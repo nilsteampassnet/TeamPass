@@ -1,0 +1,17 @@
+{
+	"sProcessing":   "Isleniyor...",
+	"sLengthMenu":   "Sayfada _MENU_ Kayit Göster",
+	"sZeroRecords":  "Eslesen Kayit Bulunmadi",
+	"sInfo":         "  _TOTAL_ Kayittan _START_ - _END_ Arasi Kayitlar",
+	"sInfoEmpty":    "Kayit Yok",
+	"sInfoFiltered": "( _MAX_ Kayit Içerisinden Bulunan)",
+	"sInfoPostFix":  "",
+	"sSearch":       "Bul:",
+	"sUrl":          "",
+	"oPaginate": {
+		"sFirst":    "Ilk",
+		"sPrevious": "Önceki",
+		"sNext":     "Sonraki",
+		"sLast":     "Son"
+	}
+}
