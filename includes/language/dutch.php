@@ -1,9 +1,9 @@
 <?php
 //dutch
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$cpassman_url = '';
+$TeamPass_url = '';
 }else{
-$cpassman_url = $_SESSION['settings']['cpassman_url'];
+$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
 $txt['account_is_locked'] = "Dit account is geblokkeerd";
@@ -143,7 +143,7 @@ $txt['connection'] = "Verbinding";
 $txt['connections'] = "Verbindingen";
 $txt['copy'] = "Kopiëren ";
 $txt['copy_to_clipboard_small_icons'] = "Enable copy to clipboard small icons in items page";
-$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>
+$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>
 ";
 $txt['creation_date'] = "Datum aangemaakt";
 $txt['csv_import_button_text'] = "Selecteer een CVS bestand";

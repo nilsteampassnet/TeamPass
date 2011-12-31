@@ -1,9 +1,9 @@
 <?php
 //german
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$cpassman_url = '';
+$TeamPass_url = '';
 }else{
-$cpassman_url = $_SESSION['settings']['cpassman_url'];
+$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
 $txt['account_is_locked'] = "Dieses Konto wurde gesperrt";
