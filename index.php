@@ -70,7 +70,7 @@ if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
 		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
 	}
 }
-//Load languages files
+//Load user languages files
 require_once('includes/language/'.$_SESSION['user_language'].'.php');
 if (isset($_GET['page']) && $_GET['page'] == "kb") {
 	require_once('includes/language/'.$_SESSION['user_language'].'_kb.php');
