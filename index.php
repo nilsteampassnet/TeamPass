@@ -56,7 +56,7 @@ require_once('sources/main.functions.php');
 /* DEFINE WHAT LANGUAGE TO USE
    * By default language is ENGLISH
 */
-if (!isset($_SESSION['user_language'])) {
+if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
 	if (isset($_POST['language'])) {
 		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
 	}else if (isset($_SESSION['settings']['default_language'])) {
@@ -68,11 +68,6 @@ if (!isset($_SESSION['user_language'])) {
 }else {
 	if (isset($_POST['language'])) {
 		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
-	}else if (isset($_POST['language'])) {
-		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
-	}else{
-		$_SESSION['user_language'] = "english";
-		$_SESSION['user_language_flag'] = "us.png";
 	}
 }
 //Load languages files

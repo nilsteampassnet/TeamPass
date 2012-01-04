@@ -5,6 +5,9 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 
 $txt['account_is_locked'] = "This is account is locked";
 $txt['activity'] = "Activity";

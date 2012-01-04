@@ -77,14 +77,15 @@ function ChangeLanguage(lang){
     $.post(
 		"sources/main.queries.php",
 		{
-		type    : "change_user_language",
-		lang	: lang
+			type    : "change_user_language",
+			lang	: lang
 		},
         function(data){
+        	$("#language").val(lang);
 			document.temp_form.submit();
         },
         "json"
-	);    
+	);
 }
 
 //Permits to open a dialogbox

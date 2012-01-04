@@ -1,10 +1,11 @@
 <?php
-//turkish
+//TURKISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Bu hesap kilitlenmiştir";
 $txt['activity'] = "Activity";
@@ -173,15 +174,18 @@ $txt['email_announce'] = "Bu öğeyi eposta ile duyur";
 $txt['email_body1'] = "Merhaba,<br><br>Öğe";
 $txt['email_body2'] = "oluşturuldu.<br><br><a href='";
 $txt['email_body3'] = "Saygılar";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "eposta adresini değiştirin";
 $txt['email_changed'] = "eposta değiştirildi";
 $txt['email_select'] = "Bilgilendirilecek kişiyi seçiniz";
 $txt['email_subject'] = "Şifre yöneticisinde yeni bir öğe oluşturuluyor";
 $txt['email_subject_new_user'] = "[TeamPass] Hesabınız Tanımlandı";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Merhaba,<br><br> TeamPass hesabınız oluşturuldu.<br> Aşağıdaki bilgileri kullanarak TeamPass hesabınıza ($TeamPass_url) giriş yapabilirsiniz:<br>";
 $txt['enable_favourites'] = "Kullanıcıların sık kullanılanlar özellğini kullanmasını aktifleştir";
 $txt['enable_personal_folder'] = "Kişisel klasörü aktifleştir";
 $txt['enable_personal_folder_feature'] = "Kişisel klasör özelliğini aktifleştir";
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Users are allowed to manage folders in allowed parent folders";
 $txt['encrypt_key'] = "Şifreleme Anahtarı";
 $txt['errors'] = "Hatalar";
@@ -301,7 +305,7 @@ $txt['is_admin'] = "Yönetici mi";
 $txt['is_manager'] = "Müdür mü";
 $txt['is_read_only'] = "Is Read Only";
 $txt['items_browser_title'] = "Klasörler";
-$txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
+$txt['item_copy_to_folder'] = ""Please select a folder in which the item has to be copied.";
 $txt['item_menu_add_elem'] = "Öğe ekle";
 $txt['item_menu_add_rep'] = "Klasör Ekle";
 $txt['item_menu_add_to_fav'] = "Çok kullanılanlara ekle";

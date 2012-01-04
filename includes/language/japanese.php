@@ -1,10 +1,11 @@
 <?php
-//japanese
+//JAPANESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "このアカウントはロックされています。\";
 <b";
@@ -308,6 +309,7 @@ $txt['email_announce'] = "このアイテムをメールで通知\";
 $txt['email_body1'] = "Hi,<br><br>Item '";
 $txt['email_body2'] = "has been created.<br /><br />You may view it by clicking <a href='";
 $txt['email_body3'] = "'>HERE</a><br /><br />Regards.";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "アカウントのEメールを変更\";
 <b";
 $txt['email_changed'] = "Email changed!\";
@@ -318,6 +320,7 @@ $txt['email_subject'] = "Creating a new Item in Passwords Manager\";
 <b";
 $txt['email_subject_new_user'] = "[TeamPass] Your account creation\";
 <b";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Hi,<br /><br />Your account has been created in TeamPass.<br />You can now access $TeamPass_url using the next credentials:<br />\";
 <b";
 $txt['enable_favourites'] = "Enable the Users to store Favourites\";
@@ -326,6 +329,7 @@ $txt['enable_personal_folder'] = "Enable Personal folder\";
 <b";
 $txt['enable_personal_folder_feature'] = "Enable Personal folder feature\";
 <b";
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Users are allowed to manage folders in allowed parent folders\";
 <b";
 $txt['encrypt_key'] = "暗号キー\";
@@ -553,7 +557,7 @@ $txt['is_manager'] = "Is Manager\";
 $txt['is_read_only'] = "Is Read Only";
 $txt['items_browser_title'] = "フォルダ名\";
 <b";
-$txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
+$txt['item_copy_to_folder'] = ""Please select a folder in which the item has to be copied.";
 $txt['item_menu_add_elem'] = "アイテムを追加\";
 <b";
 $txt['item_menu_add_rep'] = "フォルダを追加\";

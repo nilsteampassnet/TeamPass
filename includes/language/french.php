@@ -1,10 +1,11 @@
 <?php
-//french
+//FRENCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Ce compte est bloqué";
 $txt['activity'] = "Activité";
@@ -176,15 +177,18 @@ $txt['email_announce'] = "Annoncer par email ce nouveau mot de passe";
 $txt['email_body1'] = "Bonjour,<br><br>Le mot de passe de '";
 $txt['email_body2'] = "a été créé.<br /><br />Vous pouvez le consulter <a href='";
 $txt['email_body3'] = "'>ICI</a><br /><br />A bientot.";
+$txt['email_body_on_user_login'] = "Bonjour,<br><br>L'utilisateur #tp_user# s'est connecté à TeamPass le #tp_date# à #tp_time#.<br><br>Cordialement.";
 $txt['email_change'] = "Changer l'email";
 $txt['email_changed'] = "Email changé !";
 $txt['email_select'] = "Sélectionner les personnes à avertir";
 $txt['email_subject'] = "Création d'un nouveau mot de passe";
 $txt['email_subject_new_user'] = "[TeamPass] Création d\'un compte";
+$txt['email_subject_on_user_login'] = "[TeamPass] Un utilisateur s'est connecté";
 $txt['email_text_new_user'] = "Bonjour,<br /><br />Votre compte a été créé dans TeamPass.<br />Vous pouvez maintenant accéder à \".$TeamPass_url.\" en utilisant les informations de connexion suivants : <br />";
 $txt['enable_favourites'] = "Autoriser les utilisateurs à utiliser les Favoris";
 $txt['enable_personal_folder'] = "Activer le Répertoire Personnel";
 $txt['enable_personal_folder_feature'] = "Activer la fonctionnalité de Répertoire Personnel";
+$txt['enable_send_email_on_user_login'] = "Envoyer un email aux Administrateurs lorsqu'un utilisateur se connecte";
 $txt['enable_user_can_create_folders'] = "Les utilisateurs peuvent gérer les sous-répertoires auxquels ils ont accès.";
 $txt['encrypt_key'] = "Clé de cryptage";
 $txt['errors'] = "erreurs";

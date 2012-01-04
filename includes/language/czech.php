@@ -1,10 +1,11 @@
 <?php
-//czech
+//CZECH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Tento účet je uzamčen.";
 $txt['activity'] = "Aktivita";
@@ -173,15 +174,18 @@ $txt['email_announce'] = "Oznámit tuto položku po emailu";
 $txt['email_body1'] = "Dobrý den,<br><br>Položka '";
 $txt['email_body2'] = "byla vytvořena.<br><br>Můžete ji nahlédnout kliknutím <a href=\"%5C%22%3C/div%3E%3C/td%3E%0A%09%09%09%3C/tr%3E%0A%09%09%09%3Ctr%3E%0A%09%09%09%09%3Ctd%20style=%22font-size:8pt;%20background:#D0D0D0;%22%3E%5C%22\" &gt;here&lt;=\"\&quot;\&quot;\" a&gt;&lt;br=\"\&quot;\&quot;\" &gt;&lt;br=\"\&quot;\&quot;\" &gt;regards.=\"\&quot;\&quot;\"></a>";
 $txt['email_body3'] = "'>ZDE</a><br /><br />Na shledanou.";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Změnit emailovou adresu uživatelského účtu";
 $txt['email_changed'] = "Emailová adresa byla změněna!";
 $txt['email_select'] = "Vybrat uživatele, kteří budou informováni";
 $txt['email_subject'] = "Byla vytvořena nová položka v aplikaci TeamPass";
 $txt['email_subject_new_user'] = "[TeamPass] Vytvoření Vašeho uživatelského účtu";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Dobrý den,<br><br>Váš uživatelský účet v aplikaci TeamPass byl založen.<br>nyní máte přístup do $TeamPass_url pomocí následujících identifikačních údajů:<br>";
 $txt['enable_favourites'] = "Dovolit uživatelům ukládat oblíbené položky";
 $txt['enable_personal_folder'] = "Aktivovat Osobní složku";
 $txt['enable_personal_folder_feature'] = "Aktivovat funkci Osobní složky";
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Uživatelé smějí spravovat složky v povolených nadřazených složkách";
 $txt['encrypt_key'] = "Šifrovací klíč";
 $txt['errors'] = "chyby";

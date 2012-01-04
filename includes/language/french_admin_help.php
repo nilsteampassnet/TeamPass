@@ -1,4 +1,12 @@
 <?php
+//FRENCH
+if (!isset($_SESSION['settings']['cpassman_url'])) {
+	$TeamPass_url = '';
+}else{
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+}
+
+
 $txt['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 Cette page est utilisée pour créer et gérer les REPERTOIRES.<br />
 Un répertoire est nécessaire pour organiser et structurer vos éléments. Il est similaire à un répertoire de fichiers de Windows.<br />

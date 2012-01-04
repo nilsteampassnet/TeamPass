@@ -396,7 +396,7 @@ switch($_POST['type'])
 	            		array(
 	            		    'timestamp' => mktime(date('h'),date('m'),date('s'),date('m'),date('d'),date('y')),
 	            		    'subject' => $txt['email_subject_on_user_login'],
-		            		'body' => str_replace(array(' #tp_user#', '#tp_date#', '#tp_time#'), array($_SESSION['login'], date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']), date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])), $txt['email_body_on_user_login']),
+		            		'body' => str_replace(array('#tp_user#', '#tp_date#', '#tp_time#'), array(" ".$_SESSION['login'], date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']), date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])), $txt['email_body_on_user_login']),
 		            		'receivers' => $receivers,
 		            		'status' => "not sent"
 	            		)
@@ -768,11 +768,12 @@ switch($_POST['type'])
 	                ),
 	                "id = ".$_SESSION['user_id']
 	            );
+				$_SESSION['user_language'] = $_POST['lang'];
 			}
 		break;
 
 	case "send_wainting_emails":
-		if(isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1){
+		if(isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 && isset($_SESSION['key'])){
 			$row = $db->query_first("SELECT valeur FROM ".$pre."misc WHERE type='cron' AND intitule='sending_emails'");
 			if((mktime(date('h'),date('m'),date('s'),date('m'),date('d'),date('y')) - $row['valeur']) >= 300 || $row['valeur'] == 0){
 

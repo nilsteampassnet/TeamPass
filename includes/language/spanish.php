@@ -1,10 +1,11 @@
 <?php
-//spanish
+//SPANISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Esta cuenta esta bloqueada";
 $txt['activity'] = "Actividad";
@@ -173,15 +174,18 @@ $txt['email_announce'] = "Anunciar este elemento por email";
 $txt['email_body1'] = "Hola,<br><br>Elemento '";
 $txt['email_body2'] = "ha sido creado.<br /><br />Puede verlo haciendo click en <a href='";
 $txt['email_body3'] = "'>AQUI</a><br /><br />Saludos.";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Cambie el email de la cuenta";
 $txt['email_changed'] = "Email cambiado!";
 $txt['email_select'] = "Seleccionar personas a informar";
 $txt['email_subject'] = "Creando un nuevo elemento en el Administrador de Contraseñas";
 $txt['email_subject_new_user'] = "[TeamPass] Creación de su cuenta";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Hola,<br /><br />Su cuenta ha sido creada en TeamPass.<br />Puede acceder a $TeamPass_url utilizando las siguientes credenciales:<br />";
 $txt['enable_favourites'] = "Permitir al Usuario almacenar Favoritos";
 $txt['enable_personal_folder'] = "Habilitar carpeta Personal";
 $txt['enable_personal_folder_feature'] = "Habilitar la opcion de carpeta Personal";
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Los usuarios pueden administrar las carpetas y en las carpetas autorizadas";
 $txt['encrypt_key'] = "Clave de encriptacion";
 $txt['errors'] = "errores";

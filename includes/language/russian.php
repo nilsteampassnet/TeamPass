@@ -1,10 +1,11 @@
 <?php
-//russian
+//RUSSIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-$TeamPass_url = '';
+	$TeamPass_url = '';
 }else{
-$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Этот аккаунт заблокирован";
 $txt['activity'] = "Активность";
@@ -174,15 +175,18 @@ $txt['email_announce'] = "Оповестить об этом объекте по
 $txt['email_body1'] = "Hi,<br><br>Item '";
 $txt['email_body2'] = "has been created.<br /><br />You may view it by clicking <a href='";
 $txt['email_body3'] = "'>HERE</a><br /><br />Regards.";
+$txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Change the account's email";
 $txt['email_changed'] = "Email changed!";
 $txt['email_select'] = "Select persons to inform";
 $txt['email_subject'] = "Creating a new Item in Passwords Manager";
 $txt['email_subject_new_user'] = "[TeamPass] Your account creation";
+$txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Hi,<br /><br />Your account has been created in TeamPass.<br />You can now access $TeamPass_url using the next credentials:<br />";
 $txt['enable_favourites'] = "Enable the Users to store Favourites";
 $txt['enable_personal_folder'] = "Enable Personal folder";
 $txt['enable_personal_folder_feature'] = "Enable Personal folder feature";
+$txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Users are allowed to manage folders in allowed parent folders";
 $txt['encrypt_key'] = "Encryption key";
 $txt['errors'] = "errors";
@@ -302,7 +306,7 @@ $txt['is_admin'] = "Is Admin";
 $txt['is_manager'] = "Is Manager";
 $txt['is_read_only'] = "Is Read Only";
 $txt['items_browser_title'] = "Папки";
-$txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
+$txt['item_copy_to_folder'] = ""Please select a folder in which the item has to be copied.";
 $txt['item_menu_add_elem'] = "Добавить объект";
 $txt['item_menu_add_rep'] = "Добавить папку";
 $txt['item_menu_add_to_fav'] = "Добавить в избранное";
