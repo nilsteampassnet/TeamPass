@@ -46,89 +46,102 @@ switch($_POST['type'])
     	//Prepare variables
     	$new_pw = encrypt(htmlspecialchars_decode($data_received['new_pw']));
 
-			if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change"){
-				//User has decided to change is PW
+    	//User has decided to change is PW
+		if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change"){
+			//Get a string with the old pw array
+			$last_pw = explode(';',$_SESSION['last_pw']);
 
-	      //Get a string with the old pw array
-	      $last_pw = explode(';',$_SESSION['last_pw']);
+			//if size is bigger then clean the array
+			if ( sizeof($last_pw) > $_SESSION['settings']['number_of_used_pw'] && $_SESSION['settings']['number_of_used_pw'] > 0 ){
+				for($x=0;$x<$_SESSION['settings']['number_of_used_pw'];$x++)
+					unset($last_pw[$x]);
 
-        //if size is bigger then clean the array
-        if ( sizeof($last_pw) > $_SESSION['settings']['number_of_used_pw'] && $_SESSION['settings']['number_of_used_pw'] > 0 ){
-            for($x=0;$x<$_SESSION['settings']['number_of_used_pw'];$x++)
-                unset($last_pw[$x]);
+				//reinit SESSION
+				$_SESSION['last_pw'] = implode(';',$last_pw);
+			}
+			//specific case where admin setting "number_of_used_pw" is 0
+			else if ( $_SESSION['settings']['number_of_used_pw'] == 0 ){
+				$_SESSION['last_pw'] = "";
+				$last_pw = array();
+			}
 
-            //reinit SESSION
-            $_SESSION['last_pw'] = implode(';',$last_pw);
-        }
-        //specific case where admin setting "number_of_used_pw" is 0
-        else if ( $_SESSION['settings']['number_of_used_pw'] == 0 ){
-            $_SESSION['last_pw'] = "";
-            $last_pw = array();
-        }
+			//check if new pw is different that old ones
+			if ( in_array($new_pw,$last_pw) ){
+				echo '[ { "error" : "already_used" } ]';
+			}else{
+				//update old pw with new pw
+				if ( sizeof($last_pw) == ($_SESSION['settings']['number_of_used_pw']+1) ){
+					unset($last_pw[0]);
+				}else{
+					array_push($last_pw,$new_pw);
+				}
 
-        //check if new pw is different that old ones
-        if ( in_array($new_pw,$last_pw) ){
-        	echo '[ { "error" : "already_used" } ]';
-        }else{
-            //update old pw with new pw
-            if ( sizeof($last_pw) == ($_SESSION['settings']['number_of_used_pw']+1) ){
-                unset($last_pw[0]);
-            }else{
-                array_push($last_pw,$new_pw);
-            }
+				//create a list of last pw based on the table
+				$old_pw = "";
+				foreach($last_pw as $elem){
+					if ( !empty($elem) ){
+						if (empty($old_pw)) $old_pw = $elem;
+						else $old_pw .= ";".$elem;
+					}
+				}
 
-            //create a list of last pw based on the table
-            $old_pw = "";
-            foreach($last_pw as $elem){
-                if ( !empty($elem) ){
-                    if (empty($old_pw)) $old_pw = $elem;
-                    else $old_pw .= ";".$elem;
-                }
-            }
-
-            //update sessions
-            $_SESSION['last_pw'] = $old_pw;
-            $_SESSION['last_pw_change'] = mktime(0,0,0,date('m'),date('d'),date('y'));
-            $_SESSION['validite_pw'] = true;
-
-            //update DB
-            $db->query_update(
-                "users",
-                array(
-                    'pw' => $new_pw,
-                    'last_pw_change' => mktime(0,0,0,date('m'),date('d'),date('y')),
-                    'last_pw' => $old_pw
-                ),
-                "id = ".$_SESSION['user_id']
-            );
-
-            echo '[ { "error" : "none" } ]';
-        }
-			}else
-			//ADMIN has decided to change the USER's PW
-			if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "admin_change"){
-				//Check KEY
-      	if ($data_received['key'] != $_SESSION['key']) {
-      		echo '[ { "error" : "key_not_conform" } ]';
-      		exit();
-      	}
+				//update sessions
+				$_SESSION['last_pw'] = $old_pw;
+				$_SESSION['last_pw_change'] = mktime(0,0,0,date('m'),date('d'),date('y'));
+				$_SESSION['validite_pw'] = true;
 
 				//update DB
-        $db->query_update(
-            "users",
-            array(
-                'pw' => $new_pw,
-                'last_pw_change' => mktime(0,0,0,date('m'),date('d'),date('y'))
-            ),
-            "id = ".$data_received['user_id']
-        );
+				$db->query_update(
+					"users",
+					array(
+						'pw' => $new_pw,
+						'last_pw_change' => mktime(0,0,0,date('m'),date('d'),date('y')),
+						'last_pw' => $old_pw
+					),
+					"id = ".$_SESSION['user_id']
+				);
 
-        echo '[ { "error" : "none" } ]';
+				echo '[ { "error" : "none" } ]';
+			}
+		}
+		//ADMIN has decided to change the USER's PW
+		elseif(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "admin_change"){
+			//Check KEY
+			if ($data_received['key'] != $_SESSION['key']) {
+				echo '[ { "error" : "key_not_conform" } ]';
+				exit();
 			}
 
-			else{
-				echo '[ { "error" : "nothing_to_do" } ]';
-			}
+			//update DB
+			$db->query_update(
+				"users",
+				array(
+					'pw' => $new_pw,
+					'last_pw_change' => mktime(0,0,0,date('m'),date('d'),date('y'))
+				),
+				"id = ".$data_received['user_id']
+			);
+
+			echo '[ { "error" : "none" } ]';
+		}
+    	//ADMIN first login
+    	if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change"){
+    		//update DB
+    		$db->query_update(
+	    		"users",
+	    		array(
+	    			'pw' => $new_pw,
+	    			'last_pw_change' => mktime(0,0,0,date('m'),date('d'),date('y'))
+	    		),
+	    		"id = ".$_SESSION['user_id']
+    		);
+    		$_SESSION['last_pw_change'] = mktime(0,0,0,date('m'),date('d'),date('y'));
+    		echo '[ { "error" : "none" } ]';
+    	}
+    	//DEFAULT case
+		else{
+			echo '[ { "error" : "nothing_to_do" } ]';
+		}
 
     break;
 

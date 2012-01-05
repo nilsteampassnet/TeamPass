@@ -351,7 +351,6 @@ if ( !isset($_GET['page']) ){
                     if ( $("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val() ){
                     	if($("#pw_strength_value").val() >= $("#user_pw_complexity").val()){
 				            var data = "{\"new_pw\":\""+protectString($("#new_pw").val())+"\"}";
-
 				            $.post(
 				                "sources/main.queries.php",
 				                {
@@ -597,6 +596,23 @@ if ( !isset($_GET['page']) ){
 			}
 		);
     })
+
+    function ChangeMyPass(){
+    	var data = "{\"new_pw\":\""+protectString($("#new_pw").val())+"\"}";
+        $.post(
+            "sources/main.queries.php",
+            {
+                type    			: "change_pw",
+                change_pw_origine	: "first_change",
+                complexity			:	"",
+				data 				:	aes_encrypt(data)
+            },
+            function(data){
+            	document.main_form.submit();
+            },
+            "json"
+        );
+    }
 
     //Permits to upload passwords from KEEPASS file
     function ImportKEEPASS(file){

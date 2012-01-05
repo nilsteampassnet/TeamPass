@@ -244,7 +244,7 @@ if ( isset($_POST['type']) ){
                     	stripslashes($data_received['label']);
                     if (!empty($data_received['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1)
                         $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(CleanString($data_received['description']),0,30))).']</font>';
-                    $html .= '</a>';
+                    $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
 
                     // display quick icon shortcuts ?
                     if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
@@ -257,7 +257,7 @@ if ( isset($_POST['type']) ){
                     	if (!empty($data_received['pw'])) {
                     		$item_pw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$new_id.'" class="copy_clipboard" title="'.$txt['item_menu_copy_pw'].'" />';
                     	}
-                    	$html .= '<span style="float:right;margin:2px 10px 0px 0px;">'.$item_login.'&nbsp;'.$item_pw;
+                    	$html .= $item_login.'&nbsp;'.$item_pw;
                     	//$html .= '<input type="hidden" id="item_pw_in_list_'.$new_id.'" value="'.$data_received['pw'].'"><input type="hidden" id="item_login_in_list_'.$new_id.'" value="'.$data_received['login'].'">';
                     }
 

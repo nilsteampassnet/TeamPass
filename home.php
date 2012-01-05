@@ -37,7 +37,7 @@ echo '
                         	<td>'.$txt['index_new_pw'].' :</td><td><input type="password" size="10" name="new_pw" id="new_pw"/></td>
                         </tr>
                         <tr><td>'.$txt['index_change_pw_confirmation'].' :</td><td><input type="password" size="10" name="new_pw2" id="new_pw2" /></td></tr>
-                        <tr><td colspan="2"><input type="button" onClick="ChangerMdp()" value="'.$txt['index_change_pw_button'].'" /></td></tr>
+                        <tr><td colspan="2"><input type="button" onClick="ChangeMyPass()" value="'.$txt['index_change_pw_button'].'" /></td></tr>
                     </table>
                 </div>';
             }elseif ( !empty($_SESSION['derniere_connexion']) ){
