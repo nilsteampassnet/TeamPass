@@ -767,8 +767,9 @@ if ( isset($_POST['type']) ){
             $arrData['id'] = $_POST['id'];
 
         	//Check if item is deleted
-        	$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_delete'");
-        	if ( $data[0] != 0 ){
+        	$data_deleted = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_delete'");
+        	$data_restored = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
+        	if ( $data_deleted[0] != 0 && $data_deleted[0] > $data_restored[0]){
         		//This item is deleted => exit
         		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
         		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation

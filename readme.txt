@@ -77,6 +77,9 @@ LANGUAGES:
 * Do your think your can support yubikey ?
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
+v2.1.1
+* 2 bugs correction
+
 v2.1
 * Licence has changed to GNU AFFERO GPL 3.0
 * 203 - password complexity on Roles

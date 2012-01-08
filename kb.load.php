@@ -160,9 +160,9 @@ function aes_encrypt(text) {
 				var instance = CKEDITOR.instances["kb_description"];
 			    if(instance)
 			    {
-			    	CKEDITOR.replace("kb_description",{toolbar:"Full", height: 250,language: "<?php echo $k['langs'][$_SESSION['user_language']];?>"});
+			    	CKEDITOR.replace("kb_description",{toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
 			    }else{
-					$("#kb_description").ckeditor({toolbar:"Full", height: 250,language: "<?php echo $k['langs'][$_SESSION['user_language']];?>"});
+					$("#kb_description").ckeditor({toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
 			    }
 			},
 	        close: function(event,ui) {
