@@ -61,6 +61,11 @@ function table_exists($tablename, $database = false) {
 if ( isset($_POST['type']) ){
 	switch( $_POST['type'] ){
 		case "step1":
+			// erase session table
+			$_SESSION = array();
+			setcookie('pma_end_session');
+			session_destroy();
+
 			$abspath = str_replace('\\','/',$_POST['abspath']);
 			$_SESSION['abspath'] = $abspath;
 			if ( substr($abspath,strlen($abspath)-1) == "/" ) $abspath = substr($abspath,0,strlen($abspath)-1);
@@ -102,6 +107,29 @@ if ( isset($_POST['type']) ){
 				echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
 			}
 
+			//get infos from SETTINGS.PHP file
+			$filename = "../includes/settings.php";
+			$events = "";
+			if (file_exists($filename)) {
+				//copy some constants from this existing file
+				$settings_file = file($filename);
+				while(list($key,$val) = each($settings_file)) {
+					if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
+					else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')"));
+					else if (substr_count($val,'$smtp_server')>0) $_SESSION['smtp_server'] = getSettingValue($val);
+					else if (substr_count($val,'$smtp_auth')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
+					else if (substr_count($val,'$smtp_auth_username')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
+					else if (substr_count($val,'$smtp_auth_password')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
+					else if (substr_count($val,'$email_from')>0) $_SESSION['email_from'] = getSettingValue($val);
+					else if (substr_count($val,'$email_from_name')>0) $_SESSION['email_from_name'] = getSettingValue($val);
+					else if (substr_count($val,'$server')>0) $_SESSION['server'] = getSettingValue($val);
+					else if (substr_count($val,'$user')>0) $_SESSION['user'] = getSettingValue($val);
+					else if (substr_count($val,'$pass')>0) $_SESSION['pass'] = getSettingValue($val);
+					else if (substr_count($val,'$database')>0) $_SESSION['database'] = getSettingValue($val);
+					else if (substr_count($val,'$pre')>0) $_SESSION['pre'] = getSettingValue($val);
+				}
+			}
+
 			echo 'document.getElementById("res_step1").innerHTML = "'.$txt.'";';
 			echo 'document.getElementById("loader").style.display = "none";';
 			break;
@@ -112,13 +140,32 @@ if ( isset($_POST['type']) ){
 			$db_password = str_replace(" ","+",urldecode($_POST['db_password']));
 			// connexion
 			if ( @mysql_connect($_POST['db_host'],$_POST['db_login'],$db_password) ){
-				if ( @mysql_select_db($_POST['db_bdd']) ){
+				$db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
+				if ( @mysql_select_db($_POST['db_bdd'],$db_tmp) ){
 					echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
 					$res = "Connection is successfull";
 					echo 'document.getElementById("but_next").disabled = "";';
+
+					//What CPM version
+					if(@mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'")){
+						$tmp_result = mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'");
+						$cpm_version = mysql_fetch_row($tmp_result);
+						echo 'document.getElementById("actual_cpm_version").value = "'.$cpm_version[0].'";';
+					}else{
+						$res = "Table ".$_POST['tbl_prefix']."misc do not exists!";
+					}
+
+					//Get some infos from DB
+					if(@mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"))){
+						$cpm_is_utf8 = mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"));
+						echo 'document.getElementById("cpm_is_utf8").value = "'.$cpm_is_utf8[0].'";';
+						$_SESSION['utf8_enabled'] = $cpm_is_utf8[0];
+					}else{
+						$res = "Table ".$_POST['tbl_prefix']."misc do not exists!";
+					}
 				}else{
 					echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-					$res = "Impossible to get connected to table";
+					$res = "Impossible to get connected to database";
 					echo 'document.getElementById("but_next").disabled = "disabled";';
 				}
 			}else{
@@ -126,18 +173,6 @@ if ( isset($_POST['type']) ){
 				$res = "Impossible to get connected to server";
 				echo 'document.getElementById("but_next").disabled = "disabled";';
 			}
-
-			//What CPM version
-			$db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
-			mysql_select_db($_POST['db_bdd'],$db_tmp);
-			$tmp_result = mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'") or die(mysql_error());
-			$cpm_version = mysql_fetch_row($tmp_result);
-			echo 'document.getElementById("actual_cpm_version").value = "'.$cpm_version[0].'";';
-
-			//Get some infos from DB
-			$cpm_is_utf8 = mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"));
-			echo 'document.getElementById("cpm_is_utf8").value = "'.$cpm_is_utf8[0].'";';
-			$_SESSION['utf8_enabled'] = $cpm_is_utf8[0];
 
 			echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
 			echo 'document.getElementById("loader").style.display = "none";';
@@ -695,19 +730,6 @@ if ( isset($_POST['type']) ){
 			$filename = "../includes/settings.php";
 			$events = "";
 			if (file_exists($filename)) {
-				//copy some constants from this existing file
-				$settings_file = file($filename);
-				while(list($key,$val) = each($settings_file)) {
-					if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-					else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')"));
-					else if (substr_count($val,'$smtp_server')>0) $_SESSION['smtp_server'] = getSettingValue($val);
-					else if (substr_count($val,'$smtp_auth')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
-					else if (substr_count($val,'$smtp_auth_username')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
-					else if (substr_count($val,'$smtp_auth_password')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
-					else if (substr_count($val,'$email_from')>0) $_SESSION['email_from'] = getSettingValue($val);
-					else if (substr_count($val,'$email_from_name')>0) $_SESSION['email_from_name'] = getSettingValue($val);
-				}
-
 				//Do a copy of the existing file
 				if ( !copy($filename, $filename.'.'.date("Y_m_d",mktime(0,0,0,date('m'),date('d'),date('y')))) ) {
 					echo 'document.getElementById("res_step5").innerHTML = "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';

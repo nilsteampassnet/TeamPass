@@ -2,6 +2,30 @@
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;
+
+################
+## Function permits to get the value from a line
+################
+function getSettingValue($val){
+	$val = trim(strstr($val,"="));
+	return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
+}
+
+//get infos from SETTINGS.PHP file
+$filename = "../includes/settings.php";
+$events = "";
+if (file_exists($filename) && empty($_SESSION['server'])) {
+	//copy some constants from this existing file
+	$settings_file = file($filename);
+	while(list($key,$val) = each($settings_file)) {
+		if (substr_count($val,'$server')>0) $_SESSION['server'] = getSettingValue($val);
+		else if (substr_count($val,'$user')>0) $_SESSION['user'] = getSettingValue($val);
+		else if (substr_count($val,'$pass')>0) $_SESSION['pass'] = getSettingValue($val);
+		else if (substr_count($val,'$database')>0) $_SESSION['database'] = getSettingValue($val);
+		else if (substr_count($val,'$pre')>0) $_SESSION['pre'] = getSettingValue($val);
+	}
+}
+
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -187,11 +211,11 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 	echo '
 	                 <h3>Step 2</h3>
 	                 <fieldset><legend>Database Informations</legend>
-	                 <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" /><br />
-	                 <label for="db_db">Database name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" /><br />
-	                 <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" /><br />
-	                 <label for="db_pw">Password :</label><input type="password" id="db_pw" name="db_pw" class="step" /><br />
-	                 <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="teampass_" />
+	                 <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
+	                 <label for="db_db">Database name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
+	                 <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
+	                 <label for="db_pw">Password :</label><input type="password" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
+	                 <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
 	                 </fieldset>
 
 	                 <fieldset><legend>Anonymous statistics</legend>

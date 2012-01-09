@@ -77,6 +77,10 @@ LANGUAGES:
 * Do your think your can support yubikey ?
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
+2.1.2
+* improved upgrade connection errors and automatic credentials import
+* Corrections: #4, #7
+
 v2.1.1
 * 2 bugs correction
 
