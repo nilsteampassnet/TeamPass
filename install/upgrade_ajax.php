@@ -115,7 +115,7 @@ if ( isset($_POST['type']) ){
 				$settings_file = file($filename);
 				while(list($key,$val) = each($settings_file)) {
 					if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-					else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')"));
+					else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
 					else if (substr_count($val,'$smtp_server')>0) $_SESSION['smtp_server'] = getSettingValue($val);
 					else if (substr_count($val,'$smtp_auth')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
 					else if (substr_count($val,'$smtp_auth_username')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
@@ -165,12 +165,12 @@ if ( isset($_POST['type']) ){
 					}
 				}else{
 					echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-					$res = "Impossible to get connected to database";
+					$res = "Impossible to get connected to database. Error is ".mysql_error();
 					echo 'document.getElementById("but_next").disabled = "disabled";';
 				}
 			}else{
 				echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-				$res = "Impossible to get connected to server";
+				$res = "Impossible to get connected to server. Error is ".mysql_error();
 				echo 'document.getElementById("but_next").disabled = "disabled";';
 			}
 
@@ -711,7 +711,7 @@ if ( isset($_POST['type']) ){
 				while ($tmp_data = mysql_fetch_array($tmp_res)) {
 					$reason = explode(':',$tmp_data['raison']);
 					$text = AesCtr::encrypt(trim($reason[1]), $_SESSION['encrypt_key'], 256);
-					mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmp_data['id_item']." AND date = ".$tmp_data['date']." AND id_user = ".$tmp_data['id_user']." AND action = ".$tmp_data['action']) or die(mysql_error());
+					//mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmp_data['id_item']." AND date = ".$tmp_data['date']." AND id_user = ".$tmp_data['id_user']." AND action = ".$tmp_data['action']) or die(mysql_error());
 				}
 				mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
 			}
