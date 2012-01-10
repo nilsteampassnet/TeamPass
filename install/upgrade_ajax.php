@@ -710,7 +710,7 @@ if ( isset($_POST['type']) ){
 				$tmp_res = mysql_query("SELECT * FROM ".$pre."log_items WHERE action = 'at_modification' AND raison LIKE 'at_pw %'");
 				while ($tmp_data = mysql_fetch_array($tmp_res)) {
 					$reason = explode(':',$tmp_data['raison']);
-					$text = AesCtr::encrypt(trim($reason[1]), $_SESSION['key'], 256);
+					$text = AesCtr::encrypt(trim($reason[1]), $_SESSION['encrypt_key'], 256);
 					mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmp_data['id_item']." AND date = ".$tmp_data['date']." AND id_user = ".$tmp_data['id_user']." AND action = ".$tmp_data['action']) or die(mysql_error());
 				}
 				mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
