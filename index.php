@@ -62,12 +62,22 @@ if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
 	}else if (isset($_SESSION['settings']['default_language'])) {
 		$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 	}else {
-		$_SESSION['user_language'] = "english";
-		$_SESSION['user_language_flag'] = "us.png";
+		//get default language
+		$data_language = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
+		if(empty($data_language['valeur'])){
+			$_SESSION['user_language'] = "english";
+			$_SESSION['user_language_flag'] = "us.png";
+		}else{
+			$_SESSION['user_language'] = $data_language['valeur'];
+			$_SESSION['user_language_flag'] = "us.png";
+		}
+
 	}
 }else {
 	if (isset($_POST['language'])) {
 		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+	}else if (isset($_SESSION['settings']['default_language'])) {
+		$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 	}
 }
 //Load user languages files

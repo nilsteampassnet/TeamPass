@@ -71,22 +71,7 @@ function countdown()
     var counter = setTimeout("countdown()", 1000) //Create the timer "counter" that will automatic restart function countdown() again every second.
 }
 
-//Change language using icon flags
-function ChangeLanguage(lang){
-    $('#language').val(lang);
-    $.post(
-		"sources/main.queries.php",
-		{
-			type    : "change_user_language",
-			lang	: lang
-		},
-        function(data){
-        	$("#language").val(lang);
-			document.temp_form.submit();
-        },
-        "json"
-	);
-}
+
 
 //Permits to open a dialogbox
 function OpenDialog(id){
@@ -126,12 +111,14 @@ function CreateRandomString(size,type){
 
 
 function unprotectString(string){
-	string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
+	if(string != "" && string != null)
+		string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
+	}
 	return string;
 }
 
 function protectString(string){
-	if(string != ""){
+	if(string != "" && string != null){
 		string = string.replace(/\\/g,'&#93;').replace(/"/g,"&quot;");
 	}
 	return string;

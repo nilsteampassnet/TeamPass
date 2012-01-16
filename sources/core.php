@@ -62,19 +62,19 @@ $pw_complexity = array(
 
 //Load Languages stuff
 if(empty($languages_dropmenu)){
-$languages_dropmenu = "";
-$languages_list = array();
-$rows = $db->fetch_all_array("SELECT * FROM ".$pre."languages ORDER BY name ASC");
-foreach( $rows as $reccord ){
-	$languages_dropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.$reccord['flag'].'" alt="'.$reccord['label'].'" title="'.$reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
-	array_push($languages_list, $reccord['name']);
-	if(isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']){
-		$_SESSION['user_language_flag'] = $reccord['flag'];
-		$_SESSION['user_language_code'] = $reccord['code'];
-		$_SESSION['user_language_label'] = $reccord['label'];
-		$_SESSION['user_language_id'] = $reccord['id'];
+	$languages_dropmenu = "";
+	$languages_list = array();
+	$rows = $db->fetch_all_array("SELECT * FROM ".$pre."languages ORDER BY name ASC");
+	foreach( $rows as $reccord ){
+		$languages_dropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.$reccord['flag'].'" alt="'.$reccord['label'].'" title="'.$reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
+		array_push($languages_list, $reccord['name']);
+		if(isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']){
+			$_SESSION['user_language_flag'] = $reccord['flag'];
+			$_SESSION['user_language_code'] = $reccord['code'];
+			$_SESSION['user_language_label'] = $reccord['label'];
+			$_SESSION['user_language_id'] = $reccord['id'];
+		}
 	}
-}
 }
 /**
  * Define Timezone

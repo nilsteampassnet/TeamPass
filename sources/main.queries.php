@@ -822,18 +822,18 @@ switch($_POST['type'])
 						"timestamp='".$reccord['timestamp']."'"
 					);
 				}
-				//update cron time
-				$db->query_update(
-					"misc",
-					array(
-					    'valeur' => mktime(date('h'),date('m'),date('s'),date('m'),date('d'),date('y'))
-					),
-					array(
-						'intitule' => 'sending_emails',
-						'type' => 'cron'
-					)
-				);
 			}
+			//update cron time
+			$db->query_update(
+				"misc",
+				array(
+				    'valeur' => mktime(date('h'),date('m'),date('s'),date('m'),date('d'),date('y'))
+				),
+				array(
+					'intitule' => 'sending_emails',
+					'type' => 'cron'
+				)
+			);
 		}
 	break;
 

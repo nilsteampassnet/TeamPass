@@ -140,7 +140,7 @@ $htmlHeaders .= '
                 randomstring += chars[Math.floor(Math.random() * chars.length)];
             }
             var data = \'{"login":"\'+protectString($("#login").val())+\'" , "pw":"\'+protectString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"}\';
-
+alert(data);
             //send query
             $.post("sources/main.queries.php", {
                     type : "identify_user",
@@ -199,6 +199,23 @@ $htmlHeaders .= '
     function OpenDialogBox(id){
         $("#"+id).dialog("open");
     }
+
+	//Change language using icon flags
+	function ChangeLanguage(lang){
+		$("#language").val(lang);
+		$.post(
+			"sources/main.queries.php",
+			{
+				type    : "change_user_language",
+				lang	: lang
+			},
+		    function(data){
+		    	$("#language").val(lang);
+		    	document.temp_form.submit();
+		    },
+		    "json"
+		);
+	}
 
     /*
     * Clean disconnection of user for security reasons.
