@@ -111,7 +111,7 @@ function CreateRandomString(size,type){
 
 
 function unprotectString(string){
-	if(string != "" && string != null)
+	if(string != "" && string != null){
 		string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
 	}
 	return string;
