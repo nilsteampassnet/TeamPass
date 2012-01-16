@@ -80,6 +80,9 @@ LANGUAGES:
 * Issue 237:	IE8 Password Entry List Improperly Formatted
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
+2.1.3
+* upgrade improvement in case of upgrading from 1.x version.
+
 2.1.2
 * improved upgrade connection errors and automatic credentials import
 * Corrections: #4, #7, 236

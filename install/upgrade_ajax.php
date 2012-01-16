@@ -152,7 +152,7 @@ if ( isset($_POST['type']) ){
 						$cpm_version = mysql_fetch_row($tmp_result);
 						echo 'document.getElementById("actual_cpm_version").value = "'.$cpm_version[0].'";';
 					}else{
-						$res = "Table ".$_POST['tbl_prefix']."misc do not exists!";
+						echo 'document.getElementById("actual_cpm_version").value = "0";';
 					}
 
 					//Get some infos from DB
@@ -161,7 +161,8 @@ if ( isset($_POST['type']) ){
 						echo 'document.getElementById("cpm_is_utf8").value = "'.$cpm_is_utf8[0].'";';
 						$_SESSION['utf8_enabled'] = $cpm_is_utf8[0];
 					}else{
-						$res = "Table ".$_POST['tbl_prefix']."misc do not exists!";
+						echo 'document.getElementById("cpm_is_utf8").value = "0";';
+						$_SESSION['utf8_enabled'] = 0;
 					}
 				}else{
 					echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
