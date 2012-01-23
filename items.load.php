@@ -457,6 +457,11 @@ function AjouterItem(){
                         $("#new_show_error").html('ERROR!!');
                         $("#new_show_error").show();
                         LoadingPage();
+                    }else if (data.error == "pw_too_long") {
+                    	$("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#new_show_error").show();
+                        LoadingPage();
                     }else if (data.new_id != "") {
                         $("#new_show_error").hide();
                         $("#random_id").val("");
@@ -609,8 +614,14 @@ function EditerItem(){
                     //check if format error
                     if (data.error == "format") {
                         $("#div_loading").hide();
-                        document.getElementById('edit_show_error').innerHTML = data.error+" ERROR (JSON is broken)!!!!!";
+                        $("#edit_show_error").html(data.error+' ERROR (JSON is broken)!!!!!');
                         $("#edit_show_error").show();
+                    }
+                    else if (data.error == "pw_too_long") {
+                        $("#div_loading").hide();
+                        $("#edit_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#edit_show_error").show();
+                        LoadingPage();
                     }
                     //if reload page is needed
                     else if (data.reload_page == "1") {

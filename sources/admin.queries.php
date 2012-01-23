@@ -373,6 +373,7 @@ switch($_POST['type'])
 	case "admin_action_reload_cache_table":
 		require_once("main.functions.php");
 		UpdateCacheTable("reload", "");
+		echo '[{"result":""}]';
 	break;
 
 	/*

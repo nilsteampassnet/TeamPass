@@ -87,6 +87,14 @@ if ( isset($_POST['type']) ){
             $tags = htmlspecialchars_decode($data_received['tags']);
 
         	if (!empty($pw)) {
+        		//Check length
+        		if(strlen($pw)>40){
+        			$return_values = array("error" => "pw_too_long");
+        			$return_values = AesCtr::encrypt(json_encode($return_values,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+        			echo $return_values;
+        			break;
+        		}
+
 	            //;check if element doesn't already exist
 	            $item_exists = 0;
 	            $new_id = "";
@@ -294,22 +302,17 @@ if ( isset($_POST['type']) ){
                 		"array_items" => $items_id_list,
                 		"show_clipboard_small_icons" => (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) ? 1 : 0
                 	);
-
-                	//Encrypt data to return
-		        	require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
-		        	require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
-		        	$return_values = AesCtr::encrypt(json_encode($return_values,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-
-					echo $return_values;
 	            }
 
 	        	else if (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 0 && $item_exists == 1) {
-	        		//return data
-	        		echo '[ { "error" : "item_exists" } ]';
+	        		$return_values = array("error" => "item_exists");
 	        	}
         	}else{
-        		echo '[ { "error" : "something_wrong" } ]';
+        		$return_values = array("error" => "something_wrong");
         	}
+        	//Encrypt data to return
+        	$return_values = AesCtr::encrypt(json_encode($return_values,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+        	echo $return_values;
         break;
 
         /*
@@ -333,6 +336,14 @@ if ( isset($_POST['type']) ){
                 $pw = $original_pw = htmlspecialchars_decode($data_received['pw']);
                 $login = htmlspecialchars_decode($data_received['login']);
                 $tags = htmlspecialchars_decode($data_received['tags']);
+
+            	//Check length
+            	if(strlen($pw)>40){
+            		$return_values = array("error" => "pw_too_long");
+            		$return_values = AesCtr::encrypt(json_encode($return_values,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            		echo $return_values;
+            		break;
+            	}
 
                 //Get existing values
                 $data = $db->query_first("
@@ -395,7 +406,7 @@ if ( isset($_POST['type']) ){
                 );
 
             	//get readable list of restriction
-            	$list_of_restricted = "";
+            	$list_of_restricted = $old_restriction_list = "";
             	if(!empty($data_received['restricted_to'])){
             		foreach(explode(';', $data_received['restricted_to']) as $user_rest){
             			if(!empty($user_rest)){
@@ -405,9 +416,31 @@ if ( isset($_POST['type']) ){
             			}
             		}
             	}
+            	if ($data['restricted_to'] != $data_received['restricted_to']){
+            		if(!empty($data['restricted_to'])){
+            			foreach(explode(';', $data['restricted_to']) as $user_rest){
+            				if(!empty($user_rest)){
+            					$data_tmp = $db->query_first("SELECT login FROM ".$pre."users WHERE id= ".$user_rest);
+            					if(empty($old_restriction_list)) $old_restriction_list = $data_tmp['login'];
+            					else $old_restriction_list .= ";".$data_tmp['login'];
+            				}
+            			}
+            		}
+            	}
 
             	//Manage retriction_to_roles
             	if (isset($data_received['restricted_to_roles'])) {
+            		//get values before deleting them
+            		$rows = $db->fetch_all_array("
+						SELECT t.title
+						FROM ".$pre."roles_title AS t
+						INNER JOIN ".$pre."restriction_to_roles AS r ON (t.id=r.role_id)
+						WHERE r.item_id = ".$data_received['id']."
+						ORDER BY t.title ASC");
+            		foreach($rows as $reccord){
+            			if(empty($old_restriction_list)) $old_restriction_list = $data_tmp['title'];
+            			else $old_restriction_list .= ";".$reccord['title'];
+            		}
             		//delete previous values
             		$db->query_delete(
 	            		'restriction_to_roles',
@@ -435,84 +468,97 @@ if ( isset($_POST['type']) ){
                 UpdateCacheTable("update_value", $data_received['id']);
 
                 //Log all modifications done
-                    /*LABEL */
-                    if ( $data['label'] != $label )
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_label : '.$data['label'].' => '.$label
-                            )
-                        );
-                    /*LOGIN */
-                    if ( $data['login'] != $login )
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_login : '.$data['login'].' => '.$login
-                            )
-                        );
-                    /*URL */
-                    if ( $data['url'] != $url && $url != "http://")
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_url : '.$data['url'].' => '.$url
-                            )
-                        );
-                    /*DESCRIPTION */
-                    if ( $data['description'] != $data_received['description'] )
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_description'
-                            )
-                        );
-                    /*FOLDER */
-                    if ( $data['id_tree'] != $data_received['categorie'] ){
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_category : '.$data['id_tree'].' => '.$data_received['categorie']
-                            )
-                        );
-                        //ask for page reloading
-                        $reload_page = true;
-                    }
-                    /*PASSWORD */
-                    if ( $data['pw'] != $pw ){
-                        if( isset($data_received['salt_key']) && !empty($data_received['salt_key']) ) $old_pw = decrypt($data['pw'],$data_received['salt_key']);
-                        else $old_pw = decrypt($data['pw']);
-                        $db->query_insert(
-                            'log_items',
-                            array(
-                                'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_modification',
-                                'raison' => 'at_pw : '.AesCtr::encrypt(substr(addslashes($old_pw), strlen($original_key['rand_key'])), $_SESSION['key'], 256)
-                            )
-                        );
-                    }
+                /*LABEL */
+                if ( $data['label'] != $label )
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_label : '.$data['label'].' => '.$label
+                        )
+                    );
+                /*LOGIN */
+                if ( $data['login'] != $login )
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_login : '.$data['login'].' => '.$login
+                        )
+                    );
+                /*URL */
+                if ( $data['url'] != $url && $url != "http://")
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_url : '.$data['url'].' => '.$url
+                        )
+                    );
+                /*DESCRIPTION */
+                if ( $data['description'] != $data_received['description'] )
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_description'
+                        )
+                    );
+                /*FOLDER */
+                if ( $data['id_tree'] != $data_received['categorie'] ){
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_category : '.$data['id_tree'].' => '.$data_received['categorie']
+                        )
+                    );
+                    //ask for page reloading
+                    $reload_page = true;
+                }
+                /*PASSWORD */
+                if ( $data['pw'] != $pw ){
+                    if( isset($data_received['salt_key']) && !empty($data_received['salt_key']) ) $old_pw = decrypt($data['pw'],$data_received['salt_key']);
+                    else $old_pw = decrypt($data['pw']);
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_pw : '.AesCtr::encrypt(substr(addslashes($old_pw), strlen($original_key['rand_key'])), $_SESSION['key'], 256)
+                        )
+                    );
+                }
+            	/*RESTRICTIONS */
+            	if ($data['restricted_to'] != $data_received['restricted_to']){
+            		$db->query_insert(
+	            		'log_items',
+	            		array(
+	            		    'id_item' => $data_received['id'],
+	            		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	            		    'id_user' => $_SESSION['user_id'],
+	            		    'action' => 'at_modification',
+	            		    'raison' => 'at_restriction : '.$old_restriction_list.' => '.$list_of_restricted
+	            		)
+            		);
+            	}
 
                 //Reload new values
                 $data_item = $db->query_first("
@@ -622,18 +668,15 @@ if ( isset($_POST['type']) ){
             	    "restriction_to" => $data_received['restricted_to'].$data_received['restricted_to_roles'],
             	    "list_of_restricted" => $list_of_restricted
                 );
-                //print_r($arrData);
-                //Encrypt JSON data to return
-                require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
-                require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
-                $return_values = AesCtr::encrypt(json_encode($arrData,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+
             }else{
                 //an error appears on JSON format
-                $return_values = '{"error" : "format"}';
+            	$arrData = array("error" => "format");
             }
 
             //return data
-            echo $return_values;
+            $return_values = AesCtr::encrypt(json_encode($arrData,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+        	echo $return_values;
         break;
 
 
@@ -1430,6 +1473,11 @@ if ( isset($_POST['type']) ){
                     	}else{
                     		$pw = "";
                     	}
+                    	//test charset => may cause a json error if is not utf8
+                    	if(!is_utf8($pw)){
+                    		$pw = "";
+                    		$html .= '&nbsp;<img src="includes/images/exclamation_small_red.png" title="'.$txt['pw_encryption_error'].'" />';
+                    	}
 
                     	$html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
                         // display quick icon shortcuts ?
@@ -1455,6 +1503,7 @@ if ( isset($_POST['type']) ){
                     	}else {
                     		$html .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$reccord['id'].',1)" />';
                     	}
+                    	$html .= '</span>';
 
                     	//mini icon for collab
                     	if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
@@ -1466,7 +1515,7 @@ if ( isset($_POST['type']) ){
                     		$html .= '</span>'.$item_collab.'</span>';
                     	}
 
-                    	$html .= '</li>';
+                    	$html .= '</span></li>';
 
                     	//Build array with items
                         array_push($items_id_list,array($reccord['id'], $pw, $reccord['login'], $display_item));

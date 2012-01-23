@@ -5,6 +5,9 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['error_pw_too_long'] = "Password is too long! maximum characters is 40.";
+$txt['at_restriction'] = "Restriction";
+$txt['pw_encryption_error'] = "Error encryption of the password!";
 $txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";

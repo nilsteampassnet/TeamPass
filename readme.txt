@@ -76,12 +76,11 @@ LANGUAGES:
 * Would it be possible to add support for syslog? It would be a nice feature to be able to log all activity to a third syslog server. This would be mainly for security and auditing.
 * Do your think your can support yubikey ?
 * Issue 231:	How to Restrict Admin from Viewing items
-* Issue 232:	Restricted User modifications not reported on the item log
-* Issue 237:	IE8 Password Entry List Improperly Formatted
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4
-
+* Improved: 232
+* Corrections: 237
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

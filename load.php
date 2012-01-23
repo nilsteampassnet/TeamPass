@@ -140,7 +140,7 @@ $htmlHeaders .= '
                 randomstring += chars[Math.floor(Math.random() * chars.length)];
             }
             var data = \'{"login":"\'+protectString($("#login").val())+\'" , "pw":"\'+protectString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"}\';
-alert(data);
+
             //send query
             $.post("sources/main.queries.php", {
                     type : "identify_user",

@@ -53,27 +53,25 @@ $db->connect();
 // Include main functions used by cpassman
 require_once('sources/main.functions.php');
 
-/* DEFINE WHAT LANGUAGE TO USE
-   * By default language is ENGLISH
-*/
-if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
-	if (isset($_POST['language'])) {
-		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
-	}else if (isset($_SESSION['settings']['default_language'])) {
-		$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
-	}else {
-		//get default language
-		$data_language = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
-		if(empty($data_language['valeur'])){
-			$_SESSION['user_language'] = "english";
-			$_SESSION['user_language_flag'] = "us.png";
-		}else{
-			$_SESSION['user_language'] = $data_language['valeur'];
-			$_SESSION['user_language_flag'] = "us.png";
-		}
-
+/* DEFINE WHAT LANGUAGE TO USE */
+if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
+	//get default language
+	$data_language = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
+	if(empty($data_language[0])){
+		$_SESSION['user_language'] = "english";
+		$_SESSION['user_language_flag'] = "us.png";
+	}else{
+		$_SESSION['user_language'] = $data_language[0];
+		$_SESSION['user_language_flag'] = "us.png";
 	}
-}else {
+}else
+if (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
+	$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+}else
+if (isset($_POST['language'])) {
+	$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+}else
+if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
 	if (isset($_POST['language'])) {
 		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
 	}else if (isset($_SESSION['settings']['default_language'])) {
