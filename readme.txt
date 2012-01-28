@@ -76,6 +76,12 @@ LANGUAGES:
 * Would it be possible to add support for syslog? It would be a nice feature to be able to log all activity to a third syslog server. This would be mainly for security and auditing.
 * Do your think your can support yubikey ?
 * Issue 231:	How to Restrict Admin from Viewing items
+* 239: Old label of item is shown. Gets fixed only after you click on the item in "last items seen" bar.
+* Issue 240:	Edit of folder, which parent is restricted will place folder to the root
+* Issue 242:	Feature Request: SALT Key Sync with LDAP
+* Issue 243:	Restricted Items Still Can be Umasked via Find
+* #25 : Password containing \ (backslash) + copy to clipboard
+* Issue 228:	What if you forget your SALT Key? How to reset?
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4

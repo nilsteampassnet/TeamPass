@@ -303,7 +303,7 @@ switch($_POST['type'])
     #CASE for optimizing the DB
     case "admin_action_db_optimize":
         //Get all tables
-        /*$alltables = mysql_query("SHOW TABLES");
+        $alltables = mysql_query("SHOW TABLES");
         while ($table = mysql_fetch_assoc($alltables))
         {
            foreach ($table as $db => $tablename)
@@ -314,7 +314,7 @@ switch($_POST['type'])
                    mysql_query("OPTIMIZE TABLE `".$tablename."`");
                }
            }
-        }*/
+        }
 
     	//Clean up LOG_ITEMS table
     	$rows = $db->fetch_all_array("
