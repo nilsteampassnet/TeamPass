@@ -187,7 +187,8 @@ if ( isset($_POST['type']) ){
                 ('admin','default_language','english'),
                 ('admin', 'send_stats', '".$_SESSION['send_stats']."'),
                 ('admin', 'send_mail_on_user_login', '0'),
-                ('cron', 'sending_emails', '0');");
+                ('cron', 'sending_emails', '0'),
+                ('admin', 'nb_items_by_query', 'auto');");
             if ( $res4 ){
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/tick.png\">";';
             }else{

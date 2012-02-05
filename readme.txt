@@ -83,7 +83,7 @@ Issue 247:	backup restore not working
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4
-* Improved: 232
+* Improved: 232, #31 (new setting option for dynamic list)
 * Corrections: 237, #29, #25, 240, 243
 
 2.1.2

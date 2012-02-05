@@ -132,3 +132,7 @@ function protectString(string){
 	}
 	return string;
 }
+
+function is_int(input){
+    return parseInt(input)==input;
+  }

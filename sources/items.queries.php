@@ -1240,14 +1240,13 @@ if ( isset($_POST['type']) ){
             $arbo_html = $html = "";
         	$folder_is_pf = $show_error = 0;
         	$items_id_list = $rights = array();
+        	$html = '';
 
         	//Build query limits
         	if (empty($_POST['start'])) {
         		$start = 0;
-        		$html = '';
         	}else{
         		$start = $_POST['start'];
-        		$html = '';
         	}
 
             //Prepare tree
@@ -1311,8 +1310,9 @@ if ( isset($_POST['type']) ){
                     WHERE i.inactif = 0".
             		$where_arg."
                     AND l.action = 'at_creation'
-                    ORDER BY i.label ASC, l.date DESC
-                 	LIMIT ".$start.",".$_POST['nb_items_to_display_once']);
+                    ORDER BY i.label ASC, l.date DESC",
+            		$_POST['nb_items_to_display_once'] != "max" ? "LIMIT ".$start.",".$_POST['nb_items_to_display_once'] : "" , ""
+                 	);
             	}else{
             		$rows = $db->fetch_all_array("
                     SELECT DISTINCT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label, i.description AS description, i.pw AS pw, i.login AS login, i.anyone_can_modify AS anyone_can_modify,
@@ -1325,8 +1325,8 @@ if ( isset($_POST['type']) ){
                     WHERE i.inactif = 0".
             		$where_arg."
                     AND (l.action = 'at_creation')
-                    ORDER BY i.label ASC, l.date DESC
-                 	LIMIT ".$start.",".$_POST['nb_items_to_display_once']);
+                    ORDER BY i.label ASC, l.date DESC",
+            		$_POST['nb_items_to_display_once'] != "max" ? "LIMIT ".$start.",".$_POST['nb_items_to_display_once'] : "" , "");
             	}
             	// REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $id_managed = '';
@@ -1554,7 +1554,7 @@ if ( isset($_POST['type']) ){
 
 
         	//Check list to be continued status
-        	if (($_POST['nb_items_to_display_once'] + $start) < $count_items[0] ) {
+        	if (($_POST['nb_items_to_display_once'] + $start) < $count_items[0] && $_POST['nb_items_to_display_once'] != "max" ) {
         		$list_to_be_continued = "yes";
         	}
         	else {

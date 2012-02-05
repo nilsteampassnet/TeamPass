@@ -271,7 +271,8 @@ if ( isset($_POST['type']) ){
 				array('admin', 'default_language', 'english',0),
 				array('admin','send_stats', empty($_SESSION['send_stats']) ? '0' : $_SESSION['send_stats'],1),
 				array('admin', 'send_mail_on_user_login', '0', 0),
-				array('cron', 'sending_emails', '0', 0)
+				array('cron', 'sending_emails', '0', 0),
+				array('admin', 'nb_items_by_query', 'auto', 0)
 			);
 			$res1 = "na";
 			foreach($val as $elem){

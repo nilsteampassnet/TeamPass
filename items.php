@@ -66,7 +66,7 @@ echo '
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />
-<input type="hidden" id="nb_items_to_display_once" value="" />
+<input type="hidden" id="nb_items_to_display_once" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : 'auto', '" />
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />';
 
 //Afficher mdp suite ? recherche

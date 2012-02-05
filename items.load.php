@@ -1329,7 +1329,13 @@ $(function() {
     }
 
 	//Evaluate number of items to display - depends on screen height
-	$("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+	if(is_int($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max"){
+		//do nothing ... good value
+	}else{
+		//adapt to the screen height
+		$("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+	}
+
 
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();

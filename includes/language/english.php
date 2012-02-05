@@ -5,6 +5,8 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['nb_items_by_query'] = "Number of items to get at each query iterration";
+$txt['nb_items_by_query_tip'] = "<span style='font-size:11px;max-width:300px;'>More items means more time to display the list.<br />Set to 'auto' to let the tool to adapt this number depending on the size screen of the user.<br />Set to 'max' to force to display the complet list in one time.<br />Set a number corresding to the number of items to get at each query iterration.</span>";
 $txt['error_no_selected_folder'] = "You need to select a Folder";
 $txt['open_url_link'] = "Open in new page";
 $txt['error_pw_too_long'] = "Password is too long! maximum characters is 40.";
