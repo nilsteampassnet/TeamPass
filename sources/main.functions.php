@@ -314,8 +314,10 @@ function UpdateCacheTable($action, $id=""){
 
         //reload date
         $sql = "SELECT *
-                FROM ".$pre."items
-                WHERE inactif=0";
+                FROM ".$pre."items AS i
+                INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
+                AND l.action = 'at_creation'
+                AND i.inactif=0";
         $rows = $db->fetch_all_array($sql);
         foreach( $rows as $reccord ){
             //Get all TAGS
@@ -350,7 +352,8 @@ function UpdateCacheTable($action, $id=""){
                     'perso' =>  $reccord['perso'],
                     'restricted_to' =>  $reccord['restricted_to'],
                     'login' => $reccord['login'],
-                    'folder' => $folder,
+	                'folder' => $folder,
+	                'author' => $reccord['id_user'],
                 )
             );
         }
@@ -394,16 +397,18 @@ function UpdateCacheTable($action, $id=""){
                     'perso' =>  $data['perso'],
                     'restricted_to' =>  $data['restricted_to'],
                     'login' => $data['login'],
-                    'folder' => $folder,
+	                'folder' => $folder,
                 ),
                 "id='".$id."'"
             );
     //ADD an item
     }else if ( $action == "add_value"){
         //get new value from db
-        $sql = "SELECT label, description, id_tree, perso, restricted_to, id, login
-                FROM ".$pre."items
-                WHERE id=".$id;
+        $sql = "SELECT i.label, i.description, i.id_tree, i.perso, i.restricted_to, i.id, i.login
+                FROM ".$pre."items AS i
+                INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
+                WHERE i.id=".$id."
+                AND l.action = 'at_creation'";
     	$row = $db->query($sql);
         $data = $db->fetch_array($row);
 
@@ -441,6 +446,7 @@ function UpdateCacheTable($action, $id=""){
 	            'restricted_to' =>  $data['restricted_to'],
 	            'login' => $data['login'],
 	            'folder' => $folder,
+	            'author' => $reccord['id_user'],
             )
         );
     //DELETE an item

@@ -148,10 +148,12 @@ function ListerItems(groupe_id, restricted, start){
 					$("#item_details_ok, #item_details_nok").hide();
 
 				    $('#menu_button_add_item').attr('disabled', 'disabled');
-	                $("#items_list_loader").hide();
+	                $("#items_list_loader, #div_loading").hide();
 				}
 				else if (data.error == "not_authorized") {
 					//warn user
+                    $("#hid_cat").val("");
+                    $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item; #menu_button_del_item").attr('disabled', 'disabled');
 					$("#item_details_nok").show();
 					$("#item_details_ok").hide();
 	                $("#items_list_loader").hide();
@@ -183,7 +185,7 @@ function ListerItems(groupe_id, restricted, start){
 			                	if (data.array_items[i][1] != "" && data.array_items[i][3] == "1"){
 			                		$("#icon_pw_"+data.array_items[i][0]).zclip({
 			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][1],
+			                			copy : unprotectString(data.array_items[i][1]),
 			                			afterCopy:function(){
 			                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
 			                			}
@@ -239,7 +241,7 @@ function ListerItems(groupe_id, restricted, start){
 			                	if (data.array_items[i][1] != "" && data.array_items[i][3] == "1"){
 			                		$("#icon_pw_"+data.array_items[i][0]).zclip({
 			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][1],
+			                			copy : unprotectString(data.array_items[i][1]),
 			                			afterCopy:function(){
 			                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
 			                			}
@@ -375,11 +377,11 @@ function AjouterItem(){
     	url = "http://"+url;
     }
 
-    if ( document.getElementById("label").value == "" ) erreur = "<?php echo $txt['error_label'];?>";
-    else if ( document.getElementById("pw1").value == "" ) erreur = "<?php echo $txt['error_pw'];?>";
-    else if ( document.getElementById("categorie").value == "na" ) erreur = "<?php echo $txt['error_group'];?>";
-    else if ( document.getElementById("pw1").value != document.getElementById("pw2").value ) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ( document.getElementById("item_tags").value != "" && reg.test(document.getElementById("item_tags").value) ) erreur = "<?php echo $txt['error_tags'];?>";
+    if ( $("#label").val() == "" ) erreur = "<?php echo $txt['error_label'];?>";
+    else if ( $("#pw1").val() == "" ) erreur = "<?php echo $txt['error_pw'];?>";
+    else if ( $("#categorie").val() == "na" ) erreur = "<?php echo $txt['error_group'];?>";
+    else if ( $("#pw1").val() != document.getElementById("pw2").value ) erreur = "<?php echo $txt['error_confirm'];?>";
+    else if ( $("#item_tags").val() != "" && reg.test(document.getElementById("item_tags").value) ) erreur = "<?php echo $txt['error_tags'];?>";
     else{
         //Check pw complexity level
         if (
@@ -663,6 +665,9 @@ function EditerItem(){
                             PreviewImage($(this).attr("href"),$(this).attr("title"));
                         });
 
+                        //Change title in "last items list"
+						$("#last_items_"+data.id).text($('#edit_label').val());
+
                         //Clear upload queue
                         $('#item_edit_file_queue').html('');
                         //Select 1st tab
@@ -698,8 +703,8 @@ function aes_decrypt(text) {
 }
 
 function AjouterFolder(){
-    if ( document.getElementById("new_rep_titre").value == "0" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_label'];?>").show();
-    else if ( document.getElementById("new_rep_complexite").value == "" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
+    if ( $("#new_rep_titre").val() == "0" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_label'];?>").show();
+    else if ( $("#new_rep_complexite").val() == "" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
     else{
     	if ($("#new_rep_role").val() == undefined) {
     		role_id = "<?php echo $_SESSION['fonction_id'];?>";
@@ -878,7 +883,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if ( data.pw != "" ) {
                     	$("#menu_button_copy_pw").zclip({
                 			path : "includes/libraries/zclip/ZeroClipboard.swf",
-                			copy : data.pw,
+                			copy : unprotectString(data.pw),
                 			afterCopy:function(){
                 				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
                 			}
@@ -996,6 +1001,10 @@ function open_add_item_div() {
     	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['alert_message_personal_sk_missing'];?><\/div>");
     	LoadingPage();
     	$("#div_dialog_message").dialog("open");
+    }
+    else if($("#hid_cat").val() == ""){
+    	LoadingPage();
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['error_no_selected_folder'];?><\/div>").dialog("open");
     }
     else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
 	    //Select the actual forlder in the dialogbox
@@ -1398,10 +1407,10 @@ $(function() {
             "<?php echo $txt['save_button'];?>": function() {
                 //Do some checks
                 $("#edit_rep_show_error").hide();
-                if ($("#edit_rep_titre").val() == "") {
+                if ($("#edit_folder_title").val() == "") {
                 	$("#edit_rep_show_error").html("<?php echo $txt['error_group_label'];?>");
                 	$("#edit_rep_show_error").show();
-                }else if ($("#edit_rep_groupe").val() == "0") {
+                }else if ($("#edit_folder_folder").val() == "0") {
                 	$("#edit_rep_show_error").html("<?php echo $txt['error_group'];?>");
                 	$("#edit_rep_show_error").show();
                 }else if ($("#edit_folder_complexity").val() == "") {
@@ -1409,7 +1418,8 @@ $(function() {
                 	$("#edit_rep_show_error").show();
                 }else{
                 	//prepare data
-					var data = '{"title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexity').val()+'", '+
+					var data = '{"title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", '+
+					'"complexity":"'+$('#edit_folder_complexity').val()+'", '+
 					'"folder":"'+$('#edit_folder_folder').val()+'"}';
 
                 	//Send query
@@ -1422,7 +1432,9 @@ $(function() {
 						function(data){
 							//check if format error
 							if (data[0].error == "") {
-								window.location.href = "index.php?page=items";
+								$("#folder_name_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());
+								$("#path_elem_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());
+								$("#div_editer_rep").dialog("close");
 							}else{
 				                $("#edit_rep_show_error").html(data[0].error).show();
 				            }

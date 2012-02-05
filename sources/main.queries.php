@@ -383,8 +383,9 @@ switch($_POST['type'])
                 $_SESSION['latest_items_tab'][] = "";
                 foreach($_SESSION['latest_items'] as $item){
                     if ( !empty($item) ){
-                        $data = $db->query_first("SELECT label,id_tree FROM ".$pre."items WHERE id = ".$item);
+                        $data = $db->query_first("SELECT id,label,id_tree FROM ".$pre."items WHERE id = ".$item);
                         $_SESSION['latest_items_tab'][$item] = array(
+                            'id'=>$item,
                             'label'=>$data['label'],
                             'url'=>'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item
                         );
@@ -464,6 +465,10 @@ switch($_POST['type'])
     	$_SESSION['fin_session'] = $_SESSION['fin_session']+3600;
     	echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
     break;
+
+   	case "hide_maintenance":
+   		$_SESSION['hide_maintenance'] = 1;
+   	break;
 
     //Used in order to send the password to the user by email
     case "send_pw_by_email":

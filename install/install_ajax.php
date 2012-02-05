@@ -376,7 +376,8 @@ if ( isset($_POST['type']) ){
                 `perso` tinyint(1) NOT NULL,
                 `restricted_to` varchar(200) NOT NULL,
                 `login` varchar(200) NOT NULL,
-                `folder` varchar(300) NOT NULL
+                `folder` varchar(300) NOT NULL,
+                `author` varchar(50) NOT NULL
                 ) CHARSET=utf8;");
             if ( $res9 ){
                 echo 'document.getElementById("tbl_12").innerHTML = "<img src=\"images/tick.png\">";';

@@ -135,40 +135,43 @@ $sOutput .= '"aaData": [ ';
 
 $rows = $db->fetch_all_array($sql);
 foreach( $rows as $reccord ){
-    $sOutput .= "[";
+	$get_item_in_list = true;
+    $sOutput_item = "[";
 
     //col1
-    $sOutput .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'&#039;;\" style=\"cursor:pointer;\" /><img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$reccord['id'].');\" style=\"cursor:pointer;\" />",';
+    $sOutput_item .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'&#039;;\" style=\"cursor:pointer;\" /><img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$reccord['id'].');\" style=\"cursor:pointer;\" />",';
 
     //col2
-    $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'",';
+    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'",';
 
     //col3
-	$sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
+	$sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
 
 	//col4
-    if ( $reccord['perso']==1 || !empty($reccord['restricted_to']) || !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])) != $_SESSION['user_id'] ){
-        $sOutput .= '"<img src=\"includes/images/lock.png\" />",';
+    if (($reccord['perso']==1 && $reccord['author'] != $_SESSION['user_id']) || (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])))){
+        $get_item_in_list = false;
     }else{
         $txt = str_replace(array('\n','<br />','\\'),array(' ',' ',''),strip_tags((($reccord['description']))));
     	//echo $txt."   ;   ";
         if (strlen($txt) > 50) {
-            $sOutput .= '"'.(substr((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt))), 0, 50)).'",';
+            $sOutput_item .= '"'.(substr((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt))), 0, 50)).'",';
         }else{
-            $sOutput .= '"'.((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)))).'",';
+            $sOutput_item .= '"'.((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)))).'",';
         }
     }
 
     //col5 - TAGS
-    $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['tags']), ENT_QUOTES).'",';
+    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['tags']), ENT_QUOTES).'",';
 
     //col6 - Prepare the Treegrid
-    $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['folder']), ENT_QUOTES).'"';
+    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['folder']), ENT_QUOTES).'"';
 
     //Finish the line
-    $sOutput .= '],';
+    $sOutput_item .= '],';
 
-
+	if ($get_item_in_list == true) {
+		$sOutput .= $sOutput_item;
+	}
 }
 $sOutput = substr_replace( $sOutput, "", -1 );
 $sOutput .= '] }';

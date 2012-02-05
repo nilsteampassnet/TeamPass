@@ -396,13 +396,16 @@ if ( isset($_POST['type']) ){
                 `perso` tinyint(1) NOT NULL,
                 `restricted_to` varchar(200) NOT NULL,
                 `login` varchar(200) NOT NULL,
-                `folder` varchar(300) NOT NULL
+                `folder` varchar(300) NOT NULL,
+                `author` varchar(50) NOT NULL
                 );");
 			if ( $res8 ){
 				//ADD VALUES
 				$sql = "SELECT *
-                        FROM ".$_SESSION['tbl_prefix']."items
-                        WHERE inactif=0";
+						FROM ".$_SESSION['tbl_prefix']."items AS i
+		                INNER JOIN ".$_SESSION['tbl_prefix']."log_items AS l ON (l.id_item = i.id)
+		                AND l.action = 'at_creation'
+                        WHERE i.inactif=0";
 				$rows = mysql_query($sql);
 				while( $reccord = mysql_fetch_array($rows)){
 					//Get all TAGS
@@ -434,7 +437,8 @@ if ( isset($_POST['type']) ){
                             '".$reccord['perso']."',
                             '".$reccord['restricted_to']."',
                             '".$reccord['login']."',
-                            '".$folder."'
+                            '".$folder."',
+                            '".$reccord['id_user']."'
                         )"
 					);
 				}
@@ -646,6 +650,9 @@ if ( isset($_POST['type']) ){
 				*/
 				echo 'document.getElementById("tbl_15").innerHTML = "<img src=\"images/tick.png\">";';
 
+			}else{
+				echo 'document.getElementById("tbl_14").innerHTML = "<img src=\"images/tick.png\">";';
+				echo 'document.getElementById("tbl_15").innerHTML = "<img src=\"images/tick.png\">";';
 			}
 
 			## TABLE Languages

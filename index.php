@@ -211,7 +211,7 @@ require_once("load.php");
             foreach ($_SESSION['latest_items_tab'] as $item) {
             	if (!empty($item)) {
             		echo '
-                    <span class="last_seen_item" onclick="javascript:$(\'#menu_action\').val(\'action\');window.location.href = \''.$item['url'].'\'"><img src="includes/images/tag-small.png" alt="" />'.stripslashes($item['label']).'</span>';
+                    <span class="last_seen_item" onclick="javascript:$(\'#menu_action\').val(\'action\');window.location.href = \''.$item['url'].'\'"><img src="includes/images/tag-small.png" alt="" /><span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span></span>';
             	}
             }
         }else echo $txt['no_last_items'];
@@ -361,10 +361,11 @@ require_once("load.php");
 	}
 
     //Display UPDATE NEEDED information
-    if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
+    if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+    && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0) || !isset($_SESSION['hide_maintenance']))) {
         echo '
-        <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
-            <b>'.$txt['update_needed_mode_admin'].'</b>
+        <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all" id="div_maintenance">
+            <b>'.$txt['update_needed_mode_admin'].'</b><span style="float:right;cursor:pointer;"><img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" /></span>
         </div>';
 	}
 

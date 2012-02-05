@@ -883,7 +883,9 @@ if ( isset($_POST['type']) ){
             	)
             	||
             	(
-            		$data_item['anyone_can_modify']==1 && ( in_array($data_item['id_tree'],$_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1 )
+            		isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $data_item['anyone_can_modify']==1
+	            	&& ( in_array($data_item['id_tree'],$_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1 )
+	            	&& $restriction_active == false
             	)
             	||
             	(
@@ -990,7 +992,7 @@ if ( isset($_POST['type']) ){
                 $arrData['pw'] = $pw;
                 $arrData['url'] = $data_item['url'];
                 if (!empty($data_item['url'])) {
-                    $arrData['link'] = "&nbsp;<a href='". $data_item['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='Ouvrir la page'></a>";
+                    $arrData['link'] = "&nbsp;<a href='". $data_item['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='".$txt['open_url_link']."'></a>";
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '',strip_tags($data_item['description'],$allowed_tags));
@@ -1054,13 +1056,14 @@ if ( isset($_POST['type']) ){
 
                 //Refresh last seen items
                     $text = $txt['last_items_title'].": ";
-                    $_SESSION['latest_items_tab'][] = "";
+                    $_SESSION['latest_items_tab']= "";
                     foreach($_SESSION['latest_items'] as $item){
                         if ( !empty($item) ){
-                            $data = $db->query_first("SELECT label,id_tree FROM ".$pre."items WHERE id = ".$item);
+                            $data = $db->query_first("SELECT id,label,id_tree FROM ".$pre."items WHERE id = ".$item);
                             $_SESSION['latest_items_tab'][$item] = array(
-                                'label'=>addslashes($data['label']),
-                                'url'=>'index.php?page=items&group='.$data['id_tree'].'&id='.$item
+                            	'id'	=> $item,
+                                'label'	=>addslashes($data['label']),
+                                'url'	=>'index.php?page=items&group='.$data['id_tree'].'&id='.$item
                             );
                             $text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" />'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span>';
                         }
@@ -1247,7 +1250,6 @@ if ( isset($_POST['type']) ){
         		$html = '';
         	}
 
-
             //Prepare tree
             require_once ("NestedTree.class.php");
             $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -1257,10 +1259,13 @@ if ( isset($_POST['type']) ){
             		$elem->title = $_SESSION['login'];
             		$folder_is_pf = 1;
             	}
+            	$arbo_html_tmp = '<a id="path_elem_'.$elem->id.'"';
+            	if(in_array($elem->id, $_SESSION['groupes_visibles'])) $arbo_html_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
+            	$arbo_html_tmp .= '>'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';
             	if (empty($arbo_html)) {
-            		$arbo_html = '<a onclick="ListerItems('.$elem->id.', \'\', 0)">'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';
+            		$arbo_html = $arbo_html_tmp;
             	}else{
-            		$arbo_html .= ' » <a onclick="ListerItems('.$elem->id.', \'\', 0)">'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';;
+            		$arbo_html .= ' » '.$arbo_html_tmp;
             	}
             }
 
@@ -1492,8 +1497,8 @@ if ( isset($_POST['type']) ){
                     				$item_pw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$reccord['id'].'" class="copy_clipboard" title="'.$txt['item_menu_copy_pw'].'" />';
                     			}
                     		}
-                    		$html .= $item_login.'&nbsp;'.$item_pw;
-                    		$html .= '<input type="hidden" id="item_pw_in_list_'.$reccord['id'].'" value="'.$pw.'"><input type="hidden" id="item_login_in_list_'.$reccord['id'].'" value="'.$reccord['login'].'">';
+                    		$html .= $item_login.'&nbsp;'.$item_pw.
+                    			'<input type="hidden" id="item_pw_in_list_'.$reccord['id'].'" value="'.$pw.'"><input type="hidden" id="item_login_in_list_'.$reccord['id'].'" value="'.$reccord['login'].'">';
                     	}
 
                     	// Prepare make Favorite small icon
@@ -1503,7 +1508,6 @@ if ( isset($_POST['type']) ){
                     	}else {
                     		$html .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$reccord['id'].',1)" />';
                     	}
-                    	$html .= '</span>';
 
                     	//mini icon for collab
                     	if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
@@ -1513,6 +1517,8 @@ if ( isset($_POST['type']) ){
                     			$item_collab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$txt['item_menu_collab_disable'].'" />';
                     		}
                     		$html .= '</span>'.$item_collab.'</span>';
+                    	}else{
+                    		$html .= '</span>';
                     	}
 
                     	$html .= '</span></li>';
@@ -1574,7 +1580,6 @@ if ( isset($_POST['type']) ){
         	if (count( $rights) > 0) {
         		$return_values = array_merge($return_values, $rights);
         	}
-
 //print_r($return_values);
         	//Encrypt data to return
         	require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation

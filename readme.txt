@@ -77,16 +77,14 @@ LANGUAGES:
 * Do your think your can support yubikey ?
 * Issue 231:	How to Restrict Admin from Viewing items
 * 239: Old label of item is shown. Gets fixed only after you click on the item in "last items seen" bar.
-* Issue 240:	Edit of folder, which parent is restricted will place folder to the root
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
-* Issue 243:	Restricted Items Still Can be Umasked via Find
-* #25 : Password containing \ (backslash) + copy to clipboard
 * Issue 228:	What if you forget your SALT Key? How to reset?
+Issue 247:	backup restore not working
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4
 * Improved: 232
-* Corrections: 237
+* Corrections: 237, #29, #25, 240, 243
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

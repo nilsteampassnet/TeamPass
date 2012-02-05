@@ -152,14 +152,14 @@ echo '
 					<li class="jstree-open">';
 							if (in_array($folder->id,$_SESSION['groupes_visibles'])) {
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span> (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
 								//case for restriction_to_roles
 							}elseif (in_array($folder->id, $list_folders_limited_keys)) {
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).')</span></a>';
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span> (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).')</span></a>';
 							}else{
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</a>';
+							<a id="fld_'.$folder->id.'"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span></a>';
 							}
 
 							//build select for all visible folders

@@ -246,7 +246,7 @@ else if ( isset($_POST['type']) ){
                 );
 
                 //Add this folder to the role the creator has
-            	if($is_personal != 1){
+            	/*if($is_personal != 1){
 	                foreach(array_filter(explode(';', $_SESSION['fonction_id'])) as $role_id) {
 	                    $db->query_insert(
 	                        "roles_values",
@@ -256,7 +256,7 @@ else if ( isset($_POST['type']) ){
 	                        )
 	                    );
 	                }
-            	}
+            	}*/
 
                 require_once('NestedTree.class.php');
                 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -265,12 +265,12 @@ else if ( isset($_POST['type']) ){
                 //Get user's rights
                 IdentifyUserRights($_SESSION['groupes_visibles'].';'.$new_id,$_SESSION['groupes_interdits'],$_SESSION['is_admin'],$_SESSION['fonction_id'],true);
 
-								//If it is a subfolder, then give access to it for all roles that allows the parent folder
+				//If it is a subfolder, then give access to it for all roles that allows the parent folder
                 $rows = $db->fetch_all_array("
-									SELECT role_id
-									FROM ".$pre."roles_values
-									WHERE folder_id = ".$parent_id
-								);
+					SELECT role_id
+					FROM ".$pre."roles_values
+					WHERE folder_id = ".$parent_id
+				);
                 foreach ($rows as $reccord){
                     //add access to this subfolder
                     $db->query_insert(

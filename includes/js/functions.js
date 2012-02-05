@@ -81,6 +81,15 @@ function OpenDialog(id){
 //Permits to toggle a div
 function toggleDiv(id){
     $('#'+id).toggle();
+    //specific case to not show upgrade alert
+    if(id == "div_maintenance"){
+    	$.post(
+			"sources/main.queries.php",
+			{
+			type    : "hide_maintenance"
+			}
+		);
+	}
 }
 
 //Permits to check if a value is an integer
