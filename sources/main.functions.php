@@ -259,6 +259,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
             }
         }
 
+    	$_SESSION['all_non_personal_folders'] = $list_allowed_folders;
     	$_SESSION['groupes_visibles'] = $list_allowed_folders;
         $_SESSION['groupes_visibles_list'] = implode(',', $list_allowed_folders);
 
@@ -398,6 +399,7 @@ function UpdateCacheTable($action, $id=""){
                     'restricted_to' =>  $data['restricted_to'],
                     'login' => $data['login'],
 	                'folder' => $folder,
+	                'author' => $_SESSION['user_id'],
                 ),
                 "id='".$id."'"
             );
@@ -446,7 +448,7 @@ function UpdateCacheTable($action, $id=""){
 	            'restricted_to' =>  $data['restricted_to'],
 	            'login' => $data['login'],
 	            'folder' => $folder,
-	            'author' => $reccord['id_user'],
+	            'author' => $_SESSION['user_id'],
             )
         );
     //DELETE an item

@@ -1241,6 +1241,7 @@ if ( isset($_POST['type']) ){
         	$folder_is_pf = $show_error = 0;
         	$items_id_list = $rights = array();
         	$html = '';
+        	$returned_data = array();
 
         	//Build query limits
         	if (empty($_POST['start'])) {
@@ -1335,7 +1336,7 @@ if ( isset($_POST['type']) ){
                 foreach( $rows as $reccord ) {
                     //exclude all results except the first one returned by query
                     if ( empty($id_managed) || $id_managed != $reccord['id'] ){
-
+						//$returned_data[$i] = array('id' => $reccord['id']);
                         //Get Expiration date
                         $expiration_flag = '';
                         $expired_item = 0;
@@ -1343,8 +1344,10 @@ if ( isset($_POST['type']) ){
                             $expiration_flag = '<img src="includes/images/flag-green.png">';
                             if ( $reccord['renewal_period']> 0 && ($reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds'])) < time() ){
                                 $expiration_flag = '<img src="includes/images/flag-red.png">';
-                                $expired_item = 1;
-                            }
+                            	$expired_item = 1;
+                            	//$returned_data[$i]['flag'] = 'red';
+                            }//else
+                        		//$returned_data[$i]['flag'] = 'green';
                         }
 
                         //list of restricted users
@@ -1392,22 +1395,37 @@ if ( isset($_POST['type']) ){
                         		&& !in_array($_SESSION['user_id'],$restricted_users_array)
                         ){
                         	$perso = '<img src="includes/images/tag-small-red.png">';
+                        //	$returned_data[$i]['perso'] = 'red';
                         	$recherche_group_pf = 0;
                             $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\')';
+                        	/*$returned_data[$i]['detail_item'] = 0;
+                        	$returned_data[$i]['expired_item'] = $expired_item;
+                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+                        	$returned_data[$i]['display'] = 'no_display';*/
                             $display_item = $need_sk = $can_move = 0;
                         }else
                         //Case where item is in own personal folder
                         if ( in_array($_POST['id'],$_SESSION['personal_visible_groups']) && $reccord['perso'] == 1 ){
-                            $perso = '<img src="includes/images/tag-small-alert.png">';
+                        	$perso = '<img src="includes/images/tag-small-alert.png">';
+                        	//$returned_data[$i]['perso'] = 'alert';
                         	$recherche_group_pf = 1;
                             $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'1\', \''.$expired_item.'\', \''.$restricted_to.'\')';
+                        	/*$returned_data[$i]['detail_item'] = 1;
+                        	$returned_data[$i]['expired_item'] = $expired_item;
+                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+                        	$returned_data[$i]['display'] = '';*/
                             $display_item = $need_sk = $can_move = 1;
                         }else
                         //CAse where item is restricted to a group of users included user
                         if ( !empty($reccord['restricted_to']) && in_array($_SESSION['user_id'],$restricted_users_array) || (isset($_SESSION['list_folders_editable_by_role']) && in_array($_POST['id'], $_SESSION['list_folders_editable_by_role'])) && in_array($_SESSION['user_id'],$restricted_users_array)){
-                            $perso = '<img src="includes/images/tag-small-yellow.png">';
+                        	$perso = '<img src="includes/images/tag-small-yellow.png">';
+                        	//$returned_data[$i]['perso'] = 'yellow';
                         	$recherche_group_pf = 0;
                             $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+                        	/*$returned_data[$i]['detail_item'] = 0;
+                        	$returned_data[$i]['expired_item'] = $expired_item;
+                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+                        	$returned_data[$i]['display'] = '';*/
                             $display_item = 1;
                         }else
                         //CAse where item is restricted to a group of users not including user
@@ -1418,12 +1436,22 @@ if ( isset($_POST['type']) ){
                         ){
 	                        if (isset($user_is_included_in_role) && isset($item_is_restricted_to_role) && $user_is_included_in_role == 0 && $item_is_restricted_to_role == 1){
 	                        	$perso = '<img src="includes/images/tag-small-red.png">';
+	                        	//$returned_data[$i]['perso'] = 'red';
 	                        	$recherche_group_pf = 0;
 	                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\')';
+	                        	/*$returned_data[$i]['detail_item'] = 0;
+	                        	$returned_data[$i]['expired_item'] = $expired_item;
+	                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+	                        	$returned_data[$i]['display'] = 'no_display';*/
 	                            $display_item = $need_sk = $can_move = 0;
 	                        }else{
-	                            $perso = '<img src="includes/images/tag-small-yellow.png">';
+	                        	$perso = '<img src="includes/images/tag-small-yellow.png">';
+	                        	//$returned_data[$i]['perso'] = 'yellow';
 	                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+	                        	/*$returned_data[$i]['detail_item'] = 0;
+	                        	$returned_data[$i]['expired_item'] = $expired_item;
+	                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+	                        	$returned_data[$i]['display'] = '';*/
 	                            //reinit in case of not personal group
 	                            if ( $init_personal_folder == false ){
 	                            	$recherche_group_pf = "";
@@ -1435,8 +1463,13 @@ if ( isset($_POST['type']) ){
 	                        }
 	                    }
                         else{
-                            $perso = '<img src="includes/images/tag-small-green.png">';
+                        	$perso = '<img src="includes/images/tag-small-green.png">';
+                        	//$returned_data[$i]['perso'] = 'green';
                             $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+                        	/*$returned_data[$i]['detail_item'] = 0;
+                        	$returned_data[$i]['expired_item'] = $expired_item;
+                        	$returned_data[$i]['restricted_to'] = $restricted_to;
+                        	$returned_data[$i]['display'] = '';*/
                             $display_item = 1;
                             //reinit in case of not personal group
                             if ( $init_personal_folder == false ){
@@ -1458,10 +1491,17 @@ if ( isset($_POST['type']) ){
 
                     	if ($can_move == 1) {
                     		$html .= '<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />';
+                    		//$returned_data[$i]['grippy'] = 1;
                     	}else{
                     		$html .= '<span style="margin-left:11px;"></span>';
+                    		//$returned_data[$i]['grippy'] = 0;
                     	}
-
+						/*
+                    	$returned_data[$i]['can_move'] = ($can_move == 1) ? 'item_draggable' : 'item';
+                    	$returned_data[$i]['li_label'] = strip_tags(stripslashes(CleanString($reccord['label'])));
+                    	$returned_data[$i]['label'] = "'".stripslashes($reccord['label'])."'";
+                    	$returned_data[$i]['description'] = (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) ? '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(CleanString($reccord['description']),0,30))).']</font>' : '';
+                    	*/
 						$html .= $expiration_flag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.'">'.stripslashes($reccord['label']);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1)
                             $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(CleanString($reccord['description']),0,30))).']</font>';
@@ -1491,10 +1531,10 @@ if ( isset($_POST['type']) ){
                     		$item_pw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$reccord['id'].'" class="copy_clipboard" />';
                     		if ($display_item == true) {
                     			if (!empty($reccord['login'])) {
-                    				$item_login = '<img src="includes/images/mini_user_enable.png" id="icon_login_'.$reccord['id'].'" class="copy_clipboard" title="'.$txt['item_menu_copy_login'].'" />';
+                    				$item_login = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$reccord['id'].'" class="copy_clipboard" onclick="get_clipboard_item(\'login\','.$reccord['id'].')" title="'.$txt['item_menu_copy_login'].'" />';
                     			}
                     			if (!empty($reccord['pw'])) {
-                    				$item_pw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$reccord['id'].'" class="copy_clipboard" title="'.$txt['item_menu_copy_pw'].'" />';
+                    				$item_pw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$reccord['id'].'" class="copy_clipboard" onclick="get_clipboard_item(\'pw\','.$reccord['id'].')" title="'.$txt['item_menu_copy_pw'].'" />';
                     			}
                     		}
                     		$html .= $item_login.'&nbsp;'.$item_pw.
@@ -1561,6 +1601,10 @@ if ( isset($_POST['type']) ){
         		$list_to_be_continued = "end";
         	}
 
+        	//Get folder complexity
+        	$folder_complexity = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$_POST['id']."'");
+
+        	//print_r($returned_data);
         	//Prepare returned values
         	$return_values = array(
         		"recherche_group_pf" => $recherche_group_pf,
@@ -1572,7 +1616,9 @@ if ( isset($_POST['type']) ){
 	        	"show_clipboard_small_icons" => isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? 1 : 0,
 	        	"next_start" => $_POST['nb_items_to_display_once'] + $start,
 	        	"list_to_be_continued" => $list_to_be_continued,
-	        	"items_count" => $count_items[0]
+	        	"items_count" => $count_items[0],
+	        	'folder_complexity' => $folder_complexity[0],
+	        	//"items" => $returned_data
 			);
 
 
@@ -1606,7 +1652,7 @@ if ( isset($_POST['type']) ){
         		$complexity = $txt['not_defined'];
         	}
 
-            //afficher la visibilit?
+            //afficher la visibilité
             $visibilite = "";
             if ( !empty($data_pf[0]) ){
                 $visibilite = $_SESSION['login'];
@@ -1632,6 +1678,32 @@ if ( isset($_POST['type']) ){
 
         	echo json_encode($return_values,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
         break;
+
+       	/*
+       	   * CASE
+       	   * WANT TO CLIPBOARD PW/LOGIN OF ITEM
+       	*/
+        case "get_clipboard_item":
+        	$sql = "SELECT pw,login,perso
+                    FROM ".$pre."items
+                    WHERE id=".$_POST['id'];
+        	$data_item = $db->query_first($sql);
+
+        	if($_POST['field'] == "pw"){
+        		if($data_item['perso'] == 1){
+        			$data = decrypt($data_item['pw'],mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+        		}else{
+        			$pw = decrypt($data_item['pw']);
+        			$data_item_key = $db->query_first('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="items" AND `id`='.$_POST['id']);
+        			$data = substr($pw, strlen($data_item_key['rand_key']));
+        		}
+        	}else $data = $data_item['login'];
+        	//Encrypt data to return
+        	require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
+        	require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
+        	$return_values = AesCtr::encrypt($data, $_SESSION['key'], 256);
+        	echo $return_values;
+        	break;
 
 
        	/*
@@ -1863,7 +1935,8 @@ if ( isset($_POST['type']) ){
 
 				echo '[{"from_folder":"'.$data_source['id_tree'].'" , "to_folder":"'.$_POST['folder_id'].'"}]';
 
-    		break;
+    	break;
+
     }
 }
 

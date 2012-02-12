@@ -41,7 +41,6 @@ if ( isset($_GET['page']) && $_GET['page'] == "items")
 		<link rel="stylesheet" type="text/css" href="includes/css/items.css" />
         <script type="text/javascript" src="includes/libraries/jstree/jquery.cookie.js"></script>
         <script type="text/javascript" src="includes/libraries/jstree/jquery.jstree.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/zclip/jquery.zclip.min.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery.bgiframe.min.js"></script>
         <script type="text/javascript" src="includes/js/jquery.autocomplete.pack.js"></script>
@@ -57,7 +56,8 @@ if ( isset($_GET['page']) && $_GET['page'] == "items")
 		<link rel="stylesheet" type="text/css" href="includes/libraries/multiselect/jquery.multiselect.css" />
         <script type="text/javascript" src="includes/libraries/multiselect/jquery.multiselect.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/tinysort/jquery.tinysort.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/tinysort/jquery.tinysort.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/zeroclipboard/ZeroClipboard.js"></script>';
 
 else
 if ( isset($_GET['page']) && $_GET['page'] == "manage_settings")

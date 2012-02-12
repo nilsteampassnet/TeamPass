@@ -315,7 +315,7 @@ echo '
 				    <td>
 				        <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
 				        <div id="dialog_files" style="display: none;">
-				      		<img id="image_files" src="includes/images" />
+
 				        </div>
 				    </td>
 				</tr>';

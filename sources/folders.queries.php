@@ -245,19 +245,6 @@ else if ( isset($_POST['type']) ){
                     )
                 );
 
-                //Add this folder to the role the creator has
-            	/*if($is_personal != 1){
-	                foreach(array_filter(explode(';', $_SESSION['fonction_id'])) as $role_id) {
-	                    $db->query_insert(
-	                        "roles_values",
-	                        array(
-	                            'folder_id' => $new_id,
-	                            'role_id' =>  $role_id
-	                        )
-	                    );
-	                }
-            	}*/
-
                 require_once('NestedTree.class.php');
                 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();

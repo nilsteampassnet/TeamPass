@@ -293,6 +293,11 @@ if (isset($_POST['save_button'])) {
 		UpdateSettings('custom_login_text',htmlentities($_POST['custom_login_text'], ENT_QUOTES, "UTF-8"));
 	}
 
+	//Update nb of items to get in one query iterration
+	if ( @$_SESSION['settings']['nb_items_by_query'] != $_POST['nb_items_by_query'] ){
+		UpdateSettings('nb_items_by_query',$_POST['nb_items_by_query']);
+	}
+
 	//store backups settings
 	if(isset($_POST['bck_script_filename'])) UpdateSettings('bck_script_filename', $_POST['bck_script_filename'], 'settings');
 	if(isset($_POST['bck_script_path'])) UpdateSettings('bck_script_path', $_POST['bck_script_path'], 'settings');
@@ -846,6 +851,16 @@ echo '
 						<input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$txt['no'].'</label>
 					</div>
 				</td</tr>';
+
+				//nb of items to display by ajax query
+				echo '
+				<tr><td>
+				    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+				    <label>'.$txt['nb_items_by_query'].'</label>
+					<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['nb_items_by_query_tip'].'" /></span>
+					</td><td>
+				    <input type="text" size="4" id="nb_items_by_query" name="nb_items_by_query" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : '', '" class="text ui-widget-content ui-corner-all" />
+				<tr><td>';
 
             echo '
 			</table>

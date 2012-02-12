@@ -36,7 +36,7 @@ THE SOFTWARE.
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-date_default_timezone_set($_SESSION['settings']['timezone']);
+date_default_timezone_set($_POST['timezone']);
 
 // Permits to extract the file extension
 function findexts ($filename)

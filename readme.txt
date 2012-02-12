@@ -83,8 +83,10 @@ Issue 247:	backup restore not working
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4
-* Improved: 232, #31 (new setting option for dynamic list)
-* Corrections: 237, #29, #25, 240, 243
+* Improved: 232, #31 (new setting option for dynamic list) ,
+	#27 (new subfolders only associated to the same roles as the parent folder)
+	#33 (folder management in items page)
+* Corrections: 237, 240, 243 , #29, #25,  #32 , #36 , #37 , #39 , #40
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

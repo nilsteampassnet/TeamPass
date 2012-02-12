@@ -20,6 +20,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 <script type="text/javascript">
 	var query_in_progress = 0;
+    ZeroClipboard.setMoviePath( "<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/libraries/zeroclipboard/ZeroClipboard.swf" );
 
     function AddNewNode(){
         //Select first child node in tree
@@ -119,7 +120,6 @@ function ListerItems(groupe_id, restricted, start){
         $('#id_label, #id_pw, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags').html("");
         if (start == 0) {
         	$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
-			$(".copy_clipboard").zclip('remove');	//delete all existing clipboards
         }
         $("#items_list").css("display", "");
         $("#selected_items").val("");
@@ -177,33 +177,6 @@ function ListerItems(groupe_id, restricted, start){
 	        		//disable buttons
 	        		$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item; #menu_button_del_item").attr('disabled', 'disabled');
 
-	        		if (data.array_items != null) {
-		        		// Build clipboard for pw
-		        		if (data.show_clipboard_small_icons == 1) {
-		        			for (var i=0; i < data.array_items.length; ++i) {
-			                	//clipboard for password
-			                	if (data.array_items[i][1] != "" && data.array_items[i][3] == "1"){
-			                		$("#icon_pw_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : unprotectString(data.array_items[i][1]),
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                	//clipboard for login
-			                	if (data.array_items[i][2] != "" && data.array_items[i][3] == "1") {
-			                		$("#icon_login_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][2],
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                }
-		        		}
-		        	}
 	        		proceed_list_update();
 	        	}
 				else{
@@ -212,6 +185,7 @@ function ListerItems(groupe_id, restricted, start){
 					$("#item_details_no_personal_saltkey, #item_details_nok").hide();
 					$("#item_details_ok, #items_list").show();
 	        		$("#items_path").html(data.arborescence);
+					$('#complexite_groupe').val(data.folder_complexity);
 
 	        		if (data.list_to_be_continued == "yes") {
 	        			$("#full_items_list").append(data.items_html);
@@ -234,32 +208,6 @@ function ListerItems(groupe_id, restricted, start){
 
 					//If no data then empty
 					if (data.array_items != null) {
-		        		// Build clipboard for pw
-		        		if (data.show_clipboard_small_icons == 1) {
-		        			for (var i=0; i < data.array_items.length; ++i) {
-			                	//clipboard for password
-			                	if (data.array_items[i][1] != "" && data.array_items[i][3] == "1"){
-			                		$("#icon_pw_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : unprotectString(data.array_items[i][1]),
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                	//clipboard for login
-			                	if (data.array_items[i][2] != "" && data.array_items[i][3] == "1") {
-			                		$("#icon_login_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][2],
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                }
-		        		}
-
 		                $(".item_draggable").draggable({
 		                	handle: '.grippy',
 		                	cursor: "move",
@@ -297,7 +245,21 @@ function ListerItems(groupe_id, restricted, start){
 							}
 						});
 					}
-					//$('#items_list').jScrollPane();
+
+					/*for (var i=0; i < data.items.length; i++) {
+						var new_line = '<li name="'+data.items[i]['li_label']+'" class="'+data.items[i]['can_move']+'" id="'+data.items[i]['id']+'" style="margin-left:-30px;">';
+
+						if(data.items[i]['grippy'] == 1) new_line = new_line + '<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />';
+						else new_line = new_line + '<span style="margin-left:11px;"></span>';
+
+						new_line = new_line +
+							'<img src="includes/images/flag-'+data.items[i]['flag']+'.png"><img src="includes/images/tag-small-'+data.items[i]['perso']+'.png">'+
+							'&nbsp;<a id="fileclass'+data.items[i]['id']+'" class="file" onclick="AfficherDetailsItem(\''+data.items[i]['id']+'\', \''+data.items[i]['detail_item']+'\', \''+data.items[i]['expired_item']+'\', \''+data.items[i]['restricted_to']+'\', \''+data.items[i]['display']+'\')">'+
+							+data.items[i]['label']+data.items[i]['description']+'</a>'+
+							'</li>';alert(new_line);
+						$("#full_items_list").append(new_line);
+					}*/
+
 					proceed_list_update();
 	            }
 
@@ -473,32 +435,6 @@ function AjouterItem(){
 
                         //Increment counter
                         $("#itcount_"+$("#hid_cat").val()).text(Math.floor($("#itcount_"+$("#hid_cat").val()).text())+1);
-
-                        //add clipboard copy
-		        		if (data.show_clipboard_small_icons == 1) {
-		        			for (var i=0; i < data.array_items.length; ++i) {
-			                	//clipboard for password
-			                	if (data.array_items[i][1] != "" && data.array_items[i][3] == "1"){
-			                		$("#icon_pw_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][1],
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                	//clipboard for login
-			                	if (data.array_items[i][2] != "" && data.array_items[i][3] == "1") {
-			                		$("#icon_login_"+data.array_items[i][0]).zclip({
-			                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-			                			copy : data.array_items[i][2],
-			                			afterCopy:function(){
-			                				$("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
-			                			}
-			                		});
-			                	}
-			                }
-		        		}
 
 		        		AfficherDetailsItem(data.new_id);
 
@@ -870,10 +806,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 						$('#menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
 					}
 	                else if (data.restricted == "1" || data.user_can_modify == "1") {
-	                	if($('#recherche_group_pf').val() != "1")
-	                		$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeAttr("disabled");
-                		else
-                			$("#menu_button_edit_item, #menu_button_copy_item").removeAttr("disabled");
+                		$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeAttr("disabled");
 	                }else{
 	                    $("#menu_button_add_item, #menu_button_copy_item").removeAttr("disabled");
 	                }
@@ -881,31 +814,28 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                     //Prepare clipboard copies
                     if ( data.pw != "" ) {
-                    	$("#menu_button_copy_pw").zclip({
-                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-                			copy : unprotectString(data.pw),
-                			afterCopy:function(){
-                				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
-                			}
-                		});
+                    	var clip = new ZeroClipboard.Client();
+                        clip.setText(unprotectString(data.pw));
+                        clip.addEventListener( 'complete', function(client, text) {
+                                $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+                        } );
+                        clip.glue('menu_button_copy_pw');
                     }
                     if ( data.login != "" ) {
-                    	$("#menu_button_copy_login").zclip({
-                			path : "includes/libraries/zclip/ZeroClipboard.swf",
-                			copy : data.login,
-                			afterCopy:function(){
-                				$("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
-                			}
-                		});
+                    	var clip = new ZeroClipboard.Client();
+                        clip.setText(data.login);
+                        clip.addEventListener( 'complete', function(client, text) {
+                                $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+                        } );
+                        clip.glue('menu_button_copy_login');
                     }
                     //prepare link to clipboard
-                    $("#menu_button_copy_link").zclip({
-               			path : "includes/libraries/zclip/ZeroClipboard.swf",
-               			copy : "<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id,
-               			afterCopy:function(){
-               				$("#message_box").html("<?php echo $txt['url_copied'];?>").show().fadeOut(1000);
-               			}
-               		});
+                    var clip = new ZeroClipboard.Client();
+                    clip.setText("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id);
+                    clip.addEventListener( 'complete', function(client, text) {
+                            $("#message_box").html("<?php echo $txt['url_copied'];?>").show().fadeOut(1000);
+                    } );
+                    clip.glue('menu_button_copy_link');
 
                     // function calling image lightbox when clicking on link
                     $("a.image_dialog").click(function(event){
@@ -979,7 +909,9 @@ function open_add_group_div() {
 //###########
 function open_edit_group_div() {
 	//Select the actual forlder in the dialogbox
-	$('#edit_rep_groupe').val($('#hid_cat').val());
+	$('#edit_folder_folder').val($('#hid_cat').val());
+	$('#edit_folder_title').val($.trim($('#edit_folder_folder :selected').text()));
+	$('#edit_folder_complexity').val($('#complexite_groupe').val());
     $('#div_editer_rep').dialog('open');
 }
 
@@ -987,6 +919,7 @@ function open_edit_group_div() {
 //## FUNCTION : prepare delete folder dialogbox
 //###########
 function open_del_group_div() {
+	$('#delete_rep_groupe').val($('#hid_cat').val());
     $('#div_supprimer_rep').dialog('open');
 }
 
@@ -1055,7 +988,7 @@ function open_edit_item_div(restricted_to_roles) {
     $('#edit_url').val($('#hid_url').val());
     $('#edit_categorie').val($('#id_categorie').val());
     if($('#edit_restricted_to').val() != undefined) $('#edit_restricted_to').val($('#hid_restricted_to').val());
-    $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
+    if($('#edit_restricted_to_roles').val() != undefined) $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
     $('#edit_tags').val($('#hid_tags').val());
 	if ($('$id_anyone_can_modify:checked').val() == "on") {
 		$('#edit_anyone_can_modify').attr("checked","checked");
@@ -1070,28 +1003,28 @@ function open_edit_item_div(restricted_to_roles) {
 
 	//Get list of people in restriction list
 	if($('#edit_restricted_to').val() != undefined){
-	$('#edit_restricted_to_list').empty();
-	if (restricted_to_roles == 1) {
-		//add optgroup
-        $('<optgroup/>').attr('label', "<?php echo $txt['users'];?>");
-        $("#edit_restricted_to_list option:last").wrapAll(optgroup);
-	}
-	var liste = $('#input_liste_utilisateurs').val().split(';');
-	for (var i=0; i<liste.length; i++) {
-	    var elem = liste[i].split('#');
-	    if ( elem[0] != "" ){
-	    	$("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
-	        var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
-	        if ( index != -1 ) {
-	            $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
-	        }
-	    }
-	}
+		$('#edit_restricted_to_list').empty();
+		if (restricted_to_roles == 1) {
+			//add optgroup
+	        $('<optgroup/>').attr('label', "<?php echo $txt['users'];?>");
+	        $("#edit_restricted_to_list option:last").wrapAll(optgroup);
+		}
+		var liste = $('#input_liste_utilisateurs').val().split(';');
+		for (var i=0; i<liste.length; i++) {
+		    var elem = liste[i].split('#');
+		    if ( elem[0] != "" ){
+		    	$("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
+		        var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
+		        if ( index != -1 ) {
+		            $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
+		        }
+		    }
+		}
 	}
 
 	//Add list of roles if option is set
 	if (restricted_to_roles == 1) {
-	var j = i;
+		var j = i;
 		//add optgroup
 		var optgroup = $('<optgroup/>');
         optgroup.attr('label', "<?php echo $txt['roles'];?>");
@@ -1208,7 +1141,7 @@ function upload_attached_files_edit_mode() {
     var post_id = $('#selected_items').val();
     var user_id = $('#form_user_id').val();//alert(user_id+' - '+post_id);
 
-    $('#item_edit_files_upload').uploadifySettings('scriptData', {'post_id':post_id, 'user_id':user_id, 'type':'modification'});
+    $('#item_edit_files_upload').uploadifySettings('scriptData', {'post_id':post_id, 'user_id':user_id, 'type':'modification', 'timezone':'<?php echo $_SESSION['settings']['timezone'];?>'});
 
     // Launch upload
     $("#item_edit_files_upload").uploadifyUpload();
@@ -1236,7 +1169,8 @@ function upload_attached_files() {
     	{
     		'post_id':post_id,
     		'user_id':user_id,
-    		'type':'creation'
+    		'type':'creation',
+    		'timezone':'<?php echo $_SESSION['settings']['timezone'];?>'
     	}
     );
 
@@ -1264,6 +1198,7 @@ function delete_attached_file(file_id){
 //## FUNCTION : Permits to preview an attached image
 //###########
 PreviewImage = function(uri,title) {
+    $("#dialog_files").html('<img id="image_files" src="" />');
     //Get the HTML Elements
     imageDialog = $("#dialog_files");
     imageTag = $('#image_files');
@@ -1286,10 +1221,47 @@ PreviewImage = function(uri,title) {
     });
 }
 
+/**
+ *
+ * @access public
+ * @return void
+ **/
+function get_clipboard_item(field,id){
+    	$.post("sources/items.queries.php",
+        	{
+        		type 	: "get_clipboard_item",
+        		field	: field,
+        		id 		: id
+        	},
+        	function(data){
+        		data = aes_decrypt(data);
+        		clip = new ZeroClipboard.Client();
+        		clip.setText( data );
+				if(field == "pw"){
+	        		clip.addEventListener( 'complete', function(client, text) {
+	                    $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+	                    clip.destroy();
+	                } );
+					clip.glue( 'iconpw_'+id );
+				}else{
+	        		clip.addEventListener( 'complete', function(client, text) {
+	                    $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+	                    clip.destroy();
+	                } );
+					clip.glue( 'iconlogin_'+id );
+				}
+
+                var div = $('#items_list');
+				var box = ZeroClipboard.getDOMObjectPosition(clip.domElement);
+				clip.div.style.top = '' + (box.top - $(div).scrollTop()) + 'px';
+        	}
+       	);
+   };
+
 //###########
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
-$(function() {
+$(function() {$('#toppathwrap').hide();
 	//Expend/Collapse jstree
 	$("#jstree_close").click(function() {
         $("#jstree").jstree("close_all", -1);
@@ -1599,6 +1571,7 @@ $(function() {
         "uploader"  : "includes/libraries/uploadify/uploadify.swf",
         "script"    : "includes/libraries/uploadify/uploadify.php",
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
+        "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>"},
         "auto"      : false,
         "multi"     : true,
         "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
@@ -1808,22 +1781,6 @@ function items_list_filter(id){
 		$("#full_items_list").find("a:not(:contains(" + id + "))").parent().hide();
 		$("#full_items_list").find("a:contains(" + id + ")").parent().show();
     }
-}
-
-function ActionOnQuickIconClip(id, type){
-	$("#icon_"+type+"_"+id).zclip({
-		path : "includes/libraries/zclip/ZeroClipboard.swf",
-		copy : $("#item_"+type+"_in_list_"+id).val(),
-		afterCopy:function(){
-			if(type == "pw"){
-				$("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
-			}else if(type == "login"){
-				$("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
-			}
-		}
-	});
-	//TODO: simuler un click de souris
-
 }
 
 </script>
