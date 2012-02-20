@@ -5,6 +5,11 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['admin_action_change_salt_key'] = "Change the main SALT Key";
+$txt['admin_action_change_salt_key_tip'] = "Before changing the SALT key, please be sure to do a full backup of the database, and to put the tool in maintenance in order to avoid any users being logged.";
+$txt['block_admin_info'] = "Administrators Info";
+$txt['admin_new1'] = "<i><u>14FEB2012:</i></u><br>GOD profile is no more allowed to see items. This profile is now only an Administrative account.<br />See <a href='http://www.teampass.net/' target='_blank'>TeamPass.net page</a> concerning the way to handle this change.";
+
 $txt['nb_items_by_query'] = "Number of items to get at each query iterration";
 $txt['nb_items_by_query_tip'] = "<span style='font-size:11px;max-width:300px;'>More items means more time to display the list.<br />Set to 'auto' to let the tool to adapt this number depending on the size screen of the user.<br />Set to 'max' to force to display the complet list in one time.<br />Set a number corresding to the number of items to get at each query iterration.</span>";
 $txt['error_no_selected_folder'] = "You need to select a Folder";

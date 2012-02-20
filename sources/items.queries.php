@@ -1065,7 +1065,7 @@ if ( isset($_POST['type']) ){
                                 'label'	=>addslashes($data['label']),
                                 'url'	=>'index.php?page=items&group='.$data['id_tree'].'&id='.$item
                             );
-                            $text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" />'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span>';
+                            $text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
                         }
                     }
                     $arrData['div_last_items'] = str_replace('"','&quot;',$text);

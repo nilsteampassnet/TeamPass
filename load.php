@@ -39,8 +39,8 @@ $htmlHeaders = '
 if ( isset($_GET['page']) && $_GET['page'] == "items")
     $htmlHeaders .= '
 		<link rel="stylesheet" type="text/css" href="includes/css/items.css" />
-        <script type="text/javascript" src="includes/libraries/jstree/jquery.cookie.js"></script>
         <script type="text/javascript" src="includes/libraries/jstree/jquery.jstree.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/dynatree/jquery.cookie.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery.bgiframe.min.js"></script>
         <script type="text/javascript" src="includes/js/jquery.autocomplete.pack.js"></script>
@@ -891,12 +891,11 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
             "script"    : "includes/libraries/uploadify/uploadify.php",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
+            "scriptData": {"type_upload":"restore_db"},
             "auto"      : true,
             "folder"    : "'.dirname($_SERVER['REQUEST_URI']).'/files",
             "fileDesc"  : "sql",
             "fileExt"   : "*.sql",
-            "height"   : "18px",
-            "width"   : "18px",
             "wmode"     : "transparent",
             "buttonImg" : "includes/images/inbox--plus.png",
             "onComplete": function(event, queueID, fileObj, reponse, data){
@@ -923,6 +922,23 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 
         //BUILD BUTTONSET
         $(".div_radio").buttonset();
+        
+        //check NEW SALT KEY
+        $("#new_salt_key").keypress(function (e) {
+	        var key = e.charCode || e.keyCode || 0;
+			if($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32){
+				$("#change_salt_key_image").attr("src", "includes/images/cross.png");
+				$("#change_salt_key_but").hide();
+			}else{
+				$("#change_salt_key_image").attr("src", "includes/images/tick.png");
+				$("#change_salt_key_but").show();
+			}
+			// allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
+			return (
+				key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96 && (key < 165)
+				&& $("#new_salt_key").val().length <= 32
+			);
+	    });
     });
 
     //###########
@@ -933,6 +949,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         $("#result_admin_action_db_backup").html("");
         if ( action == "admin_action_db_backup" ) option = $("#result_admin_action_db_backup_key").val();
         else if ( action == "admin_action_backup_decrypt" ) option = $("#bck_script_decrypt_file").val();
+        else if ( action == "admin_action_change_salt_key" ) option = aes_encrypt(protectString($("#new_salt_key").val()));
         //Lauchn ajax query
         $.post(
 			"sources/admin.queries.php",
@@ -959,12 +976,15 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 					$("#result_admin_action_purge_old_files").html("<img src=\'includes/images/tick.png\' alt=\'\' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;'.$txt['admin_action_purge_old_files_result'].'");
 				}else if(data[0].result == "db_clean_items"){
 					$("#result_admin_action_db_clean_items").html("<img src=\"includes/images/tick.png\" alt=\"\" />&nbsp;"+data[0].nb_items_deleted+"&nbsp;'.$txt['admin_action_db_clean_items_result'].'");
+				}else if(data[0].result == "changed_salt_key"){
+					//deconnect user
+		            $("#menu_action").val("deconnexion");
+		            document.main_form.submit();
 				}
 			},
 			"json"
 		);
     }
-
     ';
 }
 

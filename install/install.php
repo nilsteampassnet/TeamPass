@@ -19,14 +19,6 @@ $_SESSION['CPM'] = 1;
 		<!-- // --><![CDATA[
         //if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
-        	if($("#approve_license").val() != undefined){
-        		$("#but_next").attr("disabled", "disabled");
-
-        		$("#approve_license").click(function() {
-					if($("#approve_license").is(':checked')) $("#but_next").removeAttr("disabled");
-					else $("#but_next").attr("disabled", "disabled");
-				});
-        	}
             if ( $("#progressbar") ){
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
                 if ( $("#step").val() == "1" ) gauge.modify($('pbar'),{values:[0.10,1]});
@@ -48,7 +40,7 @@ $_SESSION['CPM'] = 1;
 	            );
 		    });
 
-			//DB PW non accepted characters management
+			//SALT KEY non accepted characters management
 		    $("#encrypt_key").keypress(function (e) {
 		        var key = e.charCode || e.keyCode || 0;
 				if($("#encrypt_key").val().length < 15)
@@ -98,9 +90,9 @@ $_SESSION['CPM'] = 1;
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_bdd="+document.getElementById("db_bdd").value;
 
-										if(document.getElementById("db_pw").value.indexOf('"') != -1) error = "DB Password should not contain a double quotes!<br>";
-										if(document.getElementById("db_login").value.indexOf('"') != -1) error += "DB Login should not contain a double quotes!<br>";
-										if(document.getElementById("db_bdd").value.indexOf('"') != -1) error += "DB should not contain a double quotes!";
+					if(document.getElementById("db_pw").value.indexOf('"') != -1) error = "DB Password should not contain a double quotes!<br>";
+					if(document.getElementById("db_login").value.indexOf('"') != -1) error += "DB Login should not contain a double quotes!<br>";
+					if(document.getElementById("db_bdd").value.indexOf('"') != -1) error += "DB should not contain a double quotes!";
                 }else
                 if ( step == "step3" ){
                     document.getElementById("loader").style.display = "";
@@ -108,7 +100,7 @@ $_SESSION['CPM'] = 1;
                     if ( document.getElementById("tbl_prefix").value != "" )
                         document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/tick.png'>";
                     else{
-                        document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/exclamation-red.png' />";
+                        document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/exclamation-red.png'>";
                     }
 
                     //Check if saltkey is okay
@@ -117,12 +109,13 @@ $_SESSION['CPM'] = 1;
 					var key_char = false;
                     if ( document.getElementById("encrypt_key").value != "" )key_val = true;
 					else{
-						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png /'> No value!";
+						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> No value!";
                         status = false;
 					}
-					if ( document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32 ) key_length = true;
+					if ( document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32 ) 
+						key_length = true;
 					else{
-						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png /'> 15 to 32 characters!";
+						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> 15 to 32 characters!";
                         status = false;
 					}
 					if ( key_val == true && key_length == true && key_char == true )
@@ -196,7 +189,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 
 				echo '
 				<div style="" class="ui-widget ui-state-highlight">
-				     <h4>Read and approve Licence before continuing</h4>';
+				     <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
 				// Display the license file
 				$Fnm = "../license.txt";
 				if (file_exists($Fnm)) {
@@ -210,9 +203,6 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 						echo $val."<br />";
 					}
 					echo '
-							<div  style="width:100%; margin-top:20px; margin-bottom:20px;">
-								<label for="approve_license" style="width:100%;">I\'ve read and I accept the License</label><input type="checkbox" id="approve_license" />
-							</div>
 						</div>
 					</div>';
 				}

@@ -49,14 +49,6 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         <script type="text/javascript">
         //if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
-        	if($("#approve_license").val() != undefined){
-        		$("#but_next").attr("disabled", "disabled");
-
-        		$("#approve_license").click(function() {
-					if($("#approve_license").is(':checked')) $("#but_next").removeAttr("disabled");
-					else $("#but_next").attr("disabled", "disabled");
-				});
-        	}
             if ( document.getElementById("progressbar") ){
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
                 if ( document.getElementById("step").value == "1" ) gauge.modify($('pbar'),{values:[0.20,1]});
@@ -98,6 +90,7 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                     document.getElementById("loader").style.display = "";
                 }else
                 if ( step == "step4" ){
+                    $("#loader").show();
                     var data = "type="+step;
                     document.getElementById("loader").style.display = "";
                 }else
@@ -130,7 +123,9 @@ if (isset($_POST['db_host'])) {
 
 // LOADER
 echo '
-    <div style="position:absolute;top:49%;left:49%;display:none;" id="loader"><img src="images/ajax-loader.gif" /></div>';
+    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
+    	<img src="images/ajax-loader.gif" />
+    </div>';
 
 // HEADER
 echo '
@@ -160,7 +155,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 	                 <br />
 	                 <span style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</span>
 	                 <div style="" class="ui-widget ui-state-highlight">
-	                 	<h4>Read and approve Licence before continuing</h4>';
+	                 	<h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
 						// Display the license file
 						$Fnm = "../license.txt";
 						if (file_exists($Fnm)) {
@@ -174,9 +169,6 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 									echo $val."<br />";
 								}
 								echo '
-									<div  style="width:100%; margin-top:20px; margin-bottom:20px;">
-										<label for="approve_license" style="width:100%;">I\'ve read and I accept the License</label><input type="checkbox" id="approve_license" />
-									</div>
 								</div>
 							</div>';
 						}
@@ -312,7 +304,7 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']
 if ( !isset($_POST['step']) ){
 	echo '
 	             <div id="buttons_bottom">
-	                 <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" disabled="disabled" class="ui-state-default ui-corner-all" value="NEXT" />
+	                 <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
 	             </div>';
 }elseif ( $_POST['step'] == 3 && $conversion_utf8 == false){
 	echo '

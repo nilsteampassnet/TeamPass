@@ -567,7 +567,6 @@ function EditerItem(){
                     }else{
                         //refresh item in list
                         $("#fileclass"+data.id).text($('#edit_label').val());
-                        //TODO: add pw and login clipboard update + Description
 
                         //Refresh form
                         $("#id_label").text($('#edit_label').val());
@@ -592,8 +591,8 @@ function EditerItem(){
                         $("#hid_restricted_to_roles").val(restriction_role);
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
-                        $("#id_categorie").html(data.id_tree);
-                        $("#id_item").html(data.id);
+                        /*$("#id_categorie").html(data.id_tree);
+                        $("#id_item").html(data.id);*/
 
                         //calling image lightbox when clicking on link
                         $("a.image_dialog").click(function(event){
@@ -1339,10 +1338,24 @@ $(function() {$('#toppathwrap').hide();
 	.bind("search.jstree", function (e, data) {
 		if(data.rslt.nodes.length == 1){
 			//open the folder
-			ListerItems($("#jstree li>a.jstree-search").attr('id').split('_')[1], '', 0)
+			ListerItems($("#jstree li>a.jstree-search").attr('id').split('_')[1], '', 0);
 		}
 	});
-
+	/*$("#jstree").dynatree({
+		persist: true,
+		selectMode: 1,
+	      onExpand: function(node, event) {
+			return false;
+	      },
+		onFocus: function(node, event) {
+			if(node.data.title.indexOf('<span',0) != -1){
+				var fld_id = node.data.key.split('_');
+				ListerItems(fld_id[1], '', 0);
+			}
+	      }
+    });
+	*/
+	
 
     $("#add_folder").click(function() {
         var posit = document.getElementById('item_selected').value;

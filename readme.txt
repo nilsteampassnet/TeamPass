@@ -1,15 +1,6 @@
-888888888888                                         88888888ba
-     88                                              88      "8b
-     88                                              88      ,8P
-     88   ,adPPYba,  ,adPPYYba,  88,dPYba,,adPYba,   88aaaaaa8P'  ,adPPYYba,  ,adPPYba,  ,adPPYba,
-     88  a8P_____88  ""     `Y8  88P'   "88"    "8a  88""""""'    ""     `Y8  I8[    ""  I8[    ""
-     88  8PP"""""""  ,adPPPPP88  88      88      88  88           ,adPPPPP88   `"Y8ba,    `"Y8ba,
-     88  "8b,   ,aa  88,    ,88  88      88      88  88           88,    ,88  aa    ]8I  aa    ]8I
-     88   `"Ybbd8"'  `"8bbdP"Y8  88      88      88  88           `"8bbdP"Y8  `"YbbdP"'  `"YbbdP"'
-
 |===================================================================================================|
 |						TeamPass - A Collaborative Passwords Manager								|
-|								2011 (c) Nils Laumaillé												|
+|								2012 (c) Nils Laumaillé												|
 |===================================================================================================|
 
 *****************************************************************************************************
@@ -17,7 +8,7 @@
 ***** 	  								LICENCE AGREEMENT										*****
 ***** 	  Before installing and using TeamPass, you must accept its licence defined	as			*****
 *****	  GNU AFFERO GPL.																		*****
-*****	  Copyright (c) 2011, Nils Laumaillé (Nils@TeamPass.net)								*****
+*****	  Copyright (c) 2012, Nils Laumaillé (Nils@TeamPass.net)								*****
 *****																							*****
 *****     This program is free software: you can redistribute it and/or modify					*****
 *****     it under the terms of the GNU Affero General Public License as						*****
@@ -38,7 +29,8 @@
 Website: http://www.teampass.net/
 
 BUGS & SUGGESTIONS:
-*For bugs discovery or any suggestions, please report in Google Code Issues (http://code.google.com/p/cpassman/issues/list).
+  For bugs discovery or any suggestions, please report in Github 
+        https://github.com/nilsteampassnet/TeamPass/issues
 
 INSTALLATION:
 * http://www.teampass.net/tag/installation/
@@ -69,24 +61,27 @@ LANGUAGES:
 * Issue 187:	After LDAP support is configured every user (except admin) must exist in ldap
 * The folder structure is automatically expanded can there be a feature / option to disable that
 * mail notification when selecting an item
-* script that permit to change the SALT (see db_patch.php)
 * import from "Password safe" tool
 * settings page. manage settings via table and do a loop in order to display options.
 * Suggestion: Password copy button in search results
 * Would it be possible to add support for syslog? It would be a nice feature to be able to log all activity to a third syslog server. This would be mainly for security and auditing.
 * Do your think your can support yubikey ?
-* Issue 231:	How to Restrict Admin from Viewing items
-* 239: Old label of item is shown. Gets fixed only after you click on the item in "last items seen" bar.
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
 * Issue 228:	What if you forget your SALT Key? How to reset?
-Issue 247:	backup restore not working
+* Issue 247:	backup restore not working => SEEMS OK after test. Ask for more details.
+* Tree view => cookie collapse or not
+* Tree search => if big list then the view doesn't scroll down to the found folder
+* admin.queries.php => MYSQL error on REGEXP
 
 ------------------------------------------  CHANGELOG  ----------------------------------------------
 v2.1.4
-* Improved: 232, #31 (new setting option for dynamic list) ,
+* Improved: SF232, #31 (new setting option for dynamic list) ,
 	#27 (new subfolders only associated to the same roles as the parent folder)
 	#33 (folder management in items page)
-* Corrections: 237, 240, 243 , #29, #25,  #32 , #36 , #37 , #39 , #40
+* Corrections: SF237, SF240, SF243 , #29, #25,  #32 , #36 , #37 , #39 , #40
+NEW corrections: SF239
+NEW improvements: SF231:	How to Restrict Admin from Viewing items
+NEW improvement: Changing SALT key from admin pages
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

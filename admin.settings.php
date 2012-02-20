@@ -646,6 +646,18 @@ echo '
 				    <span id="result_admin_action_reload_cache_table" style="margin-left:10px;"></span>
 				</div>';
 
+				//Change main SALT key
+				echo '
+				<div style="margin-bottom:3px">
+				    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+				    <a href="#" onclick="$(\'#div_change_salt_key\').show()" style="cursor:pointer;">'.$txt['admin_action_change_salt_key'].'</a>
+				    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_change_salt_key_tip'].'" /></span>
+				    <span id="div_change_salt_key" style="margin-left:10px;display:none;">
+				    	<input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
+				    	<img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
+				    </span>
+				</div>';
+
             echo '
             </div>';
             // --------------------------------------------------------------------------------

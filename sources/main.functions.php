@@ -107,10 +107,10 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
+        /*$rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
         foreach($rows as $record){
             array_push($groupes_visibles,$record['id']);
-        }
+        }*/
         $_SESSION['groupes_visibles'] = $groupes_visibles;
     	$_SESSION['all_non_personal_folders'] = $groupes_visibles;
 
@@ -141,7 +141,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $_SESSION['groupes_visibles_list'] = implode(',',$_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $is_admin;
 
-        //Check if admin has creating Folders and Roles
+        //Check if admin has created Folders and Roles
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = $ret[0];
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_title");
@@ -253,7 +253,6 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
                     foreach($ids as $id){
                         array_push($list_allowed_folders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
-
                     }
                 }
             }

@@ -21,6 +21,8 @@ include('../includes/language/'.$_SESSION['user_language'].'.php');
 include('../includes/settings.php');
 include('../includes/include.php');
 header("Content-type: text/html; charset=utf-8");
+header("Cache-Control: no-cache, must-revalidate");
+header("Pragma: no-cache");
 
 // connect to the server
 require_once("class.database.php");
@@ -405,6 +407,68 @@ switch($_POST['type'])
 			fwrite($handle,$return);
 			fclose($handle);
 		}
+	break;
+
+	/*
+	* Change SALT Key
+	*/
+	case "admin_action_change_salt_key":
+		include('main.functions.php');
+		//put tool in maintenance.
+            $db->query_update(
+                "misc",
+                array(
+                    'valeur' => '1',
+                ),
+                "intitule = 'maintenance_mode' AND type= 'admin'"
+            );
+            //log
+            $db->query_insert(
+                "log_system",
+                array(
+                    'type' => 'system',
+                    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                    'label' => 'change_salt_key',
+                    'qui' => $_SESSION['user_id']
+                )
+            );		
+		
+		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
+		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
+		$new_salt_key = htmlspecialchars_decode(AesCtr::decrypt($_POST['option'], SALT, 256));
+		
+		//change all passwords in DB
+		$rows = $db->fetch_all_array("SELECT id,pw FROM ".$pre."items WHERE perso = '0'");
+		foreach( $rows as $reccord ){
+			$pw = decrypt($reccord['pw']);
+			//encrypt with new SALT
+			$db->query_update(
+                "items",
+                array(
+                    'pw' => encrypt($pw, $new_salt_key),
+                ),
+                "id = '".$reccord['id']."'"
+            );
+		}
+		//change all users password in DB
+		$rows = $db->fetch_all_array("SELECT id,pw FROM ".$pre."users");
+		foreach( $rows as $reccord ){
+			$pw = decrypt($reccord['pw']);
+			//encrypt with new SALT
+			$db->query_update(
+                "users",
+                array(
+                    'pw' => encrypt($pw, $new_salt_key),
+                ),
+                "id = '".$reccord['id']."'"
+            );
+		}
+		
+		//change salt key in settings.php file
+		require_once("../includes/settings.php");
+		
+		
+		echo '[{"result":"changed_salt_key"}]';
 	break;
 }
 ?>

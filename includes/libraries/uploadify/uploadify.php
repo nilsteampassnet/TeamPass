@@ -25,9 +25,9 @@ THE SOFTWARE.
 */
 /**
  * @file 		uploadify.php adapted for TeamPass
- * @author		Nils Laumaillé
+ * @author		Nils Laumaillï¿½
  * @version 	2.1
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils Laumaillï¿½
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -36,7 +36,7 @@ THE SOFTWARE.
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-date_default_timezone_set($_POST['timezone']);
+@date_default_timezone_set($_POST['timezone']);
 
 // Permits to extract the file extension
 function findexts ($filename)
@@ -75,7 +75,7 @@ if (!empty($_FILES)) {
 		}
 	}
 	//Case where upload is an attached file for one item
-	else if ( !isset($_POST['type_upload']) || $_POST['type_upload'] != "import_items_from_file" ){
+	else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db") ){
 		// Get some variables
 		$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
 		$tempFile = $_FILES['Filedata']['tmp_name'];
@@ -124,7 +124,7 @@ if (!empty($_FILES)) {
 
 	//move
 	move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile);
-	echo "1";
+	echo $targetFile;
 
 }
 ?>

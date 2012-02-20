@@ -149,17 +149,17 @@ echo '
 
 							//Prepare folder
 							$folder_txt = '
-					<li class="jstree-open">';
+					<li class="jstree-open" id="li_'.$folder->id.'">';
 							if (in_array($folder->id,$_SESSION['groupes_visibles'])) {
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span> (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
 								//case for restriction_to_roles
 							}elseif (in_array($folder->id, $list_folders_limited_keys)) {
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span> (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).')</span></a>';
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).')</span></a>';
 							}else{
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'"><span id="folder_name_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</span></a>';
+							<a id="fld_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</a>';
 							}
 
 							//build select for all visible folders
@@ -370,7 +370,11 @@ echo '
 		<div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
 		    <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
 		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$txt['home_personal_saltkey_info'].'</b>
-		    </div>
+			    <br />
+			    <div style="text-align:center;">
+			        <u><a href="index.php">'.$txt['home'].'</a></u>
+			    </div>
+			</div>
 		</div>';
 
     echo '
