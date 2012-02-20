@@ -40,7 +40,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "items")
     $htmlHeaders .= '
 		<link rel="stylesheet" type="text/css" href="includes/css/items.css" />
         <script type="text/javascript" src="includes/libraries/jstree/jquery.jstree.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/dynatree/jquery.cookie.js"></script>
+        <script type="text/javascript" src="includes/libraries/jstree/jquery.cookie.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery.bgiframe.min.js"></script>
         <script type="text/javascript" src="includes/js/jquery.autocomplete.pack.js"></script>
@@ -922,7 +922,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 
         //BUILD BUTTONSET
         $(".div_radio").buttonset();
-        
+
         //check NEW SALT KEY
         $("#new_salt_key").keypress(function (e) {
 	        var key = e.charCode || e.keyCode || 0;

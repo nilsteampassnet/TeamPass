@@ -431,12 +431,12 @@ switch($_POST['type'])
                     'label' => 'change_salt_key',
                     'qui' => $_SESSION['user_id']
                 )
-            );		
-		
+            );
+
 		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
 		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
 		$new_salt_key = htmlspecialchars_decode(AesCtr::decrypt($_POST['option'], SALT, 256));
-		
+
 		//change all passwords in DB
 		$rows = $db->fetch_all_array("SELECT id,pw FROM ".$pre."items WHERE perso = '0'");
 		foreach( $rows as $reccord ){
@@ -463,12 +463,51 @@ switch($_POST['type'])
                 "id = '".$reccord['id']."'"
             );
 		}
-		
+
 		//change salt key in settings.php file
-		require_once("../includes/settings.php");
-		
-		
-		echo '[{"result":"changed_salt_key"}]';
+		$filename = "../includes/settings.php";
+		$error = "";
+		if (file_exists($filename)) {
+			//Do a copy of the existing file
+			if ( !copy($filename, $filename.'.'.date("Y_m_d",mktime(0,0,0,date('m'),date('d'),date('y')))) ) {
+				$error = "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";
+				break;
+			}else{
+				unlink($filename);
+			}
+
+			$fh = fopen($filename, 'w');
+
+			fwrite($fh, utf8_encode("<?php
+global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
+global \$smtp_server, \$smtp_auth, \$smtp_auth_username, \$smtp_auth_password, \$email_from,\$email_from_name;
+global \$server, \$user, \$pass, \$database, \$pre, \$db;
+
+@define('SALT', '". $new_salt_key ."'); //Define your encryption key => NeverChange it once it has been used !!!!!
+
+### EMAIL PROPERTIES ###
+\$smtp_server = '".str_replace("'", "", $smtp_server)."';
+\$smtp_auth = '".str_replace("'", "\'", $smtp_auth)."'; //false or true
+\$smtp_auth_username = '".str_replace("'", "\'", $smtp_auth_username)."';
+\$smtp_auth_password = '".str_replace("'", "\'", $smtp_auth_password)."';
+\$email_from = '".str_replace("'", "", $email_from)."';
+\$email_from_name = '".str_replace("'", "", $email_from_name)."';
+
+### DATABASE connexion parameters ###
+\$server = \"". $server ."\";
+\$user = \"". $user ."\";
+\$pass = \"". str_replace("$", "\\$", $pass) ."\";
+\$database = \"". $database ."\";
+\$pre = \"". $pre ."\";
+
+@date_default_timezone_set(\$_SESSION['settings']['timezone']);
+
+?>"));
+
+			fclose($fh);
+
+
+		echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
 	break;
 }
 ?>

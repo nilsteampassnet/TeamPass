@@ -144,13 +144,17 @@ echo '
                         <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_gestionnaire'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
                     </td>
                     <td>
-                    	<div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
-	                        <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">'
-	                            .$list_allo_fcts.'
+                    	<div>
+							<div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">';
+			        	if($reccord['admin'] == 1) echo '
+								<img src="includes/images/admin_migrate_arrow.png" onclick="" />
+							</div>';
+        				else
+        					echo $list_allo_fcts.'
 	                        </div>
 	                        <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
 	                        	<img src="includes/images/cog_edit.png" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
-							</div>
+							</div>', '
 						</div>
                     </td>
                     <td>

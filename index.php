@@ -308,7 +308,7 @@ require_once("load.php");
             }
         }
         //error Salt key
-        if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 0) {
+        if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
             if (empty($errorAdmin)) {
                 $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'];
 			}else {
@@ -345,7 +345,7 @@ require_once("load.php");
     //-----------
 
     //Display system errors
-    if (isset($_SESSION['error']['salt'])) {
+    if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
         echo '
         <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
             ', ( isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == TRUE ) ? '<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'].'' : '', '
