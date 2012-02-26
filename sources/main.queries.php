@@ -68,6 +68,7 @@ switch($_POST['type'])
 			//check if new pw is different that old ones
 			if ( in_array($new_pw,$last_pw) ){
 				echo '[ { "error" : "already_used" } ]';
+				break;
 			}else{
 				//update old pw with new pw
 				if ( sizeof($last_pw) == ($_SESSION['settings']['number_of_used_pw']+1) ){
@@ -102,6 +103,7 @@ switch($_POST['type'])
 				);
 
 				echo '[ { "error" : "none" } ]';
+				break;
 			}
 		}
 		//ADMIN has decided to change the USER's PW
@@ -109,7 +111,7 @@ switch($_POST['type'])
 			//Check KEY
 			if ($data_received['key'] != $_SESSION['key']) {
 				echo '[ { "error" : "key_not_conform" } ]';
-				exit();
+				break;
 			}
 
 			//update DB
@@ -123,6 +125,7 @@ switch($_POST['type'])
 			);
 
 			echo '[ { "error" : "none" } ]';
+			break;
 		}
     	//ADMIN first login
     	if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change"){
@@ -137,6 +140,7 @@ switch($_POST['type'])
     		);
     		$_SESSION['last_pw_change'] = mktime(0,0,0,date('m'),date('d'),date('y'));
     		echo '[ { "error" : "none" } ]';
+    		break;
     	}
     	//DEFAULT case
 		else{
@@ -472,7 +476,6 @@ switch($_POST['type'])
 
     //Used in order to send the password to the user by email
     case "send_pw_by_email":
-    	echo '$("#div_forgot_pw_alert").removeClass("ui-state-error");';
     	//found account and pw associated to email
     	$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."users WHERE email = '".mysql_real_escape_string(stripslashes(($_POST['email'])))."'");
     	if ( $data[0] != 0 ){
@@ -505,6 +508,7 @@ switch($_POST['type'])
     		$mail->AddAddress($_POST['email']);     //Destinataire
     		$mail->WordWrap = 80;                              // set word wrap
     		$mail->IsHTML(true);                               // send as HTML
+    		$mail->SMTPDebug = 0;
     		$mail->Subject  =  $txt['forgot_pw_email_subject'];
     		$mail->AltBody  =  $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
     		$mail->Body     =  $txt['forgot_pw_email_body_1']." ".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login'];

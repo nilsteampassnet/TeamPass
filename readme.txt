@@ -29,7 +29,7 @@
 Website: http://www.teampass.net/
 
 BUGS & SUGGESTIONS:
-  For bugs discovery or any suggestions, please report in Github 
+  For bugs discovery or any suggestions, please report in Github
         https://github.com/nilsteampassnet/TeamPass/issues
 
 INSTALLATION:
@@ -82,6 +82,9 @@ v2.1.4
 NEW corrections: SF239
 NEW improvements: SF231:	How to Restrict Admin from Viewing items
 NEW improvement: Changing SALT key from admin pages
+
+Done: #41, SF257, SF259
+Started: 47
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

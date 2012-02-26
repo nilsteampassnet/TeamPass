@@ -106,11 +106,12 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
+    	$_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        /*$rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
+        $rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
         foreach($rows as $record){
             array_push($groupes_visibles,$record['id']);
-        }*/
+        }
         $_SESSION['groupes_visibles'] = $groupes_visibles;
     	$_SESSION['all_non_personal_folders'] = $groupes_visibles;
 
@@ -161,7 +162,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $new_liste_gp_visibles = array();
     	$liste_gp_interdits = array();
 
-    	$list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = array();
+    	$list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = $list_restricted_folders_for_items = array();
         //build Tree
         require_once ("NestedTree.class.php");
         $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -210,6 +211,14 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
             }
         }
 
+    	//Does this user is allowed to see other items
+    	$x=0;
+    	$rows = $db->fetch_all_array("SELECT id,id_tree FROM ".$pre."items WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'");
+    	foreach($rows as $reccord){
+    		$list_restricted_folders_for_items[$reccord['id_tree']][$x] = $reccord['id'];
+    		$x++;
+    		//array_push($list_restricted_folders_for_items, $reccord['id_tree']);
+    	}
 
     	// => Build final lists
    		//Clean arrays
@@ -264,6 +273,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
 
     	$_SESSION['list_folders_limited'] = $list_folders_limited;
     	$_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
+    	$_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
     }
 }
 

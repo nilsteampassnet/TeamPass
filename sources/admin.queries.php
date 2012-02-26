@@ -130,9 +130,9 @@ switch($_POST['type'])
 
     	//Delete PF for deleted users
     	$db->query(
-				"DELETE FROM ".$pre."nested_tree AS t
+			"SELECT COUNT(*) FROM ".$pre."nested_tree AS t
     		LEFT JOIN ".$pre."users AS u ON t.title = u.id
-    		WHERE u.id IS NULL AND t.parent_id=0 AND t.title REGEXP ('[0-9]')"
+    		WHERE u.id IS NULL AND t.parent_id=0 AND t.title REGEXP '^[0-9]'"
 			);
 
     	//rebuild fuild tree folder
@@ -505,7 +505,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 ?>"));
 
 			fclose($fh);
-
+		}
 
 		echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
 	break;

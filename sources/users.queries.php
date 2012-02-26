@@ -615,7 +615,79 @@ if ( !empty($_POST['type']) ){
     		}
 
     		echo '[ { "table_logs": "'.$logs.'", "pages": "'.$pages.'", "error" : "no" } ]';
-    	break;
+    		break;
+
+    	/*
+    	* Migrate the Admin PF to User
+    	*/
+    	case "migrate_admin_pf":
+    		//decrypt and retreive data in JSON format
+    		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
+    		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
+    		$data_received = json_decode((AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+
+    		//Prepare variables
+    		$user_id = htmlspecialchars_decode($data_received['user_id']);
+    		$salt_user = htmlspecialchars_decode($data_received['salt_user']);
+
+    		if(!isset($_SESSION['my_sk']) || $_SESSION['my_sk'] == ""){
+    			echo '[ { "error" : "no_sk" } ]';
+    		}else if($salt_user == ""){
+    			echo '[ { "error" : "no_sk_user" } ]';
+    		}else if($user_id == ""){
+    			echo '[ { "error" : "no_user_id" } ]';
+    		}else{
+    			require_once ("NestedTree.class.php");
+    			$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+
+    			//Get folder id for Admin
+    			$admin_folder = $db->query_first("SELECT id FROM ".$pre."nested_tree WHERE title='".$_SESSION['user_id']."' AND personal_folder = 1");
+    			//Get folder id for User
+    			$user_folder = $db->query_first("SELECT id FROM ".$pre."nested_tree WHERE title='".$user_id."' AND personal_folder = 1");
+
+    			// Get through each subfolder
+    			foreach($tree->getDescendants($admin_folder['id'], true) as $folder){
+    				//Create folder if necessary
+    				if($folder->title != $_SESSION['user_id']){
+    					//update folder
+    					/*$db->query_update(
+	    					"nested_tree",
+	    					array(
+	    					    'parent_id' => $user_folder['id']
+	    					),
+	    					"id='".$folder->id."'"
+    					);*/
+    				}
+
+    				//Get each Items in PF
+    				$rows = $db->fetch_all_array("
+	                    SELECT i.pw, i.label, l.id_user
+	                    FROM ".$pre."items AS i
+	                    LEFT JOIN ".$pre."log_items AS l ON (l.id_item=i.id)
+	                    WHERE l.action = 'at_creation' AND i.perso=1 AND i.id_tree=".$folder->id);
+    				foreach($rows as $reccord){
+    					echo $reccord['label']." - ";
+    					//Change user
+    					$db->query_update(
+	    					"log_items",
+	    					array(
+	    					    'id_user' => $user_id
+	    					),
+	    					array(
+	    						"id_item='".$reccord['id']."'",
+	    						"id_user='".$user_id."'",
+	    						"action='at_creation'"
+	    					)
+	    				);
+    				}
+
+    			}
+    			$tree->rebuild();
+    			echo '[ { "error" : "no" } ]';
+    		}
+
+
+    		break;
     }
 }
 

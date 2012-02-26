@@ -37,7 +37,7 @@ foreach($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$txt['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <img src="includes/images/user--plus.png" title="'.$txt['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" style="cursor:pointer;" />
+    <img src="includes/images/user--plus.png" title="'.$txt['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$txt['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
 </div>';
 
@@ -65,6 +65,8 @@ echo '
                 </tr>
             </thead>
             <tbody>';
+
+		$list_available_users = $list_admins = "";
         $x = 0;
         //Get through all users
         $rows = $db->fetch_all_array("SELECT * FROM ".$pre."users");
@@ -135,25 +137,34 @@ echo '
         		$show_user_folders = true;
         	}
 
+        	//Build list of available users
+        	if($reccord['admin'] != 1 && $reccord['disabled'] != 1){
+        		$list_available_users .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
+        	}
+
+
             //Display Grid
             //if ($_SESSION['user_gestionnaire'] == 1 && $reccord['admin'] == 1){
             echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x%2).'"', '>
                     <td align="center">'.$reccord['id'].'</td>
-                    <td align="center">', $reccord['disabled'] == 1 ? '<img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" title="'.$txt['unlock_user'].'" />':'', '</td>
+                    <td align="center">';
+		        	/*if($reccord['admin'] == 1 && $_SESSION['user_id'] == $reccord['id']) echo '
+		        		<img src="includes/images/admin_migrate_arrow.png" onclick="migrate_pf(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['user_admin_migrate_pw'].'" />';
+		        	else*/
+					if($reccord['disabled'] == 1) echo '
+						<img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />';
+					echo '
+					</td>
                     <td align="center">
                         <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_gestionnaire'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
                     </td>
                     <td>
                     	<div>
-							<div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">';
-			        	if($reccord['admin'] == 1) echo '
-								<img src="includes/images/admin_migrate_arrow.png" onclick="" />
-							</div>';
-        				else
-        					echo $list_allo_fcts.'
+							<div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
+								'.$list_allo_fcts.'
 	                        </div>
 	                        <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
-	                        	<img src="includes/images/cog_edit.png" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
+	                        	<img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
 							</div>', '
 						</div>
                     </td>
@@ -163,7 +174,7 @@ echo '
 	                        .$list_allo_grps.'
 	                        </div>
 	                        <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
-								<img src="includes/images/cog_edit.png" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$txt['change_authorized_groups'].'" />
+								<img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$txt['change_authorized_groups'].'" />
 							</div>
 						</div>
                     </td>
@@ -173,7 +184,7 @@ echo '
 	                            .$list_forb_grps. '
 	                        </div>
 	                        <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
-	                        	<img src="includes/images/cog_edit.png" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$txt['change_forbidden_groups'].'" />
+	                        	<img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$txt['change_forbidden_groups'].'" />
 							</div>
 						</div>
                     </td>
@@ -214,22 +225,22 @@ echo '
 
                     echo '
                     <td align="center">
-                        <img ', ($show_user_folders == true) ? 'src="includes/images/'.$user_icon.'.png" onclick="'.$action_on_user.'" style="cursor:pointer;" title="'.$user_txt.'"':'src="includes/images/user--minus_disabled.png"', ' />
+                        <img ', ($show_user_folders == true) ? 'src="includes/images/'.$user_icon.'.png" onclick="'.$action_on_user.'" class="button" style="padding:2px;" title="'.$user_txt.'"':'src="includes/images/user--minus_disabled.png"', ' />
                     </td>
                     <td align="center">
-                        &nbsp;<img ', ($show_user_folders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" style="cursor:pointer;"':'src="includes/images/lock__pencil_disabled.png"', ' />
+                        &nbsp;<img ', ($show_user_folders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"', ' />
                     </td>
                     <td align="center">
                         &nbsp;';
         				if ($show_user_folders != true) {
         					echo '<img src="includes/images/mail--pencil_disabled.png" />';
         				}else{
-        					echo '<img src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" style="cursor:pointer;" title="'.$reccord['email'].'"', ' />';
+        					echo '<img src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
         				}
         			echo '
                     </td>
                     <td align="center">
-                        &nbsp;<img ', ($show_user_folders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" style="cursor:pointer;" title="'.$txt['see_logs'].'"', ' />
+                        &nbsp;<img ', ($show_user_folders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['see_logs'].'"', ' />
                     </td>
                 </tr>';
                 $x++;
@@ -348,9 +359,23 @@ echo '
 // USER MANAGER
 echo '
 <div id="manager_dialog" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
+    <div style="text-align:center;padding:2^x;display:none;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
 </div>';
 
+
+/*// MIGRATE PERSONAL ITEMS FROM ADMIN TO A USER
+echo '
+<div id="migrate_pf_dialog" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none;margin-bottom:10px;" class="ui-state-error ui-corner-all" id="migrate_pf_dialog_error"></div>
+    <div>
+    	<label>'.$txt['migrate_pf_select_to'].'</label>:
+    	<select id="migrate_pf_to_user">
+    		<option value="">-- '.$txt['select'].' --</option>'.$list_available_users.'
+    	</select>
+    	<br /><br />
+    	<label>'.$txt['migrate_pf_user_salt'].'</label>: <input type="text" id="migrate_pf_user_salt" size="30" /><br />
+    </div>
+</div>';*/
 
 // USER LOGS
 echo '

@@ -24,6 +24,7 @@ function aes_encrypt(text) {
 		}
 
 $(function() {
+	$(".button").button();
 	//inline editing
 	$(".editable_textarea").editable("sources/users.queries.php", {
 	      indicator : "<img src=\'includes/images/loading.gif\' />",
@@ -281,6 +282,43 @@ $(function() {
 			);
 		}
 	});
+
+	$("#migrate_pf_dialog").dialog({
+	    bgiframe: true,
+	    modal: true,
+	    autoOpen: false,
+	    width: 500,
+	    height: 200,
+	    title: "<?php echo $txt["migrate_pf"];?>",
+	    buttons: {
+	        "<?php echo $txt['cancel_button'];?>": function() {
+	            $(this).dialog("close");
+	        },
+	        "<?php echo $txt['ok'];?>": function() {
+	        	$("#migrate_pf_dialog_error").show();
+	        	var data = '{"user_id":"'+$('#migrate_pf_to_user').val()+'", '+
+				'"salt_user":"'+$('#migrate_pf_user_salt').val()+'"}';
+
+	            $.post(
+					"sources/users.queries.php",
+					{
+						type    : "migrate_admin_pf",
+						data	: aes_encrypt(data)
+					},
+					function(data){
+						if (data[0].error == "no_sk") {
+							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_sk'];?>").show();
+						}else if (data[0].error == "no_sk_user") {
+							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_sk_user'];?>").show();
+						}else if (data[0].error == "no_user_id") {
+							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_user_id'];?>").show();
+						}
+					},
+					"json"
+				);
+	        }
+	    }
+	});
 });
 
 function pwGenerate(elem){
@@ -486,5 +524,15 @@ function displayLogs(page){
 function user_action_log_items(id){
 	$("#selected_user").val(id);
 	$("#user_logs_dialog").dialog("open");
+}
+
+/**
+ *
+ * @access public
+ * @return void
+ **/
+function migrate_pf(user_id){
+	$("#migrate_pf_admin_id").val(user_id);
+	$('#migrate_pf_dialog').dialog('open');
 }
 </script>

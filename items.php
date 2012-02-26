@@ -20,6 +20,11 @@ $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $tree->rebuild();
 $folders = $tree->getDescendants();
 
+if($_SESSION['user_admin'] == 1){
+	$_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+	$_SESSION['groupes_visibles_list'] = implode(',',$_SESSION['groupes_visibles']);
+}
+
 //Get list of users
 $liste_utilisateurs = array();
 $users_string = "";
@@ -116,17 +121,28 @@ echo '
 	        	$list_folders_limited_keys = array();
 	        }
 
+			//list of items accessible but not in an allowed folder
+			if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+				$list_restricted_folders_for_items_keys = @array_keys($_SESSION['list_restricted_folders_for_items']);
+			}else{
+				$list_restricted_folders_for_items_keys = array();
+			}
+
 	        echo '
 			<div id="jstree" style="overflow:auto;">
-		        <ul id="node_'.$folder_cpt.'">';
+		        <ul>';// id="node_'.$folder_cpt.'"
 		        foreach($folders as $folder){
 		            //Be sure that user can only see folders he/she is allowed to
-		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) || in_array($folder->id, $list_folders_limited_keys)) {
+		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) ||
+		            	in_array($folder->id, $list_folders_limited_keys) || in_array($folder->id, $list_restricted_folders_for_items_keys)
+		            ) {
 		            	$display_this_node = false;
 		            	// Check if any allowed folder is part of the descendants of this node
 		            	$node_descendants = $tree->getDescendants($folder->id, true, false, true);
 		            	foreach ($node_descendants as $node){
-		            		if (in_array($node, $_SESSION['groupes_visibles']) || in_array($node, $list_folders_limited_keys)) {
+		            		if (in_array($node, array_merge($_SESSION['groupes_visibles'],$_SESSION['list_restricted_folders_for_items']))
+		            			|| in_array($node, $list_folders_limited_keys) || in_array($node, $list_restricted_folders_for_items_keys)
+		            		) {
 		            			$display_this_node = true;
 		            			break;
 		            		}
@@ -156,7 +172,10 @@ echo '
 								//case for restriction_to_roles
 							}elseif (in_array($folder->id, $list_folders_limited_keys)) {
 								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).')</span></a>';
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
+							}else if (in_array($folder->id, $list_restricted_folders_for_items_keys)) {
+								$folder_txt .= '
+							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
 							}else{
 								$folder_txt .= '
 							<a id="fld_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</a>';
@@ -190,7 +209,7 @@ echo '
 				                //Construire l'arborescence
 				                if ( $prev_level < $folder->nlevel ){
 				                	echo '
-				<ul id="node_'.$folder_cpt.'">'.$folder_txt;
+				<ul>'.$folder_txt;// id="node_'.$folder_cpt.'"
 				                    $folder_cpt++;
 				                }else if ( $prev_level == $folder->nlevel ){
 				                	echo '
@@ -624,8 +643,7 @@ echo '
 			if(isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1){
 				echo '
 				<label for="" class="label_cpm">'.$txt['restricted_to'].' : </label>
-				<select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple">
-				</select>
+				<select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple"></select>
 				<input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
             <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>';

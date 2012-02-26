@@ -1281,7 +1281,7 @@ if ( isset($_POST['type']) ){
         		$where_arg = " AND i.id IN (".implode(',', $_SESSION['list_folders_limited'][$_POST['id']]).")";
         	}
 			//check if this folder is visible
-        	else if (!in_array($_POST['id'], $_SESSION['groupes_visibles'])) {
+        	else if (!in_array($_POST['id'], array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items'])))) {
         		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
         		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
         		echo AesCtr::encrypt(json_encode(array("error" => "not_authorized"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
@@ -1295,11 +1295,20 @@ if ( isset($_POST['type']) ){
                 //init variables
                 $init_personal_folder = false;
                 $expired_item = false;
+            	$limited_to_items = "";
+
+            	//
+            	/*if (in_array($_POST['id'],@array_keys($_SESSION['list_restricted_folders_for_items']))){
+            		foreach($_SESSION['list_restricted_folders_for_items'][$_POST['id']] as $reccord){
+            			if(empty($limited_to_items)) $limited_to_items = $reccord;
+            			else $limited_to_items .= ",".$reccord;
+            		}
+            	}*/
 
                 //List all ITEMS
             	if($folder_is_pf == 0){
-            		$rows = $db->fetch_all_array("
-                    SELECT DISTINCT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label, i.description AS description, i.pw AS pw, i.login AS login, i.anyone_can_modify AS anyone_can_modify,
+            		$query = "SELECT DISTINCT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label,
+                    	i.description AS description, i.pw AS pw, i.login AS login, i.anyone_can_modify AS anyone_can_modify,
                         l.date AS date,
                         n.renewal_period AS renewal_period,
                         l.action AS log_action, l.id_user AS log_user,
@@ -1310,13 +1319,17 @@ if ( isset($_POST['type']) ){
 					INNER JOIN ".$pre."keys AS k ON (k.id = i.id)
                     WHERE i.inactif = 0".
             		$where_arg."
-                    AND l.action = 'at_creation'
-                    ORDER BY i.label ASC, l.date DESC",
-            		$_POST['nb_items_to_display_once'] != "max" ? "LIMIT ".$start.",".$_POST['nb_items_to_display_once'] : "" , ""
-                 	);
+                    AND l.action = 'at_creation'";
+            		if(!empty($limited_to_items)) $query .= "
+					AND i.id IN (".$limited_to_items.")";
+            		$query .= "
+					ORDER BY i.label ASC, l.date DESC";
+            		if($_POST['nb_items_to_display_once'] != 'max') $query .= "
+					LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+
+            		$rows = $db->fetch_all_array($query);
             	}else{
-            		$rows = $db->fetch_all_array("
-                    SELECT DISTINCT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label, i.description AS description, i.pw AS pw, i.login AS login, i.anyone_can_modify AS anyone_can_modify,
+            		$query = "SELECT DISTINCT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label, i.description AS description, i.pw AS pw, i.login AS login, i.anyone_can_modify AS anyone_can_modify,
                         l.date AS date,
                         n.renewal_period AS renewal_period,
                         l.action AS log_action, l.id_user AS log_user
@@ -1326,8 +1339,11 @@ if ( isset($_POST['type']) ){
                     WHERE i.inactif = 0".
             		$where_arg."
                     AND (l.action = 'at_creation')
-                    ORDER BY i.label ASC, l.date DESC",
-            		$_POST['nb_items_to_display_once'] != "max" ? "LIMIT ".$start.",".$_POST['nb_items_to_display_once'] : "" , "");
+                    ORDER BY i.label ASC, l.date DESC";
+            		if($_POST['nb_items_to_display_once'] != 'max') $query .= "
+						LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+
+            		$rows = $db->fetch_all_array($query);
             	}
             	// REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $id_managed = '';

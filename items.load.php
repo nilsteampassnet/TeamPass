@@ -1005,7 +1005,8 @@ function open_edit_item_div(restricted_to_roles) {
 		$('#edit_restricted_to_list').empty();
 		if (restricted_to_roles == 1) {
 			//add optgroup
-	        $('<optgroup/>').attr('label', "<?php echo $txt['users'];?>");
+			var optgroup = $('<optgroup>');
+	        optgroup.attr('label', "<?php echo $txt['users'];?>");
 	        $("#edit_restricted_to_list option:last").wrapAll(optgroup);
 		}
 		var liste = $('#input_liste_utilisateurs').val().split(';');
@@ -1025,9 +1026,8 @@ function open_edit_item_div(restricted_to_roles) {
 	if (restricted_to_roles == 1) {
 		var j = i;
 		//add optgroup
-		var optgroup = $('<optgroup/>');
+		var optgroup = $('<optgroup>');
         optgroup.attr('label', "<?php echo $txt['roles'];?>");
-        $("#edit_restricted_to_list option:last").wrapAll(optgroup);
 
 		var liste = $('#input_list_roles').val().split(';');
 		for (var i=0; i<liste.length; i++) {
@@ -1038,6 +1038,7 @@ function open_edit_item_div(restricted_to_roles) {
 		        if ( index != -1 ) {
 		            $("#edit_restricted_to_list option[value='role_"+elem[0]+"']").attr('selected', true);
 		        }
+		        if(i==0) $("#edit_restricted_to_list option:last").wrapAll(optgroup);
 		    }
 		    j++;
 		}
@@ -1355,7 +1356,7 @@ $(function() {$('#toppathwrap').hide();
 	      }
     });
 	*/
-	
+
 
     $("#add_folder").click(function() {
         var posit = document.getElementById('item_selected').value;
@@ -1616,7 +1617,7 @@ $(function() {$('#toppathwrap').hide();
 	}
 
 	//load items
-	if(parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val())+1;
+	if(parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
 	else start = 0;
 	ListerItems(first_group,'', start);
 	//Load item if needed and display items list
@@ -1770,7 +1771,7 @@ function htmlspecialchars_decode (string, quote_style) {
 
 function proceed_list_update(){
 	if ($("#query_next_start").val() != "end") {
-		ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val())+1);
+		ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val()));
 	}else{
 		$('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
         $("#items_list_loader").hide();
