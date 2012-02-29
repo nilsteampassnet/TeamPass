@@ -182,8 +182,7 @@ $(function() {
 						},
 						function(data){
 							if (data[0].error == "none") {
-								$("#change_user_pw_error").html("");
-								$("#change_user_pw_error").hide();
+								$("#change_user_pw_error").html("").hide();
 								$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
 								$("#change_user_pw").dialog("close");
 							}else if (data[0].error == "key_not_conform") {
@@ -281,43 +280,6 @@ $(function() {
 				"json"
 			);
 		}
-	});
-
-	$("#migrate_pf_dialog").dialog({
-	    bgiframe: true,
-	    modal: true,
-	    autoOpen: false,
-	    width: 500,
-	    height: 200,
-	    title: "<?php echo $txt["migrate_pf"];?>",
-	    buttons: {
-	        "<?php echo $txt['cancel_button'];?>": function() {
-	            $(this).dialog("close");
-	        },
-	        "<?php echo $txt['ok'];?>": function() {
-	        	$("#migrate_pf_dialog_error").show();
-	        	var data = '{"user_id":"'+$('#migrate_pf_to_user').val()+'", '+
-				'"salt_user":"'+$('#migrate_pf_user_salt').val()+'"}';
-
-	            $.post(
-					"sources/users.queries.php",
-					{
-						type    : "migrate_admin_pf",
-						data	: aes_encrypt(data)
-					},
-					function(data){
-						if (data[0].error == "no_sk") {
-							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_sk'];?>").show();
-						}else if (data[0].error == "no_sk_user") {
-							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_sk_user'];?>").show();
-						}else if (data[0].error == "no_user_id") {
-							$("#migrate_pf_dialog_error").html("<?php echo $txt['migrate_pf_no_user_id'];?>").show();
-						}
-					},
-					"json"
-				);
-	        }
-	    }
 	});
 });
 

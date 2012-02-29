@@ -1,31 +1,31 @@
-|===================================================================================================|
-|						TeamPass - A Collaborative Passwords Manager								|
-|								2012 (c) Nils Laumaillé												|
-|===================================================================================================|
+|==============================================================================|
+|				TeamPass - A Collaborative Passwords Manager				   |
+|						2012 (c) Nils Laumaillé								   |
+|==============================================================================|
 
-*****************************************************************************************************
-***** 	  																						*****
-***** 	  								LICENCE AGREEMENT										*****
-***** 	  Before installing and using TeamPass, you must accept its licence defined	as			*****
-*****	  GNU AFFERO GPL.																		*****
-*****	  Copyright (c) 2012, Nils Laumaillé (Nils@TeamPass.net)								*****
-*****																							*****
-*****     This program is free software: you can redistribute it and/or modify					*****
-*****     it under the terms of the GNU Affero General Public License as						*****
-*****     published by the Free Software Foundation, either version 3 of the					*****
-*****     License, or any later version.														*****
-*****																							*****
-*****     This program is distributed in the hope that it will be useful,						*****
-*****     but WITHOUT ANY WARRANTY; without even the implied warranty of						*****
-*****     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the							*****
-*****     GNU Affero General Public License for more details.									*****
-*****																							*****
-*****     You should have received a copy of the GNU Affero General Public License				*****
-*****     along with this program.  If not, see <http://www.gnu.org/licenses/>.					*****
-*****																							*****
-*****************************************************************************************************
+********************************************************************************
+* 																		 	   *
+* 								LICENCE AGREEMENT							   *
+* Before installing and using TeamPass, you must accept its licence defined	as *
+* GNU AFFERO GPL.															   *
+* Copyright (c) 2012, Nils Laumaillé (Nils@TeamPass.net)					   *
+* 																			   *
+* This program is free software: you can redistribute it and/or modify		   *
+* it under the terms of the GNU Affero General Public License as			   *
+* published by the Free Software Foundation, either version 3 of the		   *
+* License, or any later version.											   *
+* 																			   *
+* This program is distributed in the hope that it will be useful,			   *
+* but WITHOUT ANY WARRANTY; without even the implied warranty of			   *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the				   *
+* GNU Affero General Public License for more details.						   *
+* 																			   *
+* You should have received a copy of the GNU Affero General Public License	   *
+* along with this program.  If not, see <http://www.gnu.org/licenses/>.		   *
+* 																			   *
+********************************************************************************
 
-----------------------------------------  INFORMATIONS  ---------------------------------------------
+----------------------------  INFORMATIONS  ------------------------------------
 Website: http://www.teampass.net/
 
 BUGS & SUGGESTIONS:
@@ -53,38 +53,44 @@ LANGUAGES:
 * JAPANESE	by Shinji (to be finished)
 * PORTUGUESE by Luiz LeFort
 
---------------------------------------------  TODO  -------------------------------------------------
+-------------------------------  TODO  -----------------------------------------
 * IMAP login
 * translations
 * PostgreSQL database support
 * DB2 database support
-* Issue 187:	After LDAP support is configured every user (except admin) must exist in ldap
-* The folder structure is automatically expanded can there be a feature / option to disable that
+* Issue 187:	After LDAP support is configured every user (except admin) must
+exist in ldap
+* The folder structure is automatically expanded can there be a feature /
+option to disable that
 * mail notification when selecting an item
 * import from "Password safe" tool
-* settings page. manage settings via table and do a loop in order to display options.
+* settings page. manage settings via table and do a loop in order to display
+options.
 * Suggestion: Password copy button in search results
-* Would it be possible to add support for syslog? It would be a nice feature to be able to log all activity to a third syslog server. This would be mainly for security and auditing.
+* Would it be possible to add support for syslog? It would be a nice feature to
+be able to log all activity to a third syslog server. This would be mainly for
+security and auditing.
 * Do your think your can support yubikey ?
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
 * Issue 228:	What if you forget your SALT Key? How to reset?
-* Issue 247:	backup restore not working => SEEMS OK after test. Ask for more details.
+* Issue 247:	backup restore not working => SEEMS OK after test. Ask for more
+details.
 * Tree view => cookie collapse or not
-* Tree search => if big list then the view doesn't scroll down to the found folder
-* admin.queries.php => MYSQL error on REGEXP
+* Tree search => if big list then the view doesn't scroll down to the found
+folder
+* CSV export
 
-------------------------------------------  CHANGELOG  ----------------------------------------------
+--------------------------------  CHANGELOG  -----------------------------------
 v2.1.4
-* Improved: SF232, #31 (new setting option for dynamic list) ,
-	#27 (new subfolders only associated to the same roles as the parent folder)
-	#33 (folder management in items page)
 * Corrections: SF237, SF240, SF243 , #29, #25,  #32 , #36 , #37 , #39 , #40
-NEW corrections: SF239
-NEW improvements: SF231:	How to Restrict Admin from Viewing items
-NEW improvement: Changing SALT key from admin pages
-
-Done: #41, SF257, SF259
-Started: 47
+	SF257, SF259, SF239, #41, #40, #51
+* Improvements:
+	SF232
+	SF231:	How to Restrict Admin from Viewing items
+	#31: new setting option for dynamic list
+	#27: new subfolders only associated to the same roles as the parent folder
+	#33: folder management in items page
+	Changing SALT key from admin pages
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import

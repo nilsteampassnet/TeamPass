@@ -322,7 +322,7 @@ switch($_POST['type'])
     	$rows = $db->fetch_all_array("
 			SELECT id
 			FROM ".$pre."items
-			ORDER BY id
+			ORDER BY id ASC
     	");
     	foreach( $rows as $item ) {
     		$row = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");

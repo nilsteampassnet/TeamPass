@@ -128,7 +128,7 @@ switch($_POST['type'])
 			break;
 		}
     	//ADMIN first login
-    	if(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change"){
+    	elseif(isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change"){
     		//update DB
     		$db->query_update(
 	    		"users",

@@ -5,10 +5,17 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+/*$txt["migrate_pf"] = "Migrate Personal Items";
+$txt['user_admin_migrate_pw'] = "Migrate personal Items to a user account";
+$txt['migrate_pf_select_to'] = "Migrate personal Items to user";
+$txt['migrate_pf_user_salt'] = "Enter the SALT key for selected User";
+$txt['migrate_pf_no_sk'] = "You have not entered your SALT Key";
+$txt['migrate_pf_no_sk_user'] = "You must enter the User SALT Key";
+$txt['migrate_pf_no_user_id'] = "You must select the User";*/
 $txt['admin_action_change_salt_key'] = "Change the main SALT Key";
 $txt['admin_action_change_salt_key_tip'] = "Before changing the SALT key, please be sure to do a full backup of the database, and to put the tool in maintenance in order to avoid any users being logged.";
 $txt['block_admin_info'] = "Administrators Info";
-$txt['admin_new1'] = "<i><u>14FEB2012:</i></u><br>GOD profile is no more allowed to see items. This profile is now only an Administrative account.<br />See <a href='http://www.teampass.net/' target='_blank'>TeamPass.net page</a> concerning the way to handle this change.";
+$txt['admin_new1'] = "<i><u>14FEB2012:</i></u><br>Administrator profile is no more allowed to see items. This profile is now only an Administrative account.<br />See <a href='http://www.teampass.net/how-to-handle-changes-on-administrator-profile' target='_blank'>TeamPass.net page</a> concerning the way to handle this change.";
 
 $txt['nb_items_by_query'] = "Number of items to get at each query iterration";
 $txt['nb_items_by_query_tip'] = "<span style='font-size:11px;max-width:300px;'>More items means more time to display the list.<br />Set to 'auto' to let the tool to adapt this number depending on the size screen of the user.<br />Set to 'max' to force to display the complet list in one time.<br />Set a number corresding to the number of items to get at each query iterration.</span>";

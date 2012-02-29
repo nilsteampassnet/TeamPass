@@ -21,6 +21,8 @@ $txt['admin_action'] = "確認";
 
 $txt['admin_actions_title'] = "メンテナンスアクション";
 
+$txt['admin_action_change_salt_key'] = "Change the main SALT Key";
+$txt['admin_action_change_salt_key_tip'] = "Before changing the SALT key, please be sure to do a full backup of the database, and to put the tool in maintenance in order to avoid any users being logged.";
 $txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 
 $txt['admin_action_db_backup'] = "データベースのバックアップを作成する。";
@@ -84,6 +86,7 @@ $txt['admin_misc_favicon'] = "faviconファイルへのフルURL";
 
 $txt['admin_misc_title'] = "カスタム設定";
 
+$txt['admin_new1'] = "<i><u>14FEB2012:</i></u><br>Administrator profile is no more allowed to see items. This profile is now only an Administrative account.<br />See <a href='http://www.teampass.net/how-to-handle-changes-on-administrator-profile' target='_blank'>TeamPass.net page</a> concerning the way to handle this change.";
 $txt['admin_one_shot_backup'] = "One shot backup and restore";
 $txt['admin_script_backups'] = "Settings for Backups script";
 $txt['admin_script_backups_tip'] = "For more security, it is recommended to parameter a scheduled backup of the database.<br />Use your server to schedule a daily cron task by calling the file 'script.backup.php' in 'backups' folder.<br />You first need to set the 2 first paramteres and SAVE them.";
@@ -172,6 +175,7 @@ $txt['auth_modification_without_complexity'] = "必要とされるパスワー�
 
 $txt['auto_create_folder_role'] = "Create folder and role for ";
 
+$txt['block_admin_info'] = "Administrators Info";
 $txt['block_last_created'] = "Last created";
 
 $txt['bugs_page'] = "If you discover a bug, you can directly post it in <a href='https://github.com/nilsteampassnet/TeamPass/issues' target='_blank'><u>Bugs Forum</u></a>.";

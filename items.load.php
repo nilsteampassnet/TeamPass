@@ -1331,9 +1331,9 @@ $(function() {$('#toppathwrap').hide();
         multipleSeparator: " "
     });
 
-	//Build tree
+	//Build tree - "cookies",
     $("#jstree").jstree({
-    	"plugins" : ["themes", "html_data", "cookies", "ui", "search"]
+    	"plugins" : ["themes", "html_data", "ui", "search"]
 	})
 	//search in tree
 	.bind("search.jstree", function (e, data) {
