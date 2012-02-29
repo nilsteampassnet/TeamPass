@@ -81,7 +81,7 @@ folder
 * CSV export
 
 --------------------------------  CHANGELOG  -----------------------------------
-v2.1.4
+2.1.4
 * Corrections: SF237, SF240, SF243 , #29, #25,  #32 , #36 , #37 , #39 , #40
 	SF257, SF259, SF239, #41, #40, #51
 * Improvements:
@@ -91,6 +91,9 @@ v2.1.4
 	#27: new subfolders only associated to the same roles as the parent folder
 	#33: folder management in items page
 	Changing SALT key from admin pages
+
+2.1.3
+* upgrade improvement in case of upgrading from 1.x version.
 
 2.1.2
 * improved upgrade connection errors and automatic credentials import
