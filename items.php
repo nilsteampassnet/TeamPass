@@ -20,7 +20,7 @@ $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $tree->rebuild();
 $folders = $tree->getDescendants();
 
-if($_SESSION['user_admin'] == 1){
+if($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])){
 	$_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
 	$_SESSION['groupes_visibles_list'] = implode(',',$_SESSION['groupes_visibles']);
 }

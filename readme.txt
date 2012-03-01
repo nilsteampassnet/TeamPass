@@ -81,6 +81,9 @@ folder
 * CSV export
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.5
+* #56: Temporary solution for keeping old ADMIN profile rights
+
 2.1.4
 * Corrections: SF237, SF240, SF243 , #29, #25,  #32 , #36 , #37 , #39 , #40
 	SF257, SF259, SF239, #41, #40, #51

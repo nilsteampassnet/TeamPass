@@ -23,6 +23,7 @@ $k['jquery-ui-theme'] = "overcast";
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg','gif','png','jpeg','tiff','bmp');
 $k['office_file_ext'] = array('xls','xlsx','docx','doc','csv','ppt','pptx');
+$k['admin_full_right'] = true;
 
 //Management Pages
 $mngPages = array(
