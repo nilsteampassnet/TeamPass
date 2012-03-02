@@ -15,7 +15,7 @@
 //DONT'T CHANGE BELOW THIS LINE
 global $settings, $languages_list;
 
-$k['version'] = "2.1.4";
+$k['version'] = "2.1.5";
 $k['tool_name'] = "TeamPass";
 $k['jquery-version'] = "1.6.2";
 $k['jquery-ui-version'] = "1.8.16";
@@ -23,7 +23,7 @@ $k['jquery-ui-theme'] = "overcast";
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg','gif','png','jpeg','tiff','bmp');
 $k['office_file_ext'] = array('xls','xlsx','docx','doc','csv','ppt','pptx');
-$k['admin_full_right'] = true;
+$k['admin_full_right'] = false;
 
 //Management Pages
 $mngPages = array(
