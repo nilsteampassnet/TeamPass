@@ -139,7 +139,7 @@ $htmlHeaders .= '
             for (var i = 0; i < 10; i++) {
                 randomstring += chars[Math.floor(Math.random() * chars.length)];
             }
-            var data = \'{"login":"\'+protectString($("#login").val())+\'" , "pw":"\'+protectString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"}\';
+            var data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"}\';
 
             //send query
             $.post("sources/main.queries.php", {
@@ -367,7 +367,7 @@ if ( !isset($_GET['page']) ){
                 "'.$txt['index_change_pw_button'].'": function() {
                     if ( $("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val() ){
                     	if($("#pw_strength_value").val() >= $("#user_pw_complexity").val()){
-				            var data = "{\"new_pw\":\""+protectString($("#new_pw").val())+"\"}";
+				            var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
 				            $.post(
 				                "sources/main.queries.php",
 				                {
@@ -615,7 +615,7 @@ if ( !isset($_GET['page']) ){
     })
 
     function ChangeMyPass(){
-    	var data = "{\"new_pw\":\""+protectString($("#new_pw").val())+"\"}";
+    	var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
         $.post(
             "sources/main.queries.php",
             {
@@ -949,7 +949,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         $("#result_admin_action_db_backup").html("");
         if ( action == "admin_action_db_backup" ) option = $("#result_admin_action_db_backup_key").val();
         else if ( action == "admin_action_backup_decrypt" ) option = $("#bck_script_decrypt_file").val();
-        else if ( action == "admin_action_change_salt_key" ) option = aes_encrypt(protectString($("#new_salt_key").val()));
+        else if ( action == "admin_action_change_salt_key" ) option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
         //Lauchn ajax query
         $.post(
 			"sources/admin.queries.php",

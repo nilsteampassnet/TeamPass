@@ -130,9 +130,9 @@ function aes_encrypt(text) {
                             itemsvalues[i] = $(selected).val();
                         });
 
-                     	var data = '{"label":"'+protectString($("#kb_label").val())+'","category":"'+protectString($("#kb_category").val())+
+                     	var data = '{"label":"'+sanitizeString($("#kb_label").val())+'","category":"'+sanitizeString($("#kb_category").val())+
                      		'","anyone_can_modify":"'+$("input[name=modify_kb]:checked").val()+'","id":"'+$("#kb_id").val()+
-                     		'","kb_associated_to":"'+itemsvalues+'","description":"'+protectString(CKEDITOR.instances["kb_description"].getData())+'"}';
+                     		'","kb_associated_to":"'+itemsvalues+'","description":"'+sanitizeString(CKEDITOR.instances["kb_description"].getData())+'"}';
 
                      	$.post("sources/kb.queries.php",
 					      	{

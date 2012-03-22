@@ -74,6 +74,11 @@ if ( isset($_POST['type']) ){
         * creating a new ITEM
         */
         case "new_item":
+        	//Check KEY
+        	if ($_POST['key'] != $_SESSION['key']) {
+        		//error
+        		exit();
+        	}
             //decrypt and retreive data in JSON format
             require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
             require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
@@ -875,8 +880,12 @@ if ( isset($_POST['type']) ){
         	}
 
 
+        	//check user is admin
+        	if($_SESSION['user_admin'] == 1 && $data_item['perso']!=1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])){
+        		$arrData['show_details'] = 0;
+        	}
             //Check if actual USER can see this ITEM
-            if ((
+            else if ((
             	( in_array($data_item['id_tree'],$_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1 )
 	                &&  ( $data_item['perso']==0 || ($data_item['perso']==1 && $data_item['id_user'] == $_SESSION['user_id'] ) )
 	                && $restriction_active == false

@@ -79,8 +79,11 @@ details.
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
 * CSV export
-
+32.48.
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.6
+
+
 2.1.5
 * #56: Temporary solution for keeping old ADMIN profile rights
 

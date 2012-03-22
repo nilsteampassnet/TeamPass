@@ -38,6 +38,16 @@ THE SOFTWARE.
 
 @date_default_timezone_set($_POST['timezone']);
 
+//Connect to mysql server
+include('../../settings.php');
+include('../../../sources/class.database.php');
+$db = new Database($server, $user, $pass, $database, $pre);
+$db->connect();
+
+//Check if true user
+$data = $db->fetch_row("SELECT key_tempo FROM ".$pre."users WHERE id = ".$_GET['user_id']);
+if($data[0] != $_GET['key_tempo']) die('Hacking attempt...');
+
 // Permits to extract the file extension
 function findexts ($filename)
 {
@@ -52,13 +62,6 @@ if (!empty($_FILES)) {
 	if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
 		$targetPath = $_SERVER['DOCUMENT_ROOT'].$_REQUEST['folder'] . '/';
 		$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
-
-		include('../../settings.php');
-
-		//Connect to mysql server
-		include('../../../sources/class.database.php');
-		$db = new Database($server, $user, $pass, $database, $pre);
-		$db->connect();
 
 		// Log upload into databse - only log for a modification
 		if ( isset($_POST['type']) && $_POST['type'] == "modification" ){
@@ -81,13 +84,6 @@ if (!empty($_FILES)) {
 		$tempFile = $_FILES['Filedata']['tmp_name'];
 		$targetPath = $_SERVER['DOCUMENT_ROOT'].$_REQUEST['folder'] . '/';
 		$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
-
-		include('../../settings.php');
-
-		//Connect to mysql server
-		include('../../../sources/class.database.php');
-		$db = new Database($server, $user, $pass, $database, $pre);
-		$db->connect();
 
 		// Store to database
 		$db->query_insert(

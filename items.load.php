@@ -379,9 +379,9 @@ function AjouterItem(){
 
 			//Manage description
             if (CKEDITOR.instances["desc"]) {
-            	var description = protectString(CKEDITOR.instances["desc"].getData());
+            	var description = sanitizeString(CKEDITOR.instances["desc"].getData());
             }else{
-            	var description = protectString($("#desc").val()).replace(/\n/g, '<br />');
+            	var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />');
             }
 
             //Is PF
@@ -392,19 +392,20 @@ function AjouterItem(){
             }
 
             //prepare data
-            var data = '{"pw":"'+protectString($('#pw1').val())+'", "label":"'+protectString($('#label').val())+'", '+
-            '"login":"'+protectString($('#item_login').val())+'", "is_pf":"'+is_pf+'", '+
+            var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
+            '"login":"'+sanitizeString($('#item_login').val())+'", "is_pf":"'+is_pf+'", '+
             '"description":"'+(description)+'", "url":"'+url+'", "categorie":"'+$('#categorie').val()+'", '+
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+'", "is_pf":"'+$('#recherche_group_pf').val()+
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
-            '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+protectString($('#item_tags').val())+'", "random_id_from_files":"'+$('#random_id').val()+'"}';
+            '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+'", "random_id_from_files":"'+$('#random_id').val()+'"}';
 
             //Send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "new_item",
-					data :	aes_encrypt(data)
+					data 	: aes_encrypt(data),
+					key		: "<?php echo $_SESSION['key'];?>"
                 },
                 function(data){
                 	//decrypt data
@@ -518,9 +519,9 @@ function EditerItem(){
 
 			//Manage description
             if (CKEDITOR.instances["edit_desc"]) {
-            	var description = protectString(CKEDITOR.instances["edit_desc"].getData());
+            	var description = sanitizeString(CKEDITOR.instances["edit_desc"].getData());
             }else{
-            	var description = protectString($("#edit_desc").val());
+            	var description = sanitizeString($("#edit_desc").val());
             }
 
             //Is PF
@@ -531,19 +532,20 @@ function EditerItem(){
             }
 
           	//prepare data
-            var data = '{"pw":"'+protectString($('#edit_pw1').val())+'", "label":"'+protectString($('#edit_label').val())+'", '+
-            '"login":"'+protectString($('#edit_item_login').val())+'", "is_pf":"'+is_pf+'", '+
+            var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
+            '"login":"'+sanitizeString($('#edit_item_login').val())+'", "is_pf":"'+is_pf+'", '+
             '"description":"'+description+'", "url":"'+url+'", "categorie":"'+$('#edit_categorie').val()+'", '+
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+'", "is_pf":"'+$('#recherche_group_pf').val()+'", '+
             '"annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
-            '"anyone_can_modify":"'+$('#edit_anyone_can_modify:checked').val()+'", "tags":"'+protectString($('#edit_tags').val())+'"}';
+            '"anyone_can_modify":"'+$('#edit_anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#edit_tags').val())+'"}';
 
             //send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "update_item",
-                    data      : aes_encrypt(data)
+                    data      : aes_encrypt(data),
+					key		: "<?php echo $_SESSION['key'];?>"
                 },
                 function(data){
                     //decrypt data
@@ -576,9 +578,9 @@ function EditerItem(){
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
                         $("#id_tags").html($('#edit_tags').val());
-                        $("#id_files").html(unprotectString(data.files));
+                        $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
-                        $("#id_info").html(unprotectString(data.history));
+                        $("#id_info").html(unsanitizeString(data.history));
                         $('#id_pw').html('<img src="includes/images/masked_pw.png" />');
 
                         //Refresh hidden data
@@ -648,15 +650,16 @@ function AjouterFolder(){
     	}
 
         //prepare data
-        var data = '{"title":"'+protectString($('#new_rep_titre').val())+'", "complexity":"'+protectString($('#new_rep_complexite').val())+'", '+
-        '"parent_id":"'+protectString($('#new_rep_groupe').val())+'", "renewal_period":"0"}';
+        var data = '{"title":"'+sanitizeString($('#new_rep_titre').val())+'", "complexity":"'+sanitizeString($('#new_rep_complexite').val())+'", '+
+        '"parent_id":"'+sanitizeString($('#new_rep_groupe').val())+'", "renewal_period":"0"}';
 
         //send query
         $.post(
             "sources/folders.queries.php",
             {
                 type    : "add_folder",
-                data      : aes_encrypt(data)
+                data  	: aes_encrypt(data),
+				key		: "<?php echo $_SESSION['key'];?>"
             },
             function(data){
                 //Check errors
@@ -681,7 +684,8 @@ function SupprimerFolder(){
 			"sources/folders.queries.php",
 			{
 				type    : "delete_folder",
-				id      : $("#delete_rep_groupe").val()
+				id      : $("#delete_rep_groupe").val(),
+				key		: "<?php echo $_SESSION['key'];?>"
 			},
 			function(data){
 				window.location.href = "index.php?page=items";
@@ -722,7 +726,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 salt_key_required   : $('#recherche_group_pf').val(),
                 salt_key_set        : $('#personal_sk_set').val(),
                 expired_item        : expired_item,
-                restricted        	: restricted
+                restricted        	: restricted,
+				key		: "<?php echo $_SESSION['key'];?>"
             },
             function(data){
                 //decrypt data
@@ -760,13 +765,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                 if (data.show_details == "1" && data.show_detail_option != "2"){
                     //unprotect data
-                    data.login = unprotectString(data.login);
+                    data.login = unsanitizeString(data.login);
 
                     //Display details
                     $("#id_label").html(data.label).html();
                     $("#hid_label").val(data.label);
                     $("#id_pw").html('<img src="includes/images/masked_pw.png" />');
-                    $("#hid_pw").val(unprotectString(data.pw));
+                    $("#hid_pw").val(unsanitizeString(data.pw));
                     if ( data.url != "") {
                         $("#id_url").html(data.url+data.link);
                         $("#hid_url").val(data.url);
@@ -814,7 +819,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     //Prepare clipboard copies
                     if ( data.pw != "" ) {
                     	var clip = new ZeroClipboard.Client();
-                        clip.setText(unprotectString(data.pw));
+                        clip.setText(unsanitizeString(data.pw));
                         clip.addEventListener( 'complete', function(client, text) {
                                 $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
                         } );
@@ -1023,7 +1028,7 @@ function open_edit_item_div(restricted_to_roles) {
 	}
 
 	//Add list of roles if option is set
-	if (restricted_to_roles == 1) {
+	if (restricted_to_roles == 1 && $('#edit_restricted_to').val() != undefined) {
 		var j = i;
 		//add optgroup
 		var optgroup = $('<optgroup>');
@@ -1139,9 +1144,9 @@ function clear_html_tags(){
 function upload_attached_files_edit_mode() {
     // Pass dynamic ITEM id
     var post_id = $('#selected_items').val();
-    var user_id = $('#form_user_id').val();//alert(user_id+' - '+post_id);
+    var user_id = $('#form_user_id').val();
 
-    $('#item_edit_files_upload').uploadifySettings('scriptData', {'post_id':post_id, 'user_id':user_id, 'type':'modification', 'timezone':'<?php echo $_SESSION['settings']['timezone'];?>'});
+    $('#item_edit_files_upload').uploadifySettings('scriptData', {'post_id':post_id, 'user_id':user_id, 'type':'modification', 'timezone':'<?php echo $_SESSION['settings']['timezone'];?>', 'session_id':'nils'});
 
     // Launch upload
     $("#item_edit_files_upload").uploadifyUpload();
@@ -1419,7 +1424,8 @@ $(function() {$('#toppathwrap').hide();
 						"sources/items.queries.php",
 						{
 							type    : "update_rep",
-							data      : aes_encrypt(data)
+							data      : aes_encrypt(data),
+							key		: "<?php echo $_SESSION['key'];?>"
 						},
 						function(data){
 							//check if format error
@@ -1534,7 +1540,8 @@ $(function() {$('#toppathwrap').hide();
 					"sources/items.queries.php",
 					{
 						type    : "del_item",
-						id  	: $("#id_item").val()
+						id  	: $("#id_item").val(),
+						key		: "<?php echo $_SESSION['key'];?>"
 					},
 					function(data){
 						window.location.href = "index.php?page=items&group="+$("#hid_cat").val();
@@ -1583,7 +1590,7 @@ $(function() {$('#toppathwrap').hide();
     //CALL TO UPLOADIFY FOR FILES UPLOAD in EDIT ITEM
     $("#item_edit_files_upload").uploadify({
         "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php",
+        "script"    : "includes/libraries/uploadify/uploadify.php?user_id='<?php $_SESSION['user_id'];?>'&key_tempo='<?php $_SESSION['key'];?>'",
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
         "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>"},
         "auto"      : false,
@@ -1598,7 +1605,7 @@ $(function() {$('#toppathwrap').hide();
     //CALL TO UPLOADIFY FOR FILES UPLOAD in NEW ITEM
     $("#item_files_upload").uploadify({
         "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php",
+        "script"    : "includes/libraries/uploadify/uploadify.php?user_id='<?php $_SESSION['user_id'];?>'&key_tempo='<?php $_SESSION['key'];?>'",
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
         "auto"      : false,
         "multi"     : true,

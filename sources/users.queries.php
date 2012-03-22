@@ -103,7 +103,7 @@ if ( !empty($_POST['type']) ){
                 $new_user_id = $db->query_insert(
                     "users",
                     array(
-                        'login' => htmlspecialchars_decode($_POST['login']),
+                        'login' => mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])),
                         'pw' => encrypt(string_utf8_decode($_POST['pw'])),
                         'email' => $_POST['email'],
                         'admin' => $_POST['admin']=="true" ? '1' : '0',

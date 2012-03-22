@@ -119,20 +119,21 @@ function CreateRandomString(size,type){
 }
 
 
-function unprotectString(string){
+function unsanitizeString(string){
 	if(string != "" && string != null){
 		string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
 	}
 	return string;
 }
 
-function protectString(string){
+function sanitizeString(string){
 	if(string != "" && string != null){
 		string = string.replace(/\\/g,'&#93;').replace(/"/g,"&quot;");
+		string = string.replace(new RegExp('\\s*<script[^>]*>[\\s\\S]*?</script>\\s*','ig'),'');	//delete any scripting stuff
 	}
 	return string;
 }
 
 function is_int(input){
-    return parseInt(input)==input;
-  }
+  return parseInt(input)==input;
+}

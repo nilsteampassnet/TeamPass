@@ -104,9 +104,9 @@ $(function() {
 					$.post(
 						"sources/users.queries.php",
 						{
-							type    : "add_new_user",
-							login	:protectString($("#new_login").val()),
-							pw	:encodeURIComponent($("#new_pwd").val()),
+							type    :"add_new_user",
+							login	:sanitizeString($("#new_login").val()),
+							pw		:encodeURIComponent($("#new_pwd").val()),
 							email	:$("#new_email").val(),
 							admin	:$("#new_admin").prop("checked"),
 							manager	:$("#new_manager").prop("checked"),
@@ -172,7 +172,7 @@ $(function() {
 	    buttons: {
 	        "<?php echo $txt['save_button'];?>": function() {
 	            if ( $("#change_user_pw_newpw").val() == $("#change_user_pw_newpw_confirm").val() ){
-								var data = "{\"new_pw\":\""+protectString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
+								var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
 	                $.post(
 						"sources/main.queries.php",
 						{
