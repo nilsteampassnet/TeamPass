@@ -50,7 +50,7 @@ $_SESSION['CPM'] = 1;
 	            // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
 	            return (
 	                key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
-					&& (key < 165)
+					&& key != 44 && key != 38 && key != 94 && (key < 122)
 					&& $("#encrypt_key").val().length <= 32
 	            );
 		    });
@@ -101,6 +101,7 @@ $_SESSION['CPM'] = 1;
                         document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/tick.png'>";
                     else{
                         document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/exclamation-red.png'>";
+                        status = false;
                     }
 
                     //Check if saltkey is okay
@@ -112,7 +113,7 @@ $_SESSION['CPM'] = 1;
 						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> No value!";
                         status = false;
 					}
-					if ( document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32 ) 
+					if ( document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32 )
 						key_length = true;
 					else{
 						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> 15 to 32 characters!";

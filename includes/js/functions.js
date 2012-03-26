@@ -137,3 +137,14 @@ function sanitizeString(string){
 function is_int(input){
   return parseInt(input)==input;
 }
+
+function SendMail(type, content){
+	$.post(
+		"sources/items.queries.php",
+		{
+			type    : "send_email",
+			cat    : "request_access_to_author",
+			content	: content
+		}
+	);
+}

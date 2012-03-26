@@ -846,7 +846,7 @@ if ( isset($_POST['type']) ){
 
             //check that actual user can access this item
             $restriction_active = true;
-            $restricted_to = explode(';',$data_item['restricted_to']);
+            $restricted_to = array_filter(explode(';',$data_item['restricted_to']));
             if ( in_array($_SESSION['user_id'],$restricted_to) ) $restriction_active = false;
             if ( empty($data_item['restricted_to']) ) $restriction_active = false;
         	//Check if user has a role that is accepted
@@ -1107,6 +1107,22 @@ if ( isset($_POST['type']) ){
 	            	}
             }else{
                 $arrData['show_details'] = 0;
+            	//get readable list of restriction
+            	$list_of_restricted = "";
+            	if(!empty($data_item['restricted_to'])){
+            		foreach(explode(';', $data_item['restricted_to']) as $user_rest){
+            			if(!empty($user_rest)){
+            				$data_tmp = $db->query_first("SELECT login FROM ".$pre."users WHERE id= ".$user_rest);
+            				if(empty($list_of_restricted)) $list_of_restricted = $data_tmp['login'];
+            				else $list_of_restricted .= ";".$data_tmp['login'];
+            			}
+            		}
+            	}
+            	$arrData['restricted_to'] = $list_of_restricted;
+            	//Get auhtor
+            	$data_tmp = $db->query_first("SELECT login FROM ".$pre."users WHERE id= ".$data_item['id_user']);
+            	$arrData['author'] = $data_tmp['login'];
+            	$arrData['id_user'] = $data_item['id_user'];
             }
             //print_r($arrData);
             //Encrypt data to return
@@ -1962,12 +1978,25 @@ if ( isset($_POST['type']) ){
 
     	break;
 
-    }
-}
 
-if ( isset($_POST['type']) ){
-    //Hide the ajax loader image
-    //echo 'document.getElementById(\'div_loading\').style.display = "none";';
+    	/*
+    	   * CASE
+    	   * Send email
+    	*/
+    	case "send_email":
+    		$content = explode(',', $_POST['content']);
+    		if($_POST['cat'] == "request_access_to_author"){
+    			$data_author = $db->query_first("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
+    			$data_item = $db->query_first("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
+    			SendEmail(
+    				$txt['email_request_access_subject'],
+    				str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($data_author['login']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_request_access_mail']),
+    				$data_author['email']
+				);
+    		}
+    	break;
+
+    }
 }
 
 

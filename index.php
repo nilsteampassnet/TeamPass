@@ -105,7 +105,7 @@ require_once("load.php");
     <?php
 
     /* HEADER */
-    echo(session_id()). '
+    echo '
     <div id="top">
         <div id="logo"><img src="includes/images/canevas/logo.png" alt="" /></div>';
 

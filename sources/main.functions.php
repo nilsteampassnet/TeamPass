@@ -34,7 +34,7 @@ function string_utf8_decode($string){
  */
 function encrypt($text, $personal_salt="")
 {
-    if ( !empty($personal_salt) )
+	if ( !empty($personal_salt) )
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
     else
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
@@ -533,7 +533,6 @@ function CPMStats(){
     );
 }
 
-
 /**
  * SendEmail()
  *
@@ -542,6 +541,7 @@ function CPMStats(){
 function SendEmail($subject, $mail, $email){
 
 	//load library
+	require_once('../includes/settings.php');
 	require_once("../includes/libraries/phpmailer/class.phpmailer.php");
 
 	//send to user

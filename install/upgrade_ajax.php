@@ -301,6 +301,7 @@ if ( isset($_POST['type']) ){
 
 			## Alter ITEMS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT NULL DEFAULT '0'");
+			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
 			## Alter USERS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
@@ -604,7 +605,7 @@ if ( isset($_POST['type']) ){
 				echo 'document.getElementById("tbl_14").innerHTML = "<img src=\"images/tick.png\">";';
 
 				//increase size of PW field in ITEMS table
-				mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(150)");
+				mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
 				//Populate table KEYS
 				//create all keys for all items
@@ -767,8 +768,8 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 ### EMAIL PROPERTIES ###
 \$smtp_server = '".str_replace("'", "", $_SESSION['smtp_server'])."';
 \$smtp_auth = '".str_replace("'", "\'", $_SESSION['smtp_auth'])."'; //false or true
-\$smtp_auth_username = '".str_replace("'", "\'", $_SESSION['smtp_auth_username'])."';
-\$smtp_auth_password = '".str_replace("'", "\'", $_SESSION['smtp_auth_password'])."';
+\$smtp_auth_username = '".str_replace("'", "\'", substr($_SESSION['smtp_auth_username'],1,-1))."';
+\$smtp_auth_password = '".str_replace("'", "\'", substr($_SESSION['smtp_auth_password'],1,-1))."';
 \$email_from = '".str_replace("'", "", $_SESSION['email_from'])."';
 \$email_from_name = '".str_replace("'", "", $_SESSION['email_from_name'])."';
 

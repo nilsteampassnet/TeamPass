@@ -82,7 +82,8 @@ folder
 32.48.
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.6
-
+ * 59
+ * added email notification for user requiering an access to a restricted item.
 
 2.1.5
 * #56: Temporary solution for keeping old ADMIN profile rights

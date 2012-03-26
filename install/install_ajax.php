@@ -104,7 +104,7 @@ if ( isset($_POST['type']) ){
                   `id` int(12) NOT NULL AUTO_INCREMENT,
                   `label` varchar(100) NOT NULL,
                   `description` text NOT NULL,
-                  `pw` varchar(100) NOT NULL,
+                  `pw` varchar(400) NOT NULL,
                   `url` varchar(250) DEFAULT NULL,
                   `id_tree` varchar(10) DEFAULT NULL,
                   `perso` tinyint(1) NOT NULL DEFAULT '0',
@@ -279,11 +279,10 @@ if ( isset($_POST['type']) ){
                 ) CHARSET=utf8;");
             if ( $res7 ){
                 echo 'document.getElementById("tbl_7").innerHTML = "<img src=\"images/tick.png\">";';
-
-                //v?rifier que l'admin n'existe pas
+            	require_once("../sources/main.functions.php");
+                //vérifier que l'admin n'existe pas
                 $tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE login = 'admin'"));
                 if ( $tmp[0] == 0 ){
-                	require_once("../sources/main.functions.php");
                     $res8 = mysql_query("
                         INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ( NULL, 'admin', '".encrypt('admin',$_SESSION['encrypt_key'])."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')
                         ");
@@ -296,7 +295,10 @@ if ( isset($_POST['type']) ){
                         mysql_close($db_tmp);
                         break;
                     }
-                }else echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
+                }else{
+                	mysql_query("UPDATE `".$_SESSION['tbl_prefix']."users` SET `pw` = '".encrypt('admin',$_SESSION['encrypt_key'])."' WHERE login = 'admin' AND id = '1'");
+                	echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
+                }
             }else{
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table USERS!";';
                 echo 'document.getElementById("tbl_7").innerHTML = "<img src=\"images/exclamation-red.png\">";';

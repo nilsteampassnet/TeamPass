@@ -863,6 +863,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 }else{
                     //Dont show details
                     $("#item_details_nok").show();
+                	$("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo $txt['request_access_ot_item'];?></a></u></div>');
                     $("#item_details_ok").hide();
                     $("#item_details_expired").hide();
                     $("#item_details_expired_full").hide();

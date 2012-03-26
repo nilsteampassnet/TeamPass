@@ -373,6 +373,7 @@ echo '
 		<div id="item_details_nok" style="display:none; width:300px; margin:20px auto 20px auto;">
 		    <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
 		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$txt['not_allowed_to_see_pw'].'</b>
+				<span id="item_details_nok_restriction_list"></span>
 		    </div>
 		</div>';
 

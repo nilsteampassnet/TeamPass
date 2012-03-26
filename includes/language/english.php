@@ -12,6 +12,10 @@ $txt['migrate_pf_user_salt'] = "Enter the SALT key for selected User";
 $txt['migrate_pf_no_sk'] = "You have not entered your SALT Key";
 $txt['migrate_pf_no_sk_user'] = "You must enter the User SALT Key";
 $txt['migrate_pf_no_user_id'] = "You must select the User";*/
+$txt['request_access_ot_item'] = "Request an access to author";
+$txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
+$txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
+
 $txt['admin_action_change_salt_key'] = "Change the main SALT Key";
 $txt['admin_action_change_salt_key_tip'] = "Before changing the SALT key, please be sure to do a full backup of the database, and to put the tool in maintenance in order to avoid any users being logged.";
 $txt['block_admin_info'] = "Administrators Info";

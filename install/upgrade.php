@@ -20,17 +20,17 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
 	while(list($key,$val) = each($settings_file)) {
 		if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
 		else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-		else if (substr_count($val,'$smtp_server')>0) $_SESSION['smtp_server'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth_username')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth_password')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
-		else if (substr_count($val,'$email_from')>0) $_SESSION['email_from'] = getSettingValue($val);
-		else if (substr_count($val,'$email_from_name')>0) $_SESSION['email_from_name'] = getSettingValue($val);
-		else if (substr_count($val,'$server')>0) $_SESSION['server'] = getSettingValue($val);
-		else if (substr_count($val,'$user')>0) $_SESSION['user'] = getSettingValue($val);
-		else if (substr_count($val,'$pass')>0) $_SESSION['pass'] = getSettingValue($val);
-		else if (substr_count($val,'$database')>0) $_SESSION['database'] = getSettingValue($val);
-		else if (substr_count($val,'$pre')>0) $_SESSION['pre'] = getSettingValue($val);
+		else if (substr_count($val,'$smtp_server = ')>0) $_SESSION['smtp_server'] = getSettingValue($val);
+		else if (substr_count($val,'$smtp_auth = ')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
+		else if (substr_count($val,'$smtp_auth_username = ')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
+		else if (substr_count($val,'$smtp_auth_password = ')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
+		else if (substr_count($val,'$email_from = ')>0) $_SESSION['email_from'] = getSettingValue($val);
+		else if (substr_count($val,'$email_from_name = ')>0) $_SESSION['email_from_name'] = getSettingValue($val);
+		else if (substr_count($val,'$server = ')>0) $_SESSION['server'] = getSettingValue($val);
+		else if (substr_count($val,'$user = ')>0) $_SESSION['user'] = getSettingValue($val);
+		else if (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
+		else if (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
+		else if (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
 	}
 }
 
