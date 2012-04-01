@@ -319,6 +319,8 @@ $txt['email_change'] = "アカウントのEメールを変更";
 
 $txt['email_changed'] = "Email changed!";
 
+$txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
+$txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
 $txt['email_select'] = "Select persons to inform";
 
 $txt['email_subject'] = "Creating a new Item in Passwords Manager";
@@ -677,6 +679,7 @@ $txt['not_defined'] = "Not defined";
 
 $txt['no_last_items'] = "No items seen";
 
+$txt['no_previous_pw'] = "No previous password";
 $txt['no_restriction'] = "No restriction";
 
 $txt['numbers'] = "Numbers";
@@ -704,6 +707,7 @@ $txt['personal_salt_key_empty'] = "Personal salt key has not been entered!";
 $txt['personal_salt_key_info'] = "This salt key will be used to encrypt and decrypt your passwords.<br />It is not stored in database, you are the only person who knows it.<br />So don't loose it!";
 $txt['please_update'] = "Please update the tool!";
 
+$txt['previous_pw'] = "Previous passwords used:";
 $txt['print'] = "Print";
 
 $txt['print_out_menu_title'] = "Print out a listing of your items";
@@ -748,6 +752,7 @@ $txt['renewal_needed_pdf_title'] = "List of Items that need to be renewed";
 
 $txt['renewal_selection_text'] = "次の期間内に期限切れになるアイテムを表示:";
 
+$txt['request_access_ot_item'] = "Request an access to author";
 $txt['restore'] = "リストア";
 
 $txt['restore'] = "Restore";

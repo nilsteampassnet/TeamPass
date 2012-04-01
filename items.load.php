@@ -797,6 +797,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#item_edit_list_files").html(data.files_edit).html();
                     $("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
 					$("#id_kbs").html(data.links_to_kbs);
+					$("#edit_past_pwds").attr('title', data.history_of_pwds);
+					$(".tip").tooltip({
+			            delay: 0,
+			            showURL: false
+			        });
 
                     //Anyone can modify button
                     if (data.anyone_can_modify == "1") {

@@ -610,8 +610,9 @@ echo '
 	            <label for="" class="label_cpm">'.$txt['used_pw'].' :
 					<span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
 				</label>
-				<input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;" />
-	            <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" /><input type="hidden" id="edit_mypassword_complex" />
+				<input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:410px;" />
+	            <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:410px;" /><input type="hidden" id="edit_mypassword_complex" />
+	            <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
 			</div>
             <div style="font-size:9px; text-align:center; width:100%;">
 	            <span id="edit_custom_pw">

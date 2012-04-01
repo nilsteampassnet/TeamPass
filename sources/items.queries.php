@@ -915,6 +915,7 @@ if ( isset($_POST['type']) ){
 
                 //GET Audit trail
                 $historique = "";
+            	$history_of_pwds = "";
                 $rows = $db->fetch_all_array("
                     SELECT l.date AS date, l.action AS action, l.raison AS raison, u.login AS login
                     FROM ".$pre."log_items AS l
@@ -937,7 +938,13 @@ if ( isset($_POST['type']) ){
                         $historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login'] ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : $txt[trim($reason[0])] ):'');
                     else
                         $historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login']  ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : $txt[trim($reason[0])] ):'');
+
+					if(trim($reason[0]) == "at_pw"){
+						if(empty($history_of_pwds)) $history_of_pwds = $txt['previous_pw']."<br>- ".$reason[1];
+						else $history_of_pwds .= "<br>- ".$reason[1];
+                	}
                 }
+            	if(empty($history_of_pwds)) $history_of_pwds = $txt['no_previous_pw'];
 
                 //Get restriction list for users
             	$liste = explode(";",$data_item['restricted_to']);
@@ -1012,6 +1019,7 @@ if ( isset($_POST['type']) ){
                 $arrData['tags'] = str_replace('"','&quot;',$tags);
                 $arrData['folder'] = $data_item['id_tree'];
                 $arrData['anyone_can_modify'] = $data_item['anyone_can_modify'];
+            	$arrData['history_of_pwds'] = str_replace('"','&quot;',$history_of_pwds);
 
                 //Add this item to the latests list
                 if ( isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($data_item['id'],$_SESSION['latest_items']) ){

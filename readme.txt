@@ -80,10 +80,13 @@ details.
 folder
 * CSV export
 32.48.
+
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.6
- * 59
+ * #59: settings.php email setting errors
+ * #67: Protected upload file
  * added email notification for user requiering an access to a restricted item.
+ * 264:	Feature Request: Password History
 
 2.1.5
 * #56: Temporary solution for keeping old ADMIN profile rights
