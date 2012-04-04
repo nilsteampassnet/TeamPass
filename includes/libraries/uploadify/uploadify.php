@@ -49,18 +49,17 @@ $data = $db->fetch_row("SELECT key_tempo FROM ".$pre."users WHERE id = ".$_GET['
 if($data[0] != $_GET['key_tempo']) die('Hacking attempt...');
 
 // Permits to extract the file extension
-function findexts ($filename)
+function get_file_extension($f)
 {
-	$filename = strtolower($filename) ;
-	$exts = preg_split("/\./", $filename) ;
-	$n = count($exts)-1;
-	$exts = $exts[$n];
-	return $exts;
+	if(strpos($f, '.') === false) return $f;
+	return substr($f, strrpos($f, '.')+1);
 }
 
-if (!empty($_FILES)) {
+$ok_exts = array('docx', 'xlsx', 'doc', 'xls', 'rtf', 'csv', 'jpg', 'jpeg', 'pdf', 'png', 'pot', 'ppt', 'shw', 'tif', 'tiff', 'wpd');
+$targetPath = $_SERVER['DOCUMENT_ROOT'].'/uploads/';
+
+if (!empty($_FILES) && in_array($ext, $ok_exts)) {
 	if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
-		$targetPath = $_SERVER['DOCUMENT_ROOT'].$_REQUEST['folder'] . '/';
 		$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
 
 		// Log upload into databse - only log for a modification
@@ -82,7 +81,6 @@ if (!empty($_FILES)) {
 		// Get some variables
 		$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
 		$tempFile = $_FILES['Filedata']['tmp_name'];
-		$targetPath = $_SERVER['DOCUMENT_ROOT'].$_REQUEST['folder'] . '/';
 		$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
 
 		// Store to database
@@ -92,7 +90,7 @@ if (!empty($_FILES)) {
 		    'id_item' => $_POST['post_id'],
 		    'name' => str_replace(' ','_',$_FILES['Filedata']['name']),
 		    'size' => $_FILES['Filedata']['size'],
-		    'extension' => findexts($_FILES['Filedata']['name']),
+		    'extension' => get_file_extension($_FILES['Filedata']['name']),
 		    'type' => $_FILES['Filedata']['type'],
 		    'file' => $file_random_id
 		)
@@ -113,8 +111,6 @@ if (!empty($_FILES)) {
 		}
 	}else{
 		// Get some variables
-		//$tempFile = $_FILES['Filedata']['tmp_name'];
-		$targetPath = $_SERVER['DOCUMENT_ROOT'].$_REQUEST['folder'] . '/';
 		$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
 	}
 
