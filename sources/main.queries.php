@@ -511,7 +511,7 @@ switch($_POST['type'])
     		$mail->SMTPDebug = 0;
     		$mail->Subject  =  $txt['forgot_pw_email_subject'];
     		$mail->AltBody  =  $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
-    		$mail->Body     =  $txt['forgot_pw_email_body_1']." ".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login'];
+    		$mail->Body     =  $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
 
     		//Check if email has already a key in DB
     		$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");

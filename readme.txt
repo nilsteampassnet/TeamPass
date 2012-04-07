@@ -79,9 +79,12 @@ details.
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
 * CSV export
-32.48.
+32.48.207.
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.7
+
+
 2.1.6
  * #59: settings.php email setting errors
  * #67: Protected upload file

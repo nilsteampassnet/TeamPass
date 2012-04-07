@@ -22,5 +22,5 @@ header("Content-Transfer-Encoding: ".$_GET['type']."\n");
 header("Pragma: no-cache");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
-readfile($_GET['path']);
+readfile('../'.$_GET['sub'].'/'.basename($_GET['file']));
 ?>

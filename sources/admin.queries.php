@@ -230,7 +230,6 @@ switch($_POST['type'])
         if ( !empty($return) ){
             //save file
             $filename = 'db-backup-'.time().'.sql';
-            $path = '../files/';
             $handle = fopen($path.$filename,'w+');
 
             //Encrypt the file
@@ -250,7 +249,7 @@ switch($_POST['type'])
         	$pwgen->setNumerals(true);
         	$_SESSION['key_tmp'] = $pwgen->generate();
 
-        	echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&path='.$path.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'"}]';
+        	echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'"}]';
         }
     break;
 
