@@ -95,6 +95,12 @@ if ( !empty($_POST['type']) ){
         		exit();
         	}
 
+        	//Empty user
+        	if(mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])) == ""){
+        		echo '[ { "error" : "'.addslashes($txt['error_empty_data']).'" } ]';
+        		break;
+        	}
+
             // Check if user already exists
             $db->query("SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".$pre."users WHERE login LIKE '".mysql_real_escape_string(stripslashes($_POST['login']))."'");
             $data = $db->fetch_array();
@@ -181,6 +187,13 @@ if ( !empty($_POST['type']) ){
 	            		"id=".$new_user_id
             		);
 
+					//Send email to new user
+            		SendEmail(
+            			$tst['email_subject_new_user'],
+            			str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(encrypt(string_utf8_decode($_POST['pw']))), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
+            			$_POST['email']
+            		);
+
             		//rebuild tree
             		require_once('NestedTree.class.php');
             		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -189,7 +202,7 @@ if ( !empty($_POST['type']) ){
 
             	echo '[ { "error" : "no" } ]';
             }else{
-            	echo '[ { "error" : "user_exists" } ]';
+            	echo '[ { "error" : "'.addslashes($txt['error_user_exists']).'" } ]';
             }
         break;
 

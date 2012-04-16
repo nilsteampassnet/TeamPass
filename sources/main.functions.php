@@ -231,13 +231,13 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
     	//Exclude from allowed folders all the specific user forbidden folders
     	$allowed_folders = array();
     	foreach($allowed_folders_tmp as $id){
-    		if (!in_array($id,$groupes_interdits_user)){
+    		if (!in_array($id,$groupes_interdits_user) && !empty($id)){
     			array_push($allowed_folders,$id);
     		}
     	}
-
+    	
         //Clean array
-    	$list_allowed_folders = array_filter(array_unique(array_merge($list_allowed_folders, $allowed_folders)));
+    	$list_allowed_folders = array_filter(array_unique($allowed_folders));
 
 		//Exclude all PF
     	$_SESSION['forbiden_pfs'] = array();
@@ -266,7 +266,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
                 }
             }
         }
-
+        
     	$_SESSION['all_non_personal_folders'] = $list_allowed_folders;
     	$_SESSION['groupes_visibles'] = $list_allowed_folders;
         $_SESSION['groupes_visibles_list'] = implode(',', $list_allowed_folders);

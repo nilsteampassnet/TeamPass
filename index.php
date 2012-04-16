@@ -1,5 +1,6 @@
 <?php
     session_start();
+    @openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <?php
@@ -29,6 +30,7 @@
  */
 
 $_SESSION['CPM'] = 1;
+session_id();
 
 //Test if settings.file exists, if not then install
 if (!file_exists('includes/settings.php')) {
@@ -541,6 +543,8 @@ require_once("load.php");
 
     //Close DB connection
     $db->close();
+
+    closelog();
     ?>
     </body>
 </html>

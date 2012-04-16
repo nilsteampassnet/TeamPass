@@ -129,7 +129,7 @@ if ( isset($_POST['type']) ){
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."log_items` (
                   `id_item` int(8) NOT NULL,
                   `date` varchar(50) NOT NULL,
-                  `id_user` tinyint(4) NOT NULL,
+                  `id_user` int(8) NOT NULL,
                   `action` varchar(250) NOT NULL,
                   `raison` text NOT NULL
                 ) CHARSET=utf8;");

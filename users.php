@@ -69,7 +69,7 @@ echo '
 		$list_available_users = $list_admins = "";
         $x = 0;
         //Get through all users
-        $rows = $db->fetch_all_array("SELECT * FROM ".$pre."users");
+        $rows = $db->fetch_all_array("SELECT * FROM ".$pre."users ORDER BY login ASC");
         foreach($rows as $reccord){
             //Get list of allowed functions
                 $list_allo_fcts = "";

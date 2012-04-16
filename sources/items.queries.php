@@ -74,14 +74,15 @@ if ( isset($_POST['type']) ){
         * creating a new ITEM
         */
         case "new_item":
-        	//Check KEY
-        	if ($_POST['key'] != $_SESSION['key']) {
-        		//error
-        		exit();
-        	}
-            //decrypt and retreive data in JSON format
             require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
             require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
+        	//Check KEY and rights
+        	if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+        		$return_values = AesCtr::encrypt(json_encode(array("error" => "something_wrong"),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+        		echo $return_values;
+        		break;
+        	}
+            //decrypt and retreive data in JSON format
             $data_received = json_decode((AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
 
             //Prepare variables
@@ -325,13 +326,19 @@ if ( isset($_POST['type']) ){
         * update an ITEM
         */
         case "update_item":
+            require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
+            require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
+        	//Check KEY and rights
+        	if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+        		$return_values = AesCtr::encrypt(json_encode(array("error" => "something_wrong"),JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+        		echo $return_values;
+        		break;
+        	}
             //init
             $reload_page = false;
             $return_values = array();
 
             //decrypt and retreive data in JSON format
-            require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
-            require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
             $data_received = json_decode(AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
 
             if (count($data_received) > 0) {
@@ -547,7 +554,7 @@ if ( isset($_POST['type']) ){
                             'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_modification',
-                            'raison' => 'at_pw : '.AesCtr::encrypt(substr(addslashes($old_pw), strlen($original_key['rand_key'])), $_SESSION['key'], 256)
+                            'raison' => 'at_pw : '.$data['pw']
                         )
                     );
                 }
@@ -671,7 +678,8 @@ if ( isset($_POST['type']) ){
             	    "id" => $data_item['id'],
             	    "reload_page" => $reload_page,
             	    "restriction_to" => $data_received['restricted_to'].$data_received['restricted_to_roles'],
-            	    "list_of_restricted" => $list_of_restricted
+            	    "list_of_restricted" => $list_of_restricted,
+                	"error" => ""
                 );
 
             }else{
@@ -690,6 +698,12 @@ if ( isset($_POST['type']) ){
        	   * Copy an Item
        	*/
         case "copy_item":
+        	//Check KEY and rights
+        	if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+        		$return_values = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($txt['error_not_allowed_to']).'"}]';
+        		echo $return_values;
+        		break;
+        	}
         	$return_values = $pw = "";
 
         	if (isset($_POST['item_id']) && !empty($_POST['item_id']) && !empty($_POST['folder_id'])) {
@@ -929,19 +943,20 @@ if ( isset($_POST['type']) ){
                 	if($reccord['action'] == "at_modification" && $reason[0] == "at_pw "){
                 		require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
                 		require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
-                		$reason[1] = AesCtr::decrypt($reason[1], $_SESSION['key'], 256);
+                		$reason[1] = substr(decrypt($reason[1]), strlen($data_item_key['rand_key']));
                 		if(!is_utf8($reason[1])){
                 			$reason[1] = "";
                 		}
                 	}
-                    if ( empty($historique) )
-                        $historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login'] ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : $txt[trim($reason[0])] ):'');
-                    else
-                        $historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login']  ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : $txt[trim($reason[0])] ):'');
-
-					if(trim($reason[0]) == "at_pw"){
-						if(empty($history_of_pwds)) $history_of_pwds = $txt['previous_pw']."<br>- ".$reason[1];
-						else $history_of_pwds .= "<br>- ".$reason[1];
+                	if(!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation"){
+                		if ( empty($historique) ) 
+                			$historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login'] ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : $txt[trim($reason[0])] ):'');
+                    	else
+                        	$historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login']  ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : $txt[trim($reason[0])] ):'');
+	                	if(trim($reason[0]) == "at_pw"){
+							if(empty($history_of_pwds)) $history_of_pwds = $txt['previous_pw']."<br>- ".$reason[1];
+							else $history_of_pwds .= "<br>- ".$reason[1];
+	                	}                		
                 	}
                 }
             	if(empty($history_of_pwds)) $history_of_pwds = $txt['no_previous_pw'];
@@ -1176,6 +1191,11 @@ if ( isset($_POST['type']) ){
 		* Delete an item
        	*/
         case "del_item":
+        	//Check KEY and rights
+        	if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+        		//error
+        		break;
+        	}
             //delete item consists in disabling it
             $db->query_update(
                 "items",
@@ -1205,6 +1225,11 @@ if ( isset($_POST['type']) ){
        	* Update a Group
        	*/
         case "update_rep":
+        	//Check KEY and rights
+        	if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+        		//error
+        		break;
+        	}
         	//decrypt and retreive data in JSON format
         	require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
         	require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
@@ -1879,6 +1904,11 @@ if ( isset($_POST['type']) ){
 		* Move an ITEM
 		*/
     	case "move_item":
+    		//Check KEY and rights
+    		if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+    			//error
+    			exit();
+    		}
     		//get data about item
     		$data_source = $db->query_first("
 					SELECT i.pw, f.personal_folder,i.id_tree, f.title

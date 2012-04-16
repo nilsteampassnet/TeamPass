@@ -79,9 +79,9 @@ echo '
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <span style="font-weight:bold;margin-bottom:10px;">'.$txt['block_admin_info'].'</span><br />'.
                 		$txt['admin_new1'];
-                		
+
                 	echo '
-                    </div>';                	
+                    </div>';
                 }
 
                 //some informations
@@ -127,6 +127,10 @@ echo '
                         <button id="change_personal_sk" onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">
                             '.$txt['personal_saltkey_change_button'].'
                         </button>
+                        &nbsp;
+                        <button id="reset_personal_sk" onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">
+                            '.$txt['personal_saltkey_lost'].'
+                        </button>
                     </div>
                 </div>';
 
@@ -138,6 +142,16 @@ echo '
            	        <div style="margin-top:20px;" class="ui-state-highlight">
            	        	'.$txt['new_saltkey_warning'].'
            	        </div>
+           	    </div>';
+
+            		//saltkey LOST dialogbox
+            		echo '
+           	    <div id="div_reset_personal_sk" style="display:none;padding:4px;">
+           	    	<div style="margin-bottom:20px;" class="ui-state-highlight">
+           	        	'.$txt['new_saltkey_warning_lost'].'
+           	        </div>
+           	        <label for="reset_personal_saltkey" class="form_label_180">'.$txt['new_saltkey'].' :</label>
+           	        <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
            	    </div>';
             	}
 

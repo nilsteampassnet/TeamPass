@@ -120,7 +120,7 @@ $(function() {
 							if(data[0].error == "no"){
 								window.location.href = "index.php?page=manage_users";
 							}else{
-								$("#add_new_user_error").html("<?php echo $txt['error_user_exists'];?>").show();
+								$("#add_new_user_error").html(data[0].error).show();
 							}
 						},
 						"json"

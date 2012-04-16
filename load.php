@@ -337,14 +337,11 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 	function aes_encrypt(text) {
 		return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
 	}
-	';
-}
-if ( !isset($_GET['page']) ){
-    $htmlHeaders .= '
+	
     $(function() {
         //build nice buttonset
         $("#radio_import_type, #connect_ldap_mode").buttonset();
-        $("#personal_sk, #change_personal_sk").button();
+        $("#personal_sk, #change_personal_sk, #reset_personal_sk").button();
 
         if($("#personal_saltkey_set").val() != 1){
         	$("#change_personal_sk").button("disable");
@@ -469,6 +466,37 @@ if ( !isset($_GET['page']) ){
 	        }
 	    });
 
+		// DIALOG BOX FOR DELETING PERSONAL SALTKEY
+	    $("#div_reset_personal_sk").dialog({
+	        bgiframe: true,
+	        modal: true,
+	        autoOpen: false,
+	        width: 400,
+	        height: 200,
+	        title: "'.$txt['menu_title_new_personal_saltkey'].'",
+	        buttons: {
+	            "'.$txt['ok'].'": function() {
+					$("#div_loading").show();
+
+	            	//Send query
+	                $.post(
+						"sources/main.queries.php",
+						{
+						   type	: "reset_personal_saltkey",
+						   sk	: encodeURIComponent($("#reset_personal_saltkey").val())
+						},
+						function(data){
+							$("#div_loading").hide();
+							$("#div_reset_personal_sk").dialog("close");
+						}
+					);
+	            },
+	            "'.$txt['cancel_button'].'": function() {
+	                $(this).dialog("close");
+	            }
+	        }
+	    });
+
         // DIALOG BOX FOR CSV IMPORT
         $("#div_import_from_csv").dialog({
             bgiframe: true,
@@ -493,10 +521,9 @@ if ( !isset($_GET['page']) ){
         $("#fileInput_csv").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_csv"},
-            "script"    : "includes/libraries/uploadify/uploadify.php",
+            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "auto"      : true,
-            "folder"    : "'.dirname($_SERVER['REQUEST_URI']).'/files",
             "fileDesc"  : "csv",
             "fileExt"   : "*.csv",
             "onComplete": function(event, queueID, fileObj, reponse, data){$("#import_status_ajax_loader").show();ImportCSV(fileObj.name);},
@@ -507,13 +534,12 @@ if ( !isset($_GET['page']) ){
         $("#fileInput_keepass").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_file"},
-            "script"    : "includes/libraries/uploadify/uploadify.php",
+            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "auto"      : true,
-            "folder"    : "'.dirname($_SERVER['REQUEST_URI']).'/files",
             "fileDesc"  : "xml",
             "fileExt"   : "*.xml",
-            "onComplete": function(event, queueID, fileObj, reponse, data){$("#import_status_ajax_loader").show();ImportKEEPASS(fileObj.name);},
+            "onComplete": function(event, queueID, fileObj, reponse, data){alert(reponse);$("#import_status_ajax_loader").show();},//ImportKEEPASS(fileObj.name);
             "buttonText": \''.$txt['keepass_import_button_text'].'\'
         });
 
@@ -889,11 +915,10 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         //CALL TO UPLOADIFY FOR RESTORE SQL FILE
         $("#fileInput_restore_sql").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-            "script"    : "includes/libraries/uploadify/uploadify.php",
+            "script"    : "includes/libraries/uploadify/uploadify.php?user_id='.$_SESSION['user_id'].'&key_tempo='.$_SESSION['key'].'",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "scriptData": {"type_upload":"restore_db"},
             "auto"      : true,
-            "folder"    : "'.dirname($_SERVER['REQUEST_URI']).'/files",
             "fileDesc"  : "sql",
             "fileExt"   : "*.sql",
             "wmode"     : "transparent",

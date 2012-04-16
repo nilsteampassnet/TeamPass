@@ -233,7 +233,8 @@ function ListerItems(groupe_id, restricted, start){
 							      	{
 							      		type 	: "move_item",
 							      		item_id : ui.draggable.attr("id"),
-							      		folder_id : $( this ).attr("id").substring(4)
+							      		folder_id : $( this ).attr("id").substring(4),
+										key		: "<?php echo $_SESSION['key'];?>"
 							      	},
 	                				function(data){
 										//increment / decrement number of items in folders
@@ -560,6 +561,12 @@ function EditerItem(){
                     else if (data.error == "pw_too_long") {
                         $("#div_loading").hide();
                         $("#edit_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#edit_show_error").show();
+                        LoadingPage();
+                    }
+                    else if (data.error != "") {
+                        $("#div_loading").hide();
+                        $("#edit_show_error").html('<?php echo $txt['error_not_allowed_to'];?>');
                         $("#edit_show_error").show();
                         LoadingPage();
                     }
@@ -1104,14 +1111,17 @@ $("#div_copy_item_to_folder").dialog({
 					{
 						type    : "copy_item",
 						item_id : $('#id_item').val(),
-						folder_id : $('#copy_in_folder').val()
+						folder_id : $('#copy_in_folder').val(),
+						key		: "<?php echo $_SESSION['key'];?>"
 					},
 					function(data){
 						//check if format error
 			            if (data[0].error == "no_item") {
 			                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
 			            }
-
+			            else if (data[0].error == "not_allowed") {
+			                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+			            }
 						//if OK
 						if (data[0].status == "ok") {
 							window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
@@ -1344,7 +1354,7 @@ $(function() {$('#toppathwrap').hide();
 
 	//Build tree - "cookies",
     $("#jstree").jstree({
-    	"plugins" : ["themes", "html_data", "ui", "search"]
+    	"plugins" : ["themes", "html_data", "ui", "search", "cookies"]
 	})
 	//search in tree
 	.bind("search.jstree", function (e, data) {
@@ -1353,6 +1363,7 @@ $(function() {$('#toppathwrap').hide();
 			ListerItems($("#jstree li>a.jstree-search").attr('id').split('_')[1], '', 0);
 		}
 	});
+
 	/*$("#jstree").dynatree({
 		persist: true,
 		selectMode: 1,
@@ -1596,22 +1607,22 @@ $(function() {$('#toppathwrap').hide();
     //CALL TO UPLOADIFY FOR FILES UPLOAD in EDIT ITEM
     $("#item_edit_files_upload").uploadify({
         "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php?user_id='<?php $_SESSION['user_id'];?>'&key_tempo='<?php $_SESSION['key'];?>'",
+        "script"    : "includes/libraries/uploadify/uploadify.php",
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
-        "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>"},
+        "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>", "PHPSESSID":"<?php echo session_id();?>"},
         "auto"      : false,
         "multi"     : true,
         "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
         "sizeLimit" : 16777216,
         "queueID"   : "item_edit_file_queue",
-        "onComplete": function(event, queueID, fileObj, reponse, data){$("#item_edit_list_files").append(fileObj.name+"<br />");},
+        "onComplete": function(event, queueID, fileObj, reponse, data){if(reponse=="ok"){$("#edit_show_error").html(reponse).hide();$("#item_edit_list_files").append(fileObj.name+"<br />");}else{$("#edit_show_error").html(reponse).show();}},
         "buttonText": "<?php echo $txt['upload_button_text'];?>"
     });
 
     //CALL TO UPLOADIFY FOR FILES UPLOAD in NEW ITEM
     $("#item_files_upload").uploadify({
         "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php?user_id='<?php $_SESSION['user_id'];?>'&key_tempo='<?php $_SESSION['key'];?>'",
+        "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='<?php $_SESSION['user_id'];?>'",
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
         "auto"      : false,
         "multi"     : true,

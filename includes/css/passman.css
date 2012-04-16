@@ -34,8 +34,8 @@ float:left;
 
 #footer{
 width: 980px;
-height: 26px;
-line-height: 26px;
+height: 20px;
+line-height: 16px;
 margin: 10px auto 0 auto;
 padding: 10px;
 background-image: url(../images/canevas/menu_top_bckg.png);

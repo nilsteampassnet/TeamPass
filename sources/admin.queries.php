@@ -24,6 +24,8 @@ header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 
+$path = "../files/";
+
 // connect to the server
 require_once("class.database.php");
 $db = new Database($server, $user, $pass, $database, $pre);
@@ -280,7 +282,7 @@ switch($_POST['type'])
         }
 
         //read sql file
-        if ( $handle = fopen("../files/".$file,"r") ) {
+        if ( $handle = fopen($_SESSION['settings']['cpassman_dir']."/files/".$file,"r") ) {
             $query = "";
             while ( !feof($handle) ) {
                 $query.= fgets($handle, 4096);

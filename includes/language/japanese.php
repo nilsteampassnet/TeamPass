@@ -319,6 +319,7 @@ $txt['email_change'] = "アカウントのEメールを変更";
 
 $txt['email_changed'] = "Email changed!";
 
+$txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
 $txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
 $txt['email_select'] = "Select persons to inform";
@@ -327,6 +328,7 @@ $txt['email_subject'] = "Creating a new Item in Passwords Manager";
 
 $txt['email_subject_new_user'] = "[TeamPass] Your account creation";
 
+$txt['email_subject_new_user'] = "[TeamPass] Your new account";
 $txt['email_subject_on_user_login'] = "[TeamPass] A user has get connected";
 $txt['email_text_new_user'] = "Hi,<br /><br />Your account has been created in TeamPass.<br />You can now access $TeamPass_url using the next credentials:<br />";
 
@@ -349,6 +351,7 @@ $txt['error_confirm'] = "Password confirmation is not correct!";
 
 $txt['error_cpassman_dir'] = "No path for TeamPass is set. Please select 'TeamPass settings' tab in Admin Settings page.";
 $txt['error_cpassman_url'] = "No URL for TeamPass is set. Please select 'TeamPass settings' tab in Admin Settings page.";
+$txt['error_empty_data'] = "No data to proceed!";
 $txt['error_fields_2'] = "The 2 fields are mandatory!";
 
 $txt['error_group'] = "A folder is mandatory!";
@@ -369,6 +372,7 @@ $txt['error_must_enter_all_fields'] = "You must fill in each fields!";
 
 $txt['error_mysql'] = "MySQL Error!";
 
+$txt['error_not_allowed_to'] = "You are not allowed to do that!";
 $txt['error_not_authorized'] = "このページを閲覧する権限がありません。";
 $txt['error_not_exists'] = "ページが存在しません。";
 $txt['error_no_folders'] = "まずはフォルダを作成してください。";
@@ -661,6 +665,7 @@ $txt['new_role_title'] = "新しいロールタイトル";
 
 $txt['new_saltkey'] = "New Saltkey";
 $txt['new_saltkey_warning'] = "Please be sure to use the original SaltKey, otherwize the new encryption will be corrupted. Before doing any change, please test your actual SaltKey!";
+$txt['new_saltkey_warning_lost'] = "You have lost your saltkey? What a pitty, this one can't be recovered, so please be sure before continuing.<br>By reseting your saltkey, all your previous personal items will be deleted!";
 $txt['new_user_title'] = "Add a new user";
 
 $txt['no'] = "No";
@@ -700,6 +705,7 @@ $txt['pdf_download'] = "Download file";
 $txt['personal_folder'] = "Personal folder";
 
 $txt['personal_saltkey_change_button'] = "Change it!";
+$txt['personal_saltkey_lost'] = "I've lost it";
 $txt['personal_salt_key'] = "Your personal salt key";
 
 $txt['personal_salt_key_empty'] = "Personal salt key has not been entered!";

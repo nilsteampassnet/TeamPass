@@ -303,6 +303,9 @@ if ( isset($_POST['type']) ){
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT NULL DEFAULT '0'");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
+			# Alter tables
+			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY id_user INT(8)");
+
 			## Alter USERS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."users","latest_items","VARCHAR(300)");

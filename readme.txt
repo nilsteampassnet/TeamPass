@@ -1,6 +1,6 @@
 |==============================================================================|
 |				TeamPass - A Collaborative Passwords Manager				   |
-|						2012 (c) Nils Laumaillé								   |
+|						2012 (c) Nils Laumaillé							   |
 |==============================================================================|
 
 ********************************************************************************
@@ -66,15 +66,12 @@ option to disable that
 * import from "Password safe" tool
 * settings page. manage settings via table and do a loop in order to display
 options.
-* Suggestion: Password copy button in search results
 * Would it be possible to add support for syslog? It would be a nice feature to
 be able to log all activity to a third syslog server. This would be mainly for
 security and auditing.
 * Do your think your can support yubikey ?
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
 * Issue 228:	What if you forget your SALT Key? How to reset?
-* Issue 247:	backup restore not working => SEEMS OK after test. Ask for more
-details.
 * Tree view => cookie collapse or not
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
@@ -83,7 +80,15 @@ folder
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.7
-
+ * SF 247 - 248 - 261 - 264 - 265 - 266 - 267
+ * 67:	protect uploadify library => different file protection added
+ * protect Downloadfile.php
+ * SF228: reset personal saltkey (purge personal items)
+ * SF262: copy of item is in log
+ * old password in log was badly encoded
+ * item copy from search page corrected
+ * some rights checks added before action
+ * email send to new created user
 
 2.1.6
  * #59: settings.php email setting errors

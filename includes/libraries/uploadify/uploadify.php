@@ -35,8 +35,58 @@ THE SOFTWARE.
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+//Variables
+$MAX_FILENAME_LENGTH = 260;
+$max_file_size_in_bytes = 2147483647;	//2Go
+$valid_chars_regex = 'A-Za-z0-9';	//accept only those characters
+$valid_exts = array('docx', 'xlsx', 'doc', 'xls', 'rtf', 'csv', 'jpg', 'jpeg', 'pdf', 'png', 'pot', 'ppt', 'shw', 'txt', 'tif', 'tiff', 'wpd', 'sql', 'xml');
 
+//check for session
+if (isset($_POST['PHPSESSID']))
+	session_id($_POST['PHPSESSID']);
+else if (isset($_GET['PHPSESSID']))
+	session_id($_GET['PHPSESSID']);
+else
+{
+	HandleError('No Session was found.');
+}
+
+session_start();
 @date_default_timezone_set($_POST['timezone']);
+
+// Check post_max_size
+$POST_MAX_SIZE = ini_get('post_max_size');
+$unit = strtoupper(substr($POST_MAX_SIZE, -1));
+$multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
+if ((int)$_SERVER['CONTENT_LENGTH'] > $multiplier*(int)$POST_MAX_SIZE && $POST_MAX_SIZE)
+	HandleError('POST exceeded maximum allowed size.');
+
+// Validate the file size (Warning: the largest files supported by this code is 2GB)
+$file_size = @filesize($_FILES['Filedata']['tmp_name']);
+if (!$file_size || $file_size > $max_file_size_in_bytes)
+	HandleError('File exceeds the maximum allowed size');
+if ($file_size <= 0)
+	HandleError('File size outside allowed lower bound');
+
+// Validate the upload
+if (!isset($_FILES['Filedata']))
+	HandleError('No upload found in $_FILES for Filedata');
+else if (isset($_FILES['Filedata']['error']) && $_FILES['Filedata']['error'] != 0)
+	HandleError($uploadErrors[$_FILES['Filedata']['error']]);
+else if (!isset($_FILES['Filedata']['tmp_name']) || !@is_uploaded_file($_FILES['Filedata']['tmp_name']))
+	HandleError('Upload failed is_uploaded_file test.');
+else if (!isset($_FILES['Filedata']['name']))
+	HandleError('File has no name.');
+
+// Validate file name (for our purposes we'll just remove invalid characters)
+$file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['Filedata']['name'])));
+if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH)
+	HandleError('Invalid file name: '.$file_name);
+
+// Validate file extension
+$ext = get_file_extension($_FILES['Filedata']['name']);
+if (!in_array($ext, $valid_exts))
+	HandleError('Invalid file extension');
 
 //Connect to mysql server
 include('../../settings.php');
@@ -44,47 +94,39 @@ include('../../../sources/class.database.php');
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-//Check if true user
-$data = $db->fetch_row("SELECT key_tempo FROM ".$pre."users WHERE id = ".$_GET['user_id']);
-if($data[0] != $_GET['key_tempo']) die('Hacking attempt...');
+//Get path
+$row = $db->query("SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule = 'cpassman_dir'");
+$data = $db->fetch_array($row);
+$targetPath = $data['valeur'];
 
-// Permits to extract the file extension
-function get_file_extension($f)
-{
-	if(strpos($f, '.') === false) return $f;
-	return substr($f, strrpos($f, '.')+1);
-}
+//Treat the uploaded file
+if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
+	$targetPath .= '/files/';
+	$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
 
-$ok_exts = array('docx', 'xlsx', 'doc', 'xls', 'rtf', 'csv', 'jpg', 'jpeg', 'pdf', 'png', 'pot', 'ppt', 'shw', 'tif', 'tiff', 'wpd');
-$targetPath = $_SERVER['DOCUMENT_ROOT'].'/uploads/';
-
-if (!empty($_FILES) && in_array($ext, $ok_exts)) {
-	if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
-		$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
-
-		// Log upload into databse - only log for a modification
-		if ( isset($_POST['type']) && $_POST['type'] == "modification" ){
-			$db->query_insert(
-			'log_items',
-			array(
-			    'id_item' => $_POST['post_id'],
-			    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-			    'id_user' => $_POST['user_id'],
-			    'action' => 'at_modification',
-			    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
-			)
-			);
-		}
-	}
-	//Case where upload is an attached file for one item
-	else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db") ){
-		// Get some variables
-		$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
-		$tempFile = $_FILES['Filedata']['tmp_name'];
-		$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
-
-		// Store to database
+	// Log upload into databse - only log for a modification
+	if ( isset($_POST['type']) && $_POST['type'] == "modification" ){
 		$db->query_insert(
+		'log_items',
+		array(
+		    'id_item' => $_POST['post_id'],
+		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+		    'id_user' => $_POST['user_id'],
+		    'action' => 'at_modification',
+		    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
+		)
+		);
+	}
+}
+//Case where upload is an attached file for one item
+else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db") ){
+	// Get some variables
+	$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
+	$targetPath .= '/upload/';
+	$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
+
+	// Store to database
+	$db->query_insert(
 		'files',
 		array(
 		    'id_item' => $_POST['post_id'],
@@ -94,29 +136,41 @@ if (!empty($_FILES) && in_array($ext, $ok_exts)) {
 		    'type' => $_FILES['Filedata']['type'],
 		    'file' => $file_random_id
 		)
+	);
+
+	// Log upload into databse - only log for a modification
+	if ( $_POST['type'] == "modification" ){
+		$db->query_insert(
+		'log_items',
+		array(
+		    'id_item' => $_POST['post_id'],
+		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+		    'id_user' => $_POST['user_id'],
+		    'action' => 'at_modification',
+		    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
+		)
 		);
-
-		// Log upload into databse - only log for a modification
-		if ( $_POST['type'] == "modification" ){
-			$db->query_insert(
-			'log_items',
-			array(
-			    'id_item' => $_POST['post_id'],
-			    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-			    'id_user' => $_POST['user_id'],
-			    'action' => 'at_modification',
-			    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
-			)
-			);
-		}
-	}else{
-		// Get some variables
-		$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
 	}
+}else{
+	// Get some variables
+	$targetPath .= '/files/';
+	$targetFile =  str_replace('//','/',$targetPath) . $_FILES['Filedata']['name'];
+}
 
-	//move
-	move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile);
-	echo $targetFile;
+//move
+move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile);
+echo "ok";
 
+// Permits to extract the file extension
+function get_file_extension($f)
+{
+	if(strpos($f, '.') === false) return $f;
+	return substr($f, strrpos($f, '.')+1);
+}
+
+/* Handles the error output. */
+function HandleError($message) {
+	echo $message;
+	exit(0);
 }
 ?>

@@ -305,6 +305,8 @@ switch($_POST['type'])
                 $_SESSION['fin_session'] = time() + $data_received['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
 
+            	syslog(LOG_WARNING, "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
+
             	//user type
             	if($_SESSION['user_admin'] == 1) $_SESSION['user_privilege'] = $txt['god'];
             	else if($_SESSION['user_gestionnaire'] == 1) $_SESSION['user_privilege'] = $txt['gestionnaire'];
@@ -752,7 +754,7 @@ switch($_POST['type'])
 			if($_POST['sk'] != "**************************"){
 				$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
 			}
-			break;
+		break;
 
 		case "change_personal_saltkey":
 			$old_personal_saltkey = $_SESSION['my_sk'];
@@ -778,6 +780,27 @@ switch($_POST['type'])
 			}
 			//change salt
 			$_SESSION['my_sk'] = $new_personal_saltkey;
+		break;
+
+		case "reset_personal_saltkey":
+			if(!empty($_SESSION['user_id']) && !empty($_POST['sk'])){
+				//delete all previous items of this user
+				$rows = mysql_query(
+				"SELECT i.id AS id
+				FROM ".$pre."items AS i
+				INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
+				WHERE i.perso = 1
+				AND l.id_user=".$_SESSION['user_id']."
+				AND l.action = 'at_creation'");
+				while($reccord = mysql_fetch_array($rows)){
+					//delete in ITEMS table
+					mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
+					//delete in LOGS table
+					mysql_query("DELETE FROM ".$pre."log_items WHERE id_item='".$reccord['id']."'") or die(mysql_error());
+				}
+				//change salt
+				$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
+			}
 		break;
 
 		case "change_user_language":

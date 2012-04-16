@@ -64,7 +64,7 @@ $pw_complexity = array(
 if(empty($languages_dropmenu)){
 	$languages_dropmenu = "";
 	$languages_list = array();
-	$rows = $db->fetch_all_array("SELECT * FROM ".$pre."languages ORDER BY name ASC");
+	$rows = $db->fetch_all_array("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
 	foreach( $rows as $reccord ){
 		$languages_dropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.$reccord['flag'].'" alt="'.$reccord['label'].'" title="'.$reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
 		array_push($languages_list, $reccord['name']);
@@ -104,6 +104,8 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
             //Log into DB the user's disconnection
             if ( isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
                 logEvents('user_connection','disconnection',$_SESSION['user_id']);
+
+        	syslog(LOG_WARNING, "Unlog user: ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
 
             // erase session table
         	$_SESSION = array();
