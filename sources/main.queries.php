@@ -673,7 +673,7 @@ switch($_POST['type'])
 	                   FROM ".$pre."items AS i
 	                   INNER JOIN ".$pre."nested_tree AS n ON (i.id_tree = n.id)
 	                   INNER JOIN ".$pre."log_items AS l ON (i.id = l.id_item)
-	                   INNER JOIN ".$pre."keys AS k ON (i.id = k.id)
+	                   LEFT JOIN ".$pre."keys AS k ON (i.id = k.id)
 	                   WHERE i.inactif = 0
 	                   AND i.id_tree=".$id."
 	                   AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))

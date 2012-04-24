@@ -1374,7 +1374,7 @@ if ( isset($_POST['type']) ){
                     FROM ".$pre."items AS i
                     INNER JOIN ".$pre."nested_tree AS n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items AS l ON (i.id = l.id_item)
-					INNER JOIN ".$pre."keys AS k ON (k.id = i.id)
+					LEFT JOIN ".$pre."keys AS k ON (k.id = i.id)
                     WHERE i.inactif = 0".
             		$where_arg."
                     AND l.action = 'at_creation'";
