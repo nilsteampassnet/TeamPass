@@ -130,7 +130,7 @@ echo '
 
 	        echo '
 			<div id="jstree" style="overflow:auto;">
-		        <ul id="node_'.$folder_cpt.'">';// 
+		        <ul id="node_'.$folder_cpt.'">';//
 		        foreach($folders as $folder){
 		            //Be sure that user can only see folders he/she is allowed to
 		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) ||

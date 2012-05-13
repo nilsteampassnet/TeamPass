@@ -560,13 +560,13 @@ function EditerItem(){
                     }
                     else if (data.error == "pw_too_long") {
                         $("#div_loading").hide();
-                        $("#edit_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#edit_show_error").html('<?php echo addslashes($txt['error_pw_too_long']);?>');
                         $("#edit_show_error").show();
                         LoadingPage();
                     }
                     else if (data.error != "") {
                         $("#div_loading").hide();
-                        $("#edit_show_error").html('<?php echo $txt['error_not_allowed_to'];?>');
+                        $("#edit_show_error").html('<?php echo addslashes($txt['error_not_allowed_to']);?>');
                         $("#edit_show_error").show();
                         LoadingPage();
                     }

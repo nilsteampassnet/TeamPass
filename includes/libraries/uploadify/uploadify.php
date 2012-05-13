@@ -159,7 +159,7 @@ else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_ite
 
 //move
 move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile);
-echo "ok";
+echo $targetFile;
 
 // Permits to extract the file extension
 function get_file_extension($f)

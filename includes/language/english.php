@@ -5,6 +5,8 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['see_item_title'] = "Item Details";
+
 /*$txt["migrate_pf"] = "Migrate Personal Items";
 $txt['user_admin_migrate_pw'] = "Migrate personal Items to a user account";
 $txt['migrate_pf_select_to'] = "Migrate personal Items to user";
@@ -12,7 +14,7 @@ $txt['migrate_pf_user_salt'] = "Enter the SALT key for selected User";
 $txt['migrate_pf_no_sk'] = "You have not entered your SALT Key";
 $txt['migrate_pf_no_sk_user'] = "You must enter the User SALT Key";
 $txt['migrate_pf_no_user_id'] = "You must select the User";*/
-$tst['email_subject_new_user'] = "[TeamPass] Your new account";
+$txt['email_subject_new_user'] = "[TeamPass] Your new account";
 $txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['error_empty_data'] = "No data to proceed!";
 $txt['error_not_allowed_to'] = "You are not allowed to do that!";

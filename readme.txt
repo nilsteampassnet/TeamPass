@@ -77,8 +77,14 @@ security and auditing.
 folder
 * CSV export
 32.48.207.
+* RAJOUTER une versiond ans les fichier JS et CSS
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.8
+ * bug correction cache table
+ * 78: escaped strings
+ * 85: antislash in login badly encoded
+
 2.1.7
  * SF 247 - 248 - 261 - 264 - 265 - 266 - 267
  * 67:	protect uploadify library => different file protection added

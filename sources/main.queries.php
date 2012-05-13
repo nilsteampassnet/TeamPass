@@ -292,7 +292,7 @@ switch($_POST['type'])
                     logEvents('user_connection','connection',$data['id']);
 
                 //Save account in SESSION
-                $_SESSION['login'] = stripslashes($username);
+                $_SESSION['login'] = mb_convert_encoding(stripslashes($username), 'UTF-8', 'HTML-ENTITIES');
                 $_SESSION['user_id'] = $data['id'];
                 $_SESSION['user_admin'] = $data['admin'];
                 $_SESSION['user_gestionnaire'] = $data['gestionnaire'];

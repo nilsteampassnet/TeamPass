@@ -337,7 +337,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 	function aes_encrypt(text) {
 		return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
 	}
-	
+
     $(function() {
         //build nice buttonset
         $("#radio_import_type, #connect_ldap_mode").buttonset();
@@ -539,7 +539,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             "auto"      : true,
             "fileDesc"  : "xml",
             "fileExt"   : "*.xml",
-            "onComplete": function(event, queueID, fileObj, reponse, data){alert(reponse);$("#import_status_ajax_loader").show();},//ImportKEEPASS(fileObj.name);
+            "onComplete": function(event, queueID, fileObj, reponse, data){$("#import_status_ajax_loader").show();ImportKEEPASS(fileObj.name);},//
             "buttonText": \''.$txt['keepass_import_button_text'].'\'
         });
 

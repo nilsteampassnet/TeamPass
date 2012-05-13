@@ -65,7 +65,7 @@ foreach($folders as $folder){
 }
 
 //Show the Items in a table view
-echo '<input type="hidden" id="id_item_to_copy" />
+echo '<input type="hidden" id="id_selected_item" />
     <div class="title ui-widget-content ui-corner-all">'.$txt['find'].'</div>
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
@@ -94,6 +94,13 @@ echo '
     		$select_visible_nonpersonal_folders_options.
 		'</select>
 	</div>
+</div>';
+
+//DIALOG TO SEE ITEM DATA
+echo '
+<div id="div_item_data" style="display:none;">
+    <div id="div_item_data_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div style=""></div>
 </div>';
     		
 

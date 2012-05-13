@@ -415,7 +415,7 @@ function UpdateCacheTable($action, $id=""){
     //ADD an item
     }else if ( $action == "add_value"){
         //get new value from db
-        $sql = "SELECT i.label, i.description, i.id_tree, i.perso, i.restricted_to, i.id, i.login
+        $sql = "SELECT i.label, i.description, i.id_tree AS id_tree, i.perso, i.restricted_to, i.id, i.login
                 FROM ".$pre."items AS i
                 INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
                 WHERE i.id=".$id."
@@ -433,7 +433,7 @@ function UpdateCacheTable($action, $id=""){
 
     	//form id_tree to full foldername
     	$folder = "";
-    	$arbo = $tree->getPath($row['id_tree'], true);
+    	$arbo = $tree->getPath($data['id_tree'], true);
     	foreach($arbo as $elem){
     		if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
     		if (empty($folder)) {
@@ -441,7 +441,6 @@ function UpdateCacheTable($action, $id=""){
     		}else{
     			$folder .= " » ".stripslashes($elem->title);
     		}
-
     	}
 
         //finaly update

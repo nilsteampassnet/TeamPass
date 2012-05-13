@@ -25,7 +25,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 //## FUNCTION : prepare copy item dialogbox
 //###########
 function copy_item(item_id) {
-	$('#id_item_to_copy').val(item_id);
+	$('#id_selected_item').val(item_id);
 	$('#div_copy_item_to_folder').dialog('open');
 }
 
@@ -43,7 +43,7 @@ $("#div_copy_item_to_folder").dialog({
 					"sources/items.queries.php",
 					{
 						type    : "copy_item",
-						item_id : $('#id_item_to_copy').val(),
+						item_id : $('#id_selected_item').val(),
 						folder_id : $('#copy_in_folder').val(),
 						key		: "<?php echo $_SESSION['key'];?>"
 					},
@@ -65,6 +65,51 @@ $("#div_copy_item_to_folder").dialog({
 					"json"
 				);
           },
+          "<?php echo $txt['cancel_button'];?>": function() {
+          	$("#copy_item_to_folder_show_error").html("").hide();
+              $(this).dialog('close');
+          }
+      }
+  });
+
+/*
+* Open a dialogbox with item data
+*/
+function see_item(item_id) {
+	$('#id_selected_item').val(item_id);
+	$('#div_copy_item_to_folder').dialog('open');
+}
+
+$("#div_item_data").dialog({
+      bgiframe: true,
+      modal: true,
+      autoOpen: false,
+      width: 400,
+      height: 200,
+      title: "<?php echo $txt['see_item_title'];?>",
+	  open:
+		//Send query
+		function(event, ui) {
+			$.post(
+				"sources/items.queries.php",
+				{
+					type    : "show_details_item",
+					item_id : $('#id_selected_item').val(),
+					key		: "<?php echo $_SESSION['key'];?>"
+				},
+				function(data){
+					alert(data[0]);
+					if (data[0].status == "ok") {
+						$("#div_dialog_message_text").html("<?php echo $txt['alert_message_done'];?>");
+						$("#div_dialog_message").dialog('open');
+						$("#div_item_data").dialog('close');
+					}
+				},
+				"json"
+			);
+		}
+	  ,
+      buttons: {
           "<?php echo $txt['cancel_button'];?>": function() {
           	$("#copy_item_to_folder_show_error").html("").hide();
               $(this).dialog('close');

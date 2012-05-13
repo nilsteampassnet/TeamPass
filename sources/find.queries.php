@@ -139,24 +139,23 @@ foreach( $rows as $reccord ){
     $sOutput_item = "[";
 
     //col1
-    $sOutput_item .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'&#039;;\" style=\"cursor:pointer;\" /><img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$reccord['id'].');\" style=\"cursor:pointer;\" />",';
+    $sOutput_item .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'&#039;;\" style=\"cursor:pointer;\" /><img src=\"includes/images/eye.png\" onClick=\"javascript:see_item('.$reccord['id'].');\" style=\"cursor:pointer;\" /><img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$reccord['id'].');\" style=\"cursor:pointer;\" />",';
 
     //col2
     $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'",';
 
     //col3
-	$sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
+	$sOutput_item .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'",';
 
 	//col4
     if (($reccord['perso']==1 && $reccord['author'] != $_SESSION['user_id']) || (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])))){
         $get_item_in_list = false;
     }else{
-        $txt = str_replace(array('\n','<br />','\\'),array(' ',' ',''),strip_tags((($reccord['description']))));
-    	//echo $txt."   ;   ";
+        $txt = str_replace(array('\n','<br />','\\'),array(' ',' ',''),strip_tags($reccord['description']));
         if (strlen($txt) > 50) {
-            $sOutput_item .= '"'.(substr((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt))), 0, 50)).'",';
+            $sOutput_item .= '"'.substr(stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)), 0, 50).'",';
         }else{
-            $sOutput_item .= '"'.((stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)))).'",';
+            $sOutput_item .= '"'.stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)).'",';
         }
     }
 
