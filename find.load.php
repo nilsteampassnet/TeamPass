@@ -18,6 +18,10 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 ?>
 
 <script type="text/javascript">
+function aes_decrypt(text) {
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
 /*
 * Copying an item from find page
 */
@@ -77,7 +81,7 @@ $("#div_copy_item_to_folder").dialog({
 */
 function see_item(item_id) {
 	$('#id_selected_item').val(item_id);
-	$('#div_copy_item_to_folder').dialog('open');
+	$('#div_item_data').dialog('open');
 }
 
 $("#div_item_data").dialog({
@@ -88,31 +92,46 @@ $("#div_item_data").dialog({
       height: 200,
       title: "<?php echo $txt['see_item_title'];?>",
 	  open:
-		//Send query
 		function(event, ui) {
+	  		$("#div_item_data_show_error").html("<?php echo $txt['admin_info_loading'];?>").show();
 			$.post(
 				"sources/items.queries.php",
 				{
 					type    : "show_details_item",
-					item_id : $('#id_selected_item').val(),
+					id 		: $('#id_selected_item').val(),
 					key		: "<?php echo $_SESSION['key'];?>"
 				},
 				function(data){
-					alert(data[0]);
-					if (data[0].status == "ok") {
-						$("#div_dialog_message_text").html("<?php echo $txt['alert_message_done'];?>");
-						$("#div_dialog_message").dialog('open');
-						$("#div_item_data").dialog('close');
+					//decrypt data
+                	data = $.parseJSON(aes_decrypt(data));
+					var return_html = "";
+					if (data.show_detail_option != "0") {
+						//item expired
+						return_html = "<?php echo $txt['not_allowed_to_see_pw_is_expired'];?>";
 					}
-				},
-				"json"
+					else{
+						return_html = "<table>"+
+							"<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['label'];?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
+							"<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['description'];?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
+							"<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['pw'];?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
+							"<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['index_login'];?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
+							"<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['url'];?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
+						"</table>";
+					}
+					$("#div_item_data_show_error").html("").hide();
+					$("#div_item_data_text").html(return_html);
+				}
 			);
 		}
 	  ,
+	  close:
+		function(event, ui) {
+			$("#div_item_data_text").html("");
+		}
+		,
       buttons: {
-          "<?php echo $txt['cancel_button'];?>": function() {
-          	$("#copy_item_to_folder_show_error").html("").hide();
-              $(this).dialog('close');
+          "<?php echo $txt['ok'];?>": function() {
+          	$(this).dialog('close');
           }
       }
   });

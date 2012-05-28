@@ -60,7 +60,6 @@ if (isset($_POST['session']) && $_POST['session'] == "expired"){
 	}
 }
 
-
 echo '
 </div>';
 ?>

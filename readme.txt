@@ -62,7 +62,6 @@ LANGUAGES:
 exist in ldap
 * The folder structure is automatically expanded can there be a feature /
 option to disable that
-* mail notification when selecting an item
 * import from "Password safe" tool
 * settings page. manage settings via table and do a loop in order to display
 options.
@@ -71,19 +70,20 @@ be able to log all activity to a third syslog server. This would be mainly for
 security and auditing.
 * Do your think your can support yubikey ?
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
-* Issue 228:	What if you forget your SALT Key? How to reset?
 * Tree view => cookie collapse or not
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
-* CSV export
+
 32.48.207.
 * RAJOUTER une versiond ans les fichier JS et CSS
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.8
  * bug correction cache table
- * 78: escaped strings
- * 85: antislash in login badly encoded
+ * view Item details from the Find page
+ * CSV export  -> started
+ * mail notification when selecting an item -> started
+ * share Item by mail  -> started
 
 2.1.7
  * SF 247 - 248 - 261 - 264 - 265 - 266 - 267

@@ -237,8 +237,7 @@ if ( isset($_POST['type']) ){
 		                    $mail->IsHTML(true);                               // send as HTML
 		                    $mail->Subject  =  $txt['email_subject'];
 		                    $mail->AltBody     =  $txt['email_altbody_1']." ".mysql_real_escape_string(stripslashes(($_POST['label'])))." ".$txt['email_altbody_2'];
-		                    $corpsDeMail = $txt['email_body_1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$txt['email_body_2'].
-		                    $_SESSION['settings']['cpassman_url']."/index.php?page=items&group=".$_POST['categorie']."&id=".$new_id.$txt['email_body_3'];
+		                    $corpsDeMail = $txt['email_body_1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$txt['email_body_2'].$txt['email_body_3'];
 		                    $mail->Body  =  $corpsDeMail;
 		                    $mail->Send();
 		                }
@@ -848,6 +847,12 @@ if ( isset($_POST['type']) ){
                     WHERE i.id=".$_POST['id']."
                     AND l.action = 'at_creation'";
             $data_item = $db->query_first($sql);
+			
+			//Get auhtor
+			$data_tmp = $db->query_first("SELECT login, email FROM ".$pre."users WHERE id= ".$data_item['id_user']);
+			$arrData['author'] = $data_tmp['login'];
+			$arrData['author_email'] = $data_tmp['email'];
+			$arrData['id_user'] = $data_item['id_user'];
 
             //Get all tags for this item
             $tags = "";
@@ -1128,6 +1133,14 @@ if ( isset($_POST['type']) ){
 		            		)
 	            		);
 	            	}
+				//send notification if enabled
+				if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
+					SendEmail(
+						$txt['email_on_open_notification_subject'],
+						str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_on_open_notification_mail']),
+						$arrData['author_email']
+					);
+				}
             }else{
                 $arrData['show_details'] = 0;
             	//get readable list of restriction
@@ -1142,10 +1155,6 @@ if ( isset($_POST['type']) ){
             		}
             	}
             	$arrData['restricted_to'] = $list_of_restricted;
-            	//Get auhtor
-            	$data_tmp = $db->query_first("SELECT login FROM ".$pre."users WHERE id= ".$data_item['id_user']);
-            	$arrData['author'] = $data_tmp['login'];
-            	$arrData['id_user'] = $data_item['id_user'];
             }
             //print_r($arrData);
             //Encrypt data to return
@@ -2031,6 +2040,18 @@ if ( isset($_POST['type']) ){
     				str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($data_author['login']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_request_access_mail']),
     				$data_author['email']
 				);
+    		}else if($_POST['cat'] == "share_this_item"){
+    			$data_item = $db->query_first("SELECT label,id_tree FROM ".$pre."items WHERE id= ".$_POST['id']);
+    			$ret = SendEmail(
+    				$txt['email_share_item_subject'],
+    				str_replace(
+						array('#tp_link#', '#tp_user#', '#tp_item#'), 
+						array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$data_item['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($data_item['label'])),
+						$txt['email_share_item_mail']
+					),
+    				$_POST['receipt'] 
+				);
+				echo '['.$ret.'}]';
     		}
     	break;
 

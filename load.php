@@ -563,13 +563,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
                 	//Send query
                     $.post(
-		                "sources/main.queries.php",
+		                "sources/export.queries.php",
 		                {
-		                    type    : "print_out_items",
+		                    type    : $("input[name=\"export_format\"]:checked").val() == "pdf" ? "export_to_pdf_format" : "export_to_csv_format",
 		                    ids		: ids
 		                },
 		                function(data){
-		                	window.open(data[0].output, "_blank");
+		                	$("#download_link").html(data[0].text);
 		                	$("#div_loading").hide();
 		                },
 		                "json"

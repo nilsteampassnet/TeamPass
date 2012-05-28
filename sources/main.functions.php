@@ -560,7 +560,14 @@ function SendEmail($subject, $mail, $email){
 	$mail->Body     =  $mail;
 
 	//send email
-	$mail->Send();
+	if(!$mail->Send())
+	{
+		return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
+	}
+	else
+	{
+		echo '"error":"" , "message":""';
+	}
 }
 
 

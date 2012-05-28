@@ -1322,7 +1322,7 @@ $(function() {$('#toppathwrap').hide();
     }
 
 	//Evaluate number of items to display - depends on screen height
-	if(is_int($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max"){
+	if(parseInt($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max"){
 		//do nothing ... good value
 	}else{
 		//adapt to the screen height
@@ -1596,6 +1596,44 @@ $(function() {$('#toppathwrap').hide();
         height: 200,
         title: "<?php echo $txt['history'];?>",
         buttons: {
+            "<?php echo $txt['close'];?>": function() {
+                $(this).dialog('close');
+            }
+        }
+    });
+    //<=
+    //=> SHOW SHARE DIALOG
+    $("#div_item_share").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 500,
+        height: 200,
+        title: "<?php echo $txt['share'];?>",
+        buttons: {
+			"<?php echo $txt['send'];?>": function() {				
+				if(IsValidEmail($("#item_share_email").val())){	//check if email format is ok
+					$.post(
+						"sources/items.queries.php",
+						{
+							type    : "send_mail",
+							id  	: $("#id_item").val(),
+							receipt	: $("#item_share_email").val(),
+							cat  	: "share_this_item",
+							key		: "<?php echo $_SESSION['key'];?>"
+						},
+						function(data){
+							if (data[0].error == "") {
+								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>");
+							}else{
+								$("#div_item_share_error").html(data[0].message);
+							}						
+						}
+					);
+				}else{
+					$("#div_item_share_error").html("<?php echo $txt['bad_email_format'];?>");
+				}
+            },
             "<?php echo $txt['close'];?>": function() {
                 $(this).dialog('close');
             }

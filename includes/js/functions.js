@@ -10,7 +10,13 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+/**
+ * @fileVersion		2.1.8
+ */
+ 
+/**
+*	Show or hide Loading animation GIF
+**/
 function LoadingPage(){
 	if ( $("#div_loading").is(':visible') )
 	    $("#div_loading").hide();
@@ -18,11 +24,16 @@ function LoadingPage(){
 	    $("#div_loading").show();
 }
 
+/**
+*	Reload a page
+**/
 function RefreshPage(myform){
     document.forms[myform].submit();
 }
 
-//Add 1 hour to session duration
+/**
+*	Add 1 hour to session duration
+**/
 function IncreaseSessionTime(){
 	 $.post(
 		"sources/main.queries.php",
@@ -38,7 +49,9 @@ function IncreaseSessionTime(){
 	);
 }
 
-//Countdown before session expiration
+/**
+*	Countdown before session expiration
+**/
 function countdown()
 {
     var DayTill
@@ -71,14 +84,16 @@ function countdown()
     var counter = setTimeout("countdown()", 1000) //Create the timer "counter" that will automatic restart function countdown() again every second.
 }
 
-
-
-//Permits to open a dialogbox
+/**
+*	Open a dialog
+**/
 function OpenDialog(id){
     $('#'+id).dialog('open');
 }
 
-//Permits to toggle a div
+/**
+*	Toggle a DIV
+**/
 function toggleDiv(id){
     $('#'+id).toggle();
     //specific case to not show upgrade alert
@@ -92,12 +107,16 @@ function toggleDiv(id){
 	}
 }
 
-//Permits to check if a value is an integer
+/**
+*	Checks if value is an integer
+**/
 function isInteger(s) {
   return (s.toString().search(/^-?[0-9]+$/) == 0);
 }
 
-//Permits to create random strings
+/**
+*	Generate a random string
+**/
 function CreateRandomString(size,type){
     var chars = "";
 
@@ -118,7 +137,9 @@ function CreateRandomString(size,type){
     return randomstring;
 }
 
-
+/**
+*	
+**/
 function unsanitizeString(string){
 	if(string != "" && string != null){
 		string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
@@ -126,25 +147,35 @@ function unsanitizeString(string){
 	return string;
 }
 
+/**
+*	Clean up a string and delete any scripting tags
+**/
 function sanitizeString(string){
 	if(string != "" && string != null){
 		string = string.replace(/\\/g,'&#92;').replace(/"/g,"&quot;");
-		string = string.replace(new RegExp('\\s*<script[^>]*>[\\s\\S]*?</script>\\s*','ig'),'');	//delete any scripting stuff
+		string = string.replace(new RegExp('\\s*<script[^>]*>[\\s\\S]*?</script>\\s*','ig'),'');
 	}
 	return string;
 }
 
-function is_int(input){
-  return parseInt(input)==input;
-}
-
-function SendMail(type, content){
+/**
+*	Send email
+**/
+function SendMail(cat, content){
 	$.post(
 		"sources/items.queries.php",
 		{
 			type    : "send_email",
-			cat    : "request_access_to_author",
+			cat    : cat,
 			content	: content
 		}
 	);
+}
+
+/**
+*	Checks if email has expected format (xxx@yyy.zzz)
+**/
+function IsValidEmail(email){
+	var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
+	return filter.test(email);
 }

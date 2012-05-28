@@ -292,7 +292,7 @@ switch($_POST['type'])
                     logEvents('user_connection','connection',$data['id']);
 
                 //Save account in SESSION
-                $_SESSION['login'] = mb_convert_encoding(stripslashes($username), 'UTF-8', 'HTML-ENTITIES');
+                $_SESSION['login'] = stripslashes($username);
                 $_SESSION['user_id'] = $data['id'];
                 $_SESSION['user_admin'] = $data['admin'];
                 $_SESSION['user_gestionnaire'] = $data['gestionnaire'];
@@ -657,165 +657,74 @@ switch($_POST['type'])
 			}
 		}
     	echo json_encode($arrOutput,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-    	break;
+    break;
 
-    case "print_out_items":
-    	$full_listing = array();
+	case "store_personal_saltkey":
+		if($_POST['sk'] != "**************************"){
+			$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
+		}
+	break;
 
-    	foreach (explode(';', $_POST['ids']) as $id){
-    		if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
+	case "change_personal_saltkey":
+		$old_personal_saltkey = $_SESSION['my_sk'];
+		$new_personal_saltkey = str_replace(" ","+",urldecode($_POST['sk']));
 
-	   			$rows = $db->fetch_all_array("
-	                   SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso, i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
-	                       l.date AS date,
-	                       n.renewal_period AS renewal_period,
-	                       k.rand_key
-	                   FROM ".$pre."items AS i
-	                   INNER JOIN ".$pre."nested_tree AS n ON (i.id_tree = n.id)
-	                   INNER JOIN ".$pre."log_items AS l ON (i.id = l.id_item)
-	                   INNER JOIN ".$pre."keys AS k ON (i.id = k.id)
-	                   WHERE i.inactif = 0
-	                   AND i.id_tree=".$id."
-	                   AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-	                   ORDER BY i.label ASC, l.date DESC
-                ");
-
-	   			$id_managed = '';
-	   			$i = 0;
-	   			$items_id_list = array();
-	   			foreach( $rows as $reccord ) {
-                    $restricted_users_array = explode(';',$reccord['restricted_to']);
-	   				//exclude all results except the first one returned by query
-	   				if ( empty($id_managed) || $id_managed != $reccord['id'] ){
-	   					if (
-                            (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
-                            ||
-                            (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],$restricted_users_array))
-                        ){
-	   						//exclude this case
-	   					}else {
-	   						//encrypt PW
-	   						if ( !empty($_POST['salt_key']) && isset($_POST['salt_key']) ){
-	   							$pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
-	   						}else
-	   							$pw = decrypt($reccord['pw']);
-
-	   						$full_listing[$reccord['id']] = array(
-		   						'id' => $reccord['id'],
-		   						'label' => $reccord['label'],
-		   						'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
-		   						'login' => $reccord['login']
-							);
-	   					}
-	    			}
-	   				$id_managed = $reccord['id'];
-	   			}
-   			}
-
-    	}
-
-    	//Build PDF
-    	if (!empty($full_listing)) {
-    		//Prepare the PDF file
-    		include('../includes/libraries/tfpdf/tfpdf.php');
-    		$pdf=new tFPDF();
-
-    		//Add font for utf-8
-    		$pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
-
-    		$pdf->AliasNbPages();
-    		$pdf->AddPage();
-    		$pdf->SetFont('DejaVu','',16);
-    		$pdf->Cell(0,10,$txt['print_out_pdf_title'],0,1,'C',false);
-    		$pdf->SetFont('DejaVu','',12);
-    		$pdf->Cell(0,10,$txt['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],mktime(date("H"),date("i"),date("s"),date("m"),date("d"),date("Y"))).' '.$txt['by'].' '.$_SESSION['login'],0,1,'C',false);
-    		$pdf->SetFont('DejaVu','',10);
-    		$pdf->SetFillColor(192,192,192);
-    		$pdf->cell(65,6,$txt['label'],1,0,"C",1);
-    		$pdf->cell(55,6,$txt['login'],1,0,"C",1);
-    		$pdf->cell(70,6,$txt['pw'],1,1,"C",1);
-    		$pdf->SetFont('DejaVu','',9);
-
-    		foreach( $full_listing as $item ){
-   				$pdf->cell(65,6,stripslashes($item['label']),1,0,"L");
-   				$pdf->cell(55,6,stripslashes($item['login']),1,0,"C");
-   				$pdf->cell(70,6,stripslashes($item['pw']),1,1,"C");
-    		}
-
-    		$pdf_file = "print_out_pdf_".date("Y-m-d",mktime(0,0,0,date('m'),date('d'),date('y'))).".pdf";
-    		//send the file
-    		$pdf->Output($_SESSION['settings']['cpassman_dir']."/files/".$pdf_file);
-
-    		echo '[{"output":"'.$_SESSION['settings']['cpassman_url'].'/files/'.$pdf_file.'"}]';
-    	}
-    	break;
-
-		case "store_personal_saltkey":
-			if($_POST['sk'] != "**************************"){
-				$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
+		//Change encryption
+		$rows = mysql_query(
+			"SELECT i.id AS id, i.pw AS pw
+			FROM ".$pre."items AS i
+			INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
+			WHERE i.perso = 1
+			AND l.id_user=".$_SESSION['user_id']."
+			AND l.action = 'at_creation'");
+		while($reccord = mysql_fetch_array($rows)){
+			if(!empty($reccord['pw'])){
+				//get pw
+				$pw = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $old_personal_saltkey, base64_decode($reccord['pw']), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+				//encrypt
+				$encrypted_pw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $new_personal_saltkey, $pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+				//update pw in ITEMS table
+				mysql_query("UPDATE ".$pre."items SET pw = '".$encrypted_pw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
 			}
-		break;
+		}
+		//change salt
+		$_SESSION['my_sk'] = $new_personal_saltkey;
+	break;
 
-		case "change_personal_saltkey":
-			$old_personal_saltkey = $_SESSION['my_sk'];
-			$new_personal_saltkey = str_replace(" ","+",urldecode($_POST['sk']));
-
-			//Change encryption
+	case "reset_personal_saltkey":
+		if(!empty($_SESSION['user_id']) && !empty($_POST['sk'])){
+			//delete all previous items of this user
 			$rows = mysql_query(
-				"SELECT i.id AS id, i.pw AS pw
-				FROM ".$pre."items AS i
-				INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
-				WHERE i.perso = 1
-				AND l.id_user=".$_SESSION['user_id']."
-				AND l.action = 'at_creation'");
+			"SELECT i.id AS id
+			FROM ".$pre."items AS i
+			INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
+			WHERE i.perso = 1
+			AND l.id_user=".$_SESSION['user_id']."
+			AND l.action = 'at_creation'");
 			while($reccord = mysql_fetch_array($rows)){
-				if(!empty($reccord['pw'])){
-					//get pw
-					$pw = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $old_personal_saltkey, base64_decode($reccord['pw']), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
-					//encrypt
-					$encrypted_pw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $new_personal_saltkey, $pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
-					//update pw in ITEMS table
-					mysql_query("UPDATE ".$pre."items SET pw = '".$encrypted_pw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
-				}
+				//delete in ITEMS table
+				mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
+				//delete in LOGS table
+				mysql_query("DELETE FROM ".$pre."log_items WHERE id_item='".$reccord['id']."'") or die(mysql_error());
 			}
 			//change salt
-			$_SESSION['my_sk'] = $new_personal_saltkey;
-		break;
+			$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
+		}
+	break;
 
-		case "reset_personal_saltkey":
-			if(!empty($_SESSION['user_id']) && !empty($_POST['sk'])){
-				//delete all previous items of this user
-				$rows = mysql_query(
-				"SELECT i.id AS id
-				FROM ".$pre."items AS i
-				INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
-				WHERE i.perso = 1
-				AND l.id_user=".$_SESSION['user_id']."
-				AND l.action = 'at_creation'");
-				while($reccord = mysql_fetch_array($rows)){
-					//delete in ITEMS table
-					mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
-					//delete in LOGS table
-					mysql_query("DELETE FROM ".$pre."log_items WHERE id_item='".$reccord['id']."'") or die(mysql_error());
-				}
-				//change salt
-				$_SESSION['my_sk'] = str_replace(" ","+",urldecode($_POST['sk']));
-			}
-		break;
-
-		case "change_user_language":
-			if(!empty($_SESSION['user_id'])){
-				//update DB
-	            $db->query_update(
-	                "users",
-	                array(
-	                    'user_language' => $_POST['lang']
-	                ),
-	                "id = ".$_SESSION['user_id']
-	            );
-				$_SESSION['user_language'] = $_POST['lang'];
-			}
-		break;
+	case "change_user_language":
+		if(!empty($_SESSION['user_id'])){
+			//update DB
+			$db->query_update(
+				"users",
+				array(
+					'user_language' => $_POST['lang']
+				),
+				"id = ".$_SESSION['user_id']
+			);
+			$_SESSION['user_language'] = $_POST['lang'];
+		}
+	break;
 
 	case "send_wainting_emails":
 		if(isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 && isset($_SESSION['key'])){

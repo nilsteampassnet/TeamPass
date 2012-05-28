@@ -130,7 +130,7 @@ echo '
 
 	        echo '
 			<div id="jstree" style="overflow:auto;">
-		        <ul id="node_'.$folder_cpt.'">';//
+		        <ul id="node_'.$folder_cpt.'">';// 
 		        foreach($folders as $folder){
 		            //Be sure that user can only see folders he/she is allowed to
 		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) ||
@@ -275,6 +275,12 @@ echo '
 				echo '
 						<button  style="cursor:pointer; float:right; margin:3px 3px 0 0;" onclick="OpenDialog(\'div_item_history\', \'false\')">
 				        	<img src="includes/images/report.png" />
+				       	</button>';
+				
+				//Share dialog button
+				echo '
+						<button  style="cursor:pointer; float:right; margin:3px 3px 0 0;" onclick="OpenDialog(\'div_item_share\', \'false\')">
+				        	<img src="includes/images/mail-at-sign.png" />
 				       	</button>';
 
 				echo'
@@ -817,6 +823,14 @@ echo '
 //DIALOG FOR HISTORY OF ITEM
 echo '
 <div id="div_item_history" style="display:none;"></div>';
+
+//DIALOG FOR ITEM SHARE
+echo '
+<div id="div_item_share" style="display:none;">
+	<div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+	<div style="">'.$txt['item_share_text'].'</div>
+	<input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
+</div>';
 
 
 require_once("items.load.php");

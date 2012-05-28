@@ -70,17 +70,22 @@ echo '<input type="hidden" id="id_selected_item" />
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
     <thead><tr>
-        <th style="width-max:34px;"></th>
+        <th style="width-max:38px;"></th>
         <th style="width:15%;">'.$txt['label'].'</th>
 		<th style="width:20%;">'.$txt['login'].'</th>
         <th style="width:25%;">'.$txt['description'].'</th>
-        <th style="width:15%;">'.$txt['tags'].'</th>
+        <th style="width:13%;">'.$txt['tags'].'</th>
         <th style="width:20%;">'.$txt['group'].'</th>
     </tr></thead>
     <tbody>
     	<tr><td></td></tr>
     </tbody>
 </table>
+</div>
+<div style="width:100%;text-align:center;margin:1px;border:1px;" class="ui-widget ui-state-highlight ui-corner-all">
+	<img src="includes/images/key_copy.png" />&nbsp;'.$txt['item_menu_copy_elem'].'&nbsp;&nbsp;|&nbsp;&nbsp;
+	<img src="includes/images/eye.png" />&nbsp;'.$txt['show'].'&nbsp;&nbsp;|&nbsp;&nbsp;
+	<img src="includes/images/key__arrow.png" />&nbsp;'.$txt['open_url_link'].'
 </div>';
 
 //DIALOG TO WHAT FOLDER COPYING ITEM
@@ -100,9 +105,9 @@ echo '
 echo '
 <div id="div_item_data" style="display:none;">
     <div id="div_item_data_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style=""></div>
+    <div id="div_item_data_text" style=""></div>
 </div>';
-    		
+
 
 //Load file
 require_once ("find.load.php");

@@ -45,7 +45,7 @@ if ( isset($_POST['newtitle']) ){
 // CASE where RENEWAL PERIOD is changed
 else if ( isset($_POST['renewal_period']) && !isset($_POST['type']) ){
     //Check if renewal period is an integer
-    if ( is_int(intval($_POST['renewal_period'])) ){
+    if ( parseInt(intval($_POST['renewal_period'])) ){
         $id = explode('_',$_POST['id']);
         //update DB
         $db->query_update(

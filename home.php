@@ -249,9 +249,16 @@ echo '
             	        <label for="selected_folders" class="form_label">'.$txt['select_folders'].' :</label>
             	        <select id="selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
 
+						<div class="div_radio" stle="text-align:center;">
+							<input type="radio" id="export_format_radio1" name="export_format" value="pdf" /><label for="export_format_radio1">'.$txt['pdf'].'</label>
+							<input type="radio" id="export_format_radio2" name="export_format" value="csv" /><label for="export_format_radio2">'.$txt['csv'].'</label>
+						</div>
+
             	        <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
             	        	<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['print_out_warning'].'
 						</div>
+
+						<div id="download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
             	    </div>
             	</div>';
             }else{
