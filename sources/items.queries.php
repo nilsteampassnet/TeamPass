@@ -847,7 +847,7 @@ if ( isset($_POST['type']) ){
                     WHERE i.id=".$_POST['id']."
                     AND l.action = 'at_creation'";
             $data_item = $db->query_first($sql);
-			
+
 			//Get auhtor
 			$data_tmp = $db->query_first("SELECT login, email FROM ".$pre."users WHERE id= ".$data_item['id_user']);
 			$arrData['author'] = $data_tmp['login'];
@@ -863,11 +863,13 @@ if ( isset($_POST['type']) ){
             foreach ($rows as $reccord)
                 $tags .= $reccord['tag']." ";
 
+        	//TODO -> improve this check
             //check that actual user can access this item
             $restriction_active = true;
             $restricted_to = array_filter(explode(';',$data_item['restricted_to']));
             if ( in_array($_SESSION['user_id'],$restricted_to) ) $restriction_active = false;
             if ( empty($data_item['restricted_to']) ) $restriction_active = false;
+
         	//Check if user has a role that is accepted
         	$rows_tmp = $db->fetch_all_array("
                     SELECT role_id
@@ -924,7 +926,13 @@ if ( isset($_POST['type']) ){
                 $arrData['show_details'] = 1;
 
                 //Display menu icon for deleting if user is allowed
-                if ($data_item['id_user'] == $_SESSION['user_id'] || $_SESSION['is_admin'] == 1 || ($_SESSION['user_gestionnaire'] == 1 && $_SESSION['settings']['manager_edit'] == 1) || $data_item['anyone_can_modify']==1 || in_array($data_item['id_tree'], $_SESSION['list_folders_editable_by_role'])){
+                if ($data_item['id_user'] == $_SESSION['user_id'] ||
+                	$_SESSION['is_admin'] == 1 ||
+                	($_SESSION['user_gestionnaire'] == 1 && $_SESSION['settings']['manager_edit'] == 1) ||
+                	$data_item['anyone_can_modify']==1 ||
+                	in_array($data_item['id_tree'], $_SESSION['list_folders_editable_by_role']) ||
+                	in_array($_SESSION['user_id'],$restricted_to)
+                ){
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
                 }else{
@@ -954,14 +962,14 @@ if ( isset($_POST['type']) ){
                 		}
                 	}
                 	if(!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation"){
-                		if ( empty($historique) ) 
+                		if ( empty($historique) )
                 			$historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login'] ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : $txt[trim($reason[0])] ):'');
                     	else
                         	$historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ". $reccord['login']  ." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : $txt[trim($reason[0])] ):'');
 	                	if(trim($reason[0]) == "at_pw"){
 							if(empty($history_of_pwds)) $history_of_pwds = $txt['previous_pw']."<br>- ".$reason[1];
 							else $history_of_pwds .= "<br>- ".$reason[1];
-	                	}                		
+	                	}
                 	}
                 }
             	if(empty($history_of_pwds)) $history_of_pwds = $txt['no_previous_pw'];
@@ -2045,11 +2053,11 @@ if ( isset($_POST['type']) ){
     			$ret = SendEmail(
     				$txt['email_share_item_subject'],
     				str_replace(
-						array('#tp_link#', '#tp_user#', '#tp_item#'), 
+						array('#tp_link#', '#tp_user#', '#tp_item#'),
 						array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$data_item['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($data_item['label'])),
 						$txt['email_share_item_mail']
 					),
-    				$_POST['receipt'] 
+    				$_POST['receipt']
 				);
 				echo '['.$ret.'}]';
     		}

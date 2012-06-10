@@ -818,12 +818,16 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     }
 
                     //manage buttons
-					if($("#user_is_read_only").val() == 1 && data.user_can_modify == 0){
+                    if($("#user_is_read_only").val() == 1){
 						$('#menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
+					}
+					else if(data.user_can_modify == 0){
+						$('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
 					}
 	                else if (data.restricted == "1" || data.user_can_modify == "1") {
                 		$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeAttr("disabled");
-	                }else{
+	                }
+	                else{
 	                    $("#menu_button_add_item, #menu_button_copy_item").removeAttr("disabled");
 	                }
                     $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").removeAttr("disabled");
@@ -1611,7 +1615,7 @@ $(function() {$('#toppathwrap').hide();
         height: 200,
         title: "<?php echo $txt['share'];?>",
         buttons: {
-			"<?php echo $txt['send'];?>": function() {				
+			"<?php echo $txt['send'];?>": function() {
 				if(IsValidEmail($("#item_share_email").val())){	//check if email format is ok
 					$.post(
 						"sources/items.queries.php",
@@ -1627,7 +1631,7 @@ $(function() {$('#toppathwrap').hide();
 								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>");
 							}else{
 								$("#div_item_share_error").html(data[0].message);
-							}						
+							}
 						}
 					);
 				}else{

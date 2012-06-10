@@ -283,6 +283,11 @@ if (isset($_POST['save_button'])) {
 		UpdateSettings('enable_send_email_on_user_login',$_POST['enable_send_email_on_user_login']);
 	}
 
+	//Update enable_email_notification_on_item_shown
+	if ( @$_SESSION['settings']['enable_email_notification_on_item_shown'] != $_POST['enable_email_notification_on_item_shown'] ){
+		UpdateSettings('enable_email_notification_on_item_shown',$_POST['enable_email_notification_on_item_shown']);
+	}
+
 	//Update custom_logo
 	if ( @$_SESSION['settings']['custom_logo'] != $_POST['custom_logo'] ){
 		UpdateSettings('custom_logo',$_POST['custom_logo']);
@@ -861,6 +866,18 @@ echo '
 				    <div class="div_radio">
 						<input type="radio" id="enable_send_email_on_user_login_radio1" name="enable_send_email_on_user_login" value="1"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_send_email_on_user_login_radio1">'.$txt['yes'].'</label>
 						<input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$txt['no'].'</label>
+					</div>
+				</td</tr>';
+
+				//enable email notification on item shown
+				echo '
+				<tr><td>
+				    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+				    <label>'.$txt['enable_email_notification_on_item_shown'].'</label>
+				    </td><td>
+				    <div class="div_radio">
+						<input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$txt['yes'].'</label>
+						<input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$txt['no'].'</label>
 					</div>
 				</td</tr>';
 

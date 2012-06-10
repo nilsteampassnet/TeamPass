@@ -79,6 +79,7 @@ folder
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.8
+ * SF 206
  * bug correction cache table
  * view Item details from the Find page
  * CSV export  -> started
