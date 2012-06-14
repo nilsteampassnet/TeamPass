@@ -309,7 +309,7 @@ switch($_POST['type'])
         $alltables = mysql_query("SHOW TABLES");
         while ($table = mysql_fetch_assoc($alltables))
         {
-           foreach ($table as $db => $tablename)
+           foreach ($table as $i => $tablename)
            {
                if ( substr_count($tablename,$pre) > 0 ){
                    // launch optimization quieries
