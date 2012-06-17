@@ -5,6 +5,11 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
+$txt['enable_notify'] = "Enable notify";
+$txt['disable_notify'] = "Disable notify";
+$txt['notify_activated'] = "Notification enabled";
+$txt['at_email'] = "email";
 $txt['enable_email_notification_on_item_shown'] = "Send notification by email when Item is shown";
 $txt['bad_email_format'] = "Email address has not the expected format!";
 $txt['item_share_text'] = "In order to share by mail this Item, enter the email address and press SEND button.";
@@ -14,7 +19,7 @@ $txt['email_share_item_subject'] = "[TeamPass] An Item was share with you";
 $txt['email_share_item_mail'] = "Hello,<br><br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['see_item_title'] = "Item Details";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification on Item open";
-$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# wants to share with you the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
+$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['pdf'] = "PDF";
 $txt['csv'] = "CSV";
 /*$txt["migrate_pf"] = "Migrate Personal Items";

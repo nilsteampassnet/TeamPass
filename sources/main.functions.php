@@ -274,6 +274,12 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
     	$_SESSION['list_folders_limited'] = $list_folders_limited;
     	$_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
     	$_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
+    	
+    	//Folders and Roles numbers
+        $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree");
+        $_SESSION['nb_folders'] = $ret[0];
+        $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_title");
+        $_SESSION['nb_roles'] = $ret[0];
     }
 }
 

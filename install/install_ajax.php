@@ -112,6 +112,7 @@ if ( isset($_POST['type']) ){
                   `inactif` tinyint(1) NOT NULL DEFAULT '0',
                   `restricted_to` varchar(200) NOT NULL,
                   `anyone_can_modify` tinyint(1) NOT NULL DEFAULT '0',
+                  `email` varchar(100) DEFAULT NULL,
                   PRIMARY KEY (`id`)
                 ) CHARSET=utf8;");
             if ( $res2 ){

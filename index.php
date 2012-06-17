@@ -268,7 +268,17 @@ require_once("load.php");
             <br />
             <button title="'.$txt['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
             <br />
-            <button title="'.$txt['link_copy'].'" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
+            <button title="'.$txt['link_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
+            <br />
+            <button title="'.$txt['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
+            <br />
+            <button title="'.$txt['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share.png" id="div_share" alt="" /></button>';
+            if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
+            	echo '
+            <br />
+            <button style="margin-bottom:5px;" id="menu_button_notify" class=""><img src="includes/images/alarm-clock.png" id="div_notify" alt="" /></button>';
+            }
+            echo '
         </div>';
     }
 

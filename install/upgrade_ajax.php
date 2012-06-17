@@ -301,6 +301,7 @@ if ( isset($_POST['type']) ){
 
 			## Alter ITEMS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT NULL DEFAULT '0'");
+			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","email","VARCHAR(100) DEFAULT NULL");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
 			# Alter tables

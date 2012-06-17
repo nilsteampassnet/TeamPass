@@ -271,17 +271,9 @@ echo '
             <input type="hidden" id="hid_anyone_can_modify" value="" />
             <div style="height:210px;overflow-y:auto;" id="item_details_scroll">';
 
-				//history dialog button
+				//Info
 				echo '
-						<button  style="cursor:pointer; float:right; margin:3px 3px 0 0;" onclick="OpenDialog(\'div_item_history\', \'false\')">
-				        	<img src="includes/images/report.png" />
-				       	</button>';
-				
-				//Share dialog button
-				echo '
-						<button  style="cursor:pointer; float:right; margin:3px 3px 0 0;" onclick="OpenDialog(\'div_item_share\', \'false\')">
-				        	<img src="includes/images/mail-at-sign.png" />
-				       	</button>';
+				<div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
 
 				echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
@@ -323,6 +315,14 @@ echo '
                     <td>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
+                    </td>
+                </tr>';
+                //Line for EMAIL
+                echo '
+                <tr>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['email'].' :</td>
+                    <td>
+                        <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
                     </td>
                 </tr>';
                 //Line for URL
@@ -447,6 +447,10 @@ echo '
             echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$txt['login'].' : </label>
             <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
+            //Line for EMAIL
+            echo '
+            <label for="" class="label_cpm">'.$txt['email'].' : </label>
+            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
             //Line for URL
             echo '
             <label for="" class="label_cpm">'.$txt['url'].' : </label>
@@ -596,6 +600,9 @@ echo '
             echo '
             <label for="" class="cpm_label">'.$txt['login'].' : </label>
             <input type="text" id="edit_item_login" class="input_text text ui-widget-content ui-corner-all" />
+
+            <label for="" class="cpm_label">'.$txt['email'].' : </label>
+            <input type="text" id="edit_email" class="input_text text ui-widget-content ui-corner-all" />
 
             <label for="" class="cpm_label">'.$txt['url'].' : </label>
             <input type="text" id="edit_url" class="input_text text ui-widget-content ui-corner-all" />

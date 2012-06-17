@@ -136,6 +136,7 @@ if ( isset($_POST['type']) ){
 		                    'label' => $label,
 		                    'description' => $data_received['description'],
 		                    'pw' => $pw,
+		                    'email' => $data_received['email'],
 		                    'url' => $url,
 		                    'id_tree' => $data_received['categorie'],
 		                    'login' => $login,
@@ -407,6 +408,7 @@ if ( isset($_POST['type']) ){
                         'label' => $label,
                         'description' => $data_received['description'],
                         'pw' => $pw,
+		                'email' => $data_received['email'],
                         'login' => $login,
                         'url' => $url,
                         'id_tree' => $data_received['categorie'],
@@ -501,6 +503,18 @@ if ( isset($_POST['type']) ){
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_modification',
                             'raison' => 'at_login : '.$data['login'].' => '.$login
+                        )
+                    );
+                /*EMAIL */
+                if ( $data['email'] != $data_received['email'])
+                    $db->query_insert(
+                        'log_items',
+                        array(
+                            'id_item' => $data_received['id'],
+                            'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_modification',
+                            'raison' => 'at_email : '.$data['email'].' => '.$data_received['email']
                         )
                     );
                 /*URL */
@@ -847,13 +861,45 @@ if ( isset($_POST['type']) ){
                     WHERE i.id=".$_POST['id']."
                     AND l.action = 'at_creation'";
             $data_item = $db->query_first($sql);
-
+            
+            //Get all USERS infos
+            $list_notif = array_filter(explode(";",$data_item['notification']));
+            $list_rest = array_filter(explode(";",$data_item['restricted_to']));
+            $liste_restriction = $list_notification= $list_notification_emails= "";
+            $rows = $db->fetch_all_array(
+        		"SELECT id, login, email
+                FROM ".$pre."users"
+        	);
+        	foreach ($rows as $reccord){
+        		//Get auhtor
+        		if($reccord['id'] == $data_item['id_user']){
+        			$arrData['author'] = $reccord['login'];
+					$arrData['author_email'] = $reccord['email'];
+					$arrData['id_user'] = $data_item['id_user'];
+					if(in_array($reccord['id'], $list_notif))
+						$arrData['notification_status'] = true;
+					else
+						$arrData['notification_status'] = false;
+        		}
+        		//Get restriction list for users
+        		if(in_array($reccord['id'], $list_rest)){
+        			$liste_restriction .= $reccord['login'].";";
+        		}
+        		//Get notification list for users
+        		if(in_array($reccord['id'], $list_notif)){
+        			$list_notification .= $reccord['login'].";";
+        			$list_notification_emails .= $reccord['email'].",";
+        		}
+        	}
+        	
+/*
 			//Get auhtor
 			$data_tmp = $db->query_first("SELECT login, email FROM ".$pre."users WHERE id= ".$data_item['id_user']);
 			$arrData['author'] = $data_tmp['login'];
 			$arrData['author_email'] = $data_tmp['email'];
 			$arrData['id_user'] = $data_item['id_user'];
-
+*/
+        	
             //Get all tags for this item
             $tags = "";
             $sql = "SELECT tag
@@ -973,7 +1019,7 @@ if ( isset($_POST['type']) ){
                 	}
                 }
             	if(empty($history_of_pwds)) $history_of_pwds = $txt['no_previous_pw'];
-
+/*
                 //Get restriction list for users
             	$liste = explode(";",$data_item['restricted_to']);
             	$liste_restriction = "";
@@ -983,8 +1029,9 @@ if ( isset($_POST['type']) ){
             				$data2 = $db->fetch_row("SELECT login FROM ".$pre."users WHERE id=".$elem);
             				$liste_restriction .= $data2[0].";";
             			}
-            		}            	}
-
+            		}            	
+            	}
+*/
 
             	//Get restriction list for roles
             	$liste_restriction_roles = array();
@@ -1034,6 +1081,7 @@ if ( isset($_POST['type']) ){
 
                 $arrData['label'] = $data_item['label'];
                 $arrData['pw'] = $pw;
+                $arrData['email'] = $data_item['email'];
                 $arrData['url'] = $data_item['url'];
                 if (!empty($data_item['url'])) {
                     $arrData['link'] = "&nbsp;<a href='". $data_item['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='".$txt['open_url_link']."'></a>";
@@ -1143,11 +1191,25 @@ if ( isset($_POST['type']) ){
 	            	}
 				//send notification if enabled
 				if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
-					SendEmail(
-						$txt['email_on_open_notification_subject'],
-						str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_on_open_notification_mail']),
-						$arrData['author_email']
-					);
+					//send back infos					
+                	$arrData['notification_list'] = $list_notification;
+                	
+					//Send email if activated
+					if(!empty($list_notification_emails) && !in_array($_SESSION['login'], explode(';', $list_notification))){
+						$db->query_insert(
+		            		'emails',
+		            		array(
+		            		    'timestamp' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+		            		    'subject' => $txt['email_on_open_notification_subject'],
+		            		    'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_on_open_notification_mail']),
+		            			'receivers' => $list_notification_emails,
+		            			'status' => ''
+		            		)
+	            		);
+					}					
+				}else{
+					$arrData['notification_list'] = "";
+					$arrData['notification_status'] = "";
 				}
             }else{
                 $arrData['show_details'] = 0;
@@ -2030,7 +2092,6 @@ if ( isset($_POST['type']) ){
 	      );
 
 				echo '[{"from_folder":"'.$data_source['id_tree'].'" , "to_folder":"'.$_POST['folder_id'].'"}]';
-
     	break;
 
 
@@ -2039,7 +2100,7 @@ if ( isset($_POST['type']) ){
     	   * Send email
     	*/
     	case "send_email":
-    		$content = explode(',', $_POST['content']);
+    		if(!empty($_POST['content'])) $content = explode(',', $_POST['content']);
     		if($_POST['cat'] == "request_access_to_author"){
     			$data_author = $db->query_first("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
     			$data_item = $db->query_first("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
@@ -2059,9 +2120,50 @@ if ( isset($_POST['type']) ){
 					),
     				$_POST['receipt']
 				);
-				echo '['.$ret.'}]';
+				echo '[{"error" : "'.$ret.'"}]';
     		}
     	break;
+    	
+    	/*
+    	   * CASE
+    	   * manage notification of an Item
+    	*/
+    	case "notify_a_user":
+    		if ($_POST['key'] != $_SESSION['key']){
+    			echo '[{"error" : "something_wrong"}]';
+        		break;
+    		}else{
+    			if($_POST['notify_type'] == "on_show"){
+	    			//Check if values already exist
+	    			$data = $db->query_first("SELECT notification FROM ".$pre."items WHERE id = ".$_POST['item_id']);
+	    			$notified_users = explode(';', $data['notification']);
+	    			//User is not in actual notification list
+	    			if($_POST['status'] == true && !in_array($_POST['user_id'], $notified_users)){
+		    			//User is not in actual notification list and wants to be notified
+	    				$db->query_update(
+			    			'items',
+			    			array(
+				    			'notification' => empty($data['notification']) ? $_POST['user_id'].";" : $data['notification'].$_POST['user_id']
+			    			),
+			    			"id='".$_POST['item_id']."'"
+		    			);
+		    			echo '[{"error" : "", "new_status":"true"}]';
+        				break;
+	    			}else if($_POST['status'] == false && in_array($_POST['user_id'], $notified_users)){
+	    				//TODO : delete user from array and store in DB
+		    			//User is in actual notification list and doesn't want to be notified
+		    			$db->query_update(
+			    			'items',
+			    			array(
+				    			'notification' => empty($data['notification']) ? $_POST['user_id'] : $data['notification'].";".$_POST['user_id']
+			    			),
+			    			"id='".$_POST['item_id']."'"
+		    			);
+		    		}
+    			}
+    		}
+    	break;
+    	
 
     }
 }
