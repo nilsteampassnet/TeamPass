@@ -188,7 +188,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
 		            		FROM ".$pre."roles_title
 		            		WHERE id = ".$role_id
             			);
-            			if ($tmp['allow_pw_change'] == 1 && !in_array($tmp['allow_pw_change'], $list_folders_editable_by_role)) {
+            			if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $list_folders_editable_by_role)) {
             				array_push($list_folders_editable_by_role, $reccord['folder_id']);
             			}
             		}
