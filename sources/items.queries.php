@@ -146,6 +146,19 @@ if ( isset($_POST['type']) ){
 							'anyone_can_modify' => (isset($data_received['anyone_can_modify']) && $data_received['anyone_can_modify'] == "on") ? '1' : '0'
 		                )
 		            );
+		            
+		            //If automatic deletion asked
+		            if($data_received['to_be_deleted'] != 0){
+		            	$db->query_insert(
+			                'automatic_del',
+			                array(
+			                    'item_id' => $_POST['id'],
+			                    'del_enabled' => 1,	//0=deactivated;1=activated
+			                    'del_type' => 1,	//1=counter;2=date
+			                    'del_value' => $data_received['to_be_deleted']
+			                )
+			            );
+		            }
 
 	            	//Store generated key
 	            	if($data_received['is_pf'] != 1){
@@ -360,8 +373,10 @@ if ( isset($_POST['type']) ){
                 //Get existing values
                 $data = $db->query_first("
 					SELECT *
-					FROM ".$pre."items
-					WHERE id=".$data_received['id']
+					FROM ".$pre."items AS i
+					INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
+					INNER JOIN ".$pre."users AS u ON (u.id=l.id_user)
+					WHERE i.id=".$data_received['id']
                 );
 
             	//Manage salt key
@@ -417,6 +432,47 @@ if ( isset($_POST['type']) ){
                     ),
                     "id='".$data_received['id']."'"
                 );
+                
+                //Update automatic deletion - Only by the creator of the Item
+                if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1){
+                	if($data_received['to_be_deleted'] > 0){
+	                	//check if elem exists in Table. If not add it or update it.
+	                	$data_exist = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
+	                	if ($data_exist[0] == 0){
+	                		$db->query_insert(
+		                        'automatic_del',
+		                        array(
+		                            'item_id' => $data_received['id'],
+		                            'del_enabled' => 1,
+		                            'del_type' => 1,
+		                            'del_value' => $data_received['to_be_deleted']
+		                        )
+		                    );
+	                	}else{
+		                	$db->query_update(
+				                "automatic_del",
+				                array(
+				                    'del_value' => $data_received['to_be_deleted'],
+				                ),
+				                "item_id = ".$data_received['id']
+				            );
+	                	}
+	                	$arrData['to_be_deleted'] = $data_received['to_be_deleted'];
+		            }else{
+		            	$db->query("DELETE FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
+		            }
+		            //update LOG
+                    $db->query_insert(
+	            		'log_items',
+	            		array(
+	            		    'id_item' => $data_received['id'],
+	            		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	            		    'id_user' => $_SESSION['user_id'],
+	            		    'action' => 'at_modification',
+	            		    'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
+	            		)
+            		);
+                }
 
             	//get readable list of restriction
             	$list_of_restricted = $old_restriction_list = "";
@@ -857,11 +913,11 @@ if ( isset($_POST['type']) ){
             //Get all informations for this item
             $sql = "SELECT *
                     FROM ".$pre."items AS i
-                    INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
+                    INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)                    
                     WHERE i.id=".$_POST['id']."
                     AND l.action = 'at_creation'";
             $data_item = $db->query_first($sql);
-            
+            //INNER JOIN ".$pre."automatic_del AS d ON (d.item_id = i.id)
             //Get all USERS infos
             $list_notif = array_filter(explode(";",$data_item['notification']));
             $list_rest = array_filter(explode(";",$data_item['restricted_to']));
@@ -946,7 +1002,7 @@ if ( isset($_POST['type']) ){
         		$item_is_expired = false;
         	}
 
-
+        	
         	//check user is admin
         	if($_SESSION['user_admin'] == 1 && $data_item['perso']!=1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])){
         		$arrData['show_details'] = 0;
@@ -1041,7 +1097,7 @@ if ( isset($_POST['type']) ){
 					SELECT t.title
 					FROM ".$pre."roles_title AS t
 					INNER JOIN ".$pre."restriction_to_roles AS r ON (t.id=r.role_id)
-					WHERE r.item_id = ".$data_item['id']."
+					WHERE r.item_id = ".$_POST['id']."
 					ORDER BY t.title ASC");
             		foreach($rows as $reccord){
             			if (!in_array($reccord['title'], $liste_restriction_roles)){
@@ -1057,7 +1113,7 @@ if ( isset($_POST['type']) ){
 							SELECT k.label, k.id
 							FROM ".$pre."kb_items AS i
 							INNER JOIN ".$pre."kb AS k ON (i.kb_id=k.id)
-							WHERE i.item_id = ".$data_item['id']."
+							WHERE i.item_id = ".$_POST['id']."
 							ORDER BY k.label ASC");
 	          		foreach($rows as $reccord){
 						if(empty($tmp)){
@@ -1097,7 +1153,7 @@ if ( isset($_POST['type']) ){
                 $arrData['anyone_can_modify'] = $data_item['anyone_can_modify'];
             	$arrData['history_of_pwds'] = str_replace('"','&quot;',$history_of_pwds);
 
-                //Add this item to the latests list
+            	//Add this item to the latests list
                 if ( isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($data_item['id'],$_SESSION['latest_items']) ){
                     if ( count($_SESSION['latest_items']) >= $_SESSION['settings']['max_latest_items'] ){
                         array_pop($_SESSION['latest_items']);   //delete last items
@@ -1189,6 +1245,58 @@ if ( isset($_POST['type']) ){
 		            		)
 	            		);
 	            	}
+	            	
+	            //Decrement the number before being deleted
+	            $sql = "SELECT * FROM ".$pre."automatic_del WHERE item_id=".$_POST['id'];
+            	$data_delete = $db->query_first($sql);
+            	$arrData['to_be_deleted'] = $data_delete['del_value'];
+            	
+	            if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1
+	            	&& $arrData['id_user'] != $_SESSION['user_id']
+	            ){	            	
+	            	if($data_delete['del_enabled'] == 1){
+	            		if($data_delete['del_type'] == 1 && $data_delete['del_value'] > 1){
+	            			//decrease counter
+		            		$db->query_update(
+				                "automatic_del",
+				                array(
+				                    'del_value' => $data_delete['del_value']-1
+				                ),
+				                "item_id = ".$_POST['id']
+				            );
+				            //store value
+                			$arrData['to_be_deleted'] = $data_delete['del_value']-1;
+	            		}else if(
+	            			$data_delete['del_type'] == 1 && $data_delete['del_value'] <= 1
+	            			|| $data_delete['del_type'] == 2 && $data_delete['del_value'] > mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))
+	            		){
+	            			//delete item
+	            			$db->query("DELETE FROM ".$pre."automatic_del WHERE item_id = '".$_POST['id']."'");
+	            			//make inactive object
+		            		$db->query_update(
+				                "items",
+				                array(
+				                    'inactif' => '1',
+				                ),
+				                "id = ".$_POST['id']
+				            );
+				            //log
+				            $db->query_insert(
+				                "log_items",
+				                array(
+				                    'id_item' => $_POST['id'],
+				                    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+				                    'id_user' => $_SESSION['user_id'],
+				                    'action' => 'at_delete',
+				                	'raison' => 'at_automatically_deleted'
+				                )
+				            );
+				            
+				            $arrData['to_be_deleted'] = 0;
+	            		}
+	            	}
+	            }
+	            	
 				//send notification if enabled
 				if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
 					//send back infos					
@@ -1405,7 +1513,10 @@ if ( isset($_POST['type']) ){
             		$arbo_html .= ' » '.$arbo_html_tmp;
             	}
             }
-
+            
+            //Check if ID folder send is valid
+            if(!in_array($_POST['id'], $_SESSION['groupes_visibles']))
+				$_POST['id'] = 1;
 
         	//check if this folder is a PF. If yes check if saltket is set
         	if ((!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])) && $folder_is_pf == 1) {
@@ -1655,7 +1766,7 @@ if ( isset($_POST['type']) ){
                     	$returned_data[$i]['label'] = "'".stripslashes($reccord['label'])."'";
                     	$returned_data[$i]['description'] = (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) ? '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(CleanString($reccord['description']),0,30))).']</font>' : '';
                     	*/
-						$html .= $expiration_flag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.'">'.stripslashes($reccord['label']);
+						$html .= $expiration_flag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($reccord['label']), 0, 65);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1)
                             $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(CleanString($reccord['description']),0,30))).']</font>';
                         $html .= '</a>';

@@ -86,6 +86,7 @@ folder
  * mail notification when selecting an item -> started
  * share Item by mail  -> started
  * add email field in Item form
+ * automatic deletion of Item after X opening or after limit date
 
 2.1.7
  * SF 247 - 248 - 261 - 264 - 265 - 266 - 267

@@ -112,7 +112,7 @@ if ( isset($_POST['type']) ){
                   `inactif` tinyint(1) NOT NULL DEFAULT '0',
                   `restricted_to` varchar(200) NOT NULL,
                   `anyone_can_modify` tinyint(1) NOT NULL DEFAULT '0',
-                  `email` varchar(100) DEFAULT NULL,
+                  `email` varchar(100) DEFAULT NULL
                   PRIMARY KEY (`id`)
                 ) CHARSET=utf8;");
             if ( $res2 ){
@@ -189,7 +189,8 @@ if ( isset($_POST['type']) ){
                 ('admin', 'send_stats', '".$_SESSION['send_stats']."'),
                 ('admin', 'send_mail_on_user_login', '0'),
                 ('cron', 'sending_emails', '0'),
-                ('admin', 'nb_items_by_query', 'auto');");
+                ('admin', 'nb_items_by_query', 'auto'),
+                ('admin', 'enable_delete_after_consultation', '1');");
             if ( $res4 ){
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/tick.png\">";';
             }else{
@@ -573,6 +574,52 @@ if ( isset($_POST['type']) ){
 				`receivers` VARCHAR( 255 ) NOT NULL ,
 				`status` VARCHAR( 30 ) NOT NULL
                 ) CHARSET=utf8;");
+    		if ( $res ){
+        		echo 'document.getElementById("tbl_21").innerHTML = "<img src=\"images/tick.png\">";';
+        	}else{
+        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table EMAILS!";';
+        		echo 'document.getElementById("tbl_21").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+        		echo 'document.getElementById("loader").style.display = "none";';
+        		mysql_close($db_tmp);
+        		break;
+        	}
+    
+
+        	## TABLE AUTOMATIC DELETION
+        	$res = mysql_query("
+                CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."automatic_del` (
+				`item_id` int(11) NOT NULL,
+				`del_enabled` tinyint(1) NOT NULL,
+				`del_type` tinyint(1) NOT NULL,
+				`del_value` varchar(35) NOT NULL
+                ) CHARSET=utf8;");
+        	if ( $res ){
+        		echo 'document.getElementById("tbl_22").innerHTML = "<img src=\"images/tick.png\">";';
+        	}else{
+        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOLATIC_DEL!";';
+        		echo 'document.getElementById("tbl_22").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+        		echo 'document.getElementById("loader").style.display = "none";';
+        		mysql_close($db_tmp);
+        		break;
+        	}
+    
+
+        	## TABLE NOTIFICATION
+        	$res = mysql_query("
+                CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."notification` (
+				`id_item` int(10) NOT NULL,
+				`id_user` int(10) NOT NULL,
+				`date` varchar(30) NOT NULL
+                ) CHARSET=utf8;");
+        	if ( $res ){
+        		echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/tick.png\">";';
+        	}else{
+        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOLATIC_DEL!";';
+        		echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+        		echo 'document.getElementById("loader").style.display = "none";';
+        		mysql_close($db_tmp);
+        		break;
+        	}
 
 
             echo 'gauge.modify($("pbar"),{values:[0.80,1]});';

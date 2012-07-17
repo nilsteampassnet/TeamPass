@@ -5,7 +5,13 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
+$txt['admin_setting_enable_delete_after_consultation'] = "Item consulted can be automatically deleted";
+$txt['admin_setting_enable_delete_after_consultation_tip'] = "<span style='font-size:11px;max-width:300px;'>When enabled, the Item creator can decide that Item will be automatically deleted after being seen X times.</span>";
+$txt['enable_delete_after_consultation'] = "Item will be automatically deleted after being seen";
+$txt['times'] = "times.";
+$txt['automatic_deletion_activated'] = "Automatic deletion engaged";
+$txt['at_automatic_del'] = "automatic deletion";
+$txt['error_times_before_deletion'] = "Number of consultation before deletion needs to be more than 0!";
 $txt['enable_notify'] = "Enable notify";
 $txt['disable_notify'] = "Disable notify";
 $txt['notify_activated'] = "Notification enabled";

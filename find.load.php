@@ -88,8 +88,8 @@ $("#div_item_data").dialog({
       bgiframe: true,
       modal: true,
       autoOpen: false,
-      width: 400,
-      height: 200,
+      width: 450,
+      height: 220,
       title: "<?php echo $txt['see_item_title'];?>",
 	  open:
 		function(event, ui) {
@@ -105,9 +105,13 @@ $("#div_item_data").dialog({
 					//decrypt data
                 	data = $.parseJSON(aes_decrypt(data));
 					var return_html = "";
-					if (data.show_detail_option != "0") {
+					if (data.show_detail_option != "0" || data.show_details == 0) {
 						//item expired
 						return_html = "<?php echo $txt['not_allowed_to_see_pw_is_expired'];?>";
+					}
+					else if(data.show_details == "0"){
+						//Admin cannot see Item
+						return_html = "<?php echo $txt['not_allowed_to_see_pw'];?>";
 					}
 					else{
 						return_html = "<table>"+

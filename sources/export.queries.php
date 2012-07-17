@@ -138,6 +138,10 @@ switch($_POST['type'])
 			'perso' => "perso"
 		);
 
+   		$id_managed = '';
+   		$i = 1;
+   		$items_id_list = array();
+
     	foreach (explode(';', $_POST['ids']) as $id){
     		if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
 
@@ -155,10 +159,6 @@ switch($_POST['type'])
 	                   AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
 	                   ORDER BY i.label ASC, l.date DESC
                 ");
-
-	   			$id_managed = '';
-	   			$i = 1;
-	   			$items_id_list = array();
 	   			foreach( $rows as $reccord ) {
                     $restricted_users_array = explode(';',$reccord['restricted_to']);
 	   				//exclude all results except the first one returned by query
@@ -179,14 +179,14 @@ switch($_POST['type'])
 	   						$full_listing[$i] = array(
 		   						'id' => $reccord['id'],
 		   						'label' => $reccord['label'],
-		   						'description' => addslashes(str_replace(";","|",html_entity_decode($reccord['description'],ENT_QUOTES))),
+		   						'description' => addslashes(str_replace(array(";","<br />"),array("|",""),stripslashes(html_entity_decode($reccord['description'],ENT_QUOTES)))),
 		   						'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
 		   						'login' => $reccord['login'],
 		   						'restricted_to' => $reccord['restricted_to'],
 		   						'perso' => $reccord['perso']
 							);
+							$i++;
 	   					}
-						$i++;
 	    			}
 	   				$id_managed = $reccord['id'];
 	   			}
@@ -194,7 +194,7 @@ switch($_POST['type'])
     	}
     	//save the file
     	$csv_file = $_SESSION['settings']['cpassman_dir'].'/files/print_out_csv_'.time().'.csv';
-
+print_r($full_listing);
     	$outstream = fopen($csv_file, "w");
     	function __outputCSV(&$vals, $key, $filehandler) {
     		fputcsv($filehandler, $vals,";"); // add parameters if you want

@@ -549,7 +549,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             modal: true,
             autoOpen: false,
             width: 400,
-            height: 400,
+            height: 450,
             title: "'.$txt['print_out_menu_title'].'",
             buttons: {
                 "'.$txt['print'].'": function() {

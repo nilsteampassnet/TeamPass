@@ -113,7 +113,11 @@ echo '
 	        $cpt_total = 0;
 	        $folder_cpt = 1;
 	        $prev_level = 1;
-	        $first_group = "";
+	        if(isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])){
+	        	$first_group = str_replace("#li_", "", $_COOKIE['jstree_select']);
+	        }else{
+	        	$first_group = "";
+	        }
 
 			if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
 				$list_folders_limited_keys = @array_keys($_SESSION['list_folders_limited']);
@@ -538,6 +542,13 @@ echo '
 				<input type="checkbox" name="anyone_can_modify" id="anyone_can_modify" />
 				<label for="anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
 			</div>';
+			//Line for Item automatically deleted
+			echo '
+			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+				<input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
+				<label for="enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
+				<input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$txt['times'].'
+			</div>';
             //Line for EMAIL
             echo '
             <input type="checkbox" name="annonce" id="annonce" onChange="toggleDiv(\'annonce_liste\')" />
@@ -673,6 +684,14 @@ echo '
 			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify" />
 				<label for="edit_anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
+			</div>';
+			
+			//Line for Item automatically deleted
+			echo '
+			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+				<input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
+				<label for="edit_enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
+				<input type="text" value="1" size="1" id="edit_times_before_deletion" />&nbsp;'.$txt['times'].'
 			</div>';
 
 			echo '

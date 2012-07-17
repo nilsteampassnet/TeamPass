@@ -303,6 +303,11 @@ if (isset($_POST['save_button'])) {
 		UpdateSettings('nb_items_by_query',$_POST['nb_items_by_query']);
 	}
 
+	//Update enable_delete_after_consultation
+	if ( @$_SESSION['settings']['enable_delete_after_consultation'] != $_POST['enable_delete_after_consultation'] ){
+		UpdateSettings('enable_delete_after_consultation',$_POST['enable_delete_after_consultation']);
+	}
+
 	//store backups settings
 	if(isset($_POST['bck_script_filename'])) UpdateSettings('bck_script_filename', $_POST['bck_script_filename'], 'settings');
 	if(isset($_POST['bck_script_path'])) UpdateSettings('bck_script_path', $_POST['bck_script_path'], 'settings');
@@ -754,6 +759,21 @@ echo '
 				    <div class="div_radio">
 						<input type="radio" id="activate_expiration_radio1" name="activate_expiration" value="1"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? ' checked="checked"' : '', ' /><label for="activate_expiration_radio1">'.$txt['yes'].'</label>
 						<input type="radio" id="activate_expiration_radio2" name="activate_expiration" value="0"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['activate_expiration']) ? ' checked="checked"':''), ' /><label for="activate_expiration_radio2">'.$txt['no'].'</label>
+					</div>
+                </td</tr>';
+
+                //Enable enable_delete_after_consultation
+                echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['admin_setting_enable_delete_after_consultation'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_setting_enable_delete_after_consultation_tip'].'" /></span>
+                    </label>
+				    </td><td>
+				    <div class="div_radio">
+						<input type="radio" id="enable_delete_after_consultation_radio1" name="enable_delete_after_consultation" value="1"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_delete_after_consultation_radio1">'.$txt['yes'].'</label>
+						<input type="radio" id="enable_delete_after_consultation_radio2" name="enable_delete_after_consultation" value="0"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_delete_after_consultation']) ? ' checked="checked"':''), ' /><label for="enable_delete_after_consultation_radio2">'.$txt['no'].'</label>
 					</div>
                 </td</tr>';
 

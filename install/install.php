@@ -343,6 +343,9 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
                         <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_18"></span></td></tr>
                         <tr><td>Add table "keys"</td><td><span id="tbl_19"></span></td></tr>
                         <tr><td>Add table "languages"</td><td><span id="tbl_20"></span></td></tr>
+                        <tr><td>Add table "emails"</td><td><span id="tbl_21"></span></td></tr>
+                        <tr><td>Add table "automatic_del"</td><td><span id="tbl_22"></span></td></tr>
+                        <tr><td>Add table "notification"</td><td><span id="tbl_23"></span></td></tr>
                     </table>
                     </fieldset>
 
