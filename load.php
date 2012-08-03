@@ -331,6 +331,47 @@ $htmlHeaders .= '
         //END
     });';
 
+if(!isset($_GET['page']) && !isset($_SESSION['key'])){
+	$htmlHeaders .= '
+	$(function() {
+		// DIALOG BOX FOR ASKING PASSWORD
+		$("#div_forgot_pw").dialog({
+			bgiframe: true,
+			modal: true,
+			autoOpen: false,
+			width: 300,
+			height: 250,
+			title: "'.$txt['forgot_my_pw'].'",
+			buttons: {
+				"'.$txt['send'].'": function() {
+					$("#div_forgot_pw_alert").html("");
+					$.post(
+					"sources/main.queries.php",
+					{
+						type    : "send_pw_by_email",
+						email	: $("#forgot_pw_email").val(),
+						login	: $("#forgot_pw_login").val()
+					},
+						function(data){
+							if (data[0].error != "no") {
+								$("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
+							}else{
+								$("#div_forgot_pw_alert").html(data[0].message);
+								$("#div_forgot_pw").dialog("close");
+							}
+						},
+						"json"
+						);
+				},
+				"'.$txt['cancel_button'].'": function() {
+					$("#div_forgot_pw_alert").html("");
+					$("#forgot_pw_email").val("");
+					$(this).dialog("close");
+				}
+			}
+		});
+	});';
+}
 
 if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $htmlHeaders .= '
@@ -393,43 +434,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 "'.$txt['cancel_button'].'": function() {
 					$("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
 					 $("#new_pw, #new_pw2").val("");
-                    $(this).dialog("close");
-                }
-            }
-        });
-
-        // DIALOG BOX FOR ASKING PASSWORD
-        $("#div_forgot_pw").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 300,
-            height: 250,
-            title: "'.$txt['forgot_my_pw'].'",
-            buttons: {
-                "'.$txt['send'].'": function() {
-					$("#div_forgot_pw_alert").html("");
-                    $.post(
-		                "sources/main.queries.php",
-		                {
-		                    type    : "send_pw_by_email",
-		                    email	: $("#forgot_pw_email").val(),
-							login	: $("#forgot_pw_login").val()
-		                },
-		                function(data){
-		                	if (data[0].error != "no") {
-		                		$("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
-		                	}else{
-		                		$("#div_forgot_pw_alert").html(data[0].message);
-		                		$("#div_forgot_pw").dialog("close");
-		                	}
-		                },
-		                "json"
-		            );
-                },
-                "'.$txt['cancel_button'].'": function() {
-					$("#div_forgot_pw_alert").html("");
-                    $("#forgot_pw_email").val("");
                     $(this).dialog("close");
                 }
             }
@@ -947,6 +951,18 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 
         //BUILD BUTTONSET
         $(".div_radio").buttonset();
+
+        //Enable/disable option
+        $( "input[name=\'restricted_to\']" ).bind( "click", radioClicks );
+        function radioClicks()
+		{
+			if( $( this ).val()== 1 ){
+				$("#tr_option_restricted_to_roles").show();
+			}else{
+				$("#tr_option_restricted_to_roles").hide();
+				$("input[name=restricted_to_roles]").val(["0"]).button("refresh");
+			}
+		}
 
         //check NEW SALT KEY
         $("#new_salt_key").keypress(function (e) {

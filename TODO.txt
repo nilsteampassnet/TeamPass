@@ -1,0 +1,61 @@
+I'm seeing a lot of problems even when I use a new installation of 2.1.7 testing under Google Chrome 18, Firefox 12 and IE9...
+
+I've noticed that all the SALT keys are disappearing. I'll store the key only to find out that it's gone.
+
+The php error log only shows a single error as follows:
+[07-May-2012 18:54:12] PHP Notice: Undefined index: nb_roles in /var/www/html/teampass/sources/roles.queries.php on line 47
+
+Regarding the installed software I am using the following out of box settings:
+
+CentOS 5.7
+Apache 2.2.22 (packaged by CentALT)
+PHP 5.3.12 (packaged by Remi with the mycrypt extension loaded)
+MySQL 5.5.23 (packaged by Remi)
+
+ANSWER => Very strange ... this session variable is initialized when user getting identified.
+If this appears, please reup the files.
+
+****
+
+I'm able to recreate the initial problems that I reported with IE every single time I upgrade to TeamPass 2.1.7.
+
+Again, the GUI issues (only using IE9) are:
+
+Logout button does not work
+Displaying the password still does not work
+Copy password or account to clipboard does not work
+The icons for deleting/locking account and changing passwords on the users management screen do not work
+
+***
+
+I have a requirement described as follows : "my customers do not have access to root account until they access a protected web site where it
+is possible for them to retrieve the root password (only once). The contracts that binds us is automaticaly and legaly broken"
+
+I then had an idea for teampass that might be interesting for a bunch of users :
+
+1/ alerting a role whenever a password entry has been accessed (at least the first time) by email or other means.
+
+2/ automaticaly delete this password entry upon first access
+
+****
+
+I am running Teampass 2.1.6. After uploading Keepass XML (using IE9) I receive the error "Can't read the file! It must be a KeePass file." I have tried exporting xml file using Keepass 2.16 and 1.09 with the same results.
+
+Apache error.log shows "PHP Notice: Undefined index: user_id in /var/www/includes/libraries/uploadify/uploadify.php on line 48" after each attempt to import.
+
+I have also tried to use Chrome and Firefox but am unable to even upload the file with an "IO Error".
+--
+2.1.7 process is still not fully functional.
+
+The IO error is caused by having HTTPS turned on without valid certs.
+
+Once you get past that importing works until the spinning arrow icon appears.
+
+This just sits there forever. Anything I can provide to you to help debug the issue?
+
+
+****************
+102
+But an administrator can backup database an access to it offline.
+I recommend logging of backup actions also...
+*****************

@@ -477,7 +477,7 @@ require_once("load.php");
                     </div>
 
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
-                        <a href="#" onclick="javascript:$(\'#div_forgot_pw\').dialog(\'open\');" style="padding:3px;cursor:pointer;">'.$txt['forgot_my_pw'].'</a>
+                        <span onclick="OpenDialogBox(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$txt['forgot_my_pw'].'</span>
                     </div>
 
                     <div style="text-align:center;margin-top:15px;">

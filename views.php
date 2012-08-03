@@ -54,11 +54,12 @@ echo '
 			<input type="radio" id="radio2" name="radio" onclick="displayLogs(\'errors_logs\',1, \'date\')" /><label for="radio2">'.$txt['errors'].'</label>
 			<input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>
 			<input type="radio" id="radio4" name="radio" onclick="displayLogs(\'copy_logs\',1, \'date\')" /><label for="radio4">'.$txt['at_copy'].'</label>
+			<input type="radio" id="radio5" name="radio" onclick="displayLogs(\'admin_logs\',1, \'date\')" /><label for="radio5">'.$txt['admin'].'</label>
 		</div>
         <div id="div_show_system_logs" style="margin-left:30px;margin-top:10px;display:none;">
-        	<div id="filter_access_logs_div" style="display:none;margin-bottom:10px;">
-        		<label for="filter_access_logs" style="font-weight:bold;">'.$txt['find'].':</label>&nbsp;<input type="text" id="filter_access_logs" />
-				&nbsp;<img src="includes/images/arrow_refresh.png" onclick="displayLogs(\'access_logs\',1)" />
+        	<div id="filter_logs_div" style="display:none;margin-bottom:10px;">
+        		<label for="filter_logs" style="font-weight:bold;">'.$txt['find'].':</label>&nbsp;<input type="text" id="filter_logs" />
+				&nbsp;<img src="includes/images/arrow_refresh.png" id="filter_logs_button" onclick="" />
 			</div>
 	        <table>
 	            <thead>

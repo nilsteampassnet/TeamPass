@@ -112,7 +112,7 @@ if ( isset($_POST['type']) ){
                   `inactif` tinyint(1) NOT NULL DEFAULT '0',
                   `restricted_to` varchar(200) NOT NULL,
                   `anyone_can_modify` tinyint(1) NOT NULL DEFAULT '0',
-                  `email` varchar(100) DEFAULT NULL
+                  `email` varchar(100) DEFAULT NULL,
                   PRIMARY KEY (`id`)
                 ) CHARSET=utf8;");
             if ( $res2 ){
@@ -502,8 +502,8 @@ if ( isset($_POST['type']) ){
         	## TABLE restriction_to_roles
         	$res = mysql_query("
         	    CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."restriction_to_roles` (
-                `role_id` tinyint(12) NOT NULL,
-                `item_id` tinyint(12) NOT NULL
+                `role_id` int(12) NOT NULL,
+                `item_id` int(12) NOT NULL
                 ) CHARSET=utf8;");
         	if ( $res ){
         		echo 'document.getElementById("tbl_18").innerHTML = "<img src=\"images/tick.png\">";';
@@ -583,7 +583,7 @@ if ( isset($_POST['type']) ){
         		mysql_close($db_tmp);
         		break;
         	}
-    
+
 
         	## TABLE AUTOMATIC DELETION
         	$res = mysql_query("
@@ -602,7 +602,7 @@ if ( isset($_POST['type']) ){
         		mysql_close($db_tmp);
         		break;
         	}
-    
+
 
         	## TABLE NOTIFICATION
         	$res = mysql_query("

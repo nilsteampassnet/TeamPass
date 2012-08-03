@@ -87,7 +87,7 @@ $("#add_new_role").dialog({
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 250,
+        height: 260,
         title: "<?php echo $txt["admin_action"];?>",
         buttons: {
             "<?php echo $txt["ok"];?>": function() {

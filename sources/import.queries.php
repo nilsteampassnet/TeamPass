@@ -241,13 +241,13 @@ switch($_POST['type'])
         $line_end_separator = '@*1|#9*|@';
 
         //prepare CACHE files
-        $cacheFile_name = "../files/cpassman_cache_".md5(time().mt_rand());
+        $cacheFile_name = $_SESSION['settings']['url_cpassman']."/files/cpassman_cache_".md5(time().mt_rand());
         $cacheFile_name_folder = $cacheFile_name."_folders";
         $cacheFile = fopen($cacheFile_name,"w");
         $cacheFileF = fopen($cacheFile_name_folder,"w");
 
         //read xml file
-        $xml = simplexml_load_file("../files/".$_POST['file']);
+        $xml = simplexml_load_file($_SESSION['settings']['url_cpassman']."/files/".$_POST['file']);
 
         /**
         Recursive function that will permit to read each level of XML nodes

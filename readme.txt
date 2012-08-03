@@ -80,6 +80,8 @@ folder
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.8
  * SF 206
+ * G107-G95-G102-G103-G67-G32-G87-G71-G125-G120-G116-G111-G108-G104-G90-
+   G85-G78-G48-G34-G67-G75-G82-G84
  * bug correction cache table
  * view Item details from the Find page
  * CSV export  -> started
@@ -87,6 +89,7 @@ folder
  * share Item by mail  -> started
  * add email field in Item form
  * automatic deletion of Item after X opening or after limit date
+ * Roles / Folders matrix: Roles passwords complexity shown
 
 2.1.7
  * SF 247 - 248 - 261 - 264 - 265 - 266 - 267

@@ -868,7 +868,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     }else{
                     	$('#item_extra_info').html("");
                     }
-                    
+
                     if(data.notification_status == 0 && data.id_user == <?php echo $_SESSION['user_id'];?>){
                     	$('#menu_button_notify')
                     		.removeAttr("disabled")
@@ -1345,7 +1345,7 @@ function notify_click(status){
         		type 	: "notify_a_user",
         		user_id : <?php echo $_SESSION['user_id'];?>,
         		status	: status,
-        		notify_type : 'on_show',	
+        		notify_type : 'on_show',
         		notify_role : '',
         		item_id : $('#id_item').val(),
 				key		: "<?php echo $_SESSION['key'];?>"

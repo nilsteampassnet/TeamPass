@@ -100,12 +100,13 @@ echo '
                     <div style="margin-left:30px;">
                         <button title="'.$txt['index_change_pw'].'" onclick="OpenDialogBox(\'div_changer_mdp\')">
                             <img src="includes/images/lock--pencil.png" alt="Change pw" />
-                        </button>
+                        </button>',
+                		$_SESSION['user_admin'] == 1 ? '' : '
                         &nbsp;
                         <button title="'.$txt['import_csv_menu_title'].'" onclick="$(\'#div_import_from_csv\').dialog(\'open\')">
                             <img src="includes/images/database-import.png" alt="Import" />
                         </button>',
-                		(isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1) ? '
+                		(isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1) ? '
                         &nbsp;
                         <button title="'.$txt['print_out_menu_title'].'" onclick="print_out_items()">
                             <img src="includes/images/printer.png" alt="Print" />

@@ -13,7 +13,7 @@
 /**
  * @fileVersion		2.1.8
  */
- 
+
 /**
 *	Show or hide Loading animation GIF
 **/
@@ -138,11 +138,11 @@ function CreateRandomString(size,type){
 }
 
 /**
-*	
+*
 **/
 function unsanitizeString(string){
 	if(string != "" && string != null){
-		string = string.replace(/\\/g,'').replace(/&#93;/g,'\\');
+		string = string.replace(/\\/g,'').replace(/&#92;/g,'\\');
 	}
 	return string;
 }

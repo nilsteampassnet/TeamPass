@@ -260,7 +260,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        //document.location.href="index.php";
+        document.location.href="index.php";
         -->
         </script>';
     }

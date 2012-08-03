@@ -134,10 +134,11 @@ function displayLogs(type, page, order){
     //Show or not the column URL
     if ( type == "errors_logs" ) $("#th_url").show();
     else $("#th_url").hide();
-    if ( type == "access_logs" ||type == "copy_logs" ){
-    	$("#filter_access_logs_div").show();
-    	filter = $("#filter_access_logs").val();
-    }else $("#filter_access_logs_div").hide();
+    if ( type == "access_logs" || type == "copy_logs" || type == "admin_logs" ){
+    	$("#filter_logs_button").attr("onclick","displayLogs(\'"+type+"\',1,\'date\')")
+    	$("#filter_logs_div").show();
+    	filter = $("#filter_logs").val();
+    }else $("#filter_logs_div").hide();
 
     $.post(
 	    "sources/views.queries.php",

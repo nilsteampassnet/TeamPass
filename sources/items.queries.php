@@ -146,7 +146,7 @@ if ( isset($_POST['type']) ){
 							'anyone_can_modify' => (isset($data_received['anyone_can_modify']) && $data_received['anyone_can_modify'] == "on") ? '1' : '0'
 		                )
 		            );
-		            
+
 		            //If automatic deletion asked
 		            if($data_received['to_be_deleted'] != 0){
 		            	$db->query_insert(
@@ -233,10 +233,10 @@ if ( isset($_POST['type']) ){
 		            //Announce by email?
 		            if ( $data_received['annonce'] == 1 ){
 		                require_once("../includes/libraries/phpmailer/class.phpmailer.php");
-		                //envoyer email
+		                //send email
 		                $destinataire= explode(';',$data_received['diffusion']);
 		                foreach($destinataire as $mail_destinataire){
-		                    //envoyer ay destinataire
+		                    //send it
 		                    $mail = new PHPMailer();
 		                    $mail->SetLanguage("en","../includes/libraries/phpmailer/language");
 		                    $mail->IsSMTP();                                   // send via SMTP
@@ -370,9 +370,9 @@ if ( isset($_POST['type']) ){
             		break;
             	}
 
-                //Get existing values
+                //Get existing values -> TODO
                 $data = $db->query_first("
-					SELECT *
+					SELECT *, u.login AS user_login, u.email AS user_email
 					FROM ".$pre."items AS i
 					INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
 					INNER JOIN ".$pre."users AS u ON (u.id=l.id_user)
@@ -432,7 +432,7 @@ if ( isset($_POST['type']) ){
                     ),
                     "id='".$data_received['id']."'"
                 );
-                
+
                 //Update automatic deletion - Only by the creator of the Item
                 if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1){
                 	if($data_received['to_be_deleted'] > 0){
@@ -550,6 +550,7 @@ if ( isset($_POST['type']) ){
                         )
                     );
                 /*LOGIN */
+            	echo $data['login']." ; ".$login;
                 if ( $data['login'] != $login )
                     $db->query_insert(
                         'log_items',
@@ -913,11 +914,12 @@ if ( isset($_POST['type']) ){
             //Get all informations for this item
             $sql = "SELECT *
                     FROM ".$pre."items AS i
-                    INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)                    
+                    INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
                     WHERE i.id=".$_POST['id']."
                     AND l.action = 'at_creation'";
             $data_item = $db->query_first($sql);
             //INNER JOIN ".$pre."automatic_del AS d ON (d.item_id = i.id)
+
             //Get all USERS infos
             $list_notif = array_filter(explode(";",$data_item['notification']));
             $list_rest = array_filter(explode(";",$data_item['restricted_to']));
@@ -947,7 +949,7 @@ if ( isset($_POST['type']) ){
         			$list_notification_emails .= $reccord['email'].",";
         		}
         	}
-        	
+
 /*
 			//Get auhtor
 			$data_tmp = $db->query_first("SELECT login, email FROM ".$pre."users WHERE id= ".$data_item['id_user']);
@@ -955,7 +957,7 @@ if ( isset($_POST['type']) ){
 			$arrData['author_email'] = $data_tmp['email'];
 			$arrData['id_user'] = $data_item['id_user'];
 */
-        	
+
             //Get all tags for this item
             $tags = "";
             $sql = "SELECT tag
@@ -1002,7 +1004,7 @@ if ( isset($_POST['type']) ){
         		$item_is_expired = false;
         	}
 
-        	
+
         	//check user is admin
         	if($_SESSION['user_admin'] == 1 && $data_item['perso']!=1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])){
         		$arrData['show_details'] = 0;
@@ -1085,7 +1087,7 @@ if ( isset($_POST['type']) ){
             				$data2 = $db->fetch_row("SELECT login FROM ".$pre."users WHERE id=".$elem);
             				$liste_restriction .= $data2[0].";";
             			}
-            		}            	
+            		}
             	}
 */
 
@@ -1245,15 +1247,15 @@ if ( isset($_POST['type']) ){
 		            		)
 	            		);
 	            	}
-	            	
+
 	            //Decrement the number before being deleted
 	            $sql = "SELECT * FROM ".$pre."automatic_del WHERE item_id=".$_POST['id'];
             	$data_delete = $db->query_first($sql);
             	$arrData['to_be_deleted'] = $data_delete['del_value'];
-            	
+
 	            if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1
 	            	&& $arrData['id_user'] != $_SESSION['user_id']
-	            ){	            	
+	            ){
 	            	if($data_delete['del_enabled'] == 1){
 	            		if($data_delete['del_type'] == 1 && $data_delete['del_value'] > 1){
 	            			//decrease counter
@@ -1291,17 +1293,17 @@ if ( isset($_POST['type']) ){
 				                	'raison' => 'at_automatically_deleted'
 				                )
 				            );
-				            
+
 				            $arrData['to_be_deleted'] = 0;
 	            		}
 	            	}
 	            }
-	            	
+
 				//send notification if enabled
 				if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
-					//send back infos					
+					//send back infos
                 	$arrData['notification_list'] = $list_notification;
-                	
+
 					//Send email if activated
 					if(!empty($list_notification_emails) && !in_array($_SESSION['login'], explode(';', $list_notification))){
 						$db->query_insert(
@@ -1314,7 +1316,7 @@ if ( isset($_POST['type']) ){
 		            			'status' => ''
 		            		)
 	            		);
-					}					
+					}
 				}else{
 					$arrData['notification_list'] = "";
 					$arrData['notification_status'] = "";
@@ -1513,7 +1515,7 @@ if ( isset($_POST['type']) ){
             		$arbo_html .= ' » '.$arbo_html_tmp;
             	}
             }
-            
+
             //Check if ID folder send is valid
             if(!in_array($_POST['id'], $_SESSION['groupes_visibles']))
 				$_POST['id'] = 1;
@@ -2234,7 +2236,7 @@ if ( isset($_POST['type']) ){
 				echo '[{"error" : "'.$ret.'"}]';
     		}
     	break;
-    	
+
     	/*
     	   * CASE
     	   * manage notification of an Item
@@ -2274,7 +2276,7 @@ if ( isset($_POST['type']) ){
     			}
     		}
     	break;
-    	
+
 
     }
 }

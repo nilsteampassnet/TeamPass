@@ -188,7 +188,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
 		            		FROM ".$pre."roles_title
 		            		WHERE id = ".$role_id
             			);
-            			if ($tmp['allow_pw_change'] == 1 && !in_array($tmp['allow_pw_change'], $list_folders_editable_by_role)) {
+            			if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $list_folders_editable_by_role)) {
             				array_push($list_folders_editable_by_role, $reccord['folder_id']);
             			}
             		}
@@ -235,7 +235,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
     			array_push($allowed_folders,$id);
     		}
     	}
-    	
+
         //Clean array
     	$list_allowed_folders = array_filter(array_unique($allowed_folders));
 
@@ -266,7 +266,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
                 }
             }
         }
-        
+
     	$_SESSION['all_non_personal_folders'] = $list_allowed_folders;
     	$_SESSION['groupes_visibles'] = $list_allowed_folders;
         $_SESSION['groupes_visibles_list'] = implode(',', $list_allowed_folders);
@@ -274,7 +274,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
     	$_SESSION['list_folders_limited'] = $list_folders_limited;
     	$_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
     	$_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
-    	
+
     	//Folders and Roles numbers
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = $ret[0];
@@ -546,8 +546,8 @@ function CPMStats(){
 function SendEmail($subject, $mail, $email){
 
 	//load library
-	require_once('../includes/settings.php');
-	require_once("../includes/libraries/phpmailer/class.phpmailer.php");
+	include('../includes/settings.php');
+	include("../includes/libraries/phpmailer/class.phpmailer.php");
 
 	//send to user
 	$mail = new PHPMailer();
@@ -559,7 +559,7 @@ function SendEmail($subject, $mail, $email){
 	$mail->Password = $smtp_auth_password; 	// SMTP password
 	$mail->From     = $email_from;
 	$mail->FromName = $email_from_name;
-	$mail->AddAddress($data_user['email']); //Destinataire
+	$mail->AddAddress($email); //Destinataire
 	$mail->WordWrap = 80;					// set word wrap
 	$mail->IsHTML(true);					// send as HTML
 	$mail->Subject  =  $subject;

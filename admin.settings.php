@@ -459,6 +459,7 @@ echo '
 							<option value="d-M-y"', $_SESSION['settings']['date_format'] == "d-M-y" ? ' selected="selected"':"",'>d-M-y</option>
 							<option value="d-m-y"', $_SESSION['settings']['date_format'] == "d-m-y" ? ' selected="selected"':"",'>d-m-y</option>
 							<option value="F d, Y"', $_SESSION['settings']['date_format'] == "F d, Y" ? ' selected="selected"':"",'>F d, Y</option>
+							<option value="Y-m-d"', $_SESSION['settings']['date_format'] == "Y-m-d" ? ' selected="selected"':"",'>Y-m-d</option>
 						</select>
                     <td>
                 </tr>';
@@ -823,7 +824,7 @@ echo '
 
 				//enable restricted_to_roles
 				echo '
-				<tr><td>
+				<tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline':'none', ';"><td>
 				    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
 				    <label>'.$txt['restricted_to_roles'].'</label>
 				    </td><td>

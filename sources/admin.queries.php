@@ -251,6 +251,17 @@ switch($_POST['type'])
         	$pwgen->setNumerals(true);
         	$_SESSION['key_tmp'] = $pwgen->generate();
 
+        	//update LOG
+        	$db->query_insert(
+	        	'log_system',
+	        	array(
+	        	    'type' => 'admin_action',
+	        	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	        	    'label' => 'Database backup',
+	        	    'qui' => $_SESSION['user_id']
+	        	)
+        	);
+
         	echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'"}]';
         }
     break;

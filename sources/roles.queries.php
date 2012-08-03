@@ -25,7 +25,6 @@ require_once("class.database.php");
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-// Construction de la requ?te en fonction du type de valeur
 if ( !empty($_POST['type']) ){
     switch($_POST['type'])
     {
@@ -114,6 +113,17 @@ if ( !empty($_POST['type']) ){
     	#-------------------------------------------
     	#CASE refresh the matrix
     	case "refresh_roles_matrix":
+    		//pw complexity levels
+			$pw_complexity = array(
+			    0=>array(0,$txt['complex_level0']),
+			    25=>array(25,$txt['complex_level1']),
+			    50=>array(50,$txt['complex_level2']),
+			    60=>array(60,$txt['complex_level3']),
+			    70=>array(70,$txt['complex_level4']),
+			    80=>array(80,$txt['complex_level5']),
+			    90=>array(90,$txt['complex_level6'])
+			);
+  		
     		require_once ("NestedTree.class.php");
     		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
     		$tree = $tree->getDescendants();
@@ -151,7 +161,7 @@ if ( !empty($_POST['type']) ){
     			}else{
     				$allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$txt['role_can_modify_all_seen_items'].'\'>';
     			}
-    			$texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].'<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'")\'>' .$allow_pw_change. '</th>';
+    			$texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].'<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'")\'>' .$allow_pw_change. '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pw_complexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
 
     			array_push($arrRoles, $reccord['id']);
     		}

@@ -307,6 +307,8 @@ if ( isset($_POST['type']) ){
 
 			# Alter tables
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY id_user INT(8)");
+			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY role_id INT(12)");
+			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY item_id INT(12)");
 
 			## Alter USERS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
@@ -716,7 +718,7 @@ if ( isset($_POST['type']) ){
 				mysql_close($db_tmp);
 				break;
 			}
-			
+
 			## TABLE AUTOMATIC DELETION
         	$res = mysql_query("
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."automatic_del` (
@@ -734,7 +736,7 @@ if ( isset($_POST['type']) ){
 				mysql_close($db_tmp);
 				break;
 			}
-    
+
 
         	## TABLE NOTIFICATION
         	$res = mysql_query("
