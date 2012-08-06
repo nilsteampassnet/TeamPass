@@ -26,7 +26,7 @@ THE SOFTWARE.
 /**
  * @file 		uploadify.php adapted for TeamPass
  * @author		Nils Laumaill�
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaill�
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net

@@ -2,7 +2,7 @@
 /**
  * @file 		items.load.php
  * @author		Nils Laumaillé
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	OpenSource BSD 3-clause (OSI)
  * @link		http://www.teampass.net
@@ -155,7 +155,7 @@ function ListerItems(groupe_id, restricted, start){
                     $("#hid_cat").val("");
                     $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history,, #menu_button_share").attr('disabled', 'disabled');
 					$("#item_details_nok").show();
-					$("#item_details_ok").hide();
+					$("#item_details_ok, #item_details_no_personal_saltkey").hide();
 	                $("#items_list_loader").hide();
 				}
 				else if($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0){

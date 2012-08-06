@@ -2,7 +2,7 @@
 /**
  * @file 		items.queries.php
  * @author		Nils Laumaillé
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -372,7 +372,9 @@ if ( isset($_POST['type']) ){
 
                 //Get existing values -> TODO
                 $data = $db->query_first("
-					SELECT *, u.login AS user_login, u.email AS user_email
+					SELECT i.id AS id, i.label AS label, i.description AS description, i.pw AS pw, i.url AS url, i.id_tree AS id_tree, i.perso AS perso, i.login AS login,
+					i.inactif AS inactif, i.restricted_to AS restricted_to, i.anyone_can_modify AS anyone_can_modify, i.email AS email, i.notification AS notification,
+					u.login AS user_login, u.email AS user_email
 					FROM ".$pre."items AS i
 					INNER JOIN ".$pre."log_items AS l ON (i.id=l.id_item)
 					INNER JOIN ".$pre."users AS u ON (u.id=l.id_user)
@@ -435,43 +437,60 @@ if ( isset($_POST['type']) ){
 
                 //Update automatic deletion - Only by the creator of the Item
                 if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1){
-                	if($data_received['to_be_deleted'] > 0){
-	                	//check if elem exists in Table. If not add it or update it.
-	                	$data_exist = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
-	                	if ($data_exist[0] == 0){
-	                		$db->query_insert(
-		                        'automatic_del',
-		                        array(
-		                            'item_id' => $data_received['id'],
-		                            'del_enabled' => 1,
-		                            'del_type' => 1,
-		                            'del_value' => $data_received['to_be_deleted']
-		                        )
-		                    );
-	                	}else{
-		                	$db->query_update(
-				                "automatic_del",
-				                array(
-				                    'del_value' => $data_received['to_be_deleted'],
-				                ),
-				                "item_id = ".$data_received['id']
-				            );
-	                	}
-	                	$arrData['to_be_deleted'] = $data_received['to_be_deleted'];
-		            }else{
-		            	$db->query("DELETE FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
-		            }
-		            //update LOG
-                    $db->query_insert(
-	            		'log_items',
-	            		array(
-	            		    'id_item' => $data_received['id'],
-	            		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-	            		    'id_user' => $_SESSION['user_id'],
-	            		    'action' => 'at_modification',
-	            		    'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
-	            		)
-            		);
+                	//check if elem exists in Table. If not add it or update it.
+                	$data_tmp = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
+                	if ($data_tmp[0] == 0){
+                		//No automatic deletion for this item
+                		if($data_received['to_be_deleted'] > 0){
+                			//Automatic deletion to be added
+                			$db->query_insert(
+	                			'automatic_del',
+	                			array(
+	                			    'item_id' => $data_received['id'],
+	                			    'del_enabled' => 1,
+	                			    'del_type' => 1,
+	                			    'del_value' => $data_received['to_be_deleted']
+	                			)
+                			);
+                			//update LOG
+                			$db->query_insert(
+	                			'log_items',
+	                			array(
+	                			    'id_item' => $data_received['id'],
+	                			    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	                			    'id_user' => $_SESSION['user_id'],
+	                			    'action' => 'at_modification',
+	                			    'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
+	                			)
+                			);
+                		}
+                	}else{
+                		//Automatic deletion exists for this item
+                		if($data_received['to_be_deleted'] > 0){
+                			//Update automatic deletion
+                			$db->query_update(
+	                			"automatic_del",
+	                			array(
+	                			    'del_value' => $data_received['to_be_deleted'],
+	                			),
+	                			"item_id = ".$data_received['id']
+                			);
+                		}else{
+                			//delete automatic deleteion for this item
+                			$db->query("DELETE FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
+                		}
+                		//update LOG
+                		$db->query_insert(
+	                		'log_items',
+	                		array(
+	                		    'id_item' => $data_received['id'],
+	                		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	                		    'id_user' => $_SESSION['user_id'],
+	                		    'action' => 'at_modification',
+	                		    'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
+	                		)
+                		);
+                	}
                 }
 
             	//get readable list of restriction
@@ -507,7 +526,7 @@ if ( isset($_POST['type']) ){
 						WHERE r.item_id = ".$data_received['id']."
 						ORDER BY t.title ASC");
             		foreach($rows as $reccord){
-            			if(empty($old_restriction_list)) $old_restriction_list = $data_tmp['title'];
+            			if(empty($old_restriction_list)) $old_restriction_list = $reccord['title'];
             			else $old_restriction_list .= ";".$reccord['title'];
             		}
             		//delete previous values
@@ -550,7 +569,6 @@ if ( isset($_POST['type']) ){
                         )
                     );
                 /*LOGIN */
-            	echo $data['login']." ; ".$login;
                 if ( $data['login'] != $login )
                     $db->query_insert(
                         'log_items',
@@ -1566,7 +1584,7 @@ if ( isset($_POST['type']) ){
                     FROM ".$pre."items AS i
                     INNER JOIN ".$pre."nested_tree AS n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items AS l ON (i.id = l.id_item)
-					INNER JOIN ".$pre."keys AS k ON (k.id = i.id)
+					LEFT JOIN ".$pre."keys AS k ON (k.id = i.id)
                     WHERE i.inactif = 0".
             		$where_arg."
                     AND l.action = 'at_creation'";
@@ -2213,27 +2231,32 @@ if ( isset($_POST['type']) ){
     	   * Send email
     	*/
     	case "send_email":
-    		if(!empty($_POST['content'])) $content = explode(',', $_POST['content']);
-    		if($_POST['cat'] == "request_access_to_author"){
-    			$data_author = $db->query_first("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
-    			$data_item = $db->query_first("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
-    			SendEmail(
-    				$txt['email_request_access_subject'],
-    				str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($data_author['login']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_request_access_mail']),
-    				$data_author['email']
-				);
-    		}else if($_POST['cat'] == "share_this_item"){
-    			$data_item = $db->query_first("SELECT label,id_tree FROM ".$pre."items WHERE id= ".$_POST['id']);
-    			$ret = SendEmail(
-    				$txt['email_share_item_subject'],
-    				str_replace(
-						array('#tp_link#', '#tp_user#', '#tp_item#'),
-						array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$data_item['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($data_item['label'])),
-						$txt['email_share_item_mail']
-					),
-    				$_POST['receipt']
-				);
-				echo '[{"error" : "'.$ret.'"}]';
+    		if ($_POST['key'] != $_SESSION['key']){
+    			echo '[{"error" : "something_wrong"}]';
+    			break;
+    		}else{
+	    		if(!empty($_POST['content'])) $content = explode(',', $_POST['content']);
+	    		if($_POST['cat'] == "request_access_to_author"){
+	    			$data_author = $db->query_first("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
+	    			$data_item = $db->query_first("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
+	    			SendEmail(
+	    				$txt['email_request_access_subject'],
+	    				str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($data_author['login']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_request_access_mail']),
+	    				$data_author['email']
+					);
+	    		}else if($_POST['cat'] == "share_this_item"){
+	    			$data_item = $db->query_first("SELECT label,id_tree FROM ".$pre."items WHERE id= ".$_POST['id']);
+	    			$ret = SendEmail(
+	    				$txt['email_share_item_subject'],
+	    				str_replace(
+							array('#tp_link#', '#tp_user#', '#tp_item#'),
+							array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$data_item['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($data_item['label'])),
+							$txt['email_share_item_mail']
+						),
+	    				$_POST['receipt']
+					);
+					echo '[{"error" : "'.$ret.'"}]';
+	    		}
     		}
     	break;
 

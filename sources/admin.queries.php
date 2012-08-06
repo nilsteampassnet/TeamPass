@@ -2,7 +2,7 @@
 /**
  * @file 		admin.queries.php
  * @author		Nils Laumaillé
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -320,7 +320,7 @@ switch($_POST['type'])
         $alltables = mysql_query("SHOW TABLES");
         while ($table = mysql_fetch_assoc($alltables))
         {
-           foreach ($table as $db => $tablename)
+           foreach ($table as $i => $tablename)
            {
                if ( substr_count($tablename,$pre) > 0 ){
                    // launch optimization quieries

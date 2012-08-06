@@ -2,7 +2,7 @@
 /**
  * @file 		kb.queries.php
  * @author		Nils Laumaillé
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
