@@ -44,10 +44,10 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     }
 
     function showItemsInTree(type){
-        if ( document.getElementById('img_funnel').src == "includes/images/funnel_plus.png" )
-            document.getElementById('img_funnel').src="includes/images/funnel_minus.png"
+        if ( $("#img_funnel").attr('src') == "includes/images/funnel_plus.png" )
+        	$("#img_funnel").attr('src','includes/images/funnel_minus.png');
         else
-            document.getElementById('img_funnel').src="includes/images/funnel_plus.png"
+            $("#img_funnel").attr('src','includes/images/funnel_plus.png');
     }
 
     //FUNCTION mask/unmask passwords characters
@@ -186,6 +186,8 @@ function ListerItems(groupe_id, restricted, start){
 					$("#item_details_ok, #items_list").show();
 	        		$("#items_path").html(data.arborescence);
 					$('#complexite_groupe').val(data.folder_complexity);
+					$('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
+					$('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
 	        		if (data.list_to_be_continued == "yes") {
 	        			$("#full_items_list").append(data.items_html);
@@ -299,11 +301,11 @@ function pwGenerate(elem){
 
 function pwCopy(elem){
     if ( elem != "" ) elem = elem+"_";
-    document.getElementById(elem+'pw2').value = document.getElementById(elem+'pw1').value;
+    $("#"+elem+'pw2').val($("#"+elem+'pw1').val());
 }
 
 function catSelected(val){
-    document.getElementById("hid_cat").value= val;
+    $("#hid_cat").val(val);
 }
 
 function RecupComplexite(val,edit){
@@ -329,8 +331,7 @@ function RecupComplexite(val,edit){
 
 function AjouterItem(){
 	LoadingPage();
-
-    document.getElementById('error_detected').value = '';   //Refresh error foolowup
+	$("#error_detected").val('');   //Refresh error foolowup
     var erreur = "";
     var  reg=new RegExp("[.|;|:|!|=|+|-|*|/|#|\"|'|&|]");
 
@@ -464,13 +465,11 @@ function AjouterItem(){
                 }
             );
         }else{
-            document.getElementById('new_show_error').innerHTML = "<?php echo $txt['error_complex_not_enought'];?>";
-            $("#new_show_error").show();
+            $('#new_show_error').html("<?php echo $txt['error_complex_not_enought'];?>").show();
         }
     }
     if ( erreur != "") {
-        document.getElementById('new_show_error').innerHTML = erreur;
-        $("#new_show_error").show();
+        $('#new_show_error').html(erreur).show();
     }
 }
 
@@ -485,23 +484,23 @@ function EditerItem(){
     }
 
     if ($('#edit_label').val() == "" ) erreur = "<?php echo $txt['error_label'];?>";
-    else if ( document.getElementById("edit_pw1").value == "" ) erreur = "<?php echo $txt['error_pw'];?>";
-    else if ( document.getElementById("edit_pw1").value != document.getElementById("edit_pw2").value ) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ( document.getElementById("edit_tags").value != "" && reg.test(document.getElementById("edit_tags").value) ) erreur = "<?php echo $txt['error_tags'];?>";
+    else if ( $("#edit_pw1").val() == "" ) erreur = "<?php echo $txt['error_pw'];?>";
+    else if ( $("#edit_pw1").val() != $("#edit_pw2").val() ) erreur = "<?php echo $txt['error_confirm'];?>";
+    else if ( $("#edit_tags").val() != "" && reg.test($("#edit_tags").val()) ) erreur = "<?php echo $txt['error_tags'];?>";
     else{
         //Check pw complexity level
         if ( (
-                document.getElementById("bloquer_modification_complexite").value == 0 &&
-                parseInt(document.getElementById("edit_mypassword_complex").value) >= parseInt(document.getElementById("complexite_groupe").value)
+                $("#bloquer_modification_complexite").val() == 0 &&
+                parseInt($("#edit_mypassword_complex").val()) >= parseInt($("#complexite_groupe").val())
             )
             ||
-            ( document.getElementById("bloquer_modification_complexite").value == 1 )
+            ( $("#bloquer_modification_complexite").val() == 1 )
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
         ){
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
-            if ( document.getElementById('edit_annonce').checked ) annonce = 1;
+            if ( $('#edit_annonce').attr('checked') ) annonce = 1;
 
 
             //Manage restriction
@@ -542,10 +541,17 @@ function EditerItem(){
             }
 
           //To be deleted
-            if ( $("#edit_enable_delete_after_consultation").is(':checked') && $("#edit_times_before_deletion").val() >= 1 ){
-				var to_be_deleted = $("#edit_times_before_deletion").val();
+            if ( $("#edit_enable_delete_after_consultation").is(':checked') && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "") ){
+				if($("#edit_times_before_deletion").val() >= 1) {
+					var to_be_deleted = $("#edit_times_before_deletion").val();
+					//var to_be_deleted_after_date = "";
+				}else if($("#edit_deletion_after_date").val() != "") {
+					//var to_be_deleted = "0";
+					var to_be_deleted = $("#edit_deletion_after_date").val();
+				}
             }else{
-            	var to_be_deleted = 0;
+            	var to_be_deleted = "";
+            	//var to_be_deleted_after_date = "";
             }
 
           	//prepare data
@@ -646,14 +652,12 @@ function EditerItem(){
 
 
         }else{
-            document.getElementById('edit_show_error').innerHTML = "<?php echo $txt['error_complex_not_enought'];?>";
-            $("#edit_show_error").show();
+            $('#edit_show_error').html("<?php echo $txt['error_complex_not_enought'];?>").show();
         }
     }
 
     if ( erreur != "") {
-        document.getElementById('edit_show_error').innerHTML = erreur;
-        $("#edit_show_error").show();
+    	$('#edit_show_error').html(erreur).show();
     }
 }
 
@@ -704,7 +708,7 @@ function AjouterFolder(){
 
 
 function SupprimerFolder(){
-    if ( document.getElementById("delete_rep_groupe").value == "0" ) alert("<?php echo $txt['error_group'];?>");
+    if ( $("#delete_rep_groupe").val() == "0" ) alert("<?php echo $txt['error_group'];?>");
     else if ( confirm("<?php echo $txt['confirm_delete_group'];?>") ) {
         $.post(
 			"sources/folders.queries.php",
@@ -731,7 +735,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         return false;
 	}
     LoadingPage();  //afficher image de chargement
-    if ( document.getElementById("is_admin").value == "1" ){
+    if ( $("#is_admin").val() == "1" ){
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
 
@@ -820,7 +824,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#hid_anyone_can_modify").val(data.anyone_can_modify);
                     $("#id_categorie").val(data.folder);
                     $("#id_item").val(data.id);
-                    $("#id_files").html(data.files_id).html();
+                    $("#id_files").html(data.files_id);
                     $("#hid_files").val(data.files_id);
                     $("#item_edit_list_files").html(data.files_edit).html();
                     $("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
@@ -1076,7 +1080,7 @@ function open_edit_item_div(restricted_to_roles) {
 	}
 
 	//Get complexity level for this folder
-	RecupComplexite(document.getElementById('hid_cat').value,1);
+	RecupComplexite($('#hid_cat').val(),1);
 
 	//Get list of people in restriction list
 	if($('#edit_restricted_to').val() != undefined){
@@ -1477,7 +1481,7 @@ $(function() {$('#toppathwrap').hide();
 
 
     $("#add_folder").click(function() {
-        var posit = document.getElementById('item_selected').value;
+        var posit = $('#item_selected').val();
         alert($("ul").text());
     });
 
@@ -1708,7 +1712,9 @@ $(function() {$('#toppathwrap').hide();
         title: "<?php echo $txt['share'];?>",
         buttons: {
 			"<?php echo $txt['send'];?>": function() {
+        		$("#div_item_share_error").hide();
 				if(IsValidEmail($("#item_share_email").val())){	//check if email format is ok
+					$("#div_item_share_status").show();
 					$.post(
 						"sources/items.queries.php",
 						{
@@ -1719,12 +1725,14 @@ $(function() {$('#toppathwrap').hide();
 							key		: "<?php echo $_SESSION['key'];?>"
 						},
 						function(data){
+							$("#div_item_share_status").html("").hide();
 							if (data[0].error == "") {
-								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>");
+								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>").show();
 							}else{
-								$("#div_item_share_error").html(data[0].message);
+								$("#div_item_share_error").html(data[0].message).show();
 							}
-						}
+						},
+						"json"
 					);
 				}else{
 					$("#div_item_share_error").html("<?php echo $txt['bad_email_format'];?>").show();
@@ -1746,7 +1754,7 @@ $(function() {$('#toppathwrap').hide();
         "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>", "PHPSESSID":"<?php echo session_id();?>"},
         "auto"      : false,
         "multi"     : true,
-        "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
+        "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",
         "sizeLimit" : 16777216,
         "queueID"   : "item_edit_file_queue",
         "onComplete": function(event, queueID, fileObj, reponse, data){if(reponse=="ok"){$("#edit_show_error").html(reponse).hide();$("#item_edit_list_files").append(fileObj.name+"<br />");}else{$("#edit_show_error").html(reponse).show();}},
@@ -1760,10 +1768,10 @@ $(function() {$('#toppathwrap').hide();
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
         "auto"      : false,
         "multi"     : true,
-        "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
+        "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",
         "sizeLimit" : 16777216,
         "queueID"   : "item_file_queue",
-        "onComplete": function(event, queueID, fileObj, reponse, data){document.getElementById("item_files_upload").append(fileObj.name+"<br />");},
+        "onComplete": function(event, queueID, fileObj, reponse, data){$("#item_files_upload").append(fileObj.name+"<br />");},
         "buttonText": "<?php echo $txt['upload_button_text'];?>"
     });
 
@@ -1871,6 +1879,13 @@ $(function() {$('#toppathwrap').hide();
 	var tbval = $('#jstree_search').val();
 	$('#jstree_search').focus(function() { $(this).val('');});
 	$('#jstree_search').blur(function() { $(this).val(tbval);});
+
+	//add date selector
+	$( ".datepicker" ).datepicker({
+		dateformat:"<?php echo $_SESSION['settings']['date_format'];?>",
+		changeMonth: true,
+		changeYear: true
+	});
 });
 
 function htmlspecialchars_decode (string, quote_style) {

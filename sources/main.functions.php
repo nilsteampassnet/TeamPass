@@ -543,7 +543,7 @@ function CPMStats(){
  *
  * @return
  */
-function SendEmail($subject, $mail, $email){
+function SendEmail($subject, $text_mail, $email){
 
 	//load library
 	include('../includes/settings.php');
@@ -552,6 +552,9 @@ function SendEmail($subject, $mail, $email){
 	//send to user
 	$mail = new PHPMailer();
 	$mail->SetLanguage("en","../includes/libraries/phpmailer/language/");
+	$mail->SMTPDebug = 0;	//value 1 can be used to debug
+	//$mail->Port = 465;	//COULD BE USED
+	//$mail->SMTPSecure = 'ssl'; 	//COULD BE USED
 	$mail->IsSMTP();						// send via SMTP
 	$mail->Host     = $smtp_server; 		// SMTP servers
 	$mail->SMTPAuth = $smtp_auth;     		// turn on SMTP authentication
@@ -563,7 +566,7 @@ function SendEmail($subject, $mail, $email){
 	$mail->WordWrap = 80;					// set word wrap
 	$mail->IsHTML(true);					// send as HTML
 	$mail->Subject  =  $subject;
-	$mail->Body     =  $mail;
+	$mail->Body     =  $text_mail;
 
 	//send email
 	if(!$mail->Send())
@@ -585,5 +588,4 @@ function SendEmail($subject, $mail, $email){
 function GenerateKey(){
 	return substr(md5(rand().rand()), 0, 15);
 }
-
 ?>

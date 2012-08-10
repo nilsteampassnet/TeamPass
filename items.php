@@ -2,7 +2,7 @@
 /**
  * @file 		items.php
  * @author		Nils Laumaillé
- * @version 	2.1
+ * @version 	2.1.8
  * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -134,7 +134,7 @@ echo '
 
 	        echo '
 			<div id="jstree" style="overflow:auto;">
-		        <ul id="node_'.$folder_cpt.'">';// 
+		        <ul id="node_'.$folder_cpt.'">';//
 		        foreach($folders as $folder){
 		            //Be sure that user can only see folders he/she is allowed to
 		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) ||
@@ -685,13 +685,14 @@ echo '
 				<input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify" />
 				<label for="edit_anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
 			</div>';
-			
+
 			//Line for Item automatically deleted
 			echo '
 			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
 				<label for="edit_enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
-				<input type="text" value="1" size="1" id="edit_times_before_deletion" />&nbsp;'.$txt['times'].'
+				<input type="text" value="" size="1" id="edit_times_before_deletion" onChange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$txt['times'].'&nbsp;
+				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
 			</div>';
 
 			echo '
@@ -856,6 +857,7 @@ echo '
 	<div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 	<div style="">'.$txt['item_share_text'].'</div>
 	<input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
+	<div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
 </div>';
 
 

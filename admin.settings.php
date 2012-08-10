@@ -165,6 +165,16 @@ if (isset($_POST['save_button'])) {
         UpdateSettings('cpassman_url',$_POST['cpassman_url']);
     }
 
+	//Update path_to_upload_folder
+	if ( (isset($_SESSION['settings']['path_to_upload_folder']) && $_SESSION['settings']['path_to_upload_folder'] != $_POST['path_to_upload_folder']) || (!isset($_SESSION['settings']['path_to_upload_folder'])) ){
+		UpdateSettings('path_to_upload_folder',$_POST['path_to_upload_folder']);
+	}
+
+	//Update url_to_upload_folder
+	if ( (isset($_SESSION['settings']['url_to_upload_folder']) && $_SESSION['settings']['url_to_upload_folder'] != $_POST['url_to_upload_folder']) || (!isset($_SESSION['settings']['url_to_upload_folder'])) ){
+		UpdateSettings('url_to_upload_folder',$_POST['url_to_upload_folder']);
+	}
+
     //Update pw_life_duration
     if ( isset($_SESSION['settings']['pw_life_duration']) && $_SESSION['settings']['pw_life_duration'] != $_POST['pw_life_duration'] ){
         UpdateSettings('pw_life_duration',$_POST['pw_life_duration']);
@@ -358,6 +368,30 @@ echo '
                 	<td>
                 </tr>';
 
+				//path_to_upload_folder
+				echo '
+				<tr style="margin-bottom:3px">
+				    <td>
+				    	<span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+				    	<label for="path_to_upload_folder">'.$txt['admin_path_to_upload_folder'].'</label>
+					</td>
+					<td>
+				    	<input type="text" size="80" id="path_to_upload_folder" name="path_to_upload_folder" value="', isset($_SESSION['settings']['path_to_upload_folder']) ? $_SESSION['settings']['path_to_upload_folder'] : $_SESSION['settings']['cpassman_dir'].'/upload', '" class="text ui-widget-content ui-corner-all" />
+					<td>
+				</tr>';
+
+				//url_to_upload_folder
+				echo '
+				<tr style="margin-bottom:3px">
+				    <td>
+				    	<span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+				    	<label for="url_to_upload_folder">'.$txt['admin_url_to_upload_folder'].'</label>
+					</td>
+					<td>
+				    	<input type="text" size="80" id="url_to_upload_folder" name="url_to_upload_folder" value="', isset($_SESSION['settings']['url_to_upload_folder']) ? $_SESSION['settings']['url_to_upload_folder'] : $_SESSION['settings']['cpassman_url'].'/upload', '" class="text ui-widget-content ui-corner-all" />
+					<td>
+				</tr>';
+
                 //Favicon
                 echo '
                 <tr style="margin-bottom:3px">
@@ -458,7 +492,6 @@ echo '
 							<option value="m/d/y"', $_SESSION['settings']['date_format'] == "m/d/y" ? ' selected="selected"':"",'>m/d/y</option>
 							<option value="d-M-y"', $_SESSION['settings']['date_format'] == "d-M-y" ? ' selected="selected"':"",'>d-M-y</option>
 							<option value="d-m-y"', $_SESSION['settings']['date_format'] == "d-m-y" ? ' selected="selected"':"",'>d-m-y</option>
-							<option value="F d, Y"', $_SESSION['settings']['date_format'] == "F d, Y" ? ' selected="selected"':"",'>F d, Y</option>
 							<option value="Y-m-d"', $_SESSION['settings']['date_format'] == "Y-m-d" ? ' selected="selected"':"",'>Y-m-d</option>
 						</select>
                     <td>

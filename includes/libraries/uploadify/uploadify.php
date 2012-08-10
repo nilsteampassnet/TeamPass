@@ -94,10 +94,8 @@ include('../../../sources/class.database.php');
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-//Get path
-$row = $db->query("SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule = 'cpassman_dir'");
-$data = $db->fetch_array($row);
-$targetPath = $data['valeur'];
+//Get path;
+$targetPath = $_SESSION['settings']['cpassman_dir'];
 
 //Treat the uploaded file
 if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
@@ -122,7 +120,7 @@ if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_fro
 else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db") ){
 	// Get some variables
 	$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
-	$targetPath .= '/upload/';
+	$targetPath = $_SESSION['settings']['path_to_upload_folder'].'/';
 	$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
 
 	// Store to database
@@ -158,8 +156,10 @@ else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_ite
 }
 
 //move
-move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile);
-echo $targetFile;
+if(move_uploaded_file($_FILES['Filedata']['tmp_name'], $targetFile))
+	echo "ok";
+else
+	echo "nok";
 
 // Permits to extract the file extension
 function get_file_extension($f)

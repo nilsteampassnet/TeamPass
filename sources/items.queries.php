@@ -148,13 +148,13 @@ if ( isset($_POST['type']) ){
 		            );
 
 		            //If automatic deletion asked
-		            if($data_received['to_be_deleted'] != 0){
+		            if($data_received['to_be_deleted'] != 0 || is_date($data_received['to_be_deleted'], $_SESSION['settings']['date_format'])){
 		            	$db->query_insert(
 			                'automatic_del',
 			                array(
 			                    'item_id' => $_POST['id'],
 			                    'del_enabled' => 1,	//0=deactivated;1=activated
-			                    'del_type' => 1,	//1=counter;2=date
+			                    'del_type' => is_date($data_received['to_be_deleted'], $_SESSION['settings']['date_format']) ? 2 : 1,	//1=counter;2=date
 			                    'del_value' => $data_received['to_be_deleted']
 			                )
 			            );
@@ -441,14 +441,14 @@ if ( isset($_POST['type']) ){
                 	$data_tmp = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$data_received['id']."'");
                 	if ($data_tmp[0] == 0){
                 		//No automatic deletion for this item
-                		if($data_received['to_be_deleted'] > 0){
+                		if(!empty($data_received['to_be_deleted']) || ($data_received['to_be_deleted'] > 0 && is_numeric($data_received['to_be_deleted']))){
                 			//Automatic deletion to be added
                 			$db->query_insert(
 	                			'automatic_del',
 	                			array(
 	                			    'item_id' => $data_received['id'],
 	                			    'del_enabled' => 1,
-	                			    'del_type' => 1,
+	                			    'del_type' => is_numeric($data_received['to_be_deleted']) ? 1 : 2,
 	                			    'del_value' => $data_received['to_be_deleted']
 	                			)
                 			);
@@ -466,11 +466,12 @@ if ( isset($_POST['type']) ){
                 		}
                 	}else{
                 		//Automatic deletion exists for this item
-                		if($data_received['to_be_deleted'] > 0){
+                		if(!empty($data_received['to_be_deleted']) || ($data_received['to_be_deleted'] > 0 && is_numeric($data_received['to_be_deleted']))){
                 			//Update automatic deletion
                 			$db->query_update(
 	                			"automatic_del",
 	                			array(
+	                				'del_type' => is_numeric($data_received['to_be_deleted']) ? 1 : 2,
 	                			    'del_value' => $data_received['to_be_deleted'],
 	                			),
 	                			"item_id = ".$data_received['id']
@@ -495,7 +496,7 @@ if ( isset($_POST['type']) ){
 
             	//get readable list of restriction
             	$list_of_restricted = $old_restriction_list = "";
-            	if(!empty($data_received['restricted_to'])){
+            	if(!empty($data_received['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1){
             		foreach(explode(';', $data_received['restricted_to']) as $user_rest){
             			if(!empty($user_rest)){
             				$data_tmp = $db->query_first("SELECT login FROM ".$pre."users WHERE id= ".$user_rest);
@@ -504,7 +505,7 @@ if ( isset($_POST['type']) ){
             			}
             		}
             	}
-            	if ($data['restricted_to'] != $data_received['restricted_to']){
+            	if ($data['restricted_to'] != $data_received['restricted_to'] && $_SESSION['settings']['restricted_to'] == 1){
             		if(!empty($data['restricted_to'])){
             			foreach(explode(';', $data['restricted_to']) as $user_rest){
             				if(!empty($user_rest)){
@@ -517,7 +518,7 @@ if ( isset($_POST['type']) ){
             	}
 
             	//Manage retriction_to_roles
-            	if (isset($data_received['restricted_to_roles'])) {
+            	if (isset($data_received['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
             		//get values before deleting them
             		$rows = $db->fetch_all_array("
 						SELECT t.title
@@ -722,7 +723,7 @@ if ( isset($_POST['type']) ){
                         $icon_image = file_format_image($reccord['extension']);
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if ( in_array($reccord['extension'],$k['image_file_ext']) )
-                            $files .=   '<img src="includes/images/'.$icon_image.'" /><a class="image_dialog" href="'.$_SESSION['settings']['cpassman_url'].'/upload/'.$reccord['file'].'" title="'.$reccord['name'].'">'.$reccord['name'].'</a><br />';
+                            $files .=   '<img src="includes/images/'.$icon_image.'" /><a class="image_dialog" href="'.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'" title="'.$reccord['name'].'">'.$reccord['name'].'</a><br />';
                         else
                             $files .=   '<img src="includes/images/'.$icon_image.'" /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\' target=\'_blank\'>'.$reccord['name'].'</a><br />';
                         // Prepare list of files for edit dialogbox
@@ -1212,7 +1213,7 @@ if ( isset($_POST['type']) ){
                         $icon_image = file_format_image($reccord['extension']);
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if ( in_array($reccord['extension'],$k['image_file_ext']) )
-                            $files .=   '<img src=\'includes/images/'.$icon_image.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['cpassman_url'].'/upload/'.$reccord['file'].'\' title=\''.$reccord['name'].'\'>'.$reccord['name'].'</a><br />';
+                            $files .=   '<img src=\'includes/images/'.$icon_image.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'\' title=\''.$reccord['name'].'\'>'.$reccord['name'].'</a><br />';
                         else
                             $files .=   '<img src=\'includes/images/'.$icon_image.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\'>'.$reccord['name'].'</a><br />';
                         // Prepare list of files for edit dialogbox
@@ -1905,7 +1906,6 @@ if ( isset($_POST['type']) ){
 	        	//"items" => $returned_data
 			);
 
-
         	//Check if $rights is not null
         	if (count( $rights) > 0) {
         		$return_values = array_merge($return_values, $rights);
@@ -2015,7 +2015,7 @@ if ( isset($_POST['type']) ){
                 );
 
                 //Delete file from server
-                @unlink("../upload/".$data[2]);
+                @unlink($_SESSION['settings']['path_to_upload_folder']."/".$data[2]);
             }
         break;
 
@@ -2239,7 +2239,7 @@ if ( isset($_POST['type']) ){
 	    		if($_POST['cat'] == "request_access_to_author"){
 	    			$data_author = $db->query_first("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
 	    			$data_item = $db->query_first("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
-	    			SendEmail(
+	    			$ret = SendEmail(
 	    				$txt['email_request_access_subject'],
 	    				str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($data_author['login']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_request_access_mail']),
 	    				$data_author['email']
@@ -2255,7 +2255,7 @@ if ( isset($_POST['type']) ){
 						),
 	    				$_POST['receipt']
 					);
-					echo '[{"error" : "'.$ret.'"}]';
+					echo '[{'.$ret.'}]';
 	    		}
     		}
     	break;
@@ -2340,7 +2340,7 @@ function RecupDroitCreationSansComplexite($groupe){
     }else{
         //echo 'document.getElementById("bloquer_creation_complexite").value = "'.$data[0].'";';
     	//echo 'document.getElementById("bloquer_modification_complexite").value = "'.$data[1].'";';
-    	return array("bloquer_modification_complexite"=>$data[0],"bloquer_creation_complexite"=>$data[1]);
+    	return array("bloquer_modification_complexite"=>$data[1],"bloquer_creation_complexite"=>$data[0]);
     }
 
 }

@@ -273,7 +273,9 @@ if ( isset($_POST['type']) ){
 				array('admin', 'send_mail_on_user_login', '0', 0),
 				array('cron', 'sending_emails', '0', 0),
 				array('admin', 'nb_items_by_query', 'auto', 0),
-				array('admin', 'enable_delete_after_consultation', '1', 0)
+				array('admin', 'enable_delete_after_consultation', '1', 0),
+				array('admin', 'path_to_upload_folder', $_SESSION['abspath'].'/upload', 0),
+				array('admin', 'url_to_upload_folder', '', 0)
 			);
 			$res1 = "na";
 			foreach($val as $elem){
@@ -303,6 +305,7 @@ if ( isset($_POST['type']) ){
 			## Alter ITEMS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT NULL DEFAULT '0'");
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","email","VARCHAR(100) DEFAULT NULL");
+			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","notification","VARCHAR(250) DEFAULT NULL");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
 			# Alter tables
@@ -736,24 +739,6 @@ if ( isset($_POST['type']) ){
 				mysql_close($db_tmp);
 				break;
 			}
-
-
-        	## TABLE NOTIFICATION
-        	$res = mysql_query("
-                CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."notification` (
-				`id_item` int(10) NOT NULL,
-				`id_user` int(10) NOT NULL,
-				`date` varchar(30) NOT NULL
-                ) CHARSET=utf8;");
-        	if ( $res ){
-        		echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/tick.png\">";';
-        	}else{
-        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOLATIC_DEL!";';
-        		echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/exclamation-red.png\">";';
-        		echo 'document.getElementById("loader").style.display = "none";';
-        		mysql_close($db_tmp);
-        		break;
-        	}
 
 
 			//CLEAN UP ITEMS TABLE
