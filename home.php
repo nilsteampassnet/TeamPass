@@ -241,7 +241,7 @@ echo '
                     </div>
                 </div>';
 
-            	//Print out the items
+            	// Data Export (PDF/CSV)
             	echo '
             	<div>
             	    <div id="div_print_out" style="display:none;padding:4px;">
@@ -249,6 +249,10 @@ echo '
 
             	        <label for="selected_folders" class="form_label">'.$txt['select_folders'].' :</label>
             	        <select id="selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
+						<br />
+						<br />
+						<label for="pdf_password" class="form_label">'.$txt['pdf_password'].' :</label>
+						<input type="password" id="pdf_password" name="pdf_password" />
 
 						<div class="div_radio" stle="text-align:center;">
 							<input type="radio" id="export_format_radio1" name="export_format" value="pdf" /><label for="export_format_radio1">'.$txt['pdf'].'</label>

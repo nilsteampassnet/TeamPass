@@ -565,13 +565,21 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 					});
 					$("#div_loading").show();
 
+					// Get PDF encryption password and make sure it is set
+					pdf_password = $("#pdf_password").val();
+					if ((pdf_password == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
+						alert("'.$txt['pdf_password_warning'].'");
+						return;
+					}
+
                 	//Send query
                     $.post(
 		                "sources/export.queries.php",
 		                {
 		                    type    : $("input[name=\"export_format\"]:checked").val() == "pdf" ? "export_to_pdf_format" : "export_to_csv_format",
-		                    ids		: ids
-		                },
+		                    ids		: ids,
+		                    pdf_password : pdf_password
+						},
 		                function(data){
 		                	$("#download_link").html(data[0].text);
 		                	$("#div_loading").hide();

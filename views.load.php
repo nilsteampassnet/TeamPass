@@ -134,6 +134,13 @@ function displayLogs(type, page, order){
     //Show or not the column URL
     if ( type == "errors_logs" ) $("#th_url").show();
     else $("#th_url").hide();
+    //Show or not the column Label
+    if ( type == "pdf_export_logs" ) $("#th_label").hide();
+    else $("#th_label").show();
+    //Show or not the column Folders
+    if ( type == "pdf_export_logs" ) $("#th_folders").show();
+    else $("#th_folders").hide();    
+    
     if ( type == "access_logs" || type == "copy_logs" || type == "admin_logs" ){
     	$("#filter_logs_button").attr("onclick","displayLogs(\'"+type+"\',1,\'date\')")
     	$("#filter_logs_div").show();

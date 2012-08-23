@@ -53,6 +53,7 @@ echo '
 			<input type="radio" id="radio1" name="radio" onclick="displayLogs(\'connections_logs\',1, \'date\')" /><label for="radio1">'.$txt['connections'].'</label>
 			<input type="radio" id="radio2" name="radio" onclick="displayLogs(\'errors_logs\',1, \'date\')" /><label for="radio2">'.$txt['errors'].'</label>
 			<input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>
+			<input type="radio" id="radio6" name="radio" onclick="displayLogs(\'pdf_export_logs\',1, \'date\')" /><label for="radio6">'.$txt['pdf_export'].'</label>
 			<input type="radio" id="radio4" name="radio" onclick="displayLogs(\'copy_logs\',1, \'date\')" /><label for="radio4">'.$txt['at_copy'].'</label>
 			<input type="radio" id="radio5" name="radio" onclick="displayLogs(\'admin_logs\',1, \'date\')" /><label for="radio5">'.$txt['admin'].'</label>
 		</div>
@@ -66,8 +67,9 @@ echo '
 	                <tr>
 	                    <th onclick="displayLogs(\'reorder\', \'\', \'date\')" style="cursor:pointer;" title="">'.$txt['date'].'</th>
 	                    <th id="th_url">'.$txt['url'].'</th>
-	                    <th onclick="displayLogs(\'reorder\', \'\', \'label\')" style="cursor:pointer;" title="">'.$txt['label'].'</th>
+	                    <th id="th_label" onclick="displayLogs(\'reorder\', \'\', \'label\')" style="cursor:pointer;" title="">'.$txt['label'].'</th>
 	                    <th onclick="displayLogs(\'reorder\', \'\', \'login\')" style="cursor:pointer;" title="">'.$txt['user'].'</th>
+	                    <th id="th_folders" title="">'.$txt['folders'].'</th>	                    
 	                </tr>
 	            </thead>
 	            <tbody id="tbody_logs">
