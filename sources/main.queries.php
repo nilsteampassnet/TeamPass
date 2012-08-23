@@ -190,28 +190,25 @@ switch($_POST['type'])
 	        	);
         	}
 
-            require_once ("../includes/libraries/adLDAP/adLDAP.php");
-            $adldap = new adLDAP(array(
-            	'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-	            'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-	            'domain_controllers' => array($_SESSION['settings']['ldap_domain_controler']),
-	            'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-	            'use_tls' => $_SESSION['settings']['ldap_tls']
-            ));
-        	if ($debug_ldap == 1) {
-        		fputs($dbg_ldap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n");	//Debug
-        	}
-
-            //authenticate the user
-            if ($adldap -> authenticate($username,$password_clear)){
+			$basedn = $_SESSION['settings']['ldap_domain_dn'];
+			$filter = "(|(uid=" . $username . ")" . "(mail=" . $username ."@\*))";
+	
+			// Connect to the LDAP server.
+			$ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler'], 389) or die("Could not connect.");
+	
+			// first, bind anonymously to the LDAP server to search and retrieve DN.
+			$ldapbind = ldap_bind($ldapconn) or die("Could not bind anonymously.");
+			$result = ldap_search($ldapconn,$basedn,$filter) or die ("Search error.");
+			$entries = ldap_get_entries($ldapconn, $result);
+			$binddn = $entries[0]["dn"];
+	
+			// Bind again using the DN retrieved. If this bind is successful, then the user has managed to authenticate.
+			$ldapbind = ldap_bind($ldapconn, $binddn, $password_clear);
+			if ($ldapbind) {
                 $ldap_connection = true;
             }else{
                 $ldap_connection = false;
             }
-        	if ($debug_ldap == 1) {
-        		fputs($dbg_ldap, "After authenticate : ".$adldap->get_last_error()."\n\n\n".
-        		"ldap status : ".$ldap_connection."\n\n\n");	//Debug
-        	}
         }
 
     	//Check if user exists in cpassman

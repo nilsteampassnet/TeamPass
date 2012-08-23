@@ -139,4 +139,21 @@ $("#div_item_data").dialog({
           }
       }
   });
+  
+  function focusFind() {
+	var x = $("input[type=\'text\']")[1];
+	if (typeof x === "undefined") {
+		setTimeout('focusFind()',100);
+		return;
+	}
+	
+	if ($(x).is(":focus") === false) {
+		console.log("hat keinen fokus, setze fokus");
+		x.focus();
+	}
+  }
+		
+  $(document).ready(function() { 
+		focusFind();
+  }); 
 </script>

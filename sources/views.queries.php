@@ -386,6 +386,67 @@ switch($_POST['type'])
     	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
     	break;
 
+    #----------------------------------
+    #CASE admin want to see PDF EXPORT logs
+    case "pdf_export_logs":
+        $logs = "";
+        $nb_pages = 1;
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+
+        //get number of pages
+        $data = $db->fetch_row("
+            SELECT COUNT(*)
+            FROM ".$pre."log_system AS l
+            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+            WHERE l.type = 'pdf_export'");
+        if ( $data[0] != 0 ){
+            $nb_pages = ceil($data[0]/$nb_elements);
+            for($i=1;$i<=$nb_pages;$i++){
+                $pages .= '<td onclick=\'displayLogs(\"pdf_export_logs\",'.$i.',\"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+            }
+        }
+        $pages .= '</tr></table>';
+
+        //define query limits
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+            $start = ($nb_elements*($_POST['page']-1)) + 1;
+        }else{
+            $start = 0;
+        }
+
+        //launch query
+        $rows = $db->fetch_all_array("
+            SELECT l.date AS date, l.qui AS who, l.label AS label, u.login AS login
+            FROM ".$pre."log_system AS l
+            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+            WHERE l.type = 'pdf_export'
+            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            LIMIT $start, $nb_elements");
+
+        foreach( $rows as $reccord){
+			$pathlist = "";
+            $folderlist = explode(';',$reccord['label']);
+
+			require_once ("NestedTree.class.php");
+			$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+			$tree->rebuild();
+			// get node paths for table headers
+			foreach($folderlist as $val) {
+				$folders = $tree->getPath($val,true);
+				$path = "";
+				foreach($folders as $val) {
+					if ($path) $path .= " » ";
+					$path .= $val->title;
+				}
+				//if ($pathlist != "") $pathlist .= "<br>";
+				$pathlist .= $path."<br>";
+			}            
+            $logs .= '<tr valign=\"top\"><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"center\">'.$reccord['login'].'</td><td>'.$pathlist.'</td></tr>';
+        }
+
+    	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+    break;
+
     	#----------------------------------
     	#CASE admin want to see COPIES logs
     case "copy_logs":
