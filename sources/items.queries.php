@@ -148,14 +148,15 @@ if ( isset($_POST['type']) ){
 		            );
 
 		            //If automatic deletion asked
-		            if($data_received['to_be_deleted'] != 0 || is_date($data_received['to_be_deleted'], $_SESSION['settings']['date_format'])){
+		            if($data_received['to_be_deleted'] != 0 && !empty($data_received['to_be_deleted'])){
+		            	$date_stamp = DateToStamp($data_received['to_be_deleted']);
 		            	$db->query_insert(
 			                'automatic_del',
 			                array(
-			                    'item_id' => $_POST['id'],
+			                    'item_id' => $new_id,
 			                    'del_enabled' => 1,	//0=deactivated;1=activated
-			                    'del_type' => is_date($data_received['to_be_deleted'], $_SESSION['settings']['date_format']) ? 2 : 1,	//1=counter;2=date
-			                    'del_value' => $data_received['to_be_deleted']
+			                    'del_type' => $date_stamp != false ? 2 : 1,	//1=counter;2=date
+			                    'del_value' => $date_stamp != false ? $date_stamp : $data_received['to_be_deleted']
 			                )
 			            );
 		            }
@@ -449,7 +450,7 @@ if ( isset($_POST['type']) ){
 	                			    'item_id' => $data_received['id'],
 	                			    'del_enabled' => 1,
 	                			    'del_type' => is_numeric($data_received['to_be_deleted']) ? 1 : 2,
-	                			    'del_value' => $data_received['to_be_deleted']
+	                			    'del_value' => is_numeric($data_received['to_be_deleted']) ? $data_received['to_be_deleted'] : DateToStamp($data_received['to_be_deleted'])
 	                			)
                 			);
                 			//update LOG
@@ -472,7 +473,7 @@ if ( isset($_POST['type']) ){
 	                			"automatic_del",
 	                			array(
 	                				'del_type' => is_numeric($data_received['to_be_deleted']) ? 1 : 2,
-	                			    'del_value' => $data_received['to_be_deleted'],
+	                			    'del_value' => is_numeric($data_received['to_be_deleted']) ? $data_received['to_be_deleted'] : DateToStamp($data_received['to_be_deleted'])
 	                			),
 	                			"item_id = ".$data_received['id']
                 			);
@@ -1271,11 +1272,13 @@ if ( isset($_POST['type']) ){
 	            $sql = "SELECT * FROM ".$pre."automatic_del WHERE item_id=".$_POST['id'];
             	$data_delete = $db->query_first($sql);
             	$arrData['to_be_deleted'] = $data_delete['del_value'];
+            	$arrData['to_be_deleted_type'] = $data_delete['del_type'];
 
-	            if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1
-	            	&& $arrData['id_user'] != $_SESSION['user_id']
-	            ){
-	            	if($data_delete['del_enabled'] == 1){
+            	//$date = date_parse_from_format($_SESSION['settings']['date_format'], $data_delete['del_value']);
+            	//echo $_SESSION['settings']['date_format']." ; ".$data_delete['del_value'] ." ; ".mktime(0, 0, 0, $date['month'], $date['day'], $date['year'])." ; ".mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))." ; ";
+
+	            if(isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1){
+	            	if($data_delete['del_enabled'] == 1 || $arrData['id_user'] != $_SESSION['user_id']){
 	            		if($data_delete['del_type'] == 1 && $data_delete['del_value'] > 1){
 	            			//decrease counter
 		            		$db->query_update(
@@ -1289,8 +1292,10 @@ if ( isset($_POST['type']) ){
                 			$arrData['to_be_deleted'] = $data_delete['del_value']-1;
 	            		}else if(
 	            			$data_delete['del_type'] == 1 && $data_delete['del_value'] <= 1
-	            			|| $data_delete['del_type'] == 2 && $data_delete['del_value'] > mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))
+	            			|| $data_delete['del_type'] == 2 && $data_delete['del_value'] < mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))
 	            		){
+	            			$arrData['show_details'] = 0;
+
 	            			//delete item
 	            			$db->query("DELETE FROM ".$pre."automatic_del WHERE item_id = '".$_POST['id']."'");
 	            			//make inactive object
@@ -1314,8 +1319,14 @@ if ( isset($_POST['type']) ){
 				            );
 
 				            $arrData['to_be_deleted'] = 0;
+	            		}else if($data_delete['del_type'] == 2){
+	            			$arrData['to_be_deleted'] = date($_SESSION['settings']['date_format'], $data_delete['del_value']);
 	            		}
+	            	}else{
+	            		$arrData['to_be_deleted'] = "";
 	            	}
+	            }else{
+	            	$arrData['to_be_deleted'] = "not_enabled";
 	            }
 
 				//send notification if enabled

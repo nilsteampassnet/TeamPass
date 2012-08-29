@@ -552,6 +552,7 @@ if ( isset($_POST['type']) ){
                 ('', 'spanish', 'Spanish' , 'es', 'es.png'),
                 ('', 'german', 'German' , 'de', 'de.png'),
                 ('', 'czech', 'Czech' , 'cz', 'cz.png'),
+                ('', 'italian', 'Italian' , 'it', 'it.png'),
                 ('', 'russian', 'Russian' , 'ru', 'ru.png'),
                 ('', 'hungarian', 'Hungarian' , 'hu', 'hu.png'),
                 ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),

@@ -74,13 +74,12 @@ security and auditing.
 * Tree view => cookie collapse or not
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
-* LDAP improvement => 2.1.9
+* LDAP improvement => 2.1.10
+* G129 => 2.1.10
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.9
- * G126-G132-G130
- TODO: G129-
- * G131 started
+ * G126-G132-G130-G131-G139
  * Italian translation
 
 2.1.8

@@ -547,7 +547,8 @@ echo '
 			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
 				<label for="enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
-				<input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$txt['times'].'
+				<input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$txt['times'].'&nbsp;
+				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onChange="$(\'#times_before_deletion\').val(\'\')" />
 			</div>';
             //Line for EMAIL
             echo '
@@ -688,11 +689,11 @@ echo '
 
 			//Line for Item automatically deleted
 			echo '
-			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+			<div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
 				<label for="edit_enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
 				<input type="text" value="" size="1" id="edit_times_before_deletion" onChange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$txt['times'].'&nbsp;
-				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
+				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
 			</div>';
 
 			echo '

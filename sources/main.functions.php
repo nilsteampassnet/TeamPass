@@ -588,4 +588,21 @@ function SendEmail($subject, $text_mail, $email){
 function GenerateKey(){
 	return substr(md5(rand().rand()), 0, 15);
 }
+
+/**
+ * DateToStamp()
+ *
+ * @return
+ */
+function DateToStamp($date){
+	$date = date_parse_from_format($_SESSION['settings']['date_format'], $date);
+	if($date['warning_count'] == 0 && $date['error_count'] == 0)
+		return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+	else
+		return false;
+}
+
+function is_date($date){
+	return (strtotime($date) !== false);
+}
 ?>
