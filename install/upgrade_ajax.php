@@ -688,12 +688,12 @@ if ( isset($_POST['type']) ){
 	                ('', 'czech', 'Czech' , 'cz', 'cz.png'),
                 	('', 'italian', 'Italian' , 'it', 'it.png'),
 	                ('', 'russian', 'Russian' , 'ru', 'ru.png'),
-	                ('', 'hungarian', 'Hungarian' , 'hu', 'hu.png'),
 	                ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),
 	                ('', 'norwegian', 'Norwegian' , 'no', 'no.png'),
 	                ('', 'japanese', 'Japanese' , 'ja', 'ja.png'),
 	                ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png');");
 			}else{
+				mysql_query("TRUNCATE TABLE ".$_SESSION['tbl_prefix']."languages");
 				//Check that all languages are present
 				$arr_lang = array(
 				    'fr'=>array('french', 'French', 'fr', 'fr.png'),
@@ -703,7 +703,6 @@ if ( isset($_POST['type']) ){
 				    'fr'=>array('czech', 'French', 'fr', 'fr.png'),
 				    'it'=>array('italian', 'Italian', 'it', 'it.png'),
 				    'ru'=>array('russian', 'Russian', 'ru', 'ru.png'),
-				    'hu'=>array('hungarian', 'Hungarian', 'hu', 'hu.png'),
 				    'tr'=>array('turkish', 'Turkish', 'tr', 'tr.png'),
 				    'no'=>array('norwegian', 'Norwegian', 'no', 'no.png'),
 				    'ja'=>array('japanese', 'Japanese', 'ja', 'ja.png'),

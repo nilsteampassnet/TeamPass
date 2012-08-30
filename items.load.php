@@ -429,7 +429,7 @@ function AjouterItem(){
                     //Check errors
                     if (data.error == "item_exists") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo $txt['error_item_exists'];?>');
+                        $("#new_show_error").html('<?php echo addslashes($txt['error_item_exists']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     }else if (data.error == "something_wrong") {
@@ -439,7 +439,7 @@ function AjouterItem(){
                         LoadingPage();
                     }else if (data.error == "pw_too_long") {
                     	$("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#new_show_error").html('<?php echo addslashes($txt['error_pw_too_long']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     }else if (data.new_id != "") {
@@ -469,7 +469,7 @@ function AjouterItem(){
                 }
             );
         }else{
-            $('#new_show_error').html("<?php echo $txt['error_complex_not_enought'];?>").show();
+            $('#new_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
         }
     }
     if ( erreur != "") {
@@ -656,7 +656,7 @@ function EditerItem(){
 
 
         }else{
-            $('#edit_show_error').html("<?php echo $txt['error_complex_not_enought'];?>").show();
+            $('#edit_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
         }
     }
 
@@ -674,8 +674,8 @@ function aes_decrypt(text) {
 }
 
 function AjouterFolder(){
-    if ( $("#new_rep_titre").val() == "0" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_label'];?>").show();
-    else if ( $("#new_rep_complexite").val() == "" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
+    if ( $("#new_rep_titre").val() == "0" ) $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();
+    else if ( $("#new_rep_complexite").val() == "" ) $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>").show();
     else{
     	if ($("#new_rep_role").val() == undefined) {
     		role_id = "<?php echo $_SESSION['fonction_id'];?>";
@@ -698,9 +698,9 @@ function AjouterFolder(){
             function(data){
                 //Check errors
                 if (data[0].error == "error_group_exist") {
-                    $("#new_rep_show_error").html("<?php echo $txt['error_group_exist'];?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_exist']);?>").show();
                 }else if (data[0].error == "error_html_codes") {
-                    $("#addgroup_show_error").html("<?php echo $txt['error_html_codes'];?>").show();
+                    $("#addgroup_show_error").html("<?php echo addslashes($txt['error_html_codes']);?>").show();
                 }else {
                     window.location.href = "index.php?page=items";
                 }
@@ -747,7 +747,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
     //Check if personal SK is needed and set
     if ( ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) && salt_key_required == 1 ){
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['alert_message_personal_sk_missing'];?><\/div>");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
     	LoadingPage();
     	$("#div_dialog_message").dialog("open");
     }else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
@@ -883,7 +883,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                     //Manage to deleted information
                     if(data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled"){
-                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'> <?php echo $txt['automatic_deletion_activated'];?></i>");
+                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'> <?php echo addslashes($txt['automatic_deletion_activated']);?></i>");
                     }else{
                     	$('#item_extra_info').html("");
                     }
@@ -900,7 +900,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     		.attr('title','<?php echo $txt['disable_notify'];?>')
                     		.attr('onclick','notify_click(\'false\')');
                     	$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'> <?php echo $txt['notify_activated'];?></i>");
+                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'> <?php echo addslashes($txt['notify_activated']);?></i>");
                     }else{
                     	$('#menu_button_notify').attr('disabled', 'disabled');
                     	$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png');
@@ -911,7 +911,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     	var clip = new ZeroClipboard.Client();
                         clip.setText(unsanitizeString(data.pw));
                         clip.addEventListener( 'complete', function(client, text) {
-                                $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+                                $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
                         } );
                         clip.glue('menu_button_copy_pw');
                     }
@@ -919,7 +919,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     	var clip = new ZeroClipboard.Client();
                         clip.setText(data.login);
                         clip.addEventListener( 'complete', function(client, text) {
-                                $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+                                $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
                         } );
                         clip.glue('menu_button_copy_login');
                     }
@@ -927,7 +927,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     var clip = new ZeroClipboard.Client();
                     clip.setText("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id);
                     clip.addEventListener( 'complete', function(client, text) {
-                            $("#message_box").html("<?php echo $txt['url_copied'];?>").show().fadeOut(1000);
+                            $("#message_box").html("<?php echo addslashes($txt['url_copied']);?>").show().fadeOut(1000);
                     } );
                     clip.glue('menu_button_copy_link');
 
@@ -953,7 +953,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 }else{
                     //Dont show details
                     $("#item_details_nok").show();
-                	$("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo $txt['request_access_ot_item'];?></a></u></div>');
+                	$("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo addslashes($txt['request_access_ot_item']);?></a></u></div>');
                     $("#item_details_ok").hide();
                     $("#item_details_expired").hide();
                     $("#item_details_expired_full").hide();
@@ -1026,13 +1026,13 @@ function open_add_item_div() {
 
     //Check if personal SK is needed and set
     if ( $('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0 ){
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['alert_message_personal_sk_missing'];?><\/div>");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
     	LoadingPage();
     	$("#div_dialog_message").dialog("open");
     }
     else if($("#hid_cat").val() == ""){
     	LoadingPage();
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['error_no_selected_folder'];?><\/div>").dialog("open");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['error_no_selected_folder']);?><\/div>").dialog("open");
     }
     else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
 	    //Select the actual forlder in the dialogbox
@@ -1339,13 +1339,13 @@ function get_clipboard_item(field,id){
         		clip.setText( data );
 				if(field == "pw"){
 	        		clip.addEventListener( 'complete', function(client, text) {
-	                    $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+	                    $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
 	                    clip.destroy();
 	                } );
 					clip.glue( 'iconpw_'+id );
 				}else{
 	        		clip.addEventListener( 'complete', function(client, text) {
-	                    $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+	                    $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
 	                    clip.destroy();
 	                } );
 					clip.glue( 'iconlogin_'+id );
@@ -1380,7 +1380,7 @@ function notify_click(status){
 	                		.attr('title','<?php echo $txt['disable_notify'];?>')
 	                		.attr('onclick','notify_click(\'false\')');
                 		$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                    	$('#item_extra_info').html("<?php echo $txt['notify_activated'];?>");
+                    	$('#item_extra_info').html("<?php echo addslashes($txt['notify_activated']);?>");
                 	}else if(data[0].new_status == "false"){
                 		$('#menu_button_notify')
 	                		.attr('title','<?php echo $txt['enable_notify'];?>')
@@ -1432,7 +1432,7 @@ $(function() {$('#toppathwrap').hide();
 
     //warning if screen height too short
     if(parseInt(window_height-440) <= 50){
-    	$("#div_dialog_message_text").html("<?php echo $txt['warning_screen_height'];?>");
+    	$("#div_dialog_message_text").html("<?php echo addslashes($txt['warning_screen_height']);?>");
     	$("#div_dialog_message").dialog('open');
     }
 
@@ -1537,13 +1537,13 @@ $(function() {$('#toppathwrap').hide();
                 //Do some checks
                 $("#edit_rep_show_error").hide();
                 if ($("#edit_folder_title").val() == "") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group_label'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>");
                 	$("#edit_rep_show_error").show();
                 }else if ($("#edit_folder_folder").val() == "0") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group']);?>");
                 	$("#edit_rep_show_error").show();
                 }else if ($("#edit_folder_complexity").val() == "") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group_complex'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>");
                 	$("#edit_rep_show_error").show();
                 }else{
                 	//prepare data
@@ -1742,7 +1742,7 @@ $(function() {$('#toppathwrap').hide();
 						function(data){
 							$("#div_item_share_status").html("").hide();
 							if (data[0].error == "") {
-								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>").show();
+								$("#div_item_share_error").html("<?php echo addslashes($txt['share_sent_ok']);?>").show();
 							}else{
 								$("#div_item_share_error").html(data[0].message).show();
 							}
@@ -1750,7 +1750,7 @@ $(function() {$('#toppathwrap').hide();
 						"json"
 					);
 				}else{
-					$("#div_item_share_error").html("<?php echo $txt['bad_email_format'];?>").show();
+					$("#div_item_share_error").html("<?php echo addslashes($txt['bad_email_format']);?>").show();
 				}
             },
             "<?php echo $txt['close'];?>": function() {

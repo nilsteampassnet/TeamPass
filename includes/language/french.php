@@ -53,6 +53,7 @@ $txt['admin_misc_favicon'] = "Chemin d'accès vers le fichier favicon";
 $txt['admin_misc_title'] = "Personnaliser";
 $txt['admin_new1'] = "<i><u>14FEV2012:</i></u><br>Le profil Administrateur n\'est plus autorisé à voir les éléments. Ce profil est maintenan uniquement un profil technique.<br />Voir<a href='http://www.teampass.net/how-to-handle-changes-on-administrator-profile' target='_blank'>TeamPass.net</a> pour voir comment prendre en compte ce changement.";
 $txt['admin_one_shot_backup'] = "Sauvegarde et restauration à la volée";
+$txt['admin_path_to_upload_folder'] = "Chemin vers le répertoire Upload";
 $txt['admin_script_backups'] = "Paramètres pour les Sauvegardes par script";
 $txt['admin_script_backups_tip'] = "Pour plus de sécurité, il est conseillé de paramétrer des sauvegardes automatiques de votre base de données.
 Paramétrez une tache quotidienne à l'aide du CRON de votre serveur en appellant le script '/backups/script.backup.php'.
@@ -72,6 +73,7 @@ $txt['admin_setting_activate_expiration'] = "Activer l'expiration des éléments
 $txt['admin_setting_activate_expiration_tip'] = "Quand activée, cette option permet de ne pas afficher les éléments expirés.";
 $txt['admin_setting_enable_delete_after_consultation'] = "L'élément consulté peut être automatiquement supprimé";
 $txt['admin_setting_enable_delete_after_consultation_tip'] = "<span style='font-size:11px;max-width:300px;'>Quand activée, cette option permet à l'auteur de l'élément de décider si ce dernier devra être automatiquement supprimé après avoir été consulté X fois.</span>";
+$txt['admin_url_to_upload_folder'] = "URL vers le répertoire Upload";
 $txt['admin_users'] = "Gestion des Utilisateurs";
 $txt['admin_views'] = "Différentes vues";
 $txt['alert_message_done'] = "Fait !";
@@ -84,6 +86,7 @@ $txt['assoc_authorized_groups'] = "Répertoires autorisés associés";
 $txt['assoc_forbidden_groups'] = "Répertoires interdits associés";
 $txt['at'] = "à";
 $txt['at_add_file'] = "Fichier ajouté";
+$txt['at_automatically_deleted'] = "Supprimé automatiquement";
 $txt['at_automatic_del'] = "suppression automatique";
 $txt['at_category'] = "Répertoire";
 $txt['at_copy'] = "Copie réalisée";
@@ -111,6 +114,7 @@ $txt['authorized_groups'] = "Plus de Répertoires autorisés";
 $txt['auth_creation_without_complexity'] = "Autoriser la création d'un item sans que le niveau de complexité soit atteint";
 $txt['auth_modification_without_complexity'] = "Autoriser la modification d'un item sans que le niveau de complexité soit atteint";
 $txt['automatic_deletion_activated'] = "Suppression automatique active";
+$txt['automatic_del_after_date_text'] = "ou après la date";
 $txt['auto_create_folder_role'] = "Créer le répertoire et le rôle pour ";
 $txt['bad_email_format'] = "L'adresse email n'a pas le formalisme requis !";
 $txt['block_admin_info'] = "Infos Administrateur";
@@ -194,9 +198,9 @@ $txt['email_body_on_user_login'] = "Bonjour,<br><br>L'utilisateur #tp_user# s'es
 $txt['email_change'] = "Changer l'email";
 $txt['email_changed'] = "Email changé !";
 $txt['email_new_user_mail'] = "Bonjour,<br><br>Un Administrateur vous a créé un compte pour TeampPass.<br>Vos identifiants de connexion sont les suivants :<br>- Login: #tp_login#<br>- Mot de passe: #tp_pw#<br><br>Cliquer le <a href='#tp_link#'>LIEN</a> pour y accéder.<br><br>Cordialement";
-$txt['email_on_open_notification_mail'] = "Bonjour,<br><br>#tp_user# a consulté l'élément \"#tp_item#'\".<br>Cliquez sur le <a href='#tp_link#'>LIEN</a> pour y accéder.<br><br>Cordialement.";
+$txt['email_on_open_notification_mail'] = "Bonjour,<br><br>#tp_user# a consulté l'élément '#tp_item#'.<br>Cliquez sur le <a href='#tp_link#'>LIEN</a> pour y accéder.<br><br>Cordialement.";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification suite à la consultation d'un élément";
-$txt['email_request_access_mail'] = "Bonjour #tp_item_author#,<br><br>L'utilisateur #tp_user# a demandé un accès à l'objet '#tp_item#'.<br><br>Avant d'autoriser l'accès, soyez sur de ce que vous faites.<br><br>Cordialement.";
+$txt['email_request_access_mail'] = "Bonjour #tp_item_author#,<br><br>L'utilisateur #tp_user# a demandé un accès à l'objet  '#tp_item#'.<br><br>Avant d'autoriser l'accès, soyez sur de ce que vous faites.<br><br>Cordialement.";
 $txt['email_request_access_subject'] = "[TeamPass] Demande d'accès à un élément";
 $txt['email_select'] = "Sélectionner les personnes à avertir";
 $txt['email_share_item_mail'] = "Hello,<br><br><u>#tp_user#</u> a partagé l'élément <b>#tp_item#</b> avec vous.<br>Cliquez le <a href='#tp_link#'>LIEN</a> pour y accéder.<br><br>Cordialement.";

@@ -75,11 +75,11 @@ security and auditing.
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
 * LDAP improvement => 2.1.10
-* G129 => 2.1.10
+* G129 => 2.2
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.9
- * G126-G132-G130-G131-G139
+ * G126-G132-G130-G131-G139-G129-G141
  * Italian translation
 
 2.1.8
