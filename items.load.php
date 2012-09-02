@@ -44,10 +44,10 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     }
 
     function showItemsInTree(type){
-        if ( document.getElementById('img_funnel').src == "includes/images/funnel_plus.png" )
-            document.getElementById('img_funnel').src="includes/images/funnel_minus.png"
+        if ( $("#img_funnel").attr('src') == "includes/images/funnel_plus.png" )
+        	$("#img_funnel").attr('src','includes/images/funnel_minus.png');
         else
-            document.getElementById('img_funnel').src="includes/images/funnel_plus.png"
+            $("#img_funnel").attr('src','includes/images/funnel_plus.png');
     }
 
     //FUNCTION mask/unmask passwords characters
@@ -116,9 +116,9 @@ function ListerItems(groupe_id, restricted, start){
     	query_in_progress = groupe_id;
         //LoadingPage();
 		$("#items_list_loader").show();
-        //clean form
-        $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags').html("");
         if (start == 0) {
+	        //clean form
+	        $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags').html("");
         	$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
         }
         $("#items_list").css("display", "");
@@ -186,6 +186,8 @@ function ListerItems(groupe_id, restricted, start){
 					$("#item_details_ok, #items_list").show();
 	        		$("#items_path").html(data.arborescence);
 					$('#complexite_groupe').val(data.folder_complexity);
+					$('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
+					$('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
 	        		if (data.list_to_be_continued == "yes") {
 	        			$("#full_items_list").append(data.items_html);
@@ -299,11 +301,11 @@ function pwGenerate(elem){
 
 function pwCopy(elem){
     if ( elem != "" ) elem = elem+"_";
-    document.getElementById(elem+'pw2').value = document.getElementById(elem+'pw1').value;
+    $("#"+elem+'pw2').val($("#"+elem+'pw1').val());
 }
 
 function catSelected(val){
-    document.getElementById("hid_cat").value= val;
+    $("#hid_cat").val(val);
 }
 
 function RecupComplexite(val,edit){
@@ -329,8 +331,7 @@ function RecupComplexite(val,edit){
 
 function AjouterItem(){
 	LoadingPage();
-
-    document.getElementById('error_detected').value = '';   //Refresh error foolowup
+	$("#error_detected").val('');   //Refresh error foolowup
     var erreur = "";
     var  reg=new RegExp("[.|;|:|!|=|+|-|*|/|#|\"|'|&|]");
 
@@ -344,7 +345,7 @@ function AjouterItem(){
     else if ( $("#pw1").val() == "" ) erreur = "<?php echo $txt['error_pw'];?>";
     else if ( $("#categorie").val() == "na" ) erreur = "<?php echo $txt['error_group'];?>";
     else if ( $("#pw1").val() != $("#pw2").val() ) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ( $("#enable_delete_after_consultation").is(':checked') && $("#times_before_deletion").val() < 1 ) erreur = "<?php echo $txt['error_times_before_deletion'];?>";
+    else if ( $("#enable_delete_after_consultation").is(':checked') && ($("#times_before_deletion").val() < 1 && $("#deletion_after_date").val() == "") || ($("#times_before_deletion").val() == "" && $("#deletion_after_date").val() == "") ) erreur = "<?php echo $txt['error_times_before_deletion'];?>";
     else if ( $("#item_tags").val() != "" && reg.test($("#item_tags").val()) ) erreur = "<?php echo $txt['error_tags'];?>";
     else{
         //Check pw complexity level
@@ -394,10 +395,14 @@ function AjouterItem(){
             }
 
             //To be deleted
-            if ( $("#enable_delete_after_consultation").is(':checked') && $("#times_before_deletion").val() >= 1 ){
-				var to_be_deleted = $("#times_before_deletion").val();
+            if ( $("#enable_delete_after_consultation").is(':checked') && ($("#times_before_deletion").val() >= 1 || $("#deletion_after_date").val() != "") ){
+				if($("#times_before_deletion").val() >= 1) {
+					var to_be_deleted = $("#times_before_deletion").val();
+				}else if($("#deletion_after_date").val() != "") {
+					var to_be_deleted = $("#deletion_after_date").val();
+				}
             }else{
-            	var to_be_deleted = 0;
+            	var to_be_deleted = "";
             }
 
             //prepare data
@@ -424,7 +429,7 @@ function AjouterItem(){
                     //Check errors
                     if (data.error == "item_exists") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo $txt['error_item_exists'];?>');
+                        $("#new_show_error").html('<?php echo addslashes($txt['error_item_exists']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     }else if (data.error == "something_wrong") {
@@ -434,7 +439,7 @@ function AjouterItem(){
                         LoadingPage();
                     }else if (data.error == "pw_too_long") {
                     	$("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo $txt['error_pw_too_long'];?>');
+                        $("#new_show_error").html('<?php echo addslashes($txt['error_pw_too_long']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     }else if (data.new_id != "") {
@@ -450,7 +455,7 @@ function AjouterItem(){
 		        		AfficherDetailsItem(data.new_id);
 
 		        		//emty form
-                        $("#label, #item_login, #email, #url, #pw1, #pw1_txt, #pw2, #item_tags").val("");
+                        $("#label, #item_login, #email, #url, #pw1, #pw1_txt, #pw2, #item_tags, #deletion_after_date, #times_before_deletion").val("");
                         CKEDITOR.instances["desc"].setData("");
                         $("#item_file_queue").html("");
                         $("#categorie").val("");
@@ -464,13 +469,11 @@ function AjouterItem(){
                 }
             );
         }else{
-            document.getElementById('new_show_error').innerHTML = "<?php echo $txt['error_complex_not_enought'];?>";
-            $("#new_show_error").show();
+            $('#new_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
         }
     }
     if ( erreur != "") {
-        document.getElementById('new_show_error').innerHTML = erreur;
-        $("#new_show_error").show();
+        $('#new_show_error').html(erreur).show();
     }
 }
 
@@ -485,23 +488,23 @@ function EditerItem(){
     }
 
     if ($('#edit_label').val() == "" ) erreur = "<?php echo $txt['error_label'];?>";
-    else if ( document.getElementById("edit_pw1").value == "" ) erreur = "<?php echo $txt['error_pw'];?>";
-    else if ( document.getElementById("edit_pw1").value != document.getElementById("edit_pw2").value ) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ( document.getElementById("edit_tags").value != "" && reg.test(document.getElementById("edit_tags").value) ) erreur = "<?php echo $txt['error_tags'];?>";
+    else if ( $("#edit_pw1").val() == "" ) erreur = "<?php echo $txt['error_pw'];?>";
+    else if ( $("#edit_pw1").val() != $("#edit_pw2").val() ) erreur = "<?php echo $txt['error_confirm'];?>";
+    else if ( $("#edit_tags").val() != "" && reg.test($("#edit_tags").val()) ) erreur = "<?php echo $txt['error_tags'];?>";
     else{
         //Check pw complexity level
         if ( (
-                document.getElementById("bloquer_modification_complexite").value == 0 &&
-                parseInt(document.getElementById("edit_mypassword_complex").value) >= parseInt(document.getElementById("complexite_groupe").value)
+                $("#bloquer_modification_complexite").val() == 0 &&
+                parseInt($("#edit_mypassword_complex").val()) >= parseInt($("#complexite_groupe").val())
             )
             ||
-            ( document.getElementById("bloquer_modification_complexite").value == 1 )
+            ( $("#bloquer_modification_complexite").val() == 1 )
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
         ){
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
-            if ( document.getElementById('edit_annonce').checked ) annonce = 1;
+            if ( $('#edit_annonce').attr('checked') ) annonce = 1;
 
 
             //Manage restriction
@@ -542,10 +545,17 @@ function EditerItem(){
             }
 
           //To be deleted
-            if ( $("#edit_enable_delete_after_consultation").is(':checked') && $("#edit_times_before_deletion").val() >= 1 ){
-				var to_be_deleted = $("#edit_times_before_deletion").val();
+            if ( $("#edit_enable_delete_after_consultation").is(':checked') && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "") ){
+				if($("#edit_times_before_deletion").val() >= 1) {
+					var to_be_deleted = $("#edit_times_before_deletion").val();
+					//var to_be_deleted_after_date = "";
+				}else if($("#edit_deletion_after_date").val() != "") {
+					//var to_be_deleted = "0";
+					var to_be_deleted = $("#edit_deletion_after_date").val();
+				}
             }else{
-            	var to_be_deleted = 0;
+            	var to_be_deleted = "";
+            	//var to_be_deleted_after_date = "";
             }
 
           	//prepare data
@@ -646,14 +656,12 @@ function EditerItem(){
 
 
         }else{
-            document.getElementById('edit_show_error').innerHTML = "<?php echo $txt['error_complex_not_enought'];?>";
-            $("#edit_show_error").show();
+            $('#edit_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
         }
     }
 
     if ( erreur != "") {
-        document.getElementById('edit_show_error').innerHTML = erreur;
-        $("#edit_show_error").show();
+    	$('#edit_show_error').html(erreur).show();
     }
 }
 
@@ -666,8 +674,8 @@ function aes_decrypt(text) {
 }
 
 function AjouterFolder(){
-    if ( $("#new_rep_titre").val() == "0" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_label'];?>").show();
-    else if ( $("#new_rep_complexite").val() == "" ) $("#new_rep_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
+    if ( $("#new_rep_titre").val() == "0" ) $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();
+    else if ( $("#new_rep_complexite").val() == "" ) $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>").show();
     else{
     	if ($("#new_rep_role").val() == undefined) {
     		role_id = "<?php echo $_SESSION['fonction_id'];?>";
@@ -690,9 +698,9 @@ function AjouterFolder(){
             function(data){
                 //Check errors
                 if (data[0].error == "error_group_exist") {
-                    $("#new_rep_show_error").html("<?php echo $txt['error_group_exist'];?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_exist']);?>").show();
                 }else if (data[0].error == "error_html_codes") {
-                    $("#addgroup_show_error").html("<?php echo $txt['error_html_codes'];?>").show();
+                    $("#addgroup_show_error").html("<?php echo addslashes($txt['error_html_codes']);?>").show();
                 }else {
                     window.location.href = "index.php?page=items";
                 }
@@ -704,7 +712,7 @@ function AjouterFolder(){
 
 
 function SupprimerFolder(){
-    if ( document.getElementById("delete_rep_groupe").value == "0" ) alert("<?php echo $txt['error_group'];?>");
+    if ( $("#delete_rep_groupe").val() == "0" ) alert("<?php echo $txt['error_group'];?>");
     else if ( confirm("<?php echo $txt['confirm_delete_group'];?>") ) {
         $.post(
 			"sources/folders.queries.php",
@@ -731,7 +739,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         return false;
 	}
     LoadingPage();  //afficher image de chargement
-    if ( document.getElementById("is_admin").value == "1" ){
+    if ( $("#is_admin").val() == "1" ){
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
 
@@ -739,7 +747,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
     //Check if personal SK is needed and set
     if ( ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) && salt_key_required == 1 ){
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['alert_message_personal_sk_missing'];?><\/div>");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
     	LoadingPage();
     	$("#div_dialog_message").dialog("open");
     }else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
@@ -820,7 +828,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#hid_anyone_can_modify").val(data.anyone_can_modify);
                     $("#id_categorie").val(data.folder);
                     $("#id_item").val(data.id);
-                    $("#id_files").html(data.files_id).html();
+                    $("#id_files").html(data.files_id);
                     $("#hid_files").val(data.files_id);
                     $("#item_edit_list_files").html(data.files_edit).html();
                     $("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
@@ -838,13 +846,24 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#edit_anyone_can_modify").attr('checked', false);
                     }
 
-                    //Show to be deleted in case counter is > to 1.
-                    if(data.to_be_deleted <= 1){
+                    //Show to be deleted in case activated
+                    if(data.to_be_deleted == "not_enabled"){
 						$("#edit_to_be_deleted").hide();
                     }else{
 						$("#edit_to_be_deleted").show();
-						$("#edit_enable_delete_after_consultation").attr("checked",true);
-						$("#edit_times_before_deletion").val(data.to_be_deleted);
+						if(data.to_be_deleted != ""){
+							$("#edit_enable_delete_after_consultation").attr("checked",true);
+							if(data.to_be_deleted_type == 2){
+								$("#edit_times_before_deletion").val("");
+								$("#edit_deletion_after_date").val(data.to_be_deleted);
+							}else{
+								$("#edit_times_before_deletion").val(data.to_be_deleted);
+								$("#edit_deletion_after_date").val("");
+							}
+						}else{
+							$("#edit_enable_delete_after_consultation").attr("checked",false);
+							$("#edit_times_before_deletion, #edit_deletion_after_date").val("");
+						}
                     }
 
                     //manage buttons
@@ -863,8 +882,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history,, #menu_button_share").removeAttr("disabled");
 
                     //Manage to deleted information
-                    if(data.to_be_deleted != 0 && data.to_be_deleted != null){
-                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'> <?php echo $txt['automatic_deletion_activated'];?></i>");
+                    if(data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled"){
+                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'> <?php echo addslashes($txt['automatic_deletion_activated']);?></i>");
                     }else{
                     	$('#item_extra_info').html("");
                     }
@@ -881,7 +900,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     		.attr('title','<?php echo $txt['disable_notify'];?>')
                     		.attr('onclick','notify_click(\'false\')');
                     	$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'> <?php echo $txt['notify_activated'];?></i>");
+                    	$('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'> <?php echo addslashes($txt['notify_activated']);?></i>");
                     }else{
                     	$('#menu_button_notify').attr('disabled', 'disabled');
                     	$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png');
@@ -892,7 +911,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     	var clip = new ZeroClipboard.Client();
                         clip.setText(unsanitizeString(data.pw));
                         clip.addEventListener( 'complete', function(client, text) {
-                                $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+                                $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
                         } );
                         clip.glue('menu_button_copy_pw');
                     }
@@ -900,7 +919,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     	var clip = new ZeroClipboard.Client();
                         clip.setText(data.login);
                         clip.addEventListener( 'complete', function(client, text) {
-                                $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+                                $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
                         } );
                         clip.glue('menu_button_copy_login');
                     }
@@ -908,7 +927,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     var clip = new ZeroClipboard.Client();
                     clip.setText("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id);
                     clip.addEventListener( 'complete', function(client, text) {
-                            $("#message_box").html("<?php echo $txt['url_copied'];?>").show().fadeOut(1000);
+                            $("#message_box").html("<?php echo addslashes($txt['url_copied']);?>").show().fadeOut(1000);
                     } );
                     clip.glue('menu_button_copy_link');
 
@@ -934,7 +953,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 }else{
                     //Dont show details
                     $("#item_details_nok").show();
-                	$("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo $txt['request_access_ot_item'];?></a></u></div>');
+                	$("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo addslashes($txt['request_access_ot_item']);?></a></u></div>');
                     $("#item_details_ok").hide();
                     $("#item_details_expired").hide();
                     $("#item_details_expired_full").hide();
@@ -1007,13 +1026,13 @@ function open_add_item_div() {
 
     //Check if personal SK is needed and set
     if ( $('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0 ){
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['alert_message_personal_sk_missing'];?><\/div>");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
     	LoadingPage();
     	$("#div_dialog_message").dialog("open");
     }
     else if($("#hid_cat").val() == ""){
     	LoadingPage();
-    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo $txt['error_no_selected_folder'];?><\/div>").dialog("open");
+    	$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['error_no_selected_folder']);?><\/div>").dialog("open");
     }
     else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
 	    //Select the actual forlder in the dialogbox
@@ -1076,7 +1095,7 @@ function open_edit_item_div(restricted_to_roles) {
 	}
 
 	//Get complexity level for this folder
-	RecupComplexite(document.getElementById('hid_cat').value,1);
+	RecupComplexite($('#hid_cat').val(),1);
 
 	//Get list of people in restriction list
 	if($('#edit_restricted_to').val() != undefined){
@@ -1320,13 +1339,13 @@ function get_clipboard_item(field,id){
         		clip.setText( data );
 				if(field == "pw"){
 	        		clip.addEventListener( 'complete', function(client, text) {
-	                    $("#message_box").html("<?php echo $txt['pw_copied_clipboard'];?>").show().fadeOut(1000);
+	                    $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
 	                    clip.destroy();
 	                } );
 					clip.glue( 'iconpw_'+id );
 				}else{
 	        		clip.addEventListener( 'complete', function(client, text) {
-	                    $("#message_box").html("<?php echo $txt['login_copied_clipboard'];?>").show().fadeOut(1000);
+	                    $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
 	                    clip.destroy();
 	                } );
 					clip.glue( 'iconlogin_'+id );
@@ -1361,7 +1380,7 @@ function notify_click(status){
 	                		.attr('title','<?php echo $txt['disable_notify'];?>')
 	                		.attr('onclick','notify_click(\'false\')');
                 		$('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                    	$('#item_extra_info').html("<?php echo $txt['notify_activated'];?>");
+                    	$('#item_extra_info').html("<?php echo addslashes($txt['notify_activated']);?>");
                 	}else if(data[0].new_status == "false"){
                 		$('#menu_button_notify')
 	                		.attr('title','<?php echo $txt['enable_notify'];?>')
@@ -1413,7 +1432,7 @@ $(function() {$('#toppathwrap').hide();
 
     //warning if screen height too short
     if(parseInt(window_height-440) <= 50){
-    	$("#div_dialog_message_text").html("<?php echo $txt['warning_screen_height'];?>");
+    	$("#div_dialog_message_text").html("<?php echo addslashes($txt['warning_screen_height']);?>");
     	$("#div_dialog_message").dialog('open');
     }
 
@@ -1477,7 +1496,7 @@ $(function() {$('#toppathwrap').hide();
 
 
     $("#add_folder").click(function() {
-        var posit = document.getElementById('item_selected').value;
+        var posit = $('#item_selected').val();
         alert($("ul").text());
     });
 
@@ -1518,13 +1537,13 @@ $(function() {$('#toppathwrap').hide();
                 //Do some checks
                 $("#edit_rep_show_error").hide();
                 if ($("#edit_folder_title").val() == "") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group_label'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>");
                 	$("#edit_rep_show_error").show();
                 }else if ($("#edit_folder_folder").val() == "0") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group']);?>");
                 	$("#edit_rep_show_error").show();
                 }else if ($("#edit_folder_complexity").val() == "") {
-                	$("#edit_rep_show_error").html("<?php echo $txt['error_group_complex'];?>");
+                	$("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>");
                 	$("#edit_rep_show_error").show();
                 }else{
                 	//prepare data
@@ -1708,7 +1727,9 @@ $(function() {$('#toppathwrap').hide();
         title: "<?php echo $txt['share'];?>",
         buttons: {
 			"<?php echo $txt['send'];?>": function() {
+        		$("#div_item_share_error").hide();
 				if(IsValidEmail($("#item_share_email").val())){	//check if email format is ok
+					$("#div_item_share_status").show();
 					$.post(
 						"sources/items.queries.php",
 						{
@@ -1719,15 +1740,17 @@ $(function() {$('#toppathwrap').hide();
 							key		: "<?php echo $_SESSION['key'];?>"
 						},
 						function(data){
+							$("#div_item_share_status").html("").hide();
 							if (data[0].error == "") {
-								$("#div_item_share_error").html("<?php echo $txt['share_sent_ok'];?>");
+								$("#div_item_share_error").html("<?php echo addslashes($txt['share_sent_ok']);?>").show();
 							}else{
-								$("#div_item_share_error").html(data[0].message);
+								$("#div_item_share_error").html(data[0].message).show();
 							}
-						}
+						},
+						"json"
 					);
 				}else{
-					$("#div_item_share_error").html("<?php echo $txt['bad_email_format'];?>").show();
+					$("#div_item_share_error").html("<?php echo addslashes($txt['bad_email_format']);?>").show();
 				}
             },
             "<?php echo $txt['close'];?>": function() {
@@ -1746,7 +1769,7 @@ $(function() {$('#toppathwrap').hide();
         "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>", "PHPSESSID":"<?php echo session_id();?>"},
         "auto"      : false,
         "multi"     : true,
-        "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
+        "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",
         "sizeLimit" : 16777216,
         "queueID"   : "item_edit_file_queue",
         "onComplete": function(event, queueID, fileObj, reponse, data){if(reponse=="ok"){$("#edit_show_error").html(reponse).hide();$("#item_edit_list_files").append(fileObj.name+"<br />");}else{$("#edit_show_error").html(reponse).show();}},
@@ -1760,16 +1783,16 @@ $(function() {$('#toppathwrap').hide();
         "cancelImg" : "includes/libraries/uploadify/cancel.png",
         "auto"      : false,
         "multi"     : true,
-        "folder"    : "<?php echo dirname($_SERVER['REQUEST_URI']);?>/upload",
+        "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",
         "sizeLimit" : 16777216,
         "queueID"   : "item_file_queue",
-        "onComplete": function(event, queueID, fileObj, reponse, data){document.getElementById("item_files_upload").append(fileObj.name+"<br />");},
+        "onComplete": function(event, queueID, fileObj, reponse, data){$("#item_files_upload").append(fileObj.name+"<br />");},
         "buttonText": "<?php echo $txt['upload_button_text'];?>"
     });
 
 
 	//Launch items loading
-	var first_group = <?php echo $first_group;?>;
+	var first_group = <?php if(!empty($first_group)) echo $first_group;else echo "1";?>;
 	if ($("#hid_cat").val() != "") {
 		first_group = $("#hid_cat").val();
 	}
@@ -1871,6 +1894,13 @@ $(function() {$('#toppathwrap').hide();
 	var tbval = $('#jstree_search').val();
 	$('#jstree_search').focus(function() { $(this).val('');});
 	$('#jstree_search').blur(function() { $(this).val(tbval);});
+
+	//add date selector
+	$( ".datepicker" ).datepicker({
+		dateFormat:"<?php echo str_replace(array("Y","M"), array("yy","mm"), $_SESSION['settings']['date_format']);?>",
+		changeMonth: true,
+		changeYear: true
+	});
 });
 
 function htmlspecialchars_decode (string, quote_style) {

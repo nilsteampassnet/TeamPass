@@ -5,6 +5,11 @@ $TeamPass_url = '';
 }else{
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['admin_path_to_upload_folder'] = "Path to Upload folder";
+$txt['admin_url_to_upload_folder'] = "URL to Upload folder";
+$txt['automatic_del_after_date_text'] = "or after date";
+$txt['at_automatically_deleted'] = "Automatically deleted";
+
 $txt['admin_setting_enable_delete_after_consultation'] = "Item consulted can be automatically deleted";
 $txt['admin_setting_enable_delete_after_consultation_tip'] = "<span style='font-size:11px;max-width:300px;'>When enabled, the Item creator can decide that Item will be automatically deleted after being seen X times.</span>";
 $txt['enable_delete_after_consultation'] = "Item will be automatically deleted after being seen";

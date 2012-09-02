@@ -222,7 +222,7 @@ switch($_POST['type'])
    			}
     	}
     	//save the file
-    	$csv_file = $_SESSION['settings']['cpassman_dir'].'/files/print_out_csv_'.time().'.csv';
+    	$csv_file = $_SESSION['settings']['cpassman_url'].'/files/print_out_csv_'.time().'.csv';
 //print_r($full_listing);
     	$outstream = fopen($csv_file, "w");
     	function __outputCSV(&$vals, $key, $filehandler) {

@@ -113,6 +113,7 @@ if ( isset($_POST['type']) ){
                   `restricted_to` varchar(200) NOT NULL,
                   `anyone_can_modify` tinyint(1) NOT NULL DEFAULT '0',
                   `email` varchar(100) DEFAULT NULL,
+                  `notification` varchar(250) DEFAULT NULL,
                   PRIMARY KEY (`id`)
                 ) CHARSET=utf8;");
             if ( $res2 ){
@@ -170,6 +171,8 @@ if ( isset($_POST['type']) ){
                 ('admin', 'cpassman_dir', '".$_SESSION['abspath']."'),
                 ('admin', 'cpassman_url', '".$_SESSION['url_path']."'),
                 ('admin', 'favicon', '".$_SESSION['url_path']."/favico.ico'),
+                ('admin', 'path_to_upload_folder', '".$_SESSION['abspath']."/upload'),
+                ('admin', 'url_to_upload_folder', '".$_SESSION['url_path']."/upload'),
                 ('admin', 'activate_expiration', '0'),
                 ('admin','pw_life_duration','0'),
                 ('admin','maintenance_mode','1'),
@@ -190,7 +193,7 @@ if ( isset($_POST['type']) ){
                 ('admin', 'send_mail_on_user_login', '0'),
                 ('cron', 'sending_emails', '0'),
                 ('admin', 'nb_items_by_query', 'auto'),
-                ('admin', 'enable_delete_after_consultation', '1');");
+                ('admin', 'enable_delete_after_consultation', '0');");
             if ( $res4 ){
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/tick.png\">";';
             }else{
@@ -549,8 +552,8 @@ if ( isset($_POST['type']) ){
                 ('', 'spanish', 'Spanish' , 'es', 'es.png'),
                 ('', 'german', 'German' , 'de', 'de.png'),
                 ('', 'czech', 'Czech' , 'cz', 'cz.png'),
+                ('', 'italian', 'Italian' , 'it', 'it.png'),
                 ('', 'russian', 'Russian' , 'ru', 'ru.png'),
-                ('', 'hungarian', 'Hungarian' , 'hu', 'hu.png'),
                 ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),
                 ('', 'norwegian', 'Norwegian' , 'no', 'no.png'),
                 ('', 'japanese', 'Japanese' , 'ja', 'ja.png'),
@@ -602,25 +605,6 @@ if ( isset($_POST['type']) ){
         		mysql_close($db_tmp);
         		break;
         	}
-
-
-        	## TABLE NOTIFICATION
-        	$res = mysql_query("
-                CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."notification` (
-				`id_item` int(10) NOT NULL,
-				`id_user` int(10) NOT NULL,
-				`date` varchar(30) NOT NULL
-                ) CHARSET=utf8;");
-        	if ( $res ){
-        		echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/tick.png\">";';
-        	}else{
-        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOLATIC_DEL!";';
-        		echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/exclamation-red.png\">";';
-        		echo 'document.getElementById("loader").style.display = "none";';
-        		mysql_close($db_tmp);
-        		break;
-        	}
-
 
             echo 'gauge.modify($("pbar"),{values:[0.80,1]});';
             echo 'document.getElementById("but_next").disabled = "";';

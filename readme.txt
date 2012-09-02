@@ -43,15 +43,16 @@ UPDATE:
 * Once uploaded, launch install/upgrade.php and follow instructions.
 
 LANGUAGES:
-* ENGLISH 	by Nils and Petr
-* FRENCH 	by Nils
-* CZECH 	by Petr and Philipp
-* GERMAN 	by Philipp
-* RUSSIAN 	by Anton (to be finished)
-* TURKISH 	by Ahmet (to be finished)
-* NORWEGIAN by Kai (to be finished)
-* JAPANESE	by Shinji (to be finished)
-* PORTUGUESE by Luiz LeFort
+* ENGLISH 		by Nils and Petr
+* FRENCH 		by Nils
+* CZECH 		by Petr and Philipp
+* GERMAN 		by Philipp
+* RUSSIAN 		by Anton (to be finished)
+* TURKISH 		by Ahmet (to be finished)
+* NORWEGIAN 	by Kai (to be finished)
+* JAPANESE		by Shinji (to be finished)
+* PORTUGUESE 	by Luiz LeFort
+* ITALIAN		by Federico
 
 -------------------------------  TODO  -----------------------------------------
 * IMAP login
@@ -73,10 +74,15 @@ security and auditing.
 * Tree view => cookie collapse or not
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
-* Italian translation => 2.1.9
-* LDAP improvement => 2.1.9
+* LDAP improvement => 2.1.10
+* G129 => 2.2
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.9
+ * #126-#132-#130-#131-#139-#129-#141-#146
+ * Italian translation
+ * Find page - focus in search box (contributor: Jay2k1)
+
 2.1.8
  * SF 206
  * #107-#95-#102-#103-#67-#32-#87-#71-#125-#120-#116-#111-#108-#104-#90-

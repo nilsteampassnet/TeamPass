@@ -273,7 +273,9 @@ if ( isset($_POST['type']) ){
 				array('admin', 'send_mail_on_user_login', '0', 0),
 				array('cron', 'sending_emails', '0', 0),
 				array('admin', 'nb_items_by_query', 'auto', 0),
-				array('admin', 'enable_delete_after_consultation', '1', 0)
+				array('admin', 'enable_delete_after_consultation', '0', 0),
+				array('admin', 'path_to_upload_folder', strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1 ? (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload' : $_SERVER['DOCUMENT_ROOT'].substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload', 0),
+				array('admin', 'url_to_upload_folder', 'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'/upload', 0)
 			);
 			$res1 = "na";
 			foreach($val as $elem){
@@ -303,6 +305,7 @@ if ( isset($_POST['type']) ){
 			## Alter ITEMS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT NULL DEFAULT '0'");
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","email","VARCHAR(100) DEFAULT NULL");
+			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."items","notification","VARCHAR(250) DEFAULT NULL");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
 			# Alter tables
@@ -683,12 +686,34 @@ if ( isset($_POST['type']) ){
 	                ('', 'spanish', 'Spanish' , 'es', 'es.png'),
 	                ('', 'german', 'German' , 'de', 'de.png'),
 	                ('', 'czech', 'Czech' , 'cz', 'cz.png'),
+                	('', 'italian', 'Italian' , 'it', 'it.png'),
 	                ('', 'russian', 'Russian' , 'ru', 'ru.png'),
-	                ('', 'hungarian', 'Hungarian' , 'hu', 'hu.png'),
 	                ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),
 	                ('', 'norwegian', 'Norwegian' , 'no', 'no.png'),
 	                ('', 'japanese', 'Japanese' , 'ja', 'ja.png'),
 	                ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png');");
+			}else{
+				mysql_query("TRUNCATE TABLE ".$_SESSION['tbl_prefix']."languages");
+				//Check that all languages are present
+				$arr_lang = array(
+				    'fr'=>array('french', 'French', 'fr', 'fr.png'),
+				    'us'=>array('english', 'English', 'us', 'us.png'),
+				    'es'=>array('spanish', 'Spanish', 'es', 'es.png'),
+				    'cz'=>array('german', 'Czech', 'cz', 'cz.png'),
+				    'fr'=>array('czech', 'French', 'fr', 'fr.png'),
+				    'it'=>array('italian', 'Italian', 'it', 'it.png'),
+				    'ru'=>array('russian', 'Russian', 'ru', 'ru.png'),
+				    'tr'=>array('turkish', 'Turkish', 'tr', 'tr.png'),
+				    'no'=>array('norwegian', 'Norwegian', 'no', 'no.png'),
+				    'ja'=>array('japanese', 'Japanese', 'ja', 'ja.png'),
+					'pr'=>array('portuguese', 'Portuguese', 'pr', 'pr.png')
+				);
+				foreach($arr_lang as $lang){
+					$res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."languages WHERE code='".$lang[2]."'"));
+					if ( $res_tmp[0] == 0 ){
+						mysql_query("INSERT IGNORE INTO `".$_SESSION['tbl_prefix']."languages` (`id`, `name`, `label`, `code`, `flag`) VALUES ('', '".$lang[0]."', '".$lang[1]."' , '".$lang[2]."', '".$lang[3]."');");
+					}
+				}
 			}
 			if ( $res ){
 				echo 'document.getElementById("tbl_16").innerHTML = "<img src=\"images/tick.png\">";';
@@ -736,24 +761,6 @@ if ( isset($_POST['type']) ){
 				mysql_close($db_tmp);
 				break;
 			}
-
-
-        	## TABLE NOTIFICATION
-        	$res = mysql_query("
-                CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."notification` (
-				`id_item` int(10) NOT NULL,
-				`id_user` int(10) NOT NULL,
-				`date` varchar(30) NOT NULL
-                ) CHARSET=utf8;");
-        	if ( $res ){
-        		echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/tick.png\">";';
-        	}else{
-        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOLATIC_DEL!";';
-        		echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/exclamation-red.png\">";';
-        		echo 'document.getElementById("loader").style.display = "none";';
-        		mysql_close($db_tmp);
-        		break;
-        	}
 
 
 			//CLEAN UP ITEMS TABLE

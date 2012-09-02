@@ -743,7 +743,7 @@ switch($_POST['type'])
 				$mail->FromName = $email_from_name;
 				$mail->WordWrap = 80;					// set word wrap
 				$mail->IsHTML(true);					// send as HTML
-
+				$status = "";
 				$rows = $db->fetch_all_array("SELECT * FROM ".$pre."emails WHERE status='not sent'");
 				foreach ($rows as $reccord){
 					//send email
@@ -762,6 +762,7 @@ switch($_POST['type'])
 						),
 						"timestamp='".$reccord['timestamp']."'"
 					);
+					if($status == "not sent") break;
 				}
 			}
 			//update cron time

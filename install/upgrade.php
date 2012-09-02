@@ -276,7 +276,6 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']
 	                     <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
 	                     <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
 	                     <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
-	                     <tr><td>Add table "Notification"</td><td><span id="tbl_19"></span></td></tr>
 	                 </table>
 
 	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
