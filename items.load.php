@@ -1792,7 +1792,7 @@ $(function() {$('#toppathwrap').hide();
 
 
 	//Launch items loading
-	var first_group = <?php echo $first_group;?>;
+	var first_group = <?php if(!empty($first_group)) echo $first_group;else echo "1";?>;
 	if ($("#hid_cat").val() != "") {
 		first_group = $("#hid_cat").val();
 	}

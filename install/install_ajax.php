@@ -193,7 +193,7 @@ if ( isset($_POST['type']) ){
                 ('admin', 'send_mail_on_user_login', '0'),
                 ('cron', 'sending_emails', '0'),
                 ('admin', 'nb_items_by_query', 'auto'),
-                ('admin', 'enable_delete_after_consultation', '1');");
+                ('admin', 'enable_delete_after_consultation', '0');");
             if ( $res4 ){
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/tick.png\">";';
             }else{

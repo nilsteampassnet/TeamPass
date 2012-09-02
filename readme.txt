@@ -79,8 +79,9 @@ folder
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.9
- * G126-G132-G130-G131-G139-G129-G141
+ * #126-#132-#130-#131-#139-#129-#141-#146
  * Italian translation
+ * Find page - focus in search box (contributor: Jay2k1)
 
 2.1.8
  * SF 206

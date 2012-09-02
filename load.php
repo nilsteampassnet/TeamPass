@@ -820,7 +820,10 @@ if ( isset($_GET['page']) && $_GET['page'] == "find"){
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "includes/language/datatables.'.$_SESSION['user_language'].'.txt"
-            }
+            },
+            "fnInitComplete": function() {
+	            $("#find_page input").focus();
+	        }
         });
     });';
 }

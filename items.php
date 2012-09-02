@@ -160,12 +160,10 @@ echo '
 				            $nb_items = $data[0];
 
 				            //get 1st folder
-							if (empty($first_group)){
-								$first_group = $folder->id;
-								if ($folder->title == $_SESSION['user_id']) {
-									$folder->title = $_SESSION['login'];
-								}
-							}
+							if (empty($first_group)) $first_group = $folder->id;
+
+							//If personal Folder, convert id into user name
+							if ($folder->title == $_SESSION['user_id']) $folder->title = $_SESSION['login'];
 
 							//Prepare folder
 							$folder_txt = '

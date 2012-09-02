@@ -273,7 +273,7 @@ if ( isset($_POST['type']) ){
 				array('admin', 'send_mail_on_user_login', '0', 0),
 				array('cron', 'sending_emails', '0', 0),
 				array('admin', 'nb_items_by_query', 'auto', 0),
-				array('admin', 'enable_delete_after_consultation', '1', 0),
+				array('admin', 'enable_delete_after_consultation', '0', 0),
 				array('admin', 'path_to_upload_folder', strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1 ? (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload' : $_SERVER['DOCUMENT_ROOT'].substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload', 0),
 				array('admin', 'url_to_upload_folder', 'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'/upload', 0)
 			);
