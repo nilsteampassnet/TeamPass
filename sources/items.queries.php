@@ -724,11 +724,11 @@ if ( isset($_POST['type']) ){
                         $icon_image = file_format_image($reccord['extension']);
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if ( in_array($reccord['extension'],$k['image_file_ext']) )
-                            $files .=   '<img src="includes/images/'.$icon_image.'" /><a class="image_dialog" href="'.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'" title="'.$reccord['name'].'">'.$reccord['name'].'</a><br />';
+                            $files .=   '<img src=\''.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$icon_image.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'\' title=\''.$reccord['name'].'\'>'.$reccord['name'].'</a><br />';
                         else
                             $files .=   '<img src="includes/images/'.$icon_image.'" /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\' target=\'_blank\'>'.$reccord['name'].'</a><br />';
                         // Prepare list of files for edit dialogbox
-                        $files_edit .= '<span id="span_edit_file_'.$reccord['id'].'"><img src="includes/images/'.$icon_image.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$reccord['id'].'\")" />&nbsp;'.$reccord['name']."</span><br />";
+                        $files_edit .= '<span id=\'span_edit_file_'.$reccord['id'].'\'><img src=\''.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$icon_image.'\' /><img src=\''.$_SESSION['settings']['cpassman_url'].'/includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file(\"'.$reccord['id'].'\")\' />&nbsp;'.$reccord['name']."</span><br />";
                     }
 
                 //Send email

@@ -94,8 +94,10 @@ include('../../../sources/class.database.php');
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-//Get path;
-$targetPath = $_SESSION['settings']['cpassman_dir'];
+//Get data from DB
+$sql = "SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule='cpassman_dir'";
+$data = $db->query_first($sql);
+$targetPath = $data['valeur'];
 
 //Treat the uploaded file
 if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from_csv" || $_POST['type_upload']== "import_items_from_file") ){
@@ -105,14 +107,14 @@ if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_fro
 	// Log upload into databse - only log for a modification
 	if ( isset($_POST['type']) && $_POST['type'] == "modification" ){
 		$db->query_insert(
-		'log_items',
-		array(
-		    'id_item' => $_POST['post_id'],
-		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-		    'id_user' => $_POST['user_id'],
-		    'action' => 'at_modification',
-		    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
-		)
+			'log_items',
+			array(
+			    'id_item' => $_POST['post_id'],
+			    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			    'id_user' => $_POST['user_id'],
+			    'action' => 'at_modification',
+			    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
+			)
 		);
 	}
 }
@@ -120,8 +122,12 @@ if ( isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_fro
 else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db") ){
 	// Get some variables
 	$file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
-	$targetPath = $_SESSION['settings']['path_to_upload_folder'].'/';
-	$targetFile =  str_replace('//','/',$targetPath) . $file_random_id;
+
+	//Get data from DB
+	$sql = "SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule='path_to_upload_folder'";
+	$data = $db->query_first($sql);
+	$targetPath = $data['valeur'];
+	$targetFile =  str_replace('//','/',$targetPath)."/" . $file_random_id;
 
 	// Store to database
 	$db->query_insert(
@@ -139,14 +145,14 @@ else if ( !isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_ite
 	// Log upload into databse - only log for a modification
 	if ( $_POST['type'] == "modification" ){
 		$db->query_insert(
-		'log_items',
-		array(
-		    'id_item' => $_POST['post_id'],
-		    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
-		    'id_user' => $_POST['user_id'],
-		    'action' => 'at_modification',
-		    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
-		)
+			'log_items',
+			array(
+			    'id_item' => $_POST['post_id'],
+			    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			    'id_user' => $_POST['user_id'],
+			    'action' => 'at_modification',
+			    'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
+			)
 		);
 	}
 }else{

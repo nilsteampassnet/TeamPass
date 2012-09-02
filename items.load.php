@@ -1786,7 +1786,7 @@ $(function() {$('#toppathwrap').hide();
         "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",
         "sizeLimit" : 16777216,
         "queueID"   : "item_file_queue",
-        "onComplete": function(event, queueID, fileObj, reponse, data){$("#item_files_upload").append(fileObj.name+"<br />");},
+        "onComplete": function(event, queueID, fileObj, reponse, data){$("#item_list_files").append(fileObj.name+"<br />");},
         "buttonText": "<?php echo $txt['upload_button_text'];?>"
     });
 

@@ -565,6 +565,7 @@ echo '
         //Tabs EDIT N?3
         echo '
         <div id="tabs-03">
+        	<div id="item_list_files" style="margin-left:25px;"></div>
             <div id="item_file_queue"></div>
             <input type="file" name="item_files_upload" id="item_files_upload" /><br />
             <a href="#" onclick="upload_attached_files()">'.$txt['start_upload'].'</a>
