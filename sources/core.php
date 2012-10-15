@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		core.php
- * @author		Nils LaumaillÃ©
+ * @author		Nils Laumaillé
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
+ * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -84,6 +84,12 @@ if (!isset($_SESSION['settings']['timezone'])) {
 }
 date_default_timezone_set($_SESSION['settings']['timezone']);
 
+/**
+ * Set the personal SaltKey if authorized
+ */
+if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 && isset($_SESSION['user_id']) && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])){
+	$_SESSION['my_sk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
+}
 
 /* CHECK IF MAINTENANCE MODE
 * IF yes then authorize all ADMIN connections and

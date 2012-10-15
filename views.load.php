@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		views.load.php
- * @author		Nils Laumaillé
+ * @author		Nils LaumaillÃ©
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -135,10 +135,21 @@ function displayLogs(type, page, order){
     if ( type == "errors_logs" ) $("#th_url").show();
     else $("#th_url").hide();
     if ( type == "access_logs" || type == "copy_logs" || type == "admin_logs" ){
+    	$("#div_show_system_logs").show();
+    	$("#div_show_items_logs").hide();
     	$("#filter_logs_button").attr("onclick","displayLogs(\'"+type+"\',1,\'date\')")
     	$("#filter_logs_div").show();
     	filter = $("#filter_logs").val();
-    }else $("#filter_logs_div").hide();
+    }
+    else if ( type == "items_logs" ){
+    	$("#div_show_system_logs").hide();
+    	$("#filter_itemslogs_button").attr("onclick","displayLogs(\'"+type+"\',1,\'date\')")
+    	$("#div_show_items_logs").show();
+    	filter = $("#filter_itemslogs").val();
+    }else{
+    	$("#filter_logs_div, #div_show_items_log").hide();
+    	$("#div_show_system_logs").show()
+    }
 
     $.post(
 	    "sources/views.queries.php",
@@ -150,8 +161,14 @@ function displayLogs(type, page, order){
 	        direction:	$("#log_direction_displayed").val()
 	    },
 	    function(data){
-    		$("#tbody_logs").empty().append(data[0].tbody_logs);
-    		$("#log_pages").empty().append(data[0].log_pages);
+		    if(type != "items_logs"){
+	    		$("#tbody_logs").empty().append(data[0].tbody_logs);
+	    		$("#log_pages").empty().append(data[0].log_pages);
+		    }else{
+	    		$("#tbody_itemslogs").empty().append(data[0].tbody_logs);
+	    		$("#itemslogs_pages").empty().append(data[0].log_pages);
+		    }
+    		
 	    },
 	    "json"
 	);

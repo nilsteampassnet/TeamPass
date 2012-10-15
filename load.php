@@ -147,23 +147,29 @@ $htmlHeaders .= '
                     data : aes_encrypt(data)
                 },
                 function(data){
-                    if (data == randomstring){
+                    if (data[0].value == randomstring){
                         $("#ajax_loader_connexion").hide();
                         $("#erreur_connexion").hide();
-                        window.location.href="index.php";
-                    }else if (data == "user_is_locked"){
+                        //redirection for admin is specific
+                        if(data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+                        else window.location.href="index.php";
+                    }else if (data[0].value == "user_is_locked"){
                         $("#ajax_loader_connexion").hide();
                         $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
                         $("#erreur_connexion").show();
-                    }else if (!isNaN(parseFloat(data)) && isFinite(data)){
+                    }else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)){
                         $("#ajax_loader_connexion").hide();
                         $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'] . (@$_SESSION['settings']['nb_bad_authentication']+1) .'");
                         $("#erreur_connexion").show();
+                    }else if (data[0].value == "error"){alert("ici");
+                    	$("#mysql_error_warning").html(data[0].text);
+                    	$("#div_mysql_error").show().dialog("open");
                     }else{
                         $("#erreur_connexion").show();
                         $("#ajax_loader_connexion").hide();
                     }
-                }
+                },
+				"json"
             );
         }else{
             $("#pw").addClass( "ui-state-error" );
@@ -564,13 +570,22 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 						else ids = ids + ";" + $(selected).val();
 					});
 					$("#div_loading").show();
-
+					$("#print_out_error").hide();
+					
+					// Get PDF encryption password and make sure it is set
+					if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
+						$("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+						$("#div_loading").hide();
+						return;
+					}
+					
                 	//Send query
                     $.post(
 		                "sources/export.queries.php",
 		                {
 		                    type    : $("input[name=\"export_format\"]:checked").val() == "pdf" ? "export_to_pdf_format" : "export_to_csv_format",
-		                    ids		: ids
+		                    ids		: ids,
+		                    pdf_password : $("#pdf_password").val()
 		                },
 		                function(data){
 		                	$("#download_link").html(data[0].text);
@@ -678,6 +693,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   destination		: $("#import_keepass_items_to").val()
 			},
 			function(data){
+				$("#div_loading").hide();
 				if(data[0].error == "not_kp_file"){
 					$("#import_status").html(data[0].message);
 					$("#import_status_ajax_loader").hide();
@@ -685,7 +701,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 					$("#import_status").html(data[0].message);
 					$("#import_status_ajax_loader").hide();
 				}
-				$("#div_loading").hide();
 			},
 			"json"
 		);
@@ -990,10 +1005,14 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
     //###########
     function LaunchAdminActions(action,option){
         $("#div_loading").show();
+        $("#email_testing_results").hide();
         $("#result_admin_action_db_backup").html("");
         if ( action == "admin_action_db_backup" ) option = $("#result_admin_action_db_backup_key").val();
         else if ( action == "admin_action_backup_decrypt" ) option = $("#bck_script_decrypt_file").val();
         else if ( action == "admin_action_change_salt_key" ) option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+        else if (action == "admin_email_send_backlog"){
+        	$("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+        }
         //Lauchn ajax query
         $.post(
 			"sources/admin.queries.php",
@@ -1003,27 +1022,35 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 			},
 			function(data){
 				$("#div_loading").hide();
-				if(data[0].result == "db_backup"){
-					$("#result_admin_action_db_backup").html("<img src=\'includes/images/document-code.png\' alt=\'\' />&nbsp;<a href=\'"+data[0].href+"\'>'.$txt['pdf_download'].'</a>");
-				}else if(data[0].result == "pf_done"){
-					$("#result_admin_action_check_pf").show();
-				}else if(data[0].result == "db_restore"){
-					$("#restore_bck_encryption_key_dialog").dialog("close");
-					$("#result_admin_action_db_restore").html("<img src=\"includes/images/tick.png\" alt=\"\" />");
-					$("#result_admin_action_db_restore_get_file").hide();
-					//deconnect user
-		            $("#menu_action").val("deconnexion");
-		            document.main_form.submit();
-				}else if(data[0].result == "db_optimize"){
-					$("#result_admin_action_db_optimize").html("<img src=\'includes/images/tick.png\' alt=\'\' />");
-				}else if(data[0].result == "purge_old_files"){
-					$("#result_admin_action_purge_old_files").html("<img src=\'includes/images/tick.png\' alt=\'\' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;'.$txt['admin_action_purge_old_files_result'].'");
-				}else if(data[0].result == "db_clean_items"){
-					$("#result_admin_action_db_clean_items").html("<img src=\"includes/images/tick.png\" alt=\"\" />&nbsp;"+data[0].nb_items_deleted+"&nbsp;'.$txt['admin_action_db_clean_items_result'].'");
-				}else if(data[0].result == "changed_salt_key"){
-					//deconnect user
-		            $("#menu_action").val("deconnexion");
-		            document.main_form.submit();
+				if(data != null){
+					if(data[0].result == "db_backup"){
+						$("#result_admin_action_db_backup").html("<img src=\'includes/images/document-code.png\' alt=\'\' />&nbsp;<a href=\'"+data[0].href+"\'>'.$txt['pdf_download'].'</a>");
+					}else if(data[0].result == "pf_done"){
+						$("#result_admin_action_check_pf").show();
+					}else if(data[0].result == "db_restore"){
+						$("#restore_bck_encryption_key_dialog").dialog("close");
+						$("#result_admin_action_db_restore").html("<img src=\"includes/images/tick.png\" alt=\"\" />");
+						$("#result_admin_action_db_restore_get_file").hide();
+						//deconnect user
+			            $("#menu_action").val("deconnexion");
+			            document.main_form.submit();
+					}else if(data[0].result == "db_optimize"){
+						$("#result_admin_action_db_optimize").html("<img src=\'includes/images/tick.png\' alt=\'\' />");
+					}else if(data[0].result == "purge_old_files"){
+						$("#result_admin_action_purge_old_files").html("<img src=\'includes/images/tick.png\' alt=\'\' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;'.$txt['admin_action_purge_old_files_result'].'");
+					}else if(data[0].result == "db_clean_items"){
+						$("#result_admin_action_db_clean_items").html("<img src=\"includes/images/tick.png\" alt=\"\" />&nbsp;"+data[0].nb_items_deleted+"&nbsp;'.$txt['admin_action_db_clean_items_result'].'");
+					}else if(data[0].result == "changed_salt_key"){
+						//deconnect user
+			            $("#menu_action").val("deconnexion");
+			            document.main_form.submit();
+					}else if(data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog"){
+						if(data[0].error != ""){
+							$("#email_testing_results").html("'.addslashes($txt['admin_email_result_nok']).' "+data[0].message).show().attr("class","ui-state-error ui-corner-all");
+						}else{
+							$("#email_testing_results").html("'.addslashes($txt['admin_email_result_ok']).' ").show().attr("class","ui-corner-all ui-state-focus");
+						}
+					}
 				}
 			},
 			"json"

@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		users.load.php
- * @author		Nils Laumaillé
+ * @author		Nils LaumaillÃ©
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -94,7 +94,7 @@ $(function() {
 	    modal: true,
 	    autoOpen: false,
 	    width: 320,
-	    height: 380,
+	    height: 400,
 	    title: "<?php echo $txt['new_user_title'];?>",
 	    buttons: {
 	        "<?php echo $txt['save_button'];?>": function() {
@@ -259,6 +259,10 @@ $(function() {
 	    title: "<?php echo $txt["logs"];?>",
 	    buttons: {
 	        "<?php echo $txt['cancel_button'];?>": function() {
+				$("#span_user_activity_option").hide();
+				$("#activity").val(0);
+				$("#tbody_logs").empty();
+				$("#log_pages").empty();
 	            $(this).dialog("close");
 	        }
 	    },
@@ -269,7 +273,8 @@ $(function() {
 					type    : "user_log_items",
 					page    : $("#log_page").val(),
 					nb_items_by_page:	$("#nb_items_by_page").val(),
-					id		: $("#selected_user").val()
+					id		: $("#selected_user").val(),
+					scope	: $("#activity").val()
 				},
 				function(data){
 					if (data[0].error == "no") {
@@ -463,15 +468,16 @@ function check_domain(email){
 	);
 }
 
-function displayLogs(page){
+function displayLogs(page, scope){
 	$.post(
 		"sources/users.queries.php",
 		{
 			type    : "user_log_items",
 			page    :page,
 			nb_items_by_page:	$("#nb_items_by_page").val(),
-			filter	:$("#activity").val(),
-			id		: $("#selected_user").val()
+			filter	:$("#activity_filter").val(),
+			id		: $("#selected_user").val(),
+			scope	: scope
 		},
 		function(data){
 			if (data[0].error == "no") {
@@ -496,5 +502,18 @@ function user_action_log_items(id){
 function migrate_pf(user_id){
 	$("#migrate_pf_admin_id").val(user_id);
 	$('#migrate_pf_dialog').dialog('open');
+}
+
+/**
+ *
+ */
+ function show_user_log(action){
+	 if(action == "user_activity"){
+		 $("#span_user_activity_option").show();
+		 displayLogs(1,'user_activity');
+	 }else{
+		 $("#span_user_activity_option").hide();
+		 displayLogs(1,'user_mngt');
+	 }
 }
 </script>

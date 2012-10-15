@@ -55,6 +55,7 @@ echo '
 			<input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>
 			<input type="radio" id="radio4" name="radio" onclick="displayLogs(\'copy_logs\',1, \'date\')" /><label for="radio4">'.$txt['at_copy'].'</label>
 			<input type="radio" id="radio5" name="radio" onclick="displayLogs(\'admin_logs\',1, \'date\')" /><label for="radio5">'.$txt['admin'].'</label>
+			<input type="radio" id="radio6" name="radio" onclick="displayLogs(\'items_logs\',1, \'date\')" /><label for="radio6">'.$txt['items'].'</label>
 		</div>
         <div id="div_show_system_logs" style="margin-left:30px;margin-top:10px;display:none;">
         	<div id="filter_logs_div" style="display:none;margin-bottom:10px;">
@@ -74,6 +75,25 @@ echo '
 	            </tbody>
 	        </table>
 	        <div id="log_pages" style="margin-top:10px;"></div>
+        </div>
+        <div id="div_show_items_logs" style="margin-left:30px;margin-top:10px;display:none;">
+        	<div id="filter_itemslogs_div" style="margin-bottom:10px;">
+        		<label for="filter_itemslogs" style="font-weight:bold;">'.$txt['find'].':</label>&nbsp;<input type="text" id="filter_itemslogs" />
+				&nbsp;<img src="includes/images/arrow_refresh.png" id="filter_itemslogs_button" onclick="" />
+			</div>
+	        <table>
+	            <thead>
+	                <tr>
+	                    <th onclick="displayLogs(\'reorder\', \'\', \'date\')" style="cursor:pointer;" title="">'.$txt['date'].'</th>
+	                    <th id="th_url">'.$txt['url'].'</th>
+	                    <th onclick="displayLogs(\'reorder\', \'\', \'label\')" style="cursor:pointer;" title="">'.$txt['label'].'</th>
+	                    <th onclick="displayLogs(\'reorder\', \'\', \'login\')" style="cursor:pointer;" title="">'.$txt['user'].'</th>
+	                </tr>
+	            </thead>
+	            <tbody id="tbody_itemslogs">
+	            </tbody>
+	        </table>
+	        <div id="itemslogs_pages" style="margin-top:10px;"></div>
         </div>
     </div>';
 

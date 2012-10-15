@@ -182,13 +182,13 @@ if ( !empty($_POST['type']) ){
             		$db->query_update(
 	            		'users',
 	            		array(
-	            		    'fonction_id' => $new_role_id
+	            		    'fonction_id' => is_int($new_role_id)
 	            		),
 	            		"id=".$new_user_id
             		);
 
 					//Send email to new user
-            		SendEmail(
+            		@SendEmail(
             			$tst['email_subject_new_user'],
             			str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(encrypt(string_utf8_decode($_POST['pw']))), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
             			$_POST['email']
@@ -199,6 +199,18 @@ if ( !empty($_POST['type']) ){
             		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
             		$tree->rebuild();
             	}
+
+            	//update LOG
+            	$db->query_insert(
+	            	'log_system',
+	            	array(
+	            	    'type' => 'user_mngt',
+	            	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	            	    'label' => 'at_user_added',
+		            	'qui' => $_SESSION['user_id'],
+		            	'field_1' => $new_user_id
+	            	)
+            	);
 
             	echo '[ { "error" : "no" } ]';
             }else{
@@ -250,6 +262,18 @@ if ( !empty($_POST['type']) ){
 	        		$tree->rebuild();
         		}
 
+            	//update LOG
+		        $db->query_insert(
+			       	'log_system',
+			       	array(
+			       	    'type' => 'user_mngt',
+			       	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			       	    'label' => 'at_user_deleted',
+				       	'qui' => $_SESSION['user_id'],
+				       	'field_1' => $_POST['id']
+			       	)
+		        );
+
         	}else{
         		//lock user in database
         		$db->query_update(
@@ -260,6 +284,18 @@ if ( !empty($_POST['type']) ){
 	        		),
 	        		"id=".$_POST['id']
         		);
+
+            	//update LOG
+		        $db->query_insert(
+			       	'log_system',
+			       	array(
+			       	    'type' => 'user_mngt',
+			       	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			       	    'label' => 'at_user_locked',
+			       	    'qui' => $_SESSION['user_id'],
+			       	    'field_1' => $_POST['id']
+			       	)
+		        );
         	}
         break;
 
@@ -271,6 +307,9 @@ if ( !empty($_POST['type']) ){
         		exit();
         	}
 
+        	//Get old email
+        	$data = $db->fetch_row("SELECT email FROM ".$pre."users WHERE id = '".$_POST['id']."'");
+
 			$db->query_update(
 			     "users",
 			     array(
@@ -278,6 +317,18 @@ if ( !empty($_POST['type']) ){
 			     ),
 			     "id = ".$_POST['id']
 			 );
+
+            //update LOG
+		    $db->query_insert(
+			   	'log_system',
+			   	array(
+			   	    'type' => 'user_mngt',
+			   	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			   	    'label' => 'at_user_email_changed:'.$data[0],
+				   	'qui' => $_SESSION['user_id'],
+				   	'field_1' => $_POST['id']
+			   	)
+		    );
         break;
 
         // UPDATE CAN CREATE ROOT FOLDER RIGHT
@@ -551,7 +602,19 @@ if ( !empty($_POST['type']) ){
                 ),
                 "id = ".$_POST['id']
             );
-        	break;
+
+            //update LOG
+		    $db->query_insert(
+			   	'log_system',
+			   	array(
+			   	    'type' => 'user_mngt',
+			   	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+			   	    'label' => 'at_user_unlocked',
+				   	'qui' => $_SESSION['user_id'],
+				   	'field_1' => $_POST['id']
+			   	)
+		    );
+        break;
 
     	/*
     	* Check the domain
@@ -586,46 +649,78 @@ if ( !empty($_POST['type']) ){
     		$logs = $sql_filter = "";
     		$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
 
-    		if(isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter']!= "all"){
-    			$sql_filter = " AND l.action = '".$_POST['filter']."'";
+    		if($_POST['scope'] == "user_activity"){
+	    		if(isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter']!= "all"){
+	    			$sql_filter = " AND l.action = '".$_POST['filter']."'";
+	    		}
+
+	    		//get number of pages
+	    		$data = $db->fetch_row("
+	    	    SELECT COUNT(*)
+	            FROM ".$pre."log_items AS l
+	            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+	            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+	            WHERE l.id_user = ".$_POST['id'].$sql_filter);
+
+	    		//define query limits
+	    		if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+	    			$start = ($_POST['nb_items_by_page']*($_POST['page']-1)) + 1;
+	    		}else{
+	    			$start = 0;
+	    		}
+
+	    		//launch query
+	    		$rows = $db->fetch_all_array("
+	    	    SELECT l.date AS date, u.login AS login, i.label AS label, l.action AS action
+	            FROM ".$pre."log_items AS l
+	            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+	            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+	            WHERE l.id_user = ".$_POST['id'].$sql_filter."
+	            ORDER BY date DESC
+	            LIMIT $start,".$_POST['nb_items_by_page']);
+    		}else{
+	    		//get number of pages
+	    		$data = $db->fetch_row("
+	    	    SELECT COUNT(*)
+	            FROM ".$pre."log_system
+	            WHERE type = 'user_mngt' AND field_1=".$_POST['id']);
+
+	    		//define query limits
+	    		if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+	    			$start = ($_POST['nb_items_by_page']*($_POST['page']-1)) + 1;
+	    		}else{
+	    			$start = 0;
+	    		}
+
+	    		//launch query
+	    		$rows = $db->fetch_all_array("
+	    	    SELECT *
+	            FROM ".$pre."log_system
+	            WHERE type = 'user_mngt' AND field_1=".$_POST['id']."
+	            ORDER BY date DESC
+	            LIMIT $start,".$_POST['nb_items_by_page']);
     		}
 
-    		//get number of pages
-    		$data = $db->fetch_row("
-    	    SELECT COUNT(*)
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            WHERE l.id_user = ".$_POST['id'].$sql_filter);
-    		if ( $data[0] != 0 ){
+    		//generate data
+    		if ( isset($data) && $data[0] != 0 ){
     			$nb_pages = ceil($data[0]/$_POST['nb_items_by_page']);
     			for($i=1;$i<=$nb_pages;$i++){
-    				$pages .= '<td onclick=\'displayLogs('.$i.')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+    				$pages .= '<td onclick=\'displayLogs('.$i.',\'user_mngt\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
     			}
     		}
     		$pages .= '</tr></table>';
-
-    		//define query limits
-    		if ( isset($_POST['page']) && $_POST['page'] > 1 ){
-    			$start = ($_POST['nb_items_by_page']*($_POST['page']-1)) + 1;
-    		}else{
-    			$start = 0;
-    		}
-
-    		//launch query
-    		$rows = $db->fetch_all_array("
-    	    SELECT l.date AS date, u.login AS login, i.label AS label, l.action AS action
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            WHERE l.id_user = ".$_POST['id'].$sql_filter."
-            ORDER BY date DESC
-            LIMIT $start,".$_POST['nb_items_by_page']);
-
-    		foreach( $rows as $reccord){
-    			//$label = explode('@',addslashes(CleanString($reccord['label'])));
-    			$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td><td align=\"center\">'.$txt[$reccord['action']].'</td></tr>';
-    		}
+			if(isset($rows)){
+	    		foreach( $rows as $reccord){
+	    			if($_POST['scope'] == "user_mngt"){
+	    				$user = $db->fetch_row("SELECT login from ".$pre."users WHERE id=".$reccord['qui']);
+	    				$user_1 = $db->fetch_row("SELECT login from ".$pre."users WHERE id=".$_POST['id']);
+	    				$tmp = explode(":", $reccord['label']);
+	    				$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"center\">'.str_replace(array('"','#user_login#'), array('\"',$user_1[0]), $txt[$tmp[0]]).'</td><td align=\"center\">'.$user[0].'</td><td align=\"center\"></td></tr>';
+	    			}else{
+	    				$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td><td align=\"center\">'.$txt[$reccord['action']].'</td></tr>';
+	    			}
+	    		}
+			}
 
     		echo '[ { "table_logs": "'.$logs.'", "pages": "'.$pages.'", "error" : "no" } ]';
     		break;
@@ -713,6 +808,16 @@ else if ( !empty($_POST['newlogin']) ){
             'login' => $_POST['newlogin']
         ),
         "id = ".$id[1]
+    );
+    //update LOG
+    $db->query_insert(
+	   	'log_system',
+	   	array(
+	   	    'type' => 'user_mngt',
+	   	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	   	    'label' => 'at_user_new_login:'.$id[1],
+	   	    'qui' => $_SESSION['user_id']
+	   	)
     );
     //Display info
     echo $_POST['newlogin'];

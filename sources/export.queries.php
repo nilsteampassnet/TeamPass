@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		export.queries.php
- * @author		Nils Laumaillé
+ * @author		Nils LaumaillÃ©
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -82,26 +82,43 @@ switch($_POST['type'])
 		   						'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
 		   						'login' => $reccord['login']
 							);*/
-	   						$full_listing[$reccord['id']] = array($reccord['label'],$reccord['login'],substr(addslashes($pw), strlen($reccord['rand_key'])));
+	   						$full_listing[$id][$reccord['id']] = array($reccord['label'],$reccord['login'],substr(addslashes($pw), strlen($reccord['rand_key'])), $reccord['description']);
 	   					}
 	    			}
 	   				$id_managed = $reccord['id'];
 	   			}
    			}
     	}
+    	
+		require_once ("NestedTree.class.php");
+		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+		$tree->rebuild();
+		// get node paths for table headers
+		foreach($full_listing as $key => $val) {
+			$folders = $tree->getPath($key,true);
+			$path = "";
+			foreach($folders as $val) {
+				if ($path) $path .= " Â» ";
+				$path .= $val->title;
+			}
+			$paths[$key] = $path;
+		}
 
     	//Build PDF
     	if (!empty($full_listing)) {
     		//Some variables
     		$table_full_width = 190;
-    		$table_col_width = array(65, 55, 70);
+    		$table_col_width = array(45, 40, 45, 60);
 
     		//Prepare the PDF file
-    		include('../includes/libraries/tfpdf/tfpdf.php');
-    		$pdf=new tFPDF();
+    		include('../includes/libraries/tfpdf/fpdf_protection.php');
+			$pdf=new FPDF_Protection();
+			$pdf->SetProtection(array('print'),$_POST['pdf_password']);   		
 
-    		//Add font for utf-8
+    		//Add font for regular text
     		$pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
+    		//Add monospace font for passwords
+			$pdf->AddFont('LiberationMono',''); 
 
     		$pdf->AliasNbPages();
     		$pdf->AddPage();
@@ -109,48 +126,68 @@ switch($_POST['type'])
     		$pdf->Cell(0,10,$txt['print_out_pdf_title'],0,1,'C',false);
     		$pdf->SetFont('DejaVu','',12);
     		$pdf->Cell(0,10,$txt['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],mktime(date("H"),date("i"),date("s"),date("m"),date("d"),date("Y"))).' '.$txt['by'].' '.$_SESSION['login'],0,1,'C',false);
-    		$pdf->SetFont('DejaVu','',10);
-    		$pdf->SetFillColor(192,192,192);
-    		$pdf->cell($table_col_width[0],5,$txt['label'],1,0,"C",1);
-    		$pdf->cell($table_col_width[1],5,$txt['login'],1,0,"C",1);
-    		$pdf->cell($table_col_width[2],5,$txt['pw'],1,1,"C",1);
-    		$pdf->SetFont('DejaVu','',9);
+    		
+    		foreach( $full_listing as $key => $val) {
+				$printed_ids[] = $key;
+				$pdf->SetFont('DejaVu','',10);
+				$pdf->SetFillColor(192,192,192);
+				error_log('key: '.$key.' - paths: '.$paths[$key]);
+				$pdf->cell(0,6,$paths[$key],1,1,"L",1);
+				$pdf->SetFillColor(222,222,222);
+				$pdf->cell(45,6,$txt['label'],1,0,"C",1);
+				$pdf->cell(40,6,$txt['login'],1,0,"C",1);
+				$pdf->cell(45,6,$txt['pw'],1,0,"C",1);
+				$pdf->cell(60,6,$txt['description'],1,1,"C",1);
+				foreach( $val as $item ){
+					//row height calculus
+					$nb = 0;
+					for($i=0;$i<count($item);$i++){
+						if($i==3){
+							$item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
+						}	
+						$nb=max($nb,NbLines($table_col_width[$i], $item[$i]));
+					}
+					$h=5*$nb;
+					//Page break needed?
+					CheckPageBreak($h);
+					//Draw cells
+					$pdf->SetFont('DejaVu','',9);    
+					for($i=0;$i<count($item);$i++)
+					{
+						$w=$table_col_width[$i];
+						$a='L';
+						//actual position
+						$x=$pdf->GetX();
+						$y=$pdf->GetY();
+						//Draw
+						$pdf->Rect($x,$y,$w,$h);
+						//Write
+						if ($i == 2) {
+							// change font for password
+							$pdf->SetFont('LiberationMono','',9);
+						}else{
+							$pdf->SetFont('DejaVu','',9); 
+						}           
+						if($i==3){
+							$item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
+						}
+						$pdf->MultiCell($w,5,$item[$i],0,$a);
+						//go to right
+						$pdf->SetXY($x+$w,$y);
+					}
+					//return to line
+					$pdf->Ln($h);
+				}
+			}    		
 
-    		foreach( $full_listing as $item ){
-	    		//row height calculus
-	    		$nb = 0;
-			    for($i=0;$i<count($item);$i++){
-			        $nb=max($nb,NbLines($table_col_width[$i], $item[$i]));
-			    }
-			    $h=5*$nb;
-
-			    //Page break needed?
-			    CheckPageBreak($h);
-
-			    //Draw cells
-			    for($i=0;$i<count($item);$i++)
-			    {
-			        $w=$table_col_width[$i];
-			        $a='L';
-			        //actual position
-			        $x=$pdf->GetX();
-			        $y=$pdf->GetY();
-			        //Draw
-			        $pdf->Rect($x,$y,$w,$h);
-			        //Write
-			        $pdf->MultiCell($w,5,$item[$i],0,$a);
-			        //go to right
-			        $pdf->SetXY($x+$w,$y);
-			    }
-			    //return to line
-			    $pdf->Ln($h);
-    		}
-
-    		$pdf_file = "print_out_pdf_".date("Y-m-d",mktime(0,0,0,date('m'),date('d'),date('y'))).".pdf";
+    		$pdf_file = "print_out_pdf_".date("Y-m-d",mktime(0,0,0,date('m'),date('d'),date('y')))."_".GenerateKey().".pdf";
     		//send the file
-    		$pdf->Output($_SESSION['settings']['cpassman_dir']."/files/".$pdf_file);
-
-    		echo '[{"text":"<a href=\''.$_SESSION['settings']['cpassman_url'].'/files/'.$pdf_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+    		$pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
+			
+    		//log
+    		logEvents('pdf_export', implode(';',$printed_ids), $_SESSION['user_id']);
+    		
+    		echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
     	}
 	break;
 
@@ -222,16 +259,16 @@ switch($_POST['type'])
    			}
     	}
     	//save the file
-    	$csv_file = $_SESSION['settings']['cpassman_url'].'/files/print_out_csv_'.time().'.csv';
+    	$csv_file = '/print_out_csv_'.time().'_'.GenerateKey().'.csv';
 //print_r($full_listing);
-    	$outstream = fopen($csv_file, "w");
+    	$outstream = fopen($_SESSION['settings']['path_to_files_folder'].$csv_file, "w");
     	function __outputCSV(&$vals, $key, $filehandler) {
     		fputcsv($filehandler, $vals,";"); // add parameters if you want
     	}
     	array_walk($full_listing, "__outputCSV", $outstream);
     	fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
 	break;
 }
 
@@ -239,14 +276,14 @@ switch($_POST['type'])
 function CheckPageBreak($h)
 {
 	global $pdf;
-	//Si la hauteur h provoque un débordement, saut de page manuel
+	//Continu on a new page if needed
 	if($pdf->GetY()+$h>$pdf->PageBreakTrigger)
 		$pdf->AddPage($pdf->CurOrientation);
 }
 function NbLines($w,$txt)
 {
 	global $pdf;
-	//Calcule le nombre de lignes qu'occupe un MultiCell de largeur w
+	//Calculate the number of lines needed by a Multicell with a width of w
 	$cw=&$pdf->CurrentFont['cw'];
 	if($w==0)
 		$w=$pdf->w-$this->rMargin-$pdf->x;

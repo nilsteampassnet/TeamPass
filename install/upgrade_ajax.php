@@ -275,7 +275,19 @@ if ( isset($_POST['type']) ){
 				array('admin', 'nb_items_by_query', 'auto', 0),
 				array('admin', 'enable_delete_after_consultation', '0', 0),
 				array('admin', 'path_to_upload_folder', strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1 ? (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload' : $_SERVER['DOCUMENT_ROOT'].substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/upload', 0),
-				array('admin', 'url_to_upload_folder', 'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'/upload', 0)
+				array('admin', 'url_to_upload_folder', 'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'/upload', 0),
+				array('admin', 'enable_personal_saltkey_cookie', '0', 0),
+				array('admin', 'personal_saltkey_cookie_duration', '31', 0),
+				array('admin', 'path_to_files_folder', strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1 ? (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/files' : $_SERVER['DOCUMENT_ROOT'].substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-25).'/files', 0),
+				array('admin', 'url_to_files_folder', 'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'/files', 0),
+				array('admin','pwd_maximum_length','40',0),
+				array('admin', 'email_smtp_server', @$_SESSION['smtp_server'], 0),
+				array('admin', 'email_smtp_auth', @$_SESSION['smtp_auth'], 0),
+				array('admin', 'email_auth_username', @$_SESSION['smtp_auth_username'], 0),
+				array('admin', 'email_auth_pwd', @$_SESSION['smtp_auth_password'], 0),
+				array('admin', 'email_post', '25', 0),
+				array('admin', 'email_from', @$_SESSION['email_from'], 0),
+				array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
 			);
 			$res1 = "na";
 			foreach($val as $elem){
@@ -312,6 +324,7 @@ if ( isset($_POST['type']) ){
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY id_user INT(8)");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY role_id INT(12)");
 			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY item_id INT(12)");
+			mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw TEXT");
 
 			## Alter USERS table
 			$res2 = add_column_if_not_exist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
@@ -363,6 +376,7 @@ if ( isset($_POST['type']) ){
                   PRIMARY KEY (`id`)
                 );");
 			if ( $res8 ){
+				mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."log_system ADD `field_1` VARCHAR( 250 ) NOT NULL");
 				echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/tick.png\">";';
 			}else{
 				echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LOG_SYSTEM!";';
@@ -699,8 +713,8 @@ if ( isset($_POST['type']) ){
 				    'fr'=>array('french', 'French', 'fr', 'fr.png'),
 				    'us'=>array('english', 'English', 'us', 'us.png'),
 				    'es'=>array('spanish', 'Spanish', 'es', 'es.png'),
-				    'cz'=>array('german', 'Czech', 'cz', 'cz.png'),
-				    'fr'=>array('czech', 'French', 'fr', 'fr.png'),
+				    'cz'=>array('german', 'German', 'de', 'de.png'),
+				    'fr'=>array('czech', 'Czech', 'cz', 'cz.png'),
 				    'it'=>array('italian', 'Italian', 'it', 'it.png'),
 				    'ru'=>array('russian', 'Russian', 'ru', 'ru.png'),
 				    'tr'=>array('turkish', 'Turkish', 'tr', 'tr.png'),
@@ -818,18 +832,9 @@ if ( isset($_POST['type']) ){
 
 				fwrite($fh, utf8_encode("<?php
 global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
-global \$smtp_server, \$smtp_auth, \$smtp_auth_username, \$smtp_auth_password, \$email_from,\$email_from_name;
 global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
 @define('SALT', '". $_SESSION['encrypt_key'] ."'); //Define your encryption key => NeverChange it once it has been used !!!!!
-
-### EMAIL PROPERTIES ###
-\$smtp_server = '".str_replace("'", "", $_SESSION['smtp_server'])."';
-\$smtp_auth = '".str_replace("'", "\'", $_SESSION['smtp_auth'])."'; //false or true
-\$smtp_auth_username = '".str_replace("'", "\'", substr($_SESSION['smtp_auth_username'],1,-1))."';
-\$smtp_auth_password = '".str_replace("'", "\'", substr($_SESSION['smtp_auth_password'],1,-1))."';
-\$email_from = '".str_replace("'", "", $_SESSION['email_from'])."';
-\$email_from_name = '".str_replace("'", "", $_SESSION['email_from_name'])."';
 
 ### DATABASE connexion parameters ###
 \$server = \"". $_SESSION['db_host'] ."\";

@@ -565,7 +565,6 @@ echo '
         //Tabs EDIT N?3
         echo '
         <div id="tabs-03">
-        	<div id="item_list_files" style="margin-left:25px;"></div>
             <div id="item_file_queue"></div>
             <input type="file" name="item_files_upload" id="item_files_upload" /><br />
             <a href="#" onclick="upload_attached_files()">'.$txt['start_upload'].'</a>
@@ -849,7 +848,18 @@ echo '
 
 //DIALOG FOR HISTORY OF ITEM
 echo '
-<div id="div_item_history" style="display:none;"></div>';
+<div id="div_item_history" style="display:none;">
+	<div id="item_history_log"></div>
+	', (isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1) ?
+	'<div id="new_history_entry_form" style="display:none;">
+		<div id="div_add_history_entry">
+			<div id="item_history_log_error"></div>
+			'.$txt['label'].'&nbsp;<input type="text" id="add_history_entry_label" size="40" />&nbsp;
+			<span class="button" style="margin-top:6px;" onclick="manage_history_entry(\'add_entry\',\'\')">'.$txt['add_history_entry'].'</div>
+		</div>
+	</div>'
+	:'', '
+</div>';
 
 //DIALOG FOR ITEM SHARE
 echo '

@@ -93,22 +93,18 @@ $(function() {
 					function(data){
 						//Check errors
 						if (data[0].error == "error_group_exist") {
-							$("#edit_folder_show_error").html("<?php echo $txt['error_group_exist'];?>");
-							$("#edit_folder_show_error").show();
+							$("#edit_folder_show_error").html("<?php echo $txt['error_group_exist'];?>").show();
 							LoadingPage();
 						}else if (data[0].error == "error_html_codes") {
-							$("#edit_folder_show_error").html("<?php echo $txt['error_html_codes'];?>");
-							$("#edit_folder_show_error").show();
+							$("#edit_folder_show_error").html("<?php echo $txt['error_html_codes'];?>").show();
 							LoadingPage();
 						}else{
+                			$("#folder_id_to_edit").val("");	//clear id
 							window.location.href = "index.php?page=manage_folders";
 						}
 					},
 					"json"
 				);
-
-                //clear id
-                $("#folder_id_to_edit").val("");
             },
             "<?php echo $txt['cancel_button'];?>": function() {
             	//clear id

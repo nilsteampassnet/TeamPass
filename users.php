@@ -144,7 +144,7 @@ echo '
 
 
             //Display Grid
-            //if ($_SESSION['user_gestionnaire'] == 1 && $reccord['admin'] == 1){
+            if ($show_user_folders == true){
             echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x%2).'"', '>
                     <td align="center">'.$reccord['id'].'</td>
                     <td align="center">';
@@ -189,26 +189,27 @@ echo '
 						</div>
                     </td>
                     <td align="center">
-                        <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"', $reccord['admin']==1 ? 'checked' : '', ' ', $_SESSION['user_gestionnaire'] == 1 ? 'disabled':'' , ' />
+                        <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"', $reccord['admin']==1 ? 'checked' : '', ' ', $_SESSION['user_gestionnaire'] == 1 ? 'disabled="disabled"':'' , ' />
                     </td>
                     <td align="center">
-                        <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"', $reccord['gestionnaire']==1 ? 'checked' : '', ' ', ($_SESSION['user_gestionnaire'] == 1 || $reccord['admin'] == 1) ? 'disabled':'',' />
+                        <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"', $reccord['gestionnaire']==1 ? 'checked' : '', ' ', ($_SESSION['user_gestionnaire'] == 1 || $reccord['admin'] == 1) ? 'disabled="disabled"':'',' />
                     </td>';
 
 					//Read Only privilege
 						echo '
                     <td align="center">
-                        <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only']==1 ? 'checked' : '', ' ', ($_SESSION['user_gestionnaire'] == 1 || $reccord['admin'] == 1) ? 'disabled':'',' />
+                        <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only']==1 ? 'checked' : '', ' ', ($show_user_folders != true) ? 'disabled="disabled"':'',' />
                     </td>';
-
+					
+					//Personal folder privilege
                     if( isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature']==1)
                         echo '
                     <td align="center">
-                        <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"', $reccord['can_create_root_folder']==1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
+                        <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"', $reccord['can_create_root_folder']==1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
                     </td>';
                     echo '
                     <td align="center">
-                        <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"', $reccord['personal_folder']==1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
+                        <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"', $reccord['personal_folder']==1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
                     </td>';
 
         			//If user is active, then you could lock it
@@ -244,7 +245,7 @@ echo '
                     </td>
                 </tr>';
                 $x++;
-            //}
+            }
         }
         echo '
             </tbody>
@@ -383,24 +384,31 @@ echo '
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_logs"></div>
      <div>'.
 		$txt['nb_items_by_page'].':
-		<select id="nb_items_by_page" onChange="displayLogs(1)">
+		<select id="nb_items_by_page" onChange="displayLogs(1,$(\'#activity\').val())">
 	    	<option value="10">10</option>
 	    	<option value="25">25</option>
 	    	<option value="50">50</option>
 	    	<option value="100">100</option>
 	    </select>
 	    &nbsp;&nbsp;'.
-		$txt['activity'].':
-		<select id="activity" onChange="displayLogs(1)">
-	    	<option value="all">'.$txt['all'].'</option>
-	    	<option value="at_modification">'.$txt['at_modification'].'</option>
-	    	<option value="at_creation">'.$txt['at_creation'].'</option>
-	    	<option value="at_delete">'.$txt['at_delete'].'</option>
-	    	<option value="at_import">'.$txt['at_import'].'</option>
-	    	<option value="at_restored">'.$txt['at_restored'].'</option>
-	    	<option value="at_pw">'.$txt['at_pw'].'</option>
-	    	<option value="at_shown">'.$txt['at_shown'].'</option>
+		$txt['select'].':
+		<select id="activity" onChange="show_user_log($(\'#activity\').val())">
+	    	<option value="user_mngt">'.$txt['user_mngt'].'</option>
+	    	<option value="user_activity">'.$txt['user_activity'].'</option>
 	    </select>
+	    <span id="span_user_activity_option" style="display:none;">&nbsp;&nbsp;'.
+			$txt['activity'].':
+			<select id="activity_filter" onChange="displayLogs(1,\'user_activity\')">
+		    	<option value="all">'.$txt['all'].'</option>
+		    	<option value="at_modification">'.$txt['at_modification'].'</option>
+		    	<option value="at_creation">'.$txt['at_creation'].'</option>
+		    	<option value="at_delete">'.$txt['at_delete'].'</option>
+		    	<option value="at_import">'.$txt['at_import'].'</option>
+		    	<option value="at_restored">'.$txt['at_restored'].'</option>
+		    	<option value="at_pw">'.$txt['at_pw'].'</option>
+		    	<option value="at_shown">'.$txt['at_shown'].'</option>
+		    </select>
+	    </span>
     </div>
     <table width="100%">
 	    <thead>

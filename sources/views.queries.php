@@ -92,9 +92,9 @@ switch($_POST['type'])
         list($d,$m,$y) = explode('/',$_POST['date']);
         $nomFichier = "log_followup_passwords_".date("Y-m-d",mktime(0,0,0,$m,$d,$y)).".pdf";
         //send the file
-        $pdf->Output($_SESSION['settings']['cpassman_dir'].'/files/'.$nomFichier);
+        $pdf->Output($_SESSION['settings']['path_to_files_folder'].'/'.$nomFichier);
 
-    	echo '[{"text":"<a href=\''.$_SESSION['settings']['cpassman_url'].'/files/'.$nomFichier.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+    	echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
     break;
 
     #----------------------------------
@@ -388,7 +388,7 @@ switch($_POST['type'])
 
     	#----------------------------------
     	#CASE admin want to see COPIES logs
-    case "copy_logs":
+   		case "copy_logs":
     	$logs = $sql_filter = "";
     	$nb_pages = 1;
     	$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
@@ -439,6 +439,60 @@ switch($_POST['type'])
 
     	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
     	break;
+
+ 		#----------------------------------
+ 		#CASE admin want to see ITEMS logs
+   		case "items_logs":
+   			$logs = $sql_filter = "";
+   			$nb_pages = 1;
+   			$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+
+   			if(isset($_POST['filter']) && !empty($_POST['filter'])){
+   				$sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
+   			}
+   			if(isset($_POST['filter_user']) && !empty($_POST['filter_user'])){
+   				$sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+   			}
+
+   			//get number of pages
+   			$data = $db->fetch_row("
+   			    SELECT COUNT(*)
+            FROM ".$pre."log_items AS l
+            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+            WHERE i.label LIKE '%".$_POST['filter']."%'");
+   			if ( $data[0] != 0 ){
+   				$nb_pages = ceil($data[0]/$nb_elements);
+   				for($i=1;$i<=$nb_pages;$i++){
+   					$pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+   				}
+   			}
+   			$pages .= '</tr></table>';
+
+   			//define query limits
+   			if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+   				$start = ($nb_elements*($_POST['page']-1)) + 1;
+   			}else{
+   				$start = 0;
+   			}
+
+   			//launch query
+   			$rows = $db->fetch_all_array("
+   			    SELECT l.date AS date, u.login AS login, i.label AS label
+            FROM ".$pre."log_items AS l
+            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+            WHERE i.label LIKE '%".$_POST['filter']."%'
+            ORDER BY date DESC
+            LIMIT $start, $nb_elements");
+
+   			foreach( $rows as $reccord){
+   				$label = explode('@',addslashes(CleanString($reccord['label'])));
+   				$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+   			}
+
+   			echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+   		break;
 
     	#----------------------------------
     	#CASE admin want to see COPIES logs
@@ -586,9 +640,9 @@ switch($_POST['type'])
 
         $pdf_file = "renewal_pdf_".date("Y-m-d",mktime(0,0,0,date('m'),date('d'),date('y'))).".pdf";
         //send the file
-        $pdf->Output($_SESSION['settings']['cpassman_dir']."/files/".$pdf_file);
+        $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
-    	echo '[{"file" : "'.$_SESSION['settings']['cpassman_url'].'/files/'.$pdf_file.'"}]';
+    	echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
     break;
 }
 

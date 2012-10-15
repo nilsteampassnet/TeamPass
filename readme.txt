@@ -76,8 +76,21 @@ security and auditing.
 folder
 * LDAP improvement => 2.1.10
 * G129 => 2.2
-
+* email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.10
+ * #161 - #100 - #175
+ * #163 Personal saltkey duration based on cookie (under option)
+ * share item -> manage error when email not sent
+ * Improved/corrected export CSV and PDF
+ * Correction: During upgrade, languages table is wrong
+ * Personal Saltkey is stored in cookie (new admin setting)
+ * Emails settings are moved to admin settings page (no more in settings.php)
+ * Files folder is now a setting (to improve security)
+ * Exported PDF is encrypted (contributor: Jay2k1)
+ * #168 Add description field in PDF
+ * #174 User creation and modification log
+
 2.1.9
  * #126-#132-#130-#131-#139-#129-#141-#146
  * Italian translation

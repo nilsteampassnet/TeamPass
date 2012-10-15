@@ -285,6 +285,8 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 
                     <label for="smtp_auth_password" style="width:300px;">SMTP authorization password :</label><input type="text" id="smtp_auth_password" name="smtp_auth_password" class="step" value="" /><br />
 
+                    <label for="smtp_port" style="width:300px;">SMTP Port :</label><input type="text" id="smtp_port" name="smtp_port" class="step" value="25" /><br />
+
                     <label for="email_from" style="width:300px;">Email from :</label><input type="text" id="email_from" name="email_from" class="step" value=""  /><br />
 
                     <label for="email_from_name" style="width:300px;">Email from name :</label><input type="text" id="email_from_name" name="email_from_name" class="step" value="" />
@@ -310,6 +312,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
     $_SESSION['smtp_auth'] = $_POST['smtp_auth'];
     $_SESSION['smtp_auth_username'] = $_POST['smtp_auth_username'];
     $_SESSION['smtp_auth_password'] = $_POST['smtp_auth_password'];
+    $_SESSION['smtp_port'] = $_POST['smtp_port'];
     $_SESSION['email_from'] = $_POST['email_from'];
     $_SESSION['email_from_name'] = $_POST['email_from_name'];
 	if (isset($_POST['send_stats'])) {

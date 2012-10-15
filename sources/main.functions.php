@@ -543,7 +543,7 @@ function CPMStats(){
  *
  * @return
  */
-function SendEmail($subject, $text_mail, $email){
+function SendEmail($subject, $text_mail, $email, $text_mail_alt=""){
 
 	//load library
 	include('../includes/settings.php');
@@ -553,20 +553,21 @@ function SendEmail($subject, $text_mail, $email){
 	$mail = new PHPMailer();
 	$mail->SetLanguage("en","../includes/libraries/phpmailer/language/");
 	$mail->SMTPDebug = 0;	//value 1 can be used to debug
-	//$mail->Port = 465;	//COULD BE USED
+	$mail->Port = $_SESSION['settings']['email_port'];	//COULD BE USED
 	//$mail->SMTPSecure = 'ssl'; 	//COULD BE USED
 	$mail->IsSMTP();						// send via SMTP
-	$mail->Host     = $smtp_server; 		// SMTP servers
-	$mail->SMTPAuth = $smtp_auth;     		// turn on SMTP authentication
-	$mail->Username = $smtp_auth_username;  // SMTP username
-	$mail->Password = $smtp_auth_password; 	// SMTP password
-	$mail->From     = $email_from;
-	$mail->FromName = $email_from_name;
+	$mail->Host     = $_SESSION['settings']['email_smtp_server'];			// SMTP servers
+	$mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'];     		// turn on SMTP authentication
+	$mail->Username = $_SESSION['settings']['email_auth_username'];  // SMTP username
+	$mail->Password = $_SESSION['settings']['email_auth_pwd']; 	// SMTP password
+	$mail->From     = $_SESSION['settings']['email_from'];
+	$mail->FromName = $_SESSION['settings']['email_from_name'];
 	$mail->AddAddress($email); //Destinataire
 	$mail->WordWrap = 80;					// set word wrap
 	$mail->IsHTML(true);					// send as HTML
 	$mail->Subject  =  $subject;
 	$mail->Body     =  $text_mail;
+	$mail->AltBody	=  $text_mail_alt;
 
 	//send email
 	if(!$mail->Send())
@@ -575,7 +576,7 @@ function SendEmail($subject, $text_mail, $email){
 	}
 	else
 	{
-		echo '"error":"" , "message":""';
+		return '"error":"" , "message":""';
 	}
 }
 

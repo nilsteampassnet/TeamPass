@@ -24,8 +24,6 @@ header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 
-$path = "../files/";
-
 // connect to the server
 require_once("class.database.php");
 $db = new Database($server, $user, $pass, $database, $pre);
@@ -40,7 +38,7 @@ switch($_POST['type'])
     	$error ="";
         // Chemin vers le fichier distant
         $remote_file = 'cpm2_config.txt';
-        $local_file = '../files/localfile.txt';
+        $local_file = $_SESSION['settings']['path_to_files_folder'].'/localfile.txt';
 
         // Ouverture du fichier pour ?criture
         $handle = fopen($local_file, 'w');
@@ -150,7 +148,6 @@ switch($_POST['type'])
     case "admin_action_db_clean_items":
         //Libraries call
         require_once ("NestedTree.class.php");
-        require_once ("main.functions.php");
 
         //init
         $folders_ids = array();
@@ -232,7 +229,7 @@ switch($_POST['type'])
         if ( !empty($return) ){
             //save file
             $filename = 'db-backup-'.time().'.sql';
-            $handle = fopen($path.$filename,'w+');
+            $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename,'w+');
 
             //Encrypt the file
             if ( !empty($_POST['option']) ) $return = encrypt($return,$_POST['option']);
@@ -278,13 +275,13 @@ switch($_POST['type'])
         //create uncrypted file
         if ( !empty($key) ) {
             //read full file
-            $file_array = file("../files/".$file);
+            $file_array = file($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //delete file
-            unlink("../files/".$file);
+            unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
-            $file = "../files/".time().".log";
+            $file = $_SESSION['settings']['path_to_files_folder']."/".time().".log";
             $inF = fopen($file,"w");
             while(list($cle,$val) = each($file_array)) {
                 fputs($inF,decrypt($val,$key)."\n");
@@ -293,7 +290,7 @@ switch($_POST['type'])
         }
 
         //read sql file
-        if ( $handle = fopen($_SESSION['settings']['cpassman_dir']."/files/".$file,"r") ) {
+        if ( $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$file,"r") ) {
             $query = "";
             while ( !feof($handle) ) {
                 $query.= fgets($handle, 4096);
@@ -307,7 +304,7 @@ switch($_POST['type'])
         }
 
         //delete file
-        unlink("../files/".$file);
+        unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
 
         //Show done
     	echo '[{"result":"db_restore"}]';
@@ -364,8 +361,7 @@ switch($_POST['type'])
         $nb_files_deleted = 0;
 
         //read folder
-        $rep = "../files/";
-        $dir = opendir($rep);
+        $dir = opendir($_SESSION['settings']['path_to_files_folder']);
 
         //delete file
         while ($f = readdir($dir)) {
@@ -492,18 +488,9 @@ switch($_POST['type'])
 
 			fwrite($fh, utf8_encode("<?php
 global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
-global \$smtp_server, \$smtp_auth, \$smtp_auth_username, \$smtp_auth_password, \$email_from,\$email_from_name;
 global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
 @define('SALT', '". $new_salt_key ."'); //Define your encryption key => NeverChange it once it has been used !!!!!
-
-### EMAIL PROPERTIES ###
-\$smtp_server = '".str_replace("'", "", $smtp_server)."';
-\$smtp_auth = '".str_replace("'", "\'", $smtp_auth)."'; //false or true
-\$smtp_auth_username = '".str_replace("'", "\'", $smtp_auth_username)."';
-\$smtp_auth_password = '".str_replace("'", "\'", $smtp_auth_password)."';
-\$email_from = '".str_replace("'", "", $email_from)."';
-\$email_from_name = '".str_replace("'", "", $email_from_name)."';
 
 ### DATABASE connexion parameters ###
 \$server = \"". $server ."\";
@@ -520,6 +507,58 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 		}
 
 		echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
+	break;
+
+	/*
+	* Test the email configuraiton
+	*/
+	case "admin_email_test_configuration":
+        require_once ("main.functions.php");
+		echo '[{"result":"email_test_conf", '.@SendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
+	break;
+
+	/*
+	* Send emails in backlog
+	*/
+	case "admin_email_send_backlog":
+        require_once ("main.functions.php");
+        
+        $rows = $db->fetch_all_array("SELECT * FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
+        foreach ($rows as $reccord){
+        	//send email
+			$ret = json_decode(@SendEmail(
+            	$reccord['subject'], 
+            	$reccord['body'],
+            	$reccord['receivers']
+            ));
+
+			if(!empty($ret['error'])){
+				//update item_id in files table
+				$db->query_update(
+					'emails',
+					array(
+					    'status' => "not sent"
+					),
+					"timestamp='".$reccord['timestamp']."'"
+				);
+			}else{
+				//delete from DB
+            	$db->query("DELETE FROM ".$pre."emails WHERE timestamp = '".$reccord['timestamp']."'");
+			}
+        }
+        
+        //update LOG
+        $db->query_insert(
+	       	'log_system',
+	       	array(
+	       	    'type' => 'admin_action',
+	       	    'date' => mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y')),
+	       	    'label' => 'Emails backlog',
+	       	    'qui' => $_SESSION['user_id']
+	       	)
+        );
+                
+		echo '[{"result":"admin_email_send_backlog", '.@SendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
 	break;
 }
 ?>

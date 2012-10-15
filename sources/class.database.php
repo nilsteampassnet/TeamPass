@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		class.database.php
- * @author		Nils Laumaillé
+ * @author		Nils LaumaillÃ©
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -120,7 +120,7 @@ function query($sql) {
 
     if (!$this->query_id) {
         $this->oops("<b>MySQL Query fail:</b> $sql");
-        return 0;
+        return 0;//$this->oops("<b>MySQL Query fail:</b> $sql");
     }
 
     $this->affected_rows = @mysql_affected_rows($this->link_id);
@@ -292,17 +292,18 @@ function oops($msg='') {
         $this->errno=mysql_errno();
     }
 	if($this->errno != "1049"){
-    @mysql_query("INSERT INTO ".$this->pre."log_system SET
-        date=".mktime(date("h"),date("i"),date("s"),date("m"),date("d"),date("y")).",
-        qui=".$_SESSION['user_id'].",
-        label='".$msg."<br />".addslashes($this->error)."@".$_SERVER['REQUEST_URI']."',
-        type='error'"
-    );
-
-	//Show Error
-    echo 'document.getElementById("mysql_error_warning").innerHTML = "'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error)).'";';
-    echo '$("#div_mysql_error").dialog("open");';
-    exit;
+	    @mysql_query("INSERT INTO ".$this->pre."log_system SET
+	        date=".mktime(date("h"),date("i"),date("s"),date("m"),date("d"),date("y")).",
+	        qui=".$_SESSION['user_id'].",
+	        label='".$msg."<br />".addslashes($this->error)."@".$_SERVER['REQUEST_URI']."',
+	        type='error'"
+	    );
+	
+		//Show Error
+	    //echo '$("#mysql_error_warning").html("'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error)).'");';
+	    //echo '$("#div_mysql_error").dialog("open");';
+	    return str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error));
+	    exit;
 	}else{
 		//DB connection error
 		echo '
