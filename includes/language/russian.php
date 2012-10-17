@@ -189,8 +189,7 @@ $txt['connection'] = "Соединение";
 $txt['connections'] = "соединения";
 $txt['copy'] = "Copy";
 $txt['copy_to_clipboard_small_icons'] = "Enable copy to clipboard small icons in items page";
-$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>
-";
+$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>";
 $txt['creation_date'] = "Дата создания";
 $txt['csv'] = "CSV";
 $txt['csv_import_button_text'] = "Выберите CSV-файл";
@@ -517,7 +516,7 @@ $txt['settings_ldap_mode'] = "Включить аутентификацию по
 $txt['settings_ldap_mode_tip'] = "Включите, только если у вас есть сервер LDAP и если вы хотите использовать его для аутентификации пользователей TeamPass через него.";
 $txt['settings_ldap_ssl'] = "Использовать LDAP через SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Использовать LDAP поверх TLS";
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "Включить протоколирование подключений пользователей к базе данных";
 $txt['settings_maintenance_mode'] = "Перевести TeamPass в режим обслуживания";
 $txt['settings_maintenance_mode_tip'] = "В этом режиме могут подключиться только Администраторы.";

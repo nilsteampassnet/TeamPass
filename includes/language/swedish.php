@@ -189,8 +189,7 @@ $txt['connection'] = "Connection";
 $txt['connections'] = "connections";
 $txt['copy'] = "Copy";
 $txt['copy_to_clipboard_small_icons'] = "Enable copy to clipboard small icons in items page";
-$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>
-";
+$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>This could help preventing memory usage if users have no recent computer.<br /> Indeed, the clipboard is not loaded with items informations. But no quick copy of password and login is possible.</span>";
 $txt['creation_date'] = "Creation date";
 $txt['csv'] = "CSV";
 $txt['csv_import_button_text'] = "Browse CSV file";
@@ -517,7 +516,7 @@ $txt['settings_ldap_mode'] = "Enable users authentification through LDAP server"
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
 $txt['settings_ldap_ssl'] = "Använd LDAP över SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Används LDAP över TSL";
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "Enable logging all users connections into database.";
 $txt['settings_maintenance_mode'] = "Set TeamPass in Maintenance mode";
 $txt['settings_maintenance_mode_tip'] = "This mode will refuse any user connection except for Administrators.";
