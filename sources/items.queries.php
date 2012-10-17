@@ -349,7 +349,7 @@ if ( isset($_POST['type']) ){
                 $pw = $original_pw = htmlspecialchars_decode($data_received['pw']);
                 $login = htmlspecialchars_decode($data_received['login']);
                 $tags = htmlspecialchars_decode($data_received['tags']);
-				
+
 				//Get all informations for this item
 				$sql = "SELECT *
 						FROM ".$pre."items AS i
@@ -357,13 +357,13 @@ if ( isset($_POST['type']) ){
 						WHERE i.id=".$data_received['id']."
 						AND l.action = 'at_creation'";
 				$data_item = $db->query_first($sql);
-							
+
 				//check that actual user can access this item
 				$restriction_active = true;
 				$restricted_to = array_filter(explode(';',$data_item['restricted_to']));
 				if ( in_array($_SESSION['user_id'],$restricted_to) ) $restriction_active = false;
 				if ( empty($data_item['restricted_to']) ) $restriction_active = false;
-				
+
 				if ((
 						( in_array($data_item['id_tree'],$_SESSION['groupes_visibles']) )
 						&&  ( $data_item['perso']==0 || ($data_item['perso']==1 && $data_item['id_user'] == $_SESSION['user_id'] ) )
@@ -1749,6 +1749,7 @@ if ( isset($_POST['type']) ){
 	                        	//$returned_data[$i]['perso'] = 'red';
 	                        	$recherche_group_pf = 0;
 	                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\')';
+	                        	$action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true)';
 	                        	/*$returned_data[$i]['detail_item'] = 0;
 	                        	$returned_data[$i]['expired_item'] = $expired_item;
 	                        	$returned_data[$i]['restricted_to'] = $restricted_to;
@@ -1758,6 +1759,7 @@ if ( isset($_POST['type']) ){
 	                        	$perso = '<img src="includes/images/tag-small-yellow.png">';
 	                        	//$returned_data[$i]['perso'] = 'yellow';
 	                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+	                        	$action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
 	                        	/*$returned_data[$i]['detail_item'] = 0;
 	                        	$returned_data[$i]['expired_item'] = $expired_item;
 	                        	$returned_data[$i]['restricted_to'] = $restricted_to;
@@ -2339,7 +2341,7 @@ if ( isset($_POST['type']) ){
 				require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
 				require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
 				$data_received = json_decode((AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
-				
+
 				//Get all informations for this item
 				$sql = "SELECT *
 						FROM ".$pre."items AS i
@@ -2347,13 +2349,13 @@ if ( isset($_POST['type']) ){
 						WHERE i.id=".$data_received['item_id']."
 						AND l.action = 'at_creation'";
 				$data_item = $db->query_first($sql);
-							
+
 				//check that actual user can access this item
 				$restriction_active = true;
 				$restricted_to = array_filter(explode(';',$data_item['restricted_to']));
 				if ( in_array($_SESSION['user_id'],$restricted_to) ) $restriction_active = false;
 				if ( empty($data_item['restricted_to']) ) $restriction_active = false;
-				
+
 				if ((
 						( in_array($data_item['id_tree'],$_SESSION['groupes_visibles']) )
 						&&  ( $data_item['perso']==0 || ($data_item['perso']==1 && $data_item['id_user'] == $_SESSION['user_id'] ) )

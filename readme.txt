@@ -78,6 +78,9 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.11
+ * #184 - bug correction
+
 2.1.10
  * #161 - #100 - #175
  * #163 Personal saltkey duration based on cookie (under option)
