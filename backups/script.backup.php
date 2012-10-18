@@ -19,7 +19,7 @@ require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP impleme
 require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
 
 // connect to the server
-require_once '../sources/class.database.php';
+require_once '../sources/Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

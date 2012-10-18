@@ -24,7 +24,7 @@ header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 
 // connect to the server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

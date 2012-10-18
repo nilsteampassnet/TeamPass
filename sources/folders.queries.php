@@ -23,7 +23,7 @@ include 'main.functions.php';
 require_once 'NestedTree.class.php';
 
 //Connect to mysql server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

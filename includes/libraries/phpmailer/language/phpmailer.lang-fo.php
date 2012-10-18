@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Faroese Version [language of the Faroe Islands, a Danish dominion]
  * This file created: 11-06-2004
  * Supplied by Dávur Sørensen [www.profo-webdesign.dk]

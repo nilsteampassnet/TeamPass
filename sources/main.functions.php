@@ -95,7 +95,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
 
     //include librairies
     require_once 'NestedTree.class.php';
-    require_once 'class.database.php';
+    require_once 'Database.class.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
@@ -293,7 +293,7 @@ function logEvents($type, $label, $who)
     global $server, $user, $pass, $database, $pre;
 
     //include librairies & connect to DB
-    require_once 'class.database.php';
+    require_once 'Database.class.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
@@ -483,7 +483,7 @@ function CPMStats()
     require_once 'includes/settings.php';
 
     // connect to the server
-    require_once 'class.database.php';
+    require_once 'Database.class.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 

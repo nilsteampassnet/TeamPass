@@ -22,7 +22,7 @@ error_reporting (E_ERROR);
 include '../includes/settings.php';
 
 // connect to the server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

@@ -21,7 +21,7 @@ include '../includes/settings.php';
 header("Content-type: text/html; charset==utf-8");
 
 // connect to the server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

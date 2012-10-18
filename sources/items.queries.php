@@ -61,7 +61,7 @@ function is_utf8($string)
 }
 
 //Connect to mysql server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
@@ -244,7 +244,7 @@ if ( isset($_POST['type']) ) {
                             );
                         }
                     }
-                
+
                     //Get Expiration date
                     $expiration_flag = '';
                     if ($_SESSION['settings']['activate_expiration'] == 1) {

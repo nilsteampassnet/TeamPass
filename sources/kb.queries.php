@@ -25,7 +25,7 @@ header("Pragma: no-cache");
 include 'main.functions.php';
 
 //Connect to mysql server
-require_once 'class.database.php';
+require_once 'Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

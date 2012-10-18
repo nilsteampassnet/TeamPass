@@ -89,7 +89,7 @@ if (!in_array($ext, $valid_exts))
 
 //Connect to mysql server
 include '../../settings.php';
-include '../../../sources/class.database.php';
+include '../../../sources/Database.class.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 

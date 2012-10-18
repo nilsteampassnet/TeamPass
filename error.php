@@ -22,7 +22,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     require_once 'includes/include.php';
 
     // connect to the server
-    require_once 'sources/class.database.php';
+    require_once 'sources/Database.class.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 

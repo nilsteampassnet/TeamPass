@@ -25,7 +25,7 @@ function UpdateSettings($setting, $val, $type='')
     if ( empty($type) ) $type = 'admin';
 
     //Connect to database
-    require_once 'sources/class.database.php';
+    require_once 'sources/Database.class.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
