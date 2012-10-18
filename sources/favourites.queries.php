@@ -14,22 +14,20 @@
 
 session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
+    die('Hacking attempt...');
 
-
-include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
+include '../includes/language/'.$_SESSION['user_language'].'.php');
+include '../includes/settings.php';
 header("Content-type: text/html; charset==utf-8");
 
 // connect to the server
-require_once("class.database.php");
+require_once 'class.database.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
 // Construction de la requ?te en fonction du type de valeur
-if ( !empty($_POST['type']) ){
-    switch($_POST['type'])
-    {
+if ( !empty($_POST['type']) ) {
+    switch ($_POST['type']) {
         #CASE adding a new function
         case "del_fav":
             //Get actual favourites
@@ -38,8 +36,8 @@ if ( !empty($_POST['type']) ){
             $favs = "";
             $tab_favs = array();
             //redefine new list of favourites
-            foreach($tmp as $f){
-                if (!empty($f) && $f != $_POST['id']){
+            foreach ($tmp as $f) {
+                if (!empty($f) && $f != $_POST['id']) {
                     if ( empty($favs) ) $favs = $f;
                     else $favs = ';'.$f;
                     array_push($tab_favs,$f);
@@ -58,4 +56,3 @@ if ( !empty($_POST['type']) ){
         break;
     }
 }
-?>

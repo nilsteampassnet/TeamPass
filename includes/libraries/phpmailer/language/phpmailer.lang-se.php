@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Swedish Version
  * Author: Johan Linnér <johan@linner.biz>
  */
@@ -21,4 +21,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP fel: Kunde inte ansluta till SMTP-server
 $PHPMAILER_LANG["file_access"] = 'Ingen åtkomst till fil: ';
 $PHPMAILER_LANG["file_open"] = 'Fil fel: Kunde inte öppna fil: ';
 $PHPMAILER_LANG["encoding"] = 'Okänt encode-format: ';
-?>

@@ -2,7 +2,7 @@
 //ENGLISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 $TeamPass_url = '';
-}else{
+} else {
 $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -590,4 +590,3 @@ $txt['visibility'] = "Visibility";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Yes";
 $txt['your_version'] = "Your version";
-?>

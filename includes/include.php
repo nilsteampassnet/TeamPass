@@ -34,5 +34,3 @@ $mngPages = array(
     'manage_main' => 'admin.php',
     'manage_settings' => 'admin.settings.php'
 );
-
-?>

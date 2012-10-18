@@ -1,11 +1,10 @@
 <?php
 //ARABIC
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "This is account is locked";
 $txt['activity'] = "Activity";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Visibility";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Yes";
 $txt['your_version'] = "Your version";
-?>

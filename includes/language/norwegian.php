@@ -1,11 +1,10 @@
 <?php
 //NORWEGIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Kontoen er låst";
 $txt['activity'] = "Aktivitet";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Synlighet";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Ja";
 $txt['your_version'] = "Versjon";
-?>

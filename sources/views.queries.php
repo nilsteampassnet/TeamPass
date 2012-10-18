@@ -14,17 +14,16 @@
 
 session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
+    die('Hacking attempt...');
 
-
-include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
-include('../includes/include.php');
+include '../includes/language/'.$_SESSION['user_language'].'.php');
+include '../includes/settings.php';
+include '../includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-include('main.functions.php');
+include 'main.functions.php';
 
 // connect to the server
-    require_once("class.database.php");
+    require_once 'class.database.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
@@ -32,19 +31,18 @@ include('main.functions.php');
 $nb_elements = 20;
 
 // Construction de la requ?te en fonction du type de valeur
-switch($_POST['type'])
-{
+switch ($_POST['type']) {
     #CASE generating the log for passwords renewal
     case "log_generate":
-        require_once ("NestedTree.class.php");
+        require_once 'NestedTree.class.php';
         $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
         //Prepare the PDF file
-        include('../includes/libraries/tfpdf/tfpdf.php');
-    	$pdf=new tFPDF();
+        include '../includes/libraries/tfpdf/tfpdf.php';
+        $pdf=new tFPDF();
 
-    	//Add font for utf-8
-    	$pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
+        //Add font for utf-8
+        $pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
 
         $pdf->AliasNbPages();
         $pdf->AddPage();
@@ -68,8 +66,8 @@ switch($_POST['type'])
             WHERE l.action = 'Modification'
             AND l.raison = 'Mot de passe chang?'
         ");
-        foreach( $rows as $reccord ){
-            if ( date($_SESSION['settings']['date_format'],$reccord['date']) == $_POST['date'] ){
+        foreach ($rows as $reccord) {
+            if ( date($_SESSION['settings']['date_format'],$reccord['date']) == $_POST['date'] ) {
                 //information about the pw creator
                 $res_user = mysql_query("SELECT login FROM ".$pre."users WHERE id = '".$reccord['id_user']."'");
                 $data_user = mysql_fetch_row($res_user);
@@ -79,7 +77,7 @@ switch($_POST['type'])
                 //get the tree grid
                 $arbo = $tree->getPath($reccord['id_tree'], true);
                 $arboTxt = "";
-                foreach($arbo as $elem){
+                foreach ($arbo as $elem) {
                     if ( empty($arboTxt) ) $arboTxt = $elem->title;
                     else $arboTxt .= " > ".$elem->title;
                 }
@@ -94,28 +92,28 @@ switch($_POST['type'])
         //send the file
         $pdf->Output($_SESSION['settings']['path_to_files_folder'].'/'.$nomFichier);
 
-    	echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
     break;
 
     #----------------------------------
     #CASE display a full listing with all items deleted
     case "lister_suppression":
-    	//FOLDERS deleted
-    	$arr_folders = array();
-    	$texte = "<table cellpadding=3><tr><td><u><b>".$txt['group']."</b></u></td></tr>";
-    	$rows = $db->fetch_all_array("
+        //FOLDERS deleted
+        $arr_folders = array();
+        $texte = "<table cellpadding=3><tr><td><u><b>".$txt['group']."</b></u></td></tr>";
+        $rows = $db->fetch_all_array("
             SELECT valeur, intitule
             FROM ".$pre."misc
             WHERE type  = 'folder_deleted'");
-    	foreach( $rows as $reccord ){
-    		$tmp = explode(',', $reccord['valeur']);
-    		$texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$reccord['intitule'].'\' id=\'folder_deleted_'.$reccord['intitule'].'\' />&nbsp;<b>'.
-    			$tmp[2].'</b></td><td><input type=\"hidden\" value=\"'.$reccord['valeur'].'\"></td></tr>';
-    		$arr_folders[substr($reccord['intitule'],1)] = $tmp[2];
-    	}
+        foreach ($rows as $reccord) {
+            $tmp = explode(',', $reccord['valeur']);
+            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$reccord['intitule'].'\' id=\'folder_deleted_'.$reccord['intitule'].'\' />&nbsp;<b>'.
+                $tmp[2].'</b></td><td><input type=\"hidden\" value=\"'.$reccord['valeur'].'\"></td></tr>';
+            $arr_folders[substr($reccord['intitule'],1)] = $tmp[2];
+        }
 
-    	//ITEMS deleted
-    	$texte .= "<tr><td><u><b>".$txt['email_altbody_1']."</b></u></td></tr>";
+        //ITEMS deleted
+        $texte .= "<tr><td><u><b>".$txt['email_altbody_1']."</b></u></td></tr>";
         $rows = $db->fetch_all_array("
             SELECT u.login AS login, i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date AS date
             FROM ".$pre."log_items AS l
@@ -124,113 +122,113 @@ switch($_POST['type'])
             WHERE i.inactif = '1'
             AND l.action = 'at_delete'
             GROUP BY l.id_item");
-        foreach( $rows as $reccord ){
-        	if(in_array($reccord['id_tree'], $arr_folders)){
-        		if (count($arr_folders[$reccord['id_tree']])>0 ) {
-        			$this_folder = '<td>'.$arr_folders[$reccord['id_tree']].'</td>';
-        		}else{
-        			$this_folder = "";
-        		}
-        	}else{
-        		$this_folder = "";
-        	}
+        foreach ($rows as $reccord) {
+            if (in_array($reccord['id_tree'], $arr_folders)) {
+                if (count($arr_folders[$reccord['id_tree']])>0 ) {
+                    $this_folder = '<td>'.$arr_folders[$reccord['id_tree']].'</td>';
+                } else {
+                    $this_folder = "";
+                }
+            } else {
+                $this_folder = "";
+            }
 
             $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$reccord['id'].'\' id=\'item_deleted_'.$reccord['id'].'\' />&nbsp;<b>'.$reccord['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'],$reccord['date']).'</td><td width=\"70px\" align=\"center\">'.$reccord['login'].'</td>'.$this_folder.'</tr>';
         }
 
-    	echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;<img src=\"includes/images/arrow-repeat.png\" title=\"'.$txt['restore'].'\" style=\"cursor:pointer;\" onclick=\"restoreDeletedItems()\">&nbsp;<img src=\"includes/images/bin_empty.png\" title=\"'.$txt['delete'].'\" style=\"cursor:pointer;\" onclick=\"reallyDeleteItems()\"></div>"}]';
+        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;<img src=\"includes/images/arrow-repeat.png\" title=\"'.$txt['restore'].'\" style=\"cursor:pointer;\" onclick=\"restoreDeletedItems()\">&nbsp;<img src=\"includes/images/bin_empty.png\" title=\"'.$txt['delete'].'\" style=\"cursor:pointer;\" onclick=\"reallyDeleteItems()\"></div>"}]';
     break;
 
     #----------------------------------
     #CASE admin want to restaure a list of deleted items
     case "restore_deleted__items":
-    	//restore FOLDERS
-    	if(count($_POST['list_f'])>0){
-	    	foreach( explode(';',$_POST['list_f']) as $id ){
-	    		$data = $db->query_first("
-					SELECT valeur
-		            FROM ".$pre."misc
-		            WHERE type = 'folder_deleted'
-		            AND intitule = '".$id."'"
-		        );
-	    		if ( $data['valeur'] != 0 ){
-	    			$folder_data = explode(',', $data['valeur']);
-	    			//insert deleted folder
-	    			$db->query_insert(
-		    			'nested_tree',
-		    			array(
-		    			    'id' => $folder_data[0],
-			    			'parent_id' => $folder_data[1],
-			    			'title' => $folder_data[2],
-			    			'nleft' => $folder_data[3],
-			    			'nright' => $folder_data[4],
-			    			'nlevel' => $folder_data[5],
-			    			'bloquer_creation' => $folder_data[6],
-			    			'bloquer_modification' => $folder_data[7],
-			    			'personal_folder' => $folder_data[8],
-			    			'renewal_period' => $folder_data[9]
-		    			)
-	    			);
-	    			//delete log
-	    			$db->query("DELETE FROM ".$pre."misc WHERE type = 'folder_deleted' AND intitule= '".$id."'");
-	    		}
-	    	}
-    	}
-    	//restore ITEMS
-    	if(count($_POST['list_i'])>0){
-    		foreach( explode(';',$_POST['list_i']) as $id ){
-    			$db->query_update(
-    			"items",
-    			array(
-    			    'inactif' => '0'
-    			),
-    			'id = '.$id
-    			);
-    			//log
-    			$db->query("INSERT INTO ".$pre."log_items VALUES ('".$id."','".mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))."','".$_SESSION['user_id']."','at_restored','')");
-    		}
-    	}
+        //restore FOLDERS
+        if (count($_POST['list_f'])>0) {
+            foreach ( explode(';',$_POST['list_f']) as $id ) {
+                $data = $db->query_first("
+                    SELECT valeur
+                    FROM ".$pre."misc
+                    WHERE type = 'folder_deleted'
+                    AND intitule = '".$id."'"
+                );
+                if ($data['valeur'] != 0) {
+                    $folder_data = explode(',', $data['valeur']);
+                    //insert deleted folder
+                    $db->query_insert(
+                        'nested_tree',
+                        array(
+                            'id' => $folder_data[0],
+                            'parent_id' => $folder_data[1],
+                            'title' => $folder_data[2],
+                            'nleft' => $folder_data[3],
+                            'nright' => $folder_data[4],
+                            'nlevel' => $folder_data[5],
+                            'bloquer_creation' => $folder_data[6],
+                            'bloquer_modification' => $folder_data[7],
+                            'personal_folder' => $folder_data[8],
+                            'renewal_period' => $folder_data[9]
+                        )
+                    );
+                    //delete log
+                    $db->query("DELETE FROM ".$pre."misc WHERE type = 'folder_deleted' AND intitule= '".$id."'");
+                }
+            }
+        }
+        //restore ITEMS
+        if (count($_POST['list_i'])>0) {
+            foreach ( explode(';',$_POST['list_i']) as $id ) {
+                $db->query_update(
+                "items",
+                array(
+                    'inactif' => '0'
+                ),
+                'id = '.$id
+                );
+                //log
+                $db->query("INSERT INTO ".$pre."log_items VALUES ('".$id."','".mktime(date('H'),date('i'),date('s'),date('m'),date('d'),date('y'))."','".$_SESSION['user_id']."','at_restored','')");
+            }
+        }
 
     break;
 
     #----------------------------------
     #CASE admin want to delete a list of deleted items
     case "really_delete_items":
-    	$folders = explode(';',$_POST['folders']);
-    	if(count($folders)>0){
-    		//delete folders
-    		foreach( $folders as $f_id ){
-    			//get folder ID
-    			$id = substr($f_id, 1);
+        $folders = explode(';',$_POST['folders']);
+        if (count($folders)>0) {
+            //delete folders
+            foreach ($folders as $f_id) {
+                //get folder ID
+                $id = substr($f_id, 1);
 
-    			//delete any subfolder
-	    		$rows = $db->fetch_all_array(
-	    			"SELECT valeur
-	                FROM ".$pre."misc
-	                WHERE type='folder_deleted' AND intitule = '".$f_id."'"
-	    		);
-	    		foreach ($rows as $reccord){
-	    			//get folder id
-	    			$val = explode(",", $reccord['valeur']);
-	    			//delete items & logs
-	    			$items = $db->fetch_all_array("SELECT id FROM ".$pre."items WHERE id_tree='".$val[0]."'");
-	    			foreach( $items as $item ) {
-	    				//Delete item
-	    				$db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
-	    				$db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
+                //delete any subfolder
+                $rows = $db->fetch_all_array(
+                    "SELECT valeur
+                    FROM ".$pre."misc
+                    WHERE type='folder_deleted' AND intitule = '".$f_id."'"
+                );
+                foreach ($rows as $reccord) {
+                    //get folder id
+                    $val = explode(",", $reccord['valeur']);
+                    //delete items & logs
+                    $items = $db->fetch_all_array("SELECT id FROM ".$pre."items WHERE id_tree='".$val[0]."'");
+                    foreach ($items as $item) {
+                        //Delete item
+                        $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
+                        $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
 
-	    				//Update CACHE table
-	    				mysql_query("DELETE FROM ".$pre."cache WHERE id = ".$item['id']);
-	    			}
-	    			//Actualize the variable
-	    			$_SESSION['nb_folders'] --;
-	    		}
-    			//delete folder
-    			$db->query("DELETE FROM ".$pre."misc WHERE intitule = '".$f_id."' AND type = 'folder_deleted'");
-    		}
-    	}
+                        //Update CACHE table
+                        mysql_query("DELETE FROM ".$pre."cache WHERE id = ".$item['id']);
+                    }
+                    //Actualize the variable
+                    $_SESSION['nb_folders'] --;
+                }
+                //delete folder
+                $db->query("DELETE FROM ".$pre."misc WHERE intitule = '".$f_id."' AND type = 'folder_deleted'");
+            }
+        }
 
-        foreach( explode(';',$_POST['items']) as $id ){
+        foreach ( explode(';',$_POST['items']) as $id ) {
             //delete from ITEMS
             $db->query("DELETE FROM ".$pre."items WHERE id=".$id);
             //delete from LOG_ITEMS
@@ -238,9 +236,9 @@ switch($_POST['type'])
             //delete from FILES
             $db->query("DELETE FROM ".$pre."files WHERE id_item=".$id);
             //delete from TAGS
-        	$db->query("DELETE FROM ".$pre."tags WHERE item_id=".$id);
-        	//delete from KEYS
-        	$db->query("DELETE FROM `".$pre."keys` WHERE `id` ='".$id."' AND `table`='items'");
+            $db->query("DELETE FROM ".$pre."tags WHERE item_id=".$id);
+            //delete from KEYS
+            $db->query("DELETE FROM `".$pre."keys` WHERE `id` ='".$id."' AND `table`='items'");
         }
     break;
 
@@ -257,18 +255,18 @@ switch($_POST['type'])
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
             WHERE l.type = 'user_connection'");
-        if ( $data[0] != 0 ){
+        if ($data[0] != 0) {
             $nb_pages = ceil($data[0]/$nb_elements);
-            for($i=1;$i<=$nb_pages;$i++){
+            for ($i=1;$i<=$nb_pages;$i++) {
                 $pages .= '<td onclick=\'displayLogs(\"connections_logs\",'.$i.',\"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
-        if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
             $start = ($nb_elements*($_POST['page']-1)) + 1;
-        }else{
+        } else {
             $start = 0;
         }
 
@@ -300,18 +298,18 @@ switch($_POST['type'])
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
             WHERE l.type = 'error'");
-        if ( $data[0] != 0 ){
+        if ($data[0] != 0) {
             $nb_pages = ceil($data[0]/$nb_elements);
-            for($i=1;$i<=$nb_pages;$i++){
+            for ($i=1;$i<=$nb_pages;$i++) {
                 $pages .= '<td onclick=\'displayLogs(\"errors_logs\",'.$i.',\"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
-        if ( isset($_POST['page']) && $_POST['page'] > 1 ){
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
             $start = ($nb_elements*($_POST['page']-1)) + 1;
-        }else{
+        } else {
             $start = 0;
         }
 
@@ -324,53 +322,53 @@ switch($_POST['type'])
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
             LIMIT $start, $nb_elements");
 
-        foreach( $rows as $reccord){
+        foreach ($rows as $reccord) {
             $label = explode('@',addslashes(CleanString($reccord['label'])));
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"center\">'.@$label[1].'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
         }
 
-    	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
     break;
 
     #----------------------------------
     #CASE admin want to see CONNECTIONS logs
     case "access_logs":
-    	$logs = $sql_filter = "";
-    	$nb_pages = 1;
-    	$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $logs = $sql_filter = "";
+        $nb_pages = 1;
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
 
-    	if(isset($_POST['filter']) && !empty($_POST['filter'])){
-    		$sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
-    	}
-    	if(isset($_POST['filter_user']) && !empty($_POST['filter_user'])){
-    		$sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
-    	}
+        if (isset($_POST['filter']) && !empty($_POST['filter'])) {
+            $sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
+        }
+        if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
+            $sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+        }
 
-    	//get number of pages
-    	$data = $db->fetch_row("
-    	    SELECT COUNT(*)
+        //get number of pages
+        $data = $db->fetch_row("
+            SELECT COUNT(*)
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
             WHERE l.action = 'at_shown'".$sql_filter);
-    	if ( $data[0] != 0 ){
-    		$nb_pages = ceil($data[0]/$nb_elements);
-    		for($i=1;$i<=$nb_pages;$i++){
-    			$pages .= '<td onclick=\'displayLogs(\"access_logs\",'.$i.',\"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
-    		}
-    	}
-    	$pages .= '</tr></table>';
+        if ($data[0] != 0) {
+            $nb_pages = ceil($data[0]/$nb_elements);
+            for ($i=1;$i<=$nb_pages;$i++) {
+                $pages .= '<td onclick=\'displayLogs(\"access_logs\",'.$i.',\"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+            }
+        }
+        $pages .= '</tr></table>';
 
-    	//define query limits
-    	if ( isset($_POST['page']) && $_POST['page'] > 1 ){
-    		$start = ($nb_elements*($_POST['page']-1)) + 1;
-    	}else{
-    		$start = 0;
-    	}
+        //define query limits
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
+            $start = ($nb_elements*($_POST['page']-1)) + 1;
+        } else {
+            $start = 0;
+        }
 
-    	//launch query
-    	$rows = $db->fetch_all_array("
-    	    SELECT l.date AS date, u.login AS login, i.label AS label
+        //launch query
+        $rows = $db->fetch_all_array("
+            SELECT l.date AS date, u.login AS login, i.label AS label
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
@@ -378,53 +376,53 @@ switch($_POST['type'])
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
             LIMIT $start, $nb_elements");
 
-    	foreach( $rows as $reccord){
-    		//$label = explode('@',addslashes(CleanString($reccord['label'])));
-    		$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
-    	}
+        foreach ($rows as $reccord) {
+            //$label = explode('@',addslashes(CleanString($reccord['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        }
 
-    	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
-    	break;
+        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+        break;
 
-    	#----------------------------------
-    	#CASE admin want to see COPIES logs
-   		case "copy_logs":
-    	$logs = $sql_filter = "";
-    	$nb_pages = 1;
-    	$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        #----------------------------------
+        #CASE admin want to see COPIES logs
+           case "copy_logs":
+        $logs = $sql_filter = "";
+        $nb_pages = 1;
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
 
-    	if(isset($_POST['filter']) && !empty($_POST['filter'])){
-    		$sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
-    	}
-    	if(isset($_POST['filter_user']) && !empty($_POST['filter_user'])){
-    		$sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
-    	}
+        if (isset($_POST['filter']) && !empty($_POST['filter'])) {
+            $sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
+        }
+        if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
+            $sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+        }
 
-    	//get number of pages
-    	$data = $db->fetch_row("
-    	    SELECT COUNT(*)
+        //get number of pages
+        $data = $db->fetch_row("
+            SELECT COUNT(*)
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
             WHERE l.action = 'at_copy'".$sql_filter);
-    	if ( $data[0] != 0 ){
-    		$nb_pages = ceil($data[0]/$nb_elements);
-    		for($i=1;$i<=$nb_pages;$i++){
-    			$pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
-    		}
-    	}
-    	$pages .= '</tr></table>';
+        if ($data[0] != 0) {
+            $nb_pages = ceil($data[0]/$nb_elements);
+            for ($i=1;$i<=$nb_pages;$i++) {
+                $pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+            }
+        }
+        $pages .= '</tr></table>';
 
-    	//define query limits
-    	if ( isset($_POST['page']) && $_POST['page'] > 1 ){
-    		$start = ($nb_elements*($_POST['page']-1)) + 1;
-    	}else{
-    		$start = 0;
-    	}
+        //define query limits
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
+            $start = ($nb_elements*($_POST['page']-1)) + 1;
+        } else {
+            $start = 0;
+        }
 
-    	//launch query
-    	$rows = $db->fetch_all_array("
-    	    SELECT l.date AS date, u.login AS login, i.label AS label
+        //launch query
+        $rows = $db->fetch_all_array("
+            SELECT l.date AS date, u.login AS login, i.label AS label
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
@@ -432,53 +430,53 @@ switch($_POST['type'])
             ORDER BY date DESC
             LIMIT $start, $nb_elements");
 
-    	foreach( $rows as $reccord){
-    		$label = explode('@',addslashes(CleanString($reccord['label'])));
-    		$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
-    	}
+        foreach ($rows as $reccord) {
+            $label = explode('@',addslashes(CleanString($reccord['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        }
 
-    	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
-    	break;
+        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+        break;
 
- 		#----------------------------------
- 		#CASE admin want to see ITEMS logs
-   		case "items_logs":
-   			$logs = $sql_filter = "";
-   			$nb_pages = 1;
-   			$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+         #----------------------------------
+         #CASE admin want to see ITEMS logs
+           case "items_logs":
+               $logs = $sql_filter = "";
+               $nb_pages = 1;
+               $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
 
-   			if(isset($_POST['filter']) && !empty($_POST['filter'])){
-   				$sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
-   			}
-   			if(isset($_POST['filter_user']) && !empty($_POST['filter_user'])){
-   				$sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
-   			}
+               if (isset($_POST['filter']) && !empty($_POST['filter'])) {
+                   $sql_filter = " AND i.label LIKE '%".$_POST['filter']."%'";
+               }
+               if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
+                   $sql_filter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+               }
 
-   			//get number of pages
-   			$data = $db->fetch_row("
-   			    SELECT COUNT(*)
+               //get number of pages
+               $data = $db->fetch_row("
+                   SELECT COUNT(*)
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
             WHERE i.label LIKE '%".$_POST['filter']."%'");
-   			if ( $data[0] != 0 ){
-   				$nb_pages = ceil($data[0]/$nb_elements);
-   				for($i=1;$i<=$nb_pages;$i++){
-   					$pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
-   				}
-   			}
-   			$pages .= '</tr></table>';
+               if ($data[0] != 0) {
+                   $nb_pages = ceil($data[0]/$nb_elements);
+                   for ($i=1;$i<=$nb_pages;$i++) {
+                       $pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+                   }
+               }
+               $pages .= '</tr></table>';
 
-   			//define query limits
-   			if ( isset($_POST['page']) && $_POST['page'] > 1 ){
-   				$start = ($nb_elements*($_POST['page']-1)) + 1;
-   			}else{
-   				$start = 0;
-   			}
+               //define query limits
+               if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
+                   $start = ($nb_elements*($_POST['page']-1)) + 1;
+               } else {
+                   $start = 0;
+               }
 
-   			//launch query
-   			$rows = $db->fetch_all_array("
-   			    SELECT l.date AS date, u.login AS login, i.label AS label
+               //launch query
+               $rows = $db->fetch_all_array("
+                   SELECT l.date AS date, u.login AS login, i.label AS label
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
@@ -486,65 +484,65 @@ switch($_POST['type'])
             ORDER BY date DESC
             LIMIT $start, $nb_elements");
 
-   			foreach( $rows as $reccord){
-   				$label = explode('@',addslashes(CleanString($reccord['label'])));
-   				$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
-   			}
+               foreach ($rows as $reccord) {
+                   $label = explode('@',addslashes(CleanString($reccord['label'])));
+                   $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+               }
 
-   			echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
-   		break;
+               echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+           break;
 
-    	#----------------------------------
-    	#CASE admin want to see COPIES logs
+        #----------------------------------
+        #CASE admin want to see COPIES logs
     case "admin_logs":
-    	$logs = $sql_filter = "";
-    	$nb_pages = 1;
-    	$pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $logs = $sql_filter = "";
+        $nb_pages = 1;
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
 
-    	if(isset($_POST['filter']) && !empty($_POST['filter'])){
-    		$sql_filter = " AND l.label LIKE '%".$_POST['filter']."%'";
-    	}
-    	if(isset($_POST['filter_user']) && !empty($_POST['filter_user'])){
-    		$sql_filter = " AND l.qui LIKE '%".$_POST['filter_user']."%'";
-    	}
+        if (isset($_POST['filter']) && !empty($_POST['filter'])) {
+            $sql_filter = " AND l.label LIKE '%".$_POST['filter']."%'";
+        }
+        if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
+            $sql_filter = " AND l.qui LIKE '%".$_POST['filter_user']."%'";
+        }
 
-    	//get number of pages
-    	$data = $db->fetch_row("
-    	    SELECT COUNT(*)
+        //get number of pages
+        $data = $db->fetch_row("
+            SELECT COUNT(*)
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
             WHERE l.type = 'admin_action'".$sql_filter);
-    	if ( $data[0] != 0 ){
-    		$nb_pages = ceil($data[0]/$nb_elements);
-    		for($i=1;$i<=$nb_pages;$i++){
-    			$pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
-    		}
-    	}
-    	$pages .= '</tr></table>';
+        if ($data[0] != 0) {
+            $nb_pages = ceil($data[0]/$nb_elements);
+            for ($i=1;$i<=$nb_pages;$i++) {
+                $pages .= '<td onclick=\'displayLogs(\"copy_logs\",'.$i.', \'\')\'><span style=\'cursor:pointer;' . ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i ) . '</span></td>';
+            }
+        }
+        $pages .= '</tr></table>';
 
-    	//define query limits
-    	if ( isset($_POST['page']) && $_POST['page'] > 1 ){
-    		$start = ($nb_elements*($_POST['page']-1)) + 1;
-    	}else{
-    		$start = 0;
-    	}
+        //define query limits
+        if ( isset($_POST['page']) && $_POST['page'] > 1 ) {
+            $start = ($nb_elements*($_POST['page']-1)) + 1;
+        } else {
+            $start = 0;
+        }
 
-    	//launch query
-    	$rows = $db->fetch_all_array("
-    	    SELECT l.date AS date, u.login AS login, l.label AS label
+        //launch query
+        $rows = $db->fetch_all_array("
+            SELECT l.date AS date, u.login AS login, l.label AS label
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
             WHERE l.type = 'admin_action'".$sql_filter."
             ORDER BY date DESC
             LIMIT $start, $nb_elements");
 
-    	foreach( $rows as $reccord){
-    		$label = explode('@',addslashes(CleanString($reccord['label'])));
-    		$logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
-    	}
+        foreach ($rows as $reccord) {
+            $label = explode('@',addslashes(CleanString($reccord['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],$reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        }
 
-    	echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
-    	break;
+        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+        break;
 
     #----------------------------------
     #CASE display a full listing with items EXPRIED
@@ -576,12 +574,12 @@ switch($_POST['type'])
             AND n.renewal_period != '0'
             ORDER BY i.label ASC, l.date DESC");
         $id_managed = '';
-        foreach( $rows as $reccord ){
-            if ( empty($id_managed) || $id_managed != $reccord['id'] ){
+        foreach ($rows as $reccord) {
+            if ( empty($id_managed) || $id_managed != $reccord['id'] ) {
                 //manage the date limit
                 $item_date = $reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds']);
 
-                if ( $item_date <= $date ){
+                if ($item_date <= $date) {
                     //Save data found
                     $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"javascript:window.location.href = \'index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'\'\">&nbsp;</span>'.$reccord['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'],$reccord['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'],$item_date).'</td><td width=\"150px\" align=\"center\">'.$reccord['title'].'</td><td width=\"100px\" align=\"center\">'.$reccord['login'].'</td></tr>';
 
@@ -601,15 +599,15 @@ switch($_POST['type'])
     #----------------------------------
     #CASE generating the pdf of items to rennew
     case "generate_renewal_pdf":
-        require_once ("NestedTree.class.php");
+        require_once 'NestedTree.class.php';
         $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
         //Prepare the PDF file
-    	include('../includes/libraries/tfpdf/tfpdf.php');
-    	$pdf=new tFPDF();
+        include '../includes/libraries/tfpdf/tfpdf.php';
+        $pdf=new tFPDF();
 
-    	//Add font for utf-8
-    	$pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
+        //Add font for utf-8
+        $pdf->AddFont('DejaVu','','DejaVuSansCondensed.ttf',true);
 
         $pdf->AliasNbPages();
         $pdf->AddPage();
@@ -626,10 +624,9 @@ switch($_POST['type'])
         $pdf->cell(25,6,$txt['author'],1,1,"C",1);
         $pdf->SetFont('DejaVu','',9);
 
-
-        foreach( explode('@|@',addslashes($_POST['text'])) as $line ){
+        foreach ( explode('@|@',addslashes($_POST['text'])) as $line ) {
             $elem = explode('@;@',$line);
-            if ( !empty($elem[0]) ){
+            if ( !empty($elem[0]) ) {
                 $pdf->cell(70,6,$elem[0],1,0,"L");
                 $pdf->cell(25,6,$elem[1],1,0,"C");
                 $pdf->cell(25,6,$elem[2],1,0,"C");
@@ -642,9 +639,6 @@ switch($_POST['type'])
         //send the file
         $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
-    	echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
+        echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
     break;
 }
-
-
-?>

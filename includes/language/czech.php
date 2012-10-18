@@ -1,11 +1,10 @@
 <?php
 //CZECH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Tento účet je uzamčen.";
 $txt['activity'] = "Aktivita";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Viditelnost";
 $txt['warning_screen_height'] = "POZOR: výška obrazovky nestačí na zobrazení seznamu položek!";
 $txt['yes'] = "Ano";
 $txt['your_version'] = "Vaše verze";
-?>

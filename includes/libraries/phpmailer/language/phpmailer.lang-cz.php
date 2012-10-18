@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Czech Version
  */
 
@@ -21,4 +21,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP Error: Nelze navázat spojení se ' .
 $PHPMAILER_LANG["file_access"] = 'Soubor nenalezen: ';
 $PHPMAILER_LANG["file_open"] = 'File Error: Nelze otevøít soubor pro ètení: ';
 $PHPMAILER_LANG["encoding"] = 'Neznámé kódování: ';
-?>

@@ -1,11 +1,10 @@
 <?php
 //GERMAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Dieses Konto wurde gesperrt";
 $txt['activity'] = "Aktivität";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Sichtbarkeit";
 $txt['warning_screen_height'] = "WARNUNG: Bildschirmhöhe reicht zur Anzeige der Elementliste nicht aus!";
 $txt['yes'] = "Ja";
 $txt['your_version'] = "Ihre Version";
-?>

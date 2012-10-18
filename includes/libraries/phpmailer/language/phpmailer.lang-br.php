@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Portuguese Version
  * By Paulo Henrique Garcia - paulo@controllerweb.com.br
  */
@@ -18,4 +18,3 @@ $PHPMAILER_LANG["connect_host"] = 'Erro de SMTP: Não foi possível conectar com o
 $PHPMAILER_LANG["file_access"] = 'Não foi possível acessar o arquivo: ';
 $PHPMAILER_LANG["file_open"] = 'Erro de Arquivo: Não foi possível abrir o arquivo: ';
 $PHPMAILER_LANG["encoding"] = 'Codificação desconhecida: ';
-?>

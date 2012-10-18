@@ -14,14 +14,13 @@
 
 session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
 global $k, $settings;
-include('../includes/settings.php');
+include '../includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
-require_once("class.database.php");
+require_once 'class.database.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
@@ -36,7 +35,7 @@ $sWhere = "id_tree IN(".implode(',', $_SESSION['groupes_visibles']).")";	//limit
 $array_pf = array();
 $list_pf = "";
 $rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT title = ".$_SESSION['user_id']);
-foreach( $rows as $reccord ){
+foreach ($rows as $reccord) {
     if ( !in_array($reccord['id'],$array_pf) ) {
         //build an array of personal folders ids
         array_push($array_pf,$reccord['id']);
@@ -55,21 +54,17 @@ if ( isset( $_GET['iDisplayStart'] ) && $_GET['iDisplayLength'] != '-1' ) {
 
 //Ordering
 
-if ( isset( $_GET['iSortCol_0'] ) )
-{
+if ( isset( $_GET['iSortCol_0'] ) ) {
         $sOrder = "ORDER BY  ";
-        for ( $i=0 ; $i<intval( $_GET['iSortingCols'] ) ; $i++ )
-        {
-                if ( $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" )
-                {
+        for ( $i=0 ; $i<intval( $_GET['iSortingCols'] ) ; $i++ ) {
+                if ( $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" ) {
                         $sOrder .= $aColumns[ intval( $_GET['iSortCol_'.$i] ) ]."
                                 ".mysql_real_escape_string( $_GET['sSortDir_'.$i] ) .", ";
                 }
         }
 
         $sOrder = substr_replace( $sOrder, "", -2 );
-        if ( $sOrder == "ORDER BY" )
-        {
+        if ($sOrder == "ORDER BY") {
                 $sOrder = "";
         }
 }
@@ -80,11 +75,9 @@ if ( isset( $_GET['iSortCol_0'] ) )
  * word by word on any field. It's possible to do here, but concerned about efficiency
  * on very large tables, and MySQL's regex functionality is very limited
  */
-if ( $_GET['sSearch'] != "" )
-{
-	$sWhere .= " AND (";
-    for ( $i=0 ; $i<count($aColumns) ; $i++ )
-    {
+if ($_GET['sSearch'] != "") {
+    $sWhere .= " AND (";
+    for ( $i=0 ; $i<count($aColumns) ; $i++ ) {
             $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string( $_GET['sSearch'] )."%' OR ";
     }
     $sWhere = substr_replace( $sWhere, "", -3 ).") ";
@@ -94,8 +87,8 @@ if ( $_GET['sSearch'] != "" )
 if ( !empty($list_pf) ) {
     if (!empty($sWhere)) $sWhere .= " AND ";
     $sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$list_pf.") ";
-}else{
-	$sWhere = "WHERE ".$sWhere;
+} else {
+    $sWhere = "WHERE ".$sWhere;
 }
 
 $sql = "SELECT SQL_CALC_FOUND_ROWS *
@@ -134,8 +127,8 @@ $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": [ ';
 
 $rows = $db->fetch_all_array($sql);
-foreach( $rows as $reccord ){
-	$get_item_in_list = true;
+foreach ($rows as $reccord) {
+    $get_item_in_list = true;
     $sOutput_item = "[";
 
     //col1
@@ -145,16 +138,16 @@ foreach( $rows as $reccord ){
     $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'",';
 
     //col3
-	$sOutput_item .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'",';
+    $sOutput_item .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'",';
 
-	//col4
-    if (($reccord['perso']==1 && $reccord['author'] != $_SESSION['user_id']) || (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])))){
+    //col4
+    if (($reccord['perso']==1 && $reccord['author'] != $_SESSION['user_id']) || (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])))) {
         $get_item_in_list = false;
-    }else{
+    } else {
         $txt = str_replace(array('\n','<br />','\\'),array(' ',' ',''),strip_tags($reccord['description']));
         if (strlen($txt) > 50) {
             $sOutput_item .= '"'.substr(stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)), 0, 50).'",';
-        }else{
+        } else {
             $sOutput_item .= '"'.stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)).'",';
         }
     }
@@ -168,12 +161,11 @@ foreach( $rows as $reccord ){
     //Finish the line
     $sOutput_item .= '],';
 
-	if ($get_item_in_list == true) {
-		$sOutput .= $sOutput_item;
-	}
+    if ($get_item_in_list == true) {
+        $sOutput .= $sOutput_item;
+    }
 }
 $sOutput = substr_replace( $sOutput, "", -1 );
 $sOutput .= '] }';
 
 echo $sOutput;
-?>

@@ -1,11 +1,10 @@
 <?php
 //TURKISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Bu hesap kilitlenmiştir";
 $txt['activity'] = "Aktivite";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Görünürlük";
 $txt['warning_screen_height'] = "UYARI: ekran boyu öğeleri göstermek için yeterli değil!";
 $txt['yes'] = "Evet";
 $txt['your_version'] = "veriyonunuz";
-?>

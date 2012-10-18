@@ -1,11 +1,10 @@
 <?php
 //DUTCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Dit account is geblokkeerd";
 $txt['activity'] = "Aktiviteit";
@@ -571,4 +570,3 @@ $txt['visibility'] = "Zichtbaarheid";
 $txt['warning_screen_height'] = "WAARSCHUWING: scherm resolutie niet hoog genoeg om de lijst te maken!";
 $txt['yes'] = "Ja";
 $txt['your_version'] = "Versie";
-?>

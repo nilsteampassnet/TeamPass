@@ -13,34 +13,31 @@
  */
 
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
 //load language
-require_once('includes/language/'.$_SESSION['user_language'].'_kb.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php');
 
 //build list of categories
 $tab_users = array();
 $rows = $db->fetch_all_array("SELECT id, login FROM ".$pre."users ORDER BY login ASC");
 if (count($rows)>0) {
-	foreach($rows AS $reccord){
-		$tab_users[$reccord['login']] = array(
-			'id'=>$reccord['id'],
-			'login'=>$reccord['login']
-		);
-	}
+    foreach ($rows AS $reccord) {
+        $tab_users[$reccord['login']] = array(
+            'id'=>$reccord['id'],
+            'login'=>$reccord['login']
+        );
+    }
 }
-
 
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$txt['kb'].'&nbsp;&nbsp;&nbsp;
-	<button title="'.$txt['new_kb'].'" onclick="OpenDialog(\'kb_form\')" id="button_new_kb">
-		<img src="includes/images/direction_plus.png" alt="" />
-	</button>
+    <button title="'.$txt['new_kb'].'" onclick="OpenDialog(\'kb_form\')" id="button_new_kb">
+        <img src="includes/images/direction_plus.png" alt="" />
+    </button>
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$txt['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
 </div>';
-
 
 //Show the KB in a table view
 echo '
@@ -53,7 +50,7 @@ echo '
         <th style="width:15%;">'.$txt['author'].'</th>
     </tr></thead>
     <tbody>
-    	<tr><td></td></tr>
+        <tr><td></td></tr>
     </tbody>
 </table>
 </div>';
@@ -66,27 +63,27 @@ echo '
 echo '
 <div id="kb_form" style="display:none;">
     <label for="kb_label" class="label">'.$txt['label'].'</label>
-	<input type="text" id="kb_label" class="input text ui-widget-content ui-corner-all" />
-	<br />
+    <input type="text" id="kb_label" class="input text ui-widget-content ui-corner-all" />
+    <br />
 
-	<div style="width:100%;">
-		<div style="float:left;width:50%;">
-			<label for="kb_category" class="label">'.$txt['category'].'</label>
-			<input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" width="300px;" value="">
-		</div>
-		<div style="float:right;width:50%;">
-		    <label for="" class="">'.$txt['kb_anyone_can_modify'].' : </label>
-			<span class="div_radio">
-				<input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$txt['yes'].'</label>
-				<input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$txt['no'].'</label>
-			</span>
-		</div>
-	</div>
+    <div style="width:100%;">
+        <div style="float:left;width:50%;">
+            <label for="kb_category" class="label">'.$txt['category'].'</label>
+            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" width="300px;" value="">
+        </div>
+        <div style="float:right;width:50%;">
+            <label for="" class="">'.$txt['kb_anyone_can_modify'].' : </label>
+            <span class="div_radio">
+                <input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$txt['yes'].'</label>
+                <input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$txt['no'].'</label>
+            </span>
+        </div>
+    </div>
 
-	<div style="float:left;width:100%;">
-	    <label for="kb_description" class="label">'.$txt['description'].'</label>
-		<textarea rows="5" name="kb_description" id="kb_description" class="input"></textarea>
-	</div>
+    <div style="float:left;width:100%;">
+        <label for="kb_description" class="label">'.$txt['description'].'</label>
+        <textarea rows="5" name="kb_description" id="kb_description" class="input"></textarea>
+    </div>
 
     <div style="float:left;width:100%;margin-top:15px;">
         <label for="kb_associated_to" class="label">'.$txt['associate_kb_to_items'].'</label>
@@ -103,8 +100,8 @@ echo '
                 WHERE i.inactif = 0
                 AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
                 ORDER BY i.label ASC, l.date DESC");
-            foreach( $rows as $reccord ) {
-                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])){
+            foreach ($rows as $reccord) {
+                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
                     echo '
                     <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
                     array_push($items_id_list, $reccord['id']);
@@ -121,21 +118,19 @@ echo '
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$txt['confirm_deletion'].'</p>
 </div>';
 
-
 //Hidden things
 echo '
 <input type="hidden" id="kb_id" value="" />';
 
 //Call javascript stuff
-require_once("kb.load.php");
+require_once 'kb.load.php';
 
 //If redirection is done to a speoific KB then open it
-if(isset($_GET['id']) && !empty($_GET['id'])){
-	echo '
-	    <script language="javascript" type="text/javascript">
-	    <!--
-	    openKB('.$_GET['id'].');
-	    -->
-	    </script>';
+if (isset($_GET['id']) && !empty($_GET['id'])) {
+    echo '
+        <script language="javascript" type="text/javascript">
+        <!--
+        openKB('.$_GET['id'].');
+        -->
+        </script>';
 }
-?>

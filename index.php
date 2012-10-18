@@ -34,7 +34,7 @@ session_id();
 
 //Test if settings.file exists, if not then install
 if (!file_exists('includes/settings.php')) {
-	echo '
+    echo '
     <script language="javascript" type="text/javascript">
     <!--
     document.location.replace("install/install.php");
@@ -44,53 +44,50 @@ if (!file_exists('includes/settings.php')) {
 }
 
 //Include files
-require_once('includes/settings.php');
-require_once('includes/include.php');
+require_once 'includes/settings.php';
+require_once 'includes/include.php';
 
 // connect to the server
-require_once("sources/class.database.php");
+require_once 'sources/class.database.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
 // Include main functions used by cpassman
-require_once('sources/main.functions.php');
+require_once 'sources/main.functions.php';
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
-	//get default language
-	$data_language = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
-	if(empty($data_language[0])){
-		$_SESSION['user_language'] = "english";
-		$_SESSION['user_language_flag'] = "us.png";
-	}else{
-		$_SESSION['user_language'] = $data_language[0];
-		$_SESSION['user_language_flag'] = "us.png";
-	}
-}else
-if (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
-	$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
-}else
-if (isset($_POST['language'])) {
-	$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
-}else
-if (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
-	if (isset($_POST['language'])) {
-		$_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
-	}else if (isset($_SESSION['settings']['default_language'])) {
-		$_SESSION['user_language'] = $_SESSION['settings']['default_language'];
-	}
+    //get default language
+    $data_language = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
+    if (empty($data_language[0])) {
+        $_SESSION['user_language'] = "english";
+        $_SESSION['user_language_flag'] = "us.png";
+    } else {
+        $_SESSION['user_language'] = $data_language[0];
+        $_SESSION['user_language_flag'] = "us.png";
+    }
+} elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
+    $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+} elseif (isset($_POST['language'])) {
+    $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+} elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
+    if (isset($_POST['language'])) {
+        $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+    } elseif (isset($_SESSION['settings']['default_language'])) {
+        $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+    }
 }
 //Load user languages files
-require_once('includes/language/'.$_SESSION['user_language'].'.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'.php');
 if (isset($_GET['page']) && $_GET['page'] == "kb") {
-	require_once('includes/language/'.$_SESSION['user_language'].'_kb.php');
+    require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php');
 }
 
 // Load CORE
-require_once("sources/core.php");
+require_once 'sources/core.php';
 
 // Load links, css and javascripts
-require_once("load.php");
+require_once 'load.php';
 
 ?>
 
@@ -133,34 +130,34 @@ require_once("load.php");
                 </button>';
 
                 // Favourites menu
-	        	if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1) {
-	        		echo '
+                if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1) {
+                    echo '
                 <button title="'.$txt['my_favourites'].'" onclick="MenuAction(\'favourites\');">
                     <img src="includes/images/favourite.png" alt="" />
                 </button>';
-	        	}
+                }
 
-	        	// KB menu
-	        	if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
-	        		echo '
-	                <button style="margin-left:10px;" title="'.$txt['kb_menu'].'" onclick="MenuAction(\'kb\');">
-	                    <img src="includes/images/direction.png" alt="" />
-	                </button>';
-	        	}
+                // KB menu
+                if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
+                    echo '
+                    <button style="margin-left:10px;" title="'.$txt['kb_menu'].'" onclick="MenuAction(\'kb\');">
+                        <img src="includes/images/direction.png" alt="" />
+                    </button>';
+                }
 
                 //Admin menu
-	        	if ($_SESSION['user_admin'] == 1) {
-	        		echo '
+                if ($_SESSION['user_admin'] == 1) {
+                    echo '
                 <button style="margin-left:10px;" title="'.$txt['admin_main'].'" onclick="MenuAction(\'manage_main\');">
                     <img src="includes/images/menu_informations.png" alt="" />
                 </button>
                 <button title="'.$txt['admin_settings'].'" onclick="MenuAction(\'manage_settings\');">
                     <img src="includes/images/menu_settings.png" alt="" />
                 </button>';
-	        	}
+                }
 
-	        	if ($_SESSION['user_admin'] == 1 || $_SESSION['user_gestionnaire'] == 1) {
-	        		echo '
+                if ($_SESSION['user_admin'] == 1 || $_SESSION['user_gestionnaire'] == 1) {
+                    echo '
                 <button title="'.$txt['admin_groups'].'" onclick="MenuAction(\'manage_folders\');">
                     <img src="includes/images/menu_groups.png" alt="" />
                 </button>
@@ -173,7 +170,7 @@ require_once("load.php");
                 <button title="'.$txt['admin_views'].'" onclick="MenuAction(\'manage_views\');">
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
-	        	}
+                }
 
                 //1 hour
                 echo '
@@ -204,19 +201,20 @@ require_once("load.php");
         </div>
     </div>';
 
-
     /* LAST SEEN */
     echo '
     <div style="display:none;" id="div_last_items" class="ui-state-active ui-corner-all">
         '.$txt['last_items_title'].":&nbsp;";
         if (isset($_SESSION['latest_items_tab'])) {
             foreach ($_SESSION['latest_items_tab'] as $item) {
-            	if (!empty($item)) {
-            		echo '
+                if (!empty($item)) {
+                    echo '
                     <span class="last_seen_item" onclick="javascript:$(\'#menu_action\').val(\'action\');window.location.href = \''.$item['url'].'\'"><img src="includes/images/tag-small.png" alt="" /><span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span></span>';
-            	}
+                }
             }
-        }else echo $txt['no_last_items'];
+        } else {
+            echo $txt['no_last_items'];
+        }
     echo '
     </div>';
 
@@ -228,7 +226,6 @@ require_once("load.php");
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
     </form>';
 
-
     /* INSERT ITEM BUTTONS IN MENU BAR */
     if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items") {
         echo '
@@ -238,9 +235,9 @@ require_once("load.php");
             </button>
             <br />',
             (
-            	(isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) ||
-	        	(isset($_SESSION['user_gestionnaire']) && $_SESSION['user_gestionnaire'] == 1) ||
-	        	(isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
+                (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) ||
+                (isset($_SESSION['user_gestionnaire']) && $_SESSION['user_gestionnaire'] == 1) ||
+                (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
             ) ? '
             <button title="'.$txt['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
                 <img src="includes/images/folder__plus.png" alt="" />
@@ -273,8 +270,8 @@ require_once("load.php");
             <button title="'.$txt['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
             <br />
             <button title="'.$txt['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share.png" id="div_share" alt="" /></button>';
-            if(isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1){
-            	echo '
+            if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
+                echo '
             <br />
             <button style="margin-bottom:5px;" id="menu_button_notify" class=""><img src="includes/images/alarm-clock.png" id="div_notify" alt="" /></button>';
             }
@@ -308,14 +305,14 @@ require_once("load.php");
     // Display a help to admin
         $errorAdmin = "";
         //error nb folders
-	    if (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) {
-	    	$errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_folders'].'<br />';
-	    }
+        if (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) {
+            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_folders'].'<br />';
+        }
         //error nb roles
         if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
             if (empty($errorAdmin)) {
                 $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_roles'];
-    		}else {
+            } else {
                 $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_roles'];
             }
         }
@@ -323,28 +320,28 @@ require_once("load.php");
         if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
             if (empty($errorAdmin)) {
                 $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'];
-			}else {
+            } else {
                 $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'];
-			}
-		}
+            }
+        }
 
         if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
             //error cpassman dir
             if (isset($_SESSION['settings']['cpassman_dir']) && empty($_SESSION['settings']['cpassman_dir']) || !isset($_SESSION['settings']['cpassman_dir'])) {
                 if (empty($errorAdmin)) {
                     $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_dir'];
-				}else {
+                } else {
                     $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_dir'];
-				}
-			}
+                }
+            }
             //error cpassman url
             if (isset($_SESSION['validite_pw']) && (isset($_SESSION['settings']['cpassman_url']) && empty($_SESSION['settings']['cpassman_url']) || !isset($_SESSION['settings']['cpassman_url']))) {
                 if (empty($errorAdmin)) {
                     $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_url'];
-				}else {
+                } else {
                     $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_url'];
-				}
-			}
+                }
+            }
         }
 
         //Display help
@@ -353,7 +350,7 @@ require_once("load.php");
             <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
             '.$errorAdmin.'
             </div>';
-		}
+        }
     //-----------
 
     //Display system errors
@@ -362,7 +359,7 @@ require_once("load.php");
         <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
             ', ( isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == TRUE ) ? '<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'].'' : '', '
         </div>';
-	}
+    }
 
     //Display Maintenance mode information
     if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
@@ -370,7 +367,7 @@ require_once("load.php");
         <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
             <b>'.$txt['index_maintenance_mode_admin'].'</b>
         </div>';
-	}
+    }
 
     //Display UPDATE NEEDED information
     if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
@@ -379,53 +376,53 @@ require_once("load.php");
         <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all" id="div_maintenance">
             <b>'.$txt['update_needed_mode_admin'].'</b><span style="float:right;cursor:pointer;"><img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" /></span>
         </div>';
-	}
+    }
 
     //Display pages
     if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page'])) {
         if ($_GET['page'] == "items") {
             //SHow page with Items
-            include("items.php");
-        }else if ($_GET['page'] == "find") {
+            include 'items.php';
+        } elseif ($_GET['page'] == "find") {
             //Show page for items findind
-            include("find.php");
-        }else if ($_GET['page'] == "favourites") {
+            include 'find.php';
+        } elseif ($_GET['page'] == "favourites") {
             //Show page for user favourites
-        	include("favourites.php");
-        }else if ($_GET['page'] == "kb") {
-        	//Show page for user favourites
-        	include("kb.php");
-        }else if (in_array($_GET['page'], array_keys($mngPages))) {
+            include 'favourites.php';
+        } elseif ($_GET['page'] == "kb") {
+            //Show page for user favourites
+            include 'kb.php';
+        } elseif (in_array($_GET['page'], array_keys($mngPages))) {
             //Define if user is allowed to see management pages
             if ($_SESSION['user_admin'] == 1 || $_SESSION['user_gestionnaire'] == 1) {
                 include($mngPages[$_GET['page']]);
-			}else {
+            } else {
                 $_SESSION['error'] = "1000";    //not allowed page
-                include("error.php");
+                include 'error.php';
             }
-        }else {
+        } else {
             $_SESSION['error'] = "1001";    //page don't exists
-            include("error.php");
+            include 'error.php';
         }
     }
 
     //Case where user has asked new PW
     else if (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
     echo '
-    	<div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
-    		<div style="text-align:center;font-weight:bold;margin-bottom:20px;">
-    			'.$txt['pw_recovery_asked'].'
-    		</div>
-    		<div id="generate_new_pw_error" style="color:red;display:none;text-align:center;margin:5px;"></div>
-    		<div style="margin-bottom:3px;">
-    			'.$txt['pw_recovery_info'].'
-			</div>
-			<div style="margin:15px; text-align:center;">
-    			<input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.$_GET['key'] .'\',\''.$_GET['login'] .'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$txt['pw_recovery_button'].'" />
-				<br /><br />
-				<img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
-    		</div>
-    	</div>';
+        <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
+            <div style="text-align:center;font-weight:bold;margin-bottom:20px;">
+                '.$txt['pw_recovery_asked'].'
+            </div>
+            <div id="generate_new_pw_error" style="color:red;display:none;text-align:center;margin:5px;"></div>
+            <div style="margin-bottom:3px;">
+                '.$txt['pw_recovery_info'].'
+            </div>
+            <div style="margin:15px; text-align:center;">
+                <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.$_GET['key'] .'\',\''.$_GET['login'] .'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$txt['pw_recovery_button'].'" />
+                <br /><br />
+                <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+            </div>
+        </div>';
     }
 
     //When user is not identified
@@ -433,9 +430,9 @@ require_once("load.php");
         //Automatic redirection
         if (strpos($_SERVER["REQUEST_URI"], "?") > 0) {
             $nextUrl = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?"));
-		}else {
+        } else {
             $nextUrl = "";
-		}
+        }
 
         // MAINTENANCE MODE
         if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1) {
@@ -443,37 +440,37 @@ require_once("load.php");
             <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;" class="ui-state-error ui-corner-all">
                 <b>'.$txt['index_maintenance_mode'].'</b>
             </div>';
-		}else {
+        } else {
         //SESSION FINISHED => RECONNECTION ASKED
             echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;" class="ui-state-error ui-corner-all">
                     <b>'.$txt['index_session_expired'].'</b>
                 </div>';
-		}
+        }
 
         // CONNECTION FORM
         echo '
             <form method="post" name="form_identify" action="">
                 <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
-                    	isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="' . $_SESSION['settings']['custom_logo'] . '" alt="" style="margin-bottom:40px;" />' : '', '<br />
+                        isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="' . $_SESSION['settings']['custom_logo'] . '" alt="" style="margin-bottom:40px;" />' : '', '<br />
                         '.$txt['index_get_identified'].'
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
                     <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
 
-					echo '
-					<div style="margin-bottom:3px;">
-	                    <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
-	                    <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                    echo '
+                    <div style="margin-bottom:3px;">
+                        <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
+                        <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
                     </div>
-					<div id="connect_pw" style="margin-bottom:3px;">
-	                    <label for="pw" class="form_label">'.$txt['index_password'].'</label>
-	                    <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" />
+                    <div id="connect_pw" style="margin-bottom:3px;">
+                        <label for="pw" class="form_label">'.$txt['index_password'].'</label>
+                        <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>
-					<div style="margin-bottom:3px;">
-	                    <label for="duree_session" class="">'.$txt['index_session_duration'].'&nbsp;('.$txt['minutes'].') </label>
-	                    <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                    <div style="margin-bottom:3px;">
+                        <label for="duree_session" class="">'.$txt['index_session_duration'].'&nbsp;('.$txt['minutes'].') </label>
+                        <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                     </div>
 
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
@@ -496,13 +493,13 @@ require_once("load.php");
                 <div style="margin:5px auto 5px auto;">'.$txt['forgot_my_pw_text'].'</div>
                 <label for="forgot_pw_email">'.$txt['email'].'</label>
                 <input type="text" size="40" name="forgot_pw_email" id="forgot_pw_email" />
-				<br />
-				<label for="forgot_pw_login">'.$txt['login'].'</label>
+                <br />
+                <label for="forgot_pw_login">'.$txt['login'].'</label>
                 <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
             </div>';
-    }else {
+    } else {
         //PAGE BY DEFAULT
-        include("home.php");
+        include 'home.php';
     }
     echo '
     </div>';
@@ -516,12 +513,11 @@ require_once("load.php");
             <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;&copy;&nbsp;copyright 2009-2012</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
-        	', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '
+            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '
         </div>
         <div style="float:right;margin-top:5px;text-align:right;">
         </div>
     </div>';
-
 
     //PAGE LOADING
     echo '
@@ -534,7 +530,7 @@ require_once("load.php");
     //Alert BOX
     echo '
     <div id="div_dialog_message" style="display:none;">
-		<div id="div_dialog_message_text"></div>
+        <div id="div_dialog_message_text"></div>
     </div>';
 
     //ENDING SESSION WARNING

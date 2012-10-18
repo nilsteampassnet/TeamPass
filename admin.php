@@ -13,7 +13,7 @@
  */
 
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
+    die('Hacking attempt...');
 
 echo '
     <div class="title ui-widget-content ui-corner-all">'.$txt['admin'].'</div>
@@ -26,13 +26,13 @@ echo '
      //div for information
      echo '
         <div style="float:right;width:300px;padding:10px;" class="ui-state-highlight ui-corner-all">
-        	<h3>Some instructions</h3>
+            <h3>Some instructions</h3>
             <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-            	Access to <a target="_blank" href="http://www.teampass.net" style="font-weight:bold;font-style:italic;">TeamPass website</a><br />
+                Access to <a target="_blank" href="http://www.teampass.net" style="font-weight:bold;font-style:italic;">TeamPass website</a><br />
             <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-            	For any kind of Help and Support, please use the <a target="_blank" href="http://www.teampass.net/forum" style="font-weight:bold;font-style:italic;">Forum</a><br />
+                For any kind of Help and Support, please use the <a target="_blank" href="http://www.teampass.net/forum" style="font-weight:bold;font-style:italic;">Forum</a><br />
             <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-            	You discovered a Bug or you have an improvement Proposal, please use the <a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github channel</a>. <i>If you are not sure, always use the Forum before to obtain a confirmation. This will prevent having to much open tickets at Github</i>.<br />
+                You discovered a Bug or you have an improvement Proposal, please use the <a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github channel</a>. <i>If you are not sure, always use the Forum before to obtain a confirmation. This will prevent having to much open tickets at Github</i>.<br />
             <div style="text-align:center;margin-top:10px;">
                 '.$txt['thku'].'
             </div>
@@ -48,12 +48,11 @@ echo '
             <h3>'.$txt['changelog'].'</h3>';
         $show = false;
         $cnt = 0;
-        while(list($cle,$val) = each($tab)) {
-            if ( $show == true && $cnt < 30 ){
+        while (list($cle,$val) = each($tab)) {
+            if ($show == true && $cnt < 30) {
                 echo $val."<br />";
                 $cnt ++;
-            }
-            else if ( $cnt == 30 ){
+            } elseif ($cnt == 30) {
                 echo '...<br /><br /><b><a href="readme.txt" target="_blank">'.$txt['readme_open'].'</a></b>';
                 break;
             }
@@ -64,5 +63,3 @@ echo '
     }
     echo '
     </div>';
-
-?>

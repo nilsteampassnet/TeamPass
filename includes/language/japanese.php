@@ -1,11 +1,10 @@
 <?php
 //JAPANESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "このアカウントはロックされています。";
 
@@ -962,5 +961,3 @@ $txt['warning_screen_height'] = "WARNING: screen height is not enough for displa
 $txt['yes'] = "Yes";
 
 $txt['your_version'] = "Your version";
-
-?>

@@ -21,5 +21,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP Hatasý: SMTP hosta baðlanýlamýyor.';
 $PHPMAILER_LANG["file_access"] = 'Dosyaya eriþilemiyor: ';
 $PHPMAILER_LANG["file_open"] = 'Dosya Hatasý: Dosya açýlamýyor: ';
 $PHPMAILER_LANG["encoding"] = 'Bilinmeyen þifreleme: ';
-
-?>

@@ -1,11 +1,10 @@
 <?php
 //RUSSIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
-}else{
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = '';
+} else {
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Этот аккаунт заблокирован";
 $txt['activity'] = "Активность";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Видимость";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Да";
 $txt['your_version'] = "Ваша версия";
-?>

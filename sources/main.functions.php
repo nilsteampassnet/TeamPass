@@ -14,18 +14,17 @@
 
 //session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
 /**
  * string_utf8_decode()
  *
  * utf8_decode
  */
-function string_utf8_decode($string){
-	return str_replace(" ","+",utf8_decode($string));
+function string_utf8_decode($string)
+{
+    return str_replace(" ","+",utf8_decode($string));
 }
-
 
 /**
  * encrypt()
@@ -34,7 +33,7 @@ function string_utf8_decode($string){
  */
 function encrypt($text, $personal_salt="")
 {
-	if ( !empty($personal_salt) )
+    if ( !empty($personal_salt) )
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
     else
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
@@ -53,86 +52,86 @@ function decrypt($text, $personal_salt="")
         return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
 }
 
-
 /**
  * TrimElement()
  *
  * trim a string depending on a specific string
  */
-function TrimElement($chaine,$element){
-	if (!empty($chaine)) {
-		$chaine = trim($chaine);
-		if ( substr($chaine,0,1) == $element ) $chaine = substr($chaine,1);
-		if ( substr($chaine,strlen($chaine)-1,1) == $element ) $chaine = substr($chaine,0,strlen($chaine)-1);
-		return $chaine;
-	}
+function TrimElement($chaine,$element)
+{
+    if (!empty($chaine)) {
+        $chaine = trim($chaine);
+        if ( substr($chaine,0,1) == $element ) $chaine = substr($chaine,1);
+        if ( substr($chaine,strlen($chaine)-1,1) == $element ) $chaine = substr($chaine,0,strlen($chaine)-1);
+        return $chaine;
+    }
 }
-
 
 /**
  * CleanString()
  *
  * permits to suppress all "special" characters from string
  */
-function CleanString($string){
+function CleanString($string)
+{
     //Create temporary table for special characters escape
     $tab_special_car = array();
-    for ($i=0; $i<=31; $i++)
-    {
+    for ($i=0; $i<=31; $i++) {
         $tab_special_car[] = chr($i);
     }
-	array_push($tab_special_car, "<br />");
+    array_push($tab_special_car, "<br />");
+
     return str_replace($tab_special_car, "",$string);
 }
-
 
 /**
  * IdentifyUserRights()
  *
  * @return
  */
-function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_admin,$id_fonctions,$refresh){
+function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_admin,$id_fonctions,$refresh)
+{
     global $server, $user, $pass, $database, $pre;
 
     //include librairies
-    require_once ("NestedTree.class.php");
-    require_once("class.database.php");
+    require_once 'NestedTree.class.php';
+    require_once 'class.database.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
     //Check if user is ADMINISTRATOR
-    if ( $is_admin == 1 ){
+    if ($is_admin == 1) {
         $groupes_visibles = array();
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
-    	$_SESSION['list_restricted_folders_for_items'] = array();
+        $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
         $rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
-        foreach($rows as $record){
+        foreach ($rows as $record) {
             array_push($groupes_visibles,$record['id']);
         }
         $_SESSION['groupes_visibles'] = $groupes_visibles;
-    	$_SESSION['all_non_personal_folders'] = $groupes_visibles;
+        $_SESSION['all_non_personal_folders'] = $groupes_visibles;
 
-    	//Exclude all PF
-    	$_SESSION['forbiden_pfs'] = array();
-    	$sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
-    	if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
-    		$sql .= " AND title != '".$_SESSION['user_id']."'";
-    	}
+        //Exclude all PF
+        $_SESSION['forbiden_pfs'] = array();
+        $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
+            $sql .= " AND title != '".$_SESSION['user_id']."'";
+        }
 
         //Get ID of personal folder
         $pf = $db->fetch_row("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_SESSION['user_id']."'");
-        if ( !empty($pf[0]) ){
-            if ( !in_array($pf[0],$_SESSION['groupes_visibles']) ){
+        if ( !empty($pf[0]) ) {
+            if ( !in_array($pf[0],$_SESSION['groupes_visibles']) ) {
                 array_push($_SESSION['groupes_visibles'],$pf[0]);
                 array_push($_SESSION['personal_visible_groups'],$pf[0]);
                 //get all descendants
                 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title', 'personal_folder');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($pf[0]);
-                foreach($tst as $t){
+                foreach ($tst as $t) {
                     array_push($_SESSION['groupes_visibles'],$t->id);
                     array_push($_SESSION['personal_visible_groups'],$t->id);
                 }
@@ -148,7 +147,7 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_title");
         $_SESSION['nb_roles'] = $ret[0];
 
-    }else{
+    } else {
         //init
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
@@ -160,106 +159,106 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
         $_SESSION['is_admin'] = $is_admin;
         $fonctions_associees = explode(';',TrimElement($id_fonctions, ";"));
         $new_liste_gp_visibles = array();
-    	$liste_gp_interdits = array();
+        $liste_gp_interdits = array();
 
-    	$list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = $list_restricted_folders_for_items = array();
+        $list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = $list_restricted_folders_for_items = array();
         //build Tree
-        require_once ("NestedTree.class.php");
+        require_once 'NestedTree.class.php';
         $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
         //rechercher tous les groupes visibles en fonction des roles de l'utilisateur
-        foreach($fonctions_associees as $role_id){
-            if ( !empty($role_id) ){
-            	//Get allowed folders for each Role
-            	$rows = $db->fetch_all_array("
-					SELECT folder_id
-					FROM ".$pre."roles_values
-					WHERE role_id=".$role_id
-            	);
-            	if (count($rows) > 0) {
-            		foreach($rows as $reccord){
-            			if (isset($reccord['folder_id']) && !in_array($reccord['folder_id'], $list_allowed_folders)) {
-            				array_push($list_allowed_folders, $reccord['folder_id']);
-            			}
+        foreach ($fonctions_associees as $role_id) {
+            if ( !empty($role_id) ) {
+                //Get allowed folders for each Role
+                $rows = $db->fetch_all_array("
+                    SELECT folder_id
+                    FROM ".$pre."roles_values
+                    WHERE role_id=".$role_id
+                );
+                if (count($rows) > 0) {
+                    foreach ($rows as $reccord) {
+                        if (isset($reccord['folder_id']) && !in_array($reccord['folder_id'], $list_allowed_folders)) {
+                            array_push($list_allowed_folders, $reccord['folder_id']);
+                        }
 
-            			//Check if this group is allowed to modify any pw in allowed folders
-            			$tmp = $db->query_first("
-            				SELECT allow_pw_change
-		            		FROM ".$pre."roles_title
-		            		WHERE id = ".$role_id
-            			);
-            			if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $list_folders_editable_by_role)) {
-            				array_push($list_folders_editable_by_role, $reccord['folder_id']);
-            			}
-            		}
-            		//Check for the users roles if some specific rights exist on items
-            		$rows = $db->fetch_all_array("
-						SELECT i.id_tree, r.item_id
-						FROM ".$pre."items AS i
-						INNER JOIN ".$pre."restriction_to_roles AS r ON (r.item_id=i.id)
-						WHERE r.role_id=".$role_id."
-						ORDER BY i.id_tree ASC
-					");
-            		$x=0;
-            		foreach($rows as $reccord){
-            			if (isset($reccord['id_tree'])) {
-            				$list_folders_limited[$reccord['id_tree']][$x] = $reccord['item_id'];
-            				$x++;
-            			}
-            		}
-            	}
+                        //Check if this group is allowed to modify any pw in allowed folders
+                        $tmp = $db->query_first("
+                            SELECT allow_pw_change
+                            FROM ".$pre."roles_title
+                            WHERE id = ".$role_id
+                        );
+                        if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $list_folders_editable_by_role)) {
+                            array_push($list_folders_editable_by_role, $reccord['folder_id']);
+                        }
+                    }
+                    //Check for the users roles if some specific rights exist on items
+                    $rows = $db->fetch_all_array("
+                        SELECT i.id_tree, r.item_id
+                        FROM ".$pre."items AS i
+                        INNER JOIN ".$pre."restriction_to_roles AS r ON (r.item_id=i.id)
+                        WHERE r.role_id=".$role_id."
+                        ORDER BY i.id_tree ASC
+                    ");
+                    $x=0;
+                    foreach ($rows as $reccord) {
+                        if (isset($reccord['id_tree'])) {
+                            $list_folders_limited[$reccord['id_tree']][$x] = $reccord['item_id'];
+                            $x++;
+                        }
+                    }
+                }
             }
         }
 
-    	//Does this user is allowed to see other items
-    	$x=0;
-    	$rows = $db->fetch_all_array("SELECT id,id_tree FROM ".$pre."items WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'");
-    	foreach($rows as $reccord){
-    		$list_restricted_folders_for_items[$reccord['id_tree']][$x] = $reccord['id'];
-    		$x++;
-    		//array_push($list_restricted_folders_for_items, $reccord['id_tree']);
-    	}
+        //Does this user is allowed to see other items
+        $x=0;
+        $rows = $db->fetch_all_array("SELECT id,id_tree FROM ".$pre."items WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'");
+        foreach ($rows as $reccord) {
+            $list_restricted_folders_for_items[$reccord['id_tree']][$x] = $reccord['id'];
+            $x++;
+            //array_push($list_restricted_folders_for_items, $reccord['id_tree']);
+        }
 
-    	// => Build final lists
-   		//Clean arrays
-    	$allowed_folders_tmp = array();
-   		$list_allowed_folders = array_unique($list_allowed_folders);
+        // => Build final lists
+           //Clean arrays
+        $allowed_folders_tmp = array();
+           $list_allowed_folders = array_unique($list_allowed_folders);
 
-   		//Add user allowed folders
-    	$allowed_folders_tmp =array_unique(array_merge($list_allowed_folders,explode(';',TrimElement($groupes_visibles_user,";"))));
+           //Add user allowed folders
+        $allowed_folders_tmp =array_unique(array_merge($list_allowed_folders,explode(';',TrimElement($groupes_visibles_user,";"))));
 
-    	//Exclude from allowed folders all the specific user forbidden folders
-    	$allowed_folders = array();
-    	foreach($allowed_folders_tmp as $id){
-    		if (!in_array($id,$groupes_interdits_user) && !empty($id)){
-    			array_push($allowed_folders,$id);
-    		}
-    	}
+        //Exclude from allowed folders all the specific user forbidden folders
+        $allowed_folders = array();
+        foreach ($allowed_folders_tmp as $id) {
+            if (!in_array($id,$groupes_interdits_user) && !empty($id)) {
+                array_push($allowed_folders,$id);
+            }
+        }
 
         //Clean array
-    	$list_allowed_folders = array_filter(array_unique($allowed_folders));
+        $list_allowed_folders = array_filter(array_unique($allowed_folders));
 
-		//Exclude all PF
-    	$_SESSION['forbiden_pfs'] = array();
-    	$sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
-    	if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && isset($_SESSION['personal_folder']) && $_SESSION['personal_folder'] == 1) {
-    		$sql .= " AND title != '".$_SESSION['user_id']."'";
-		}
+        //Exclude all PF
+        $_SESSION['forbiden_pfs'] = array();
+        $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && isset($_SESSION['personal_folder']) && $_SESSION['personal_folder'] == 1) {
+            $sql .= " AND title != '".$_SESSION['user_id']."'";
+        }
 
-    	$pfs = $db->fetch_all_array($sql);
-    	foreach ($pfs as $pf_id) {
-    		array_push($_SESSION['forbiden_pfs'], $pf_id['id']);
-    	}
+        $pfs = $db->fetch_all_array($sql);
+        foreach ($pfs as $pf_id) {
+            array_push($_SESSION['forbiden_pfs'], $pf_id['id']);
+        }
 
 
         //Get ID of personal folder
         if ( isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && isset($_SESSION['personal_folder']) && $_SESSION['personal_folder'] == 1) {
             $pf = $db->fetch_row("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_SESSION['user_id']."'");
-            if ( !empty($pf[0]) ){
-                if ( !in_array($pf[0], $list_allowed_folders) ){
+            if ( !empty($pf[0]) ) {
+                if ( !in_array($pf[0], $list_allowed_folders) ) {
                     //get all descendants
                     $ids = $tree->getDescendants($pf[0],true);
-                    foreach($ids as $id){
+                    foreach ($ids as $id) {
                         array_push($list_allowed_folders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
                     }
@@ -267,15 +266,15 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
             }
         }
 
-    	$_SESSION['all_non_personal_folders'] = $list_allowed_folders;
-    	$_SESSION['groupes_visibles'] = $list_allowed_folders;
+        $_SESSION['all_non_personal_folders'] = $list_allowed_folders;
+        $_SESSION['groupes_visibles'] = $list_allowed_folders;
         $_SESSION['groupes_visibles_list'] = implode(',', $list_allowed_folders);
 
-    	$_SESSION['list_folders_limited'] = $list_folders_limited;
-    	$_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
-    	$_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
+        $_SESSION['list_folders_limited'] = $list_folders_limited;
+        $_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
+        $_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
 
-    	//Folders and Roles numbers
+        //Folders and Roles numbers
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = $ret[0];
         $ret = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_title");
@@ -289,11 +288,12 @@ function IdentifyUserRights($groupes_visibles_user,$groupes_interdits_user,$is_a
  *
  * permits to log events into DB
  */
-function logEvents($type, $label, $who){
+function logEvents($type, $label, $who)
+{
     global $server, $user, $pass, $database, $pre;
 
     //include librairies & connect to DB
-    require_once("class.database.php");
+    require_once 'class.database.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
@@ -314,17 +314,18 @@ function logEvents($type, $label, $who){
  *
  * Update the CACHE table
  */
-function UpdateCacheTable($action, $id=""){
+function UpdateCacheTable($action, $id="")
+{
     global $db, $server, $user, $pass, $database, $pre;
 
-	//include librairies
-	require_once ("NestedTree.class.php");
+    //include librairies
+    require_once 'NestedTree.class.php';
 
-	//Build tree
-	$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+    //Build tree
+    $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
     //Rebuild full cache table
-    if ( $action == "reload"){
+    if ($action == "reload") {
         //truncate table
         $db->query("TRUNCATE TABLE ".$pre."cache");
 
@@ -335,26 +336,26 @@ function UpdateCacheTable($action, $id=""){
                 AND l.action = 'at_creation'
                 AND i.inactif=0";
         $rows = $db->fetch_all_array($sql);
-        foreach( $rows as $reccord ){
+        foreach ($rows as $reccord) {
             //Get all TAGS
             $tags = "";
             $item_tags = $db->fetch_all_array("SELECT tag FROM ".$pre."tags WHERE item_id=".$reccord['id']);
-            foreach( $item_tags as $item_tag ){
+            foreach ($item_tags as $item_tag) {
                 if ( !empty($item_tag['tag']))
                     $tags .= $item_tag['tag']. " ";
             }
 
-        	//form id_tree to full foldername
-        	$folder = "";
-        	$arbo = $tree->getPath($reccord['id_tree'], true);
-			foreach($arbo as $elem){
-				if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
-				if (empty($folder)) {
-					$folder = stripslashes($elem->title);
-				}else{
-					$folder .= " » ".stripslashes($elem->title);
-				}
-			}
+            //form id_tree to full foldername
+            $folder = "";
+            $arbo = $tree->getPath($reccord['id_tree'], true);
+            foreach ($arbo as $elem) {
+                if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
+                if (empty($folder)) {
+                    $folder = stripslashes($elem->title);
+                } else {
+                    $folder .= " » ".stripslashes($elem->title);
+                }
+            }
 
             //store data
             $db->query_insert(
@@ -368,39 +369,39 @@ function UpdateCacheTable($action, $id=""){
                     'perso' =>  $reccord['perso'],
                     'restricted_to' =>  $reccord['restricted_to'],
                     'login' => $reccord['login'],
-	                'folder' => $folder,
-	                'author' => $reccord['id_user'],
+                    'folder' => $folder,
+                    'author' => $reccord['id_user'],
                 )
             );
         }
     //UPDATE an item
-    }else if ( $action == "update_value"){
+    } elseif ($action == "update_value") {
         //get new value from db
         $sql = "SELECT label, description, id_tree, perso, restricted_to, login
                 FROM ".$pre."items
                 WHERE id=".$id;
-    	$row = $db->query($sql);
-    	$data = $db->fetch_array($row);
+        $row = $db->query($sql);
+        $data = $db->fetch_array($row);
 
         //Get all TAGS
         $tags = "";
         $item_tags = $db->fetch_all_array("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
-        foreach( $item_tags as $item_tag ){
+        foreach ($item_tags as $item_tag) {
             if ( !empty($item_tag['tag']))
                 $tags .= $item_tag['tag']. " ";
         }
 
-    	//form id_tree to full foldername
-    	$folder = "";
-    	$arbo = $tree->getPath($data['id_tree'], true);
-    	foreach($arbo as $elem){
-    		if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
-    		if (empty($folder)) {
-    			$folder = stripslashes($elem->title);
-    		}else{
-    			$folder .= " » ".stripslashes($elem->title);
-    		}
-    	}
+        //form id_tree to full foldername
+        $folder = "";
+        $arbo = $tree->getPath($data['id_tree'], true);
+        foreach ($arbo as $elem) {
+            if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
+            if (empty($folder)) {
+                $folder = stripslashes($elem->title);
+            } else {
+                $folder .= " » ".stripslashes($elem->title);
+            }
+        }
 
         //finaly update
         $db->query_update(
@@ -413,41 +414,41 @@ function UpdateCacheTable($action, $id=""){
                     'perso' =>  $data['perso'],
                     'restricted_to' =>  $data['restricted_to'],
                     'login' => $data['login'],
-	                'folder' => $folder,
-	                'author' => $_SESSION['user_id'],
+                    'folder' => $folder,
+                    'author' => $_SESSION['user_id'],
                 ),
                 "id='".$id."'"
             );
     //ADD an item
-    }else if ( $action == "add_value"){
+    } elseif ($action == "add_value") {
         //get new value from db
         $sql = "SELECT i.label, i.description, i.id_tree AS id_tree, i.perso, i.restricted_to, i.id, i.login
                 FROM ".$pre."items AS i
                 INNER JOIN ".$pre."log_items AS l ON (l.id_item = i.id)
                 WHERE i.id=".$id."
                 AND l.action = 'at_creation'";
-    	$row = $db->query($sql);
+        $row = $db->query($sql);
         $data = $db->fetch_array($row);
 
         //Get all TAGS
         $tags = "";
         $item_tags = $db->fetch_all_array("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
-        foreach( $item_tags as $item_tag ){
+        foreach ($item_tags as $item_tag) {
             if ( !empty($item_tag['tag']))
                 $tags .= $item_tag['tag']. " ";
         }
 
-    	//form id_tree to full foldername
-    	$folder = "";
-    	$arbo = $tree->getPath($data['id_tree'], true);
-    	foreach($arbo as $elem){
-    		if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
-    		if (empty($folder)) {
-    			$folder = stripslashes($elem->title);
-    		}else{
-    			$folder .= " » ".stripslashes($elem->title);
-    		}
-    	}
+        //form id_tree to full foldername
+        $folder = "";
+        $arbo = $tree->getPath($data['id_tree'], true);
+        foreach ($arbo as $elem) {
+            if ( $elem->title == $_SESSION['user_id'] && $elem->nlevel == 1 ) $elem->title = $_SESSION['login'];
+            if (empty($folder)) {
+                $folder = stripslashes($elem->title);
+            } else {
+                $folder .= " » ".stripslashes($elem->title);
+            }
+        }
 
         //finaly update
         $db->query_insert(
@@ -459,14 +460,14 @@ function UpdateCacheTable($action, $id=""){
                 'tags'    =>  $tags,
                 'id_tree' =>  $data['id_tree'],
                 'perso' =>  $data['perso'],
-	            'restricted_to' =>  $data['restricted_to'],
-	            'login' => $data['login'],
-	            'folder' => $folder,
-	            'author' => $_SESSION['user_id'],
+                'restricted_to' =>  $data['restricted_to'],
+                'login' => $data['login'],
+                'folder' => $folder,
+                'author' => $_SESSION['user_id'],
             )
         );
     //DELETE an item
-    }else if ( $action == "delete_value"){
+    } elseif ($action == "delete_value") {
         mysql_query("DELETE FROM ".$pre."cache WHERE id = ".$id);
     }
 }
@@ -475,13 +476,14 @@ function UpdateCacheTable($action, $id=""){
 *  send statistics about your usage of cPassMan.
 * This helps the creator to evaluate the usage you have of the tool.
 */
-function CPMStats(){
+function CPMStats()
+{
     global $server, $user, $pass, $database, $pre;
 
-    require_once('includes/settings.php');
+    require_once 'includes/settings.php';
 
     // connect to the server
-    require_once("class.database.php");
+    require_once 'class.database.php';
     $db = new Database($server, $user, $pass, $database, $pre);
     $db->connect();
 
@@ -495,14 +497,12 @@ function CPMStats(){
     // Get info about installation
     $data_system = array();
     $rows = $db->fetch_all_array("SELECT valeur,intitule FROM ".$pre."misc WHERE type = 'admin' AND intitule IN ('enable_pf_feature','log_connections','cpassman_version')");
-    foreach ($rows as $reccord){
+    foreach ($rows as $reccord) {
         if ($reccord['intitule']=='enable_pf_feature') {
             $data_system['enable_pf_feature'] = $reccord['valeur'];
-        }else
-        if ($reccord['intitule']=='cpassman_version') {
+        } elseif ($reccord['intitule']=='cpassman_version') {
             $data_system['cpassman_version'] = $reccord['valeur'];
-        }else
-        if ($reccord['intitule']=='log_connections') {
+        } elseif ($reccord['intitule']=='log_connections') {
             $data_system['log_connections'] = $reccord['valeur'];
         }
     }
@@ -543,41 +543,38 @@ function CPMStats(){
  *
  * @return
  */
-function SendEmail($subject, $text_mail, $email, $text_mail_alt=""){
+function SendEmail($subject, $text_mail, $email, $text_mail_alt="")
+{
+    //load library
+    include '../includes/settings.php';
+    include '../includes/libraries/phpmailer/class.phpmailer.php';
 
-	//load library
-	include('../includes/settings.php');
-	include("../includes/libraries/phpmailer/class.phpmailer.php");
+    //send to user
+    $mail = new PHPMailer();
+    $mail->SetLanguage("en","../includes/libraries/phpmailer/language/");
+    $mail->SMTPDebug = 0;	//value 1 can be used to debug
+    $mail->Port = $_SESSION['settings']['email_port'];	//COULD BE USED
+    //$mail->SMTPSecure = 'ssl'; 	//COULD BE USED
+    $mail->IsSMTP();						// send via SMTP
+    $mail->Host     = $_SESSION['settings']['email_smtp_server'];			// SMTP servers
+    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'];     		// turn on SMTP authentication
+    $mail->Username = $_SESSION['settings']['email_auth_username'];  // SMTP username
+    $mail->Password = $_SESSION['settings']['email_auth_pwd']; 	// SMTP password
+    $mail->From     = $_SESSION['settings']['email_from'];
+    $mail->FromName = $_SESSION['settings']['email_from_name'];
+    $mail->AddAddress($email); //Destinataire
+    $mail->WordWrap = 80;					// set word wrap
+    $mail->IsHTML(true);					// send as HTML
+    $mail->Subject  =  $subject;
+    $mail->Body     =  $text_mail;
+    $mail->AltBody	=  $text_mail_alt;
 
-	//send to user
-	$mail = new PHPMailer();
-	$mail->SetLanguage("en","../includes/libraries/phpmailer/language/");
-	$mail->SMTPDebug = 0;	//value 1 can be used to debug
-	$mail->Port = $_SESSION['settings']['email_port'];	//COULD BE USED
-	//$mail->SMTPSecure = 'ssl'; 	//COULD BE USED
-	$mail->IsSMTP();						// send via SMTP
-	$mail->Host     = $_SESSION['settings']['email_smtp_server'];			// SMTP servers
-	$mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'];     		// turn on SMTP authentication
-	$mail->Username = $_SESSION['settings']['email_auth_username'];  // SMTP username
-	$mail->Password = $_SESSION['settings']['email_auth_pwd']; 	// SMTP password
-	$mail->From     = $_SESSION['settings']['email_from'];
-	$mail->FromName = $_SESSION['settings']['email_from_name'];
-	$mail->AddAddress($email); //Destinataire
-	$mail->WordWrap = 80;					// set word wrap
-	$mail->IsHTML(true);					// send as HTML
-	$mail->Subject  =  $subject;
-	$mail->Body     =  $text_mail;
-	$mail->AltBody	=  $text_mail_alt;
-
-	//send email
-	if(!$mail->Send())
-	{
-		return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
-	}
-	else
-	{
-		return '"error":"" , "message":""';
-	}
+    //send email
+    if (!$mail->Send()) {
+        return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
+    } else {
+        return '"error":"" , "message":""';
+    }
 }
 
 
@@ -586,8 +583,9 @@ function SendEmail($subject, $text_mail, $email, $text_mail_alt=""){
  *
  * @return
  */
-function GenerateKey(){
-	return substr(md5(rand().rand()), 0, 15);
+function GenerateKey()
+{
+    return substr(md5(rand().rand()), 0, 15);
 }
 
 /**
@@ -595,15 +593,17 @@ function GenerateKey(){
  *
  * @return
  */
-function DateToStamp($date){
-	$date = date_parse_from_format($_SESSION['settings']['date_format'], $date);
-	if($date['warning_count'] == 0 && $date['error_count'] == 0)
-		return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
-	else
-		return false;
+function DateToStamp($date)
+{
+    $date = date_parse_from_format($_SESSION['settings']['date_format'], $date);
+    if($date['warning_count'] == 0 && $date['error_count'] == 0)
+
+        return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+    else
+        return false;
 }
 
-function is_date($date){
-	return (strtotime($date) !== false);
+function is_date($date)
+{
+    return (strtotime($date) !== false);
 }
-?>

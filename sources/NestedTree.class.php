@@ -14,8 +14,7 @@
 
 //session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
     class NestedTree
     {
@@ -90,13 +89,12 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                 $nleft = 0;
                 $nright = 0;
                 $parent_id = 0;
-            	$personal_folder = 0;
-            }
-            else {
+                $personal_folder = 0;
+            } else {
                 $nleft = $node->nleft;
                 $nright = $node->nright;
-            	$parent_id = $node->$idField;
-            	$personal_folder = $node->personal_folder;
+                $parent_id = $node->$idField;
+                $personal_folder = $node->personal_folder;
             }
 
             if ($childrenOnly) {
@@ -108,31 +106,27 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                                      $parent_id,
                                      $this->fields['parent'],
                                      $parent_id);
-                }
-                else {
+                } else {
                     $query = sprintf('select %s from %s where %s = %d order by nleft',
                                      join(',', $this->_getFields()),
                                      $this->table,
                                      $this->fields['parent'],
                                      $parent_id);
                 }
-            }
-            else {
+            } else {
                 if ($nleft > 0 && $includeSelf) {
                     $query = sprintf('select %s from %s where nleft >= %d and nright <= %d order by nleft',
                                      join(',', $this->_getFields()),
                                      $this->table,
                                      $nleft,
                                      $nright);
-                }
-                else if ($nleft > 0) {
+                } elseif ($nleft > 0) {
                     $query = sprintf('select %s from %s where nleft > %d and nright < %d order by nleft',
                                      join(',', $this->_getFields()),
                                      $this->table,
                                      $nleft,
                                      $nright);
-                }
-                else {
+                } else {
                     $query = sprintf('select %s from %s order by nleft',
                                      join(',', $this->_getFields()),
                                      $this->table);
@@ -143,11 +137,11 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
             $arr = array();
             while ($row = mysql_fetch_object($result)) {
-            	if ($unique_id_list == false) {
-            		$arr[$row->$idField] = $row;
-            	}else{
-            		array_push($arr, $row->$idField);
-            	}
+                if ($unique_id_list == false) {
+                    $arr[$row->$idField] = $row;
+                } else {
+                    array_push($arr, $row->$idField);
+                }
             }
 
             return $arr;
@@ -189,8 +183,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                                  $this->table,
                                  $node->nleft,
                                  $node->nright);
-            }
-            else {
+            } else {
                 $query = sprintf('select %s from %s where nleft < %d and nright > %d order by nlevel',
                                  join(',', $this->_getFields()),
                                  $this->table,
@@ -282,13 +275,13 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                 $result = mysql_query($query);
                 if ($row = mysql_fetch_object($result))
                     return (int) $row->num_descendants;
-            }
-            else {
+            } else {
                 $node = $this->getNode($id);
                 if (!is_null($node)) {
                     return ($node->nright - $node->nleft - 1) / 2;
                 }
             }
+
             return -1;
         }
 
@@ -319,11 +312,11 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
         function getTreeWithChildren()
         {
             $idField = $this->fields['id'];
-        	$parentField = $this->fields['parent'];
+            $parentField = $this->fields['parent'];
 
             $query = sprintf('select %s from %s order by %s',
                              join(',', $this->_getFields()),
-				           	$this->table,
+                               $this->table,
                              $this->fields['sort']);
 
             $result = mysql_query($query);
@@ -438,8 +431,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                                  $parentField, $node->$parentField,
                                  $parentField, $node->$idField);
 
-            }
-            else {
+            } else {
                 // the passed node did not exist, get the first level of nodes
                 $query = sprintf('select %s from %s where %s = 0 order by nleft',
                                  join(',', $this->_getFields()),
@@ -454,8 +446,8 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
                 $row->num_descendants = ($row->nright - $row->nleft - 1) / 2;
                 $arr[$row->$idField] = $row;
             }
+
             return $arr;
         }
 
     }
-?>

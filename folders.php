@@ -13,25 +13,24 @@
  */
 
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
 /* load help*/
-require_once('includes/language/'.$_SESSION['user_language'].'_admin_help.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'_admin_help.php');
 
 /* Get full tree structure */
-require_once ("sources/NestedTree.class.php");
+require_once 'sources/NestedTree.class.php';
 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $tst = $tree->getDescendants();
 
 /* Build list of all folders */
 if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
     $folders_list = "\'0\':\'".$txt['root']."\'";
-}else{
+} else {
     $folders_list = "";
 }
 $ident = "";
-foreach($tst as $t){
+foreach ($tst as $t) {
     if (in_array($t->id,$_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
         if ( $t->nlevel == 1 ) $ident = ">";
         if ( $t->nlevel == 2 ) $ident = "->";
@@ -41,7 +40,6 @@ foreach($tst as $t){
         $folders_list .= ','."\'".$t->id.'\':\''.$ident." ".addslashes(addslashes($t->title))."\'";
     }
 }
-
 
 /* Display header */
 echo '
@@ -72,18 +70,18 @@ echo '
         <tbody>';
         $x = 0;
         $arr_ids = array();
-        foreach($tst as $t){
+        foreach ($tst as $t) {
             if ( in_array($t->id,$_SESSION['groupes_visibles'])  && !in_array($t->id, $_SESSION['personal_visible_groups']) ) {
                 //r?cup $t->parent_id
                 $data = $db->fetch_row("SELECT title FROM ".$pre."nested_tree WHERE id = ".$t->parent_id);
-                if ( $t->nlevel == 1 ) {
+                if ($t->nlevel == 1) {
                     $data[0] = $txt['root'];
                 }
 
                 //r?cup les droits associ?s ? ce groupe
                 $tab_droits=array();
                 $rows = $db->fetch_all_array("SELECT fonction_id  FROM ".$pre."rights WHERE authorized=1 AND tree_id = ".$t->id);
-                foreach( $rows as $reccord ){
+                foreach ($rows as $reccord) {
                     array_push($tab_droits,$reccord['fonction_id']);
                 }
                 //g?rer l'identation en fonction du niveau
@@ -131,8 +129,8 @@ echo '
                             <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3[1]) && $data3[1]==1 ? 'checked' : '', ' />
                         </td>
                         <td>
-                        	<input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
-							<input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data[0].'" />
+                            <input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
+                            <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data[0].'" />
                         </td>
                 </tr>';
                 array_push($arr_ids,$t->id);
@@ -170,15 +168,15 @@ echo '
             echo '<option value="0">'.$txt['root'].'</option>';
         }
         $prev_level = 0;
-        foreach($tst as $t){
+        foreach ($tst as $t) {
             if ( in_array($t->id,$_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
                 $ident="";
                 for($x=1;$x<$t->nlevel;$x++) $ident .= "&nbsp;&nbsp;";
-                if ( $prev_level < $t->nlevel ){
+                if ($prev_level < $t->nlevel) {
                     echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-                }else if ( $prev_level == $t->nlevel ){
+                } elseif ($prev_level == $t->nlevel) {
                    echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-                }else{
+                } else {
                     echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
                 }
                 $prev_level = $t->nlevel;
@@ -211,22 +209,22 @@ echo '
     <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">';
 echo '<option value="na">---'.$txt['select'].'---</option>';
 if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-	echo '<option value="0">'.$txt['root'].'</option>';
+    echo '<option value="0">'.$txt['root'].'</option>';
 }
 $prev_level = 0;
-foreach($tst as $t){
-	if ( in_array($t->id,$_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-		$ident="";
-		for($x=1;$x<$t->nlevel;$x++) $ident .= "&nbsp;&nbsp;";
-		if ( $prev_level < $t->nlevel ){
-			echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-		}else if ( $prev_level == $t->nlevel ){
-			echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-		}else{
-			echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-		}
-		$prev_level = $t->nlevel;
-	}
+foreach ($tst as $t) {
+    if ( in_array($t->id,$_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+        $ident="";
+        for($x=1;$x<$t->nlevel;$x++) $ident .= "&nbsp;&nbsp;";
+        if ($prev_level < $t->nlevel) {
+            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
+        } elseif ($prev_level == $t->nlevel) {
+            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
+        } else {
+            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
+        }
+        $prev_level = $t->nlevel;
+    }
 }
 echo '
     </select>
@@ -235,7 +233,7 @@ echo '
     <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">
 <option value="">---</option>';
 foreach($pw_complexity as $complex)
-	echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
+    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 echo '
     </select>
 
@@ -243,5 +241,4 @@ echo '
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 </div>';
 
-require_once("folders.load.php");
-?>
+require_once 'folders.load.php';

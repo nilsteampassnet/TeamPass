@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Polish Version, encoding: windows-1250
  * translated from english lang file ver. 1.72
  */
@@ -20,5 +20,3 @@ $PHPMAILER_LANG["connect_host"] = 'B³¹d SMTP: Nie mo¿na po³¹czyæ siê z wybranym 
 $PHPMAILER_LANG["file_access"] = 'Brak dostêpu do pliku: ';
 $PHPMAILER_LANG["file_open"] = 'Nie mo¿na otworzyæ pliku: ';
 $PHPMAILER_LANG["encoding"] = 'Nieznany sposób kodowania znaków: ';
-
-?>

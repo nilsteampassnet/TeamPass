@@ -13,8 +13,7 @@
  */
 
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
+    die('Hacking attempt...');
 
 echo '
 <form name="form_favourites" method="post" action="">
@@ -36,8 +35,8 @@ echo '
             <tbody>';
             //Get favourites
             $cpt= 0 ;
-            foreach($_SESSION['favourites'] as $fav){
-                if ( !empty($fav) ){
+            foreach ($_SESSION['favourites'] as $fav) {
+                if ( !empty($fav) ) {
                     $data = $db->query_first(
                         "SELECT i.label, i.description, i.id, i.id_tree, t.title
                         FROM ".$pre."items AS i
@@ -73,4 +72,3 @@ echo '
     '.$txt['confirm_del_from_fav'].'
     <input type="hidden" id="detele_fav_id" />
 </div>';
-?>
