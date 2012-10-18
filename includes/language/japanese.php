@@ -873,7 +873,7 @@ $txt['settings_ldap_ssl'] = "SSL経由でLDAPを使用する(LDAPS)";
 
 $txt['settings_ldap_tls'] = "TLS経由でLDAPを使用する";
 
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "全てのユーザーのコネクションをDBにロギングする。";
 
 $txt['settings_maintenance_mode'] = "メンテナンスモードに設定";
