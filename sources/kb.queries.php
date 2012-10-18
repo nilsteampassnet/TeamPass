@@ -16,7 +16,7 @@ session_start();
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     die('Hacking attempt...');
 
-require_once '../includes/language/'.$_SESSION['user_language'].'.php');
+require_once '../includes/language/'.$_SESSION['user_language'].'.php';
 include '../includes/settings.php';
 require_once '../includes/include.php';
 header("Content-type: text/html; charset=utf-8");

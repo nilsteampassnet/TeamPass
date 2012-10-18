@@ -16,7 +16,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     die('Hacking attempt...');
 
 /* load help*/
-require_once 'includes/language/'.$_SESSION['user_language'].'_admin_help.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'_admin_help.php';
 
 /* Get full tree structure */
 require_once 'sources/NestedTree.class.php';

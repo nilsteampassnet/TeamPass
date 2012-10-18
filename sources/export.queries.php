@@ -29,7 +29,7 @@ require_once 'main.functions.php';
 
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
-require_once '../includes/language/'.$_SESSION['user_language'].'.php');
+require_once '../includes/language/'.$_SESSION['user_language'].'.php';
 
 //Manage type of action asked
 switch ($_POST['type']) {

@@ -19,7 +19,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 require_once 'users.load.php';
 
 //load help
-require_once 'includes/language/'.$_SESSION['user_language'].'_admin_help.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'_admin_help.php';
 
 require_once 'sources/NestedTree.class.php';
 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');

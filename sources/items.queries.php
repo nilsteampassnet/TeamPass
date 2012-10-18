@@ -25,7 +25,7 @@ if (isset($_SESSION['settings']['timezone'])) {
     date_default_timezone_set('UTC');
 }
 
-require_once '../includes/language/'.$_SESSION['user_language'].'.php');
+require_once '../includes/language/'.$_SESSION['user_language'].'.php';
 include '../includes/settings.php';
 require_once '../includes/include.php';
 header("Content-type: text/html; charset=utf-8");

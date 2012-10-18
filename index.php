@@ -78,9 +78,9 @@ if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     }
 }
 //Load user languages files
-require_once 'includes/language/'.$_SESSION['user_language'].'.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'.php';
 if (isset($_GET['page']) && $_GET['page'] == "kb") {
-    require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php');
+    require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php';
 }
 
 // Load CORE

@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 include '../includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
-require_once '../includes/language/'.$_SESSION['user_language'].'.php');
+require_once '../includes/language/'.$_SESSION['user_language'].'.php';
 require_once 'main.functions.php';
 
 //Connect to mysql server

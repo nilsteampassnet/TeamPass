@@ -28,7 +28,7 @@ $db->connect();
 
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
-require_once '../includes/language/'.$_SESSION['user_language'].'.php');
+require_once '../includes/language/'.$_SESSION['user_language'].'.php';
 
 // Construction de la requ?te en fonction du type de valeur
 switch ($_POST['type']) {

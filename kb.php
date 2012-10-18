@@ -16,7 +16,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     die('Hacking attempt...');
 
 //load language
-require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php');
+require_once 'includes/language/'.$_SESSION['user_language'].'_kb.php';
 
 //build list of categories
 $tab_users = array();
