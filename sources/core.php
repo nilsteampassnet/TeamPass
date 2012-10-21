@@ -18,11 +18,11 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 
 /* CHECK IF UPDATE IS NEEDED */
-    if ( isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false || empty($_SESSION['settings']['update_needed'])) ){
+    if (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false || empty($_SESSION['settings']['update_needed']))) {
         $row = $db->fetch_row("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
-        if ( $row[0] != $k['version'] ){
+        if ($row[0] != $k['version']) {
             $_SESSION['settings']['update_needed'] = true;
-        }else{
+        } else {
             $_SESSION['settings']['update_needed'] = false;
         }
     }
@@ -33,17 +33,17 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
     $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
 
     $rows = $db->fetch_all_array("SELECT * FROM ".$pre."misc WHERE type = 'admin' OR type = 'settings'");
-    foreach( $rows as $reccord ){
+    foreach ($rows as $reccord) {
     	if($reccord['type'] == 'admin') {
     		$_SESSION['settings'][$reccord['intitule']] = $reccord['valeur'];
-    	}else{
+    	} else {
     		$settings[$reccord['intitule']] = $reccord['valeur'];
     	}
 
     }
 
 $rows = $db->fetch_all_array("SELECT valeur,intitule FROM ".$pre."misc WHERE type = 'admin'");
-foreach( $rows as $reccord ){
+foreach ($rows as $reccord) {
 	$_SESSION['settings'][$reccord['intitule']] = $reccord['valeur'];
 }
 
@@ -61,14 +61,14 @@ $pw_complexity = array(
 
 
 //Load Languages stuff
-if(empty($languages_dropmenu)){
+if(empty($languages_dropmenu)) {
 	$languages_dropmenu = "";
 	$languages_list = array();
 	$rows = $db->fetch_all_array("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
-	foreach( $rows as $reccord ){
+	foreach ($rows as $reccord) {
 		$languages_dropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.$reccord['flag'].'" alt="'.$reccord['label'].'" title="'.$reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
 		array_push($languages_list, $reccord['name']);
-		if(isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']){
+		if(isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']) {
 			$_SESSION['user_language_flag'] = $reccord['flag'];
 			$_SESSION['user_language_code'] = $reccord['code'];
 			$_SESSION['user_language_label'] = $reccord['label'];
@@ -87,7 +87,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 /**
  * Set the personal SaltKey if authorized
  */
-if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 && isset($_SESSION['user_id']) && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])){
+if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 && isset($_SESSION['user_id']) && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])) {
 	$_SESSION['my_sk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
 }
 
@@ -95,10 +95,10 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
 * IF yes then authorize all ADMIN connections and
 * reject all others
 */
-    if ( isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ){
-        if ( isset($_SESSION['user_admin']) && $_SESSION['user_admin'] != 1 ){
+    if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1) {
+        if (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] != 1) {
             // Update table by deleting ID
-            if ( isset($_SESSION['user_id']) )
+            if (isset($_SESSION['user_id']))
                 $db->query_update(
                     "users",
                     array(
@@ -108,7 +108,7 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
                 );
 
             //Log into DB the user's disconnection
-            if ( isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
+            if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
                 logEvents('user_connection','disconnection',$_SESSION['user_id']);
 
         	syslog(LOG_WARNING, "Unlog user: ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
@@ -134,7 +134,7 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
 
 
 /* LOAD INFORMATION CONCERNING USER */
-    if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])){
+    if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         // query on user
         $sql="SELECT * FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'";
         $row = $db->query($sql);
@@ -155,14 +155,14 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
 	        document.location.href="index.php";
 	        -->
 	        </script>';
-		}else{
+		} else {
 			// update user's rights
 			$_SESSION['user_admin'] = $data['admin'];
 			$_SESSION['user_gestionnaire'] = $data['gestionnaire'];
 			$_SESSION['groupes_visibles'] = array();
 			$_SESSION['groupes_interdits'] = array();
-			if ( !empty($data['groupes_visibles'])) $_SESSION['groupes_visibles'] = @implode(';',$data['groupes_visibles']);
-			if ( !empty($data['groupes_interdits'])) $_SESSION['groupes_interdits'] = @implode(';',$data['groupes_interdits']);
+			if (!empty($data['groupes_visibles'])) $_SESSION['groupes_visibles'] = @implode(';',$data['groupes_visibles']);
+			if (!empty($data['groupes_interdits'])) $_SESSION['groupes_interdits'] = @implode(';',$data['groupes_interdits']);
 
 			$db->query_update(
 			"users",
@@ -179,9 +179,9 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
 
 
 /* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
-    if ( (isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion") || (isset($_GET['session']) && $_GET['session'] == "expired") || (isset($_POST['session']) && $_POST['session'] == "expired")){
+    if ((isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion") || (isset($_GET['session']) && $_GET['session'] == "expired") || (isset($_POST['session']) && $_POST['session'] == "expired")) {
         // Update table by deleting ID
-        if ( isset($_SESSION['user_id']) )
+        if (isset($_SESSION['user_id']))
             $db->query_update(
                 "users",
                 array(
@@ -191,7 +191,7 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
             );
 
         //Log into DB the user's disconnection
-        if ( isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
+        if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
             logEvents('user_connection','disconnection',@$_SESSION['user_id']);
 
         // erase session table
@@ -219,30 +219,30 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
 	if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) {
 		$_SESSION['validite_pw'] = true;
 		$_SESSION['last_pw_change'] = true;
-	}else{
-		if ( isset($_SESSION['last_pw_change']) ){
-			if ( $_SESSION['settings']['pw_life_duration'] == 0 ){
+	} else {
+		if (isset($_SESSION['last_pw_change'])) {
+			if ($_SESSION['settings']['pw_life_duration'] == 0) {
 				$nb_jours_avant_expiration_du_mdp = "infinite";
 				$_SESSION['validite_pw'] = true;
-			}else{
-				$nb_jours_avant_expiration_du_mdp = $_SESSION['settings']['pw_life_duration'] - round( (mktime(0,0,0,date('m'),date('d'),date('y'))-$_SESSION['last_pw_change'])/(24*60*60) );
-				if ( $nb_jours_avant_expiration_du_mdp <= 0 )
+			} else {
+				$nb_jours_avant_expiration_du_mdp = $_SESSION['settings']['pw_life_duration'] - round((mktime(0,0,0,date('m'),date('d'),date('y'))-$_SESSION['last_pw_change'])/(24*60*60));
+				if ($nb_jours_avant_expiration_du_mdp <= 0 )
 					$_SESSION['validite_pw'] = false;
 				else
 					$_SESSION['validite_pw'] = true;
 			}
-		}else{
+		} else {
 			$_SESSION['validite_pw'] = false;
 		}
 	}
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
-    if ( !empty($_SESSION['fin_session']) ) {
+    if (!empty($_SESSION['fin_session'])) {
         $data_session = $db->fetch_row("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
-    }else
+    } else
         $data_session[0] = "";
 
-    if ( isset($_SESSION['user_id']) && ( empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || $_SESSION['key'] != $data_session[0] ) ){
+    if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || $_SESSION['key'] != $data_session[0] )) {
         // Update table by deleting ID
         $db->query_update(
             "users",
@@ -253,7 +253,7 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
         );
 
         //Log into DB the user's disconnection
-        if ( isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
+        if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 )
             logEvents('user_connection','disconnection',$_SESSION['user_id']);
 
         // erase session table
@@ -274,8 +274,8 @@ if(isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['
     /*
     * CHECK IF SENDING ANONYMOUS STATS
     */
-    if ( isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 && isset($_SESSION['settings']['send_stats_time']) && !isset($_SESSION['temporary']['send_stats_done'])  ){
-        if ( ( $_SESSION['settings']['send_stats_time'] + $k['one_month_seconds'] ) <= time() ){
+    if (isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 && isset($_SESSION['settings']['send_stats_time']) && !isset($_SESSION['temporary']['send_stats_done'])) {
+        if (($_SESSION['settings']['send_stats_time'] + $k['one_month_seconds'] ) <= time()) {
             CPMStats();
             $_SESSION['temporary']['send_stats_done'] = true;   //permits to test only once by session
         }

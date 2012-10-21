@@ -1,42 +1,33 @@
 <?php
 /**
- * @file 		load.php
- * @author		Nils Laumaillé
- * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * @file load.php
+ * @author Nils Laumaillé
+ * @version 2.1.8
+ * @copyright (c) 2009-2011 Nils Laumaillé
+ * @licensing GNU AFFERO GPL 3.0
+ * @link
  */
 
-if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
-
-
-//Common elements
+if ( !isset( $_SESSION['CPM'] ) || $_SESSION['CPM'] != 1 )
+    die( 'Hacking attempt...' );
+// Common elements
 $htmlHeaders = '
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
-        <link rel="stylesheet" href="includes/jquery-ui/css/'.$k['jquery-ui-theme'].'/jquery-ui-'.$k['jquery-ui-version'].'.custom.css" type="text/css" />
+        <link rel="stylesheet" href="includes/jquery-ui/css/' . $k['jquery-ui-theme'] . '/jquery-ui-' . $k['jquery-ui-version'] . '.custom.css" type="text/css" />
 
         <script type="text/javascript" src="includes/js/functions.js"></script>
 
-        <script type="text/javascript" src="includes/jquery-ui/js/jquery-'.$k['jquery-version'].'.min.js"></script>
-        <script type="text/javascript" src="includes/jquery-ui/js/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.js"></script>
+        <script type="text/javascript" src="includes/jquery-ui/js/jquery-' . $k['jquery-version'] . '.min.js"></script>
+        <script type="text/javascript" src="includes/jquery-ui/js/jquery-ui-' . $k['jquery-ui-version'] . '.custom.min.js"></script>
 
         <script language="JavaScript" type="text/javascript" src="includes/js/jquery.tooltip.js"></script>
 
 		<script language="JavaScript" type="text/javascript" src="includes/libraries/simplePassMeter/simplePassMeter.js"></script>
 
         <script type="text/javascript" src="includes/libraries/crypt/aes.min.js"></script>';
-
-
-
-
-//For ITEMS page, load specific CSS files for treeview
-if ( isset($_GET['page']) && $_GET['page'] == "items")
+// For ITEMS page, load specific CSS files for treeview
+if ( isset( $_GET['page'] ) && $_GET['page'] == "items" )
     $htmlHeaders .= '
 		<link rel="stylesheet" type="text/css" href="includes/css/items.css" />
         <script type="text/javascript" src="includes/libraries/jstree/jquery.jstree.min.js"></script>
@@ -60,26 +51,26 @@ if ( isset($_GET['page']) && $_GET['page'] == "items")
         <script type="text/javascript" src="includes/libraries/zeroclipboard/ZeroClipboard.js"></script>';
 
 else
-if ( isset($_GET['page']) && $_GET['page'] == "manage_settings")
+if ( isset( $_GET['page'] ) && $_GET['page'] == "manage_settings" )
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
         <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
         <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>';
 
 else
-if ( isset($_GET['page']) && ( $_GET['page'] == "manage_users" ||$_GET['page'] == "manage_folders") )
+if ( isset( $_GET['page'] ) && ( $_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders" ) )
     $htmlHeaders .= '
         <script src="includes/js/jquery.jeditable.js" type="text/javascript"></script>';
 
 else
-if ( isset($_GET['page']) && $_GET['page'] == "manage_views" )
+if ( isset( $_GET['page'] ) && $_GET['page'] == "manage_views" )
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/libraries/datatable/jquery.dataTablesUI.css" />
 		<script type="text/javascript" src="includes/libraries/datatable/jquery.dataTables.min.js"></script>';
 
 else
-if ( isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb"))
-	$htmlHeaders .= '
+if ( isset( $_GET['page'] ) && ( $_GET['page'] == "find" || $_GET['page'] == "kb" ) )
+    $htmlHeaders .= '
 	    <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
 
 	    <script type="text/javascript" src="includes/libraries/ckeditor/ckeditor.js"></script>
@@ -93,43 +84,41 @@ if ( isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb"))
         <script type="text/javascript" src="includes/libraries/ui-multiselect/js/ui.multiselect.min.js"></script>';
 
 else
-if ( !isset($_GET['page']) )
-	$htmlHeaders .= '
+if ( !isset( $_GET['page'] ) )
+    $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
         <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
         <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>
         <script type="text/javascript" src="includes/libraries/numeric/jquery.numeric.js"></script>';
-
-
-//Get Favicon
-$htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
-        <link rel="icon" href="'. $_SESSION['settings']['favicon'] . '" type="image/vnd.microsoft.ico" />' : '';
+// Get Favicon
+$htmlHeaders .= isset( $_SESSION['settings']['favicon'] ) ? '
+        <link rel="icon" href="' . $_SESSION['settings']['favicon'] . '" type="image/vnd.microsoft.ico" />' : '';
 
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
     //deconnexion
-    function MenuAction(val){
-        if ( val == "deconnexion" ) {
+    function MenuAction(val) {
+        if (val == "deconnexion") {
             $("#menu_action").val(val);
             document.main_form.submit();
         }
         else {
         	$("#menu_action").val("action");
-            if ( val == "") document.location.href="index.php";
+            if (val == "") document.location.href="index.php";
             else document.location.href="index.php?page="+val;
         }
     }
 
 	function aes_encrypt(text) {
-		    return Aes.Ctr.encrypt(text, "'.SALT.'", 256);
+		    return Aes.Ctr.encrypt(text, "' . SALT . '", 256);
 		}
 
     //Identify user
-    function identifyUser(redirect){
+    function identifyUser(redirect) {
         $("#erreur_connexion").hide();
-        if ( redirect == undefined ) redirect = ""; //Check if redirection
-        if ( $("#login").val() != "" && $("#pw").val() != "" ){
+        if (redirect == undefined ) redirect = ""; //Check if redirection
+        if ($("#login").val() != "" && $("#pw").val() != "") {
             $("#pw").removeClass( "ui-state-error" );
             $("#ajax_loader_connexion").show();
 
@@ -146,32 +135,33 @@ $htmlHeaders .= '
                     type : "identify_user",
                     data : aes_encrypt(data)
                 },
-                function(data){
-                    if (data[0].value == randomstring){
+                function(data) {
+                    if (data[0].value == randomstring) {
                         $("#ajax_loader_connexion").hide();
                         $("#erreur_connexion").hide();
                         //redirection for admin is specific
                         if(data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+                        else if(data[0].initial_url != "") window.location.href=data[0].initial_url;
                         else window.location.href="index.php";
-                    }else if (data[0].value == "user_is_locked"){
+                    } else if (data[0].value == "user_is_locked") {
                         $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
+                        $("#erreur_connexion").html("' . $txt['account_is_locked'] . '");
                         $("#erreur_connexion").show();
-                    }else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)){
+                    } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                         $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'] . (@$_SESSION['settings']['nb_bad_authentication']+1) .'");
+                        $("#erreur_connexion").html(data + "' . $txt['login_attempts_on'] . ( @$_SESSION['settings']['nb_bad_authentication'] + 1 ) . '");
                         $("#erreur_connexion").show();
-                    }else if (data[0].value == "error"){alert("ici");
+                    } else if (data[0].value == "error") {alert("ici");
                     	$("#mysql_error_warning").html(data[0].text);
                     	$("#div_mysql_error").show().dialog("open");
-                    }else{
+                    } else {
                         $("#erreur_connexion").show();
                         $("#ajax_loader_connexion").hide();
                     }
                 },
 				"json"
             );
-        }else{
+        } else {
             $("#pw").addClass( "ui-state-error" );
         }
     }
@@ -179,7 +169,7 @@ $htmlHeaders .= '
 	/*
 	* Manage generation of new password
 	*/
-    function GenerateNewPassword(key, login){
+    function GenerateNewPassword(key, login) {
     	$("#ajax_loader_send_mail").show();
 		//send query
 		$.post("sources/main.queries.php", {
@@ -187,10 +177,10 @@ $htmlHeaders .= '
 				login:	login,
 				key :	key
 			},
-			function(data){
-				if (data == "done"){
+			function(data) {
+				if (data == "done") {
 					window.location.href="index.php";
-				}else{
+				} else {
 					$("#generate_new_pw_error").show().html(data);
 				}
 				$("#ajax_loader_send_mail").hide();
@@ -198,16 +188,16 @@ $htmlHeaders .= '
 		);
 	}
 
-    function OpenDiv(div){
+    function OpenDiv(div) {
         $("#"+div).slideToggle("slow");
     }
 
-    function OpenDialogBox(id){
+    function OpenDialogBox(id) {
         $("#"+id).dialog("open");
     }
 
 	//Change language using icon flags
-	function ChangeLanguage(lang){
+	function ChangeLanguage(lang) {
 		$("#language").val(lang);
 		$.post(
 			"sources/main.queries.php",
@@ -215,7 +205,7 @@ $htmlHeaders .= '
 				type    : "change_user_language",
 				lang	: lang
 			},
-		    function(data){
+		    function(data) {
 		    	$("#language").val(lang);
 		    	document.temp_form.submit();
 		    },
@@ -226,8 +216,8 @@ $htmlHeaders .= '
     /*
     * Clean disconnection of user for security reasons.
     *
-   	$(window).bind("beforeunload", function(){
-		if ( $("#menu_action").val() == ""){
+   	$(window).bind("beforeunload", function() {
+		if ($("#menu_action").val() == "") {
 			//Forces the disconnection of the user
 			$.ajax({
 				type: "POST",
@@ -249,16 +239,16 @@ $htmlHeaders .= '
 
         //BUTTON
         $("#but_identify_user").hover(
-            function(){
+            function() {
                 $(this).addClass("ui-state-hover");
             },
-            function(){
+            function() {
                 $(this).removeClass("ui-state-hover");
             }
-        ).mousedown(function(){
+        ).mousedown(function() {
             $(this).addClass("ui-state-active");
         })
-        .mouseup(function(){
+        .mouseup(function() {
                 $(this).removeClass("ui-state-active");
         });
 
@@ -269,9 +259,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 400,
             height: 150,
-            title: "'.$txt['index_alarm'].'",
+            title: "' . $txt['index_alarm'] . '",
             buttons: {
-                "'.$txt['index_add_one_hour'].'": function() {
+                "' . $txt['index_add_one_hour'] . '": function() {
                     IncreaseSessionTime();
                     $("#div_fin_session").hide();
                     $("#countdown").css("color","white");
@@ -287,9 +277,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 700,
             height: 150,
-            title: "'.$txt['error_mysql'].'",
+            title: "' . $txt['error_mysql'] . '",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "' . $txt['ok'] . '": function() {
                     $(this).dialog("close");
                 }
             }
@@ -302,9 +292,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 300,
             height: 150,
-            title: "'.$txt['div_dialog_message_title'].'",
+            title: "' . $txt['div_dialog_message_title'] . '",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "' . $txt['ok'] . '": function() {
                     $(this).dialog("close");
                 }
             }
@@ -337,8 +327,9 @@ $htmlHeaders .= '
         //END
     });';
 
-if(!isset($_GET['page']) && !isset($_SESSION['key'])){
-	$htmlHeaders .= '
+if ( !isset( $_GET['page'] ) && !isset( $_SESSION['key'] ) )
+{
+    $htmlHeaders .= '
 	$(function() {
 		// DIALOG BOX FOR ASKING PASSWORD
 		$("#div_forgot_pw").dialog({
@@ -347,9 +338,9 @@ if(!isset($_GET['page']) && !isset($_SESSION['key'])){
 			autoOpen: false,
 			width: 300,
 			height: 250,
-			title: "'.$txt['forgot_my_pw'].'",
+			title: "' . $txt['forgot_my_pw'] . '",
 			buttons: {
-				"'.$txt['send'].'": function() {
+				"' . $txt['send'] . '": function() {
 					$("#div_forgot_pw_alert").html("");
 					$.post(
 					"sources/main.queries.php",
@@ -358,10 +349,10 @@ if(!isset($_GET['page']) && !isset($_SESSION['key'])){
 						email	: $("#forgot_pw_email").val(),
 						login	: $("#forgot_pw_login").val()
 					},
-						function(data){
+						function(data) {
 							if (data[0].error != "no") {
 								$("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
-							}else{
+							} else {
 								$("#div_forgot_pw_alert").html(data[0].message);
 								$("#div_forgot_pw").dialog("close");
 							}
@@ -369,7 +360,7 @@ if(!isset($_GET['page']) && !isset($_SESSION['key'])){
 						"json"
 						);
 				},
-				"'.$txt['cancel_button'].'": function() {
+				"' . $txt['cancel_button'] . '": function() {
 					$("#div_forgot_pw_alert").html("");
 					$("#forgot_pw_email").val("");
 					$(this).dialog("close");
@@ -379,10 +370,11 @@ if(!isset($_GET['page']) && !isset($_SESSION['key'])){
 	});';
 }
 
-if (!isset($_GET['page']) && isset($_SESSION['key'])) {
+if ( !isset( $_GET['page'] ) && isset( $_SESSION['key'] ) )
+{
     $htmlHeaders .= '
 	function aes_encrypt(text) {
-		return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
+		return Aes.Ctr.encrypt(text, "' . $_SESSION['key'] . '", 256);
 	}
 
     $(function() {
@@ -390,7 +382,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $("#radio_import_type, #connect_ldap_mode").buttonset();
         $("#personal_sk, #change_personal_sk, #reset_personal_sk").button();
 
-        if($("#personal_saltkey_set").val() != 1){
+        if($("#personal_saltkey_set").val() != 1) {
         	$("#change_personal_sk").button("disable");
         }
 
@@ -406,11 +398,11 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             autoOpen: false,
             width: 300,
             height: 250,
-            title: "'.$txt['index_change_pw'].'",
+            title: "' . $txt['index_change_pw'] . '",
             buttons: {
-                "'.$txt['index_change_pw_button'].'": function() {
-                    if ( $("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val() ){
-                    	if($("#pw_strength_value").val() >= $("#user_pw_complexity").val()){
+                "' . $txt['index_change_pw_button'] . '": function() {
+                    if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
+                    	if($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
 				            var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
 				            $.post(
 				                "sources/main.queries.php",
@@ -420,24 +412,24 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 				                    complexity:	$("#pw_strength_value").val(),
 									data :	aes_encrypt(data)
 				                },
-				                function(data){
+				                function(data) {
 				                	if (data[0].error == "already_used") {
 				                		$("#new_pw, #new_pw2").val("");
-				                		$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$txt['pw_used'].'</span>");
-				                	}else{
+				                		$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>' . $txt['pw_used'] . '</span>");
+				                	} else {
 				                		document.main_form.submit();
 				                	}
 				                },
 				                "json"
 				            );
-				        }else{
-				        	$("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("'.$txt['error_complex_not_enought'].'");
+				        } else {
+				        	$("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("' . $txt['error_complex_not_enought'] . '");
 				        }
-			        }else{
-			            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("'.$txt['index_pw_error_identical'].'");
+			        } else {
+			            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("' . $txt['index_pw_error_identical'] . '");
 			        }
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "' . $txt['cancel_button'] . '": function() {
 					$("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
 					 $("#new_pw, #new_pw2").val("");
                     $(this).dialog("close");
@@ -452,9 +444,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 	        autoOpen: false,
 	        width: 400,
 	        height: 200,
-	        title: "'.$txt['menu_title_new_personal_saltkey'].'",
+	        title: "' . $txt['menu_title_new_personal_saltkey'] . '",
 	        buttons: {
-	            "'.$txt['ok'].'": function() {
+	            "' . $txt['ok'] . '": function() {
 					$("#div_loading").show();
 
 	            	//Send query
@@ -464,13 +456,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 						   type	: "change_personal_saltkey",
 						   sk	: encodeURIComponent($("#new_personal_saltkey").val())
 						},
-						function(data){
+						function(data) {
 							$("#div_loading").hide();
 							$("#div_change_personal_saltkey").dialog("close");
 						}
 					);
 	            },
-	            "'.$txt['cancel_button'].'": function() {
+	            "' . $txt['cancel_button'] . '": function() {
 	                $(this).dialog("close");
 	            }
 	        }
@@ -483,9 +475,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 	        autoOpen: false,
 	        width: 400,
 	        height: 200,
-	        title: "'.$txt['menu_title_new_personal_saltkey'].'",
+	        title: "' . $txt['menu_title_new_personal_saltkey'] . '",
 	        buttons: {
-	            "'.$txt['ok'].'": function() {
+	            "' . $txt['ok'] . '": function() {
 					$("#div_loading").show();
 
 	            	//Send query
@@ -495,13 +487,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 						   type	: "reset_personal_saltkey",
 						   sk	: encodeURIComponent($("#reset_personal_saltkey").val())
 						},
-						function(data){
+						function(data) {
 							$("#div_loading").hide();
 							$("#div_reset_personal_sk").dialog("close");
 						}
 					);
 	            },
-	            "'.$txt['cancel_button'].'": function() {
+	            "' . $txt['cancel_button'] . '": function() {
 	                $(this).dialog("close");
 	            }
 	        }
@@ -514,13 +506,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             autoOpen: false,
             width: 600,
             height: 500,
-            title: "'.$txt['import_csv_menu_title'].'",
+            title: "' . $txt['import_csv_menu_title'] . '",
             buttons: {
-                "'.$txt['import_button'].'": function() {
-                    if ( $(\'#radio1\').attr(\'checked\') ) ImportItemsFromCSV();
+                "' . $txt['import_button'] . '": function() {
+                    if ($(\'#radio1\').attr(\'checked\')) ImportItemsFromCSV();
                     else $(this).dialog("close");
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "' . $txt['cancel_button'] . '": function() {
                     $("#import_status").html("");
                     $(this).dialog("close");
                 }
@@ -531,26 +523,26 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $("#fileInput_csv").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_csv"},
-            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
+            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID=' . $_SESSION['user_id'] . '",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "auto"      : true,
             "fileDesc"  : "csv",
             "fileExt"   : "*.csv",
-            "onComplete": function(event, queueID, fileObj, reponse, data){$("#import_status_ajax_loader").show();ImportCSV(fileObj.name);},
-            "buttonText": \''.$txt['csv_import_button_text'].'\'
+            "onComplete": function(event, queueID, fileObj, reponse, data) {$("#import_status_ajax_loader").show();ImportCSV(fileObj.name);},
+            "buttonText": \'' . $txt['csv_import_button_text'] . '\'
         });
 
         //CALL TO UPLOADIFY FOR KEEPASS IMPORT
         $("#fileInput_keepass").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_file"},
-            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
+            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID=' . $_SESSION['user_id'] . '",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "auto"      : true,
             "fileDesc"  : "xml",
             "fileExt"   : "*.xml",
-            "onComplete": function(event, queueID, fileObj, reponse, data){$("#import_status_ajax_loader").show();ImportKEEPASS(fileObj.name);},//
-            "buttonText": \''.$txt['keepass_import_button_text'].'\'
+            "onComplete": function(event, queueID, fileObj, reponse, data) {$("#import_status_ajax_loader").show();ImportKEEPASS(fileObj.name);},//
+            "buttonText": \'' . $txt['keepass_import_button_text'] . '\'
         });
 
         // DIALOG BOX FOR PRINT OUT ITEMS
@@ -560,25 +552,25 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             autoOpen: false,
             width: 400,
             height: 450,
-            title: "'.$txt['print_out_menu_title'].'",
+            title: "' . $txt['print_out_menu_title'] . '",
             buttons: {
-                "'.$txt['print'].'": function() {
+                "' . $txt['print'] . '": function() {
 					//Get list of selected folders
 					var ids = "";
-					$("#selected_folders :selected").each(function(i, selected){
-						if (ids == "" ) ids = $(selected).val();
+					$("#selected_folders :selected").each(function(i, selected) {
+						if (ids == "") ids = $(selected).val();
 						else ids = ids + ";" + $(selected).val();
 					});
 					$("#div_loading").show();
 					$("#print_out_error").hide();
-					
+
 					// Get PDF encryption password and make sure it is set
 					if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
-						$("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+						$("#print_out_error").show().html("' . $txt['pdf_password_warning'] . '").attr("class","ui-state-error");
 						$("#div_loading").hide();
 						return;
 					}
-					
+
                 	//Send query
                     $.post(
 		                "sources/export.queries.php",
@@ -587,14 +579,14 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 		                    ids		: ids,
 		                    pdf_password : $("#pdf_password").val()
 		                },
-		                function(data){
+		                function(data) {
 		                	$("#download_link").html(data[0].text);
 		                	$("#div_loading").hide();
 		                },
 		                "json"
 		            );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "' . $txt['cancel_button'] . '": function() {
                     $(this).dialog("close");
                 }
             }
@@ -605,35 +597,35 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			$("#new_pw").simplePassMeter({
 				"requirements": {},
 			  	"container": "#pw_strength",
-			  	"defaultText" : "'.$txt['index_pw_level_txt'].'",
+			  	"defaultText" : "' . $txt['index_pw_level_txt'] . '",
 				"ratings": [
 				{"minScore": 0,
 					"className": "meterFail",
-					"text": "'.$txt['complex_level0'].'"
+					"text": "' . $txt['complex_level0'] . '"
 				},
 				{"minScore": 25,
 					"className": "meterWarn",
-					"text": "'.$txt['complex_level1'].'"
+					"text": "' . $txt['complex_level1'] . '"
 				},
 				{"minScore": 50,
 					"className": "meterWarn",
-					"text": "'.$txt['complex_level2'].'"
+					"text": "' . $txt['complex_level2'] . '"
 				},
 				{"minScore": 60,
 					"className": "meterGood",
-					"text": "'.$txt['complex_level3'].'"
+					"text": "' . $txt['complex_level3'] . '"
 				},
 				{"minScore": 70,
 					"className": "meterGood",
-					"text": "'.$txt['complex_level4'].'"
+					"text": "' . $txt['complex_level4'] . '"
 				},
 				{"minScore": 80,
 					"className": "meterExcel",
-					"text": "'.$txt['complex_level5'].'"
+					"text": "' . $txt['complex_level5'] . '"
 				},
 				{"minScore": 90,
 					"className": "meterExcel",
-					"text": "'.$txt['complex_level6'].'"
+					"text": "' . $txt['complex_level6'] . '"
 				}
 				]
 			});
@@ -653,13 +645,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			{
 				type    : "send_wainting_emails"
 			},
-			function(data){
+			function(data) {
 				//
 			}
 		);
     })
 
-    function ChangeMyPass(){
+    function ChangeMyPass() {
     	var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
         $.post(
             "sources/main.queries.php",
@@ -669,7 +661,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 complexity			:	"",
 				data 				:	aes_encrypt(data)
             },
-            function(data){
+            function(data) {
             	document.main_form.submit();
             },
             "json"
@@ -677,7 +669,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     }
 
     //Permits to upload passwords from KEEPASS file
-    function ImportKEEPASS(file){
+    function ImportKEEPASS(file) {
     	//clean divs
     	$("#import_status").html("");
     	$("#import_from_file_info").html("").hide();
@@ -692,12 +684,12 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   file		: file,
 			   destination		: $("#import_keepass_items_to").val()
 			},
-			function(data){
+			function(data) {
 				$("#div_loading").hide();
-				if(data[0].error == "not_kp_file"){
+				if(data[0].error == "not_kp_file") {
 					$("#import_status").html(data[0].message);
 					$("#import_status_ajax_loader").hide();
-				}else{
+				} else {
 					$("#import_status").html(data[0].message);
 					$("#import_status_ajax_loader").hide();
 				}
@@ -707,7 +699,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     }
 
     //Permits to upload passwords from CSV file
-    function ImportCSV(file){
+    function ImportCSV(file) {
     	$("#import_status").html("");
     	$("#import_from_file_info").html("").hide();
         $.post(
@@ -716,15 +708,15 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   type		: "import_file_format_csv",
 			   file		: file
 			},
-			function(data){
-				if(data[0].error == "bad_structure"){
-					$("#import_from_file_info").html("'.$txt['import_error_no_read_possible'].'").show();
-				}else{
+			function(data) {
+				if(data[0].error == "bad_structure") {
+					$("#import_from_file_info").html("' . $txt['import_error_no_read_possible'] . '").show();
+				} else {
 					$("#import_status").html(data[0].output);
-					$("#item_all_selection").click(function(){
-						if($("#item_all_selection").prop("checked")){
+					$("#item_all_selection").click(function() {
+						if($("#item_all_selection").prop("checked")) {
 							$("input[class=\'item_checkbox\']:not([disabled=\'disabled\'])").attr("checked", true);
-						}else{
+						} else {
 							$("input[class=\'item_checkbox\']:not([disabled=\'disabled\'])").removeAttr("checked");
 						}
 					});
@@ -736,13 +728,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     }
 
     //get list of items checked by user
-    function ImportItemsFromCSV(){
+    function ImportItemsFromCSV() {
         var items = "";
 
         //Get data checked
         $("input[class=item_checkbox]:checked").each(function() {
             var elem = $(this).attr("id").split("-");
-            if ( items == "") items = $("#item_to_import_values-"+elem[1]).val();
+            if (items == "") items = $("#item_to_import_values-"+elem[1]).val();
             else items = items + "@_#sep#_@" + $("#item_to_import_values-"+elem[1]).val();
 
         });
@@ -758,7 +750,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   import_csv_anyone_can_modify	: $("#import_csv_anyone_can_modify").prop("checked"),
 			   import_csv_anyone_can_modify_in_role	: $("#import_csv_anyone_can_modify_in_role").prop("checked")
 			},
-			function(data){
+			function(data) {
 				//after inserted, disable the checkbox in order to prevent against new insert
 				var elem = data[0].items.split(";");
 				for (var i=0; i<elem.length; i++) {
@@ -788,9 +780,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   type		: "get_folders_list",
 			   div_id	: "selected_folders"
 			},
-			function(data){
+			function(data) {
 				data = $.parseJSON(data);
-				for(reccord in data){
+				for(reccord in data) {
 					$("#selected_folders").append("<option value=\'"+reccord+"\'>"+data[reccord]+"</option>");
 				}
 			}
@@ -801,7 +793,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     }
 
 	//Store PSK
-	function StorePersonalSK(){
+	function StorePersonalSK() {
         //Lauchn ajax query
         $.post(
 			"sources/main.queries.php",
@@ -809,9 +801,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 			   type	: "store_personal_saltkey",
 			   sk	: encodeURIComponent($("#input_personal_saltkey").val())
 			},
-			function(data){
-				if($("#input_personal_saltkey").val() != ""){
-					$("#div_dialog_message_text").html("<div style=\'font-size:16px;\'><span class=\'ui-icon ui-icon-info\' style=\'float: left; margin-right: .3em;\'></span>'.$txt['alert_message_done'].'</div>");
+			function(data) {
+				if($("#input_personal_saltkey").val() != "") {
+					$("#div_dialog_message_text").html("<div style=\'font-size:16px;\'><span class=\'ui-icon ui-icon-info\' style=\'float: left; margin-right: .3em;\'></span>' . $txt['alert_message_done'] . '</div>");
 					$("#change_personal_sk").button("enable");
 					$("#div_dialog_message").dialog("open");
 				}
@@ -821,9 +813,10 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 }
 
 else
-//JAVASCRIPT FOR FIND PAGE
-if ( isset($_GET['page']) && $_GET['page'] == "find"){
-    $htmlHeaders .= '
+    // JAVASCRIPT FOR FIND PAGE
+    if ( isset( $_GET['page'] ) && $_GET['page'] == "find" )
+    {
+        $htmlHeaders .= '
     $(function() {
         //Launch the datatables pluggin
         oTable = $("#t_items").dataTable({
@@ -834,32 +827,33 @@ if ( isset($_GET['page']) && $_GET['page'] == "find"){
             "sAjaxSource": "sources/find.queries.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.'.$_SESSION['user_language'].'.txt"
+                "sUrl": "includes/language/datatables.' . $_SESSION['user_language'] . '.txt"
             },
             "fnInitComplete": function() {
 	            $("#find_page input").focus();
 	        }
         });
     });';
-}
+    }
 
-else
-//JAVASCRIPT FOR ADMIN PAGE
-if ( isset($_GET['page']) && $_GET['page'] == "manage_main" ){
-    $htmlHeaders .= '
+    else
+        // JAVASCRIPT FOR ADMIN PAGE
+        if ( isset( $_GET['page'] ) && $_GET['page'] == "manage_main" )
+        {
+            $htmlHeaders .= '
             //Function loads informations from cpassman FTP
-            function LoadCPMInfo(){
+            function LoadCPMInfo() {
                 //Lauchn ajax query
 		        $.post(
 					"sources/admin.queries.php",
 					{
 					   type	: "cpm_status"
 					},
-					function(data){
-						if(data[0].error == "connection"){
+					function(data) {
+						if(data[0].error == "connection") {
 							$("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
-						}else{
-							$("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$txt['admin_info'].'</span>"+data[0].output+"</ul>");
+						} else {
+							$("#CPM_infos").html("<span style=\'font-weight:bold;\'>' . $txt['admin_info'] . '</span>"+data[0].output+"</ul>");
 						}
 					},
 					"json"
@@ -869,13 +863,13 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_main" ){
             $(function() {
                 LoadCPMInfo();
             });';
+        }
 
-}
-
-else
-//JAVASCRIPT FOR FAVOURITES PAGE
-if ( isset($_GET['page']) && $_GET['page'] == "favourites" ){
-    $htmlHeaders .= '
+        else
+            // JAVASCRIPT FOR FAVOURITES PAGE
+            if ( isset( $_GET['page'] ) && $_GET['page'] == "favourites" )
+            {
+                $htmlHeaders .= '
     $(function() {
         // DIALOG BOX FOR DELETING FAVOURITE
         $("#div_delete_fav").dialog({
@@ -884,9 +878,9 @@ if ( isset($_GET['page']) && $_GET['page'] == "favourites" ){
             autoOpen: false,
             width: 300,
             height: 100,
-            title: "'.$txt['item_menu_del_from_fav'].'",
+            title: "' . $txt['item_menu_del_from_fav'] . '",
             buttons: {
-                "'.$txt['index_change_pw_confirmation'].'": function() {
+                "' . $txt['index_change_pw_confirmation'] . '": function() {
                     //Lauchn ajax query
 			        $.post(
 						"sources/favourites.queries.php",
@@ -894,28 +888,29 @@ if ( isset($_GET['page']) && $_GET['page'] == "favourites" ){
 						   type	: "del_fav",
 						   id	: $("#detele_fav_id").val()
 						},
-						function(data){
+						function(data) {
 							document.form_favourites.submit();
 						}
 					);
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "' . $txt['cancel_button'] . '": function() {
                     $(this).dialog("close");
                 }
             }
         });
     })
 
-    function prepare_delete_fav(id){
+    function prepare_delete_fav(id) {
         $("#detele_fav_id").val(id);
         OpenDialogBox("div_delete_fav");
     }';
-}
+            }
 
-else
-//JAVASCRIPT FOR ADMIN_SETTIGNS PAGE
-if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
-    $htmlHeaders .= '
+            else
+                // JAVASCRIPT FOR ADMIN_SETTIGNS PAGE
+                if ( isset( $_GET['page'] ) && $_GET['page'] == "manage_settings" )
+                {
+                    $htmlHeaders .= '
     $(function() {
     	$("#restore_bck_encryption_key_dialog").dialog({
             bgiframe: true,
@@ -923,12 +918,12 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
             autoOpen: false,
             width:100,
             height:140,
-            title: "'.$txt['admin_action_db_restore_key'].'",
+            title: "' . $txt['admin_action_db_restore_key'] . '",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "' . $txt['ok'] . '": function() {
                     LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "' . $txt['cancel_button'] . '": function() {
                     $(this).dialog("close");
                 }
             }
@@ -937,7 +932,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         //CALL TO UPLOADIFY FOR RESTORE SQL FILE
         $("#fileInput_restore_sql").uploadify({
             "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-            "script"    : "includes/libraries/uploadify/uploadify.php?user_id='.$_SESSION['user_id'].'&key_tempo='.$_SESSION['key'].'",
+            "script"    : "includes/libraries/uploadify/uploadify.php?user_id=' . $_SESSION['user_id'] . '&key_tempo=' . $_SESSION['key'] . '",
             "cancelImg" : "includes/libraries/uploadify/cancel.png",
             "scriptData": {"type_upload":"restore_db"},
             "auto"      : true,
@@ -945,7 +940,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
             "fileExt"   : "*.sql",
             "wmode"     : "transparent",
             "buttonImg" : "includes/images/inbox--plus.png",
-            "onComplete": function(event, queueID, fileObj, reponse, data){
+            "onComplete": function(event, queueID, fileObj, reponse, data) {
             	$("#restore_bck_fileObj").val(fileObj.name);
             	$("#restore_bck_encryption_key_dialog").dialog("open");
             }
@@ -957,7 +952,7 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         	select: function(event, ui) {
         		if (ui.index == 2) {
 					$("#save_button").hide();
-		        }else{
+		        } else {
 		        	$("#save_button").show();
         		}
         		return true;
@@ -974,9 +969,9 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         $( "input[name=\'restricted_to\']" ).bind( "click", radioClicks );
         function radioClicks()
 		{
-			if( $( this ).val()== 1 ){
+			if( $( this ).val()== 1) {
 				$("#tr_option_restricted_to_roles").show();
-			}else{
+			} else {
 				$("#tr_option_restricted_to_roles").hide();
 				$("input[name=restricted_to_roles]").val(["0"]).button("refresh");
 			}
@@ -985,10 +980,10 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
         //check NEW SALT KEY
         $("#new_salt_key").keypress(function (e) {
 	        var key = e.charCode || e.keyCode || 0;
-			if($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32){
+			if($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32) {
 				$("#change_salt_key_image").attr("src", "includes/images/cross.png");
 				$("#change_salt_key_but").hide();
-			}else{
+			} else {
 				$("#change_salt_key_image").attr("src", "includes/images/tick.png");
 				$("#change_salt_key_but").show();
 			}
@@ -1003,15 +998,15 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
     //###########
     //## FUNCTION : Launch the action the admin wants
     //###########
-    function LaunchAdminActions(action,option){
+    function LaunchAdminActions(action,option) {
         $("#div_loading").show();
         $("#email_testing_results").hide();
         $("#result_admin_action_db_backup").html("");
-        if ( action == "admin_action_db_backup" ) option = $("#result_admin_action_db_backup_key").val();
-        else if ( action == "admin_action_backup_decrypt" ) option = $("#bck_script_decrypt_file").val();
-        else if ( action == "admin_action_change_salt_key" ) option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
-        else if (action == "admin_email_send_backlog"){
-        	$("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+        if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
+        else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
+        else if (action == "admin_action_change_salt_key") option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+        else if (action == "admin_email_send_backlog") {
+        	$("#email_testing_results").show().html("' . addslashes( $txt['please_wait'] ) . '").attr("class","ui-corner-all ui-state-focus");
         }
         //Lauchn ajax query
         $.post(
@@ -1020,35 +1015,35 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 			   type		: action,
 			   option	: option
 			},
-			function(data){
+			function(data) {
 				$("#div_loading").hide();
-				if(data != null){
-					if(data[0].result == "db_backup"){
-						$("#result_admin_action_db_backup").html("<img src=\'includes/images/document-code.png\' alt=\'\' />&nbsp;<a href=\'"+data[0].href+"\'>'.$txt['pdf_download'].'</a>");
-					}else if(data[0].result == "pf_done"){
+				if(data != null) {
+					if(data[0].result == "db_backup") {
+						$("#result_admin_action_db_backup").html("<img src=\'includes/images/document-code.png\' alt=\'\' />&nbsp;<a href=\'"+data[0].href+"\'>' . $txt['pdf_download'] . '</a>");
+					} else if(data[0].result == "pf_done") {
 						$("#result_admin_action_check_pf").show();
-					}else if(data[0].result == "db_restore"){
+					} else if(data[0].result == "db_restore") {
 						$("#restore_bck_encryption_key_dialog").dialog("close");
 						$("#result_admin_action_db_restore").html("<img src=\"includes/images/tick.png\" alt=\"\" />");
 						$("#result_admin_action_db_restore_get_file").hide();
 						//deconnect user
 			            $("#menu_action").val("deconnexion");
 			            document.main_form.submit();
-					}else if(data[0].result == "db_optimize"){
+					} else if(data[0].result == "db_optimize") {
 						$("#result_admin_action_db_optimize").html("<img src=\'includes/images/tick.png\' alt=\'\' />");
-					}else if(data[0].result == "purge_old_files"){
-						$("#result_admin_action_purge_old_files").html("<img src=\'includes/images/tick.png\' alt=\'\' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;'.$txt['admin_action_purge_old_files_result'].'");
-					}else if(data[0].result == "db_clean_items"){
-						$("#result_admin_action_db_clean_items").html("<img src=\"includes/images/tick.png\" alt=\"\" />&nbsp;"+data[0].nb_items_deleted+"&nbsp;'.$txt['admin_action_db_clean_items_result'].'");
-					}else if(data[0].result == "changed_salt_key"){
+					} else if(data[0].result == "purge_old_files") {
+						$("#result_admin_action_purge_old_files").html("<img src=\'includes/images/tick.png\' alt=\'\' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;' . $txt['admin_action_purge_old_files_result'] . '");
+					} else if(data[0].result == "db_clean_items") {
+						$("#result_admin_action_db_clean_items").html("<img src=\"includes/images/tick.png\" alt=\"\" />&nbsp;"+data[0].nb_items_deleted+"&nbsp;' . $txt['admin_action_db_clean_items_result'] . '");
+					} else if(data[0].result == "changed_salt_key") {
 						//deconnect user
 			            $("#menu_action").val("deconnexion");
 			            document.main_form.submit();
-					}else if(data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog"){
-						if(data[0].error != ""){
-							$("#email_testing_results").html("'.addslashes($txt['admin_email_result_nok']).' "+data[0].message).show().attr("class","ui-state-error ui-corner-all");
-						}else{
-							$("#email_testing_results").html("'.addslashes($txt['admin_email_result_ok']).' ").show().attr("class","ui-corner-all ui-state-focus");
+					} else if(data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
+						if(data[0].error != "") {
+							$("#email_testing_results").html("' . addslashes( $txt['admin_email_result_nok'] ) . ' "+data[0].message).show().attr("class","ui-state-error ui-corner-all");
+						} else {
+							$("#email_testing_results").html("' . addslashes( $txt['admin_email_result_ok'] ) . ' ").show().attr("class","ui-corner-all ui-state-focus");
 						}
 					}
 				}
@@ -1057,10 +1052,10 @@ if ( isset($_GET['page']) && $_GET['page'] == "manage_settings" ){
 		);
     }
     ';
-}
+                }
 
-
-$htmlHeaders .= '
+                $htmlHeaders .= '
 // ]]>
 </script>';
-?>
+
+                ?>

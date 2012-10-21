@@ -12,20 +12,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include('../includes/settings.php');
+include '../includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
 require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
 require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
 
 // connect to the server
-require_once("../sources/class.database.php");
+require_once '../sources/class.database.php';
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
 //get backups infos
 $rows = $db->fetch_all_array("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
-foreach( $rows as $reccord ){
+foreach ($rows as $reccord) {
 	$settings[$reccord['intitule']] = $reccord['valeur'];
 }
 
@@ -33,16 +33,14 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 	//get all of the tables
 	$tables = array();
 	$result = mysql_query('SHOW TABLES');
-	while($row = mysql_fetch_row($result))
-	{
+	while ($row = mysql_fetch_row($result)) {
 		$tables[] = $row[0];
 	}
 
 	$return = "";
 
-		//cycle through each table and format the data
-	foreach($tables as $table)
-	{
+	//cycle through each table and format the data
+	foreach ($tables as $table) {
 		$result = mysql_query('SELECT * FROM '.$table);
 		$num_fields = mysql_num_fields($result);
 
@@ -50,13 +48,10 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 		$row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
 		$return.= "\n\n".$row2[1].";\n\n";
 
-		for ($i = 0; $i < $num_fields; $i++)
-		{
-			while($row = mysql_fetch_row($result))
-			{
+		for ($i = 0; $i < $num_fields; $i++) {
+			while ($row = mysql_fetch_row($result)) {
 				$return.= 'INSERT INTO '.$table.' VALUES(';
-				for($j=0; $j<$num_fields; $j++)
-				{
+				for ($j=0; $j<$num_fields; $j++) {
 					$row[$j] = addslashes($row[$j]);
 					$row[$j] = preg_replace('/\n/','/\\n/',$row[$j]);
 					if (isset($row[$j])) { $return.= '"'.$row[$j].'"' ; } else { $return.= '""'; }
@@ -77,7 +72,4 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 	fwrite($handle,$return);
 	fclose($handle);
 }
-
-
-
 ?>

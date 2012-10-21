@@ -125,11 +125,11 @@ function FPDF($orientation='P', $unit='mm', $format='A4')
 	//Scale factor
 	if($unit=='pt')
 		$this->k=1;
-	elseif($unit=='mm')
+	else if($unit=='mm')
 		$this->k=72/25.4;
-	elseif($unit=='cm')
+	else if($unit=='cm')
 		$this->k=72/2.54;
-	elseif($unit=='in')
+	else if($unit=='in')
 		$this->k=72;
 	else
 		$this->Error('Incorrect unit: '.$unit);
@@ -148,7 +148,7 @@ function FPDF($orientation='P', $unit='mm', $format='A4')
 		$this->w=$this->DefPageFormat[0];
 		$this->h=$this->DefPageFormat[1];
 	}
-	elseif($orientation=='l' || $orientation=='landscape')
+	else if($orientation=='l' || $orientation=='landscape')
 	{
 		$this->DefOrientation='L';
 		$this->w=$this->DefPageFormat[1];
@@ -460,7 +460,7 @@ function Rect($x, $y, $w, $h, $style='')
 	//Draw a rectangle
 	if($style=='F')
 		$op='f';
-	elseif($style=='FD' || $style=='DF')
+	else if($style=='FD' || $style=='DF')
 		$op='B';
 	else
 		$op='S';
@@ -525,7 +525,7 @@ function SetFont($family, $style='', $size=0)
 		$family=$this->FontFamily;
 	if($family=='arial')
 		$family='helvetica';
-	elseif($family=='symbol' || $family=='zapfdingbats')
+	else if($family=='symbol' || $family=='zapfdingbats')
 		$style='';
 	$style=strtoupper($style);
 	if(strpos($style,'U')!==false)
@@ -679,7 +679,7 @@ function Cell($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false, $link
 	{
 		if($align=='R')
 			$dx=$w-$this->cMargin-$this->GetStringWidth($txt);
-		elseif($align=='C')
+		else if($align=='C')
 			$dx=($w-$this->GetStringWidth($txt))/2;
 		else
 			$dx=$this->cMargin;
@@ -944,9 +944,9 @@ function Image($file, $x=null, $y=null, $w=0, $h=0, $type='', $link='')
 		$w=$info['w']/$this->k;
 		$h=$info['h']/$this->k;
 	}
-	elseif($w==0)
+	else if($w==0)
 		$w=$h*$info['w']/$info['h'];
-	elseif($h==0)
+	else if($h==0)
 		$h=$w*$info['h']/$info['w'];
 	//Flowing mode
 	if($y===null)
@@ -1188,7 +1188,7 @@ function _UTF8toUTF16($s)
 			$res.=chr((($c1 & 0x0F)<<4) + (($c2 & 0x3C)>>2));
 			$res.=chr((($c2 & 0x03)<<6) + ($c3 & 0x3F));
 		}
-		elseif($c1>=192)
+		else if($c1>=192)
 		{
 			//2-byte character
 			$c2=ord($s[$i++]);
@@ -1223,7 +1223,7 @@ function _parsejpg($file)
 		$this->Error('Not a JPEG file: '.$file);
 	if(!isset($a['channels']) || $a['channels']==3)
 		$colspace='DeviceRGB';
-	elseif($a['channels']==4)
+	else if($a['channels']==4)
 		$colspace='DeviceCMYK';
 	else
 		$colspace='DeviceGray';
@@ -1258,9 +1258,9 @@ function _parsepng($file)
 	$ct=ord($this->_readstream($f,1));
 	if($ct==0)
 		$colspace='DeviceGray';
-	elseif($ct==2)
+	else if($ct==2)
 		$colspace='DeviceRGB';
-	elseif($ct==3)
+	else if($ct==3)
 		$colspace='Indexed';
 	else
 		$this->Error('Alpha channel not supported: '.$file);
@@ -1286,13 +1286,13 @@ function _parsepng($file)
 			$pal=$this->_readstream($f,$n);
 			$this->_readstream($f,4);
 		}
-		elseif($type=='tRNS')
+		else if($type=='tRNS')
 		{
 			//Read transparency info
 			$t=$this->_readstream($f,$n);
 			if($ct==0)
 				$trns=array(ord(substr($t,1,1)));
-			elseif($ct==2)
+			else if($ct==2)
 				$trns=array(ord(substr($t,1,1)), ord(substr($t,3,1)), ord(substr($t,5,1)));
 			else
 			{
@@ -1302,13 +1302,13 @@ function _parsepng($file)
 			}
 			$this->_readstream($f,4);
 		}
-		elseif($type=='IDAT')
+		else if($type=='IDAT')
 		{
 			//Read image data block
 			$data.=$this->_readstream($f,$n);
 			$this->_readstream($f,4);
 		}
-		elseif($type=='IEND')
+		else if($type=='IEND')
 			break;
 		else
 			$this->_readstream($f,$n+4);
@@ -1423,7 +1423,7 @@ function _putpages()
 		{
 			//Links
 			$annots='/Annots [';
-			foreach($this->PageLinks[$n] as $pl)
+			foreach ($this->PageLinks[$n] as $pl)
 			{
 				$rect=sprintf('%.2F %.2F %.2F %.2F',$pl[0],$pl[1],$pl[0]+$pl[2],$pl[1]-$pl[3]);
 				$annots.='<</Type /Annot /Subtype /Link /Rect ['.$rect.'] /Border [0 0 0] ';
@@ -1464,14 +1464,14 @@ function _putpages()
 function _putfonts()
 {
 	$nf=$this->n;
-	foreach($this->diffs as $diff)
+	foreach ($this->diffs as $diff)
 	{
 		//Encodings
 		$this->_newobj();
 		$this->_out('<</Type /Encoding /BaseEncoding /WinAnsiEncoding /Differences ['.$diff.']>>');
 		$this->_out('endobj');
 	}
-	foreach($this->FontFiles as $file=>$info)
+	foreach ($this->FontFiles as $file=>$info)
 	{
 		//Font file embedding
 		$this->_newobj();
@@ -1508,7 +1508,7 @@ function _putfonts()
 		$this->_putstream($font);
 		$this->_out('endobj');
 	}
-	foreach($this->fonts as $k=>$font)
+	foreach ($this->fonts as $k=>$font)
 	{
 		//Font objects
 		$this->fonts[$k]['n']=$this->n+1;
@@ -1526,7 +1526,7 @@ function _putfonts()
 			$this->_out('>>');
 			$this->_out('endobj');
 		}
-		elseif($type=='Type1' || $type=='TrueType')
+		else if($type=='Type1' || $type=='TrueType')
 		{
 			//Additional Type1 or TrueType font
 			$this->_newobj();
@@ -1556,7 +1556,7 @@ function _putfonts()
 			//Descriptor
 			$this->_newobj();
 			$s='<</Type /FontDescriptor /FontName /'.$name;
-			foreach($font['desc'] as $k=>$v)
+			foreach ($font['desc'] as $k=>$v)
 				$s.=' /'.$k.' '.$v;
 			$file=$font['file'];
 			if($file)
@@ -1625,7 +1625,7 @@ function _putimages()
 
 function _putxobjectdict()
 {
-	foreach($this->images as $image)
+	foreach ($this->images as $image)
 		$this->_out('/I'.$image['i'].' '.$image['n'].' 0 R');
 }
 
@@ -1633,7 +1633,7 @@ function _putresourcedict()
 {
 	$this->_out('/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]');
 	$this->_out('/Font <<');
-	foreach($this->fonts as $font)
+	foreach ($this->fonts as $font)
 		$this->_out('/F'.$font['i'].' '.$font['n'].' 0 R');
 	$this->_out('>>');
 	$this->_out('/XObject <<');
@@ -1676,17 +1676,17 @@ function _putcatalog()
 	$this->_out('/Pages 1 0 R');
 	if($this->ZoomMode=='fullpage')
 		$this->_out('/OpenAction [3 0 R /Fit]');
-	elseif($this->ZoomMode=='fullwidth')
+	else if($this->ZoomMode=='fullwidth')
 		$this->_out('/OpenAction [3 0 R /FitH null]');
-	elseif($this->ZoomMode=='real')
+	else if($this->ZoomMode=='real')
 		$this->_out('/OpenAction [3 0 R /XYZ null null 1]');
-	elseif(!is_string($this->ZoomMode))
+	else if(!is_string($this->ZoomMode))
 		$this->_out('/OpenAction [3 0 R /XYZ null null '.($this->ZoomMode/100).']');
 	if($this->LayoutMode=='single')
 		$this->_out('/PageLayout /SinglePage');
-	elseif($this->LayoutMode=='continuous')
+	else if($this->LayoutMode=='continuous')
 		$this->_out('/PageLayout /OneColumn');
-	elseif($this->LayoutMode=='two')
+	else if($this->LayoutMode=='two')
 		$this->_out('/PageLayout /TwoColumnLeft');
 }
 

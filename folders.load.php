@@ -56,7 +56,7 @@ $(function() {
                 $(this).dialog("close");
             }
         },
-        open: function(){
+        open: function() {
             $("#accordion").accordion({ autoHeight: false, navigation: true, collapsible: true, active: false });
         }
     });
@@ -90,15 +90,15 @@ $(function() {
 					type    : "update_folder",
 					data      : aes_encrypt(data)
 					},
-					function(data){
+					function(data) {
 						//Check errors
 						if (data[0].error == "error_group_exist") {
 							$("#edit_folder_show_error").html("<?php echo $txt['error_group_exist'];?>").show();
 							LoadingPage();
-						}else if (data[0].error == "error_html_codes") {
+						} else if (data[0].error == "error_html_codes") {
 							$("#edit_folder_show_error").html("<?php echo $txt['error_html_codes'];?>").show();
 							LoadingPage();
-						}else{
+						} else {
                 			$("#folder_id_to_edit").val("");	//clear id
 							window.location.href = "index.php?page=manage_folders";
 						}
@@ -123,8 +123,8 @@ function aes_encrypt(text) {
 }
 
 
-function supprimer_groupe(id){
-	if ( confirm("<?php echo $txt['confirm_delete_group'];?>") ){
+function supprimer_groupe(id) {
+	if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
 		//send query
 		$.post(
 			"sources/folders.queries.php",
@@ -132,20 +132,20 @@ function supprimer_groupe(id){
 				type    : "delete_folder",
 				id      : id
 			},
-			function(data){
+			function(data) {
 				RefreshPage("form_groupes");
 			}
 		);
 	}
 }
 
-function Changer_Droit_Complexite(id,type){
+function Changer_Droit_Complexite(id,type) {
 	var droit = 0;
-	if ( type == "creation" ){
-		if ( $("#cb_droit_"+id).prop("checked") == true ) droit = 1;
+	if (type == "creation") {
+		if ($("#cb_droit_"+id).prop("checked") == true ) droit = 1;
 		type = "modif_droit_autorisation_sans_complexite";
-	}else if ( type == "modification" ){
-		if ( $("#cb_droit_modif_"+id).prop("checked") == true ) droit = 1;
+	} else if (type == "modification") {
+		if ($("#cb_droit_modif_"+id).prop("checked") == true ) droit = 1;
 		type = "modif_droit_modification_sans_complexite";
 	}
 	//send query
@@ -159,16 +159,16 @@ function Changer_Droit_Complexite(id,type){
 	);
 }
 
-function add_new_folder(){
+function add_new_folder() {
 	//Check if renewal_period is an integer
-	if ( isInteger(document.getElementById("add_node_renewal_period").value) == false ){
+	if (isInteger(document.getElementById("add_node_renewal_period").value) == false) {
 		document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_renawal_period_not_integer'];?>";
 		$("#addgroup_show_error").show();
-	}else if ( document.getElementById("new_rep_complexite").value == "" ){
+	} else if (document.getElementById("new_rep_complexite").value == "") {
 		document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_group_complex'];?>";
 		$("#addgroup_show_error").show();
-	}else{
-		if ( document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na" ){
+	} else {
+		if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
 			$("#addgroup_show_error").hide();
 			LoadingPage();
 			//prepare data
@@ -182,25 +182,25 @@ function add_new_folder(){
 				type    : "add_folder",
 				data      : aes_encrypt(data)
 				},
-				function(data){
+				function(data) {
 					//Check errors
 					if (data[0].error == "error_group_exist") {
 						$("#div_add_group").dialog("open");
 						$("#addgroup_show_error").html("<?php echo $txt['error_group_exist'];?>");
 						$("#addgroup_show_error").show();
 						LoadingPage();
-					}else if (data[0].error == "error_html_codes") {
+					} else if (data[0].error == "error_html_codes") {
 						$("#div_add_group").dialog("open");
 						$("#addgroup_show_error").html("<?php echo $txt['error_html_codes'];?>");
 						$("#addgroup_show_error").show();
 						LoadingPage();
-					}else{
+					} else {
 						window.location.href = "index.php?page=manage_folders";
 					}
 				},
 				"json"
 			);
-		}else{
+		} else {
 			document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_fields_2'];?>";
 			$("#addgroup_show_error").show();
 		}
@@ -212,7 +212,7 @@ function add_new_folder(){
  * @access public
  * @return void
  **/
-function open_edit_folder_dialog(id){
+function open_edit_folder_dialog(id) {
 	$("#folder_id_to_edit").val(id);
 	$("#div_edit_folder").dialog("open");
 }

@@ -49,15 +49,15 @@ echo '
         $show = false;
         $cnt = 0;
         while(list($cle,$val) = each($tab)) {
-            if ( $show == true && $cnt < 30 ){
+            if ($show == true && $cnt < 30) {
                 echo $val."<br />";
                 $cnt ++;
             }
-            else if ( $cnt == 30 ){
+            else if ($cnt == 30) {
                 echo '...<br /><br /><b><a href="readme.txt" target="_blank">'.$txt['readme_open'].'</a></b>';
                 break;
             }
-            if ( substr_count($val,"CHANGELOG") == 1 && $show == false ) $show = true;
+            if (substr_count($val,"CHANGELOG") == 1 && $show == false ) $show = true;
         }
         echo '
         </div></div>';

@@ -57,7 +57,7 @@ var $query_id = 0;
 
 #-#############################################
 # desc: constructor
-function Database($server, $user, $pass, $database, $pre=''){
+function Database($server, $user, $pass, $database, $pre='') {
     $this->server=$server;
     $this->user=$user;
     $this->pass=$pass;
@@ -94,7 +94,7 @@ function connect($new_link=false) {
 #-#############################################
 # desc: close the connection
 function close() {
-    if(!@mysql_close($this->link_id)){
+    if(!@mysql_close($this->link_id)) {
         $this->oops("Connection close failed.");
     }
 }#-#close()
@@ -141,7 +141,7 @@ function fetch_array($query_id=-1) {
 
     if (isset($this->query_id)) {
         $record = @mysql_fetch_assoc($this->query_id);
-    }else{
+    } else {
         $this->oops("Invalid query_id: <b>$this->query_id</b>. Records could not be fetched.");
     }
 
@@ -172,7 +172,7 @@ function fetch_all_array($sql) {
     $query_id = $this->query($sql);
     $out = array();
 
-    while ($row = $this->fetch_array($query_id, $sql)){
+    while ($row = $this->fetch_array($query_id, $sql)) {
         $out[] = $row;
     }
 
@@ -213,21 +213,21 @@ function query_first($query_string) {
 function query_update($table, $data, $where='1') {
     $q="UPDATE `".$this->pre.$table."` SET ";
 
-    foreach($data as $key=>$val) {
+    foreach ($data as $key=>$val) {
         if(strtolower($val)=='null') $q.= "`$key` = NULL, ";
-        elseif(strtolower($val)=='now()') $q.= "`$key` = NOW(), ";
+        else if(strtolower($val)=='now()') $q.= "`$key` = NOW(), ";
         else $q.= "`$key`='".$this->escape($val)."', ";
     }
 
 	if(is_array($where)) {
 		$w = "";
-		foreach($where as $key=>$val) {
+		foreach ($where as $key=>$val) {
 			if(strtolower($val)=='null') $w.= "`$key` = NULL, ";
-			elseif(strtolower($val)=='now()') $w.= "`$key` = NOW(), ";
+			else if(strtolower($val)=='now()') $w.= "`$key` = NOW(), ";
 			else $w.= "`$key`='".$this->escape($val)."' AND ";
 		}
 		$q = rtrim($q, ', ') . ' WHERE '. rtrim($w, ' AND ') .';';
-	}else{
+	} else {
 		$q = rtrim($q, ', ') . ' WHERE '.$where.';';
 	}
 
@@ -243,16 +243,16 @@ function query_insert($table, $data) {
     $q="INSERT INTO `".$this->pre.$table."` ";
     $v=''; $n='';
 
-    foreach($data as $key=>$val) {
+    foreach ($data as $key=>$val) {
         $n.="`$key`, ";
         if(strtolower($val)=='null') $v.="NULL, ";
-        elseif(strtolower($val)=='now()') $v.="NOW(), ";
+        else if(strtolower($val)=='now()') $v.="NOW(), ";
         else $v.= "'".$this->escape($val)."', ";
     }
 
     $q .= "(". rtrim($n, ', ') .") VALUES (". rtrim($v, ', ') .");";
 
-    if($this->query($q)){
+    if($this->query($q)) {
         //$this->free_result();
         return mysql_insert_id($this->link_id);
     }
@@ -268,9 +268,9 @@ function query_insert($table, $data) {
 function query_delete($table, $data, $where='1') {
 	$q="DELETE FROM `".$this->pre.$table."` WHERE ";
 
-	foreach($data as $key=>$val) {
+	foreach ($data as $key=>$val) {
 		if(strtolower($val)=='null') $q.= "`$key` = NULL, ";
-		elseif(strtolower($val)=='now()') $q.= "`$key` = NOW(), ";
+		else if(strtolower($val)=='now()') $q.= "`$key` = NOW(), ";
 		else $q.= "`$key`='".$this->escape($val)."' AND ";
 	}
 
@@ -283,7 +283,7 @@ function query_delete($table, $data, $where='1') {
 # desc: throw an error message
 # param: [optional] any custom error to display
 function oops($msg='') {
-    if($this->link_id>0){
+    if($this->link_id>0) {
         $this->error=mysql_error($this->link_id);
         $this->errno=mysql_errno($this->link_id);
     }
@@ -291,7 +291,7 @@ function oops($msg='') {
         $this->error=mysql_error();
         $this->errno=mysql_errno();
     }
-	if($this->errno != "1049"){
+	if($this->errno != "1049") {
 	    @mysql_query("INSERT INTO ".$this->pre."log_system SET
 	        date=".mktime(date("h"),date("i"),date("s"),date("m"),date("d"),date("y")).",
 	        qui=".$_SESSION['user_id'].",
@@ -304,7 +304,7 @@ function oops($msg='') {
 	    //echo '$("#div_mysql_error").dialog("open");';
 	    return str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error));
 	    exit;
-	}else{
+	} else {
 		//DB connection error
 		echo '
 		<div style="float:left; width:400px; margin-left:30%; margin-top:10%">

@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Japanese Version
  * By Mitsuhiro Yoshida - http://mitstek.com/
  * This file is written in EUC-JP.
@@ -22,4 +22,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP¥¨¥é¡¼: SMTP¥Û¥¹¥È¤ËÀÜÂ³¤Ç¤­¤Þ¤»¤ó¤Ç¤·¤¿¡
 $PHPMAILER_LANG["file_access"] = '¥Õ¥¡¥¤¥ë¤Ë¥¢¥¯¥»¥¹¤Ç¤­¤Þ¤»¤ó: ';
 $PHPMAILER_LANG["file_open"] = '¥Õ¥¡¥¤¥ë¥¨¥é¡¼: ¥Õ¥¡¥¤¥ë¤ò³«¤±¤Þ¤»¤ó: ';
 $PHPMAILER_LANG["encoding"] = 'ÉÔÌÀ¤Ê¥¨¥ó¥³¡¼¥Ç¥£¥ó¥°: ';
-?>

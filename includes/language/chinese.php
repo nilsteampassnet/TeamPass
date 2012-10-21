@@ -2,7 +2,7 @@
 //CHINESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -511,13 +511,13 @@ $txt['settings_kb'] = "启用知识库(beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>启用后，将会添加一个可以用于建立知识库的页面</span>";
 $txt['settings_ldap_domain'] = "域名的LDAP账户前缀";
 $txt['settings_ldap_domain_controler'] = "LDAP array of domain controllers";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn for your domain";
 $txt['settings_ldap_mode'] = "Enable users authentification through LDAP server";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
 $txt['settings_ldap_ssl'] = "Use LDAP through SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Use LDAP through TLS";
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "Enable logging all users connections into database.";
 $txt['settings_maintenance_mode'] = "Set TeamPass in Maintenance mode";
 $txt['settings_maintenance_mode_tip'] = "This mode will refuse any user connection except for Administrators.";

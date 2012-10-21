@@ -2,7 +2,7 @@
 //TURKISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -510,13 +510,13 @@ $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
 $txt['settings_ldap_domain'] = "LDAP suffix";
 $txt['settings_ldap_domain_controler'] = "LDAP array";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "Alan Adınız için LDAP Base dn";
 $txt['settings_ldap_mode'] = "Kullanıcı Doğrulamasını LDAP sunucusu üzerinden yap";
 $txt['settings_ldap_mode_tip'] = "Eğer bir LDAP sunucunuz var ve kullanıcılarınızın LDAP sunucusu üzerinden doğrulanmasını istiyorsanız aktifleştirin";
 $txt['settings_ldap_ssl'] = "LDAP'ı SSL ile kullan (LDAPS)";
 $txt['settings_ldap_tls'] = "LDAP'ı TLS ile kullan";
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "Tüm kullanıcı bağlantılarını veritabanına kaydet";
 $txt['settings_maintenance_mode'] = "TeamPass'i Bakım Moduna Sok";
 $txt['settings_maintenance_mode_tip'] = "This mode will refuse any user connection except for Administrators.";

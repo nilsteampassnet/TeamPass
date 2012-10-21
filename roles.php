@@ -22,7 +22,7 @@ require_once('includes/language/'.$_SESSION['user_language'].'_admin_help.php');
 //Get full list of groups
 $arr_groups = array();
 $rows = $db->fetch_all_array("SELECT id,title FROM ".$pre."nested_tree");
-foreach( $rows as $reccord )
+foreach ($rows as $reccord )
     $arr_groups[$reccord['id']] = $reccord['title'];
 
 //display
@@ -55,7 +55,7 @@ echo '
 	<label for="new_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
     <select id="new_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach($pw_complexity as $complex)
+foreach ($pw_complexity as $complex)
 	echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 echo '
     </select>
@@ -81,7 +81,7 @@ echo '
 	<label for="edit_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
     <select id="edit_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach($pw_complexity as $complex)
+foreach ($pw_complexity as $complex)
 	echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 echo '
     </select>

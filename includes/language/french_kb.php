@@ -2,7 +2,7 @@
 //FRENCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 

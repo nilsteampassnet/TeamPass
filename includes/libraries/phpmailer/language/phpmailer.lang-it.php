@@ -25,4 +25,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP Error: Impossibile connettersi'.
 $PHPMAILER_LANG["file_access"] = 'Impossibile accedere al file: ';
 $PHPMAILER_LANG["file_open"] = 'File Error: Impossibile aprire il file: ';
 $PHPMAILER_LANG["encoding"] = 'Encoding set dei caratteri sconosciuto: ';
-?>

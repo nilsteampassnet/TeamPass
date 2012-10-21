@@ -2,7 +2,7 @@
 //DUTCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -511,7 +511,7 @@ $txt['settings_kb'] = "Knowledge Base activeren";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Door dit aan te zetten wordt er een pagina toegevoegd waar u uw knowledge base kan opzetten.</span>";
 $txt['settings_ldap_domain'] = "LDAP account voorzetsel voor het domein";
 $txt['settings_ldap_domain_controler'] = "Komma gescheiden lijst van domein controllers";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specificeer meerdere domein controllers om de LDAP queries tussen verschillende servers te verdelen<br />De lijst moet komma gescheiden zijn ( , )!<br />Bijvoorbeeld: domein_1,domein_2,domein_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specificeer meerdere domein controllers om de LDAP queries tussen verschillende servers te verdelen<br />De lijst moet komma gescheiden zijn (, )!<br />Bijvoorbeeld: domein_1,domein_2,domein_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn voor het domein";
 $txt['settings_ldap_mode'] = "Gebruikers authenticatie d.m.v LDAP server aanzetten";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";

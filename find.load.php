@@ -51,7 +51,7 @@ $("#div_copy_item_to_folder").dialog({
 						folder_id : $('#copy_in_folder').val(),
 						key		: "<?php echo $_SESSION['key'];?>"
 					},
-					function(data){
+					function(data) {
 						//check if format error
 			            if (data[0].error == "no_item") {
 			                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
@@ -101,7 +101,7 @@ $("#div_item_data").dialog({
 					id 		: $('#id_selected_item').val(),
 					key		: "<?php echo $_SESSION['key'];?>"
 				},
-				function(data){
+				function(data) {
 					//decrypt data
                 	data = $.parseJSON(aes_decrypt(data));
 					var return_html = "";
@@ -109,7 +109,7 @@ $("#div_item_data").dialog({
 						//item expired
 						return_html = "<?php echo $txt['not_allowed_to_see_pw_is_expired'];?>";
 					}
-					else if(data.show_details == "0"){
+					else if(data.show_details == "0") {
 						//Admin cannot see Item
 						return_html = "<?php echo $txt['not_allowed_to_see_pw'];?>";
 					}

@@ -17,7 +17,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 global $k, $settings;
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 header("Content-type: text/x-json; charset=".$k['charset']);
 
 require_once("class.database.php");
@@ -37,10 +37,10 @@ $sOutput = '';
 
 $rows = $db->fetch_all_array($sql);
 if ($rows[0]>0) {
-	foreach($rows as $reccord){
+	foreach ($rows as $reccord) {
 		if (empty($sOutput)) {
 			$sOutput = '"'.$reccord['category'].'"';
-		}else{
+		} else {
 			$sOutput .= ', "'.$reccord['category'].'"';
 		}
 	}

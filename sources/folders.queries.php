@@ -17,10 +17,10 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 header("Content-type: text/html; charset==utf-8");
-include('main.functions.php');
-require_once ("NestedTree.class.php");
+include 'main.functions.php' ;
+require_once "NestedTree.class.php";
 
 //Connect to mysql server
 require_once("class.database.php");
@@ -28,7 +28,7 @@ $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
 // CASE where title is changed
-if ( isset($_POST['newtitle']) ){
+if (isset($_POST['newtitle'])) {
     $id = explode('_',$_POST['id']);
     //update DB
     $db->query_update(
@@ -43,9 +43,9 @@ if ( isset($_POST['newtitle']) ){
 }
 
 // CASE where RENEWAL PERIOD is changed
-else if ( isset($_POST['renewal_period']) && !isset($_POST['type']) ){
+else if (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
     //Check if renewal period is an integer
-    if ( parseInt(intval($_POST['renewal_period'])) ){
+    if (parseInt(intval($_POST['renewal_period']))) {
         $id = explode('_',$_POST['id']);
         //update DB
         $db->query_update(
@@ -57,14 +57,14 @@ else if ( isset($_POST['renewal_period']) && !isset($_POST['type']) ){
         );
         //Show value
         echo ($_POST['renewal_period']);
-    }else{
+    } else {
         //Show ERROR
         echo ($txt['error_renawal_period_not_integer']);
     }
 }
 
 // CASE where the parent is changed
-else if ( isset($_POST['newparent_id']) ){
+else if (isset($_POST['newparent_id'])) {
     $id = explode('_',$_POST['id']);
     //Store in DB
     $db->query_update(
@@ -84,12 +84,12 @@ else if ( isset($_POST['newparent_id']) ){
 }
 
 // CASE where complexity is changed
-else if ( isset($_POST['changer_complexite']) ){
+else if (isset($_POST['changer_complexite'])) {
     $id = explode('_',$_POST['id']);
 
     //Check if group exists
     $tmp = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$id[1]."'");
-    if ( $tmp[0] == 0 ){
+    if ($tmp[0] == 0) {
         //Insert into DB
         $db->query_insert(
             'misc',
@@ -99,7 +99,7 @@ else if ( isset($_POST['changer_complexite']) ){
                 'valeur' => $_POST['changer_complexite']
             )
         );
-    }else{
+    } else {
         //update DB
         $db->query_update(
             'misc',
@@ -119,7 +119,7 @@ else if ( isset($_POST['changer_complexite']) ){
 }
 
 // Several other cases
-else if ( isset($_POST['type']) ){
+else if (isset($_POST['type'])) {
     switch($_POST['type'])
     {
         // CASE where DELETING a group
@@ -130,7 +130,7 @@ else if ( isset($_POST['type']) ){
 
             // Get through each subfolder
             $folders = $tree->getDescendants($_POST['id'],true);
-            foreach($folders as $folder){
+            foreach ($folders as $folder) {
             	//Store the deleted folder (recycled bin)
             	$db->query_insert(
 	            	'misc',
@@ -145,7 +145,7 @@ else if ( isset($_POST['type']) ){
 
                 //delete items & logs
                 $items = $db->fetch_all_array("SELECT id FROM ".$pre."items WHERE id_tree='".$folder->id."'");
-                foreach( $items as $item ) {
+                foreach ($items as $item ) {
                     //Delete item
                 	//$db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
                 	//$db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
@@ -205,20 +205,20 @@ else if ( isset($_POST['type']) ){
 
             //Check if duplicate folders name are allowed
             $create_new_folder = true;
-            if ( isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0 ){
+            if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if ( $data[0] != 0 ){
+                if ($data[0] != 0) {
                 	$error = 'error_group_exist';
                     $create_new_folder = false;
                 }
             }
 
-            if ( $create_new_folder == true ){
+            if ($create_new_folder == true) {
             	//check if parent folder is personal
             	$data = $db->fetch_row("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parent_id."'");
-            	if ( $data[0] == 1 ){
+            	if ($data[0] == 1) {
             		$is_personal = 1;
-            	}else{
+            	} else {
             		$is_personal = 0;
             	}
 
@@ -264,7 +264,7 @@ else if ( isset($_POST['type']) ){
 					FROM ".$pre."roles_values
 					WHERE folder_id = ".$parent_id
 				);
-                foreach ($rows as $reccord){
+                foreach ($rows as $reccord) {
                     //add access to this subfolder
                     $db->query_insert(
                         'roles_values',
@@ -303,9 +303,9 @@ else if ( isset($_POST['type']) ){
 
         	//Check if duplicate folders name are allowed
         	$create_new_folder = true;
-        	if ( isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0 ){
+        	if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
         		$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-        		if ( $data[0] != 0 ){
+        		if ($data[0] != 0) {
         			echo '[ { "error" : "error_group_exist" } ]';
         			break;
         		}
@@ -356,7 +356,7 @@ else if ( isset($_POST['type']) ){
             $valeur = $_POST['valeur'];
             //Check if ID already exists
             $data = $db->fetch_row("SELECT authorized FROM ".$pre."rights WHERE tree_id = '".$val[0]."' AND fonction_id= '".$val[1]."'");
-            if ( empty($data[0]) ){
+            if (empty($data[0])) {
                 //Insert into DB
                 $db->query_insert(
                     'rights',
@@ -366,7 +366,7 @@ else if ( isset($_POST['type']) ){
                         'authorized' => 1
                     )
                 );
-            }else{
+            } else {
                 //Update DB
                 if ($data[0]==1)
                     $db->query_update(

@@ -6,7 +6,7 @@ $_SESSION['CPM'] = 1;
 ################
 ## Function permits to get the value from a line
 ################
-function getSettingValue($val){
+function getSettingValue($val) {
 	$val = trim(strstr($val,"="));
 	return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
 }
@@ -49,17 +49,17 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         <script type="text/javascript">
         //if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
-            if ( document.getElementById("progressbar") ){
+            if (document.getElementById("progressbar")) {
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
-                if ( document.getElementById("step").value == "1" ) gauge.modify($('pbar'),{values:[0.20,1]});
-                else if ( document.getElementById("step").value == "2" ) gauge.modify($('pbar'),{values:[0.35,1]});
-                else if ( document.getElementById("step").value == "3" ) gauge.modify($('pbar'),{values:[0.55,1]});
-                else if ( document.getElementById("step").value == "4" ) gauge.modify($('pbar'),{values:[0.70,1]});
-                else if ( document.getElementById("step").value == "5" ) gauge.modify($('pbar'),{values:[0.85,1]});
+                if (document.getElementById("step").value == "1") gauge.modify($('pbar'),{values:[0.20,1]});
+                else if (document.getElementById("step").value == "2") gauge.modify($('pbar'),{values:[0.35,1]});
+                else if (document.getElementById("step").value == "3") gauge.modify($('pbar'),{values:[0.55,1]});
+                else if (document.getElementById("step").value == "4") gauge.modify($('pbar'),{values:[0.70,1]});
+                else if (document.getElementById("step").value == "5") gauge.modify($('pbar'),{values:[0.85,1]});
             }
         });
 
-        function goto_next_page(page){
+        function goto_next_page(page) {
             if (page == "3" && document.getElementById("cpm_is_utf8").value == 1) {
                 page = "4";
             }
@@ -67,14 +67,14 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
             document.install.submit();
         }
 
-        function Check(step){
-            if ( step != "" ){
-                if ( step == "step1" ){
+        function Check(step) {
+            if (step != "") {
+                if (step == "step1") {
                     var data = "type="+step+
                     "&abspath="+escape(document.getElementById("root_path").value);
                     document.getElementById("loader").style.display = "";
-                }else
-                if ( step == "step2" ){
+                } else
+                if (step == "step2") {
                     document.getElementById("loader").style.display = "";
                     var data = "type="+step+
                     "&db_host="+document.getElementById("db_host").value+
@@ -82,19 +82,19 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+encodeURIComponent(document.getElementById("db_pw").value)+
                     "&db_bdd="+document.getElementById("db_bdd").value;
-                }else
-                if ( step == "step3" ){
+                } else
+                if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
                     var data = "type="+step+
                     "&prefix_before_convert="+document.getElementById("prefix_before_convert").checked;
                     document.getElementById("loader").style.display = "";
-                }else
-                if ( step == "step4" ){
+                } else
+                if (step == "step4") {
                     $("#loader").show();
                     var data = "type="+step;
                     document.getElementById("loader").style.display = "";
-                }else
-                if ( step == "step5" ){
+                } else
+                if (step == "step5") {
                     document.getElementById("loader").style.display = "";
                     var data = "type="+step;
                 }
@@ -116,7 +116,7 @@ if (isset($_POST['db_host'])) {
 	$_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
 	if (isset($_POST['send_stats'])) {
 		$_SESSION['send_stats'] = $_POST['send_stats'];
-	}else{
+	} else {
 		$_SESSION['send_stats'] = "";
 	}
 }
@@ -143,7 +143,7 @@ echo '
                     <input type="hidden" id="cpm_is_utf8" name="cpm_is_utf8" value="', isset($_POST['cpm_is_utf8']) ? $_POST['cpm_is_utf8']:'', '" />
 					<input type="hidden" name="menu_action" id="menu_action" value="" />';
 
-if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
+if (!isset($_GET['step']) && !isset($_POST['step'])) {
 	//ETAPE O
 	echo '
 	                 <h2>This page will help you to upgrade the TeamPass\'s database</h2>
@@ -177,7 +177,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 	                 &nbsp;
 	                 ';
 
-}else if ( (isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1) ){
+} else if ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
 //define root path
 	$abs_path = "";
 	if(strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
@@ -206,7 +206,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 	                 <input type="hidden" id="step1" name="step1" value="" />';
 
 
-}else if ( (isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2) ){
+} else if ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {
 	//ETAPE 2
 	echo '
 	                 <h3>Step 2</h3>
@@ -228,7 +228,7 @@ if ( !isset($_GET['step']) && !isset($_POST['step'])  ){
 	                 <input type="hidden" id="step2" name="step2" value="" />';
 }
 
-else if ( (isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3) && (isset($_POST['actual_cpm_version'])) ){
+else if ((isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3) && (isset($_POST['actual_cpm_version']))) {
 	//ETAPE 3
 	echo '
 	                 <h3>Step 3 - Converting database to UTF-8</h3>';
@@ -244,14 +244,14 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) 
 
 			<div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step3"></div>  ';
 		$conversion_utf8 = true;
-	}else{
+	} else {
 		echo '
 			The database seems already in UTF-8 charset';
 		$conversion_utf8 = false;
 	}
 }
 
-else if ( (isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4) ){
+else if ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4)) {
 	//ETAPE 4
 
 	echo '
@@ -282,7 +282,7 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']
 	                 <input type="hidden" id="step4" name="step4" value="" />';
 }
 
-else if ( (isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5) ){
+else if ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
 	//ETAPE 5
 	echo '
 	                 <h3>Step 5 - Update setting file</h3>
@@ -292,7 +292,7 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']
 	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';
 }
 
-else if ( (isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6) ){
+else if ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
 	//ETAPE 5
 	echo '
 	                 <h3>Step 6</h3>
@@ -303,12 +303,12 @@ else if ( (isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']
 
 
 //buttons
-if ( !isset($_POST['step']) ){
+if (!isset($_POST['step'])) {
 	echo '
 	             <div id="buttons_bottom">
 	                 <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
 	             </div>';
-}elseif ( $_POST['step'] == 3 && $conversion_utf8 == false){
+}else if ($_POST['step'] == 3 && $conversion_utf8 == false) {
 	echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
@@ -316,7 +316,7 @@ if ( !isset($_POST['step']) ){
                             <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-}elseif ( $_POST['step'] == 3 && $conversion_utf8 == true){
+}else if ($_POST['step'] == 3 && $conversion_utf8 == true) {
 	echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
@@ -325,12 +325,12 @@ if ( !isset($_POST['step']) ){
                             <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
-}elseif ( $_POST['step'] == 6 ){
+}else if ($_POST['step'] == 6) {
 	echo '
 	             <div id="buttons_bottom">
 	                 <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8) . '\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
 	             </div>';
-}else{
+} else {
 	echo '
 	                 <div style="width:900px;margin:auto;margin-top:30px;">
 	                     <div id="progressbar" style="float:left;margin-top:9px;"></div>

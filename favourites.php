@@ -15,13 +15,12 @@
 if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
-
 echo '
 <form name="form_favourites" method="post" action="">
     <div class="title ui-widget-content ui-corner-all">'.$txt['my_favourites'].'</div>
 
     <div style="height:100%;overflow:auto;">';
-    if ( empty($_SESSION['favourites']) )
+    if (empty($_SESSION['favourites']))
         echo '
         ';
     else{
@@ -36,8 +35,8 @@ echo '
             <tbody>';
             //Get favourites
             $cpt= 0 ;
-            foreach($_SESSION['favourites'] as $fav){
-                if ( !empty($fav) ){
+            foreach ($_SESSION['favourites'] as $fav) {
+                if (!empty($fav)) {
                     $data = $db->query_first(
                         "SELECT i.label, i.description, i.id, i.id_tree, t.title
                         FROM ".$pre."items AS i

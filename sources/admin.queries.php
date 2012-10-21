@@ -18,8 +18,8 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 
 include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
-include('../includes/include.php');
+include '../includes/settings.php' ;
+include '../includes/include.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
@@ -58,14 +58,14 @@ switch($_POST['type'])
             if (file_exists($local_file)) {
                 $tableau = file($local_file);
                 while(list($cle,$val) = each($tableau)) {
-                    if ( substr($val,0,1) <> "#" ){
+                    if (substr($val,0,1) <> "#") {
                         $tab = explode('|',$val);
-                        foreach($tab as $elem){
+                        foreach ($tab as $elem) {
                             $tmp = explode('#',$elem);
                             $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                            if ( $tmp[0] == "version" ) {
+                            if ($tmp[0] == "version") {
                                 $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
-                                if ( floatval($k['version']) < floatval($tmp[1]) ) $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+                                if (floatval($k['version']) < floatval($tmp[1])) $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
                                 $text .= '</li>';
                             }
                         }
@@ -91,7 +91,7 @@ switch($_POST['type'])
     case "admin_action_check_pf":
         //get through all users
         $rows = $db->fetch_all_array("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
-        foreach($rows as $record){
+        foreach ($rows as $record) {
             //update PF field for user
             $db->query_update(
                 'users',
@@ -103,7 +103,7 @@ switch($_POST['type'])
 
             //if folder doesn't exist then create it
             $data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$record['id']."' AND parent_id = 0");
-            if ( $data[0] == 0 ){
+            if ($data[0] == 0) {
                 //If not exist then add it
                 $db->query_insert(
                     "nested_tree",
@@ -113,7 +113,7 @@ switch($_POST['type'])
                         'personal_folder' => '1'
                     )
                 );
-            }else{
+            } else {
                 //If exists then update it
                 $db->query_update(
                     'nested_tree',
@@ -147,7 +147,7 @@ switch($_POST['type'])
     #CASE for deleting all items from DB that are linked to a folder that has been deleted
     case "admin_action_db_clean_items":
         //Libraries call
-        require_once ("NestedTree.class.php");
+        require_once "NestedTree.class.php";
 
         //init
         $folders_ids = array();
@@ -159,12 +159,12 @@ switch($_POST['type'])
 
         // Get an array of all folders
         $folders = $tree->getDescendants();
-        foreach($folders as $folder){
-            if ( !in_array($folder->id,$folders_ids) ) array_push($folders_ids,$folder->id);
+        foreach ($folders as $folder) {
+            if (!in_array($folder->id,$folders_ids)) array_push($folders_ids,$folder->id);
         }
 
         $items = $db->fetch_all_array("SELECT id,label FROM ".$pre."items WHERE id_tree NOT IN(".implode(',',$folders_ids).")");
-        foreach( $items as $item ) {
+        foreach ($items as $item ) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
             $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
@@ -196,9 +196,9 @@ switch($_POST['type'])
         }
 
         //cycle through
-        foreach($tables as $table)
+        foreach ($tables as $table)
         {
-            if ( empty($pre) || substr_count($table,$pre) > 0 ){
+            if (empty($pre) || substr_count($table,$pre) > 0) {
                 $result = mysql_query('SELECT * FROM '.$table);
                 $num_fields = mysql_num_fields($result);
                 // prepare a drop table
@@ -226,13 +226,13 @@ switch($_POST['type'])
             }
         }
 
-        if ( !empty($return) ){
+        if (!empty($return)) {
             //save file
             $filename = 'db-backup-'.time().'.sql';
             $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename,'w+');
 
             //Encrypt the file
-            if ( !empty($_POST['option']) ) $return = encrypt($return,$_POST['option']);
+            if (!empty($_POST['option'])) $return = encrypt($return,$_POST['option']);
 
             //write file
             fwrite($handle,$return);
@@ -273,7 +273,7 @@ switch($_POST['type'])
     	$key = $data_post[1];
 
         //create uncrypted file
-        if ( !empty($key) ) {
+        if (!empty($key)) {
             //read full file
             $file_array = file($_SESSION['settings']['path_to_files_folder']."/".$file);
 
@@ -290,11 +290,11 @@ switch($_POST['type'])
         }
 
         //read sql file
-        if ( $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$file,"r") ) {
+        if ($handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$file,"r")) {
             $query = "";
-            while ( !feof($handle) ) {
+            while (!feof($handle)) {
                 $query.= fgets($handle, 4096);
-                if ( substr(rtrim($query), -1) == ';' ) {
+                if (substr(rtrim($query), -1) == ';' ) {
                     //launch query
                     $db->query($query);
                     $query = '';
@@ -319,7 +319,7 @@ switch($_POST['type'])
         {
            foreach ($table as $i => $tablename)
            {
-               if ( substr_count($tablename,$pre) > 0 ){
+               if (substr_count($tablename,$pre) > 0) {
                    // launch optimization quieries
                    mysql_query("ANALYZE TABLE `".$tablename."`");
                    mysql_query("OPTIMIZE TABLE `".$tablename."`");
@@ -333,9 +333,9 @@ switch($_POST['type'])
 			FROM ".$pre."items
 			ORDER BY id ASC
     	");
-    	foreach( $rows as $item ) {
+    	foreach ($rows as $item ) {
     		$row = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
-    		if($row[0] == 0){
+    		if($row[0] == 0) {
     			//Create new at_creation entry
     			$row_tmp = $db->query_first("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
     			$db->query_insert(
@@ -395,7 +395,7 @@ switch($_POST['type'])
 
 		//get backups infos
 		$rows = $db->fetch_all_array("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
-		foreach( $rows as $reccord ){
+		foreach ($rows as $reccord) {
 			$settings[$reccord['intitule']] = $reccord['valeur'];
 		}
 
@@ -421,7 +421,7 @@ switch($_POST['type'])
 	* Change SALT Key
 	*/
 	case "admin_action_change_salt_key":
-		include('main.functions.php');
+		include 'main.functions.php' ;
 		//put tool in maintenance.
             $db->query_update(
                 "misc",
@@ -447,7 +447,7 @@ switch($_POST['type'])
 
 		//change all passwords in DB
 		$rows = $db->fetch_all_array("SELECT id,pw FROM ".$pre."items WHERE perso = '0'");
-		foreach( $rows as $reccord ){
+		foreach ($rows as $reccord) {
 			$pw = decrypt($reccord['pw']);
 			//encrypt with new SALT
 			$db->query_update(
@@ -460,7 +460,7 @@ switch($_POST['type'])
 		}
 		//change all users password in DB
 		$rows = $db->fetch_all_array("SELECT id,pw FROM ".$pre."users");
-		foreach( $rows as $reccord ){
+		foreach ($rows as $reccord) {
 			$pw = decrypt($reccord['pw']);
 			//encrypt with new SALT
 			$db->query_update(
@@ -477,10 +477,10 @@ switch($_POST['type'])
 		$error = "";
 		if (file_exists($filename)) {
 			//Do a copy of the existing file
-			if ( !copy($filename, $filename.'.'.date("Y_m_d",mktime(0,0,0,date('m'),date('d'),date('y')))) ) {
+			if (!copy($filename, $filename.'.'.date("Y_m_d",mktime(0,0,0,date('m'),date('d'),date('y'))))) {
 				$error = "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";
 				break;
-			}else{
+			} else {
 				unlink($filename);
 			}
 
@@ -522,17 +522,17 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 	*/
 	case "admin_email_send_backlog":
         require_once ("main.functions.php");
-        
+
         $rows = $db->fetch_all_array("SELECT * FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
-        foreach ($rows as $reccord){
+        foreach ($rows as $reccord) {
         	//send email
 			$ret = json_decode(@SendEmail(
-            	$reccord['subject'], 
+            	$reccord['subject'],
             	$reccord['body'],
             	$reccord['receivers']
             ));
 
-			if(!empty($ret['error'])){
+			if(!empty($ret['error'])) {
 				//update item_id in files table
 				$db->query_update(
 					'emails',
@@ -541,12 +541,12 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 					),
 					"timestamp='".$reccord['timestamp']."'"
 				);
-			}else{
+			} else {
 				//delete from DB
             	$db->query("DELETE FROM ".$pre."emails WHERE timestamp = '".$reccord['timestamp']."'");
 			}
         }
-        
+
         //update LOG
         $db->query_insert(
 	       	'log_system',
@@ -557,7 +557,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 	       	    'qui' => $_SESSION['user_id']
 	       	)
         );
-                
+
 		echo '[{"result":"admin_email_send_backlog", '.@SendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
 	break;
 }

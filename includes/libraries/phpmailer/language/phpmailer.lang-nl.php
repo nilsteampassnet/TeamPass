@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPMailer language file.  
+ * PHPMailer language file.
  * Dutch Version
  */
 
@@ -20,4 +20,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP Fout: Kon niet verbinden met SMTP host.'
 $PHPMAILER_LANG["file_access"] = 'Kreeg geen toegang tot bestand: ';
 $PHPMAILER_LANG["file_open"] = 'Bestandsfout: Kon bestand niet openen: ';
 $PHPMAILER_LANG["encoding"] = 'Onbekende codering: ';
-?>

@@ -78,6 +78,11 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.12
+ * #188
+ * #185 Started adjusting codebase to follow PSR 1 and PSR 2 based on ecaron
+ 		work (thank you)
+
 2.1.11
  * #184 - bug correction
 

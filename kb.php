@@ -23,7 +23,7 @@ require_once('includes/language/'.$_SESSION['user_language'].'_kb.php');
 $tab_users = array();
 $rows = $db->fetch_all_array("SELECT id, login FROM ".$pre."users ORDER BY login ASC");
 if (count($rows)>0) {
-	foreach($rows AS $reccord){
+	foreach ($rows AS $reccord) {
 		$tab_users[$reccord['login']] = array(
 			'id'=>$reccord['id'],
 			'login'=>$reccord['login']
@@ -103,8 +103,8 @@ echo '
                 WHERE i.inactif = 0
                 AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
                 ORDER BY i.label ASC, l.date DESC");
-            foreach( $rows as $reccord ) {
-                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])){
+            foreach ($rows as $reccord ) {
+                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
                     echo '
                     <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
                     array_push($items_id_list, $reccord['id']);
@@ -130,7 +130,7 @@ echo '
 require_once("kb.load.php");
 
 //If redirection is done to a speoific KB then open it
-if(isset($_GET['id']) && !empty($_GET['id'])){
+if(isset($_GET['id']) && !empty($_GET['id'])) {
 	echo '
 	    <script language="javascript" type="text/javascript">
 	    <!--

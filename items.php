@@ -1,69 +1,71 @@
 <?php
 /**
- * @file 		items.php
- * @author		Nils Laumaillé
- * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
  *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * @file items.php
+ * @author Nils Laumaillé
+ * @version 2.1.8
+ * @copyright (c) 2009-2011 Nils Laumaillé
+ * @licensing GNU AFFERO GPL 3.0
+ * @link
  */
 
-if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
-	die('Hacking attempt...');
+if ( !isset( $_SESSION['CPM'] ) || $_SESSION['CPM'] != 1 )
+    die( 'Hacking attempt...' );
 
-require_once ("sources/NestedTree.class.php");
-$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+if ( !isset( $_SESSION['login'] ) )
+    break;
+
+require_once "sources/NestedTree.class.php";
+$tree = new NestedTree( $pre . 'nested_tree', 'id', 'parent_id', 'title' );
 $tree->rebuild();
 $folders = $tree->getDescendants();
 
-if($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])){
-	$_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
-	$_SESSION['groupes_visibles_list'] = implode(',',$_SESSION['groupes_visibles']);
+if ( $_SESSION['user_admin'] == 1 && ( isset( $k['admin_full_right'] ) && $k['admin_full_right'] == true ) || !isset( $k['admin_full_right'] ) )
+{
+    $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+    $_SESSION['groupes_visibles_list'] = implode( ',', $_SESSION['groupes_visibles'] );
 }
-
-//Get list of users
+// Get list of users
 $liste_utilisateurs = array();
 $users_string = "";
-$rows = $db->fetch_all_array("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
-foreach($rows as $record){
+$rows = $db->fetch_all_array( "SELECT id,login,email FROM " . $pre . "users ORDER BY login ASC" );
+foreach ( $rows as $record )
+{
     $liste_utilisateurs[$record['login']] = array(
         "id" => $record['id'],
         "login" => $record['login'],
         "email" => $record['email'],
-    );
-    $users_string .= $record['id']."#".$record['login'].";";
+        );
+    $users_string .= $record['id'] . "#" . $record['login'] . ";";
 }
-
-//Get list of roles
+// Get list of roles
 $arrRoles = array();
 $listRoles = "";
-$rows = $db->fetch_all_array("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
-foreach($rows as $reccord){
-	$arrRoles[$reccord['title']] = array(
-		'id' => $reccord['id'],
-		'title' => $reccord['title']
-	);
-	if (empty($listRoles)) {
-		$listRoles = $reccord['id'].'#'.$reccord['title'];
-	}else{
-		$listRoles .= ';'.$reccord['id'].'#'.$reccord['title'];
-	}
+$rows = $db->fetch_all_array( "SELECT id,title FROM " . $pre . "roles_title ORDER BY title ASC" );
+foreach ( $rows as $reccord )
+{
+    $arrRoles[$reccord['title']] = array(
+        'id' => $reccord['id'],
+        'title' => $reccord['title']
+        );
+    if ( empty( $listRoles ) )
+    {
+        $listRoles = $reccord['id'] . '#' . $reccord['title'];
+    }
+    else
+    {
+        $listRoles .= ';' . $reccord['id'] . '#' . $reccord['title'];
+    }
 }
-
-//Build list of visible folders
+// Build list of visible folders
 $select_visible_folders_options = $select_visible_nonpersonal_folders_options = "";
-
-//Hidden things
+// Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? $_GET['group'] : "", '" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset( $_GET['group'] ) ? $_GET['group'] : "", '" />
 <input type="hidden" id="complexite_groupe" />
 <input type="hidden" name="selected_items" id="selected_items" />
-<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$users_string.'" />
-<input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlentities($listRoles, ENT_QUOTES, 'UTF-8').'" />
+<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="' . $users_string . '" />
+<input type="hidden" name="input_list_roles" id="input_list_roles" value="' . htmlentities( $listRoles, ENT_QUOTES, 'UTF-8' ) . '" />
 <input type="hidden" id="bloquer_creation_complexite" />
 <input type="hidden" id="bloquer_modification_complexite" />
 <input type="hidden" id="error_detected" />
@@ -71,186 +73,217 @@ echo '
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />
-<input type="hidden" id="nb_items_to_display_once" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : 'auto', '" />
-<input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />';
-
-//Afficher mdp suite ? recherche
-if ( isset($_GET['group']) && isset($_GET['id']) ){
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="'.$_GET['id'].'" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($_GET['group'],$_SESSION['personal_visible_groups']) ? '1' : '', '" />';
-}elseif ( isset($_GET['group']) && !isset($_GET['id']) ){
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
+<input type="hidden" id="nb_items_to_display_once" value="', isset( $_SESSION['settings']['nb_items_by_query'] ) ? $_SESSION['settings']['nb_items_by_query'] : 'auto', '" />
+<input type="hidden" id="user_is_read_only" value="', isset( $_SESSION['user_read_only'] ) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />';
+// Afficher mdp suite ? recherche
+if ( isset( $_GET['group'] ) && isset( $_GET['id'] ) )
+{
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="' . $_GET['group'] . '" />';
+    echo '<input type="hidden" name="open_id" id="open_id" value="' . $_GET['id'] . '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array( $_GET['group'], $_SESSION['personal_visible_groups'] ) ? '1' : '', '" />';
+}
+else if ( isset( $_GET['group'] ) && !isset( $_GET['id'] ) )
+{
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="' . $_GET['group'] . '" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($_GET['group'],$_SESSION['personal_visible_groups']) ? '1' : '', '" />';
-}else{
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array( $_GET['group'], $_SESSION['personal_visible_groups'] ) ? '1' : '', '" />';
+}
+else
+{
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
     echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="" />';
 }
-
-//Is personal SK available
+// Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset( $_SESSION['my_sk'] ) && !empty( $_SESSION['my_sk'] ) ? '1':'0', '" />';
 
 echo '
 <div id="div_items">';
-
-    // MAIN ITEMS TREE
-    echo '
+// MAIN ITEMS TREE
+echo '
 	<div class="items_tree">
 	    <div>
 	        <div style="margin:3px;font-weight:bold;">
-	            '.$txt['items_browser_title'].'
+	            ' . $txt['items_browser_title'] . '
 			    <span id="jstree_open" class="pointer" ><img src="includes/images/chevron-small-expand.png" /></span>
 			    <span id="jstree_close" class="pointer"><img alt="" src="includes/images/chevron-small.png" /></span>
-			    <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$txt['item_menu_find'].'" />
+			    <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="' . $txt['item_menu_find'] . '" />
 	        </div>
 	    </div>
 	    <div id="sidebar" class="sidebar">';
 
-	        $tab_items = array();
-	        $cpt_total = 0;
-	        $folder_cpt = 1;
-	        $prev_level = 1;
-	        if(isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])){
-	        	$first_group = str_replace("#li_", "", $_COOKIE['jstree_select']);
-	        }else{
-	        	$first_group = "";
-	        }
+$tab_items = array();
+$cpt_total = 0;
+$folder_cpt = 1;
+$prev_level = 1;
+if ( isset( $_COOKIE['jstree_select'] ) && !empty( $_COOKIE['jstree_select'] ) )
+{
+    $first_group = str_replace( "#li_", "", $_COOKIE['jstree_select'] );
+}
+else
+{
+    $first_group = "";
+}
 
-			if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-				$list_folders_limited_keys = @array_keys($_SESSION['list_folders_limited']);
-	        }else{
-	        	$list_folders_limited_keys = array();
-	        }
+if ( isset( $_SESSION['list_folders_limited'] ) && count( $_SESSION['list_folders_limited'] ) > 0 )
+{
+    $list_folders_limited_keys = @array_keys( $_SESSION['list_folders_limited'] );
+}
+else
+{
+    $list_folders_limited_keys = array();
+}
+// list of items accessible but not in an allowed folder
+if ( isset( $_SESSION['list_restricted_folders_for_items'] ) && count( $_SESSION['list_restricted_folders_for_items'] ) > 0 )
+{
+    $list_restricted_folders_for_items_keys = @array_keys( $_SESSION['list_restricted_folders_for_items'] );
+}
+else
+{
+    $list_restricted_folders_for_items_keys = array();
+}
 
-			//list of items accessible but not in an allowed folder
-			if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['list_restricted_folders_for_items']) > 0) {
-				$list_restricted_folders_for_items_keys = @array_keys($_SESSION['list_restricted_folders_for_items']);
-			}else{
-				$list_restricted_folders_for_items_keys = array();
-			}
-
-	        echo '
+echo '
 			<div id="jstree" style="overflow:auto;">
-		        <ul id="node_'.$folder_cpt.'">';//
-		        foreach($folders as $folder){
-		            //Be sure that user can only see folders he/she is allowed to
-		            if ( !in_array($folder->id, $_SESSION['forbiden_pfs']) || in_array($folder->id, $_SESSION['groupes_visibles']) ||
-		            	in_array($folder->id, $list_folders_limited_keys) || in_array($folder->id, $list_restricted_folders_for_items_keys)
-		            ) {
-		            	$display_this_node = false;
-		            	// Check if any allowed folder is part of the descendants of this node
-		            	$node_descendants = $tree->getDescendants($folder->id, true, false, true);
-		            	foreach ($node_descendants as $node){
-		            		if (in_array($node, array_merge($_SESSION['groupes_visibles'],$_SESSION['list_restricted_folders_for_items']))
-		            			|| in_array($node, $list_folders_limited_keys) || in_array($node, $list_restricted_folders_for_items_keys)
-		            		) {
-		            			$display_this_node = true;
-		            			break;
-		            		}
-		            	}
+		        <ul id="node_' . $folder_cpt . '">'; //
+foreach ( $folders as $folder )
+{
+    // Be sure that user can only see folders he/she is allowed to
+    if ( !in_array( $folder->id, $_SESSION['forbiden_pfs'] ) || in_array( $folder->id, $_SESSION['groupes_visibles'] ) ||
+            in_array( $folder->id, $list_folders_limited_keys ) || in_array( $folder->id, $list_restricted_folders_for_items_keys )
+            )
+    {
+        $display_this_node = false;
+        // Check if any allowed folder is part of the descendants of this node
+        $node_descendants = $tree->getDescendants( $folder->id, true, false, true );
+        foreach ( $node_descendants as $node )
+        {
+            if ( in_array( $node, array_merge( $_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'] ) ) || in_array( $node, $list_folders_limited_keys ) || in_array( $node, $list_restricted_folders_for_items_keys )
+                    )
+            {
+                $display_this_node = true;
+                break;
+            }
+        }
 
-						if ($display_this_node == true) {
-							$ident="";
-							for($x=1;$x<$folder->nlevel;$x++) $ident .= "&nbsp;&nbsp;";
+        if ( $display_this_node == true )
+        {
+            $ident = "";
+            for( $x = 1;$x < $folder->nlevel;$x++ ) $ident .= "&nbsp;&nbsp;";
 
-				            $data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-				            $nb_items = $data[0];
-
-				            //get 1st folder
-							if (empty($first_group)) $first_group = $folder->id;
-
-							//If personal Folder, convert id into user name
-							if ($folder->title == $_SESSION['user_id']) $folder->title = $_SESSION['login'];
-
-							//Prepare folder
-							$folder_txt = '
-					<li class="jstree-open" id="li_'.$folder->id.'">';
-							if (in_array($folder->id,$_SESSION['groupes_visibles'])) {
-								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
-								//case for restriction_to_roles
-							}elseif (in_array($folder->id, $list_folders_limited_keys)) {
-								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
-							}else if (in_array($folder->id, $list_restricted_folders_for_items_keys)) {
-								$folder_txt .= '
-							<a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&","&amp;",$folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
-							}else{
-								$folder_txt .= '
-							<a id="fld_'.$folder->id.'">'.str_replace("&","&amp;",$folder->title).'</a>';
-							}
-
-							//build select for all visible folders
-							if (in_array($folder->id,$_SESSION['groupes_visibles'])) {
-								if($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))){
-									$select_visible_folders_options .= '<option value="'.$folder->id.'">'.$ident.str_replace("&","&amp;",$folder->title).'</option>';
-								}else{
-									$select_visible_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&","&amp;",$folder->title).'</option>';
-								}
-							}else{
-								$select_visible_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&","&amp;",$folder->title).'</option>';
-							}
-
-							//build select for non personal visible folders
-							if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id,$_SESSION['all_non_personal_folders'])) {
-								$select_visible_nonpersonal_folders_options .= '<option value="'.$folder->id.'">'.$ident.str_replace("&","&amp;",$folder->title).'</option>';
-							}else{
-								$select_visible_nonpersonal_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&","&amp;",$folder->title).'</option>';
-							}
-
-				            //Construire l'arborescence
-				            if ( $cpt_total == 0 ) {
-				        		// Force the name of the personal folder with the login name
-								if ( $folder->title ==$_SESSION['user_id'] && $folder->nlevel == 1 ) $folder->title = $_SESSION['login'];
-								echo $folder_txt;
-				            	$folder_cpt++;
-				            }else{
-				                //Construire l'arborescence
-				                if ( $prev_level < $folder->nlevel ){
-				                	echo '
-				<ul  id="node_'.$folder_cpt.'">'.$folder_txt;
-				                    $folder_cpt++;
-				                }else if ( $prev_level == $folder->nlevel ){
-				                	echo '
-					</li>'.$folder_txt;
-				                	$folder_cpt++;
-				                }else{
-				                	$tmp = '';
-				                    //Afficher les items de la derni?eres cat s'ils existent
-				                    for($x=$folder->nlevel;$x<$prev_level;$x++){
-										echo "
+            $data = $db->fetch_row( "SELECT COUNT(*) FROM " . $pre . "items WHERE inactif=0 AND id_tree = " . $folder->id );
+            $nb_items = $data[0];
+            // get 1st folder
+            if ( empty( $first_group ) ) $first_group = $folder->id;
+            // If personal Folder, convert id into user name
+            if ( $folder->title == $_SESSION['user_id'] ) $folder->title = $_SESSION['login'];
+            // Prepare folder
+            $folder_txt = '
+					<li class="jstree-open" id="li_' . $folder->id . '">';
+            if ( in_array( $folder->id, $_SESSION['groupes_visibles'] ) )
+            {
+                $folder_txt .= '
+							<a id="fld_' . $folder->id . '" class="folder" onclick="ListerItems(\'' . $folder->id . '\', \'\', 0);">' . str_replace( "&", "&amp;", $folder->title ) . ' (<span class="items_count" id="itcount_' . $folder->id . '">' . $nb_items . '</span>)</a>';
+                // case for restriction_to_roles
+            }
+            else if ( in_array( $folder->id, $list_folders_limited_keys ) )
+            {
+                $folder_txt .= '
+							<a id="fld_' . $folder->id . '" class="folder" onclick="ListerItems(\'' . $folder->id . '\', \'\', 0);">' . str_replace( "&", "&amp;", $folder->title ) . ' (<span class="items_count" id="itcount_' . $folder->id . '">' . count( $_SESSION['list_folders_limited'][$folder->id] ) . '</span>)</a>';
+            }
+            else if ( in_array( $folder->id, $list_restricted_folders_for_items_keys ) )
+            {
+                $folder_txt .= '
+							<a id="fld_' . $folder->id . '" class="folder" onclick="ListerItems(\'' . $folder->id . '\', \'\', 0);">' . str_replace( "&", "&amp;", $folder->title ) . ' (<span class="items_count" id="itcount_' . $folder->id . '">' . count( $_SESSION['list_restricted_folders_for_items'][$folder->id] ) . '</span>)</a>';
+            }
+            else
+            {
+                $folder_txt .= '
+							<a id="fld_' . $folder->id . '">' . str_replace( "&", "&amp;", $folder->title ) . '</a>';
+            }
+            // build select for all visible folders
+            if ( in_array( $folder->id, $_SESSION['groupes_visibles'] ) )
+            {
+                if ( $_SESSION['user_read_only'] == 0 || ( $_SESSION['user_read_only'] == 1 && in_array( $folder->id, $_SESSION['personal_visible_groups'] ) ) )
+                {
+                    $select_visible_folders_options .= '<option value="' . $folder->id . '">' . $ident . str_replace( "&", "&amp;", $folder->title ) . '</option>';
+                }
+                else
+                {
+                    $select_visible_folders_options .= '<option value="' . $folder->id . '" disabled="disabled">' . $ident . str_replace( "&", "&amp;", $folder->title ) . '</option>';
+                }
+            }
+            else
+            {
+                $select_visible_folders_options .= '<option value="' . $folder->id . '" disabled="disabled">' . $ident . str_replace( "&", "&amp;", $folder->title ) . '</option>';
+            }
+            // build select for non personal visible folders
+            if ( isset( $_SESSION['all_non_personal_folders'] ) && in_array( $folder->id, $_SESSION['all_non_personal_folders'] ) )
+            {
+                $select_visible_nonpersonal_folders_options .= '<option value="' . $folder->id . '">' . $ident . str_replace( "&", "&amp;", $folder->title ) . '</option>';
+            }
+            else
+            {
+                $select_visible_nonpersonal_folders_options .= '<option value="' . $folder->id . '" disabled="disabled">' . $ident . str_replace( "&", "&amp;", $folder->title ) . '</option>';
+            }
+            // Construire l'arborescence
+            if ( $cpt_total == 0 )
+            {
+                // Force the name of the personal folder with the login name
+                if ( $folder->title == $_SESSION['user_id'] && $folder->nlevel == 1 ) $folder->title = $_SESSION['login'];
+                echo $folder_txt;
+                $folder_cpt++;
+            }
+            else
+            {
+                // Construire l'arborescence
+                if ( $prev_level < $folder->nlevel )
+                {
+                    echo '
+				<ul  id="node_' . $folder_cpt . '">' . $folder_txt;
+                    $folder_cpt++;
+                }
+                else if ( $prev_level == $folder->nlevel )
+                {
+                    echo '
+					</li>' . $folder_txt;
+                    $folder_cpt++;
+                }
+                else
+                {
+                    $tmp = '';
+                    // Afficher les items de la derni?eres cat s'ils existent
+                    for( $x = $folder->nlevel;$x < $prev_level;$x++ )
+                    {
+                        echo "
 				    </li>
 				</ul>";
-				                    }
-				                	echo '
-					</li>'.$folder_txt;
-				                	$folder_cpt++;
-				                					                }
-				                					            }
-			            	$prev_level = $folder->nlevel;
+                    }
+                    echo '
+					</li>' . $folder_txt;
+                    $folder_cpt++;
+                }
+            }
+            $prev_level = $folder->nlevel;
 
-				            $cpt_total++;
-						}
-			        }
-		        }
-
-		        //clore toutes les balises de l'arbo
-		        for($x=1;$x<$prev_level;$x++)
-		                        echo "
+            $cpt_total++;
+        }
+    }
+}
+// clore toutes les balises de l'arbo
+for( $x = 1;$x < $prev_level;$x++ )
+echo "
 				</li>
 			</ul>";
-		        echo '
+echo '
 				</li>
 			</ul>
 		</div>
 	    </div>
     </div>';
-
-    //Zone top right - items list
-    echo '
+// Zone top right - items list
+echo '
     <div id="items_content">
         <div id="items_center">
             <div id="items_path" class="ui-corner-all"></div>
@@ -262,83 +295,81 @@ echo '
             </div>-->
             <div id="items_list"></div>
         </div>';
-
-    // Zone ITEM DETAIL
-    echo '
+// Zone ITEM DETAIL
+echo '
         <div id="item_details_ok">';
 
-        echo '
+echo '
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
             <div style="height:210px;overflow-y:auto;" id="item_details_scroll">';
-
-				//Info
-				echo '
+// Info
+echo '
 				<div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
 
-				echo'
+echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
                     <div class="ui-state-error ui-corner-all" style="padding:2px;">
-                        <img src="includes/images/error.png" alt="" />&nbsp;<b>'.$txt['pw_is_expired_-_update_it'].'</b>
+                        <img src="includes/images/error.png" alt="" />&nbsp;<b>' . $txt['pw_is_expired_-_update_it'] . '</b>
                     </div>
                 </div>
                 <table>';
-                //Line for LABEL
-                echo '
+// Line for LABEL
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['label'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['label'] . ' :</td>
                     <td>
-                        <input type="hidden" id="hid_label" value="', isset($data_item) ? $data_item['label'] : '', '" />
+                        <input type="hidden" id="hid_label" value="', isset( $data_item ) ? $data_item['label'] : '', '" />
                         <div id="id_label" style="display:inline;"></div>
                     </td>
                 </tr>';
-                //Line for DESCRIPTION
-                echo '
+// Line for DESCRIPTION
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['description'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['description'] . ' :</td>
                     <td>
-                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($data_item) ? $data_item['description'] : '', '" />
+                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset( $data_item ) ? $data_item['description'] : '', '" />
                     </td>
                 </tr>';
-                //Line for PW
-                echo '
+// Line for PW
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['pw'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['pw'] . ' :</td>
                     <td>
                         <div id="id_pw" style="float:left;"></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
                 </tr>';
-                //Line for LOGIN
-                echo '
+// Line for LOGIN
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['index_login'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['index_login'] . ' :</td>
                     <td>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
                 </tr>';
-                //Line for EMAIL
-                echo '
+// Line for EMAIL
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['email'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['email'] . ' :</td>
                     <td>
                         <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
                     </td>
                 </tr>';
-                //Line for URL
-                echo '
+// Line for URL
+echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['url'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['url'] . ' :</td>
                     <td>
                         <div id="id_url" style="display:inline;"></div><input type="hidden" id="hid_url" value="" />
                     </td>
                 </tr>';
-				//Line for FILES
-				echo '
+// Line for FILES
+echo '
 				<tr>
-				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float:left; margin-right:.3em;">&nbsp;</span>'.$txt['files_&_images'].' :</td>
+				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float:left; margin-right:.3em;">&nbsp;</span>' . $txt['files_&_images'] . ' :</td>
 				    <td>
 				        <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
 				        <div id="dialog_files" style="display: none;">
@@ -346,74 +377,68 @@ echo '
 				        </div>
 				    </td>
 				</tr>';
-				//Line for RESTRICTED TO
-				echo '
+// Line for RESTRICTED TO
+echo '
 				<tr>
-				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['restricted_to'].' :</td>
+				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['restricted_to'] . ' :</td>
 				    <td>
 				        <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
 				    </td>
 				</tr>';
-				//Line for TAGS
-				echo '
+// Line for TAGS
+echo '
 				<tr>
-				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['tags'].' :</td>
+				    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['tags'] . ' :</td>
 				    <td>
 				        <div id="id_tags" style="display:inline;"></div><input type="hidden" id="hid_tags" />
 				    </td>
 				</tr>';
-				//Line for KBs
-				if(isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1)
-					echo '
+// Line for KBs
+if ( isset( $_SESSION['settings']['enable_kb'] ) && $_SESSION['settings']['enable_kb'] == 1 )
+    echo '
 					<tr>
-					    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['kbs'].' :</td>
+					    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['kbs'] . ' :</td>
 					    <td>
 					        <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
 					    </td>
 					</tr>';
-                echo '
+echo '
                 </table>
             </div>
         </div>';
-
-		## NOT ALLOWED
-		echo '
+// # NOT ALLOWED
+echo '
 		<div id="item_details_nok" style="display:none; width:300px; margin:20px auto 20px auto;">
 		    <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$txt['not_allowed_to_see_pw'].'</b>
+		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>' . $txt['not_allowed_to_see_pw'] . '</b>
 				<span id="item_details_nok_restriction_list"></span>
 		    </div>
 		</div>';
-
-        //DATA EXPIRED
-        echo '
+// DATA EXPIRED
+echo '
         <div id="item_details_expired_full" style="display:none; width:300px; margin:20px auto 20px auto;">
 			<div class="ui-state-error ui-corner-all" style="padding:10px;">
-				<img src="includes/images/error.png" alt="" />&nbsp;<b>'.$txt['pw_is_expired_-_update_it'].'</b>
+				<img src="includes/images/error.png" alt="" />&nbsp;<b>' . $txt['pw_is_expired_-_update_it'] . '</b>
 			</div>
 		</div>';
-
-		## NOT ALLOWED
-		echo '
+// # NOT ALLOWED
+echo '
 		<div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
 		    <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$txt['home_personal_saltkey_info'].'</b>
+		        <img src="includes/images/lock.png" alt="" />&nbsp;<b>' . $txt['home_personal_saltkey_info'] . '</b>
 			    <br />
 			    <div style="text-align:center;">
-			        <u><a href="index.php">'.$txt['home'].'</a></u>
+			        <u><a href="index.php">' . $txt['home'] . '</a></u>
 			    </div>
 			</div>
 		</div>';
 
-    echo '
+echo '
     </div>';
 
-    echo '
+echo '
 </div>';
-
-
-
-//Formulaire NOUVEAU
+// Formulaire NOUVEAU
 echo '
 <div id="div_formulaire_saisi" style="display:none;">
     <form method="post" name="new_item" action="">
@@ -423,53 +448,53 @@ echo '
 
         <div id="item_tabs">
         <ul>
-            <li><a href="#tabs-01">'.$txt['definition'].'</a></li>
-            <li><a href="#tabs-02">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
-            <li><a href="#tabs-03">'.$txt['files_&_images'].'</a></li>
+            <li><a href="#tabs-01">' . $txt['definition'] . '</a></li>
+            <li><a href="#tabs-02">' . $txt['index_password'] . ' &amp; ' . $txt['visibility'] . '</a></li>
+            <li><a href="#tabs-03">' . $txt['files_&_images'] . '</a></li>
         </ul>
         <div id="tabs-01">';
-            //Line for LABEL
-            echo '
-            <label for="" class="label_cpm">'.$txt['label'].' : </label>
+// Line for LABEL
+echo '
+            <label for="" class="label_cpm">' . $txt['label'] . ' : </label>
             <input type="text" name="label" id="label" onchange="javascript:$(\'#display_title\').html(this.value)" class="input_text text ui-widget-content ui-corner-all" />';
-            //Line for DESCRIPTION
-            echo '
-            <label for="" class="label_cpm">'.$txt['description'].' : </label>
+// Line for DESCRIPTION
+echo '
+            <label for="" class="label_cpm">' . $txt['description'] . ' : </label>
             <span id="desc_span">
                 <textarea rows="5" name="desc" id="desc" class="input_text"></textarea>
             </span>
             <br />';
-            //Line for FOLDERS
-            echo '
-            <label for="" class="">'.$txt['group'].' : </label>
-            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px">'.
-            	$select_visible_folders_options.
-            '</select>';
-            //Line for LOGIN
-            echo '
-            <label for="" class="label_cpm" style="margin-top:10px;">'.$txt['login'].' : </label>
+// Line for FOLDERS
+echo '
+            <label for="" class="">' . $txt['group'] . ' : </label>
+            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px">' .
+$select_visible_folders_options .
+'</select>';
+// Line for LOGIN
+echo '
+            <label for="" class="label_cpm" style="margin-top:10px;">' . $txt['login'] . ' : </label>
             <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
-            //Line for EMAIL
-            echo '
-            <label for="" class="label_cpm">'.$txt['email'].' : </label>
+// Line for EMAIL
+echo '
+            <label for="" class="label_cpm">' . $txt['email'] . ' : </label>
             <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
-            //Line for URL
-            echo '
-            <label for="" class="label_cpm">'.$txt['url'].' : </label>
+// Line for URL
+echo '
+            <label for="" class="label_cpm">' . $txt['url'] . ' : </label>
             <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all" />
         </div>';
-        //Tabs Items N?2
-        echo '
+// Tabs Items N?2
+echo '
         <div id="tabs-02">';
-            //Line for folder complexity
-            echo'
+// Line for folder complexity
+echo'
 			<div style="margin-bottom:10px;">
-	            <label for="" class="form_label_180">'.$txt['complex_asked'].'</label>
+	            <label for="" class="form_label_180">' . $txt['complex_asked'] . '</label>
 	            <span id="complex_attendue" style="color:#D04806; margin-left:40px;"></span>
             </div>';
-            //Line for PW
-            echo '
-            <label class="label_cpm">'.$txt['used_pw'].' :
+// Line for PW
+echo '
+            <label class="label_cpm">' . $txt['used_pw'] . ' :
 				<span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
 			</label>
 			<input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;" />
@@ -480,157 +505,159 @@ echo '
 	                <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
 	                <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
 	                <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
-	                <input type="checkbox" id="pw_secure" /><label for="pw_secure">'.$txt['secure'].'</label>
-	            	&nbsp;<label for="pw_size">'.$txt['size'].' : </label>
+	                <input type="checkbox" id="pw_secure" /><label for="pw_secure">' . $txt['secure'] . '</label>
+	            	&nbsp;<label for="pw_size">' . $txt['size'] . ' : </label>
 						<img src="includes/images/minus.gif" style="cursor:pointer;" onclick="javascript:$(\'#pw_size\').text(parseInt($(\'#pw_size\').text())-1);" />
 							<span id="pw_size" style="font-size:11px; margin:0px 2px 0px 2px; width:50px;">8</span>
 						<img src="includes/images/plus.gif" style="cursor:pointer;" onclick="javascript:$(\'#pw_size\').text(parseInt($(\'#pw_size\').text())+1);"  />
 	            </span>
-				<a href="#" title="'.$txt['pw_generate'].'" onclick="pwGenerate(\'\')" class="cpm_button">
+				<a href="#" title="' . $txt['pw_generate'] . '" onclick="pwGenerate(\'\')" class="cpm_button">
 					<img  src="includes/images/arrow_refresh.png"  />
 				</a>
-				<a href="#" title="'.$txt['copy'].'" onclick="pwCopy(\'\')" class="cpm_button">
+				<a href="#" title="' . $txt['copy'] . '" onclick="pwCopy(\'\')" class="cpm_button">
 					<img  src="includes/images/paste_plain.png"  />
 				</a>
-				<a href="#" title="'.$txt['mask_pw'].'" onclick="ShowPasswords_Form()" class="cpm_button">
+				<a href="#" title="' . $txt['mask_pw'] . '" onclick="ShowPasswords_Form()" class="cpm_button">
 					<img  src="includes/images/eye.png"  />
 				</a>
 			</div>
 			<div style="width:100%;">
             	<div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
             </div>';
-            //Line for PW CONFIRMATION
-            echo '
-            <label for="" class="label_cpm">'.$txt['index_change_pw_confirmation'].' :</label>
+// Line for PW CONFIRMATION
+echo '
+            <label for="" class="label_cpm">' . $txt['index_change_pw_confirmation'] . ' :</label>
             <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />';
-            //Line for RESTRICTED TO
-			if(isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1){
-            	echo '
-            <label for="" class="label_cpm">'.$txt['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple">', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '
-				<optgroup label="'.$txt['users'].'">' : '';
-                foreach($liste_utilisateurs as $user){
-                    echo '
-					<option value="'.$user['id'].'">'.$user['login'].'</option>';
-                }
-                //Build restriction roles
-                if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
-                	echo '
+// Line for RESTRICTED TO
+if ( isset( $_SESSION['settings']['restricted_to'] ) && $_SESSION['settings']['restricted_to'] == 1 )
+{
+    echo '
+            <label for="" class="label_cpm">' . $txt['restricted_to'] . ' : </label>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple">', isset( $_SESSION['settings']['restricted_to_roles'] ) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '
+				<optgroup label="' . $txt['users'] . '">' : '';
+    foreach ( $liste_utilisateurs as $user )
+    {
+        echo '
+					<option value="' . $user['id'] . '">' . $user['login'] . '</option>';
+    }
+    // Build restriction roles
+    if ( isset( $_SESSION['settings']['restricted_to_roles'] ) && $_SESSION['settings']['restricted_to_roles'] == 1 )
+    {
+        echo '
 				</optgroup>
-				<optgroup label="'.$txt['roles'].'">';
-                	foreach($_SESSION['arr_roles_full'] as $role){
-                		echo '
-					<option value="role_'.$role['id'].'">'.$role['title'].'</option>';
-                	}
-                	echo '
+				<optgroup label="' . $txt['roles'] . '">';
+        foreach ( $_SESSION['arr_roles_full'] as $role )
+        {
+            echo '
+					<option value="role_' . $role['id'] . '">' . $role['title'] . '</option>';
+        }
+        echo '
                 	</optgroup>';
-                }
-                echo '
+    }
+    echo '
             </select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
             <div style="line-height:10px;">&nbsp;</div>';
-			}
-            //Line for TAGS
-            echo '
-            <label for="" class="label_cpm">'.$txt['tags'].' : </label>
+}
+// Line for TAGS
+echo '
+            <label for="" class="label_cpm">' . $txt['tags'] . ' : </label>
             <input type="text" name="item_tags" id="item_tags" class="input_text text ui-widget-content ui-corner-all" />';
-			//Line for Item modification
-			echo '
-			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+// Line for Item modification
+echo '
+			<div style="width:100%;margin:0px 0px 6px 0px;', isset( $_SESSION['settings']['anyone_can_modify'] ) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="anyone_can_modify" id="anyone_can_modify" />
-				<label for="anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
+				<label for="anyone_can_modify">' . $txt['anyone_can_modify'] . '</label>
 			</div>';
-			//Line for Item automatically deleted
-			echo '
-			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+// Line for Item automatically deleted
+echo '
+			<div style="width:100%;margin:0px 0px 6px 0px;', isset( $_SESSION['settings']['enable_delete_after_consultation'] ) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
-				<label for="enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
-				<input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$txt['times'].'&nbsp;
-				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onChange="$(\'#times_before_deletion\').val(\'\')" />
+				<label for="enable_delete_after_consultation">' . $txt['enable_delete_after_consultation'] . '</label>
+				<input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;' . $txt['times'] . '&nbsp;
+				' . $txt['automatic_del_after_date_text'] . '&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onChange="$(\'#times_before_deletion\').val(\'\')" />
 			</div>';
-            //Line for EMAIL
-            echo '
+// Line for EMAIL
+echo '
             <input type="checkbox" name="annonce" id="annonce" onChange="toggleDiv(\'annonce_liste\')" />
-            <label for="annonce">'.$txt['email_announce'].'</label>
+            <label for="annonce">' . $txt['email_announce'] . '</label>
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
-                <h3>'.$txt['email_select'].'</h3>
+                <h3>' . $txt['email_select'] . '</h3>
                 <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
-                foreach($liste_utilisateurs as $user){
-                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-                }
-                echo '
+foreach ( $liste_utilisateurs as $user )
+{
+    echo '<option value="' . $user['email'] . '">' . $user['login'] . '</option>';
+}
+echo '
                 </select>
             </div>
         </div>';
-        //Tabs EDIT N?3
-        echo '
+// Tabs EDIT N?3
+echo '
         <div id="tabs-03">
             <div id="item_file_queue"></div>
             <input type="file" name="item_files_upload" id="item_files_upload" /><br />
-            <a href="#" onclick="upload_attached_files()">'.$txt['start_upload'].'</a>
+            <a href="#" onclick="upload_attached_files()">' . $txt['start_upload'] . '</a>
         </div>
     </div>
     </form>
 </div>';
-
-//Formulaire EDITION ITEM
+// Formulaire EDITION ITEM
 echo '
 <div id="div_formulaire_edition_item" style="display:none;">
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
     <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
-
-    //Prepare TABS
-    echo '
+// Prepare TABS
+echo '
     <div id="item_edit_tabs">
         <ul>
-            <li><a href="#tabs-1">'.$txt['definition'].'</a></li>
-            <li><a href="#tabs-2">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
-            <li><a href="#tabs-3">'.$txt['files_&_images'].'</a></li>
+            <li><a href="#tabs-1">' . $txt['definition'] . '</a></li>
+            <li><a href="#tabs-2">' . $txt['index_password'] . ' &amp; ' . $txt['visibility'] . '</a></li>
+            <li><a href="#tabs-3">' . $txt['files_&_images'] . '</a></li>
         </ul>
         <div id="tabs-1">
-            <label for="" class="cpm_label">'.$txt['label'].' : </label>
+            <label for="" class="cpm_label">' . $txt['label'] . ' : </label>
             <input type="text" size="60" id="edit_label" onchange="javascript:$(\'#edit_display_title\').html(this.value)" class="input_text text ui-widget-content ui-corner-all" />
 
-            <label for="" class="cpm_label">'.$txt['description'].'&nbsp;<img src="includes/images/broom.png" style="cursor:pointer;" onclick="clear_html_tags()" /> </label>
+            <label for="" class="cpm_label">' . $txt['description'] . '&nbsp;<img src="includes/images/broom.png" style="cursor:pointer;" onclick="clear_html_tags()" /> </label>
             <span id="edit_desc_span">
                 <textarea rows="5" id="edit_desc" name="edit_desc" class="input_text"></textarea>
             </span>';
-            //Line for FOLDER
-            echo '
+// Line for FOLDER
+echo '
             <div style="margin:10px 0px 10px 0px;">
-            <label for="" class="">'.$txt['group'].' : </label>
-            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;">'.
-            	$select_visible_folders_options.
-            	'
+            <label for="" class="">' . $txt['group'] . ' : </label>
+            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;">' .
+$select_visible_folders_options .
+'
             </select>
             </div>';
-            //Line for LOGIN
-            echo '
-            <label for="" class="cpm_label">'.$txt['login'].' : </label>
+// Line for LOGIN
+echo '
+            <label for="" class="cpm_label">' . $txt['login'] . ' : </label>
             <input type="text" id="edit_item_login" class="input_text text ui-widget-content ui-corner-all" />
 
-            <label for="" class="cpm_label">'.$txt['email'].' : </label>
+            <label for="" class="cpm_label">' . $txt['email'] . ' : </label>
             <input type="text" id="edit_email" class="input_text text ui-widget-content ui-corner-all" />
 
-            <label for="" class="cpm_label">'.$txt['url'].' : </label>
+            <label for="" class="cpm_label">' . $txt['url'] . ' : </label>
             <input type="text" id="edit_url" class="input_text text ui-widget-content ui-corner-all" />
         </div>';
-
-        //TABS edit n?2
-        echo '
+// TABS edit n?2
+echo '
         <div id="tabs-2">';
-            //Line for folder complexity
-            echo'
+// Line for folder complexity
+echo'
 			<div style="margin-bottom:10px;">
-	            <label for="" class="cpm_label">'.$txt['complex_asked'].'</label>
+	            <label for="" class="cpm_label">' . $txt['complex_asked'] . '</label>
 	            <span id="edit_complex_attendue" style="color:#D04806;"></span>
             </div>';
 
-            echo '
+echo '
 			<div style="line-height:20px;">
-	            <label for="" class="label_cpm">'.$txt['used_pw'].' :
+	            <label for="" class="label_cpm">' . $txt['used_pw'] . ' :
 					<span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
 				</label>
 				<input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:410px;" />
@@ -642,19 +669,19 @@ echo '
 	                <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
 	                <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
 	                <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-	                <input type="checkbox" id="edit_pw_secure" /><label for="edit_pw_secure">'.$txt['secure'].'</label>
-	            	&nbsp;<label for="edit_pw_size">'.$txt['size'].' : </label>
+	                <input type="checkbox" id="edit_pw_secure" /><label for="edit_pw_secure">' . $txt['secure'] . '</label>
+	            	&nbsp;<label for="edit_pw_size">' . $txt['size'] . ' : </label>
 						<img src="includes/images/minus.gif" style="cursor:pointer;" onclick="javascript:$(\'#edit_pw_size\').text(parseInt($(\'#edit_pw_size\').text())-1);" />
 						<span id="edit_pw_size" style="font-size:11px; margin:0px 2px 0px 2px; width:50px;">8</span>
 						<img src="includes/images/plus.gif" style="cursor:pointer;" onclick="javascript:$(\'#edit_pw_size\').text(parseInt($(\'#edit_pw_size\').text())+1);"  />
 	            </span>
-				<a href="#" title="'.$txt['pw_generate'].'" onclick="pwGenerate(\'edit\')" class="cpm_button">
+				<a href="#" title="' . $txt['pw_generate'] . '" onclick="pwGenerate(\'edit\')" class="cpm_button">
 					<img  src="includes/images/arrow_refresh.png"  />
 				</a>
-				<a href="#" title="'.$txt['copy'].'" onclick="pwCopy(\'edit\')" class="cpm_button">
+				<a href="#" title="' . $txt['copy'] . '" onclick="pwCopy(\'edit\')" class="cpm_button">
 					<img  src="includes/images/paste_plain.png"  />
 				</a>
-				<a href="#" title="'.$txt['mask_pw'].'" onclick="ShowPasswords_EditForm()" class="cpm_button">
+				<a href="#" title="' . $txt['mask_pw'] . '" onclick="ShowPasswords_EditForm()" class="cpm_button">
 					<img  src="includes/images/eye.png"  />
 				</a>
 			</div>
@@ -662,214 +689,206 @@ echo '
             	<div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
             </div>
 
-            <label for="" class="cpm_label">'.$txt['confirm'].' : </label>
+            <label for="" class="cpm_label">' . $txt['confirm'] . ' : </label>
             <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />';
 
-			if(isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1){
-				echo '
-				<label for="" class="label_cpm">'.$txt['restricted_to'].' : </label>
+if ( isset( $_SESSION['settings']['restricted_to'] ) && $_SESSION['settings']['restricted_to'] == 1 )
+{
+    echo '
+				<label for="" class="label_cpm">' . $txt['restricted_to'] . ' : </label>
 				<select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple"></select>
 				<input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
             <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>';
-			}
+}
 
-            echo '
-            <label for="" class="cpm_label">'.$txt['tags'].' : </label>
+echo '
+            <label for="" class="cpm_label">' . $txt['tags'] . ' : </label>
             <input type="text" size="50" name="edit_tags" id="edit_tags" class="input_text text ui-widget-content ui-corner-all" />';
-
-			//Line for Item modification
-			echo '
-			<div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+// Line for Item modification
+echo '
+			<div style="width:100%;margin:0px 0px 6px 0px;', isset( $_SESSION['settings']['anyone_can_modify'] ) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify" />
-				<label for="edit_anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
+				<label for="edit_anyone_can_modify">' . $txt['anyone_can_modify'] . '</label>
 			</div>';
-
-			//Line for Item automatically deleted
-			echo '
-			<div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+// Line for Item automatically deleted
+echo '
+			<div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset( $_SESSION['settings']['enable_delete_after_consultation'] ) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
 				<input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
-				<label for="edit_enable_delete_after_consultation">'.$txt['enable_delete_after_consultation'].'</label>
-				<input type="text" value="" size="1" id="edit_times_before_deletion" onChange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$txt['times'].'&nbsp;
-				'.$txt['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
+				<label for="edit_enable_delete_after_consultation">' . $txt['enable_delete_after_consultation'] . '</label>
+				<input type="text" value="" size="1" id="edit_times_before_deletion" onChange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;' . $txt['times'] . '&nbsp;
+				' . $txt['automatic_del_after_date_text'] . '&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
 			</div>';
 
-			echo '
+echo '
             <input type="checkbox" name="edit_annonce" id="edit_annonce" onChange="toggleDiv(\'edit_annonce_liste\')" />
-            <label for="edit_annonce">'.$txt['email_announce'].'</label>
+            <label for="edit_annonce">' . $txt['email_announce'] . '</label>
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
-                <h3>'.$txt['email_select'].'</h3>
+                <h3>' . $txt['email_select'] . '</h3>
                 <select id="edit_annonce_liste_destinataires" multiple="multiple" size="10">';
-                foreach($liste_utilisateurs as $user){
-                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-                }
-                echo '
+foreach ( $liste_utilisateurs as $user )
+{
+    echo '<option value="' . $user['email'] . '">' . $user['login'] . '</option>';
+}
+echo '
                 </select>
             </div>
         </div>';
-        //Tabs EDIT N?3
-        echo '
+// Tabs EDIT N?3
+echo '
         <div id="tabs-3">
             <div style="font-weight:bold;font-size:12px;">
                 <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$txt['uploaded_files'].'
+                ' . $txt['uploaded_files'] . '
             </div>
             <div id="item_edit_list_files" style="margin-left:25px;"></div>
             <div style="margin-top:10px;font-weight:bold;font-size:12px;">
                 <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$txt['upload_files'].'
+                ' . $txt['upload_files'] . '
             </div>
             <div id="item_edit_file_queue"></div>
 
             <input type="file" name="item_edit_files_upload" id="item_edit_files_upload" />
 			<br />
-            <a href="#" onclick="upload_attached_files_edit_mode()">'.$txt['start_upload'].'</a>
+            <a href="#" onclick="upload_attached_files_edit_mode()">' . $txt['start_upload'] . '</a>
 
         </div>
     </div>';
-        echo '
+echo '
     </form>
 </div>';
-
-//Formulaire AJOUT REPERTORIE
+// Formulaire AJOUT REPERTORIE
 echo '
 <div id="div_ajout_rep" style="display:none;">
     <div id="new_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
-            <td>'.$txt['label'].' : </td>
+            <td>' . $txt['label'] . ' : </td>
             <td><input type="text" size="20" id="new_rep_titre" /></td>
         </tr>
         <tr>
-            <td>'.$txt['sub_group_of'].' : </td>
+            <td>' . $txt['sub_group_of'] . ' : </td>
             <td><select id="new_rep_groupe">
-            	<option value="0">---</option>'.
-				$select_visible_folders_options.
-			'
+            	<option value="0">---</option>' .
+$select_visible_folders_options .
+'
             </select></td>
         </tr>
         <tr>
-            <td>'.$txt['complex_asked'].' : </td>
+            <td>' . $txt['complex_asked'] . ' : </td>
             <td><select id="new_rep_complexite">
                 <option value="">---</option>';
-                foreach($pw_complexity as $complex)
-                    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
-            echo '
+foreach ( $pw_complexity as $complex )
+echo '<option value="' . $complex[0] . '">' . $complex[1] . '</option>';
+echo '
             </select>
         </tr>';
-        /*
+/*
         if (count($_SESSION['arr_roles'])>1) {
         	echo '
 	        <tr>
 	            <td>'.$txt['associated_role'].'</td>
 	            <td><select id="new_rep_role">';
-	        	foreach($_SESSION['arr_roles'] as $role)
+	        	foreach ($_SESSION['arr_roles'] as $role)
 	        		echo '<option value="'.$role['id'].'">'.$role['title'].'</option>';
 	        	echo '
 	            </select>
 	        </tr>';
         }
        */
-        echo '
+echo '
     </table>
 </div>';
-
-//Formulaire EDITER REPERTORIE
+// Formulaire EDITER REPERTORIE
 echo '
 <div id="div_editer_rep" style="display:none;">
     <div id="edit_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
-            <td>'.$txt['new_label'].' : </td>
+            <td>' . $txt['new_label'] . ' : </td>
             <td><input type="text" size="20" id="edit_folder_title" /></td>
         </tr>
         <tr>
-            <td>'.$txt['group_select'].' : </td>
+            <td>' . $txt['group_select'] . ' : </td>
             <td><select id="edit_folder_folder">
-            	<option value="0">-choisir-</option>'.
-				$select_visible_folders_options.
-				'
+            	<option value="0">-choisir-</option>' .
+$select_visible_folders_options .
+'
             </select></td>
         </tr>
         <tr>
-            <td>'.$txt['complex_asked'].' : </td>
+            <td>' . $txt['complex_asked'] . ' : </td>
             <td><select id="edit_folder_complexity">
                 <option value="">---</option>';
-                foreach($pw_complexity as $complex)
-                    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
-            echo '
+foreach ( $pw_complexity as $complex )
+echo '<option value="' . $complex[0] . '">' . $complex[1] . '</option>';
+echo '
             </select>
         </tr>
     </table>
 </div>';
-
-//Formulaire SUPPRIMER REPERTORIE
+// Formulaire SUPPRIMER REPERTORIE
 echo '
 <div id="div_supprimer_rep" style="display:none;">
     <table>
         <tr>
-            <td>'.$txt['group_select'].' : </td>
+            <td>' . $txt['group_select'] . ' : </td>
             <td><select id="delete_rep_groupe">
-            	<option value="0">-choisir-</option>'.
-				$select_visible_folders_options.
-				'
+            	<option value="0">-choisir-</option>' .
+$select_visible_folders_options .
+'
             </select></td>
         </tr>
     </table>
 </div>';
-
-//SUPPRIMER UN ELEMENT
+// SUPPRIMER UN ELEMENT
 echo '
 <div id="div_del_item" style="display:none;">
-    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$txt['confirm_deletion'].'</p>
+    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>' . $txt['confirm_deletion'] . '</p>
 </div>';
-
-//DIALOG INFORM USER THAT LINK IS COPIED
+// DIALOG INFORM USER THAT LINK IS COPIED
 echo '
 <div id="div_item_copied" style="display:none;">
     <p>
-        <span class="ui-icon ui-icon-info" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$txt['link_is_copied'].'
+        <span class="ui-icon ui-icon-info" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>' . $txt['link_is_copied'] . '
     </p>
     <div id="div_display_link"></div>
 </div>';
-
-//DIALOG TO WHAT FOLDER COPYING ITEM
+// DIALOG TO WHAT FOLDER COPYING ITEM
 echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$txt['item_copy_to_folder'].'</div>
+    <div style="">' . $txt['item_copy_to_folder'] . '</div>
 	<div style="margin:10px;">
 		<select id="copy_in_folder">
-            <option value="0">---</option>'.
-    		$select_visible_nonpersonal_folders_options.
-		'</select>
+            <option value="0">---</option>' .
+$select_visible_nonpersonal_folders_options .
+'</select>
 	</div>
 </div>';
-
-//DIALOG FOR HISTORY OF ITEM
+// DIALOG FOR HISTORY OF ITEM
 echo '
 <div id="div_item_history" style="display:none;">
 	<div id="item_history_log"></div>
-	', (isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1) ?
-	'<div id="new_history_entry_form" style="display:none;">
+	', ( isset( $_SESSION['settings']['insert_manual_entry_item_history'] ) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ) ?
+'<div id="new_history_entry_form" style="display:none;">
 		<div id="div_add_history_entry">
 			<div id="item_history_log_error"></div>
-			'.$txt['label'].'&nbsp;<input type="text" id="add_history_entry_label" size="40" />&nbsp;
-			<span class="button" style="margin-top:6px;" onclick="manage_history_entry(\'add_entry\',\'\')">'.$txt['add_history_entry'].'</div>
+			' . $txt['label'] . '&nbsp;<input type="text" id="add_history_entry_label" size="40" />&nbsp;
+			<span class="button" style="margin-top:6px;" onclick="manage_history_entry(\'add_entry\',\'\')">' . $txt['add_history_entry'] . '</div>
 		</div>
 	</div>'
-	:'', '
+:'', '
 </div>';
-
-//DIALOG FOR ITEM SHARE
+// DIALOG FOR ITEM SHARE
 echo '
 <div id="div_item_share" style="display:none;">
 	<div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-	<div style="">'.$txt['item_share_text'].'</div>
+	<div style="">' . $txt['item_share_text'] . '</div>
 	<input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
 	<div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
 </div>';
 
+require_once( "items.load.php" );
 
-require_once("items.load.php");
 ?>

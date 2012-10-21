@@ -20,4 +20,3 @@ $PHPMAILER_LANG["connect_host"] = 'SMTP Feil: Kunne ikke koble til SMTP host.';
 $PHPMAILER_LANG["file_access"] = 'Kunne ikke få tilgang til filen: ';
 $PHPMAILER_LANG["file_open"] = 'Fil feil: Kunne ikke åpne filen: ';
 $PHPMAILER_LANG["encoding"] = 'Ukjent encoding: ';
-?>

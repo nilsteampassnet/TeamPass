@@ -145,7 +145,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
             while ($row = mysql_fetch_object($result)) {
             	if ($unique_id_list == false) {
             		$arr[$row->$idField] = $row;
-            	}else{
+            	} else {
             		array_push($arr, $row->$idField);
             	}
             }

@@ -17,7 +17,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 global $k, $settings;
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 header("Content-type: text/html; charset=utf-8");
 error_reporting (E_ERROR);
 require_once('main.functions.php');
@@ -38,7 +38,7 @@ switch($_POST['type'])
     case "export_to_pdf_format":
     	$full_listing = array();
 
-    	foreach (explode(';', $_POST['ids']) as $id){
+    	foreach (explode(';', $_POST['ids']) as $id) {
     		if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
 
 	   			$rows = $db->fetch_all_array("
@@ -59,21 +59,21 @@ switch($_POST['type'])
 	   			$id_managed = '';
 	   			$i = 0;
 	   			$items_id_list = array();
-	   			foreach( $rows as $reccord ) {
+	   			foreach ($rows as $reccord ) {
                     $restricted_users_array = explode(';',$reccord['restricted_to']);
 	   				//exclude all results except the first one returned by query
-	   				if ( empty($id_managed) || $id_managed != $reccord['id'] ){
+	   				if (empty($id_managed) || $id_managed != $reccord['id']) {
 	   					if (
                             (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
                             ||
                             (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],$restricted_users_array))
-                        ){
+                       ) {
 	   						//exclude this case
-	   					}else {
+	   					} else {
 	   						//encrypt PW
-	   						if ( !empty($_POST['salt_key']) && isset($_POST['salt_key']) ){
+	   						if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
 	   							$pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
-	   						}else
+	   						} else
 	   							$pw = decrypt($reccord['pw']);
 
 	   						/*$full_listing[$reccord['id']] = array(
@@ -90,14 +90,14 @@ switch($_POST['type'])
    			}
     	}
     	
-		require_once ("NestedTree.class.php");
+		require_once "NestedTree.class.php";
 		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 		$tree->rebuild();
 		// get node paths for table headers
-		foreach($full_listing as $key => $val) {
+		foreach ($full_listing as $key => $val) {
 			$folders = $tree->getPath($key,true);
 			$path = "";
-			foreach($folders as $val) {
+			foreach ($folders as $val) {
 				if ($path) $path .= " » ";
 				$path .= $val->title;
 			}
@@ -127,7 +127,7 @@ switch($_POST['type'])
     		$pdf->SetFont('DejaVu','',12);
     		$pdf->Cell(0,10,$txt['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'],mktime(date("H"),date("i"),date("s"),date("m"),date("d"),date("Y"))).' '.$txt['by'].' '.$_SESSION['login'],0,1,'C',false);
     		
-    		foreach( $full_listing as $key => $val) {
+    		foreach ($full_listing as $key => $val) {
 				$printed_ids[] = $key;
 				$pdf->SetFont('DejaVu','',10);
 				$pdf->SetFillColor(192,192,192);
@@ -138,11 +138,11 @@ switch($_POST['type'])
 				$pdf->cell(40,6,$txt['login'],1,0,"C",1);
 				$pdf->cell(45,6,$txt['pw'],1,0,"C",1);
 				$pdf->cell(60,6,$txt['description'],1,1,"C",1);
-				foreach( $val as $item ){
+				foreach ($val as $item) {
 					//row height calculus
 					$nb = 0;
-					for($i=0;$i<count($item);$i++){
-						if($i==3){
+					for($i=0;$i<count($item);$i++) {
+						if($i==3) {
 							$item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
 						}	
 						$nb=max($nb,NbLines($table_col_width[$i], $item[$i]));
@@ -165,10 +165,10 @@ switch($_POST['type'])
 						if ($i == 2) {
 							// change font for password
 							$pdf->SetFont('LiberationMono','',9);
-						}else{
+						} else {
 							$pdf->SetFont('DejaVu','',9); 
 						}           
-						if($i==3){
+						if($i==3) {
 							$item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
 						}
 						$pdf->MultiCell($w,5,$item[$i],0,$a);
@@ -208,7 +208,7 @@ switch($_POST['type'])
    		$i = 1;
    		$items_id_list = array();
 
-    	foreach (explode(';', $_POST['ids']) as $id){
+    	foreach (explode(';', $_POST['ids']) as $id) {
     		if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
 
 	   			$rows = $db->fetch_all_array("
@@ -225,21 +225,21 @@ switch($_POST['type'])
 	                   AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
 	                   ORDER BY i.label ASC, l.date DESC
                 ");
-	   			foreach( $rows as $reccord ) {
+	   			foreach ($rows as $reccord ) {
                     $restricted_users_array = explode(';',$reccord['restricted_to']);
 	   				//exclude all results except the first one returned by query
-	   				if ( empty($id_managed) || $id_managed != $reccord['id'] ){
+	   				if (empty($id_managed) || $id_managed != $reccord['id']) {
 	   					if (
                             (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
                             ||
                             (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],$restricted_users_array))
-                        ){
+                       ) {
 	   						//exclude this case
-	   					}else {
+	   					} else {
 	   						//encrypt PW
-	   						if ( !empty($_POST['salt_key']) && isset($_POST['salt_key']) ){
+	   						if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
 	   							$pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
-	   						}else
+	   						} else
 	   							$pw = decrypt($reccord['pw']);
 
 	   						$full_listing[$i] = array(

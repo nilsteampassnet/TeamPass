@@ -1,9 +1,9 @@
 <?php
 /**
  * @file 		home.php
- * @author		Nils Laumaill�
+ * @author		Nils Laumaillé
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaill�
+ * @copyright 	(c) 2009-2011 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -16,7 +16,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 //Call nestedtree library and load full tree
-require_once ("sources/NestedTree.class.php");
+require_once  "sources/NestedTree.class.php";
 $tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $tree->rebuild();
 $full_tree = $tree->getDescendants();
@@ -26,7 +26,7 @@ echo '
             <span class="ui-icon ui-icon-person" style="float: left; margin-right: .3em;">&nbsp;</span>
             '.$txt['index_welcome'].' <b>'.$_SESSION['login'].'</b><br />';
             //Check if password is valid
-            if ( empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false ){
+            if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 echo '
                 <div style="margin:auto;padding:4px;width:300px;"  class="ui-state-focus ui-corner-all">
                 	<h3>'.$txt['index_change_pw'].'</h3>
@@ -40,9 +40,9 @@ echo '
                         <tr><td colspan="2"><input type="button" onClick="ChangeMyPass()" value="'.$txt['index_change_pw_button'].'" /></td></tr>
                     </table>
                 </div>';
-            }elseif ( !empty($_SESSION['derniere_connexion']) ){
+            }else if (!empty($_SESSION['derniere_connexion'])) {
                 //Last items created block
-                if ( isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && !empty($_SESSION['groupes_visibles_list']) ){
+                if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && !empty($_SESSION['groupes_visibles_list'])) {
                     echo '
                     <div style="position:relative;float:right;margin-top:-25px;padding:4px;width:250px;" class="ui-state-highlight ui-corner-all">
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>
@@ -60,9 +60,9 @@ echo '
                         ";
                 	$cpt=1;
                     $rows = $db->fetch_all_array($sql);
-                	foreach($rows as $record){
+                	foreach ($rows as $record) {
                 		$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$record['id']."' AND action = 'at_delete'");
-                		if ( $data[0] == 0 ){
+                		if ($data[0] == 0) {
                 			echo '<span class="ui-icon ui-icon-tag" style="float: left; margin-right: .3em;">&nbsp;</span>
                             <a href="#" onClick="javascript:$(\'#menu_action\').val(\'action\');window.location.href =\'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\';" style="cursor:pointer;">'.stripslashes($record['label']).'</a><br />';
                 			if($cpt==5) break;
@@ -73,7 +73,7 @@ echo '
                     </div>';
                 }
                 //ADMIN INFORMATION
-                if($_SESSION['user_admin'] == 1){
+                if($_SESSION['user_admin'] == 1) {
                 	echo '
                     <div style="position:relative;float:right;margin-top:-25px;padding:4px;width:250px;" class="ui-state-highlight ui-corner-all">
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>
@@ -113,7 +113,7 @@ echo '
                         </button>' : '' ,'
                     </div>
                 </div>';
-                
+
             	//Personnal SALTKEY
             	if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
             		echo '
@@ -209,15 +209,15 @@ echo '
                                 <select id="import_keepass_items_to">
                                     <option value="0">'.$txt['root'].'</option>';
                             $prev_level = "";
-                            foreach($full_tree as $t){
-                                if ( in_array($t->id,$_SESSION['groupes_visibles']) ){
+                            foreach ($full_tree as $t) {
+                                if (in_array($t->id,$_SESSION['groupes_visibles'])) {
                                     $ident="&nbsp;&nbsp;";
                                     for($x=1;$x<$t->nlevel;$x++) $ident .= "&nbsp;&nbsp;";
-                                    if ( $prev_level < $t->nlevel ){
+                                    if ($prev_level < $t->nlevel) {
                                         echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-                                    }else if ( $prev_level == $t->nlevel ){
+                                    } else if ($prev_level == $t->nlevel) {
                                        echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-                                    }else{
+                                    } else {
                                         echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
                                     }
                                     $prev_level = $t->nlevel;
@@ -249,7 +249,7 @@ echo '
 
             	        <label for="selected_folders" class="form_label">'.$txt['select_folders'].' :</label>
             	        <select id="selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
-            	        
+
             	        <br /><br />
             	        <label for="pdf_password" class="form_label">'.$txt['pdf_password'].' :</label>
             	        <input type="password" id="pdf_password" name="pdf_password" />
@@ -266,7 +266,7 @@ echo '
 						<div id="download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
             	    </div>
             	</div>';
-            }else{
+            } else {
 
             }
             echo '

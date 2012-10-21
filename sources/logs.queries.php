@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 
 global $k, $settings;
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 header("Content-type: text/html; charset==utf-8");
 
 require_once("class.database.php");
@@ -36,8 +36,8 @@ $sWhere = "id_tree IN(".implode(',', $_SESSION['groupes_visibles']).")";	//limit
 $array_pf = array();
 $list_pf = "";
 $rows = $db->fetch_all_array("SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT title = ".$_SESSION['user_id']);
-foreach( $rows as $reccord ){
-	if ( !in_array($reccord['id'],$array_pf) ) {
+foreach ($rows as $reccord) {
+	if (!in_array($reccord['id'],$array_pf)) {
 		//build an array of personal folders ids
 		array_push($array_pf,$reccord['id']);
 		//build also a string with those ids
@@ -49,18 +49,18 @@ foreach( $rows as $reccord ){
 /* BUILD QUERY */
 //Paging
 $sLimit = "";
-if ( isset( $_GET['iDisplayStart'] ) && $_GET['iDisplayLength'] != '-1' ) {
+if (isset( $_GET['iDisplayStart'] ) && $_GET['iDisplayLength'] != '-1' ) {
 	$sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
 }
 
 //Ordering
 
-if ( isset( $_GET['iSortCol_0'] ) )
+if (isset( $_GET['iSortCol_0'] ))
 {
 	$sOrder = "ORDER BY  ";
-	for ( $i=0 ; $i<intval( $_GET['iSortingCols'] ) ; $i++ )
+	for ($i=0 ; $i<intval( $_GET['iSortingCols'] ) ; $i++ )
 	{
-		if ( $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" )
+		if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" )
 		{
 			$sOrder .= $aColumns[ intval( $_GET['iSortCol_'.$i] ) ]."
 			        ".mysql_real_escape_string( $_GET['sSortDir_'.$i] ) .", ";
@@ -68,7 +68,7 @@ if ( isset( $_GET['iSortCol_0'] ) )
 	}
 
 	$sOrder = substr_replace( $sOrder, "", -2 );
-	if ( $sOrder == "ORDER BY" )
+	if ($sOrder == "ORDER BY" )
 	{
 		$sOrder = "";
 	}
@@ -80,10 +80,10 @@ if ( isset( $_GET['iSortCol_0'] ) )
    * word by word on any field. It's possible to do here, but concerned about efficiency
    * on very large tables, and MySQL's regex functionality is very limited
 */
-if ( $_GET['sSearch'] != "" )
+if ($_GET['sSearch'] != "" )
 {
 	$sWhere .= " AND ";
-	for ( $i=0 ; $i<count($aColumns) ; $i++ )
+	for ($i=0 ; $i<count($aColumns) ; $i++ )
 	{
 		$sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string( $_GET['sSearch'] )."%' OR ";
 	}
@@ -91,10 +91,10 @@ if ( $_GET['sSearch'] != "" )
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
-if ( !empty($list_pf) ) {
+if (!empty($list_pf)) {
 	if (!empty($sWhere)) $sWhere .= " AND ";
 	$sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$list_pf.") ";
-}else{
+} else {
 	$sWhere = "WHERE ".$sWhere;
 }
 
@@ -134,7 +134,7 @@ $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": [ ';
 
 $rows = $db->fetch_all_array($sql);
-foreach( $rows as $reccord ){
+foreach ($rows as $reccord) {
 	$sOutput .= "[";
 
 	//col1
@@ -147,13 +147,13 @@ foreach( $rows as $reccord ){
 	$sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
 
 	//col4
-	if ( $reccord['perso']==1 || !empty($reccord['restricted_to']) || !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])) != $_SESSION['user_id'] ){
+	if ($reccord['perso']==1 || !empty($reccord['restricted_to']) || !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])) != $_SESSION['user_id']) {
 		$sOutput .= '"<img src=\"includes/images/lock.png\" />",';
-	}else{
+	} else {
 		$txt = str_replace(array('\n','<br />','\\'),array(' ',' ',''),strip_tags(mysql_real_escape_string($reccord['description'])));
 		if (strlen($txt) > 50) {
 			$sOutput .= '"'.(substr(htmlspecialchars(stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)), ENT_QUOTES), 0, 50)).'",';
-		}else{
+		} else {
 			$sOutput .= '"'.(htmlspecialchars(stripslashes(preg_replace ('/<[^>]*>|[\t]/', '', $txt)), ENT_QUOTES)).'",';
 		}
 	}

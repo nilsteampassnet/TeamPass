@@ -25,14 +25,14 @@ function aes_encrypt(text) {
 }
 
 //Function opening
-	function openKB(id){
+	function openKB(id) {
 		$.post(
 			"sources/kb.queries.php",
 			{
 			type    : "open_kb",
 			id      : id
 			},
-			function(data){
+			function(data) {
 				data = $.parseJSON(data);
 				$("#kb_label").val(data.label);
 				$("#kb_category").val(data.category);
@@ -40,7 +40,7 @@ function aes_encrypt(text) {
 				$("#kb_id").val(id);
 				if (data.anyone_can_modify == 0) {
 					$("#modify_kb_no").prop("checked", true);
-				}else{
+				} else {
 					$("#modify_kb_yes").prop("checked", true);
 				}
 				for (var i=0; i < data.options.length; ++i) {
@@ -52,7 +52,7 @@ function aes_encrypt(text) {
 	}
 
 	//Function deleting
-	function deleteKB(id){
+	function deleteKB(id) {
 		$("#kb_id").val(id);
 		$("#div_kb_delete").dialog("open");
 	}
@@ -94,7 +94,7 @@ function aes_encrypt(text) {
 						"sources/kb.queries.php",
 						"type=delete_kb&"+
 					    "&id="+$("#kb_id").val(),
-					    function(data){
+					    function(data) {
 							$("#div_kb_delete").dialog("close");
 							oTable = $("#t_kb").dataTable();
 							oTable.fnDraw();
@@ -119,11 +119,11 @@ function aes_encrypt(text) {
 				"<?php echo $txt['save_button'];?>": function() {
 					if($("#kb_label").val() == "") {
 						$("#kb_label").addClass( "ui-state-error" );
-					}else if($("#kb_category").val() == "") {
+					} else if($("#kb_category").val() == "") {
 						$("#kb_category").addClass( "ui-state-error" );
-					}else if($("#kb_description").val() == "") {
+					} else if($("#kb_description").val() == "") {
 						$("#kb_description").addClass( "ui-state-error" );
-					}else{
+					} else {
                         //selected items associated to KB
                         var itemsvalues = [];
                         $("#kb_associated_to :selected").each(function(i, selected) {
@@ -139,7 +139,7 @@ function aes_encrypt(text) {
 					      		type 	: "kb_in_db",
 					      		data : aes_encrypt(data)
 					      	},
-			                function(data){
+			                function(data) {
 			                	if (data[0].status == "done") {
 			                		oTable = $("#t_kb").dataTable();
 			                		oTable.fnDraw();
@@ -161,12 +161,12 @@ function aes_encrypt(text) {
 			    if(instance)
 			    {
 			    	CKEDITOR.replace("kb_description",{toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
-			    }else{
+			    } else {
 					$("#kb_description").ckeditor({toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
 			    }
 			},
 	        close: function(event,ui) {
-	        	if(CKEDITOR.instances["kb_description"]){
+	        	if(CKEDITOR.instances["kb_description"]) {
 	        		CKEDITOR.instances["kb_description"].destroy();
 	        	}
 	        	$("#kb_id,#kb_label, #kb_description, #kb_category, #full_list_items_associated").val("");
@@ -177,7 +177,7 @@ function aes_encrypt(text) {
 		$( "#kb_category" ).autocomplete({
 			source: "sources/kb.queries.categories.php",
 			minLength: 1
-		}).focus(function(){
+		}).focus(function() {
 			if (this.value == "")
 				$(this).trigger("keydown.autocomplete");
 		});

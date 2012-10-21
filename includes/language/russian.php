@@ -2,7 +2,7 @@
 //RUSSIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -511,13 +511,13 @@ $txt['settings_kb'] = "Включить Базу Знаний (beta)";
 $txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой ( , )!<br />Например: домен_1,домен_2,домен_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой (, )!<br />Например: домен_1,домен_2,домен_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP Base DN вашего домена";
 $txt['settings_ldap_mode'] = "Включить аутентификацию пользователей через сервер LDAP";
 $txt['settings_ldap_mode_tip'] = "Включите, только если у вас есть сервер LDAP и если вы хотите использовать его для аутентификации пользователей TeamPass через него.";
 $txt['settings_ldap_ssl'] = "Использовать LDAP через SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Использовать LDAP поверх TLS";
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "Включить протоколирование подключений пользователей к базе данных";
 $txt['settings_maintenance_mode'] = "Перевести TeamPass в режим обслуживания";
 $txt['settings_maintenance_mode_tip'] = "В этом режиме могут подключиться только Администраторы.";

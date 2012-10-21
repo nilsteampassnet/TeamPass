@@ -17,7 +17,7 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to mysql server
@@ -25,7 +25,7 @@ require_once("class.database.php");
 $db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-if ( !empty($_POST['type']) ){
+if (!empty($_POST['type'])) {
     switch($_POST['type'])
     {
         #CASE adding a new role
@@ -79,13 +79,13 @@ if ( !empty($_POST['type']) ){
         #CASE change right for a role on a folder via the TM
         case "change_role_via_tm";
         	//get full tree dependencies
-        	require_once ("NestedTree.class.php");
+        	require_once "NestedTree.class.php";
         	$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
         	$tree = $tree->getDescendants($_POST['folder'],true);
 
         	if (isset($_POST['allowed']) AND $_POST['allowed'] == 1) {
         		//case where folder was allowed but not any more
-        		foreach($tree as $node){
+        		foreach ($tree as $node) {
         			//Store in DB
         			$db->query_delete(
 	        			'roles_values',
@@ -95,9 +95,9 @@ if ( !empty($_POST['type']) ){
 	        			)
         			);
         		}
-        	}else if ($_POST['allowed'] == 0){
+        	} else if ($_POST['allowed'] == 0) {
         		//case where folder was not allowed but allowed now
-        		foreach($tree as $node){
+        		foreach ($tree as $node) {
         			//Store in DB
         			$db->query_insert(
 	        			'roles_values',
@@ -124,7 +124,7 @@ if ( !empty($_POST['type']) ){
 			    90=>array(90,$txt['complex_level6'])
 			);
   		
-    		require_once ("NestedTree.class.php");
+    		require_once "NestedTree.class.php";
     		$tree = new NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
     		$tree = $tree->getDescendants();
     		$texte = '<table><thead><tr><th>'.$txt['group'].'s</th>';
@@ -136,11 +136,11 @@ if ( !empty($_POST['type']) ){
 
     		//count nb of roles
     		$roles_count = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_title");
-    		if($roles_count > $display_nb){
-    			if(!isset($_POST['start']) || $_POST['start'] == 0){
+    		if($roles_count > $display_nb) {
+    			if(!isset($_POST['start']) || $_POST['start'] == 0) {
     				$start = 0;
     				$previous = 0;
-    			}else{
+    			} else {
     				$start = intval($_POST['start']);
     				$previous = $start-$display_nb;
     			}
@@ -155,10 +155,10 @@ if ( !empty($_POST['type']) ){
 				FROM ".$pre."roles_title
 				ORDER BY title ASC".
     		$sql_limit);
-    		foreach( $rows as $reccord ){
+    		foreach ($rows as $reccord) {
     			if ($reccord['allow_pw_change'] == 1) {
     				$allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$txt['role_cannot_modify_all_seen_items'].'\'>';
-    			}else{
+    			} else {
     				$allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$txt['role_can_modify_all_seen_items'].'\'>';
     			}
     			$texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].'<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'")\'>' .$allow_pw_change. '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pw_complexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
@@ -169,22 +169,22 @@ if ( !empty($_POST['type']) ){
 
     		//Display each folder with associated rights by role
     		$i=0;
-    		foreach($tree as $node){
-    			if ( in_array($node->id, $_SESSION['groupes_visibles']) && !in_array($node->id, $_SESSION['personal_visible_groups']) ) {
+    		foreach ($tree as $node) {
+    			if (in_array($node->id, $_SESSION['groupes_visibles']) && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
     				$ident="";
     				for($a=1;$a<$node->nlevel;$a++) $ident .= "&nbsp;&nbsp;";
 
     				//display 1st cell of the line
     				$texte .= '<tr><td style=\'font-size:10px; font-family:arial;\'>'.$ident.$node->title.'</td>';
 
-    				foreach($arrRoles as $role){
+    				foreach ($arrRoles as $role) {
     					//check if this role has access or not
     					// if not then color is red; if yes then color is green
     					$count = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."roles_values WHERE folder_id = ".$node->id." AND role_id = ".$role);
     					if ($count[0] > 0) {
     						$couleur = '#008000';
     						$allowed = 1;
-    					}else{
+    					} else {
     						$couleur = '#FF0000';
     						$allowed = 0;
     					}
@@ -213,7 +213,7 @@ if ( !empty($_POST['type']) ){
 
     		break;
     }
-}else if ( !empty($_POST['edit_fonction']) ){
+} else if (!empty($_POST['edit_fonction'])) {
     $id = explode('_',$_POST['id']);
     //Update DB
     $db->query_update(

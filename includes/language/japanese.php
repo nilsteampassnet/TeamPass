@@ -2,7 +2,7 @@
 //JAPANESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -862,7 +862,7 @@ $txt['settings_ldap_domain'] = "あなたのドメインのLDAPアカウント�
 
 $txt['settings_ldap_domain_controler'] = "ドメインコントローラーのLDAPアレイ";
 
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "あなたのドメインのLDAPベース dn";
 
 $txt['settings_ldap_mode'] = "LDAPサーバーを使ったユーザー認証を有効にする。";
@@ -873,7 +873,7 @@ $txt['settings_ldap_ssl'] = "SSL経由でLDAPを使用する(LDAPS)";
 
 $txt['settings_ldap_tls'] = "TLS経由でLDAPを使用する";
 
-$txt['settings_log_accessed'] = "Enable loggin who accessed the items";
+$txt['settings_log_accessed'] = "Enable logging who accessed the items";
 $txt['settings_log_connections'] = "全てのユーザーのコネクションをDBにロギングする。";
 
 $txt['settings_maintenance_mode'] = "メンテナンスモードに設定";

@@ -17,10 +17,10 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 	die('Hacking attempt...');
 
 include('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
-include('../includes/include.php');
+include '../includes/settings.php' ;
+include '../includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-include('main.functions.php');
+include 'main.functions.php' ;
 
 // connect to the server
     require_once("class.database.php");
@@ -43,7 +43,7 @@ switch($_POST['type'])
 			'perso' => "perso"
 		);
 
-    	foreach (explode(';', $_POST['ids']) as $id){
+    	foreach (explode(';', $_POST['ids']) as $id) {
     		if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
 
 	   			$rows = $db->fetch_all_array("
@@ -64,21 +64,21 @@ switch($_POST['type'])
 	   			$id_managed = '';
 	   			$i = 1;
 	   			$items_id_list = array();
-	   			foreach( $rows as $reccord ) {
+	   			foreach ($rows as $reccord ) {
                     $restricted_users_array = explode(';',$reccord['restricted_to']);
 	   				//exclude all results except the first one returned by query
-	   				if ( empty($id_managed) || $id_managed != $reccord['id'] ){
+	   				if (empty($id_managed) || $id_managed != $reccord['id']) {
 	   					if (
                             (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
                             ||
                             (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'],$restricted_users_array))
-                        ){
+                       ) {
 	   						//exclude this case
-	   					}else {
+	   					} else {
 	   						//encrypt PW
-	   						if ( !empty($_POST['salt_key']) && isset($_POST['salt_key']) ){
+	   						if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
 	   							$pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
-	   						}else
+	   						} else
 	   							$pw = decrypt($reccord['pw']);
 
 	   						$full_listing[$i] = array(
@@ -98,7 +98,7 @@ switch($_POST['type'])
    			}
 			//save the file
 			$handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql','w+');
-			foreach($full_listing as $line){
+			foreach ($full_listing as $line) {
 				$return = $line['id'].";".$line['label'].";".$line['description'].";".$line['pw'].";".$line['login'].";".$line['restricted_to'].";".$line['perso']."/n";
 				fwrite($handle,$return);
 			}

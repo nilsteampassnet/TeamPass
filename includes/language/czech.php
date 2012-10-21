@@ -2,7 +2,7 @@
 //CZECH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = '';
-}else{
+} else {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -510,7 +510,7 @@ $txt['settings_kb'] = "Povolit databázi znalostí a zkušeností (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Aktivací bude přidána stránka, kde můžete vybudovat Vaší databázi znalostí a zkušeností.</span>";
 $txt['settings_ldap_domain'] = "Přípona účtu LDAP pro Vaši doménu";
 $txt['settings_ldap_domain_controler'] = "Pole LDAP správců domény";
-$txt['settings_ldap_domain_controler_tip'] = "<span style=\"max-width: 300px;\">Zadejte více správců, pokud chcete, aby třída rozdělovala dotazy na LDAP na více serverů.<br>Domény musí být odděleny čárkou ( , )!<br>Např.: doména_1,doména_2,doména_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style=\"max-width: 300px;\">Zadejte více správců, pokud chcete, aby třída rozdělovala dotazy na LDAP na více serverů.<br>Domény musí být odděleny čárkou (, )!<br>Např.: doména_1,doména_2,doména_3</span>";
 $txt['settings_ldap_domain_dn'] = "Kořenové jméno LDAP (dn) Vaší domény";
 $txt['settings_ldap_mode'] = "Umožnit autorizaci uživatelů prostřednictvím serveru LDAP";
 $txt['settings_ldap_mode_tip'] = "Aktivujte pouze pokud máte server LDAP a chcete jej používat k autorizaci.<br><span style=\"\" 10px;=\"\" max-width:=\"\" 300px;\=\"\">Konfiguraci LDAP je třeba provést manuelně. Musíte upravit soubor <b>adLDAP.php</b> umístěný v <i>/includes/libraries/adLDAP</i>. Pozměňte všechny chráněné parametry mezi řádky 68 až 128 tak, aby odpovídaly konfiguraci Vašeho serveru LDAP.</span>";

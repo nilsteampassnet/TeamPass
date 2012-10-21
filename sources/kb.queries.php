@@ -18,12 +18,12 @@ if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
 
 
 require_once('../includes/language/'.$_SESSION['user_language'].'.php');
-include('../includes/settings.php');
+include '../includes/settings.php' ;
 require_once('../includes/include.php');
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
-include('main.functions.php');
+include 'main.functions.php' ;
 
 //Connect to mysql server
 require_once("class.database.php");
@@ -37,7 +37,7 @@ function utf8Urldecode($value)
 }
 
 // Construction de la requête en fonction du type de valeur
-if ( !empty($_POST['type']) ){
+if (!empty($_POST['type'])) {
 	switch($_POST['type'])
 	{
 		case "kb_in_db":
@@ -60,23 +60,23 @@ if ( !empty($_POST['type']) ){
 			    $ret = $db->fetch_array($row);
                 if ($ret['anyone_can_modify'] == 1 || $ret['author_id'] == $_SESSION['user_id']) {
                     $manage_kb = true;
-                }else{
+                } else {
                     $manage_kb = false;
                 }
-            }else{
+            } else {
                 $manage_kb = true;
             }
 			if ($manage_kb == true) {
 				//Add category if new
 				$data = $db->fetch_row("SELECT COUNT(*) FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
-				if ( $data[0] == 0 ){
+				if ($data[0] == 0) {
 					$cat_id = $db->query_insert(
 					"kb_categories",
 					array(
 					    'category' => mysql_real_escape_string($category)
 					)
 					);
-				}else{
+				} else {
 					//get the ID of this existing category
 					$cat_id = $db->fetch_row("SELECT id FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
 					$cat_id = $cat_id[0];
@@ -95,7 +95,7 @@ if ( !empty($_POST['type']) ){
 					    ),
 					    "id='".$id."'"
 					);
-				}else{
+				} else {
 					//add new KB
 					$new_id = $db->query_insert(
 					    "kb",
@@ -118,7 +118,7 @@ if ( !empty($_POST['type']) ){
                     )
                 );
                 //add all items associated to this KB
-                foreach(explode(',', $kb_associated_to) as $item_id) {
+                foreach (explode(',', $kb_associated_to) as $item_id) {
                     $db->query_insert(
                         "kb_items",
                         array(
@@ -129,7 +129,7 @@ if ( !empty($_POST['type']) ){
                 }
 
 				echo '[ { "status" : "done" } ]';
-			}else{
+			} else {
 				echo '[ { "status" : "none" } ]';
 			}
 
@@ -153,7 +153,7 @@ if ( !empty($_POST['type']) ){
                             WHERE kb_id = '".$_POST['id']."'
             ");
 			$arrOptions = array();
-            foreach( $rows as $reccord ) {
+            foreach ($rows as $reccord ) {
                 //echo '$("#kb_associated_to option[value='.$reccord['item_id'].']").attr("selected","selected");';
             	array_push($arrOptions, $reccord['item_id']);
             }
