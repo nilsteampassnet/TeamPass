@@ -336,7 +336,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>' . $txt['pw'] . ' :</td>
-                    <td>
+                    <td ondblclick="ShowPassword()">
                         <div id="id_pw" style="float:left;"></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
