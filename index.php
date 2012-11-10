@@ -117,24 +117,30 @@ if ( isset( $_SESSION['login'] ) )
             <div style="margin-left:65px; margin-top:3px;width:100%;" id="main_menu">
                 <button title="' . $txt['home'] . '" onclick="MenuAction(\'\');">
                     <img src="includes/images/home.png" alt="" />
-                </button>
-                <button style="margin-left:10px;" title="' . $txt['pw'] . '" onclick="MenuAction(\'items\');"', ( isset( $_SESSION['nb_folders'] ) && $_SESSION['nb_folders'] == 0 ) || ( isset( $_SESSION['nb_roles'] ) && $_SESSION['nb_roles'] == 0 ) ? ' disabled="disabled"' : '', '>
+                </button>';
+	//Since 2.1.4 administrators can't view items, makes no sense to show the buttons 
+	if ( $_SESSION['user_admin'] != 1 )
+    {
+    echo        '  <button style="margin-left:10px;" title="' . $txt['pw'] . '" onclick="MenuAction(\'items\');"', ( isset( $_SESSION['nb_folders'] ) && $_SESSION['nb_folders'] == 0 ) || ( isset( $_SESSION['nb_roles'] ) && $_SESSION['nb_roles'] == 0 ) ? ' disabled="disabled"' : '', '>
                     <img src="includes/images/menu_key.png" alt="" />
                 </button>
                 <button title="' . $txt['find'] . '" onclick="MenuAction(\'find\');"', ( isset( $_SESSION['nb_folders'] ) && $_SESSION['nb_folders'] == 0 ) || ( isset( $_SESSION['nb_roles'] ) && $_SESSION['nb_roles'] == 0 ) ? ' disabled="disabled"' : '', '>
                     <img src="includes/images/binocular.png" alt="" />
                 </button>
+	
                 <button title="' . $txt['last_items_icon_title'] . '" onclick="OpenDiv(\'div_last_items\')">
                     <img src="includes/images/tag_blue.png" alt="" />
                 </button>';
-    // Favourites menu
-    if ( isset( $_SESSION['settings']['enable_favourites'] ) && $_SESSION['settings']['enable_favourites'] == 1 )
-    {
-        echo '
-                <button title="' . $txt['my_favourites'] . '" onclick="MenuAction(\'favourites\');">
-                    <img src="includes/images/favourite.png" alt="" />
-                </button>';
-    }
+
+		// Favourites menu
+		if ( isset( $_SESSION['settings']['enable_favourites'] ) && $_SESSION['settings']['enable_favourites'] == 1 )
+		{
+			echo '
+					<button title="' . $txt['my_favourites'] . '" onclick="MenuAction(\'favourites\');">
+						<img src="includes/images/favourite.png" alt="" />
+					</button>';
+		}
+	}
     // KB menu
     if ( isset( $_SESSION['settings']['enable_kb'] ) && $_SESSION['settings']['enable_kb'] == 1 )
     {
