@@ -78,12 +78,6 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
-2.1.13
- * Code improvement for PSR compliance
- * jQueryUI updated to v1.9
- * saltkey is exported in a unique file that should be moved outside "www" server scope.
- * 190, 192, 199, 202 corrected
-
 2.1.12
  * #188
  * #185 Started adjusting codebase to follow PSR 1 and PSR 2 based on ecaron

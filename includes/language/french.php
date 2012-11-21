@@ -1,10 +1,11 @@
 <?php
 //FRENCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Ce compte est bloqué";
 $txt['activity'] = "Activité";
@@ -512,7 +513,7 @@ $txt['settings_kb'] = "Activer la Base de Connaissance (béta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Quand activé, cela ajoutera la possibilité de créer votre propre Base de Connaissance au travers d'une page dédiée.</span>";
 $txt['settings_ldap_domain'] = "Suffix LDAP de votre domaine";
 $txt['settings_ldap_domain_controler'] = "Tableau des contrôleurs de votre domaine LDAP";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Vous pouvez spécifier plusieurs controlleurs si vous désirez que la classe balance les requetes LDAP sur plusieurs serveurs.<br />Attention, vous devez délimiter les domaines par une virgule (,)!<br />Par exemple : domaine_1,domaine_2,domaine_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Vous pouvez spécifier plusieurs controlleurs si vous désirez que la classe balance les requetes LDAP sur plusieurs serveurs.<br />Attention, vous devez délimiter les domaines par une virgule (, )!<br />Par exemple : domaine_1,domaine_2,domaine_3</span>";
 $txt['settings_ldap_domain_dn'] = "Base dn de votre domaine LDAP";
 $txt['settings_ldap_mode'] = "Activer l'identification LDAP des utilisateurs";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
@@ -572,3 +573,4 @@ $txt['visibility'] = "Visibilité";
 $txt['warning_screen_height'] = "ATTENTION : la hauteur de la page n'est pas suffisante pour affichier les éléments !";
 $txt['yes'] = "Oui";
 $txt['your_version'] = "Votre version";
+?>

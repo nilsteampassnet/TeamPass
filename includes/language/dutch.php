@@ -1,10 +1,11 @@
 <?php
 //DUTCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Dit account is geblokkeerd";
 $txt['activity'] = "Aktiviteit";
@@ -24,8 +25,8 @@ $txt['admin_action_db_backup_tip'] = "Maak geregeld een backup van de database, 
 $txt['admin_action_db_clean_items'] = "Schoon de database op (Deze actie verwijderd orphaned items)";
 $txt['admin_action_db_clean_items_result'] = "items zijn verwijderd";
 $txt['admin_action_db_clean_items_tip'] = "Hiermee worden de items en logging verwijderd die achtergebleven zijn nadat een map verwijderd is. Het is raadzaam eerst een backup te maken. ";
-$txt['admin_action_db_optimize'] = "dataBase optimaliseren";
-$txt['admin_action_db_restore'] = "dataBase herstellen";
+$txt['admin_action_db_optimize'] = "Database optimaliseren";
+$txt['admin_action_db_restore'] = "Database herstellen";
 $txt['admin_action_db_restore_key'] = "Voer een encryptie sleutel in.";
 $txt['admin_action_db_restore_tip'] = "Gebruik hiervoor een backup bestand gecreëerd door de backup functionaliteit van TeamPass.";
 $txt['admin_action_purge_old_files'] = "Verwijder oude bestanden";
@@ -510,7 +511,7 @@ $txt['settings_kb'] = "Knowledge Base activeren";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Door dit aan te zetten wordt er een pagina toegevoegd waar u uw knowledge base kan opzetten.</span>";
 $txt['settings_ldap_domain'] = "LDAP account voorzetsel voor het domein";
 $txt['settings_ldap_domain_controler'] = "Komma gescheiden lijst van domein controllers";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specificeer meerdere domein controllers om de LDAP queries tussen verschillende servers te verdelen<br />De lijst moet komma gescheiden zijn (,)!<br />Bijvoorbeeld: domein_1,domein_2,domein_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specificeer meerdere domein controllers om de LDAP queries tussen verschillende servers te verdelen<br />De lijst moet komma gescheiden zijn (, )!<br />Bijvoorbeeld: domein_1,domein_2,domein_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn voor het domein";
 $txt['settings_ldap_mode'] = "Gebruikers authenticatie d.m.v LDAP server aanzetten";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
@@ -570,3 +571,4 @@ $txt['visibility'] = "Zichtbaarheid";
 $txt['warning_screen_height'] = "WAARSCHUWING: scherm resolutie niet hoog genoeg om de lijst te maken!";
 $txt['yes'] = "Ja";
 $txt['your_version'] = "Versie";
+?>

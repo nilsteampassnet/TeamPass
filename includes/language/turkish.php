@@ -1,10 +1,11 @@
 <?php
 //TURKISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Bu hesap kilitlenmiştir";
 $txt['activity'] = "Aktivite";
@@ -509,7 +510,7 @@ $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
 $txt['settings_ldap_domain'] = "LDAP suffix";
 $txt['settings_ldap_domain_controler'] = "LDAP array";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "Alan Adınız için LDAP Base dn";
 $txt['settings_ldap_mode'] = "Kullanıcı Doğrulamasını LDAP sunucusu üzerinden yap";
 $txt['settings_ldap_mode_tip'] = "Eğer bir LDAP sunucunuz var ve kullanıcılarınızın LDAP sunucusu üzerinden doğrulanmasını istiyorsanız aktifleştirin";
@@ -569,3 +570,4 @@ $txt['visibility'] = "Görünürlük";
 $txt['warning_screen_height'] = "UYARI: ekran boyu öğeleri göstermek için yeterli değil!";
 $txt['yes'] = "Evet";
 $txt['your_version'] = "veriyonunuz";
+?>

@@ -1,11 +1,11 @@
 <?php
 /**
- * @file           downloadFile.php
- * @author        Nils Laumaillé
- * @version         2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
- * @link            http://www.teampass.net
+ * @file 		downloadFile.php
+ * @author		Nils Laumaillé
+ * @version 	2.1.8
+ * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @licensing 	GNU AFFERO GPL 3.0
+ * @link		http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,9 +13,8 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || $_GET['key'] != $_SESSION['key'] || $_GET['key_tmp'] != $_SESSION['key_tmp']) {
-    die('Hacking attempt...');
-}
+if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1 || $_GET['key'] != $_SESSION['key'] || $_GET['key_tmp'] != $_SESSION['key_tmp'])
+	die('Hacking attempt...');
 
 header("Content-disposition: attachment; filename=".rawurldecode($_GET['name']));
 header("Content-Type: application/octet-stream");
@@ -23,3 +22,4 @@ header("Pragma: public");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
 readfile('../'.$_GET['sub'].'/'.basename($_GET['file']));
+?>

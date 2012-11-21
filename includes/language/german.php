@@ -1,10 +1,11 @@
 <?php
 //GERMAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Dieses Konto wurde gesperrt";
 $txt['activity'] = "Aktivität";
@@ -509,7 +510,7 @@ $txt['settings_kb'] = "Wissensdatenbank aktivieren (beta)";
 $txt['settings_kb_tip'] = "Durch Aktivierung dieser Option wird eine zusätzliche Seite hinzugefügt, auf der Sie Ihre Wissensdatenbank aufbauen können.";
 $txt['settings_ldap_domain'] = "LDAP Suffix Ihrer Domäne";
 $txt['settings_ldap_domain_controler'] = "LDAP Serverliste";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Geben Sie mehrere Server an, falls Sie die Verteilung der LDAP-Anfragen auf mehrere Server wünschen.<br />Sie müssen die Domänennamen durch Kommazeichen trennen (,)!<br />Bsp.: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Geben Sie mehrere Server an, falls Sie die Verteilung der LDAP-Anfragen auf mehrere Server wünschen.<br />Sie müssen die Domänennamen durch Kommazeichen trennen (, )!<br />Bsp.: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP Base DN Ihrer Domäne";
 $txt['settings_ldap_mode'] = "Benutzerauthentifizierung über LDAP server erlauben";
 $txt['settings_ldap_mode_tip'] = "Erlauben Sie dies nur, wenn Sie über einen LDAP-Server verfügen und diesen für die Authentifizierung von TeamPass-Benutzern verwenden möchten.<br /><span style='font-size:10px;max-width:300px;'>Die Konfiguration von LDAP erfolgt manuell. Sie müssen die Datei <b>adLDAP.php</b> unter <i>/includes/libraries/adLDAP</i> editieren. Passen Sie alle geschützten Einträge zwischen Zeile 68 bis 128 entsprechend Ihrer LDAP-Konfiguration an.</span>";
@@ -569,3 +570,4 @@ $txt['visibility'] = "Sichtbarkeit";
 $txt['warning_screen_height'] = "WARNUNG: Bildschirmhöhe reicht zur Anzeige der Elementliste nicht aus!";
 $txt['yes'] = "Ja";
 $txt['your_version'] = "Ihre Version";
+?>

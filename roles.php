@@ -1,30 +1,29 @@
 <?php
 /**
- * @file           roles.php
- * @author        Nils Laumaillé
- * @version         2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
- * @link            http://www.teampass.net
+ * @file 		roles.php
+ * @author		Nils Laumaillé
+ * @version 	2.1.8
+ * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @licensing 	GNU AFFERO GPL 3.0
+ * @link		http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
-}
+if (!isset($_SESSION['CPM'] ) || $_SESSION['CPM'] != 1)
+	die('Hacking attempt...');
+
 
 //load help
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
+require_once('includes/language/'.$_SESSION['user_language'].'_admin_help.php');
 
 //Get full list of groups
 $arr_groups = array();
-$rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."nested_tree");
-foreach ($rows as $reccord) {
+$rows = $db->fetch_all_array("SELECT id,title FROM ".$pre."nested_tree");
+foreach ($rows as $reccord )
     $arr_groups[$reccord['id']] = $reccord['title'];
-}
 
 //display
 echo '
@@ -37,8 +36,8 @@ echo '
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
-        <img src="includes/images/arrow-180.png" style="display:none; cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')">
-        <img src="includes/images/arrow-0.png" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')">
+    	<img src="includes/images/arrow-180.png" style="display:none; cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')">
+    	<img src="includes/images/arrow-0.png" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')">
     </div>
 </div>
 <input type="hidden" id="selected_function" />
@@ -49,19 +48,18 @@ echo '
 // DIV FOR ADDING A ROLE
 echo '
 <div id="add_new_role" style="">
-    <p>
+	<p>
     <label for="new_function" class="form_label_100">'.$txt['name'].'</label><input type="text" id="new_function" size="40" />
-    </p>
-    <p>
-    <label for="new_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
+	</p>
+	<p>
+	<label for="new_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
     <select id="new_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pw_complexity as $complex) {
-    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
-}
+foreach ($pw_complexity as $complex)
+	echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 echo '
     </select>
-    </p>
+	</p>
 </div>';
 
 // DIV FOR DELETING A ROLE
@@ -79,16 +77,15 @@ echo '
     <div style="font-weight:bold;text-align:center;color:#FF8000;text-align:center;font-size:13pt;" id="edit_role_show"></div>
     <input type="hidden" id="edit_role_id" />
     <label for="edit_role_title" class="form_label">'.$txt['new_role_title'].'</label><input type="text" id="edit_role_title" size="40" />
-    <p>
-    <label for="edit_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
+	<p>
+	<label for="edit_role_complexity" class="form_label">'.$txt['complex_asked'].' :</label>
     <select id="edit_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pw_complexity as $complex) {
-    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
-}
+foreach ($pw_complexity as $complex)
+	echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 echo '
     </select>
-    </p>
+	</p>
 </div>';
 
 // DIV FOR HELP
@@ -98,4 +95,6 @@ echo '
 </div>';
 
 //call to roles.load.php
-require_once 'roles.load.php';
+require_once("roles.load.php");
+
+?>

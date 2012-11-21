@@ -1,86 +1,75 @@
 <?php
 /**
- * @file          views.queries.php
- * @author        Nils LaumaillÃ©
- * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils LaumaillÃ©
- * @licensing     GNU AFFERO GPL 3.0
- * @link          http://www.teampass.net
+ * @file 		views.queries.php
+ * @author		Nils Laumaillé
+ * @version 	2.1.8
+ * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @licensing 	GNU AFFERO GPL 3.0
+ * @link		http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include '../includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
-//require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/veness/crypt/aes.class.php';     // AES PHP implementation
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/veness/crypt/aesctr.class.php';  // AES Counter Mode implementation
+require_once '../includes/libraries/crypt/aes.class.php';     // AES PHP implementation
+require_once '../includes/libraries/crypt/aesctr.class.php';  // AES Counter Mode implementation
 
-// connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
+// connect to the server
+require_once '../sources/class.database.php';
+$db = new Database($server, $user, $pass, $database, $pre);
 $db->connect();
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 //get backups infos
-$rows = $db->fetchAllArray("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
+$rows = $db->fetch_all_array("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
 foreach ($rows as $reccord) {
-    $settings[$reccord['intitule']] = $reccord['valeur'];
+	$settings[$reccord['intitule']] = $reccord['valeur'];
 }
 
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
-    //get all of the tables
-    $tables = array();
-    $result = mysql_query('SHOW TABLES');
-    while ($row = mysql_fetch_row($result)) {
-        $tables[] = $row[0];
-    }
+	//get all of the tables
+	$tables = array();
+	$result = mysql_query('SHOW TABLES');
+	while ($row = mysql_fetch_row($result)) {
+		$tables[] = $row[0];
+	}
 
-    $return = "";
+	$return = "";
 
-    //cycle through each table and format the data
-    foreach ($tables as $table) {
-        $result = mysql_query('SELECT * FROM '.$table);
-        $num_fields = mysql_num_fields($result);
+	//cycle through each table and format the data
+	foreach ($tables as $table) {
+		$result = mysql_query('SELECT * FROM '.$table);
+		$num_fields = mysql_num_fields($result);
 
-        $return.= 'DROP TABLE '.$table.';';
-        $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
-        $return.= "\n\n".$row2[1].";\n\n";
+		$return.= 'DROP TABLE '.$table.';';
+		$row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
+		$return.= "\n\n".$row2[1].";\n\n";
 
-        for ($i = 0; $i < $num_fields; $i++) {
-            while ($row = mysql_fetch_row($result)) {
-                $return.= 'INSERT INTO '.$table.' VALUES(';
-                for ($j=0; $j<$num_fields; $j++) {
-                    $row[$j] = addslashes($row[$j]);
-                    $row[$j] = preg_replace('/\n/', '/\\n/', $row[$j]);
-                    if (isset($row[$j])) {
-                        $return.= '"'.$row[$j].'"' ;
-                    } else {
-                        $return.= '""';
-                    }
-                    if ($j<($num_fields-1)) {
-                        $return.= ',';
-                    }
-                }
-                $return.= ");\n";
-            }
-        }
-        $return.="\n\n\n";
-    }
+		for ($i = 0; $i < $num_fields; $i++) {
+			while ($row = mysql_fetch_row($result)) {
+				$return.= 'INSERT INTO '.$table.' VALUES(';
+				for ($j=0; $j<$num_fields; $j++) {
+					$row[$j] = addslashes($row[$j]);
+					$row[$j] = preg_replace('/\n/','/\\n/',$row[$j]);
+					if (isset($row[$j])) { $return.= '"'.$row[$j].'"' ; } else { $return.= '""'; }
+					if ($j<($num_fields-1)) { $return.= ','; }
+				}
+				$return.= ");\n";
+			}
+		}
+		$return.="\n\n\n";
+	}
 
-    if (!empty($settings['bck_script_key'])) {
-        $return = Encryption\Crypt\AesCtr::encrypt($return, $settings['bck_script_key'], 256);
-    }
+	if (!empty($settings['bck_script_key'])) {
+		$return = AesCtr::encrypt($return, $settings['bck_script_key'], 256);
+	}
 
-    //save the file
-    $handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql', 'w+');
-    fwrite($handle, $return);
-    fclose($handle);
+	//save the file
+	$handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql','w+');
+	fwrite($handle,$return);
+	fclose($handle);
 }
+?>

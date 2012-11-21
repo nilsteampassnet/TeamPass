@@ -1,10 +1,11 @@
 <?php
 //PORTUGUESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Conta bloqueada";
 $txt['activity'] = "Atividade";
@@ -52,7 +53,7 @@ $txt['admin_email_test_body'] = "Hi,<br><br>Email sent successfully.<br><br>Chee
 $txt['admin_email_test_configuration'] = "Test the Email configuration";
 $txt['admin_email_test_subject'] = "[TeamPass] Test email";
 $txt['admin_error_no_complexity'] = "(<a href='index.php?page=manage_groups'>Definir?</a>)";
-$txt['admin_error_no_visibility'] = "Ninguem pode ver este item. (<a href='index.php?page=manage_roles'>Personalize as regras</a>)    ";
+$txt['admin_error_no_visibility'] = "Ninguem pode ver este item. (<a href='index.php?page=manage_roles'>Personalize as regras</a>)	";
 $txt['admin_functions'] = "Gerenciador de regras";
 $txt['admin_groups'] = "Gerenciador de pastas";
 $txt['admin_help'] = "Ajuda";
@@ -576,3 +577,4 @@ $txt['visibility'] = "Visibilidade";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Sim";
 $txt['your_version'] = "Sua versão:";
+?>

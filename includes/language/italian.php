@@ -1,10 +1,11 @@
 <?php
 //ITALIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "Questo account è bloccato";
 $txt['activity'] = "Attività";
@@ -509,7 +510,7 @@ $txt['settings_kb'] = "Abilita Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Se attivo, verrà aggiunta una pagina dove puoi costruire la knowledge base.</span>";
 $txt['settings_ldap_domain'] = "Suffisso LDAP per gli account del dominio";
 $txt['settings_ldap_domain_controler'] = "Lista di DC LDAP";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifica più DC se vuoi che le query LDAP vengano bilanciate su più server.<br />Devi separare i DC con una virgola (,).<br />Per esempio: dominio_1,dominio_2,dominio_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifica più DC se vuoi che le query LDAP vengano bilanciate su più server.<br />Devi separare i DC con una virgola (, ).<br />Per esempio: dominio_1,dominio_2,dominio_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP Base DN per il dominio";
 $txt['settings_ldap_mode'] = "Abilita auenticazione utente tramite server LDAP";
 $txt['settings_ldap_mode_tip'] = "Abilitaloslo se hai un server LDAP e vuoi usarlo per autenticare gli utenti di TeamPass.";
@@ -569,3 +570,4 @@ $txt['visibility'] = "Visibilità";
 $txt['warning_screen_height'] = "Attenzione: La risoluzione non è sufficiente per visualizzare la lista degli elementi.";
 $txt['yes'] = "Sì";
 $txt['your_version'] = "La tua versione";
+?>

@@ -1,10 +1,11 @@
 <?php
 //JAPANESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['account_is_locked'] = "このアカウントはロックされています。";
 
@@ -861,7 +862,7 @@ $txt['settings_ldap_domain'] = "あなたのドメインのLDAPアカウント�
 
 $txt['settings_ldap_domain_controler'] = "ドメインコントローラーのLDAPアレイ";
 
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "あなたのドメインのLDAPベース dn";
 
 $txt['settings_ldap_mode'] = "LDAPサーバーを使ったユーザー認証を有効にする。";
@@ -961,3 +962,5 @@ $txt['warning_screen_height'] = "WARNING: screen height is not enough for displa
 $txt['yes'] = "Yes";
 
 $txt['your_version'] = "Your version";
+
+?>

@@ -1,24 +1,24 @@
 <?php
 /**
  *
- * @file          include.php
- * @author        Nils Laumaillé
- * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @file include.php
+ * @author Nils Laumaillé
+ * @version 2.1.8
+ * @copyright (c) 2009-2011 Nils Laumaillé
+ * @licensing GNU AFFERO GPL 3.0
  * @link
  */
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languages_list;
 
-$k['version'] = "2.1.13";
+$k['version'] = "2.1.12";
 $k['tool_name'] = "TeamPass";
-$k['jquery-version'] = "1.8.2";
-$k['jquery-ui-version'] = "1.9.1";
+$k['jquery-version'] = "1.8.0";
+$k['jquery-ui-version'] = "1.8.23";
 $k['jquery-ui-theme'] = "overcast";
 $k['one_month_seconds'] = 2592000;
-$k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
-$k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');
+$k['image_file_ext'] = array( 'jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp' );
+$k['office_file_ext'] = array( 'xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx' );
 $k['admin_full_right'] = true;
 // Management Pages
 $mngPages = array(
@@ -28,4 +28,6 @@ $mngPages = array(
     'manage_views' => 'views.php',
     'manage_main' => 'admin.php',
     'manage_settings' => 'admin.settings.php'
-   );
+    );
+
+?>

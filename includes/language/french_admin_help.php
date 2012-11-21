@@ -1,10 +1,11 @@
 <?php
 //FRENCH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
+	$TeamPass_url = '';
 } else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
 
 $txt['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 Cette page est utilisée pour créer et gérer les REPERTOIRES.<br />
@@ -16,11 +17,11 @@ Un répertoire est nécessaire pour organiser et structurer vos éléments. Il e
 <div id='accordion'>
     <h3><a href='#'>Ajouter un REPERTOIRE</a></h3>
     <div>
-        Cliquer sur l'icone <img src='includes/images/folder--plus.png' alt='' />. Une boite de dialogue vous permettra de saisir :<br />
+        Cliquer sur l'icone <img src='includes/images/folder--plus.png' alt='' />. Une boite de dialogue vous permettra de saisir :<br />        
         - l'intitulé du répertoire<br />
         - le répertoire parent (chaque répertoire étant associé à un autre répertoire parent)<br />
         - un niveau de complexité (celui-ci est utilisé pour la complexité des mots de passe. Quand un utilisateur créé un nouvel élément, le mot de passe associé doit au moins répondre à ce critère de complexité)<br />
-        - une période de renouvellement exprimée en mois (est nécessaire pour demander un renouvellement des mots de passe).
+        - une période de renouvellement exprimée en mois (est nécessaire pour demander un renouvellement des mots de passe).    
     </div>
     <h3><a href='#'>Editer un répertoire existant</a></h3>
     <div>
@@ -35,7 +36,7 @@ Un répertoire est nécessaire pour organiser et structurer vos éléments. Il e
     </div>
     <h3><a href='#'>Supprimer un répertoire</a></h3>
     <div>
-        Vous pouvez supprimer un répertoire. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/folder--minus.png' alt='' />.<br />
+        Vous pouvez supprimer un répertoire. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/folder--minus.png' alt='' />.<br /> 
         Attention car cela aura pour conséquence de supprimer également tous les éléments et les sous-répertoires !!!!
         <p style='text-align:center;'>
         <img src='includes/images/help/folders_2.png' alt='' />
@@ -44,11 +45,11 @@ Un répertoire est nécessaire pour organiser et structurer vos éléments. Il e
     <h3><a href='#'>Astuces spéciales</a></h3>
     <div>
         2 astuces existent sur les répertoires.<br />
-        La 1ère autorise la création d'un élément sans avoir à respecter la complexité minimal du mot de passe.<br />
-        La 2de autorise la modification d'un élément sans avoir à respecter la complexité minimal du mot de passe.<br />
+        La 1ère autorise la création d'un élément sans avoir à respecter la complexité minimal du mot de passe.<br /> 
+        La 2de autorise la modification d'un élément sans avoir à respecter la complexité minimal du mot de passe.<br /> 
         Vous pouvez également combiner les 2..<br />
         Vous pouvez également l'utiliser temporairement
-       .
+        .   
         <p style='text-align:center;'>
         <img src='includes/images/help/folders_3.png' alt='' />
         </p>
@@ -64,7 +65,7 @@ Une fois plusieurs roles paramétrés, vous pouvez les utiliser pour les associe
     <div>
         Cliquer sur l'icone <img src='includes/images/users--plus.png' alt='' />. Une boite de dialogue spécifique vous demandera de saisir l'intitulé de ce nouveau role.
     </div>
-
+    
     <h3><a href='#'>Autoriser ou interdire un REPERTOIRE</a></h3>
     <div>
         Vous devez utiliser la matrice 'Roles / Répertoires' pour définir les droits d'accès des roles. Si la couleur de la cellule est rouge, alors le role ne pourra pas accèder à ce répertoire, et si la cellule est verte, alors le role pourra accéder à la cellule.<br />
@@ -74,19 +75,19 @@ Une fois plusieurs roles paramétrés, vous pouvez les utiliser pour les associe
         </p>
         Dans la capture d'écran, vous voyez que le répertoire 'Cleaner' est autorisé pour le role 'Dev' mais qu'il ne l'est pas pour le role 'Commercial'.
     </div>
-
+    
     <h3><a href='#'>Rafraichir manuellement la matrice</a></h3>
     <div>
         Il vous suffit de cliquer sur l'icone <img src='includes/images/arrow_refresh.png' alt='' />.
     </div>
-
+    
     <h3><a href='#'>Editer un role</a></h3>
     <div>
         Il est possible de changer l'intitulé d'un role sans aucun impact sur les différents paramétrages effectués..<br />
         Selectionner le role que vous voulez renommé et cliquer sur l'icone <img src='includes/images/ui-tab--pencil.png' alt='' />.<br />
         Cela ouvrira une boite de dialogue dans laquelle vous pourrez saisir le nouvel intitulé.
     </div>
-
+    
     <h3><a href='#'>Supprimer un role</a></h3>
     <div>
         Vous pouvez tout à fait supprimer un role. Cela aura pour effet de supprimer ce role de chaque utilisateur le possèdant.<br />
@@ -103,13 +104,13 @@ Un compte utilisateur est nécessaire pour chaque personne physique devant utili
 <div id='accordion'>
     <h3><a href='#'>Ajouter un UTILISATEUR</a></h3>
     <div>
-        Cliquer sur l'icone <img src='includes/images/user--plus.png' alt='' />. Dans la boite de dialogue, il conviendra de saisir :<br />
+        Cliquer sur l'icone <img src='includes/images/user--plus.png' alt='' />. Dans la boite de dialogue, il conviendra de saisir :<br />        
         - l'identifiant de connexion de l'utilisateur<br />
         - un mot de passe (peut etre générer automatiquement et sera obligatoirement changé à la 1ère connexion)<br />
         - un email valide<br />
         - si l'utilisateur sera un administrateur (accès sans limite aux fonctionnalités)<br />
         - si l'utilisateur sera un Manager (tous les droits sur les éléments accessibles)<br />
-        - si l'utilisateur peut avoir accès à des répertoires personnels
+        - si l'utilisateur peut avoir accès à des répertoires personnels 
     </div>
     <h3><a href='#'>Ajouter un ROLE à un UTILISATEUR</a></h3>
     <div>
@@ -130,7 +131,7 @@ Un compte utilisateur est nécessaire pour chaque personne physique devant utili
     </div>
     <h3><a href='#'>Est Administrateur (DIEU)</a></h3>
     <div>
-        Vous pouvez autoriser tout utilisateur à etre DIEU. Pour cela, vous n'avez qu'à cocher la case correspondante.<br />
+        Vous pouvez autoriser tout utilisateur à etre DIEU. Pour cela, vous n'avez qu'à cocher la case correspondante.<br /> 
         Attention cependant car un utilisateur DIEU peut accèder à toutes les fonctionnalités de TeamPass !!!!
         <p style='text-align:center;'>
         <img src='includes/images/help/users_1.png' alt='' />
@@ -138,9 +139,9 @@ Un compte utilisateur est nécessaire pour chaque personne physique devant utili
     </div>
     <h3><a href='#'>Est Manager</a></h3>
     <div>
-        Vous pouvez autoriser tout utilisateur à etre MANAGER. Pour cela, vous n'avez qu'à cocher la case correspondante.<br />
-        Un Manager peut modifier et supprimer des éléments et des répertoires, y compris ceux qu'il n'a pas créé.<br />
-        Un Manager n'a cependant accès qu'aux répertoires qu'il est autorisé à voir. Il est donc possible de créer plusieurs Managers en fonction des Services par exemple.
+        Vous pouvez autoriser tout utilisateur à etre MANAGER. Pour cela, vous n'avez qu'à cocher la case correspondante.<br /> 
+        Un Manager peut modifier et supprimer des éléments et des répertoires, y compris ceux qu'il n'a pas créé.<br /> 
+        Un Manager n'a cependant accès qu'aux répertoires qu'il est autorisé à voir. Il est donc possible de créer plusieurs Managers en fonction des Services par exemple.    
         <p style='text-align:center;'>
         <img src='includes/images/help/users_2.png' alt='' />
         </p>
@@ -154,17 +155,18 @@ Un compte utilisateur est nécessaire pour chaque personne physique devant utili
     </div>
     <h3><a href='#'>Changer le mot de passe d'un utilisateur</a></h3>
     <div>
-        Il est tout à fait possible pour un administrateur de changer le mot de passe d'un utilisateur. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/lock__pencil.png' alt='' />.<br />
-        A la 1ere connexion de l'utilisateur, il devra la modifier.
+        Il est tout à fait possible pour un administrateur de changer le mot de passe d'un utilisateur. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/lock__pencil.png' alt='' />.<br /> 
+        A la 1ere connexion de l'utilisateur, il devra la modifier. 
         <p style='text-align:center;'>
         <img src='includes/images/help/users_4.png' alt='' />
         </p>
     </div>
     <h3><a href='#'>Changer l'email d'un utilisateur</a></h3>
     <div>
-        Il est tout à fait possible pour un administrateur de changer l'email d'un utilisateur. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/mail--pencil.png' alt='' />.<br />
+        Il est tout à fait possible pour un administrateur de changer l'email d'un utilisateur. Pour cela, il suffit de cliquer sur l'icone <img src='includes/images/mail--pencil.png' alt='' />.<br />   
         <p style='text-align:center;'>
         <img src='includes/images/help/users_5.png' alt='' />
         </p>
     </div>
 </div>";
+?>
