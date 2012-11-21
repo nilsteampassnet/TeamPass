@@ -1,11 +1,8 @@
 <?php
 // ENGLISH
-if ( !isset( $_SESSION['settings']['cpassman_url'] ) )
-{
+if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = '';
-}
-else
-{
+} else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
@@ -40,7 +37,7 @@ $txt['admin_email_test_body'] = "Hi,<br><br>Email sent successfully.<br><br>Chee
 $txt['admin_email_result_ok'] = "Email sent ... check your inbox.";
 $txt['admin_email_result_nok'] = "Email not sent ... check your configuration. See associated error: ";
 $txt['email_subject_item_updated'] = "Password has been updated";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"" . @$_SESSION['settings']['cpassman_url'] . "/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
 $txt['admin_email_send_backlog'] = "Send emails backlog (actually #nb_emails# emails)";
 $txt['admin_email_send_backlog_tip'] = "This script permits to force the emails in the database to be sent.<br />This could take some time depending of the number of emails to send.";
@@ -539,7 +536,7 @@ $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
 $txt['settings_ldap_domain'] = "LDAP account suffix for your domain";
 $txt['settings_ldap_domain_controler'] = "LDAP array of domain controllers";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (, )!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn for your domain";
 $txt['settings_ldap_mode'] = "Enable users authentification through LDAP server";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
@@ -593,5 +590,3 @@ $txt['visibility'] = "Visibility";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Yes";
 $txt['your_version'] = "Your version";
-
-?>

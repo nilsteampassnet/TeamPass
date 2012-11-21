@@ -1,11 +1,10 @@
 <?php
 //SPANISH
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
+    $TeamPass_url = '';
 } else {
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Esta cuenta esta bloqueada";
 $txt['activity'] = "Actividad";
@@ -510,7 +509,7 @@ $txt['settings_kb'] = "Habilitar Base de Conocimientos (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Una vez activado, esto agregara una pagina en la cual usted puede construir su base de conocimientos.</span>";
 $txt['settings_ldap_domain'] = "Sufijo de cuentas LDAP para su dominio";
 $txt['settings_ldap_domain_controler'] = "Array de controladores de dominio LDAP";
-$txt['settings_ldap_domain_controler_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Especifique multiples controladores si desea que la clase balancee las consultas LDAP entre los multiples servidores.<br>Debe delimitar los dominios con una coma (, )!<br>Por ejemplo: dominio_1,dominio_2,dominio_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Especifique multiples controladores si desea que la clase balancee las consultas LDAP entre los multiples servidores.<br>Debe delimitar los dominios con una coma (,)!<br>Por ejemplo: dominio_1,dominio_2,dominio_3</span>";
 $txt['settings_ldap_domain_dn'] = "Base DN LDAP para su dominio";
 $txt['settings_ldap_mode'] = "Permitir autenticacion de usuarios a traves de servidor LDAP";
 $txt['settings_ldap_mode_tip'] = "Habilitar solamente si usted tiene un servidor LDAP y desea utilizarlo para autenticar los usuarios de TeamPass.";
@@ -570,4 +569,3 @@ $txt['visibility'] = "Visibilidad";
 $txt['warning_screen_height'] = "CUIDADO: ¡el alto de pantalla no es suficiente para mostrar la lista de Items!";
 $txt['yes'] = "Si";
 $txt['your_version'] = "Su version";
-?>
