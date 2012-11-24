@@ -6,31 +6,41 @@ $_SESSION['CPM'] = 1;
 ################
 ## Function permits to get the value from a line
 ################
-function getSettingValue($val) {
-	$val = trim(strstr($val,"="));
-	return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
+function getSettingValue($val)
+{
+    $val = trim(strstr($val,"="));
+
+    return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
 }
 
 //get infos from SETTINGS.PHP file
 $filename = "../includes/settings.php";
 $events = "";
 if (file_exists($filename) && empty($_SESSION['server'])) {
-	//copy some constants from this existing file
-	$settings_file = file($filename);
-	while(list($key,$val) = each($settings_file)) {
-		if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-		else if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-		else if (substr_count($val,'$smtp_server = ')>0) $_SESSION['smtp_server'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth = ')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth_username = ')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
-		else if (substr_count($val,'$smtp_auth_password = ')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
-		else if (substr_count($val,'$email_from = ')>0) $_SESSION['email_from'] = getSettingValue($val);
-		else if (substr_count($val,'$email_from_name = ')>0) $_SESSION['email_from_name'] = getSettingValue($val);
-		else if (substr_count($val,'$server = ')>0) $_SESSION['server'] = getSettingValue($val);
-		else if (substr_count($val,'$user = ')>0) $_SESSION['user'] = getSettingValue($val);
-		else if (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
-		else if (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
-		else if (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
+    //copy some constants from this existing file
+    $settings_file = file($filename);
+    while (list($key,$val) = each($settings_file)) {
+        if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
+        elseif (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
+        elseif (substr_count($val,'$smtp_server = ')>0) $_SESSION['smtp_server'] = getSettingValue($val);
+        elseif (substr_count($val,'$smtp_auth = ')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
+        elseif (substr_count($val,'$smtp_auth_username = ')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
+        elseif (substr_count($val,'$smtp_auth_password = ')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
+        elseif (substr_count($val,'$email_from = ')>0) $_SESSION['email_from'] = getSettingValue($val);
+        elseif (substr_count($val,'$email_from_name = ')>0) $_SESSION['email_from_name'] = getSettingValue($val);
+        elseif (substr_count($val,'$server = ')>0) $_SESSION['server'] = getSettingValue($val);
+        elseif (substr_count($val,'$user = ')>0) $_SESSION['user'] = getSettingValue($val);
+        elseif (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
+        elseif (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
+        elseif (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
+        elseif (substr_count($val,"require_once '")>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'"')-14);
+    }
+	echo "> ".$_SESSION['sk_path'];
+	//SK file
+	if(isset($_SESSION['sk_path'])) {
+		while (list($key,$val) = each(file($_SESSION['sk_path']))) {
+			if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
+		}
 	}
 }
 
@@ -43,11 +53,11 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         <script type="text/javascript" src="../includes/js/functions.js"></script>
         <script type="text/javascript" src="install.js"></script>
         <script type="text/javascript" src="js/jquery.min.js"></script>
-		<script type="text/javascript" src="js/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="gauge/gauge.js"></script>
 
         <script type="text/javascript">
-        //if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
+        //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
             if (document.getElementById("progressbar")) {
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
@@ -59,15 +69,17 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
             }
         });
 
-        function goto_next_page(page) {
-            if (page == "3" && document.getElementById("cpm_is_utf8").value == 1) {
+        function goto_next_page(page)
+        {
+            if (page == "3" && document.getElementById("cpm_isUTF8").value == 1) {
                 page = "4";
             }
             document.getElementById("step").value=page;
             document.install.submit();
         }
 
-        function Check(step) {
+        function Check(step)
+        {
             if (step != "") {
                 if (step == "step1") {
                     var data = "type="+step+
@@ -96,7 +108,7 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                 } else
                 if (step == "step5") {
                     document.getElementById("loader").style.display = "";
-                    var data = "type="+step;
+                    var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
                 }
                 httpRequest("upgrade_ajax.php",data);
             }
@@ -105,26 +117,26 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
     </head>
     <body>
 <?php
-require_once("../includes/language/english.php");
-require_once("../includes/include.php");
+require_once '../includes/language/english.php';
+require_once '../includes/include.php';
 
 if (isset($_POST['db_host'])) {
-	$_SESSION['db_host'] = $_POST['db_host'];
-	$_SESSION['db_bdd'] = $_POST['db_bdd'];
-	$_SESSION['db_login'] = $_POST['db_login'];
-	$_SESSION['db_pw'] = $_POST['db_pw'];
-	$_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
-	if (isset($_POST['send_stats'])) {
-		$_SESSION['send_stats'] = $_POST['send_stats'];
-	} else {
-		$_SESSION['send_stats'] = "";
-	}
+    $_SESSION['db_host'] = $_POST['db_host'];
+    $_SESSION['db_bdd'] = $_POST['db_bdd'];
+    $_SESSION['db_login'] = $_POST['db_login'];
+    $_SESSION['db_pw'] = $_POST['db_pw'];
+    $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
+    if (isset($_POST['send_stats'])) {
+        $_SESSION['send_stats'] = $_POST['send_stats'];
+    } else {
+        $_SESSION['send_stats'] = "";
+    }
 }
 
 // LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
-    	<img src="images/ajax-loader.gif" />
+        <img src="images/ajax-loader.gif" />
     </div>';
 
 // HEADER
@@ -140,205 +152,204 @@ echo '
 echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
                     <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version']:'', '" />
-                    <input type="hidden" id="cpm_is_utf8" name="cpm_is_utf8" value="', isset($_POST['cpm_is_utf8']) ? $_POST['cpm_is_utf8']:'', '" />
-					<input type="hidden" name="menu_action" id="menu_action" value="" />';
+                    <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8']:'', '" />
+                    <input type="hidden" name="menu_action" id="menu_action" value="" />';
 
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
-	//ETAPE O
-	echo '
-	                 <h2>This page will help you to upgrade the TeamPass\'s database</h2>
+    //ETAPE O
+    echo '
+                     <h2>This page will help you to upgrade the TeamPass\'s database</h2>
 
-	                 Before starting, be sure to:<br />
-	                 - upload the complete package on the server and overwrite existing files,<br />
-	                 - have the database connection informations,<br />
-	                 - get some CHMOD rights on the server.<br />
-	                 <br />
-	                 <span style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</span>
-	                 <div style="" class="ui-widget ui-state-highlight">
-	                 	<h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
-						// Display the license file
-						$Fnm = "../license.txt";
-						if (file_exists($Fnm)) {
-							$tab = file($Fnm);
-							echo '
-							<div style="float:left;width:100%;height:250px;overflow:auto;">
-								<div style="float:left;font-style:italic;">';
-								$show = false;
-								$cnt = 0;
-								while(list($cle,$val) = each($tab)) {
-									echo $val."<br />";
-								}
-								echo '
-								</div>
-							</div>';
-						}
-					echo '
-	                 </div>
-	                 &nbsp;
-	                 ';
+                     Before starting, be sure to:<br />
+                     - upload the complete package on the server and overwrite existing files,<br />
+                     - have the database connection informations,<br />
+                     - get some CHMOD rights on the server.<br />
+                     <br />
+                     <span style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</span>
+                     <div style="" class="ui-widget ui-state-highlight">
+                         <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
+                        // Display the license file
+                        $Fnm = "../license.txt";
+                        if (file_exists($Fnm)) {
+                            $tab = file($Fnm);
+                            echo '
+                            <div style="float:left;width:100%;height:250px;overflow:auto;">
+                                <div style="float:left;font-style:italic;">';
+                                $show = false;
+                                $cnt = 0;
+                                while (list($cle,$val) = each($tab)) {
+                                    echo $val."<br />";
+                                }
+                                echo '
+                                </div>
+                            </div>';
+                        }
+                    echo '
+                     </div>
+                     &nbsp;
+                     ';
 
-} else if ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
+} elseif ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
 //define root path
-	$abs_path = "";
-	if(strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
-	else $abs_path = $_SERVER['DOCUMENT_ROOT'];
-	$abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
-	//ETAPE 1
-	echo '
-	                 <h3>Step 1 - Check server</h3>
+    $abs_path = "";
+    if (strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
+    else $abs_path = $_SERVER['DOCUMENT_ROOT'];
+    $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
+    //ETAPE 1
+    echo '
+                     <h3>Step 1 - Check server</h3>
 
-	                 <fieldset><legend>Please give me</legend>
-	                 <label for="root_path" style="width:300px;">Absolute path to TeamPass folder :</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="'.$abs_path.'" /><br />
-	                 </fieldset>
+                     <fieldset><legend>Please give me</legend>
+                     <label for="root_path" style="width:300px;">Absolute path to TeamPass folder :</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="'.$abs_path.'" /><br />
+                     </fieldset>
 
-	                 <h4>Next elements will be checked.</h4>
-	                 <div style="margin:15px;" id="res_step1">
-	                 <span style="padding-left:30px;font-size:13pt;">File "settings.php" is writable</span><br />
-	                 <span style="padding-left:30px;font-size:13pt;">Directory "/install/" is writable</span><br />
-	                 <span style="padding-left:30px;font-size:13pt;">Directory "/includes/" is writable</span><br />
-	                 <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
-	                 <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
-	                 <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                     <h4>Next elements will be checked.</h4>
+                     <div style="margin:15px;" id="res_step1">
+                     <span style="padding-left:30px;font-size:13pt;">File "settings.php" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/install/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/includes/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
-	                 </div>
-	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
-	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
-	                 <input type="hidden" id="step1" name="step1" value="" />';
+                     </div>
+                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
+                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
+                     <input type="hidden" id="step1" name="step1" value="" />';
 
+} elseif ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {
+    //ETAPE 2
+    echo '
+                     <h3>Step 2</h3>
+                     <fieldset><legend>dataBase Informations</legend>
+                     <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
+                     <label for="db_db">dataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
+                     <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
+                     <label for="db_pw">Password :</label><input type="password" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
+                     <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
+                     </fieldset>
 
-} else if ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {
-	//ETAPE 2
-	echo '
-	                 <h3>Step 2</h3>
-	                 <fieldset><legend>Database Informations</legend>
-	                 <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
-	                 <label for="db_db">Database name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
-	                 <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
-	                 <label for="db_pw">Password :</label><input type="password" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
-	                 <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
-	                 </fieldset>
+                     <fieldset><legend>Anonymous statistics</legend>
+                     <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
+                     Please considere sending your statistics as a way to contribute to futur improvments of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
+                     This option can be enabled or disabled through the administration panel.
+                     </fieldset>
 
-	                 <fieldset><legend>Anonymous statistics</legend>
-	                 <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
-	                 Please considere sending your statistics as a way to contribute to futur improvments of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
-	                 This option can be enabled or disabled through the administration panel.
-	                 </fieldset>
+                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
+                     <input type="hidden" id="step2" name="step2" value="" />';
+} elseif ((isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3) && (isset($_POST['actual_cpm_version']))) {
+    //ETAPE 3
+    echo '
+                     <h3>Step 3 - Converting database to UTF-8</h3>';
 
-	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
-	                 <input type="hidden" id="step2" name="step2" value="" />';
-}
+    if (version_compare($_POST['actual_cpm_version'], $k['version'], "<")) {
+        echo '
+            Notice that TeamPass is now only using UTF-8 charset.
+            This step will convert the database to this charset.<br />
+            <p>
+                Save previous tables before converting (prefix "old_" will be used)&nbsp;&nbsp;<input type="checkbox" id="prefix_before_convert" />
+            </p>
+            Click on the button when ready.
 
-else if ((isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3) && (isset($_POST['actual_cpm_version']))) {
-	//ETAPE 3
-	echo '
-	                 <h3>Step 3 - Converting database to UTF-8</h3>';
+            <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step3"></div>  ';
+        $conversion_utf8 = true;
+    } else {
+        echo '
+            The database seems already in UTF-8 charset';
+        $conversion_utf8 = false;
+    }
+} elseif ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4)) {
+    //ETAPE 4
 
-	if (version_compare($_POST['actual_cpm_version'], $k['version'], "<")) {
+    echo '
+                     <h3>Step 4</h3>
+
+                     The upgrader will now update your database.
+                     <table>
+                         <tr><td>Misc table will be populated with new values</td><td><span id="tbl_1"></span></td></tr>
+                         <tr><td>Users table will be altered with news fields</td><td><span id="tbl_2"></span></td></tr>
+                         <tr><td>Nested_Tree table will be altered with news fields</td><td><span id="tbl_5"></span></td></tr>
+                         <tr><td>Table "tags" will be created</td><td><span id="tbl_3"></span></td></tr>
+                         <tr><td>Table "log_system" will be created</td><td><span id="tbl_4"></span></td></tr>
+                         <tr><td>Table "files" will be created</td><td><span id="tbl_6"></span></td></tr>
+                         <tr><td>Table "cache" will be created</td><td><span id="tbl_7"></span></td></tr>
+                         <tr><td>Change table "functions" to "roles"</td><td><span id="tbl_9"></span></td></tr>
+                         <tr><td>Add table "kb"</td><td><span id="tbl_10"></span></td></tr>
+                         <tr><td>Add table "kb_categories"</td><td><span id="tbl_11"></span></td></tr>
+                         <tr><td>Add table "kb_items"</td><td><span id="tbl_12"></span></td></tr>
+                         <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_13"></span></td></tr>
+                         <tr><td>Add table "keys"</td><td><span id="tbl_14"></span></td></tr>
+                         <tr><td>Populate table "keys"</td><td><span id="tbl_15"></span></td></tr>
+                         <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
+                         <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
+                         <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
+                     </table>
+
+                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
+                     <input type="hidden" id="step4" name="step4" value="" />';
+} elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
+    //ETAPE 5
+    echo '
+                     <h3>Step 5 - Update setting file</h3>
+                     This step will write the new setting.php file for your server configuration.<br />
+                     Click on the button when ready.';
+					 
+	if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {
 		echo '
-			Notice that TeamPass is now only using UTF-8 charset.
-			This step will convert the database to this charset.<br />
-			<p>
-				Save previous tables before converting (prefix "old_" will be used)&nbsp;&nbsp;<input type="checkbox" id="prefix_before_convert" />
-			</p>
-			Click on the button when ready.
-
-			<div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step3"></div>  ';
-		$conversion_utf8 = true;
-	} else {
-		echo '
-			The database seems already in UTF-8 charset';
-		$conversion_utf8 = false;
+		<h3>IMPORTANT: Since version 2.11.3, saltkey is stored in an independent file.</h3>
+		<label for="sk_path" style="width:300px;">Absolute path to SaltKey :
+			<img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \'/includes\'.">
+		</label><input type="text" id="sk_path" name="sk_path" value="" size="75" /><br />
+		';
 	}
-}
-
-else if ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4)) {
-	//ETAPE 4
-
 	echo '
-	                 <h3>Step 4</h3>
-
-	                 The upgrader will now update your database.
-	                 <table>
-	                     <tr><td>Misc table will be populated with new values</td><td><span id="tbl_1"></span></td></tr>
-	                     <tr><td>Users table will be altered with news fields</td><td><span id="tbl_2"></span></td></tr>
-	                     <tr><td>Nested_Tree table will be altered with news fields</td><td><span id="tbl_5"></span></td></tr>
-	                     <tr><td>Table "tags" will be created</td><td><span id="tbl_3"></span></td></tr>
-	                     <tr><td>Table "log_system" will be created</td><td><span id="tbl_4"></span></td></tr>
-	                     <tr><td>Table "files" will be created</td><td><span id="tbl_6"></span></td></tr>
-	                     <tr><td>Table "cache" will be created</td><td><span id="tbl_7"></span></td></tr>
-	                     <tr><td>Change table "functions" to "roles"</td><td><span id="tbl_9"></span></td></tr>
-	                     <tr><td>Add table "kb"</td><td><span id="tbl_10"></span></td></tr>
-	                     <tr><td>Add table "kb_categories"</td><td><span id="tbl_11"></span></td></tr>
-	                     <tr><td>Add table "kb_items"</td><td><span id="tbl_12"></span></td></tr>
-	                     <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_13"></span></td></tr>
-	                     <tr><td>Add table "keys"</td><td><span id="tbl_14"></span></td></tr>
-	                     <tr><td>Populate table "keys"</td><td><span id="tbl_15"></span></td></tr>
-	                     <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
-	                     <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
-	                     <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
-	                 </table>
-
-	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
-	                 <input type="hidden" id="step4" name="step4" value="" />';
+		<div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';
+} elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
+    //ETAPE 5
+    echo '
+                     <h3>Step 6</h3>
+                     Upgrade is now finished!<br />
+                     You can delete "Install" directory from your server for more security.<br /><br />
+                     For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.';
 }
-
-else if ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
-	//ETAPE 5
-	echo '
-	                 <h3>Step 5 - Update setting file</h3>
-	                 This step will write the new setting.php file for your server configuration.<br />
-	                 Click on the button when ready.
-
-	                 <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';
-}
-
-else if ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
-	//ETAPE 5
-	echo '
-	                 <h3>Step 6</h3>
-	                 Upgrade is now finished!<br />
-	                 You can delete "Install" directory from your server for more security.<br /><br />
-	                 For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.';
-}
-
 
 //buttons
 if (!isset($_POST['step'])) {
-	echo '
-	             <div id="buttons_bottom">
-	                 <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
-	             </div>';
-}else if ($_POST['step'] == 3 && $conversion_utf8 == false) {
-	echo '
+    echo '
+                 <div id="buttons_bottom">
+                     <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
+                 </div>';
+} elseif ($_POST['step'] == 3 && $conversion_utf8 == false) {
+    echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
+                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-}else if ($_POST['step'] == 3 && $conversion_utf8 == true) {
-	echo '
+} elseif ($_POST['step'] == 3 && $conversion_utf8 == true) {
+    echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
-}else if ($_POST['step'] == 6) {
-	echo '
-	             <div id="buttons_bottom">
-	                 <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://' . $_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8) . '\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
-	             </div>';
+} elseif ($_POST['step'] == 6) {
+    echo '
+                 <div id="buttons_bottom">
+                     <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
+                 </div>';
 } else {
-	echo '
-	                 <div style="width:900px;margin:auto;margin-top:30px;">
-	                     <div id="progressbar" style="float:left;margin-top:9px;"></div>
-	                     <div id="buttons_bottom">
-	                         <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-	                         <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
-	                     </div>
-	                 </div>';
+    echo '
+                     <div style="width:900px;margin:auto;margin-top:30px;">
+                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
+                         <div id="buttons_bottom">
+                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                             <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                         </div>
+                     </div>';
 }
 
 echo '

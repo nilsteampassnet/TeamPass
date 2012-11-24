@@ -1,11 +1,10 @@
 <?php
 //RUSSIAN
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-	$TeamPass_url = '';
+    $TeamPass_url = '';
 } else {
-	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
+    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 
 $txt['account_is_locked'] = "Этот аккаунт заблокирован";
 $txt['activity'] = "Активность";
@@ -511,7 +510,7 @@ $txt['settings_kb'] = "Включить Базу Знаний (beta)";
 $txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой (, )!<br />Например: домен_1,домен_2,домен_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой (,)!<br />Например: домен_1,домен_2,домен_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP Base DN вашего домена";
 $txt['settings_ldap_mode'] = "Включить аутентификацию пользователей через сервер LDAP";
 $txt['settings_ldap_mode_tip'] = "Включите, только если у вас есть сервер LDAP и если вы хотите использовать его для аутентификации пользователей TeamPass через него.";
@@ -571,4 +570,3 @@ $txt['visibility'] = "Видимость";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Да";
 $txt['your_version'] = "Ваша версия";
-?>

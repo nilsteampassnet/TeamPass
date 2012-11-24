@@ -72,7 +72,7 @@ class AesCtr extends Aes
     }
 
     // implode is more efficient than repeated string concatenation
-    $ciphertext = $ctrTxt . implode('', $ciphertxt);
+    $ciphertext = $ctrTxt.implode('', $ciphertxt);
     $ciphertext = base64_encode($ciphertext);
 
     return $ciphertext;

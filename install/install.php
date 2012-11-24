@@ -13,12 +13,12 @@ $_SESSION['CPM'] = 1;
         <script type="text/javascript" src="install.js"></script>
         <script type="text/javascript" src="gauge/gauge.js"></script>
         <script type="text/javascript" src="js/jquery.min.js"></script>
-		<script type="text/javascript" src="js/jquery-ui.min.js"></script>
-		<script type="text/javascript" src="js/aes.min.js"></script>
+        <script type="text/javascript" src="js/jquery-ui.min.js"></script>
+        <script type="text/javascript" src="js/aes.min.js"></script>
 
         <script type="text/javascript">
-		<!-- // --><![CDATA[
-        //if(typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
+        <!-- // --><![CDATA[
+        //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
             if ($("#progressbar")) {
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
@@ -30,60 +30,63 @@ $_SESSION['CPM'] = 1;
                 else if ($("#step").val() == "6") gauge.modify($('pbar'),{values:[1,1]});
             }
 
-			//DB PW non accepted characters management
-		    $("#db_pw").keypress(function (e) {
-		        var key = e.charCode || e.keyCode || 0;
-		        if(key == 32) alert('No space character is allowed for password');
-	            // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
-	            return (
-	                (key >= 8 && key <= 31) ||
-	                (key >= 33 && key <= 222)
-	            );
-		    });
+            //DB PW non accepted characters management
+            $("#db_pw").keypress(function (e) {
+                var key = e.charCode || e.keyCode || 0;
+                if (key == 32) alert('No space character is allowed for password');
+                // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
+                return (
+                    (key >= 8 && key <= 31) ||
+                    (key >= 33 && key <= 222)
+               );
+            });
 
-			//SALT KEY non accepted characters management
-		    $("#encrypt_key").keypress(function (e) {
-		        var key = e.charCode || e.keyCode || 0;
-				if($("#encrypt_key").val().length < 15)
-					$("#encrypt_key_res").html("<img src='../includes/images/cross.png' />");
-				else
-					$("#encrypt_key_res").html("<img src='../includes/images/tick.png' />");
-	            // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
-	            return (
-	                key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
-					&& key != 44 && key != 38 && key != 94 && (key < 122)
-					&& $("#encrypt_key").val().length <= 32
-	            );
-		    });
+            //SALT KEY non accepted characters management
+            $("#encrypt_key").keypress(function (e) {
+                var key = e.charCode || e.keyCode || 0;
+                if ($("#encrypt_key").val().length < 15)
+                    $("#encrypt_key_res").html("<img src='../includes/images/cross.png' />");
+                else
+                    $("#encrypt_key_res").html("<img src='../includes/images/tick.png' />");
+                // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
+                return (
+                    key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
+                    && key != 44 && key != 38 && key != 94 && (key < 122)
+                    && $("#encrypt_key").val().length <= 32
+               );
+            });
         });
 
-		function aes_encrypt(text) {
-			return Aes.Ctr.encrypt(text, "cpm", 128);
-		}
+        function aes_encrypt(text)
+        {
+            return Aes.Ctr.encrypt(text, "cpm", 128);
+        }
 
-        function goto_next_page(page) {
+        function goto_next_page(page)
+        {
             document.getElementById("step").value=page;
             document.install.submit();
         }
 
-        function Check(step) {
+        function Check(step)
+        {
             if (step != "") {
-				var data;
-				var error = "";
+                var data;
+                var error = "";
 
                 if (step == "step1") {
                     document.getElementById("loader").style.display = "";
-					document.getElementById("url_path_res").innerHTML = "";
-					//Check if last slash exists. If yes, then warn
-					if (document.getElementById("url_path").value.lastIndexOf("/") == (document.getElementById("url_path").value.length-1)) {
-						document.getElementById("url_path_res").innerHTML = "<img src='images/exclamation-red.png' /> No end slash!";
-					} else {
-						data = "type="+step+
-						"&abspath="+escape(document.getElementById("root_path").value);
-					}
+                    document.getElementById("url_path_res").innerHTML = "";
+                    //Check if last slash exists. If yes, then warn
+                    if (document.getElementById("url_path").value.lastIndexOf("/") == (document.getElementById("url_path").value.length-1)) {
+                        document.getElementById("url_path_res").innerHTML = "<img src='images/exclamation-red.png' /> No end slash!";
+                    } else {
+                        data = "type="+step+
+                        "&abspath="+escape(document.getElementById("root_path").value);
+                    }
                 } else
                 if (step == "step2") {
-                		$("#error_db").hide();
+                        $("#error_db").hide();
                     document.getElementById("loader").style.display = "none";
                     data = "type="+step+
                     "&db_host="+document.getElementById("db_host").value+
@@ -91,14 +94,14 @@ $_SESSION['CPM'] = 1;
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_bdd="+document.getElementById("db_bdd").value;
 
-					if(document.getElementById("db_pw").value.indexOf('"') != -1) error = "DB Password should not contain a double quotes!<br>";
-					if(document.getElementById("db_login").value.indexOf('"') != -1) error += "DB Login should not contain a double quotes!<br>";
-					if(document.getElementById("db_bdd").value.indexOf('"') != -1) error += "DB should not contain a double quotes!";
+                    if (document.getElementById("db_pw").value.indexOf('"') != -1) error = "DB Password should not contain a double quotes!<br>";
+                    if (document.getElementById("db_login").value.indexOf('"') != -1) error += "DB Login should not contain a double quotes!<br>";
+                    if (document.getElementById("db_bdd").value.indexOf('"') != -1) error += "DB should not contain a double quotes!";
                 } else
                 if (step == "step3") {
                     document.getElementById("loader").style.display = "";
                     var status = true;
-                    if (document.getElementById("tbl_prefix").value != "" )
+                    if (document.getElementById("tbl_prefix").value != "")
                         document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/tick.png'>";
                     else{
                         document.getElementById("tbl_prefix_res").innerHTML = "<img src='images/exclamation-red.png'>";
@@ -106,23 +109,22 @@ $_SESSION['CPM'] = 1;
                     }
 
                     //Check if saltkey is okay
-					var key_val = false;
-					var key_length = false;
-					var key_char = false;
-                    if (document.getElementById("encrypt_key").value != "" )key_val = true;
-					else{
-						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> No value!";
+                    var key_val = false;
+                    var key_length = false;
+                    var key_char = false;
+                    if (document.getElementById("encrypt_key").value != "")key_val = true;
+                    else{
+                        document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> No value!";
                         status = false;
-					}
-					if (document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32 )
-						key_length = true;
-					else{
-						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> 15 to 32 characters!";
+                    }
+                    if (document.getElementById("encrypt_key").value.length >= 15 && document.getElementById("encrypt_key").value.length <= 32)
+                        key_length = true;
+                    else{
+                        document.getElementById("encrypt_key_res").innerHTML = "<img src='images/exclamation-red.png'> 15 to 32 characters!";
                         status = false;
-					}
-					if (key_val == true && key_length == true && key_char == true )
-						document.getElementById("encrypt_key_res").innerHTML = "<img src='images/tick.png'>";
-
+                    }
+                    if (key_val == true && key_length == true && key_char == true)
+                        document.getElementById("encrypt_key_res").innerHTML = "<img src='images/tick.png'>";
 
                     if (status == true) {
                         gauge.modify($('pbar'),{values:[0.60,1]});
@@ -138,21 +140,21 @@ $_SESSION['CPM'] = 1;
                     data = "type="+step;
                 }
 
-				if (data && error == "") httpRequest("install_ajax.php",data);
+                if (data && error == "") httpRequest("install_ajax.php",data);
 
-				if(error != "") {
-					$("#error_db").html(error);
-					$("#error_db").show();
-				}
+                if (error != "") {
+                    $("#error_db").html(error);
+                    $("#error_db").show();
+                }
             }
         }
-		// ]]>
+        // ]]>
         </script>
     </head>
     <body>
 <?php
-require_once( "../includes/language/english.php" );
-require_once( "../includes/include.php" );
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 // # LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;" id="loader"><img src="images/ajax-loader.gif" /></div>';
@@ -166,11 +168,10 @@ echo '
                 <form name="install" method="post" action="">';
 // Hidden things
 echo '
-                    <input type="hidden" id="step" name="step" value="', isset( $_POST['step'] ) ? $_POST['step']:'', '" />
-					<input type="hidden" name="menu_action" id="menu_action" value="" />';
+                    <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
+                    <input type="hidden" name="menu_action" id="menu_action" value="" />';
 
-if ( !isset( $_GET['step'] ) && !isset( $_POST['step'] ) )
-{
+if (!isset($_GET['step']) && !isset($_POST['step'])) {
     // ETAPE O
     echo '
                     <h2>This page will help you through the installation process of TeamPass</h2>
@@ -188,45 +189,41 @@ if ( !isset( $_GET['step'] ) && !isset( $_POST['step'] ) )
                     - allow access from localhost to the database<br /></i>';
 
     echo '
-				<div style="" class="ui-widget ui-state-highlight">
-				     <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
+                <div style="" class="ui-widget ui-state-highlight">
+                     <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
     // Display the license file
     $Fnm = "../license.txt";
-    if ( file_exists( $Fnm ) )
-    {
-        $tab = file( $Fnm );
+    if (file_exists($Fnm)) {
+        $tab = file($Fnm);
         echo '
-					<div style="float:left;width:100%;height:250px;overflow:auto;">
-						<div style="float:left;font-style:italic;">';
+                    <div style="float:left;width:100%;height:250px;overflow:auto;">
+                        <div style="float:left;font-style:italic;">';
         $show = false;
         $cnt = 0;
-        while ( list( $cle, $val ) = each( $tab ) )
-        {
-            echo $val . "<br />";
+        while (list($cle, $val) = each($tab)) {
+            echo $val."<br />";
         }
         echo '
-						</div>
-					</div>';
+                        </div>
+                    </div>';
     }
     echo '
                  </div>
                  &nbsp;
                  ';
-}
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 1 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 1 ) )
-{
+} elseif ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
     // define root path
     $abs_path = "";
-    if ( strrpos( $_SERVER['DOCUMENT_ROOT'], "/" ) == 1 ) $abs_path = strlen( $_SERVER['DOCUMENT_ROOT'] ) - 1;
+    if (strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT']) - 1;
     else $abs_path = $_SERVER['DOCUMENT_ROOT'];
-    $abs_path .= substr( $_SERVER['PHP_SELF'], 0, strlen( $_SERVER['PHP_SELF'] ) - 20 );
+    $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
     // ETAPE 1
     echo '
                     <h3>Step 1 - Check server</h3>
 
                     <fieldset><legend>Please give me</legend>
-                    <label for="root_path" style="width:300px;">Absolute path to teampass folder :</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="' . $abs_path . '" /><br />
-                    <label for="url_path" style="width:300px;">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="step" style="width:560px;" value="http://' . $_SERVER['HTTP_HOST'] . substr( $_SERVER['PHP_SELF'], 0, strrpos( $_SERVER['PHP_SELF'], '/' ) - 8 ) . '" /><span style="padding-left:10px;" id="url_path_res"></span><br />
+                    <label for="root_path" style="width:300px;">Absolute path to teampass folder :</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="'.$abs_path.'" /><br />
+                    <label for="url_path" style="width:300px;">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="step" style="width:560px;" value="http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><span style="padding-left:10px;" id="url_path_res"></span><br />
                     </fieldset>
 
                     <h4>Next elements will be checked.</h4>
@@ -240,28 +237,24 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 1 ) || ( isset( $_GET['
                     <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                     </div>
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="status_step1"></div>';
-}
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 2 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 2 ) )
-{
+} elseif ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {
     $_SESSION['root_path'] = $_POST['root_path'];
     $_SESSION['url_path'] = $_POST['url_path'];
     // ETAPE 2
     echo '
                     <h3>Step 2</h3>
-                    <fieldset><legend>Database Informations</legend>
+                    <fieldset><legend>dataBase Informations</legend>
                     <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" /><br />
-                    <label for="db_db">Database name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" /><br />
+                    <label for="db_db">dataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" /><br />
                     <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" /><br />
                     <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" tilte="Double quotes not allowed!" />
-										<br />
-										<div id="error_db" style="display:none;font-size:18px;color:red;margin:10px 0 10px 0;"></div>
+                                        <br />
+                                        <div id="error_db" style="display:none;font-size:18px;color:red;margin:10px 0 10px 0;"></div>
                     </fieldset>
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                     <input type="hidden" id="step2" name="step2" value="" />';
-}
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 3 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 3 ) )
-{
+} elseif ((isset($_POST['step']) && $_POST['step'] == 3) || (isset($_GET['step']) && $_GET['step'] == 3)) {
     $_SESSION['db_host'] = $_POST['db_host'];
     $_SESSION['db_bdd'] = $_POST['db_bdd'];
     $_SESSION['db_login'] = $_POST['db_login'];
@@ -272,10 +265,14 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 3 ) || ( isset( $_GET['
                     <fieldset><legend>Give me some informations</legend>
                     <label for="tbl_prefix" style="width:300px;">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="teampass_" onblur /><span style="padding-left:10px;" id="tbl_prefix_res"></span><br />
 
-                    <label for="encrypt_key" style="width:300px;">Encryption key: <img src="../includes/images/information-white.png" alt="" title="For security reasons, salt key must be more than 15 characters and less than 32, should contains upper and lower case letters, special characters and numbers, and SHALL NOT CONTAINS single quotes!!!">
+                    <label for="encrypt_key" style="width:300px;">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="For security reasons, salt key must be more than 15 characters and less than 32, should contains upper and lower case letters, special characters and numbers, and SHALL NOT CONTAINS single quotes!!!">
                         <span style="font-size:9pt;font-weight:normal;"><br />for passwords encryption in database</span>
                     </label>
                     <input type="text" id="encrypt_key" name="encrypt_key" class="step" value="whateveryouwant" /><span style="padding-left:10px;" id="encrypt_key_res"></span><br /><br />
+					
+					<label for="sk_path" style="width:300px;">Absolute path to SaltKey :
+						<img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \"/includes\".">
+					</label><input type="text" id="sk_path" name="sk_path" class="step" value="" /><span style="padding-left:10px;" id="sk_path_res"></span><br /><br />
 
                     <label for="smtp_server" style="width:300px;">SMTP server :<span style="font-size:9pt;font-weight:normal;"><br />Email server configuration</span></label><input type="text" id="smtp_server" name="smtp_server" class="step" value="smtp.my_domain.com" /><br /><br />
 
@@ -299,18 +296,14 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 3 ) || ( isset( $_GET['
                     </fieldset>
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step3"></div>  ';
-}
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 4 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 4 ) )
-{
-    if ( !isset( $_POST['tbl_prefix'] ) || ( isset( $_POST['tbl_prefix'] ) && empty( $_POST['tbl_prefix'] ) ) )
-    {
+} elseif ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4)) {
+    if (!isset($_POST['tbl_prefix']) || (isset($_POST['tbl_prefix']) && empty($_POST['tbl_prefix']))) {
         $_SESSION['tbl_prefix'] = "";
-    }
-    else
-    {
+    } else {
         $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
     }
     $_SESSION['encrypt_key'] = $_POST['encrypt_key'];
+    $_SESSION['sk_path'] = $_POST['sk_path'];
     $_SESSION['smtp_server'] = $_POST['smtp_server'];
     $_SESSION['smtp_auth'] = $_POST['smtp_auth'];
     $_SESSION['smtp_auth_username'] = $_POST['smtp_auth_username'];
@@ -318,18 +311,15 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 4 ) || ( isset( $_GET['
     $_SESSION['smtp_port'] = $_POST['smtp_port'];
     $_SESSION['email_from'] = $_POST['email_from'];
     $_SESSION['email_from_name'] = $_POST['email_from_name'];
-    if ( isset( $_POST['send_stats'] ) )
-    {
+    if (isset($_POST['send_stats'])) {
         $_SESSION['send_stats'] = $_POST['send_stats'];
-    }
-    else
-    {
+    } else {
         $_SESSION['send_stats'] = "";
     }
     // ETAPE 4
     echo '
                     <h3>Step 4</h3>
-                    <fieldset><legend>Populate the Database</legend>
+                    <fieldset><legend>Populate the dataBase</legend>
                     The installer will now update your database.
                     <table>
                         <tr><td>Add table "items"</td><td><span id="tbl_2"></span></td></tr>
@@ -357,9 +347,7 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 4 ) || ( isset( $_GET['
                     </fieldset>
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>  ';
-}
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 5 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 5 ) )
-{
+} elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
     // ETAPE 5
     echo '
                     <h3>Step 5 - Update setting file</h3>
@@ -367,10 +355,7 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 5 ) || ( isset( $_GET['
                     Click on the button when ready.
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';
-}
-
-else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 6 ) || ( isset( $_GET['step'] ) && $_GET['step'] == 6 ) )
-{
+} elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
     // ETAPE 6
     echo '
                     <h3>Step 6</h3>
@@ -380,28 +365,23 @@ else if ( ( isset( $_POST['step'] ) && $_POST['step'] == 6 ) || ( isset( $_GET['
                     For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.';
 }
 // buttons
-if ( !isset( $_POST['step'] ) )
-{
+if (!isset($_POST['step'])) {
     echo '
                     <div id="buttons_bottom">
                         <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                     </div>';
-}
-else if ( $_POST['step'] == 6 )
-{
+} elseif ($_POST['step'] == 6) {
     echo '
                     <div id="buttons_bottom">
-                        <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://' . $_SERVER['HTTP_HOST'] . substr( $_SERVER['PHP_SELF'], 0, strrpos( $_SERVER['PHP_SELF'], '/' ) - 8 ) . '\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
+                        <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
                     </div>';
-}
-else
-{
+} else {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_launch" onclick="Check(\'step' . $_POST['step'] . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                            <input type="button" id="but_next" onclick="goto_next_page(\'' . ( intval( $_POST['step'] ) + 1 ) . '\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                            <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'].'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                            <input type="button" id="but_next" onclick="goto_next_page(\''.(intval($_POST['step']) + 1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
 }
@@ -415,7 +395,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px;">
-            ' . $k['tool_name'] . ' ' . $k['version'] . ' &copy; copyright 2010-2012
+            '.$k['tool_name'].' '.$k['version'].' &copy; copyright 2010-2012
         </div>
         <div style="float:right;margin-top:-15px;">
 
