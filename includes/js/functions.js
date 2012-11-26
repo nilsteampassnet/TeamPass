@@ -189,3 +189,14 @@ function split( val ) {
 function extractLast( term ) {
     return split( term ).pop();
 }
+
+
+function aes_encrypt(text)
+{
+    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+function aes_decrypt(text)
+{
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}

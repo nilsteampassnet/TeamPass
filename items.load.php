@@ -704,16 +704,6 @@ function EditerItem()
     }
 }
 
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
 function AjouterFolder()
 {
     if ($("#new_rep_titre").val() == "0") $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();

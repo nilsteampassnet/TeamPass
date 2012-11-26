@@ -5,6 +5,12 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['admin_2factors_autentication_setting'] = "Enable Google 2-Factors autentication";
+$txt['admin_2factors_autentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";
+$txt['2factors_tile'] = "2-Factors Autentication";
+$txt['2factors_image_text'] = "Please, scan the QR code to get the one-time password";
+$txt['2factors_confirm_text'] = "Enter the one-time password";
+$txt['bad_onetime_password'] = "Wrong One-Time password!";
 
 $txt['at_user_added'] = "User #user_login# added";
 $txt['at_user_deleted'] = "User #user_login# deleted";

@@ -38,7 +38,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/jstree/jstree.min.js"></script>
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
 
-        <script type="text/javascript" src="includes/js/jquery.bgiframe.min.js"></script>
+        <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
         <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
@@ -60,7 +60,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>';
 } elseif (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
-        <script src="includes/js/jquery.jeditable.js" type="text/javascript"></script>';
+        <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
 } elseif (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
@@ -125,7 +125,13 @@ $htmlHeaders .= '
             for (var i = 0; i < 10; i++) {
                 randomstring += chars[Math.floor(Math.random() * chars.length)];
             }
-            var data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"}\';
+            
+            var data = "";
+            if ($("#2factors_code").val() != undefined) {
+                data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'", "original_onetimepw":"\'+sanitizeString($("#2factors_initKey").val())+\'"\';
+            }
+                    
+            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
 
             //send query
             $.post(
@@ -150,9 +156,13 @@ $htmlHeaders .= '
                         $("#ajax_loader_connexion").hide();
                         $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
                         $("#erreur_connexion").show();
-                    } else if (data[0].value == "error") {alert("ici");
+                    } else if (data[0].value == "error") {
                         $("#mysql_error_warning").html(data[0].text);
                         $("#div_mysql_error").show().dialog("open");
+                    } else if (data[0].value == "false_onetimepw") {
+                        $("#ajax_loader_connexion").hide();
+                        $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
+                        $("#erreur_connexion").show();
                     } else {
                         $("#erreur_connexion").show();
                         $("#ajax_loader_connexion").hide();

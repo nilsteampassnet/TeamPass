@@ -82,6 +82,8 @@ folder
  * Code improvement for PSR compliance
  * jQueryUI updated to v1.9
  * saltkey is exported in a unique file that should be moved outside "www" server scope.
+ * Cleanup unused files
+ * Added 2-factors autentication
  * 190, 192, 199, 202 corrected
 
 2.1.12

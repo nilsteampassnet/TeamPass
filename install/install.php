@@ -153,8 +153,8 @@ $_SESSION['CPM'] = 1;
     </head>
     <body>
 <?php
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once '../includes/language/english.php';
+require_once '../includes/include.php';
 // # LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;" id="loader"><img src="images/ajax-loader.gif" /></div>';

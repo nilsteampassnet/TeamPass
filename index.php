@@ -450,7 +450,27 @@ elseif (empty($_SESSION['user_id'])) {
                     <div id="connect_pw" style="margin-bottom:3px;">
                         <label for="pw" class="form_label">'.$txt['index_password'].'</label>
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" />
-                    </div>
+                    </div>';
+
+    if (isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1) {
+        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/autentication/twofactors/twofactors.php';
+        $Google2FA=new Google2FA();
+        
+        $InitalizationKey = "PEHMPSDNLXIOG65U";
+        $TimeStamp = $Google2FA->get_timestamp();
+        $secretkey = $Google2FA->base32_decode($InitalizationKey);	// Decode it into binary
+        $otp = $Google2FA->oath_hotp($secretkey, $TimeStamp);	// Get current token
+        $qrCode = $Google2FA->get_qr_code_url("", $otp);
+        echo '
+                    <div id="connect_2factors_code" style="margin-bottom:3px;">
+                        <div style="text-align:center;" id="2factors_qr_code">"'.$txt['2factors_image_text'].'<br /><img class=\'google_qrcode\' src=\''.$qrCode.'\' />"</div>
+                        <label for="2factors_code" class="">'.$txt['2factors_confirm_text'].'</label>
+                        <input type="text" size="10" id="2factors_code" name="2factors_code" class="input_text text ui-widget-content ui-corner-all" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
+                        <input type="hidden" id="2factors_initKey" value="'.$otp.'" />
+                    </div>';
+    }
+
+    echo '
                     <div style="margin-bottom:3px;">
                         <label for="duree_session" class="">'.$txt['index_session_duration'].'&nbsp;('.$txt['minutes'].') </label>
                         <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />

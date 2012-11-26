@@ -341,6 +341,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['insert_manual_entry_item_history'] != $_POST['insert_manual_entry_item_history']) {
         updateSettings('insert_manual_entry_item_history', $_POST['insert_manual_entry_item_history']);
     }
+    //2factors_autentication
+    if (isset($_POST['2factors_autentication'])) {
+        updateSettings('2factors_autentication', $_POST['2factors_autentication']);
+    }
 }
 
 echo '
@@ -501,6 +505,23 @@ echo '
                 <td>
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
+            </tr>';
+
+// 2factors_code
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$txt['admin_2factors_autentication_setting'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_2factors_autentication_setting_tip'].'" />
+                  </label>
+            </td>
+            <td>
+                <div class="div_radio">
+                    <input type="radio" id="2factors_autentication_radio1" name="2factors_autentication" value="1"', isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_autentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="2factors_autentication_radio2" name="2factors_autentication" value="0"', isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_autentication']) ? ' checked="checked"':''), ' /><label for="2factors_autentication_radio2">'.$txt['no'].'</label>
+                </div>
+              <td>
             </tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';

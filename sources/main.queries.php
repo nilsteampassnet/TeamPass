@@ -185,6 +185,16 @@ switch ($_POST['type']) {
         $password_clear = htmlspecialchars_decode($data_received['pw']);
         $password = encrypt(htmlspecialchars_decode($data_received['pw']));
         $username = htmlspecialchars_decode($data_received['login']);
+
+        //CHeck 2-Factors pw
+        if (isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1) {
+            if ($data_received['onetimepw'] != $data_received['original_onetimepw']) {
+                echo '[{"value" : "false_onetimepw", "user_admin":"", "initial_url" : ""}]';
+                $_SESSION['initial_url'] = "";
+                break;
+            }
+        }
+
         // GET SALT KEY LENGTH
         if (strlen(SALT) > 32) {
             $_SESSION['error']['salt'] = true;
@@ -650,7 +660,7 @@ switch ($_POST['type']) {
     /**
      * Get the list of folders
      */
-    case "get_folders_list":        
+    case "get_folders_list":
         //Load Tree
         $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
         $tree->register();
