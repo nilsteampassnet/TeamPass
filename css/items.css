@@ -1,0 +1,136 @@
+.liste_items li.hover { color: red; }
+
+.liste_items li.item li.item_draggable {
+    color:#242D35;
+	margin-left: 5px;
+}
+
+
+.liste_items li {
+    list-style-type:none;
+    padding-bottom: 3px;
+    background: url(../images/canevas/fond_item_li.png) 0% 100% repeat-x;
+}
+
+button{
+    cursor: pointer;
+}
+
+.small_text{
+	font-size: 10px;
+    font-style: italic;
+}
+
+.liste_items a.file, .liste_items a.fileselected {
+    padding: 2px 1px 1px 16px;
+    display: inline;
+    font-family:verdana;
+    font-size:11px;
+	color:#242D35;
+    background: url(../images/key.png) 0 0 no-repeat;
+}
+.liste_items a.fileselected {
+    font-style: italic;
+    font-weight:bold;
+}
+.item:hover{
+    background-color: #F0F0F0;
+}
+
+.item_draggable:hover{
+    background-color: #F0F0F0;
+}
+
+.items_tree{
+	width:300px;
+	padding:5px;
+	float: left;
+	background: white url(../images/canevas/tree_lock.png) 100% 100% no-repeat;
+}
+
+.sidebar {
+	margin-top:3px;
+	min-height:200px;
+}
+
+#jstree{
+	font-family:arial;
+	font-size: 12px;
+}
+
+#items_content{
+	float:left;
+	width:680px;
+	margin-left:10px;
+	background: url(../images/canevas/fond_items_tree.png) repeat;
+}
+
+#items_center{
+	margin-left:0px;
+}
+
+#items_path{
+	padding: 5px;
+	float:left;
+	width:660px;
+	font-size: 15px;
+	font-family:arial;
+	font-style:italic;
+	color:#242D35;
+	margin:5px;
+	background-image: url(../images/canevas/menu_top_bckg.png);
+}
+#items_list{
+	float:left;
+	width: 675px;
+	overflow:auto ;
+}
+
+#item_details_ok{
+	width: 670px;
+	height: 230px;
+	margin: 5px;
+	background:white url(../images/canevas/lock_open.png) 100% 100% no-repeat;
+}
+
+.item_detail_title_1{
+	font-family:arial;
+	font-weight: bold;
+	background-color: #C7D6E5;
+}
+.item_detail_title_2{
+	font-family:arial;
+	font-weight: bold;
+	background-color: #B1C9E2;
+}
+.item_detail_text_1{
+	font-family:arial;
+	background-color: #B1C9E2;
+}
+.item_detail_text_2{
+	font-family:arial;
+	background-color: #C7D6E5;
+}
+
+.grippy{
+	cursor:move;
+}
+
+.file, .cursor, .folder{
+	cursor:pointer;
+}
+
+.search_tree{
+	margin-left:20px;
+	 width:120px;
+	 padding:2px;
+	 font-size:9px;
+}
+
+.state-hover{
+	background-color:#F0F0F0;
+}
+
+.ui-autocomplete-loading {
+    background: white url('../images/ajax-loader.gif') right center no-repeat;
+}

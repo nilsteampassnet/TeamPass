@@ -234,7 +234,7 @@ if (!empty($_POST['type'])) {
                         'id' => $_POST['id']
                        )
                 );
-                // delete personal folder and subfolders                
+                // delete personal folder and subfolders
                 $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_POST['id']."' AND personal_folder = 1");    // Get personal folder ID
                 // Get through each subfolder
                 if (!empty($data[0])) {
@@ -422,16 +422,18 @@ if (!empty($_POST['type'])) {
             // array of roles for actual user
             $my_functions = explode(';', $_SESSION['fonction_id']);
 
-            $rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title");
+            $rows = $db->fetchAllArray("SELECT id,title,creator_id FROM ".$pre."roles_title");
             foreach ($rows as $reccord) {
+                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
                 $text .= '<input type="checkbox" id="cb_change_function-'.$reccord['id'].'"';
                 if (in_array($reccord['id'], $users_functions)) {
                     $text .= ' checked';
                 }
-                if (!in_array($reccord['id'], $my_functions) && $_SESSION['is_admin'] != 1) {
+                /*if ((!in_array($reccord['id'], $my_functions) && $_SESSION['is_admin'] != 1) && !($_SESSION['user_manager'] == 1 && $reccord['creator_id'] == $_SESSION['user_id'])) {
                     $text .= ' disabled="disabled"';
-                }
+                }*/
                 $text .= '>&nbsp;'.$reccord['title'].'<br />';
+                }
             }
             // return data
             $return_values = json_encode(array("text" => $text), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);

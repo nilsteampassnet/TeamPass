@@ -120,10 +120,10 @@ foreach ($rows as $reccord) {
     if ($reccord['disabled'] == 1) {
     }
     // Check if user has the same roles accessible as the manager
-    if ($_SESSION['user_gestionnaire']) {
+    if ($_SESSION['user_manager']) {
         $show_user_folders = false;
         // Check if the user is a manager. If yes, not allowed to modifier
-        if (($_SESSION['user_gestionnaire'] == 1 && $reccord['gestionnaire'] == 1) || $reccord['admin'] == 1) {
+        if (($_SESSION['user_manager'] == 1 && $reccord['gestionnaire'] == 1) || $reccord['admin'] == 1) {
             $show_user_folders = false;
         } else {
             // Check if the user has at least a same role as the manager
@@ -160,7 +160,7 @@ foreach ($rows as $reccord) {
         echo '
                     </td>
                     <td align="center">
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_gestionnaire'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
                     </td>
                     <td>
                         <div>
@@ -193,10 +193,10 @@ foreach ($rows as $reccord) {
                         </div>
                     </td>
                     <td align="center">
-                        <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"', $reccord['admin'] == 1 ? 'checked' : '', ' ', $_SESSION['user_gestionnaire'] == 1 ? 'disabled="disabled"':'' , ' />
+                        <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"', $reccord['admin'] == 1 ? 'checked' : '', ' ', $_SESSION['user_manager'] == 1 ? 'disabled="disabled"':'' , ' />
                     </td>
                     <td align="center">
-                        <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"', $reccord['gestionnaire'] == 1 ? 'checked' : '', ' ', ($_SESSION['user_gestionnaire'] == 1 || $reccord['admin'] == 1) ? 'disabled="disabled"':'', ' />
+                        <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"', $reccord['gestionnaire'] == 1 ? 'checked' : '', ' ', ($_SESSION['user_manager'] == 1 || $reccord['admin'] == 1) ? 'disabled="disabled"':'', ' />
                     </td>';
         // Read Only privilege
         echo '
@@ -312,6 +312,7 @@ echo '
            <label for="new_folder_role_domain">'.$txt['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
         <input type="hidden" id="new_domain">
     </div>
+    <div style="display:none;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // DIV FOR DELETING A USER
 echo '

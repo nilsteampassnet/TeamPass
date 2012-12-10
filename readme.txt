@@ -84,7 +84,9 @@ folder
  * saltkey is exported in a unique file that should be moved outside "www" server scope.
  * Cleanup unused files
  * Added 2-factors autentication
+ * 207: Managers can only see the Roles they are allowed to.
  * 190, 192, 199, 202 corrected
+ * Correction: taking into account user "can create at root level" setting
 
 2.1.12
  * #188

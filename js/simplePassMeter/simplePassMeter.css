@@ -1,0 +1,37 @@
+
+.simplePassMeter {
+  border: 1px solid #aaa;
+  background-color: #f3f3f3;
+  color: #666;
+  font-size: 0.8em;
+  padding: 1px 5px 0 5px;
+  margin: 0;
+  width: 19em;
+}
+
+.meterFail { border: 1px solid #daa; background-color: #fdd; }
+.meterWarn { border: 1px solid #fd6; background-color: #feb; }
+.meterGood { border: 1px solid #ada; background-color: #dfd; }
+.meterExcel { border: 1px solid #aad; background-color: #ddf; }
+
+.simplePassMeterBar { background-color: #ddd; }
+.meterFail .simplePassMeterProgress  { background-color: #f66; }
+.meterWarn .simplePassMeterProgress  { background-color: #fd6; }
+.meterGood .simplePassMeterProgress  { background-color: #ada; }
+.meterExcel .simplePassMeterProgress { background-color: #88f; }
+
+.simplePassMeter p { margin: 0; }
+.simplePassMeterIcon { height: 16px; width: 16px; float: left; }
+.meterFail .simplePassMeterIcon,
+.meterWarn .simplePassMeterIcon,
+.meterGood .simplePassMeterIcon,
+.meterExcel .simplePassMeterIcon {
+  background-image: url('simplePassMeterSprite.png');
+  background-repeat: no-repeat;
+}
+.meterExcel .simplePassMeterIcon { background-position: 0 0; } 
+.meterFail .simplePassMeterIcon { background-position: 0 -17px; } 
+.meterGood .simplePassMeterIcon { background-position: 0 -34px; } 
+.meterWarn .simplePassMeterIcon { background-position: 0 -51px; } 
+
+.simplePassMeterText { margin-left: 2px; }

@@ -126,6 +126,14 @@ $_SESSION['CPM'] = 1;
                     if (key_val == true && key_length == true && key_char == true)
                         document.getElementById("encrypt_key_res").innerHTML = "<img src='images/tick.png'>";
 
+                    //check if sk path is okay
+                    if (document.getElementById("sk_path").value != "")
+                        document.getElementById("sk_path_res").innerHTML = "<img src='images/tick.png'>";
+                    else{
+                        document.getElementById("sk_path_res").innerHTML = "<img src='images/exclamation-red.png'>";
+                        status = false;
+                    }
+
                     if (status == true) {
                         gauge.modify($('pbar'),{values:[0.60,1]});
                         document.getElementById("but_next").disabled = "";
@@ -269,10 +277,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <span style="font-size:9pt;font-weight:normal;"><br />for passwords encryption in database</span>
                     </label>
                     <input type="text" id="encrypt_key" name="encrypt_key" class="step" value="whateveryouwant" /><span style="padding-left:10px;" id="encrypt_key_res"></span><br /><br />
-					
-					<label for="sk_path" style="width:300px;">Absolute path to SaltKey :
-						<img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \"/includes\".">
-					</label><input type="text" id="sk_path" name="sk_path" class="step" value="" /><span style="padding-left:10px;" id="sk_path_res"></span><br /><br />
+
+                    <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
+                        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \"/includes\".">
+                    </label><input type="text" id="sk_path" name="sk_path" class="step" value="" /><span style="padding-left:10px;" id="sk_path_res"></span><br /><br />
 
                     <label for="smtp_server" style="width:300px;">SMTP server :<span style="font-size:9pt;font-weight:normal;"><br />Email server configuration</span></label><input type="text" id="smtp_server" name="smtp_server" class="step" value="smtp.my_domain.com" /><br /><br />
 

@@ -33,15 +33,8 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         elseif (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
         elseif (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
         elseif (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
-        elseif (substr_count($val,"require_once '")>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'"')-14);
+        elseif (substr_count($val,"require_once '")>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
     }
-	echo "> ".$_SESSION['sk_path'];
-	//SK file
-	if(isset($_SESSION['sk_path'])) {
-		while (list($key,$val) = each(file($_SESSION['sk_path']))) {
-			if (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-		}
-	}
 }
 
 ?>
@@ -55,6 +48,7 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="gauge/gauge.js"></script>
+        <script type="text/javascript" src="js/aes.min.js"></script>
 
         <script type="text/javascript">
         //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
@@ -68,6 +62,11 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                 else if (document.getElementById("step").value == "5") gauge.modify($('pbar'),{values:[0.85,1]});
             }
         });
+
+        function aes_encrypt(text)
+        {
+            return Aes.Ctr.encrypt(text, "cpm", 128);
+        }
 
         function goto_next_page(page)
         {
@@ -92,7 +91,7 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                     "&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
-                    "&db_password="+encodeURIComponent(document.getElementById("db_pw").value)+
+                    "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_bdd="+document.getElementById("db_bdd").value;
                 } else
                 if (step == "step3") {
@@ -293,17 +292,17 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <h3>Step 5 - Update setting file</h3>
                      This step will write the new setting.php file for your server configuration.<br />
                      Click on the button when ready.';
-					 
-	if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {
-		echo '
-		<h3>IMPORTANT: Since version 2.11.3, saltkey is stored in an independent file.</h3>
-		<label for="sk_path" style="width:300px;">Absolute path to SaltKey :
-			<img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \'/includes\'.">
-		</label><input type="text" id="sk_path" name="sk_path" value="" size="75" /><br />
-		';
-	}
-	echo '
-		<div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';
+
+    if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {
+        echo '
+        <h3>IMPORTANT: Since version 2.1.13, saltkey is stored in an independent file.</h3>
+        <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
+            <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \'/includes\'.">
+        </label><input type="text" id="sk_path" name="sk_path" value="" size="75" /><br />
+        ';
+    }
+    echo '
+        <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';
 } elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
     //ETAPE 5
     echo '

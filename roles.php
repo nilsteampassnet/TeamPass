@@ -49,6 +49,7 @@ echo '
 // DIV FOR ADDING A ROLE
 echo '
 <div id="add_new_role" style="">
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="new_role_error"></div>
     <p>
     <label for="new_function" class="form_label_100">'.$txt['name'].'</label><input type="text" id="new_function" size="40" />
     </p>
@@ -75,6 +76,7 @@ echo '
 // DIV FOR EDITING A ROLE
 echo '
 <div id="edit_role" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="edit_role_error"></div>
     <div>'.$txt['confirm_edit_role'].'</div>
     <div style="font-weight:bold;text-align:center;color:#FF8000;text-align:center;font-size:13pt;" id="edit_role_show"></div>
     <input type="hidden" id="edit_role_id" />

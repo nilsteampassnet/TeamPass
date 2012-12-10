@@ -35,7 +35,7 @@ function updateSettings ($setting, $val, $type = '')
     $db->register();
     $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
     $db->connect();
-    
+
     // Check if setting is already in DB. If NO then insert, if YES then update.
     $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."'");
     if ($data[0] == 0) {
@@ -341,9 +341,9 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['insert_manual_entry_item_history'] != $_POST['insert_manual_entry_item_history']) {
         updateSettings('insert_manual_entry_item_history', $_POST['insert_manual_entry_item_history']);
     }
-    //2factors_autentication
-    if (isset($_POST['2factors_autentication'])) {
-        updateSettings('2factors_autentication', $_POST['2factors_autentication']);
+    //2factors_authentication
+    if (isset($_POST['2factors_authentication'])) {
+        updateSettings('2factors_authentication', $_POST['2factors_authentication']);
     }
 }
 
@@ -512,14 +512,14 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                   <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                  <label>'.$txt['admin_2factors_autentication_setting'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_2factors_autentication_setting_tip'].'" />
+                  <label>'.$txt['admin_2factors_authentication_setting'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_2factors_authentication_setting_tip'].'" />
                   </label>
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="2factors_autentication_radio1" name="2factors_autentication" value="1"', isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_autentication_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="2factors_autentication_radio2" name="2factors_autentication" value="0"', isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_autentication']) ? ' checked="checked"':''), ' /><label for="2factors_autentication_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$txt['no'].'</label>
                 </div>
               <td>
             </tr>';

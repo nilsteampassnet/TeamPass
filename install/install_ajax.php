@@ -64,7 +64,7 @@ if (isset($_POST['type'])) {
          */
         case "step2":
                 //decrypt the password
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/crypt/aesctr.php';  // AES Counter Mode implementation
+                require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
                 $db_password = Encryption\Crypt\AesCtr::decrypt($_POST['db_password'], "cpm", 128);
 
             $res = "";
@@ -153,8 +153,8 @@ if (isset($_POST['type'])) {
             }
 
             ## TABLE 4 - MISC
-            require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
-            require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+            require_once '../includes/language/english.php';
+            require_once '../includes/include.php';
             $res4 = mysql_query(
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."misc` (
                   `type` varchar(50) NOT NULL,
@@ -213,7 +213,8 @@ if (isset($_POST['type'])) {
                 ('admin', 'email_port', '".$_SESSION['smtp_port']."'),
                 ('admin', 'email_from', '".$_SESSION['email_from']."'),
                 ('admin', 'email_from_name', '".$_SESSION['email_from_name']."'),
-                ('admin', 'pwd_maximum_length', '40')
+                ('admin', 'pwd_maximum_length', '40'),
+                ('admin', '2factors_authentication', '0')
                 ;"
             );
 
@@ -310,7 +311,7 @@ if (isset($_POST['type'])) {
             );
             if ($res7) {
                 echo 'document.getElementById("tbl_7").innerHTML = "<img src=\"images/tick.png\">";';
-                require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+                require_once '../sources/main.functions.php';
                 //vérifier que l'admin n'existe pas
                 $tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE login = 'admin'"));
                 if ($tmp[0] == 0) {
@@ -657,12 +658,12 @@ if (isset($_POST['type'])) {
          * STEP 5
          */
         case "step5":
-			if (empty($_SESSION['sk_path'])) {
-				$sk_file = $_SESSION['abspath'].'/includes/sk.php';
-			} else {
-				$sk_file = $_SESSION['sk_path'].'/sk.php';
-			}
-			
+            if (empty($_SESSION['sk_path'])) {
+                $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+            } else {
+                $sk_file = $_SESSION['sk_path'].'/sk.php';
+            }
+
             $filename = "../includes/settings.php";
             $events = "";
             if (file_exists($filename)) {
@@ -693,14 +694,14 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 
-require_once \"".$sk_file."\";
+require_once \"".str_replace('\\', '/', $sk_file)."\";
 ?>"
                 )
             );
             fclose($fh);
-			
-			//Create sk.php file
-			if (file_exists($sk_file)) {
+
+            //Create sk.php file
+            if (file_exists($sk_file)) {
                 if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
                     echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
                     echo 'document.getElementById("loader").style.display = "none";';
@@ -718,16 +719,16 @@ require_once \"".$sk_file."\";
 "<?php
 @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
 ?>")
-			);
-			fclose($fh);
-			if ($result === false) {
-				echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
-			} else {
-				echo 'gauge.modify($("pbar"),{values:[1,1]});';
-				echo 'document.getElementById("but_next").disabled = "";';
-				echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.";';
-				echo 'document.getElementById("loader").style.display = "none";';
-			}
+            );
+            fclose($fh);
+            if ($result === false) {
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
+            } else {
+                echo 'gauge.modify($("pbar"),{values:[1,1]});';
+                echo 'document.getElementById("but_next").disabled = "";';
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.";';
+                echo 'document.getElementById("loader").style.display = "none";';
+            }
             break;
     }
 }

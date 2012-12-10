@@ -78,9 +78,9 @@ if (isset($_GET['page']) && $_GET['page'] == "kb") {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
 }
 // Load CORE
-require_once 'sources/core.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 // Load links, css and javascripts
-require_once 'load.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
 
 ?>
 
@@ -149,7 +149,7 @@ if (isset($_SESSION['login'])) {
                 </button>';
     }
 
-    if ($_SESSION['user_admin'] == 1 || $_SESSION['user_gestionnaire'] == 1) {
+    if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
         echo '
                 <button title="'.$txt['admin_groups'].'" onclick="MenuAction(\'manage_folders\');">
                     <img src="includes/images/menu_groups.png" alt="" />
@@ -226,7 +226,7 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_G
             <br />',
     (
         (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) ||
-        (isset($_SESSION['user_gestionnaire']) && $_SESSION['user_gestionnaire'] == 1) ||
+        (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1) ||
         (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
       ) ? '
             <button title="'.$txt['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
@@ -359,6 +359,7 @@ if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['upda
             <b>'.$txt['update_needed_mode_admin'].'</b><span style="float:right;cursor:pointer;"><img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" /></span>
         </div>';
 }
+
 // Display pages
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page'])) {
     if ($_GET['page'] == "items") {
@@ -375,7 +376,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         include 'kb.php';
     } elseif (in_array($_GET['page'], array_keys($mngPages))) {
         // Define if user is allowed to see management pages
-        if ($_SESSION['user_admin'] == 1 || $_SESSION['user_gestionnaire'] == 1) {
+        if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
             include($mngPages[$_GET['page']]);
         } else {
             $_SESSION['error'] = "1000"; //not allowed page
@@ -410,8 +411,13 @@ elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action']
             </div>
         </div>';
 }
+// When user identified
+elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+    // PAGE BY DEFAULT
+    include 'home.php';
+}
 // When user is not identified
-elseif (empty($_SESSION['user_id'])) {
+else {
     // Automatic redirection
     if (strpos($_SERVER["REQUEST_URI"], "?") > 0) {
         $nextUrl = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?"));
@@ -452,21 +458,14 @@ elseif (empty($_SESSION['user_id'])) {
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
 
-    if (isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1) {
-        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/autentication/twofactors/twofactors.php';
-        $Google2FA=new Google2FA();
-        
-        $InitalizationKey = "PEHMPSDNLXIOG65U";
-        $TimeStamp = $Google2FA->get_timestamp();
-        $secretkey = $Google2FA->base32_decode($InitalizationKey);	// Decode it into binary
-        $otp = $Google2FA->oath_hotp($secretkey, $TimeStamp);	// Get current token
-        $qrCode = $Google2FA->get_qr_code_url("", $otp);
+    //2-Factors authentication is asked
+    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {echo $qrCode;
+        //Display QR
         echo '
                     <div id="connect_2factors_code" style="margin-bottom:3px;">
-                        <div style="text-align:center;" id="2factors_qr_code">"'.$txt['2factors_image_text'].'<br /><img class=\'google_qrcode\' src=\''.$qrCode.'\' />"</div>
+                        <div style="text-align:center;" id="2factors_qr_code">'.$txt['2factors_image_text'].'<br /><img class=\'google_qrcode\' src=\''.$qrCode.'\' /></div>
                         <label for="2factors_code" class="">'.$txt['2factors_confirm_text'].'</label>
                         <input type="text" size="10" id="2factors_code" name="2factors_code" class="input_text text ui-widget-content ui-corner-all" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
-                        <input type="hidden" id="2factors_initKey" value="'.$otp.'" />
                     </div>';
     }
 
@@ -486,7 +485,7 @@ elseif (empty($_SESSION['user_id'])) {
                 </div>
             </form>
             <script type="text/javascript">
-                document.getElementById("login").focus();
+                $("#login").focus();
             </script>';
     // DIV for forgotten password
     echo '
@@ -499,9 +498,6 @@ elseif (empty($_SESSION['user_id'])) {
                 <label for="forgot_pw_login">'.$txt['login'].'</label>
                 <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
             </div>';
-} else {
-    // PAGE BY DEFAULT
-    include 'home.php';
 }
 echo '
     </div>';

@@ -23,10 +23,11 @@ $("#add_new_role").dialog({
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 220,
+        height: 240,
         title: "<?php echo $txt["give_function_title"];?>",
         buttons: {
             "<?php echo $txt["save_button"];?>": function() {
+            	$("#new_role_error").hide().html("");
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -39,6 +40,8 @@ $("#add_new_role").dialog({
                             $("#new_function").val("");
                             $("#add_new_role").dialog("close");
                             refresh_roles_matrix("reload");
+                        } else {
+                        	$("#new_role_error").show().html(data[0].message);
                         }
                     },
                     "json"
@@ -89,6 +92,7 @@ $("#add_new_role").dialog({
         title: "<?php echo $txt["admin_action"];?>",
         buttons: {
             "<?php echo $txt["ok"];?>": function() {
+            	$("#edit_role_error").hide().html("");
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -99,10 +103,15 @@ $("#add_new_role").dialog({
                         complexity    : $("#edit_role_complexity").val()
                     },
                     function(data) {
-                        $("#edit_role_title").val("");
-                        $("#edit_role").dialog("close");
-                        refresh_roles_matrix("reload");
-                    }
+                        if (data[0].error == "yes") {
+                            $("#edit_role_error").show().html(data[0].message);
+                        } else {
+                            $("#edit_role_title").val("");
+                            $("#edit_role").dialog("close");
+                            refresh_roles_matrix("reload");
+                        }
+                    },
+                    "json"
                );
             },
             "<?php echo $txt["cancel_button"];?>": function() {
@@ -234,6 +243,8 @@ function refresh_roles_matrix(order)
                 //manage next & previous arrows
                 $('#next_role').val(data.next);
                 $('#previous_role').val(data.previous);
+            } else {
+                $("#matrice_droits").html(data.error);
             }
         }
    );

@@ -20,6 +20,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
+include 'main.functions.php';
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -38,11 +39,17 @@ if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         #CASE adding a new role
         case "add_new_role":
-            $db->query("INSERT INTO ".$pre."roles_title SET title = '".mysql_real_escape_string(stripslashes($_POST['name']))."', complexity='".$_POST['complexity']."'");
-            //Actualize the variable
-            $_SESSION['nb_roles'] ++;
+            //Check if role already exist : No similar roles
+            $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['name']))."'");
+            if ($tmp[0] == 0) {
+                $db->query("INSERT INTO ".$pre."roles_title SET title = '".mysql_real_escape_string(stripslashes($_POST['name']))."', complexity='".$_POST['complexity']."', creator_id='".$_SESSION['user_id']."'");
+                //Actualize the variable
+                $_SESSION['nb_roles'] ++;
 
-            echo '[ { "error" : "no" } ]';
+                echo '[ { "error" : "no" } ]';
+            } else {
+                echo '[ { "error" : "yes" , "message" : "'.$txt['error_role_exist'].'" } ]';
+            }
             break;
 
         //-------------------------------------------
@@ -59,14 +66,21 @@ if (!empty($_POST['type'])) {
         //-------------------------------------------
         #CASE editing a role
         case "edit_role":
-            $db->queryUpdate(
-                "roles_title",
-                array(
-                    'title' => $_POST['title'],
-                    'complexity' => $_POST['complexity']
-               ),
-                'id = '.$_POST['id']
-            );
+            //Check if role already exist : No similar roles
+            $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['title']))."'");
+            if ($tmp[0] == 0) {
+                $db->queryUpdate(
+                    "roles_title",
+                    array(
+                        'title' => $_POST['title'],
+                        'complexity' => $_POST['complexity']
+                   ),
+                    'id = '.$_POST['id']
+                );
+                echo '[ { "error" : "no" } ]';
+            } else {
+                echo '[ { "error" : "yes" , "message" : "'.$txt['error_role_exist'].'" } ]';
+            }
             break;
 
         /******************************************
@@ -151,6 +165,9 @@ if (!empty($_POST['type'])) {
                 $next = $start+$display_nb;
             }
 
+            // array of roles for actual user
+            $my_functions = explode(';', $_SESSION['fonction_id']);
+
             //Display table header
             $rows = $db->fetchAllArray(
                 "SELECT *
@@ -159,14 +176,21 @@ if (!empty($_POST['type'])) {
                 $sql_limit
             );
             foreach ($rows as $reccord) {
-                if ($reccord['allow_pw_change'] == 1) {
-                    $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$txt['role_cannot_modify_all_seen_items'].'\'>';
-                } else {
-                    $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$txt['role_can_modify_all_seen_items'].'\'>';
-                }
-                $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].'<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES).'")\'>' .$allow_pw_change. '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pw_complexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
+                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
+                    if ($reccord['allow_pw_change'] == 1) {
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$txt['role_cannot_modify_all_seen_items'].'\'>';
+                    } else {
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$txt['role_can_modify_all_seen_items'].'\'>';
+                    }
 
-                array_push($arrRoles, $reccord['id']);
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].
+                        '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
+                        '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'")\'>'.
+                        $allow_pw_change.
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pw_complexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
+
+                    array_push($arrRoles, $reccord['id']);
+                }
             }
             $texte .= '</tr></thead><tbody>';
 
@@ -200,9 +224,6 @@ if (!empty($_POST['type'])) {
                 }
             }
             $texte .= '</tbody></table>';
-            //echo '[ { "new_table" : "'.$texte.'", "all" : "'.$roles_count[0].'", "next" : "'.$next.'", "previous" : "'.$previous.'" } ]';
-            //echo 'document.getElementById(\'matrice_droits\').innerHTML = "'.addslashes($texte).'";';
-            //echo '$("#div_loading").hide()';  //hide loading div
 
             $return_values = array(
                 "new_table" => $texte,
@@ -210,6 +231,11 @@ if (!empty($_POST['type'])) {
                 "next" => $next,
                 "previous" => $previous
             );
+
+            //Check if is UTF8. IF not send Error
+            /*if (!isUTF8($texte)) {
+                $return_values = array("error" => $txt['error_string_not_utf8']);
+            }*/
 
             $return_values = json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
 

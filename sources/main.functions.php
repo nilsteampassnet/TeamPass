@@ -96,7 +96,7 @@ function cleanString($string)
 function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is_admin, $id_fonctions, $refresh)
 {
     global $server, $user, $pass, $database, $pre;
-    
+
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -172,7 +172,7 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
         $liste_gp_interdits = array();
 
         $list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = $list_restricted_folders_for_items = array();
-        
+
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctions_associees as $role_id) {
             if (!empty($role_id)) {
@@ -313,18 +313,18 @@ function updateCacheTable($action, $id = "")
 {
     global $db, $server, $user, $pass, $database, $pre;
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    
+
     //Connect to DB
     $db = new SplClassLoader('Database\Core', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $db->register();
     $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
     $db->connect();
-    
+
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-    
+
     // Rebuild full cache table
     if ($action == "reload") {
         // truncate table
@@ -483,13 +483,13 @@ function teampassStats()
 
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    
+
     // connect to the server
     $db = new SplClassLoader('Database\Core', '../includes/libraries');
     $db->register();
     $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
     $db->connect();
-    
+
     // Prepare stats to be sent
     // Count no FOLDERS
     $data_folders = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
@@ -527,7 +527,7 @@ function teampassStats()
     // Turn this into the query string!
     $stats_to_send = implode('&', $stats_to_send);
 
-    fopen("http://www.cpassman.org/files/cpm_stats/collect_stats.php?".$stats_to_send, 'r');
+    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$stats_to_send, 'r');
     // update the actual time
     $db->queryUpdate(
         "misc",
@@ -609,4 +609,27 @@ function dateToStamp($date)
 function isDate($date)
 {
     return (strtotime($date) !== false);
+}
+
+/**
+ * isUTF8()
+ *
+ * @return is the string in UTF8 format.
+ */
+
+function isUTF8($string)
+{
+    return preg_match(
+        '%^(?:
+        [\x09\x0A\x0D\x20-\x7E] # ASCII
+        | [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
+        | \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
+        | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
+        | \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
+        | \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
+        | [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
+        | \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
+        )*$%xs',
+        $string
+    );
 }

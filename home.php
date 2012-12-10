@@ -41,10 +41,13 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <tr>
                             <td>'.$txt['index_new_pw'].' :</td><td><input type="password" size="10" name="new_pw" id="new_pw"/></td>
                         </tr>
-                        <tr><td>'.$txt['index_change_pw_confirmation'].' :</td><td><input type="password" size="10" name="new_pw2" id="new_pw2" /></td></tr>
-                        <tr><td colspan="2"><input type="button" onClick="ChangeMyPass()" value="'.$txt['index_change_pw_button'].'" /></td></tr>
+                        <tr><td>'.$txt['index_change_pw_confirmation'].' :</td><td><input type="password" size="10" name="new_pw2" id="new_pw2" onkeypress="if (event.keyCode == 13) ChangeMyPass();" /></td></tr>
                     </table>
-                </div>';
+                    <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$txt['index_change_pw_button'].'" />
+                </div>
+                <script type="text/javascript">
+                    $("#new_pw").focus();
+                </script>';
 } elseif (!empty($_SESSION['derniere_connexion'])) {
     //Last items created block
     if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && !empty($_SESSION['groupes_visibles_list'])) {

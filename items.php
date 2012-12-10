@@ -737,7 +737,7 @@ echo '
         <tr>
             <td>'.$txt['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe">
-                <option value="0">---</option>' .
+                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
 $select_visible_folders_options .
 '
             </select></td>
@@ -745,7 +745,7 @@ $select_visible_folders_options .
         <tr>
             <td>'.$txt['complex_asked'].' : </td>
             <td><select id="new_rep_complexite">
-                <option value="">---</option>';
+                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' ;
 foreach ($pw_complexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
@@ -831,7 +831,7 @@ echo '
     <div style="">'.$txt['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
-            <option value="0">---</option>' .
+            ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
 $select_visible_nonpersonal_folders_options .
 '</select>
     </div>

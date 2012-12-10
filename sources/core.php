@@ -17,22 +17,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
-/* CHECK IF UPDATE IS NEEDED */
-if (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false || empty($_SESSION['settings']['update_needed']))) {
-    $row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
-    if ($row[0] != $k['version']) {
-        $_SESSION['settings']['update_needed'] = true;
-    } else {
-        $_SESSION['settings']['update_needed'] = false;
-    }
-}
-
 /* LOAD CPASSMAN SETTINGS */
-if(!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
+if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
     $_SESSION['settings']['duplicate_folder'] = 0;  //by default, this is false;
     $_SESSION['settings']['duplicate_item'] = 0;  //by default, this is false;
     $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
-    
+
     $rows = $db->fetchAllArray("SELECT * FROM ".$pre."misc WHERE type = 'admin' OR type = 'settings'");
     foreach ($rows as $reccord) {
         if ($reccord['type'] == 'admin') {
@@ -59,6 +49,13 @@ $pw_complexity = array(
     80=>array(80,$txt['complex_level5']),
     90=>array(90,$txt['complex_level6'])
 );
+/**
+ * Define Timezone
+ */
+if (!isset($_SESSION['settings']['timezone'])) {
+    $_SESSION['settings']['timezone'] = 'UTC';
+}
+date_default_timezone_set($_SESSION['settings']['timezone']);
 
 //Load Languages stuff
 if (empty($languages_dropmenu)) {
@@ -76,13 +73,87 @@ if (empty($languages_dropmenu)) {
         }
     }
 }
-/**
- * Define Timezone
- */
-if (!isset($_SESSION['settings']['timezone'])) {
-    $_SESSION['settings']['timezone'] = 'UTC';
+
+/* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
+if ((isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion") || (isset($_GET['session']) && $_GET['session'] == "expired") || (isset($_POST['session']) && $_POST['session'] == "expired")) {
+    // Update table by deleting ID
+    if (isset($_SESSION['user_id'])) {
+        $db->queryUpdate(
+            "users",
+            array(
+                'key_tempo' => ''
+           ),
+            "id=".$_SESSION['user_id']
+        );
+    }
+
+    //Log into DB the user's disconnection
+    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+        logEvents('user_connection', 'disconnection', @$_SESSION['user_id']);
+    }
+
+    // erase session table
+    $_SESSION = array();
+
+    // Kill session
+    session_destroy();
+
+    // REDIRECTION PAGE ERREUR
+    echo '
+    <script language="javascript" type="text/javascript">
+    <!--
+    setTimeout(function(){document.location.href="index.php"}, 10);
+    -->
+    </script>';
+    exit;
 }
-date_default_timezone_set($_SESSION['settings']['timezone']);
+
+/* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
+if (!empty($_SESSION['fin_session'])) {
+    $data_session = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
+} else {
+    $data_session[0] = "";
+}
+
+if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || $_SESSION['key'] != $data_session[0])) {
+    // Update table by deleting ID
+    $db->queryUpdate(
+        "users",
+        array(
+            'key_tempo' => ''
+       ),
+        "id=".$_SESSION['user_id']
+    );
+
+    //Log into DB the user's disconnection
+    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
+    }
+
+    // erase session table
+    $_SESSION = array();
+
+    // Kill session
+    session_destroy();
+
+    //Redirection
+    echo '
+    <script language="javascript" type="text/javascript">
+    <!--
+    setTimeout(function(){document.location.href="index.php"}, 10);
+    -->
+    </script>';
+}
+
+/* CHECK IF UPDATE IS NEEDED */
+if (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false || empty($_SESSION['settings']['update_needed']))) {
+    $row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
+    if ($row[0] != $k['version']) {
+        $_SESSION['settings']['update_needed'] = true;
+    } else {
+        $_SESSION['settings']['update_needed'] = false;
+    }
+}
 
 /**
  * Set the personal SaltKey if authorized
@@ -127,7 +198,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        document.location.href="index.php?session=expired";
+        setTimeout(function(){document.location.href="index.php?session=expired"}, 10);
         -->
         </script>';
         exit;
@@ -154,13 +225,13 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        document.location.href="index.php";
+        setTimeout(function(){document.location.href="index.php"}, 10);
         -->
         </script>';
     } else {
         // update user's rights
         $_SESSION['user_admin'] = $data['admin'];
-        $_SESSION['user_gestionnaire'] = $data['gestionnaire'];
+        $_SESSION['user_manager'] = $data['gestionnaire'];
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         if (!empty($data['groupes_visibles'])) {
@@ -181,42 +252,21 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         // get access rights
         identifyUserRights($data['groupes_visibles'], $data['groupes_interdits'], $data['admin'], $data['fonction_id'], false);
     }
+} elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+    //2 Factors authentication is asked
+    include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/authentication/twofactors/twofactors.php';
+    $Google2FA=new Google2FA();
+
+    //Generate code and QR
+    $InitalizationKey = $Google2FA->generate_secret_key();
+    $TimeStamp = $Google2FA->get_timestamp();
+    $secretkey = $Google2FA->base32_decode($InitalizationKey);	// Decode it into binary
+    $otp = $Google2FA->oath_hotp($secretkey, $TimeStamp);	// Get current token
+    $qrCode = $Google2FA->get_qr_code_url("", $otp);
+
+    //Store Onetime pw
+    $_SESSION['initKey'] = $InitalizationKey;
 }
-
-/* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
-if ((isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion") || (isset($_GET['session']) && $_GET['session'] == "expired") || (isset($_POST['session']) && $_POST['session'] == "expired")) {
-    // Update table by deleting ID
-    if (isset($_SESSION['user_id'])) {
-        $db->queryUpdate(
-            "users",
-            array(
-                'key_tempo' => ''
-           ),
-            "id=".$_SESSION['user_id']
-        );
-    }
-
-    //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', @$_SESSION['user_id']);
-    }
-
-    // erase session table
-    $_SESSION = array();
-
-    // Kill session
-    session_destroy();
-
-    // REDIRECTION PAGE ERREUR
-    echo '
-    <script language="javascript" type="text/javascript">
-    <!--
-    document.location.href="index.php";
-    -->
-    </script>';
-    exit;
-}
-
 
 /*
 * CHECK PASSWORD VALIDITY
@@ -242,43 +292,6 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
     } else {
         $_SESSION['validite_pw'] = false;
     }
-}
-
-/* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
-if (!empty($_SESSION['fin_session'])) {
-    $data_session = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
-} else {
-    $data_session[0] = "";
-}
-
-if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || $_SESSION['key'] != $data_session[0])) {
-    // Update table by deleting ID
-    $db->queryUpdate(
-        "users",
-        array(
-            'key_tempo' => ''
-       ),
-        "id=".$_SESSION['user_id']
-    );
-
-    //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
-    }
-
-    // erase session table
-    $_SESSION = array();
-
-    // Kill session
-    session_destroy();
-
-    //Redirection
-    echo '
-    <script language="javascript" type="text/javascript">
-    <!--
-    document.location.href="index.php";
-    -->
-    </script>';
 }
 
 /*

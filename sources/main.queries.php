@@ -9,7 +9,7 @@
  * @link
  */
 
-$debug_ldap = 0; //Can be used in order to debug LDAP authentication
+$debug_ldap = 1; //Can be used in order to debug LDAP authentication
 
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -186,13 +186,17 @@ switch ($_POST['type']) {
         $password = encrypt(htmlspecialchars_decode($data_received['pw']));
         $username = htmlspecialchars_decode($data_received['login']);
 
-        //CHeck 2-Factors pw
-        if (isset($_SESSION['settings']['2factors_autentication']) && $_SESSION['settings']['2factors_autentication'] == 1) {
-            if ($data_received['onetimepw'] != $data_received['original_onetimepw']) {
+        //Check 2-Factors pw
+        if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/authentication/twofactors/twofactors.php';
+            $Google2FA=new Google2FA();
+
+            if ($Google2FA->verify_key($_SESSION['initKey'], $data_received['onetimepw']) != true) {
                 echo '[{"value" : "false_onetimepw", "user_admin":"", "initial_url" : ""}]';
                 $_SESSION['initial_url'] = "";
                 break;
             }
+            $_SESSION['user_onetimepw'] = "";
         }
 
         // GET SALT KEY LENGTH
@@ -220,9 +224,10 @@ switch ($_POST['type']) {
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
             }
-            
-            $adldap = new SplClassLoader('LDAP\AdLDAP', '../includes/libraries');
-            $adldap = new LDAP\AdLDAP\AdLDAP(
+
+            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+            $adldap->register();
+            $adldap = new LDAP\adLDAP\adLDAP(
                 array(
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                     'account_suffix' => $_SESSION['settings']['ldap_suffix'],
@@ -334,7 +339,7 @@ switch ($_POST['type']) {
                 $_SESSION['login'] = stripslashes($username);
                 $_SESSION['user_id'] = $data['id'];
                 $_SESSION['user_admin'] = $data['admin'];
-                $_SESSION['user_gestionnaire'] = $data['gestionnaire'];
+                $_SESSION['user_manager'] = $data['gestionnaire'];
                 $_SESSION['user_read_only'] = $data['read_only'];
                 $_SESSION['last_pw_change'] = $data['last_pw_change'];
                 $_SESSION['last_pw'] = $data['last_pw'];
@@ -348,7 +353,7 @@ switch ($_POST['type']) {
                 // user type
                 if ($_SESSION['user_admin'] == 1) {
                     $_SESSION['user_privilege'] = $txt['god'];
-                } elseif ($_SESSION['user_gestionnaire'] == 1) {
+                } elseif ($_SESSION['user_manager'] == 1) {
                     $_SESSION['user_privilege'] = $txt['gestionnaire'];
                 } elseif ($_SESSION['user_read_only'] == 1) {
                     $_SESSION['user_privilege'] = $txt['read_only_account'];
@@ -781,7 +786,7 @@ switch ($_POST['type']) {
                 $mail = new SplClassLoader('Email\PhpMailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
                 $mail->register();
                 $mail = new Email\PhpMailer\PHPMailer();
-    
+
                 $mail->setLanguage("en", "../includes/libraries/email/phpmailer/language");
                 $mail->isSmtp(); // send via SMTP
                 $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
@@ -832,6 +837,23 @@ switch ($_POST['type']) {
                     'intitule' => 'sending_emails',
                     'type' => 'cron'
                    )
+            );
+        }
+        break;
+    /**
+     * Store error
+     */
+    case "store_error":
+        if (!empty($_SESSION['user_id'])) {
+            // update DB
+            $db->queryInsert(
+                "log_system",
+                array(
+                    'type' => 'error',
+                    'date' => mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'label' => urldecode($_POST['error']),
+                    'qui' => $_SESSION['user_id']
+                )
             );
         }
         break;

@@ -139,7 +139,10 @@ if (isset($_POST['type'])) {
             #==========================
         case "step2":
             $res = "";
-            $db_password = str_replace(" ","+",urldecode($_POST['db_password']));
+            //decrypt the password
+            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            $db_password = Encryption\Crypt\AesCtr::decrypt($_POST['db_password'], "cpm", 128);
+            echo $db_password;
             // connexion
             if (@mysql_connect($_POST['db_host'],$_POST['db_login'],$db_password)) {
                 $db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
@@ -289,6 +292,7 @@ if (isset($_POST['type'])) {
                 array('admin', 'email_post', '25', 0),
                 array('admin', 'email_from', @$_SESSION['email_from'], 0),
                 array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
+                array('admin', '2factors_authentication', 0, 0),
            );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -765,7 +769,7 @@ if (isset($_POST['type'])) {
             //Encrypt passwords in log_items
             $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'update' AND intitule = 'encrypt_pw_in_log_items' AND valeur = 1"));
             if ($res_tmp[0] == 0) {
-                require_once '../includes/libraries/encryption/crypt/aesctr.php';  // AES Counter Mode implementation
+                require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
                 $tmp_res = mysql_query("SELECT * FROM ".$pre."log_items WHERE action = 'at_modification' AND raison LIKE 'at_pw %'");
                 while ($tmp_data = mysql_fetch_array($tmp_res)) {
                     $reason = explode(':', $tmp_data['raison']);
@@ -798,16 +802,16 @@ if (isset($_POST['type'])) {
                     $events .= "The file $filename already exist. A copy has been created.<br />";
                     unlink($filename);
                 }
-				
-				if(isset($_POST['sk_path'])) {
-					if (empty($_POST['sk_path'])) {
-						$sk_file = $_SESSION['abspath'].'/includes/sk.php';
-					} else {
-						$sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
-					}
-				} else {
-					$sk_file = $_SESSION['sk_path'];
-				}
+
+                if (isset($_POST['sk_path'])) {
+                    if (empty($_POST['sk_path'])) {
+                        $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                    } else {
+                        $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                    }
+                } else {
+                    $sk_file = $_SESSION['sk_path'];
+                }
 
                 $fh = fopen($filename, 'w');
 
@@ -834,37 +838,37 @@ require_once \"".$sk_file."\";
 ?>"));
 
                 fclose($fh);
-				
-				//Create sk.php file
-				if (file_exists($sk_file)) {
-					if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-						echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
-						echo 'document.getElementById("loader").style.display = "none";';
-						break;
-					} else {
-						$events .= "The file $sk_file already exist. A copy has been created.<br />";
-						unlink($sk_file);
-					}
-				}
-				$fh = fopen($sk_file, 'w');
 
-				$result = fwrite(
-					$fh,
-					utf8_encode(
-	"<?php
-	@define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
-	?>")
-				);
-				fclose($fh);
-				if ($result === false) {
-					echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
-				} else {
-					echo 'gauge.modify($("pbar"),{values:[1,1]});';
-					echo 'document.getElementById("but_next").disabled = "";';
-					echo 'document.getElementById("res_step5").innerHTML = "Setting.php and sk.php files have been created.";';
-					echo 'document.getElementById("loader").style.display = "none";';
-					echo 'document.getElementById("but_launch").disabled = "disabled";';
-				}
+                //Create sk.php file
+                if (file_exists($sk_file)) {
+                    if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
+                        echo 'document.getElementById("loader").style.display = "none";';
+                        break;
+                    } else {
+                        $events .= "The file $sk_file already exist. A copy has been created.<br />";
+                        unlink($sk_file);
+                    }
+                }
+                $fh = fopen($sk_file, 'w');
+
+                $result = fwrite(
+                    $fh,
+                    utf8_encode(
+    "<?php
+    @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+    ?>")
+                );
+                fclose($fh);
+                if ($result === false) {
+                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
+                } else {
+                    echo 'gauge.modify($("pbar"),{values:[1,1]});';
+                    echo 'document.getElementById("but_next").disabled = "";';
+                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php and sk.php files have been created.";';
+                    echo 'document.getElementById("loader").style.display = "none";';
+                    echo 'document.getElementById("but_launch").disabled = "disabled";';
+                }
             } else {
                 //settings.php file doesn't exit => ERROR !!!!
                 echo 'document.getElementById("res_step5").innerHTML = "<img src=\"../includes/images/error.png\">&nbsp;Setting.php file doesn\'t exist! Upgrade can\'t continue without this file.<br />Please copy your existing settings.php into the \"includes\" folder of your cpassman installation ";';

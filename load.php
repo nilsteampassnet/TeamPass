@@ -29,7 +29,7 @@ $htmlHeaders = '
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/encryption/crypt/aes.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -53,19 +53,19 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
         <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>';
-} elseif (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
+} else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
         <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
         <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>';
-} elseif (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
+} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
-} elseif (isset($_GET['page']) && $_GET['page'] == "manage_views") {
+} else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
         <script type="text/javascript" src="includes/js/datatable/jquery.dataTables.min.js"></script>';
-} elseif (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
+} else if (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
 
@@ -78,7 +78,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
-} elseif (!isset($_GET['page'])) {
+} else if (!isset($_GET['page'])) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
         <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
@@ -92,7 +92,7 @@ $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
-    //deconnexion
+    //Menu actions
     function MenuAction(val)
     {
         if (val == "deconnexion") {
@@ -107,8 +107,8 @@ $htmlHeaders .= '
 
     function aes_encrypt(text)
     {
-            return Aes.Ctr.encrypt(text, "'.SALT.'", 256);
-        }
+        return Aes.Ctr.encrypt(text, "'.SALT.'", 256);
+    }
 
     //Identify user
     function identifyUser(redirect)
@@ -125,12 +125,12 @@ $htmlHeaders .= '
             for (var i = 0; i < 10; i++) {
                 randomstring += chars[Math.floor(Math.random() * chars.length)];
             }
-            
+
             var data = "";
             if ($("#2factors_code").val() != undefined) {
-                data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'", "original_onetimepw":"\'+sanitizeString($("#2factors_initKey").val())+\'"\';
+                data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
             }
-                    
+
             data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
 
             //send query
@@ -336,34 +336,34 @@ $htmlHeaders .= '
                     $(".dropdown dd ul").hide();
             });
         //END
-		
-		$.ajaxSetup({
-			error: function(jqXHR, exception) {
-				if (jqXHR.status === 0) {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Not connect. Verify Network.");
-				} else if (jqXHR.status == 404) {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Requested page not found. [404]");
-				} else if (jqXHR.status == 500) {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Internal Server Error [500].");
-				} else if (exception === "parsererror") {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Requested JSON parse failed.");
-				} else if (exception === "timeout") {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Time out error.");
-				} else if (exception === "abort") {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Ajax request aborted.");
-				} else {
-					$("#div_dialog_message").show();
-					$("#div_dialog_message_text").html("Uncaught Error.<br />" + jqXHR.responseText);
-				}
-			}
-		});
-		
+
+        $.ajaxSetup({
+            error: function(jqXHR, exception) {
+                if (jqXHR.status === 0) {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Not connect. Verify Network.");
+                } else if (jqXHR.status == 404) {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Requested page not found. [404]");
+                } else if (jqXHR.status == 500) {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Internal Server Error [500].");
+                } else if (exception === "parsererror") {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Requested JSON parse failed.");
+                } else if (exception === "timeout") {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Time out error.");
+                } else if (exception === "abort") {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Ajax request aborted.");
+                } else {
+                    $("#div_dialog_message").show();
+                    $("#div_dialog_message_text").html("Uncaught Error.<br />" + jqXHR.responseText);
+                }
+            }
+        });
+
     });';
 
 if (!isset($_GET['page']) && !isset($_SESSION['key'])) {

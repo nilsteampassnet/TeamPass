@@ -21,8 +21,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 function aes_encrypt(text)
 {
-            return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-        }
+    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
 
 $(function() {
     $(".button").button();
@@ -102,6 +102,7 @@ $(function() {
                 if ($("#new_login").val() == "" || $("#new_pwd").val()=="" || $("#new_email").val()=="") {
                     $("#add_new_user_error").show().html("<?php echo $txt['error_must_enter_all_fields'];?>");
                 } else {
+                    $("#add_new_user_info").show().html("<?php echo $txt['please_wait'];?>");
                     $.post(
                         "sources/users.queries.php",
                         {

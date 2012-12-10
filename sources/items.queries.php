@@ -45,22 +45,6 @@ $pw_complexity = array(0 => array(0, $txt['complex_level0']),
 
 $allowed_tags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
 
-function isUTF8($string)
-{
-    return preg_match(
-        '%^(?:
-        [\x09\x0A\x0D\x20-\x7E] # ASCII
-        | [\xC2-\xDF][\x80-\xBF] # non-overlong 2-byte
-        | \xE0[\xA0-\xBF][\x80-\xBF] # excluding overlongs
-        | [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2} # straight 3-byte
-        | \xED[\x80-\x9F][\x80-\xBF] # excluding surrogates
-        | \xF0[\x90-\xBF][\x80-\xBF]{2} # planes 1-3
-        | [\xF1-\xF3][\x80-\xBF]{3} # planes 4-15
-        | \xF4[\x80-\x8F][\x80-\xBF]{2} # plane 16
-        )*$%xs',
-        $string
-    );
-}
 //Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -1025,7 +1009,7 @@ if (isset($_POST['type'])) {
                 if (
                     $data_item['id_user'] == $_SESSION['user_id']
                     || $_SESSION['is_admin'] == 1
-                    || ($_SESSION['user_gestionnaire'] == 1 && $_SESSION['settings']['manager_edit'] == 1)
+                    || ($_SESSION['user_manager'] == 1 && $_SESSION['settings']['manager_edit'] == 1)
                     || $data_item['anyone_can_modify'] == 1
                     || in_array($data_item['id_tree'], $_SESSION['list_folders_editable_by_role'])
                     || in_array($_SESSION['user_id'], $restricted_to)
@@ -1440,8 +1424,8 @@ if (isset($_POST['type'])) {
         * Store hierarchic position of Group
         */
         case 'save_position':
-            
-            
+
+
             $db->queryUpdate(
                 "nested_tree",
                 array(
@@ -1682,12 +1666,12 @@ if (isset($_POST['type'])) {
                             ) {
                                 $perso = '<img src="includes/images/tag-small-red.png">';
                                 $recherche_group_pf = 0;
-                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\')';
+                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\',\'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true)';
                                 $display_item = $need_sk = $can_move = 0;
                             } else {
                                 $perso = '<img src="includes/images/tag-small-yellow.png">';
-                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
                                 // reinit in case of not personal group
                                 if ($init_personal_folder == false) {
@@ -1701,7 +1685,7 @@ if (isset($_POST['type'])) {
                             }
                         } else {
                             $perso = '<img src="includes/images/tag-small-green.png">';
-                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
+                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
                             $display_item = 1;
                             // reinit in case of not personal group
@@ -1725,9 +1709,9 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expiration_flag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($reccord['label']), 0, 65);
+                        $html .= $expiration_flag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.';">'.substr(stripslashes($reccord['label']), 0, 65);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                            $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($reccord['description']), 0, 30))).']</font>';
+                            $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($reccord['description']), 0, 30))).']</font>';
                         }
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -1836,7 +1820,7 @@ if (isset($_POST['type'])) {
             if (count($rights) > 0) {
                 $return_values = array_merge($return_values, $rights);
             }
-            // print_r($return_values);
+            //print_r($return_values);
             // Encrypt data to return
             $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
             // return data
@@ -1849,6 +1833,28 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "recup_complex":
+            //Lock Item (if already locked), go back and warn
+            $data_tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+            if ($data_tmp[0] == 0) {                
+                $db->queryInsert(
+                        'items_edition',
+                        array(
+                                'timestamp' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
+                                'item_id' => $_POST['item_id'],
+                                'user_id' => $_SESSION['user_id']
+                        )
+                );
+            } else {
+                $return_values = array(
+                        "error" => "no_edition_possible",
+                        "error_msg" => $txt['error_no_edition_possible_locked']
+                );
+                
+                echo json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+                break;
+            }
+
+            //Get required Complexity for this Folder
             $data = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type='complex' AND intitule = '".$_POST['groupe']."'");
 
             if (isset($data[0]) && (!empty($data[0]) || $data[0] == 0)) {
@@ -2254,8 +2260,8 @@ if (isset($_POST['type'])) {
                     );
                     // Prepare new line
                     $data = $db->queryFirst("SELECT * FROM ".$pre."log_items WHERE id_item = '".$data_received['item_id']."' ORDER BY date DESC");
-                    $reason = explode(':', $data['raison']);
-                    $historic = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $data['date'])." - ".$_SESSION['login']." - ".$txt[$data['action']]." - ".$reason[1];
+                    //$reason = explode(':', $data['raison']);
+                    $historic = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $data['date'])." - ".$_SESSION['login']." - ".$txt[$data['action']]." - ".$data['raison'];
                     // send back
                     echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
                 } else {
@@ -2264,6 +2270,14 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
+            break;
+
+        /*
+        * CASE
+        * Free Item for Edition
+        */
+        case "free_item_for_edition":
+            $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['id']."'");
             break;
     }
 }
