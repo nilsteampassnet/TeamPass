@@ -65,6 +65,9 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     } elseif (@$_SESSION['error'] == 1002) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['index_session_expired'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
+    } elseif (@$_SESSION['error'] == 1003) {
+        echo '
+        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
     }
 }
 

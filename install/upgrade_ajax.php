@@ -759,6 +759,24 @@ if (isset($_POST['type'])) {
                 break;
             }
 
+            ## TABLE items_edition
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."items_edition` (
+                `item_id` int(11) NOT NULL,
+                `user_id` int(11) NOT NULL,
+                `timestamp` varchar(50) NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table items_edition! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($db_tmp);
+                break;
+            }
+
             //CLEAN UP ITEMS TABLE
             $allowed_tags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
             $clean_res = mysql_query("SELECT id,description FROM `".$_SESSION['tbl_prefix']."items`");
@@ -821,7 +839,7 @@ if (isset($_POST['type'])) {
                 if (empty($_SESSION['smtp_auth_password'])) $_SESSION['smtp_auth_password'] = 'false';
                 if (empty($_SESSION['email_from_name'])) $_SESSION['email_from_name'] = 'false';
 
-                fwrite($fh, utf8_encode("<?php
+                $result1 = fwrite($fh, utf8_encode("<?php
 global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
@@ -840,28 +858,23 @@ require_once \"".$sk_file."\";
                 fclose($fh);
 
                 //Create sk.php file
-                if (file_exists($sk_file)) {
-                    if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                        echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
-                        echo 'document.getElementById("loader").style.display = "none";';
-                        break;
-                    } else {
-                        $events .= "The file $sk_file already exist. A copy has been created.<br />";
-                        unlink($sk_file);
-                    }
+                if (!file_exists($sk_file)) {
+                    $fh = fopen($sk_file, 'w');
+    
+                    $result2 = fwrite(
+                        $fh,
+                        utf8_encode(
+"<?php
+@define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+?>")
+                    );
+                    fclose($fh);
                 }
-                $fh = fopen($sk_file, 'w');
-
-                $result = fwrite(
-                    $fh,
-                    utf8_encode(
-    "<?php
-    @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
-    ?>")
-                );
-                fclose($fh);
-                if ($result === false) {
-                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
+                
+                if ($result1 === false) {
+                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
+                } elseif (isset($result2) && $result2 === false) {
+                    echo 'document.getElementById("res_step5").innerHTML = "$sk_file could not be created. Please check the path and the rights.";';
                 } else {
                     echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';

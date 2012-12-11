@@ -1835,19 +1835,19 @@ if (isset($_POST['type'])) {
         case "recup_complex":
             //Lock Item (if already locked), go back and warn
             $data_tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-            if ($data_tmp[0] == 0) {                
+            if ($data_tmp[0] == 0) {
                 $db->queryInsert(
-                        'items_edition',
-                        array(
-                                'timestamp' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
-                                'item_id' => $_POST['item_id'],
-                                'user_id' => $_SESSION['user_id']
-                        )
+                    'items_edition',
+                    array(
+                            'timestamp' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
+                            'item_id' => $_POST['item_id'],
+                            'user_id' => $_SESSION['user_id']
+                    )
                 );
             } else {
                 $return_values = array(
-                        "error" => "no_edition_possible",
-                        "error_msg" => $txt['error_no_edition_possible_locked']
+                    "error" => "no_edition_possible",
+                    "error_msg" => $txt['error_no_edition_possible_locked']
                 );
                 
                 echo json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);

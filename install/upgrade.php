@@ -16,7 +16,7 @@ function getSettingValue($val)
 //get infos from SETTINGS.PHP file
 $filename = "../includes/settings.php";
 $events = "";
-if (file_exists($filename) && empty($_SESSION['server'])) {
+if (file_exists($filename)) {    // && empty($_SESSION['server'])
     //copy some constants from this existing file
     $settings_file = file($filename);
     while (list($key,$val) = each($settings_file)) {
@@ -33,10 +33,10 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
         elseif (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
         elseif (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
         elseif (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
-        elseif (substr_count($val,"require_once '")>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        elseif (substr_count($val,'require_once "')>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
     }
 }
-
+echo $_SESSION['sk_path'];
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -107,7 +107,11 @@ if (file_exists($filename) && empty($_SESSION['server'])) {
                 } else
                 if (step == "step5") {
                     document.getElementById("loader").style.display = "";
-                    var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
+                    if (document.getElementById("sk_path") == null)
+                    	var data = "type="+step;
+                    else
+                    	var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value); 
+                    
                 }
                 httpRequest("upgrade_ajax.php",data);
             }
@@ -282,6 +286,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
                          <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
                          <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
+                         <tr><td>Add table "items_edition"</td><td><span id="tbl_19"></span></td></tr>
                      </table>
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>

@@ -647,6 +647,24 @@ if (isset($_POST['type'])) {
                 break;
             }
 
+            ## TABLE items_edition
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."items_edition` (
+                `item_id` int(11) NOT NULL,
+                `user_id` int(11) NOT NULL,
+                `timestamp` varchar(50) NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table items_edition! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($db_tmp);
+                break;
+            }
+
             echo 'gauge.modify($("pbar"),{values:[0.80,1]});';
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("res_step4").innerHTML = "dataBase has been populated";';

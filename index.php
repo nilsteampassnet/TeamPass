@@ -362,7 +362,10 @@ if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['upda
 
 // Display pages
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page'])) {
-    if ($_GET['page'] == "items") {
+    if (!extension_loaded('mcrypt')) {
+        $_SESSION['error'] = "1003"; 
+        include 'error.php';
+    } elseif ($_GET['page'] == "items") {
         // SHow page with Items
         include 'items.php';
     } elseif ($_GET['page'] == "find") {
@@ -459,7 +462,7 @@ else {
                     </div>';
 
     //2-Factors authentication is asked
-    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {echo $qrCode;
+    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
         //Display QR
         echo '
                     <div id="connect_2factors_code" style="margin-bottom:3px;">

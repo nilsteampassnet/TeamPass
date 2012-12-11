@@ -15,6 +15,7 @@ $txt['bad_onetime_password'] = "Wrong One-Time password!";
 $txt['error_string_not_utf8'] = "An error appears because string format is not UTF8!";
 $txt['error_role_exist'] = "This Role already exists!";
 $txt['error_no_edition_possible_locked'] = "Edition not possible. This Item is presently edited!";
+$txt['error_mcrypt_not_loaded'] = "Extension 'mcrypt' is actually not loaded in PHP module. This module is required for TeamPass to work. Please inform your administrator if you see this message.";
 
 $txt['at_user_added'] = "User #user_login# added";
 $txt['at_user_deleted'] = "User #user_login# deleted";
