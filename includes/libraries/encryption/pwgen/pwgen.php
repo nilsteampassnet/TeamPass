@@ -8,7 +8,7 @@ namespace Encryption\PwGen;
 * Copyright (C) 2009 by Superwayne <superwayne@superwayne.org>
 */
 
-class PwGen
+class pwgen
 {
     // Flags for the pwgen function
     const PW_DIGITS = 0x0001;

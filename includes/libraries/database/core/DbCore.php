@@ -23,7 +23,6 @@ namespace Database\Core;
 * Version: 2.2.2
 * Copyright 2003 ricocheting.com
 
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -122,6 +121,7 @@ class DbCore
 
         if (!$this->query_id) {
             $this->oops("<b>MySQL Query fail:</b> $sql");
+
             return 0;
         }
 

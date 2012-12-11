@@ -1011,6 +1011,7 @@ class TFPDF
             $nb = mb_strlen($s, 'UTF-8');
             if ($nb ==1 && $s ==" ") {
                 $this->x += $this->GetStringWidth($s);
+
                 return;
             }
         } else {
@@ -2174,6 +2175,7 @@ class TFPDF
                 }
             }
         }
+
         return $out;
     }
 

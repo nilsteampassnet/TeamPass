@@ -15,12 +15,12 @@
 require 'tfpdf.class.php';
 
 if (function_exists('mcrypt_encrypt')) {
-    function RC4($key, $data)
+    public function RC4($key, $data)
     {
         return mcrypt_encrypt(MCRYPT_ARCFOUR, $key, $data, MCRYPT_MODE_STREAM, '');
     }
 } else {
-    function RC4($key, $data)
+    public function RC4($key, $data)
     {
         static $last_key, $last_state;
 

@@ -7,7 +7,7 @@ namespace Encryption\Crypt;
 /*    form is offered.                                                                            */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 
-class AesCtr extends Aes
+class aesctr extends Aes
 {
 
     /**
@@ -196,7 +196,7 @@ class Aes
      * @param input message as byte-array (16 bytes)
      * @param w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
      *              generated from the cipher key by keyExpansion()
-     * @return      ciphertext as byte-array (16 bytes)
+     * @return ciphertext as byte-array (16 bytes)
      */
     public static function cipher($input, $w)
     {
@@ -294,7 +294,7 @@ class Aes
      * to generate a key schedule
      *
      * @param key cipher key byte-array (16 bytes)
-     * @return    key schedule as 2D byte-array (Nr+1 x Nb bytes)
+     * @return key schedule as 2D byte-array (Nr+1 x Nb bytes)
      */
     public static function keyExpansion($key)
     {

@@ -6,7 +6,7 @@ namespace Encryption\Crypt;
 /*    commercial or non-commercial use under CC-BY licence. No warranty of any form is offered.   */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
 
-class Aes
+class aes
 {
     /**
     * AES Cipher function: encrypt 'input' with Rijndael algorithm

@@ -12,6 +12,9 @@ $txt['2factors_tile'] = "2-Factors Autentication";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['bad_onetime_password'] = "Wrong One-Time password!";
+$txt['error_string_not_utf8'] = "An error appears because string format is not UTF8!";
+$txt['error_role_exist'] = "This Role already exists!";
+$txt['error_no_edition_possible_locked'] = "Edition not possible. This Item is presently edited!";
 
 $txt['at_user_added'] = "User #user_login# added";
 $txt['at_user_deleted'] = "User #user_login# deleted";
