@@ -333,6 +333,8 @@ function catSelected(val)
 
 function RecupComplexite(val, edit)
 {
+	var funcReturned = null;
+    $.ajaxSetup({async: false});
     $.post(
         "sources/items.queries.php",
         {
@@ -351,6 +353,10 @@ function RecupComplexite(val, edit)
                     $("#complex_attendue").html("<b>"+data.complexity+"</b>");
                     $("#afficher_visibilite").html("<img src='includes/images/users.png'>&nbsp;<b>"+data.visibility+"</b>");
                 }
+            } else if (data.error == "no_edition_possible") {
+            	$("#div_dialog_message_text").html(data.error_msg);
+                $("#div_dialog_message").dialog("open");
+                funcReturned = 0;
             } else {
             	$("#div_formulaire_edition_item").dialog("close");
                 $("#div_dialog_message_text").html(data.error_msg);
@@ -358,6 +364,8 @@ function RecupComplexite(val, edit)
             }
         }
    );
+    $.ajaxSetup({async: true});
+    return funcReturned;
 }
 
 function AjouterItem()
@@ -1206,7 +1214,13 @@ function open_edit_item_div(restricted_to_roles)
     }
 
     //Get complexity level for this folder
-    RecupComplexite($('#hid_cat').val(), 1);
+    if (RecupComplexite($('#hid_cat').val(), 1) == 0) {
+    	$("#div_loading").hide();
+        if (CKEDITOR.instances["edit_desc"]) {
+            CKEDITOR.instances["edit_desc"].destroy();
+        }
+        return;
+    }
 
     //Get list of people in restriction list
     if ($('#edit_restricted_to').val() != undefined) {

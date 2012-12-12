@@ -87,6 +87,8 @@ folder
  * 207: Managers can only see the Roles they are allowed to.
  * 190, 192, 199, 202 corrected
  * Correction: taking into account user "can create at root level" setting
+ * Added new check when Role creation
+ * Added new check for database query error
 
 2.1.12
  * #188

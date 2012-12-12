@@ -9,7 +9,6 @@ $_SESSION['CPM'] = 1;
 function getSettingValue($val)
 {
     $val = trim(strstr($val,"="));
-
     return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
 }
 
@@ -36,7 +35,6 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
         elseif (substr_count($val,'require_once "')>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
     }
 }
-echo $_SESSION['sk_path'];
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

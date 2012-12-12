@@ -28,24 +28,28 @@ $("#add_new_role").dialog({
         buttons: {
             "<?php echo $txt["save_button"];?>": function() {
             	$("#new_role_error").hide().html("");
-                $.post(
-                    "sources/roles.queries.php",
-                    {
-                        type    : "add_new_role",
-                        name    : $("#new_function").val(),
-                        complexity    : $("#new_role_complexity").val()
-                    },
-                    function(data) {
-                        if (data[0].error == "no") {
-                            $("#new_function").val("");
-                            $("#add_new_role").dialog("close");
-                            refresh_roles_matrix("reload");
-                        } else {
-                        	$("#new_role_error").show().html(data[0].message);
-                        }
-                    },
-                    "json"
-               );
+            	if ($("#new_role_complexity").val() != "") {
+                    $.post(
+                        "sources/roles.queries.php",
+                        {
+                            type    : "add_new_role",
+                            name    : $("#new_function").val(),
+                            complexity    : $("#new_role_complexity").val()
+                        },
+                        function(data) {
+                            if (data[0].error == "no") {
+                                $("#new_function").val("");
+                                $("#add_new_role").dialog("close");
+                                refresh_roles_matrix("reload");
+                            } else {
+                            	$("#new_role_error").show().html(data[0].message);
+                            }
+                        },
+                        "json"
+                   );
+            	} else {
+            		$("#new_role_error").show().html("<?php echo addslashes($txt['error_role_complex_not_set']);?>");
+            	}
             },
             "<?php echo $txt["cancel_button"];?>": function() {
                 $(this).dialog("close");

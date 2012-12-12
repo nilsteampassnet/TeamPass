@@ -6,6 +6,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
+
 $txt['admin_2factors_authentication_setting'] = "Enable Google 2-Factors authentication";
 $txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";
 $txt['2factors_tile'] = "2-Factors Autentication";

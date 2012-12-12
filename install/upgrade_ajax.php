@@ -490,10 +490,13 @@ if (isset($_POST['type'])) {
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_title` (
                 `id` int(12) NOT NULL,
                 `title` varchar(50) NOT NULL,
-                `allow_pw_change` TINYINT(1) NOT null DEFAULT '0'
+                `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
+                `complexity` INT(5) NOT null DEFAULT '0',
+                `creator_id` int(11) NOT null DEFAULT '0'
                );");
             addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","allow_pw_change","TINYINT(1) NOT null DEFAULT '0'");
             addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","complexity","INT(5) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","creator_id","INT(11) NOT null DEFAULT '0'");
 
             $res10 = mysql_query("
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_values` (

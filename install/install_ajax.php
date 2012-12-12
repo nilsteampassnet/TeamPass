@@ -436,6 +436,7 @@ if (isset($_POST['type'])) {
                   `title` varchar(50) NOT NULL,
                   `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
                   `complexity` INT(5) NOT null DEFAULT '0',
+                  `creator_id` int(11) NOT null DEFAULT '0',
                   PRIMARY KEY (`id`)
                ) CHARSET=utf8;"
             );

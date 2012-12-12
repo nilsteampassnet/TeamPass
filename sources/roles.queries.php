@@ -42,11 +42,23 @@ if (!empty($_POST['type'])) {
             //Check if role already exist : No similar roles
             $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['name']))."'");
             if ($tmp[0] == 0) {
-                $db->query("INSERT INTO ".$pre."roles_title SET title = '".mysql_real_escape_string(stripslashes($_POST['name']))."', complexity='".$_POST['complexity']."', creator_id='".$_SESSION['user_id']."'");
-                //Actualize the variable
-                $_SESSION['nb_roles'] ++;
-
-                echo '[ { "error" : "no" } ]';
+                $role_id = $db->queryInsert(
+                        'roles_title',
+                        array(
+                                'title' => mysql_real_escape_string(stripslashes($_POST['name'])),
+                                'complexity' => $_POST['complexity'],
+                                'creator_id' => $_SESSION['user_id']
+                        )
+                );
+                
+                if ($role_id != 0) {
+                    //Actualize the variable
+                    $_SESSION['nb_roles'] ++;
+    
+                    echo '[ { "error" : "no" } ]';
+                } else {
+                    echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';
+                }
             } else {
                 echo '[ { "error" : "yes" , "message" : "'.$txt['error_role_exist'].'" } ]';
             }

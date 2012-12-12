@@ -288,11 +288,13 @@ class DbCore
         }
 
         $q .= "(". rtrim($n, ', ') .") VALUES (". rtrim($v, ', ') .");";
-
-        if ($this->query($q)) {
-            //$this->freeResult();
+        
+        $this->query($q);
+        
+        if (isset($this->link_id)) {
             return mysql_insert_id($this->link_id);
-        } else {
+        } else {            
+            $this->oops("Result ID: <b>$this->query_id</b> could not be executed.");
             return false;
         }
 
