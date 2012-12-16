@@ -81,7 +81,8 @@ echo '
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
 <input type="hidden" id="request_ongoing" />
 <input type="hidden" id="request_lastItem" />
-<input type="hidden" id="item_editable" />';
+<input type="hidden" id="item_editable" />
+<input type="hidden" id="timestamp_item_displayed" />';
 // Afficher mdp suite ? recherche
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
@@ -857,6 +858,11 @@ echo '
     <div style="">'.$txt['item_share_text'].'</div>
     <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
     <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
+</div>';
+// DIALOG FOR ITEM IS UPDATED
+echo '
+<div id="div_item_updated" style="display:none;">
+    <div style="">'.$txt['item_updated_text'].'</div>
 </div>';
 
 require_once 'items.load.php';

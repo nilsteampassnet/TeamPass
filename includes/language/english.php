@@ -7,6 +7,12 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 $txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
+$txt['item_updated_text'] = "This Item has been edited. You need to update it before you can change it.";
+$txt['database_menu'] = "Database";
+$txt['db_items_edited'] = "Items actually in edition";
+$txt['item_edition_start_hour'] = "Edition started since";
+$txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
+$txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token. If the value is set to 0 then the token will never be deleted (unless by Administrator)</span>";
 
 $txt['admin_2factors_authentication_setting'] = "Enable Google 2-Factors authentication";
 $txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";

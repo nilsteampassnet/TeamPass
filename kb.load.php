@@ -76,7 +76,7 @@ function aes_encrypt(text)
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/kb.queries.table.php",
+            "sAjaxSource": "sources/datatable/datatable.kb.php",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"

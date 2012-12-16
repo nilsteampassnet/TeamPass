@@ -662,4 +662,11 @@ switch ($_POST['type']) {
 
         echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
         break;
+
+    /**
+     * CASE generating the pdf of items to rennew
+     */
+    case "items_edited_table":
+        echo "ici";
+        break;
 }

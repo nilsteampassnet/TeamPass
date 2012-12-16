@@ -214,7 +214,8 @@ if (isset($_POST['type'])) {
                 ('admin', 'email_from', '".$_SESSION['email_from']."'),
                 ('admin', 'email_from_name', '".$_SESSION['email_from_name']."'),
                 ('admin', 'pwd_maximum_length', '40'),
-                ('admin', '2factors_authentication', '0')
+                ('admin', '2factors_authentication', '0'),
+                ('admin', 'delay_item_edition', '0')
                 ;"
             );
 

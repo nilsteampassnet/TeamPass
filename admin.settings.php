@@ -103,6 +103,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['max_latest_items']) && $_SESSION['settings']['max_latest_items'] != $_POST['max_last_items']) {
         updateSettings('max_latest_items', $_POST['max_last_items']);
     }
+    // Update delay_item_edition
+    if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] != $_POST['delay_item_edition']) {
+        updateSettings('delay_item_edition', $_POST['delay_item_edition']);
+    }
     // Update favourites
     if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != $_POST['enable_favourites']) {
         updateSettings('enable_favourites', $_POST['enable_favourites']);
@@ -792,10 +796,22 @@ echo '
             </div>';
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-// TAB Né3
+// TAB N°3
 echo '
             <div id="tabs-3">
-                <table widht="100%">';
+                <table width="100%">';
+// After how long, edition is considered as failed or finished
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_delay_for_item_edition'].
+                        '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
 // Managers can edit & delete items they are allowed to see
 echo '
                 <tr><td>

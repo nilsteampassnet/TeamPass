@@ -240,7 +240,7 @@ if (isset($_POST['type'])) {
                     .'" id="'.$new_id.'" style="margin-left:-30px;">'
                     .'<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />'
                     .$expiration_flag.'<img src="includes/images/tag-small-green.png">' .
-                    '&nbsp;<a id="fileclass'.$new_id.'" class="file" onclick="AfficherDetailsItem(\''.$new_id.'\', \'0\', \'\', \'\', \'\')">' .
+                    '&nbsp;<a id="fileclass'.$new_id.'" class="file" onclick="AfficherDetailsItem(\''.$new_id.'\', \'0\', \'\', \'\', \'\', \'\', \'\')">' .
                     stripslashes($data_received['label']);
                     if (!empty($data_received['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                         $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($data_received['description']), 0, 30))).']</font>';
@@ -1301,6 +1301,7 @@ if (isset($_POST['type'])) {
                 }
                 $arrData['restricted_to'] = $list_of_restricted;
             }
+            $arrData['timestamp'] = mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y'));
             // print_r($arrData);
             // Encrypt data to return
             $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
@@ -1613,8 +1614,8 @@ if (isset($_POST['type'])) {
                         ) {
                             $perso = '<img src="includes/images/tag-small-red.png">';
                             $recherche_group_pf = 0;
-                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true)';
+                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', \'\', \'\')';
+                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true, \'\')';
                             $display_item = $need_sk = $can_move = 0;
                         }
                         // Case where item is in own personal folder
@@ -1624,8 +1625,8 @@ if (isset($_POST['type'])) {
                         ) {
                             $perso = '<img src="includes/images/tag-small-alert.png">';
                             $recherche_group_pf = 1;
-                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'1\', \''.$expired_item.'\', \''.$restricted_to.'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'1\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
+                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'1\', \''.$expired_item.'\', \''.$restricted_to.'\', \'\', \'\', \'\')';
+                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'1\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true, \'\')';
                             $display_item = $need_sk = $can_move = 1;
                         }
                         // CAse where item is restricted to a group of users included user
@@ -1638,8 +1639,8 @@ if (isset($_POST['type'])) {
                         ) {
                             $perso = '<img src="includes/images/tag-small-yellow.png">';
                             $recherche_group_pf = 0;
-                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
+                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', \'\', \'\')';
+                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true, \'\')';
                             $display_item = 1;
                         }
                         // CAse where item is restricted to a group of users not including user
@@ -1666,13 +1667,13 @@ if (isset($_POST['type'])) {
                             ) {
                                 $perso = '<img src="includes/images/tag-small-red.png">';
                                 $recherche_group_pf = 0;
-                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\',\'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true)';
+                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\', \'0\', \''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\',\'\', \'\')';
+                                $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'no_display\', true, \'\')';
                                 $display_item = $need_sk = $can_move = 0;
                             } else {
                                 $perso = '<img src="includes/images/tag-small-yellow.png">';
-                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
+                                $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\', \'\')';
+                                $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true, \'\')';
                                 // reinit in case of not personal group
                                 if ($init_personal_folder == false) {
                                     $recherche_group_pf = "";
@@ -1685,8 +1686,8 @@ if (isset($_POST['type'])) {
                             }
                         } else {
                             $perso = '<img src="includes/images/tag-small-green.png">';
-                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true)';
+                            $action = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\',\'\',\'\', \'\')';
+                            $action_dbl = 'AfficherDetailsItem(\''.$reccord['id'].'\',\'0\',\''.$expired_item.'\', \''.$restricted_to.'\', \'\', true, \'\')';
                             $display_item = 1;
                             // reinit in case of not personal group
                             if ($init_personal_folder == false) {
@@ -1833,28 +1834,39 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "recup_complex":
-            //Lock Item (if already locked), go back and warn
-            $data_tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-            if ($data_tmp[0] == 0) {
+            // Lock Item (if already locked), go back and warn
+            $data_tmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$data_tmp[0];
+
+            // If token is taken for this Item and delay is passed then delete it.
+            if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] > 0 && !empty($data_tmp[0]) && round(abs(time()-$data_tmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']) {
+                $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['id']."'");
+            }
+
+            // If edition by same user (and token not freed before for any reason, then update timestamp)
+            if (!empty($data_tmp[0]) && $data_tmp[1] == $_SESSION['user_id']) {
+                $db->query("UPDATE ".$pre."items_edition SET timestamp = '".time()."' WHERE user_id = '".$_SESSION['user_id']."' AND item_id = '".$_POST['item_id']."'");
+                // If no token for this Item, then initialize one
+            } elseif (empty($data_tmp[0])) {
                 $db->queryInsert(
                     'items_edition',
                     array(
-                            'timestamp' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
+                            'timestamp' => time(),
                             'item_id' => $_POST['item_id'],
                             'user_id' => $_SESSION['user_id']
                     )
                 );
+                // Edition not possible
             } else {
                 $return_values = array(
                     "error" => "no_edition_possible",
                     "error_msg" => $txt['error_no_edition_possible_locked']
                 );
-                
+
                 echo json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
                 break;
             }
 
-            //Get required Complexity for this Folder
+            // Get required Complexity for this Folder
             $data = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type='complex' AND intitule = '".$_POST['groupe']."'");
 
             if (isset($data[0]) && (!empty($data[0]) || $data[0] == 0)) {
@@ -1862,7 +1874,7 @@ if (isset($_POST['type'])) {
             } else {
                 $complexity = $txt['not_defined'];
             }
-            // afficher la visibilité
+            // Prepare Item actual visibility (what Users/Roles can see it)
             $visibilite = "";
             if (!empty($data_pf[0])) {
                 $visibilite = $_SESSION['login'];
@@ -2252,7 +2264,7 @@ if (isset($_POST['type'])) {
                         'log_items',
                         array(
                             'id_item' => $data_received['item_id'],
-                            'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                            'date' => time(),
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_manual',
                             'raison' => htmlspecialchars_decode($data_received['label'])
@@ -2265,8 +2277,7 @@ if (isset($_POST['type'])) {
                     // send back
                     echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
                 } else {
-                    $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-                    echo $return_values;
+                    echo Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                     break;
                 }
             }
@@ -2278,6 +2289,20 @@ if (isset($_POST['type'])) {
         */
         case "free_item_for_edition":
             $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['id']."'");
+            break;
+
+        /*
+        * CASE
+        * Check if Item has been changed since loaded
+        */
+        case "is_item_changed":
+            $data = $db->fetchRow("SELECT date FROM ".$pre."log_items WHERE action = 'at_modification' AND id_item = '".$_POST['item_id']."' ORDER BY date DESC");
+            // Check if it's in a personal folder. If yes, then force complexity overhead.
+            if ($data[0] > $_POST['timestamp']) {
+                echo '{ "modified" : "1" }';
+            } else {
+                echo '{ "modified" : "0" }';
+            }
             break;
     }
 }

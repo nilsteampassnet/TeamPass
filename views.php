@@ -27,6 +27,7 @@ echo '
         <li><a href="#tabs-2">'.$txt['deletion'].'</a></li>
         <li><a href="#tabs-3">'.$txt['logs'].'</a></li>
         <li><a href="#tabs-4">'.$txt['renewal_menu'].'</a></li>
+        <li><a href="views_database.php">'.$txt['database_menu'].'</a></li>
     </ul>';
 
     //TAB 1 - Log password
@@ -51,7 +52,7 @@ echo '
         <input type="hidden" id="type_log_displayed" />
         <input type="hidden" id="log_page_displayed" />
         <input type="hidden" id="log_direction_displayed" value="ASC" />
-         <div id="radio_logs">
+        <div id="radio_logs">
             <input type="radio" id="radio1" name="radio" onclick="displayLogs(\'connections_logs\',1, \'date\')" /><label for="radio1">'.$txt['connections'].'</label>
             <input type="radio" id="radio2" name="radio" onclick="displayLogs(\'errors_logs\',1, \'date\')" /><label for="radio2">'.$txt['errors'].'</label>
             <input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>

@@ -331,6 +331,9 @@ function catSelected(val)
     $("#hid_cat").val(val);
 }
 
+/**
+* Get Item complexity
+*/
 function RecupComplexite(val, edit)
 {
 	var funcReturned = null;
@@ -361,6 +364,33 @@ function RecupComplexite(val, edit)
             	$("#div_formulaire_edition_item").dialog("close");
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
+            }
+        }
+   );
+    $.ajaxSetup({async: true});
+    return funcReturned;
+}
+
+/**
+* Check if Item has been changed since loaded
+*/
+function CheckIfItemChanged()
+{
+	var funcReturned = null;
+    $.ajaxSetup({async: false});
+    $.post(
+        "sources/items.queries.php",
+        {
+            type        : "is_item_changed",
+            timestamp   : $("#timestamp_item_displayed").val(),
+            item_id     : $("#selected_items").val()
+        },
+        function(data) {
+            data = $.parseJSON(data);
+            if (data.modified == 1) {                
+                funcReturned = 1;
+            } else {
+            	funcReturned = 0;
             }
         }
    );
@@ -504,7 +534,7 @@ function AjouterItem()
 
                         AfficherDetailsItem(data.new_id);
 
-                        //emty form
+                        //empty form
                         $("#label, #item_login, #email, #url, #pw1, #pw1_txt, #pw2, #item_tags, #deletion_after_date, #times_before_deletion").val("");
                         CKEDITOR.instances["desc"].setData("");
                         $("#item_file_queue").html("");
@@ -783,25 +813,24 @@ function SupprimerFolder()
     }
 }
 
-function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit)
+function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload)
 {
-    //If a request is already launched, then kill new.
+    // If a request is already launched, then kill new.
     if ($("#request_ongoing").val() != "") {
         request.abort();
-
         return;
     }
 
-    //store status query running
+    // Store status query running
     $("#request_ongoing").val("1");
 
-    //If opening new item, reinit hidden fields
+    // If opening new item, reinit hidden fields
     if ($("#request_lastItem").val() != id) {
         $("#request_lastItem").val("");
         $("#item_editable").val("");
     }
 
-    //Dont show details
+    // Don't show details
     if (display == "no_display") {
         $("#item_details_nok").show();
         $("#item_details_ok").hide();
@@ -816,16 +845,18 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
 
-    if ($("#edit_restricted_to") != undefined) $("#edit_restricted_to").val("");
-
-    //Check if personal SK is needed and set
+    if ($("#edit_restricted_to") != undefined) {
+        $("#edit_restricted_to").val("");
+    }
+    
+    // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) && salt_key_required == 1) {
         $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
         LoadingPage();
         $("#div_dialog_message").dialog("open");
     } else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
-        //Double click
-        if (open_edit == 1 && $("#item_editable").val() == 1) {
+        // Double click
+        if (open_edit == 1 && $("#item_editable").val() == 1 && reload != 1) {
             $("#request_ongoing").val("");
             open_edit_item_div(
                         <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
@@ -833,24 +864,25 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 } else {
     echo 0;
 }?>);
-        } else if ($("#request_lastItem").val() == id) {
+        } else if ($("#request_lastItem").val() == id && reload != 1) {
             $("#request_ongoing").val("");
             LoadingPage();
 
             return;
         } else {
+            $("#timestamp_item_displayed").val("");
             //Send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type                : 'show_details_item',
                     id                  : id,
-                    folder_id             : $('#hid_cat').val(),
+                    folder_id           : $('#hid_cat').val(),
                     salt_key_required   : $('#recherche_group_pf').val(),
                     salt_key_set        : $('#personal_sk_set').val(),
                     expired_item        : expired_item,
-                    restricted            : restricted,
-                    key        : "<?php echo $_SESSION['key'];?>"
+                    restricted          : restricted,
+                    key                 : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
                     //decrypt data
@@ -865,6 +897,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         return;
                     }
+                    
+                    // Show timestamp
+                    $("#timestamp_item_displayed").val(data.timestamp);
 
                     //Change the class of this selected item
                     if ($("#selected_items").val() != "") {
@@ -1178,12 +1213,34 @@ function open_add_item_div()
 //###########
 function open_edit_item_div(restricted_to_roles)
 {
+    // If no Item selected, no edition possible
 	if ($("#selected_items").val() == "") {
 	    return;
-	}
+	}    
+
+    // Get complexity level for this folder
+    // and stop edition if Item edited by another user
+    if (RecupComplexite($('#hid_cat').val(), 1) == 0) {
+        if (CKEDITOR.instances["edit_desc"]) {
+            CKEDITOR.instances["edit_desc"].destroy();
+        }
+        $("#div_loading").hide();
+        return;
+    }
+    
+    // Check if Item has changed since loaded
+    if (CheckIfItemChanged() == 1) {
+        var tmp = $("#"+$("#selected_items").val()).attr("ondblclick");
+        tmp = tmp.substring(20,tmp.indexOf(")"));
+        tmp = tmp.replace(/'/g, "").split(',');
+        AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
+        //LoadingPage();
+        return;
+    }
+    
     LoadingPage();
 
-    //Show WYGIWYS editor
+    // Show WYGIWYG editor
     CKEDITOR.replace(
         "edit_desc",
         {
@@ -1211,15 +1268,6 @@ function open_edit_item_div(restricted_to_roles)
     } else {
         $('#edit_anyone_can_modify').attr("checked",false);
         $('#edit_anyone_can_modify').button("refresh");
-    }
-
-    //Get complexity level for this folder
-    if (RecupComplexite($('#hid_cat').val(), 1) == 0) {
-    	$("#div_loading").hide();
-        if (CKEDITOR.instances["edit_desc"]) {
-            CKEDITOR.instances["edit_desc"].destroy();
-        }
-        return;
     }
 
     //Get list of people in restriction list
@@ -1898,6 +1946,21 @@ $(function() {
             },
             "<?php echo $txt['close'];?>": function() {
                 $(this).dialog('close');
+            }
+        }
+    });
+    //<=
+    //=> SHOW ITEM UPDATED DIALOG
+    $("#div_item_updated").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 300,
+        height: 100,
+        title: "<?php echo $txt['share'];?>",
+        buttons: {
+            "<?php echo $txt['ok'];?>": function() {
+                
             }
         }
     });

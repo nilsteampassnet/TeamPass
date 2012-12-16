@@ -89,6 +89,7 @@ folder
  * Correction: taking into account user "can create at root level" setting
  * Added new check when Role creation
  * Added new check for database query error
+ * Item in edition will lock any other edition
 
 2.1.12
  * #188
