@@ -180,7 +180,7 @@ if (isset($_POST['type'])) {
                         'log_items',
                         array(
                             'id_item' => $new_id,
-                            'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                            'date' => time(),
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_creation'
                            )
@@ -448,7 +448,7 @@ if (isset($_POST['type'])) {
                                     'log_items',
                                     array(
                                         'id_item' => $data_received['id'],
-                                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                        'date' => time(),
                                         'id_user' => $_SESSION['user_id'],
                                         'action' => 'at_modification',
                                         'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
@@ -476,7 +476,7 @@ if (isset($_POST['type'])) {
                                 'log_items',
                                 array(
                                     'id_item' => $data_received['id'],
-                                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                    'date' => time(),
                                     'id_user' => $_SESSION['user_id'],
                                     'action' => 'at_modification',
                                     'raison' => 'at_automatic_del : '.$data_received['to_be_deleted']
@@ -562,7 +562,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_label : '.$data['label'].' => '.$label
@@ -575,7 +575,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_login : '.$data['login'].' => '.$login
@@ -588,7 +588,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_email : '.$data['email'].' => '.$data_received['email']
@@ -601,7 +601,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_url : '.$data['url'].' => '.$url
@@ -614,7 +614,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_description'
@@ -627,7 +627,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_category : '.$data['id_tree'].' => '.$data_received['categorie']
@@ -647,7 +647,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_pw : '.$data['pw']
@@ -660,7 +660,7 @@ if (isset($_POST['type'])) {
                             'log_items',
                             array(
                                 'id_item' => $data_received['id'],
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_modification',
                                 'raison' => 'at_restriction : '.$old_restriction_list.' => '.$list_of_restricted
@@ -851,7 +851,7 @@ if (isset($_POST['type'])) {
                     'log_items',
                     array(
                         'id_item' => $new_id,
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_creation'
                        )
@@ -861,7 +861,7 @@ if (isset($_POST['type'])) {
                     'log_items',
                     array(
                         'id_item' => $_POST['item_id'],
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_copy'
                        )
@@ -1201,7 +1201,7 @@ if (isset($_POST['type'])) {
                         'log_items',
                         array(
                             'id_item' => $_POST['id'],
-                            'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                            'date' => time(),
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_shown'
                            )
@@ -1213,7 +1213,7 @@ if (isset($_POST['type'])) {
                 $arrData['to_be_deleted'] = $data_delete['del_value'];
                 $arrData['to_be_deleted_type'] = $data_delete['del_type'];
                 // $date = date_parse_from_format($_SESSION['settings']['date_format'], $data_delete['del_value']);
-                // echo $_SESSION['settings']['date_format']." ; ".$data_delete['del_value'] ." ; ".mktime(0, 0, 0, $date['month'], $date['day'], $date['year'])." ; ".mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y'))." ; ";
+                // echo $_SESSION['settings']['date_format']." ; ".$data_delete['del_value'] ." ; ".mktime(0, 0, 0, $date['month'], $date['day'], $date['year'])." ; ".time()." ; ";
                 if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                     if ($data_delete['del_enabled'] == 1 || $arrData['id_user'] != $_SESSION['user_id']) {
                         if ($data_delete['del_type'] == 1 && $data_delete['del_value'] > 1) {
@@ -1227,7 +1227,7 @@ if (isset($_POST['type'])) {
                             );
                             // store value
                             $arrData['to_be_deleted'] = $data_delete['del_value'] - 1;
-                        } elseif ($data_delete['del_type'] == 1 && $data_delete['del_value'] <= 1 || $data_delete['del_type'] == 2 && $data_delete['del_value'] < mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y'))
+                        } elseif ($data_delete['del_type'] == 1 && $data_delete['del_value'] <= 1 || $data_delete['del_type'] == 2 && $data_delete['del_value'] < time()
                                )
                         {
                             $arrData['show_details'] = 0;
@@ -1246,7 +1246,7 @@ if (isset($_POST['type'])) {
                                 "log_items",
                                 array(
                                     'id_item' => $_POST['id'],
-                                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                    'date' => time(),
                                     'id_user' => $_SESSION['user_id'],
                                     'action' => 'at_delete',
                                     'raison' => 'at_automatically_deleted'
@@ -1271,7 +1271,7 @@ if (isset($_POST['type'])) {
                         $db->queryInsert(
                             'emails',
                             array(
-                                'timestamp' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'timestamp' => time(),
                                 'subject' => $txt['email_on_open_notification_subject'],
                                 'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($data_item['label'])), $txt['email_on_open_notification_mail']),
                                 'receivers' => $list_notification_emails,
@@ -1301,7 +1301,7 @@ if (isset($_POST['type'])) {
                 }
                 $arrData['restricted_to'] = $list_of_restricted;
             }
-            $arrData['timestamp'] = mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y'));
+            $arrData['timestamp'] = time();
             // print_r($arrData);
             // Encrypt data to return
             $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
@@ -1361,7 +1361,7 @@ if (isset($_POST['type'])) {
                 "log_items",
                 array(
                     'id_item' => $_POST['id'],
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'id_user' => $_SESSION['user_id'],
                     'action' => 'at_delete'
                    )
@@ -1946,7 +1946,7 @@ if (isset($_POST['type'])) {
                     'log_items',
                     array(
                         'id_item' => $data[1],
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_modification',
                         'raison' => 'at_del_file : '.$data[0]
@@ -2133,7 +2133,7 @@ if (isset($_POST['type'])) {
                 'log_items',
                 array(
                     'id_item' => $_POST['item_id'],
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'id_user' => $_SESSION['user_id'],
                     'action' => 'at_modification',
                     'raison' => 'at_moved : '.$data_source['title'].' -> '.$data_destination['title']
@@ -2288,6 +2288,12 @@ if (isset($_POST['type'])) {
         * Free Item for Edition
         */
         case "free_item_for_edition":
+            // Check KEY
+            if ($data_received['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            // Do
             $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['id']."'");
             break;
 

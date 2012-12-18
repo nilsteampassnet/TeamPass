@@ -101,7 +101,7 @@ switch ($_POST['type']) {
                     'log_system',
                     array(
                         'type' => 'user_mngt',
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'label' => 'at_user_pwd_changed',
                         'qui' => $_SESSION['user_id'],
                         'field_1' => $_SESSION['user_id']
@@ -133,7 +133,7 @@ switch ($_POST['type']) {
                 'log_system',
                 array(
                     'type' => 'user_mngt',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'at_user_pwd_changed',
                     'qui' => $_SESSION['user_id'],
                     'field_1' => $_SESSION['user_id']
@@ -160,7 +160,7 @@ switch ($_POST['type']) {
                 'log_system',
                 array(
                     'type' => 'user_mngt',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'at_user_initial_pwd_changed',
                     'qui' => $_SESSION['user_id'],
                     'field_1' => $_SESSION['user_id']
@@ -279,7 +279,7 @@ switch ($_POST['type']) {
                     'fonction_id' => '0',
                     'groupes_interdits' => '0',
                     'groupes_visibles' => '0',
-                    'last_pw_change' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
+                    'last_pw_change' => time(),
                    )
             );
             // Create personnal folder
@@ -337,6 +337,8 @@ switch ($_POST['type']) {
                 }
                 // Save account in SESSION
                 $_SESSION['login'] = stripslashes($username);
+                $_SESSION['name'] = stripslashes($data['name']);
+                $_SESSION['lastname'] = stripslashes($data['lastname']);
                 $_SESSION['user_id'] = $data['id'];
                 $_SESSION['user_admin'] = $data['admin'];
                 $_SESSION['user_manager'] = $data['gestionnaire'];
@@ -349,7 +351,7 @@ switch ($_POST['type']) {
                 $_SESSION['fin_session'] = time() + $data_received['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
 
-                syslog(LOG_WARNING, "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
+                @syslog(LOG_WARNING, "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
                 // user type
                 if ($_SESSION['user_admin'] == 1) {
                     $_SESSION['user_privilege'] = $txt['god'];
@@ -362,7 +364,7 @@ switch ($_POST['type']) {
                 }
 
                 if (empty($data['last_connexion'])) {
-                    $_SESSION['derniere_connexion'] = mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y'));
+                    $_SESSION['derniere_connexion'] = time();
                 } else {
                     $_SESSION['derniere_connexion'] = $data['last_connexion'];
                 }
@@ -426,10 +428,11 @@ switch ($_POST['type']) {
                     "users",
                     array(
                         'key_tempo' => $_SESSION['key'],
-                        'last_connexion' => mktime(date("h"), date("i"), date("s"), date("m"), date("d"), date("Y")),
-                        'timestamp' => mktime(date("h"), date("i"), date("s"), date("m"), date("d"), date("Y")),
+                        'last_connexion' => time(),
+                        'timestamp' => time(),
                         'disabled' => 0,
-                        'no_bad_attempts' => 0
+                        'no_bad_attempts' => 0,
+                        'session_end' => $_SESSION['fin_session']
                        ),
                     "id=".$data['id']
                 );
@@ -467,7 +470,7 @@ switch ($_POST['type']) {
                     $db->queryInsert(
                         'emails',
                         array(
-                            'timestamp' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')),
+                            'timestamp' => time(),
                             'subject' => $txt['email_subject_on_user_login'],
                             'body' => str_replace(array('#tp_user#', '#tp_date#', '#tp_time#'), array(" ".$_SESSION['login'], date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']), date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])), $txt['email_body_on_user_login']),
                             'receivers' => $receivers,
@@ -494,7 +497,7 @@ switch ($_POST['type']) {
                     "users",
                     array(
                         'key_tempo' => $_SESSION['key'],
-                        'last_connexion' => mktime(date("h"), date("i"), date("s"), date("m"), date("d"), date("Y")),
+                        'last_connexion' => time(),
                         'disabled' => $user_is_locked,
                         'no_bad_attempts' => $nb_attempts
                        ),
@@ -519,7 +522,17 @@ switch ($_POST['type']) {
      * Increase the session time of User
      */
     case "increase_session_time":
+        // Calculate end of session
         $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
+        // Update table
+        $db->queryUpdate(
+            "users",
+            array(
+                'session_end' => $_SESSION['fin_session']
+            ),
+            "id=".$_SESSION['user_id']
+        );
+        // Return data
         echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
         break;
     /**
@@ -781,7 +794,7 @@ switch ($_POST['type']) {
     case "send_wainting_emails":
         if (isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 && isset($_SESSION['key'])) {
             $row = $db->queryFirst("SELECT valeur FROM ".$pre."misc WHERE type='cron' AND intitule='sending_emails'");
-            if ((mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')) - $row['valeur']) >= 300 || $row['valeur'] == 0) {
+            if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                 //load library
                 $mail = new SplClassLoader('Email\PhpMailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
                 $mail->register();
@@ -831,7 +844,7 @@ switch ($_POST['type']) {
             $db->queryUpdate(
                 "misc",
                 array(
-                    'valeur' => mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y'))
+                    'valeur' => time()
                    ),
                 array(
                     'intitule' => 'sending_emails',
@@ -850,7 +863,7 @@ switch ($_POST['type']) {
                 "log_system",
                 array(
                     'type' => 'error',
-                    'date' => mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => urldecode($_POST['error']),
                     'qui' => $_SESSION['user_id']
                 )

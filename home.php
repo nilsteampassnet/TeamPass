@@ -29,7 +29,7 @@ $full_tree = $tree->getDescendants();
 echo '
             <div style="line-height: 24px;margin-top:10px;min-height:220px;">
             <span class="ui-icon ui-icon-person" style="float: left; margin-right: .3em;">&nbsp;</span>
-            '.$txt['index_welcome'].' <b>'.$_SESSION['login'].'</b><br />';
+            '.$txt['index_welcome'].' <b>', isset($_SESSION['name']) && !empty($_SESSION['name']) ? $_SESSION['name'].' '.$_SESSION['lastname'] : $_SESSION['login'], '</b><br />';
             //Check if password is valid
 if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 echo '

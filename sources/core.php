@@ -81,7 +81,9 @@ if ((isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion") || 
         $db->queryUpdate(
             "users",
             array(
-                'key_tempo' => ''
+                'key_tempo' => '',
+                'timestamp' => '',
+                'session_end' => ''
            ),
             "id=".$_SESSION['user_id']
         );
@@ -120,7 +122,9 @@ if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION
     $db->queryUpdate(
         "users",
         array(
-            'key_tempo' => ''
+            'key_tempo' => '',
+            'timestamp' => '',
+            'session_end' => ''
        ),
         "id=".$_SESSION['user_id']
     );
@@ -140,7 +144,7 @@ if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION
     echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php"}, 10);
+    setTimeout(function(){document.location.href="index.php"}, 1);
     -->
     </script>';
 }
@@ -173,7 +177,9 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
             $db->queryUpdate(
                 "users",
                 array(
-                    'key_tempo' => ''
+                    'key_tempo' => '',
+                    'timestamp' => '',
+                    'session_end' => ''
                ),
                 "id=".$_SESSION['user_id']
             );
@@ -244,7 +250,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         $db->queryUpdate(
             "users",
             array(
-                'timestamp'=>mktime(date("h"), date("i"), date("s"), date("m"), date("d"), date("Y"))
+                'timestamp'=>time()
            ),
             "id=".$_SESSION['user_id']
         );
@@ -305,5 +311,5 @@ if (isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_st
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-$query_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(mktime(date('h'), date('m'), date('s'), date('m'), date('d'), date('y')) - 600)."'");
+$query_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(time() - 600)."'");
 $_SESSION['nb_users_online'] = $query_count[0];

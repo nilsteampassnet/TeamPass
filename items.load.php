@@ -840,7 +840,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
         return false;
     }
-    LoadingPage();
+    $("#div_loading").show();//LoadingPage();
     if ($("#is_admin").val() == "1") {
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
@@ -852,7 +852,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) && salt_key_required == 1) {
         $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
-        LoadingPage();
+        $("#div_loading").hide();//LoadingPage();
         $("#div_dialog_message").dialog("open");
     } else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
         // Double click
@@ -867,7 +867,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         } else if ($("#request_lastItem").val() == id && reload != 1) {
             $("#request_ongoing").val("");
             LoadingPage();
-
             return;
         } else {
             $("#timestamp_item_displayed").val("");

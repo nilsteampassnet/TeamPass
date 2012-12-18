@@ -272,7 +272,7 @@ switch ($_POST['type']) {
                 'log_system',
                 array(
                     'type' => 'admin_action',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'dataBase backup',
                     'qui' => $_SESSION['user_id']
                )
@@ -449,7 +449,7 @@ switch ($_POST['type']) {
                 "log_system",
                 array(
                     'type' => 'system',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'change_salt_key',
                     'qui' => $_SESSION['user_id']
                )
@@ -571,7 +571,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
             'log_system',
             array(
                'type' => 'admin_action',
-               'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+               'date' => time(),
                'label' => 'Emails backlog',
                'qui' => $_SESSION['user_id']
             )

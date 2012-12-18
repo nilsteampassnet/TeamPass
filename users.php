@@ -50,9 +50,11 @@ echo '
         <table cellspacing="0" cellpadding="2">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th width="20px">ID</th>
                     <th></th>
-                    <th>'.$txt['index_login'].'</th>
+                    <th>'.$txt['user_login'].'</th>
+                    <th>'.$txt['name'].'</th>
+                    <th>'.$txt['lastname'].'</th>
                     <th>'.$txt['functions'].'</th>
                     <th>'.$txt['authorized_groups'].'</th>
                     <th>'.$txt['forbidden_groups'].'</th>
@@ -149,18 +151,18 @@ foreach ($rows as $reccord) {
     if ($show_user_folders == true) {
         echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).'"', '>
                     <td align="center">'.$reccord['id'].'</td>
-                    <td align="center">';
-        /*if ($reccord['admin'] == 1 && $_SESSION['user_id'] == $reccord['id']) echo '
-                        <img src="includes/images/admin_migrate_arrow.png" onclick="migrate_pf(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['user_admin_migrate_pw'].'" />';
-                    else*/
-        if ($reccord['disabled'] == 1) {
-            echo '
-                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />';
-        }
-        echo '
+                    <td align="center">', $reccord['disabled'] == 1 ?'
+                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />' : 
+                    '', '
                     </td>
                     <td align="center">
                         <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
+                    </td>
+                    <td>
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="name_'.$reccord['id'].'">'.@$reccord['name'].'</p>
+                    </td>
+                    <td>
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
                     </td>
                     <td>
                         <div>
@@ -285,8 +287,15 @@ $txt['change_user_forgroups_info'].'
 echo '
 <div id="add_new_user" style="display:none;">
     <div id="add_new_user_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <label for="new_login" class="label_cpm">'.$txt['name'].'</label>
+    <label for="new_name" class="label_cpm">'.$txt['name'].'</label>
+    <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation($this.val(), \'\')" />
+    < br />
+    <label for="new_lastname" class="label_cpm">'.$txt['lastname'].'</label>
+    <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation(\'\', $this.val())" />
+    < br />
+    <label for="new_login" class="label_cpm">'.$txt['login'].'</label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" />
+    <br />
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
 '<label for="new_pwd" class="label_cpm">'.$txt['pw'].'&nbsp;<img src="includes/images/refresh.png" onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;" /></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" />', '

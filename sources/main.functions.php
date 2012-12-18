@@ -297,7 +297,7 @@ function logEvents($type, $label, $who)
         "log_system",
         array(
             'type' => $type,
-            'date' => mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')),
+            'date' => time(),
             'label' => $label,
             'qui' => $who
            )

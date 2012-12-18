@@ -71,7 +71,6 @@ be able to log all activity to a third syslog server. This would be mainly for
 security and auditing.
 * Do your think your can support yubikey ?
 * Issue 242:	Feature Request: SALT Key Sync with LDAP
-* Tree view => cookie collapse or not
 * Tree search => if big list then the view doesn't scroll down to the found
 folder
 * LDAP improvement => 2.1.10
@@ -83,13 +82,16 @@ folder
  * jQueryUI updated to v1.9
  * saltkey is exported in a unique file that should be moved outside "www" server scope.
  * Cleanup unused files
- * Added 2-factors autentication
+ * Added 2-factors authentication
  * 207: Managers can only see the Roles they are allowed to.
  * 190, 192, 199, 202 corrected
  * Correction: taking into account user "can create at root level" setting
  * Added new check when Role creation
  * Added new check for database query error
  * Item in edition will lock any other edition
+ * New administrator View permitting to view "Users actually connected"
+   and "Tokens taken for Items in edition"
+ * User account contains now Name and Last Name fields
 
 2.1.12
  * #188

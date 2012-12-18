@@ -218,18 +218,6 @@ function generate_renewal_pdf()
    );
 }
 
-function manage_div_display(show_id){
-	var all_divs = new Array();
-	all_divs[0] = "tab5_1";
-	for (i=0;i<all_divs.length;i++) {
-	    if (all_divs[i] == show_id) {
-	        $("#"+all_divs[i]).show();
-	    } else {
-	    	$("#"+all_divs[i]).hide();
-	    }
-	}
-}
-
 $(function() {
     $("#tabs").tabs();
     $("#log_jours").datepicker({

@@ -29,11 +29,11 @@ $(function() {
     //inline editing
     $(".editable_textarea").editable("sources/users.queries.php", {
           indicator : "<img src=\'includes/images/loading.gif\' />",
-          type   : "textarea",
+          type   : "text",
           select : true,
           submit : " <img src=\'includes/images/disk_black.png\' />",
           cancel : " <img src=\'includes/images/cross.png\' />",
-          name : "newlogin"
+          name : "newValue"
     });
 
     $("#change_user_functions").dialog({
@@ -108,6 +108,8 @@ $(function() {
                         {
                             type    :"add_new_user",
                             login    :sanitizeString($("#new_login").val()),
+                            name    :sanitizeString($("#new_name").val()),
+                            lastname    :sanitizeString($("#new_lastname").val()),
                             pw        :encodeURIComponent($("#new_pwd").val()),
                             email    :$("#new_email").val(),
                             admin    :$("#new_admin").prop("checked"),
@@ -530,5 +532,10 @@ function migrate_pf(user_id)
          $("#span_user_activity_option").hide();
          displayLogs(1,'user_mngt');
      }
+}
+
+function loginCreation(name, lastname)
+{
+    $("#new_login").val(name+"."+lastname);
 }
 </script>

@@ -54,7 +54,7 @@ switch ($_POST['type']) {
         $pdf->SetFont('DejaVu', '', 16);
         $pdf->Cell(0, 10, $txt['pdf_del_title'], 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 12);
-        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 10);
         $pdf->SetFillColor(15, 86, 145);
         $pdf->cell(80, 6, $txt['label'], 1, 0, "C", 1);
@@ -191,7 +191,7 @@ switch ($_POST['type']) {
                     'id = '.$id
                 );
                 //log
-                $db->query("INSERT INTO ".$pre."log_items VALUES ('".$id."', '".mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y'))."', '".$_SESSION['user_id']."', 'at_restored', '')");
+                $db->query("INSERT INTO ".$pre."log_items VALUES ('".$id."', '".time()."', '".$_SESSION['user_id']."', 'at_restored', '')");
             }
         }
         break;
@@ -570,7 +570,7 @@ switch ($_POST['type']) {
      */
     case "generate_renewal_listing":
         if ($_POST['period'] == "0") {
-            $date = (mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')));
+            $date = (time());
         } elseif ($_POST['period'] == "1month") {
             $date = (mktime(date('h'), date('i'), date('s'), date('m')+1, date('d'), date('y')));
         } elseif ($_POST['period'] == "6months") {
@@ -635,7 +635,7 @@ switch ($_POST['type']) {
         $pdf->SetFont('DejaVu', '', 16);
         $pdf->Cell(0, 10, $txt['renewal_needed_pdf_title'], 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 12);
-        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], mktime(date("H"), date("i"), date("s"), date("m"), date("d"), date("Y"))), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 10);
         $pdf->SetFillColor(192, 192, 192);
         $pdf->cell(70, 6, $txt['label'], 1, 0, "C", 1);
@@ -661,12 +661,5 @@ switch ($_POST['type']) {
         $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
         echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
-        break;
-
-    /**
-     * CASE generating the pdf of items to rennew
-     */
-    case "items_edited_table":
-        echo "ici";
         break;
 }

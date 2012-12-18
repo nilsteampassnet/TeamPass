@@ -122,6 +122,8 @@ if (!empty($_POST['type'])) {
                     "users",
                     array(
                         'login' => mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])),
+                        'name' => mysql_real_escape_string(htmlspecialchars_decode($_POST['name'])),
+                        'lastname' => mysql_real_escape_string(htmlspecialchars_decode($_POST['lastname'])),
                         'pw' => encrypt(stringUtf8Decode($_POST['pw'])),
                         'email' => $_POST['email'],
                         'admin' => $_POST['admin'] == "true" ? '1' : '0',
@@ -206,7 +208,7 @@ if (!empty($_POST['type'])) {
                     'log_system',
                     array(
                         'type' => 'user_mngt',
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'label' => 'at_user_added',
                         'qui' => $_SESSION['user_id'],
                         'field_1' => $new_user_id
@@ -260,7 +262,7 @@ if (!empty($_POST['type'])) {
                     'log_system',
                     array(
                         'type' => 'user_mngt',
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'label' => 'at_user_deleted',
                         'qui' => $_SESSION['user_id'],
                         'field_1' => $_POST['id']
@@ -281,7 +283,7 @@ if (!empty($_POST['type'])) {
                     'log_system',
                     array(
                         'type' => 'user_mngt',
-                        'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                        'date' => time(),
                         'label' => 'at_user_locked',
                         'qui' => $_SESSION['user_id'],
                         'field_1' => $_POST['id']
@@ -313,7 +315,7 @@ if (!empty($_POST['type'])) {
                 'log_system',
                 array(
                     'type' => 'user_mngt',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'at_user_email_changed:'.$data[0],
                     'qui' => $_SESSION['user_id'],
                     'field_1' => $_POST['id']
@@ -623,7 +625,7 @@ if (!empty($_POST['type'])) {
                 'log_system',
                 array(
                     'type' => 'user_mngt',
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'label' => 'at_user_unlocked',
                     'qui' => $_SESSION['user_id'],
                     'field_1' => $_POST['id']
@@ -797,30 +799,76 @@ if (!empty($_POST['type'])) {
             }
 
             break;
+
+        /**
+        * delete the timestamp value for specified user => disconnect
+        */
+        case "disconnect_user":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            // Do
+            $db->queryUpdate(
+                    "users",
+                    array(
+                        'timestamp' => "",
+                        'key_tempo' => "",
+                        'session_end' => ""
+                       ),
+                    "id = ".$_POST['user_id']
+                );
+            break;
+
+        /**
+        * delete the timestamp value for all users
+        */
+        case "disconnect_all_users":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            // Do
+            $rows = $db->fetchAllArray("SELECT id FROM ".$pre."users WHERE timestamp != '' AND admin != 1");
+            foreach ($rows as $reccord) {
+                $db->queryUpdate(
+                    "users",
+                    array(
+                        'timestamp' => "",
+                        'key_tempo' => "",
+                        'session_end' => ""
+                       ),
+                    "id = ".$reccord['id']
+                );
+            }
+            break;
     }
 }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-elseif (!empty($_POST['newlogin'])) {
-    $id = explode('_', $_POST['id']);
+elseif (!empty($_POST['newValue'])) {
+    $value = explode('_', $_POST['id']);
     $db->queryUpdate(
         "users",
         array(
-            'login' => $_POST['newlogin']
+            $value[0] => $_POST['newValue']
            ),
-        "id = ".$id[1]
+        "id = ".$value[1]
     );
     // update LOG
     $db->queryInsert(
         'log_system',
         array(
             'type' => 'user_mngt',
-            'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
-            'label' => 'at_user_new_login:'.$id[1],
-            'qui' => $_SESSION['user_id']
+            'date' => time(),
+            'label' => 'at_user_new_'.$value[0].':'.$value[1],
+            'qui' => $_SESSION['user_id'],
+            'field_1' => $_POST['id']
            )
     );
     // Display info
-    echo $_POST['newlogin'];
+    echo $_POST['newValue'];
 }
 // # ADMIN FOR USER HAS BEEN DEFINED ##
 elseif (isset($_POST['newadmin'])) {

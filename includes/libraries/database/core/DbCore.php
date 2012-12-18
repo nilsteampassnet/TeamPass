@@ -339,7 +339,7 @@ class DbCore
         if ($this->errno != "1049") {
             @mysql_query(
                 "INSERT INTO ".$this->pre."log_system SET
-                date=".mktime(date("h"), date("i"), date("s"), date("m"), date("d"), date("y")).",
+                date=".time().",
                 qui=".$_SESSION['user_id'].",
                 label='".$msg."<br />".addslashes($this->error)."@".$_SERVER['REQUEST_URI']."',
                 type='error'"

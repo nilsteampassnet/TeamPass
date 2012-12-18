@@ -1,6 +1,6 @@
 <?php
 /**
- * @file          datatable.item_edition.php
+ * @file          datatable.users_logged.php
  * @author        Nils Laumaillé
  * @version       2.1.13
  * @copyright     (c) 2009-2012 Nils Laumaillé
@@ -21,6 +21,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
 $db = new SplClassLoader('Database\Core', '../../includes/libraries');
@@ -29,10 +30,10 @@ $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
 $db->connect();
 
 //Columns name
-$aColumns = array('e.timestamp', 'u.login', 'i.label');
+$aColumns = array('login', 'name', 'lastname', 'timestamp', 'last_connexion');
 
 //init SQL variables
-$sOrder = $sLimit = $sWhere = "";
+$sOrder = $sLimit = "";
 
 /* BUILD QUERY */
 //Paging
@@ -64,18 +65,19 @@ if (isset($_GET['iSortCol_0'])) {
 * word by word on any field. It's possible to do here, but concerned about efficiency
 * on very large tables, and MySQL's regex functionality is very limited
 */
+$sWhere = " WHERE ((timestamp != '' AND session_end >= '".time()."')";
 if ($_GET['sSearch'] != "") {
-    $sWhere = " WHERE (";
+    $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
     }
-    $sWhere = substr_replace($sWhere, "", -3).") ";
+    $sWhere = substr_replace($sWhere, "", -3);
+    $sWhere .= ") ";
 }
+$sWhere .= ") ";
 
-$sql = "SELECT e.timestamp,e.item_id, e.user_id, u.login, i.label
-        FROM ".$pre."items_edition AS e
-        INNER JOIN ".$pre."items as i ON (e.item_id=i.id)
-        INNER JOIN ".$pre."users as u ON (e.user_id=u.id)
+$sql = "SELECT *
+        FROM ".$pre."users
         $sWhere
         $sOrder
         $sLimit";
@@ -93,7 +95,8 @@ $iFilteredTotal = $aResultFilterTotal[0];
 /* Total data set length */
 $sql_c = "
         SELECT COUNT(timestamp)
-        FROM   ".$pre."items_edition
+        FROM   ".$pre."users
+        WHERE timestamp != '' AND session_end >= '".time()."'
 ";
 $rResultTotal = mysql_query($sql_c) or die(mysql_error());
 $aResultTotal = mysql_fetch_array($rResultTotal);
@@ -114,19 +117,27 @@ foreach ($rows as $reccord) {
     $sOutput_item = "[";
 
     //col1
-    $sOutput_item .= '"<img src=\"includes/images/delete.png\" onClick=\"killEntry(\'items_edited\', '.$reccord['item_id'].')\" style=\"cursor:pointer;\" />", ';
+    $sOutput_item .= '"<img src=\"includes/images/delete.png\" onClick=\"killEntry(\'disconnect_user\', '.$reccord['id'].')\" style=\"cursor:pointer;\" />", ';
 
     //col2
+    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($reccord['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).']", ';
+
+    //col3
+    if ($reccord['admin'] == "1") {
+        $user_role = $txt['god'];
+    } elseif ($reccord['gestionnaire'] == 1) {
+        $user_role = $txt['gestionnaire'];
+    } else {
+        $user_role = $txt['user'];
+    }
+    $sOutput_item .= '"'.$user_role.'", ';
+
+    //col4
     $time_diff = intval(time() - $reccord['timestamp']);
     $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
     $minutesDiffRemainder = floor($time_diff % 3600 / 60);
-    $sOutput_item .= '"'.$hoursDiff . "h " . $minutesDiffRemainder . "m".'", ';
+    $sOutput_item .= '"'.$hoursDiff . 'h ' . $minutesDiffRemainder . 'm" ';
 
-    //col3
-    $sOutput_item .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'", ';
-
-    //col5 - TAGS
-    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'"';
 
     //Finish the line
     $sOutput_item .= '], ';

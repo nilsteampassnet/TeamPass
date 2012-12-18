@@ -119,7 +119,7 @@ if (isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from
             'log_items',
             array(
                 'id_item' => $_POST['post_id'],
-                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                'date' => time(),
                 'id_user' => $_POST['user_id'],
                 'action' => 'at_modification',
                 'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])
@@ -130,7 +130,7 @@ if (isset($_POST['type_upload']) && ($_POST['type_upload'] == "import_items_from
 //Case where upload is an attached file for one item
 elseif (!isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items_from_file" && $_POST['type_upload'] != "restore_db")) {
     // Get some variables
-    $file_random_id = md5($_FILES['Filedata']['name'].mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('Y')));
+    $file_random_id = md5($_FILES['Filedata']['name'].time());
 
     //Get data from DB
     $sql = "SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule='path_to_upload_folder'";
@@ -157,7 +157,7 @@ elseif (!isset($_POST['type_upload']) || ($_POST['type_upload'] != "import_items
             'log_items',
             array(
                 'id_item' => $_POST['post_id'],
-                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                'date' => time(),
                 'id_user' => $_POST['user_id'],
                 'action' => 'at_modification',
                 'raison' => 'at_add_file : '.addslashes($_FILES['Filedata']['name'])

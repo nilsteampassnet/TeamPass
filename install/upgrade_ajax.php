@@ -342,7 +342,13 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","read_only","TINYINT(1) NOT null DEFAULT '0'");
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","timestamp","VARCHAR(30) NOT null DEFAULT '0'");
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","user_language","VARCHAR(30) NOT null DEFAULT 'english'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","name","VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","lastname","VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","session_end","VARCHAR(30) DEFAULT NULL");
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
+            
+            // Clean timestamp for users table
+            mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
 
             ## Alter nested_tree table
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree","personal_folder","TINYINT(1) NOT null DEFAULT '0'");

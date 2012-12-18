@@ -306,6 +306,9 @@ if (isset($_POST['type'])) {
                   `read_only` tinyint(1) NOT null DEFAULT '0',
                   `timestamp` varchar(30) NOT null DEFAULT '0',
                   `user_language` varchar(30) NOT null DEFAULT 'english',
+                  `name` varchar(100) NULL,
+                  `lastname` varchar(100) NULL,
+                  `session_end` varchar(30) NULL,
                   PRIMARY KEY (`id`),
                   UNIQUE KEY `login` (`login`)
                ) CHARSET=utf8;"

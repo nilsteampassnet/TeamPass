@@ -80,7 +80,7 @@ if (isset($_GET['page']) && $_GET['page'] == "kb") {
 // Load CORE
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 // Load links, css and javascripts
-require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+@require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
 
 ?>
 
@@ -505,8 +505,7 @@ else {
 echo '
     </div>';
 // FOOTER
-/* DON'T MODIFY THE FOOTER
-    *  ... MANY THANKS TO YOU */
+/* DON'T MODIFY THE FOOTER ... MANY THANKS TO YOU */
 echo '
     <div id="footer">
         <div style="float:left;width:32%;">

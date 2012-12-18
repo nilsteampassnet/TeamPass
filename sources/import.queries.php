@@ -229,7 +229,7 @@ switch ($_POST['type']) {
                 'log_items',
                 array(
                     'id_item' => $new_id,
-                    'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                    'date' => time(),
                     'id_user' => $_SESSION['user_id'],
                     'action' => 'at_creation'
                )
@@ -724,7 +724,7 @@ switch ($_POST['type']) {
                             'log_items',
                             array(
                                 'id_item' => $new_id,
-                                'date' => mktime(date('H'), date('i'), date('s'), date('m'), date('d'), date('y')),
+                                'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_creation'
                            )
