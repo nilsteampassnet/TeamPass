@@ -289,10 +289,10 @@ echo '
     <div id="add_new_user_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <label for="new_name" class="label_cpm">'.$txt['name'].'</label>
     <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation($this.val(), \'\')" />
-    < br />
+    <br />
     <label for="new_lastname" class="label_cpm">'.$txt['lastname'].'</label>
     <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation(\'\', $this.val())" />
-    < br />
+    <br />
     <label for="new_login" class="label_cpm">'.$txt['login'].'</label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" />
     <br />

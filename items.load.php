@@ -1741,7 +1741,7 @@ $(function() {
                                 $("#path_elem_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());
                                 $("#fld_"+$('#edit_folder_folder').val()).html($('#edit_folder_title').val());
                                 $("#edit_folder_title").val($('#edit_folder_title').val());
-                                //TODO: mettre à jour la liste de selection avec le nouveau nom du répertoire
+                                $("#jstree").jstree("refresh");
                                 $("#div_editer_rep").dialog("close");
                             } else {
                                 $("#edit_rep_show_error").html(data[0].error).show();
@@ -1968,9 +1968,9 @@ $(function() {
 
     //CALL TO UPLOADIFY FOR FILES UPLOAD in EDIT ITEM
     $("#item_edit_files_upload").uploadify({
-        "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php",
-        "cancelImg" : "includes/libraries/uploadify/cancel.png",
+        "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
+        "script"    : "includes/libraries/Uploadify/uploadify.php",
+        "cancelImg" : "includes/libraries/Uploadify/cancel.png",
         "scriptData": {"timezone":"<?php echo $_SESSION['settings']['timezone'];?>", "PHPSESSID":"<?php echo session_id();?>"},
         "auto"      : false,
         "multi"     : true,
@@ -1983,9 +1983,9 @@ $(function() {
 
     //CALL TO UPLOADIFY FOR FILES UPLOAD in NEW ITEM
     $("#item_files_upload").uploadify({
-        "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-        "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='<?php $_SESSION['user_id'];?>'",
-        "cancelImg" : "includes/libraries/uploadify/cancel.png",
+        "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
+        "script"    : "includes/libraries/Uploadify/uploadify.php?PHPSESSID='<?php $_SESSION['user_id'];?>'",
+        "cancelImg" : "includes/libraries/Uploadify/cancel.png",
         "auto"      : false,
         "multi"     : true,
         "folder"    : "<?php echo $_SESSION['settings']['path_to_upload_folder'];?>",

@@ -117,7 +117,7 @@ switch ($_POST['type']) {
             $table_col_width = array(45, 40, 45, 60);
 
             //Prepare the PDF file
-            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/pdf/tfpdf/fpdf.php';
+            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
             $pdf=new FPDF_Protection();
             $pdf->SetProtection(array('print'), $_POST['pdf_password']);
 

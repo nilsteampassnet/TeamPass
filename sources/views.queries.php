@@ -44,7 +44,7 @@ switch ($_POST['type']) {
     #CASE generating the log for passwords renewal
     case "log_generate":
         //Prepare the PDF file
-        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/pdf/tfpdf/tfpdf.class.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
         $pdf=new TFPDF();
 
         //Add font for utf-8
@@ -624,7 +624,7 @@ switch ($_POST['type']) {
      */
     case "generate_renewal_pdf":
         //Prepare the PDF file
-        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/pdf/tfpdf/tfpdf.class.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
         $pdf=new tFPDF();
 
         //Add font for utf-8

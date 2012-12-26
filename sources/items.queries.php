@@ -1392,8 +1392,8 @@ if (isset($_POST['type'])) {
             // Check if duplicate folders name are allowed
             $create_new_folder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if ($data[0] != 0) {
+                $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                if ($data[0] != $data_received['folder']) {
                     echo '[ { "error" : "'.addslashes($txt['error_group_exist']).'" } ]';
                     break;
                 }
@@ -1839,7 +1839,9 @@ if (isset($_POST['type'])) {
 
             // If token is taken for this Item and delay is passed then delete it.
             if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] > 0 && !empty($data_tmp[0]) && round(abs(time()-$data_tmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']) {
-                $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['id']."'");
+                $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                //reload the previous data
+                $data_tmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
             }
 
             // If edition by same user (and token not freed before for any reason, then update timestamp)
@@ -2289,7 +2291,7 @@ if (isset($_POST['type'])) {
         */
         case "free_item_for_edition":
             // Check KEY
-            if ($data_received['key'] != $_SESSION['key']) {
+            if ($_POST['key'] != $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }

@@ -29,7 +29,7 @@ $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
 $db->connect();
 
 //Columns name
-$aColumns = array('e.timestamp', 'u.login', 'i.label');
+$aColumns = array('e.timestamp', 'u.login', 'i.label', 'u.name', 'u.lastname');
 
 //init SQL variables
 $sOrder = $sLimit = $sWhere = "";
@@ -72,7 +72,7 @@ if ($_GET['sSearch'] != "") {
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }
 
-$sql = "SELECT e.timestamp,e.item_id, e.user_id, u.login, i.label
+$sql = "SELECT e.timestamp,e.item_id, e.user_id, u.login, u.name, u.lastname, i.label
         FROM ".$pre."items_edition AS e
         INNER JOIN ".$pre."items as i ON (e.item_id=i.id)
         INNER JOIN ".$pre."users as u ON (e.user_id=u.id)
@@ -123,7 +123,7 @@ foreach ($rows as $reccord) {
     $sOutput_item .= '"'.$hoursDiff . "h " . $minutesDiffRemainder . "m".'", ';
 
     //col3
-    $sOutput_item .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'", ';
+    $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($reccord['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).']", ';
 
     //col5 - TAGS
     $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'"';

@@ -247,20 +247,22 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             $_SESSION['groupes_interdits'] = @implode(';', $data['groupes_interdits']);
         }
 
-        $db->queryUpdate(
-            "users",
-            array(
-                'timestamp'=>time()
-           ),
-            "id=".$_SESSION['user_id']
-        );
+        if(!isset($_SESSION['fin_session'])) {
+            $db->queryUpdate(
+                "users",
+                array(
+                    'timestamp'=>time()
+               ),
+                "id=".$_SESSION['user_id']
+            );
+        }
 
         // get access rights
         identifyUserRights($data['groupes_visibles'], $data['groupes_interdits'], $data['admin'], $data['fonction_id'], false);
     }
 } elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
     //2 Factors authentication is asked
-    include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/authentication/twofactors/twofactors.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
     $Google2FA=new Google2FA();
 
     //Generate code and QR

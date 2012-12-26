@@ -42,7 +42,7 @@ echo '
                     <thead><tr>
                         <th style="width-max:38px;"></th>
                         <th style="width:25%;">'.$txt['item_edition_start_hour'].'</th>
-                        <th style="width:30%;">'.$txt['login'].'</th>
+                        <th style="width:30%;">'.$txt['user'].'</th>
                         <th style="width:35%;">'.$txt['label'].'</th>
                     </tr></thead>
                     <tbody>

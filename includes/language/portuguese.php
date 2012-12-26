@@ -1,17 +1,24 @@
 <?php
 //PORTUGUESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
-} else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = '';
+}else{
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+
+$txt['2factors_confirm_text'] = "Enter the one-time password";
+$txt['2factors_image_text'] = "Please, scan the QR code";
+$txt['2factors_tile'] = "2-Factors Autentication";
 $txt['account_is_locked'] = "Conta bloqueada";
+$txt['action'] = "Action";
 $txt['activity'] = "Atividade";
 $txt['add_button'] = "Adicionar";
 $txt['add_new_group'] = "Adicionar uma nova pasta";
 $txt['add_role_tip'] = "Adicionar nova regra";
 $txt['admin'] = "Administração";
+$txt['admin_2factors_authentication_setting'] = "Enable Google 2-Factors authentication";
+$txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";
 $txt['admin_action'] = "Por favor, confirme sua ação";
 $txt['admin_actions_title'] = "Especificar ações";
 $txt['admin_action_change_salt_key'] = "Change the main SALT Key";
@@ -52,7 +59,7 @@ $txt['admin_email_test_body'] = "Hi,<br><br>Email sent successfully.<br><br>Chee
 $txt['admin_email_test_configuration'] = "Test the Email configuration";
 $txt['admin_email_test_subject'] = "[TeamPass] Test email";
 $txt['admin_error_no_complexity'] = "(<a href='index.php?page=manage_groups'>Definir?</a>)";
-$txt['admin_error_no_visibility'] = "Ninguem pode ver este item. (<a href='index.php?page=manage_roles'>Personalize as regras</a>)    ";
+$txt['admin_error_no_visibility'] = "Ninguem pode ver este item. (<a href='index.php?page=manage_roles'>Personalize as regras</a>)	";
 $txt['admin_functions'] = "Gerenciador de regras";
 $txt['admin_groups'] = "Gerenciador de pastas";
 $txt['admin_help'] = "Ajuda";
@@ -132,6 +139,8 @@ $txt['at_user_deleted'] = "User #user_login# deleted";
 $txt['at_user_email_changed'] = "User #user_login# email changed";
 $txt['at_user_initial_pwd_changed'] = "User #user_login# initial password change";
 $txt['at_user_locked'] = "User #user_login# locked";
+$txt['at_user_new_lastname'] = "User #user_login# lastname changed";
+$txt['at_user_new_name'] = "User #user_login# name changed";
 $txt['at_user_pwd_changed'] = "User #user_login# password changed";
 $txt['at_user_unlocked'] = "User #user_login# unlocked";
 $txt['auteur'] = "Autor";
@@ -143,6 +152,7 @@ $txt['automatic_deletion_activated'] = "Automatic deletion engaged";
 $txt['automatic_del_after_date_text'] = "or after date";
 $txt['auto_create_folder_role'] = "Criar um diretório e regra para";
 $txt['bad_email_format'] = "Email address has not the expected format!";
+$txt['bad_onetime_password'] = "Wrong One-Time password!";
 $txt['block_admin_info'] = "Administrators Info";
 $txt['block_last_created'] = "Ultimo criado";
 $txt['bugs_page'] = "Se você encontrar um bug poderá postar diretamente em <a href='http://code.google.com/p/TeamPass/issues/list' target='_blank'><u>Bugs</u></a>.";
@@ -193,10 +203,13 @@ $txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-wid
 $txt['creation_date'] = "Data de criação";
 $txt['csv'] = "CSV";
 $txt['csv_import_button_text'] = "Procurar arquivo CSV";
+$txt['database_menu'] = "Database";
 $txt['date'] = "Data";
 $txt['date'] = "Data";
 $txt['date_format'] = "Formato da data";
 $txt['days'] = "dias";
+$txt['db_items_edited'] = "Items actually in edition";
+$txt['db_users_logged'] = "Users actually logged";
 $txt['definition'] = "Definição";
 $txt['delete'] = "Deletar";
 $txt['deletion'] = "Deletados";
@@ -209,6 +222,8 @@ $txt['description'] = "Descrição";
 $txt['disable_notify'] = "Disable notify";
 $txt['disconnect'] = "Desconexão";
 $txt['disconnection'] = "Desconexão";
+$txt['disconnect_all_users'] = "Disconnected all Users (except Administrators)";
+$txt['disconnect_all_users_sure'] = "You have decided to disconnect all users. Are you sure?";
 $txt['div_dialog_message_title'] = "Informação";
 $txt['done'] = "Concluído ";
 $txt['drag_drop_helper'] = "Item 'drag and drop'";
@@ -264,11 +279,13 @@ $txt['error_group_label'] = "O diretório necessita de um nome!";
 $txt['error_html_codes'] = "Algum texto contem códigos HTML! Isto não é permitido.";
 $txt['error_item_exists'] = "O item já existe!";
 $txt['error_label'] = "O rótulo é obrigatório!";
+$txt['error_mcrypt_not_loaded'] = "Extension 'mcrypt' is actually not loaded in PHP module. This module is required for TeamPass to work. Please inform your administrator if you see this message.";
 $txt['error_must_enter_all_fields'] = "Você deve preencher cada um dos campos!";
 $txt['error_mysql'] = "Erro de MySQL!";
 $txt['error_not_allowed_to'] = "You are not allowed to do that!";
 $txt['error_not_authorized'] = "Você não esta autorizado a ver esta pagina.";
 $txt['error_not_exists'] = "Esta pagina não existe.";
+$txt['error_no_edition_possible_locked'] = "Edition not possible. This Item is presently edited!";
 $txt['error_no_folders'] = "Você pode começar criando algum diretório";
 $txt['error_no_password'] = "Você necessita entrar com sua senha!";
 $txt['error_no_roles'] = "Você necessita criar alguma regra e associar a alguma pasta.";
@@ -277,8 +294,11 @@ $txt['error_password_confirmation'] = "As senhas devem ser as mesmas";
 $txt['error_pw'] = "A senha é obrigatória!";
 $txt['error_pw_too_long'] = "Password is too long! maximum characters is 40.";
 $txt['error_renawal_period_not_integer'] = "A renovação é expressada em meses!";
+$txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
+$txt['error_role_exist'] = "This Role already exists!";
 $txt['error_salt'] = "<b>O 'SALT KEY' é muito longo! Por favor, não use a ferramenta de administração Até que você tenha modificado o 'SALT KEY'. </b> No arquivo settings.php, o 'SALT KEY'NÃO deve ser maior que 32 caracteres.
 ";
+$txt['error_string_not_utf8'] = "An error appears because string format is not UTF8!";
 $txt['error_tags'] = "Caracteres de pontuação não é permitida no TAGS! Apenas o espaço.";
 $txt['error_times_before_deletion'] = "Number of consultation before deletion needs to be more than 0!";
 $txt['error_user_exists'] = "Usuário já existe.";
@@ -371,12 +391,14 @@ $txt['index_session_expired'] = "Sua sessão expirou ou não esta identificado!"
 $txt['index_welcome'] = "Bem vindo";
 $txt['info'] = "Informação";
 $txt['info_click_to_edit'] = "Clique em uma célula para editar os valores.";
+$txt['info_list_of_connected_users_approximation'] = "Note: This list may show more connected users than it is really the case.";
 $txt['is_admin'] = "É Administrador";
 $txt['is_manager'] = "É Gerenciador";
 $txt['is_read_only'] = "É somente leitura";
 $txt['items'] = "Items";
 $txt['items_browser_title'] = "Diretórios";
 $txt['item_copy_to_folder'] = "'Por favor, selecione o diretório do item que deseja copiar'";
+$txt['item_edition_start_hour'] = "Edition started since";
 $txt['item_menu_add_elem'] = "Adicionar item";
 $txt['item_menu_add_rep'] = "Adicionar diretório";
 $txt['item_menu_add_to_fav'] = "Adiciona a meus favoritos.";
@@ -394,10 +416,12 @@ $txt['item_menu_find'] = "Procurar";
 $txt['item_menu_mask_pw'] = "Ocultar senha";
 $txt['item_menu_refresh'] = "Atualiza pagina";
 $txt['item_share_text'] = "In order to share by mail this Item, enter the email address and press SEND button.";
+$txt['item_updated_text'] = "This Item has been edited. You need to update it before you can change it.";
 $txt['kbs'] = "KBs";
 $txt['kb_menu'] = "Base de conhecimento";
 $txt['keepass_import_button_text'] = "Procurar arquivo XML";
 $txt['label'] = "Rótulo ";
+$txt['lastname'] = "Last name";
 $txt['last_items_icon_title'] = "Mostra/Oculta o ultimo item visto";
 $txt['last_items_title'] = "Ultimo item visto";
 $txt['ldap_extension_not_loaded'] = "A extensão LDAP não esta ativado no servidor";
@@ -408,6 +432,7 @@ $txt['login'] = "Login (se necessário)";
 $txt['login_attempts_on'] = "Tentativas de logon em";
 $txt['login_copied_clipboard'] = "Login copiado para o clipboard";
 $txt['login_copy'] = "Copia a conta para o clipboard";
+$txt['login_time'] = "Logged since";
 $txt['logs'] = "Relatórios ";
 $txt['logs_1'] = "Gera o arquivo de registro com as senhas que precisam renovar";
 $txt['logs_passwords'] = "Gera um relatório de senhas";
@@ -493,6 +518,7 @@ $txt['restore'] = "Recuperar";
 $txt['restricted_to'] = "Restrito para";
 $txt['restricted_to_roles'] = "Ativa itens restritos para regras e usuários";
 $txt['rights_matrix'] = "Matriz de privilégios";
+$txt['role'] = "Role";
 $txt['roles'] = "Regras";
 $txt['role_cannot_modify_all_seen_items'] = "Definir este papel não tem permissão para modificar todos os itens acessíveis (definição normal) ";
 $txt['role_can_modify_all_seen_items'] = "Definir esta permissão para modificar todos os itens acessíveis (definição não seguro)";
@@ -512,6 +538,8 @@ $txt['settings_anyone_can_modify_tip'] = "
 
 <span style='font-size:11px;max-width:300px;'> Quando ativado, isto irá adicionar uma opção no formulário de item que permite que o criador para permitir a modificação deste item por qualquer pessoa. </ span>";
 $txt['settings_default_language'] = "Define a linguagem padrão";
+$txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
+$txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token after un certain delay. If the value is set to 0 then the token will never be deleted.</span>";
 $txt['settings_kb'] = "Ativa Base de Conhecimento (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'> Quando ativado, isto irá adicionar uma página onde você pode construir sua base de conhecimento. </ span>";
 $txt['settings_ldap_domain'] = "Conta sufixo para LDAP para seu dominio";
@@ -568,6 +596,7 @@ $txt['user_activity'] = "User Activity";
 $txt['user_alarm_no_function'] = "Este usuário não tem regras!";
 $txt['user_del'] = "Excluir conta";
 $txt['user_lock'] = "Bloquear conta";
+$txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
 $txt['version'] = "Versão atual";
 $txt['views_confirm_items_deletion'] = "Você realmente deseja excluir os itens selecionados do banco de dados?";
@@ -576,3 +605,4 @@ $txt['visibility'] = "Visibilidade";
 $txt['warning_screen_height'] = "WARNING: screen height is not enough for displaying items list!";
 $txt['yes'] = "Sim";
 $txt['your_version'] = "Sua versão:";
+?>

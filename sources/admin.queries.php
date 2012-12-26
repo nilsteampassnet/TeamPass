@@ -59,9 +59,9 @@ switch ($_POST['type']) {
 
         // Identification avec un nom d'utilisateur et un mot de passe
         $login_result = ftp_login($conn_id, "robot@teampass.net", "Cm3_Pc9l");
-
-        //envoyer la date et ip de connexion
-        //....
+        
+        // Enable PASV mode
+        ftp_pasv($conn_id, true);
 
         // Tente de t?l?chargement le fichier $remote_file et de le sauvegarder dans $handle
         if (ftp_fget($conn_id, $handle, $remote_file, FTP_ASCII, 0)) {

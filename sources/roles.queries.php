@@ -50,11 +50,10 @@ if (!empty($_POST['type'])) {
                                 'creator_id' => $_SESSION['user_id']
                         )
                 );
-                
+
                 if ($role_id != 0) {
                     //Actualize the variable
                     $_SESSION['nb_roles'] ++;
-    
                     echo '[ { "error" : "no" } ]';
                 } else {
                     echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';

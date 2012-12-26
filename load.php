@@ -40,9 +40,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
 
-        <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
+        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>
 
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
@@ -55,9 +55,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>';
+        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
+        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
@@ -80,9 +80,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
 } else if (!isset($_GET['page'])) {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/libraries/uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/uploadify/swfobject.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
+        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
 }
 // Get Favicon
@@ -559,10 +559,10 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
         //CALL TO UPLOADIFY FOR CSV IMPORT
         $("#fileInput_csv").uploadify({
-            "uploader"  : "includes/libraries/uploadify/uploadify.swf",
+            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_csv"},
-            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
-            "cancelImg" : "includes/libraries/uploadify/cancel.png",
+            "script"    : "includes/libraries/Uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
+            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
             "auto"      : true,
             "fileDesc"  : "csv",
             "fileExt"   : "*.csv",
@@ -572,10 +572,10 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
         //CALL TO UPLOADIFY FOR KEEPASS IMPORT
         $("#fileInput_keepass").uploadify({
-            "uploader"  : "includes/libraries/uploadify/uploadify.swf",
+            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
             "scriptData": {"type_upload":"import_items_from_file"},
-            "script"    : "includes/libraries/uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
-            "cancelImg" : "includes/libraries/uploadify/cancel.png",
+            "script"    : "includes/libraries/Uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
+            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
             "auto"      : true,
             "fileDesc"  : "xml",
             "fileExt"   : "*.xml",
@@ -964,9 +964,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
         //CALL TO UPLOADIFY FOR RESTORE SQL FILE
         $("#fileInput_restore_sql").uploadify({
-            "uploader"  : "includes/libraries/uploadify/uploadify.swf",
-            "script"    : "includes/libraries/uploadify/uploadify.php?user_id='.$_SESSION['user_id'].'&key_tempo='.$_SESSION['key'].'",
-            "cancelImg" : "includes/libraries/uploadify/cancel.png",
+            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
+            "script"    : "includes/libraries/Uploadify/uploadify.php?user_id='.$_SESSION['user_id'].'&key_tempo='.$_SESSION['key'].'",
+            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
             "scriptData": {"type_upload":"restore_db"},
             "auto"      : true,
             "fileDesc"  : "sql",

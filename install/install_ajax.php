@@ -601,7 +601,10 @@ if (isset($_POST['type'])) {
                 ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),
                 ('', 'norwegian', 'Norwegian' , 'no', 'no.png'),
                 ('', 'japanese', 'Japanese' , 'ja', 'ja.png'),
-                ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png');"
+                ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png'),
+                ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
+                ('', 'swedish', 'Swedish' , 'se', 'se.png'),
+                ('', 'dutch', 'Dutch' , 'nl', 'nl.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_20").innerHTML = "<img src=\"images/tick.png\">";';

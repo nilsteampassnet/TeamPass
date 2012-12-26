@@ -194,15 +194,15 @@ if (!empty($_POST['type'])) {
                            ),
                         "id=".$new_user_id
                     );
-                    // Send email to new user
-                    @sendEmail(
-                        $tst['email_subject_new_user'],
-                        str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(encrypt(stringUtf8Decode($_POST['pw']))), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
-                        $_POST['email']
-                    );
                     // rebuild tree
                     $tree->rebuild();
                 }
+                // Send email to new user
+                @sendEmail(
+                    $txt['email_subject_new_user'],
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(string_utf8_decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
+                    $_POST['email']
+                );
                 // update LOG
                 $db->queryInsert(
                     'log_system',

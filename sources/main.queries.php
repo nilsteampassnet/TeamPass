@@ -9,7 +9,7 @@
  * @link
  */
 
-$debug_ldap = 1; //Can be used in order to debug LDAP authentication
+$debug_ldap = 0; //Can be used in order to debug LDAP authentication
 
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -188,7 +188,7 @@ switch ($_POST['type']) {
 
         //Check 2-Factors pw
         if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/authentication/twofactors/twofactors.php';
+            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
             $Google2FA=new Google2FA();
 
             if ($Google2FA->verify_key($_SESSION['initKey'], $data_received['onetimepw']) != true) {
@@ -568,7 +568,7 @@ switch ($_POST['type']) {
             $mail->register();
             $mail = new Email\PhpMailer\PHPMailer();
             // send to user
-            $mail->setLanguage("en", "../includes/libraries/email/phpmailer/language/");
+            $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
             $mail->isSmtp(); // send via SMTP
             $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
             $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth']; // turn on SMTP authentication
@@ -800,7 +800,7 @@ switch ($_POST['type']) {
                 $mail->register();
                 $mail = new Email\PhpMailer\PHPMailer();
 
-                $mail->setLanguage("en", "../includes/libraries/email/phpmailer/language");
+                $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language");
                 $mail->isSmtp(); // send via SMTP
                 $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
                 $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth']; // turn on SMTP authentication

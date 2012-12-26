@@ -556,7 +556,7 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     $mail = new Email\PhpMailer\PHPMailer();
 
     // send to user
-    $mail->setLanguage("en", "../includes/libraries/email/phpmailer/language/");
+    $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
     $mail->Port = $_SESSION['settings']['email_port']; //COULD BE USED
     // $mail->SMTPSecure = 'ssl';     //COULD BE USED

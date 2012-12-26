@@ -88,9 +88,8 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
     <head>
         <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
         <title>Collaborative Passwords Manager</title>
-        <?php
+<?php
 echo $htmlHeaders;
-
 ?>
     </head>
 
@@ -363,7 +362,7 @@ if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['upda
 // Display pages
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page'])) {
     if (!extension_loaded('mcrypt')) {
-        $_SESSION['error'] = "1003"; 
+        $_SESSION['error'] = "1003";
         include 'error.php';
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
@@ -418,9 +417,8 @@ elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action']
 elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
     // PAGE BY DEFAULT
     include 'home.php';
-}
-// When user is not identified
-else {
+    // When user is not identified
+} else {
     // Automatic redirection
     if (strpos($_SERVER["REQUEST_URI"], "?") > 0) {
         $nextUrl = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?"));

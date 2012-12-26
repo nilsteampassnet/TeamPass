@@ -63,17 +63,16 @@ foreach ($rows as $reccord) {
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength']) ;
 }
 
 //Ordering
-
 if (isset($_GET['iSortCol_0'])) {
     $sOrder = "ORDER BY  ";
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-        if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
+        if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" && preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])) {
             $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-            ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+            ".$_GET['sSortDir_'.$i] .", ";
         }
     }
 

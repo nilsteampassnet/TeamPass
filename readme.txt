@@ -80,18 +80,19 @@ folder
 2.1.13
  * Code improvement for PSR compliance
  * jQueryUI updated to v1.9
- * saltkey is exported in a unique file that should be moved outside "www" server scope.
  * Cleanup unused files
- * Added 2-factors authentication
- * 207: Managers can only see the Roles they are allowed to.
- * 190, 192, 199, 202 corrected
+ * #207: Managers can only see the Roles they are allowed to.
+ * #190, #192, #199, #202, #196, #204, #191, #214 corrected
  * Correction: taking into account user "can create at root level" setting
- * Added new check when Role creation
- * Added new check for database query error
- * Item in edition will lock any other edition
- * New administrator View permitting to view "Users actually connected"
+ * Added: saltkey is exported in a unique file that should be moved outside
+   "www" server scope.
+ * Added: 2-factors authentication
+ * Added: new check when Role creation
+ * Added: new check for database query error
+ * Added: Item in edition will lock any other edition
+ * Added: New administrator View permitting to view "Users actually connected"
    and "Tokens taken for Items in edition"
- * User account contains now Name and Last Name fields
+ * Added: User account contains now Name and Last Name fields
 
 2.1.12
  * #188

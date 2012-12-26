@@ -1,13 +1,18 @@
 <?php
 //JAPANESE
 if (!isset($_SESSION['settings']['cpassman_url'])) {
-    $TeamPass_url = '';
-} else {
-    $TeamPass_url = $_SESSION['settings']['cpassman_url'];
+	$TeamPass_url = '';
+}else{
+	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+
+$txt['2factors_confirm_text'] = "Enter the one-time password";
+$txt['2factors_image_text'] = "Please, scan the QR code";
+$txt['2factors_tile'] = "2-Factors Autentication";
 $txt['account_is_locked'] = "このアカウントはロックされています。";
 
+$txt['action'] = "Action";
 $txt['activity'] = "Activity";
 $txt['add_button'] = "Add";
 
@@ -16,6 +21,8 @@ $txt['add_role_tip'] = "Add a new role.";
 
 $txt['admin'] = "Administration";
 
+$txt['admin_2factors_authentication_setting'] = "Enable Google 2-Factors authentication";
+$txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";
 $txt['admin_action'] = "確認";
 
 $txt['admin_actions_title'] = "メンテナンスアクション";
@@ -197,6 +204,8 @@ $txt['at_user_deleted'] = "User #user_login# deleted";
 $txt['at_user_email_changed'] = "User #user_login# email changed";
 $txt['at_user_initial_pwd_changed'] = "User #user_login# initial password change";
 $txt['at_user_locked'] = "User #user_login# locked";
+$txt['at_user_new_lastname'] = "User #user_login# lastname changed";
+$txt['at_user_new_name'] = "User #user_login# name changed";
 $txt['at_user_pwd_changed'] = "User #user_login# password changed";
 $txt['at_user_unlocked'] = "User #user_login# unlocked";
 $txt['auteur'] = "Author";
@@ -214,6 +223,7 @@ $txt['automatic_del_after_date_text'] = "or after date";
 $txt['auto_create_folder_role'] = "Create folder and role for ";
 
 $txt['bad_email_format'] = "Email address has not the expected format!";
+$txt['bad_onetime_password'] = "Wrong One-Time password!";
 $txt['block_admin_info'] = "Administrators Info";
 $txt['block_last_created'] = "Last created";
 
@@ -305,6 +315,7 @@ $txt['creation_date'] = "作成日時";
 $txt['csv'] = "CSV";
 $txt['csv_import_button_text'] = "CSVファイルを参照する";
 
+$txt['database_menu'] = "Database";
 $txt['date'] = "日時";
 
 $txt['date'] = "Date";
@@ -312,6 +323,8 @@ $txt['date_format'] = "日付フォーマット";
 
 $txt['days'] = "days";
 
+$txt['db_items_edited'] = "Items actually in edition";
+$txt['db_users_logged'] = "Users actually logged";
 $txt['definition'] = "定義";
 
 $txt['delete'] = "Delete";
@@ -334,6 +347,8 @@ $txt['disconnect'] = "ログアウト";
 
 $txt['disconnection'] = "Disconnection";
 
+$txt['disconnect_all_users'] = "Disconnected all Users (except Administrators)";
+$txt['disconnect_all_users_sure'] = "You have decided to disconnect all users. Are you sure?";
 $txt['div_dialog_message_title'] = "Information";
 
 $txt['done'] = "Done";
@@ -420,6 +435,7 @@ $txt['error_item_exists'] = "This Item already exists!";
 
 $txt['error_label'] = "A label is mandatory!";
 
+$txt['error_mcrypt_not_loaded'] = "Extension 'mcrypt' is actually not loaded in PHP module. This module is required for TeamPass to work. Please inform your administrator if you see this message.";
 $txt['error_must_enter_all_fields'] = "You must fill in each fields!";
 
 $txt['error_mysql'] = "MySQL Error!";
@@ -427,6 +443,7 @@ $txt['error_mysql'] = "MySQL Error!";
 $txt['error_not_allowed_to'] = "You are not allowed to do that!";
 $txt['error_not_authorized'] = "このページを閲覧する権限がありません。";
 $txt['error_not_exists'] = "ページが存在しません。";
+$txt['error_no_edition_possible_locked'] = "Edition not possible. This Item is presently edited!";
 $txt['error_no_folders'] = "まずはフォルダを作成してください。";
 
 $txt['error_no_password'] = "You need to enter your password!";
@@ -441,7 +458,10 @@ $txt['error_pw'] = "A password is mandatory!";
 $txt['error_pw_too_long'] = "Password is too long! maximum characters is 40.";
 $txt['error_renawal_period_not_integer'] = "Renewal period should be expressed in months!";
 
+$txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
+$txt['error_role_exist'] = "This Role already exists!";
 $txt['error_salt'] = "<b>The SALT KEY is too long! Please don't use the tool until an Admin has modified the salt key.</b> In settings.php file, SALT should not be longer than 32 characters.";
+$txt['error_string_not_utf8'] = "An error appears because string format is not UTF8!";
 $txt['error_tags'] = "No punctuation characters allowed in TAGS! Only space.";
 
 $txt['error_times_before_deletion'] = "Number of consultation before deletion needs to be more than 0!";
@@ -615,6 +635,7 @@ $txt['info'] = "Information";
 
 $txt['info_click_to_edit'] = "この値を編集するにはセルをクリック";
 
+$txt['info_list_of_connected_users_approximation'] = "Note: This list may show more connected users than it is really the case.";
 $txt['is_admin'] = "Is Admin";
 
 $txt['is_manager'] = "Is Manager";
@@ -624,6 +645,7 @@ $txt['items'] = "Items";
 $txt['items_browser_title'] = "フォルダ名";
 
 $txt['item_copy_to_folder'] = "Please select a folder in which the item has to be copied.";
+$txt['item_edition_start_hour'] = "Edition started since";
 $txt['item_menu_add_elem'] = "アイテムを追加";
 
 $txt['item_menu_add_rep'] = "フォルダを追加";
@@ -657,12 +679,14 @@ $txt['item_menu_mask_pw'] = "Mask password";
 $txt['item_menu_refresh'] = "更新";
 
 $txt['item_share_text'] = "In order to share by mail this Item, enter the email address and press SEND button.";
+$txt['item_updated_text'] = "This Item has been edited. You need to update it before you can change it.";
 $txt['kbs'] = "KBs";
 $txt['kb_menu'] = "ナレッジベース";
 $txt['keepass_import_button_text'] = "Browse XML file";
 
 $txt['label'] = "ラベル";
 
+$txt['lastname'] = "Last name";
 $txt['last_items_icon_title'] = "最後に見たアイテムを 表示/隠す";
 
 $txt['last_items_title'] = "最後に見たアイテム";
@@ -682,6 +706,7 @@ $txt['login_copied_clipboard'] = "Login copied in clipboard";
 
 $txt['login_copy'] = "アカウントをクリップボードをコピー";
 
+$txt['login_time'] = "Logged since";
 $txt['logs'] = "ログ";
 
 $txt['logs_1'] = "Generate the log file for the passwords renewal done the";
@@ -827,6 +852,7 @@ $txt['restricted_to_roles'] = "Allow to restrict items to Users and Roles";
 
 $txt['rights_matrix'] = "Users rights matrix";
 
+$txt['role'] = "Role";
 $txt['roles'] = "ロール";
 
 $txt['role_cannot_modify_all_seen_items'] = "Set this role not allowed to modify all accessible items (normal setting)";
@@ -854,6 +880,8 @@ $txt['settings_anyone_can_modify'] = "Activate an option for each item that allo
 
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a checkbox in the item form that permits the creator to allow the modification of this item by anyone.</span>";
 $txt['settings_default_language'] = "Define the Default Language";
+$txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
+$txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token after un certain delay. If the value is set to 0 then the token will never be deleted.</span>";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
@@ -861,7 +889,7 @@ $txt['settings_ldap_domain'] = "あなたのドメインのLDAPアカウント�
 
 $txt['settings_ldap_domain_controler'] = "ドメインコントローラーのLDAPアレイ";
 
-$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
+$txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "あなたのドメインのLDAPベース dn";
 
 $txt['settings_ldap_mode'] = "LDAPサーバーを使ったユーザー認証を有効にする。";
@@ -948,6 +976,7 @@ $txt['user_alarm_no_function'] = "This user has no Roles!";
 $txt['user_del'] = "アカウントを削除";
 
 $txt['user_lock'] = "Lock user";
+$txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
 $txt['version'] = "Current version";
 
@@ -961,3 +990,5 @@ $txt['warning_screen_height'] = "WARNING: screen height is not enough for displa
 $txt['yes'] = "Yes";
 
 $txt['your_version'] = "Your version";
+
+?>
