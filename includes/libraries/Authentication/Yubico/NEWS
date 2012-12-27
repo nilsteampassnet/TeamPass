@@ -1,0 +1,52 @@
+* Version 2.4 released 2011-09-21
+
+  * Fix PHP warnings.  Tiny patch from Simon Buckle
+    <simon.buckle@gmail.com>.
+
+* Version 2.3 released 2011-02-02
+
+  * Fix PHP warnings.  Tiny patch from Patrick MONNERAT
+    <patrick.monnerat@datasphere.ch>.
+
+* Version 2.2 released 2010-11-04
+
+  * Don't use PHP 5.3 deprecated features.
+
+    - Replace use of 'split' with 'explode'.
+
+    - Replace use of '&new' with 'new'.
+
+  * Improve documentation.
+
+* Version 2.1 released 2010-04-26
+
+  * Verify server certificates by default when HTTPS is requested.
+    - New parameter to constructor to disable verification.
+
+  * Improve last request/response messages, for debugging purposes.
+
+  * Disable API input by default in demo.php.
+
+  * API doc fixes.
+
+* Version 2.0 released 2010-04-23
+
+  * Support for new replicated server protocol.
+
+** Version 1.9 released 2009-10-12
+
+** Version 1.8 released 2009-04
+
+** Version 1.7 released 2009-03
+
+** Version 1.6 released 2009-03
+
+** Version 1.5 released 2009-03
+
+** Version 1.4 released 2009-03
+
+** Version 1.3 released 2008-10
+
+** Version 1.2 released 2008-05
+
+** Version 1.1 released 2008-01
