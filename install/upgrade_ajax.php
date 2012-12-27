@@ -226,7 +226,7 @@ if (isset($_POST['type'])) {
             #==========================
         case "step4":
             //include librairies
-            require_once '../includes/libraries/tree/nestedtree/NestedTree.php';
+            require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 
             //Build tree
             $tree = new Tree\NestedTree\NestedTree($_SESSION['tbl_prefix'].'nested_tree', 'id', 'parent_id', 'title');
