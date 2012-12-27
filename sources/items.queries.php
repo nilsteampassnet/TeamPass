@@ -73,12 +73,12 @@ if (isset($_POST['type'])) {
         case "new_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $return_values = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                 echo $return_values;
                 break;
             }
             // decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
             // Prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
             $url = htmlspecialchars_decode($data_received['url']);
@@ -90,7 +90,7 @@ if (isset($_POST['type'])) {
                 // Check length
                 if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
                     $return_values = array("error" => "pw_too_long");
-                    $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                     echo $return_values;
                     break;
                 }
@@ -298,7 +298,7 @@ if (isset($_POST['type'])) {
                 $return_values = array("error" => "something_wrong");
             }
             // Encrypt data to return
-            $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
             echo $return_values;
             break;
 
@@ -309,7 +309,7 @@ if (isset($_POST['type'])) {
         case "update_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $return_values = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                 echo $return_values;
                 break;
             }
@@ -317,7 +317,7 @@ if (isset($_POST['type'])) {
             $reload_page = false;
             $return_values = array();
             // decrypt and retreive data in JSON format
-            $data_received = json_decode(Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
+            $data_received = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
 
             if (count($data_received) > 0) {
                 // Prepare variables
@@ -363,7 +363,7 @@ if (isset($_POST['type'])) {
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
                         $return_values = array("error" => "pw_too_long");
-                        $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                        $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                         echo $return_values;
                         break;
                     }
@@ -704,7 +704,7 @@ if (isset($_POST['type'])) {
                     // generate 2d key
                     $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
                     $pwgen->register();
-                    $pwgen = new Encryption\PwGen\PwGen();
+                    $pwgen = new Encryption\PwGen\pwgen();
                     $pwgen->setLength(20);
                     $pwgen->setSecure(true);
                     $pwgen->setSymbols(false);
@@ -755,7 +755,7 @@ if (isset($_POST['type'])) {
                         "error" => ""
                        );
                 } else {
-                    $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    $return_values = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                     echo $return_values;
                     break;
                 }
@@ -764,7 +764,7 @@ if (isset($_POST['type'])) {
                 $arrData = array("error" => "format");
             }
             // return data
-            $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
             echo $return_values;
             break;
 
@@ -892,7 +892,7 @@ if (isset($_POST['type'])) {
             $data_restored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
             if ($data_deleted[0] != 0 && $data_deleted[0] > $data_restored[0]) {
                 // This item is deleted => exit
-                $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $return_values = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
 
                 echo $return_values;
                 break;
@@ -1138,7 +1138,7 @@ if (isset($_POST['type'])) {
                 // generate 2d key
                 $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
                 $pwgen->register();
-                $pwgen = new Encryption\PwGen\PwGen();
+                $pwgen = new Encryption\PwGen\pwgen();
                 $pwgen->setLength(20);
                 $pwgen->setSecure(true);
                 $pwgen->setSymbols(false);
@@ -1304,7 +1304,7 @@ if (isset($_POST['type'])) {
             $arrData['timestamp'] = time();
             // print_r($arrData);
             // Encrypt data to return
-            $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
             // return data
             echo $return_values;
             break;
@@ -1316,7 +1316,7 @@ if (isset($_POST['type'])) {
         case "pw_generate":
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
-            $pwgen = new Encryption\PwGen\PwGen();
+            $pwgen = new Encryption\PwGen\pwgen();
             // Set pw size
             $pwgen->setLength($_POST['size']);
             // Include at least one number in the password
@@ -1381,7 +1381,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
             // Prepare variables
             $title = htmlspecialchars_decode($data_received['title']);
             // Check if title doesn't contains html codes
@@ -1487,7 +1487,7 @@ if (isset($_POST['type'])) {
             }
             // check if this folder is visible
             elseif (!in_array($_POST['id'], array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items'])))) {
-                echo Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "not_authorized"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "not_authorized"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                 break;
             } else {
                 $data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
@@ -1823,7 +1823,7 @@ if (isset($_POST['type'])) {
             }
             //print_r($return_values);
             // Encrypt data to return
-            $return_values = Encryption\Crypt\AesCtr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $return_values = Encryption\Crypt\aesctr::encrypt(json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
             // return data
             echo $return_values;
 
@@ -1929,7 +1929,7 @@ if (isset($_POST['type'])) {
                 $data = $data_item['login'];
             }
             // Encrypt data to return
-            $return_values = Encryption\Crypt\AesCtr::encrypt($data, $_SESSION['key'], 256);
+            $return_values = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['key'], 256);
             echo $return_values;
             break;
 
@@ -2231,7 +2231,7 @@ if (isset($_POST['type'])) {
                 break;
             } else {
                 // decrypt and retreive data in JSON format
-                $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+                $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
                 // Get all informations for this item
                 $sql = "SELECT *
                         FROM ".$pre."items as i
@@ -2279,7 +2279,7 @@ if (isset($_POST['type'])) {
                     // send back
                     echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
                 } else {
-                    echo Encryption\Crypt\AesCtr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
                     break;
                 }
             }

@@ -141,7 +141,7 @@ if (isset($_POST['type'])) {
             $res = "";
             //decrypt the password
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-            $db_password = Encryption\Crypt\AesCtr::decrypt($_POST['db_password'], "cpm", 128);
+            $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
             echo $db_password;
             // connexion
             if (@mysql_connect($_POST['db_host'],$_POST['db_login'],$db_password)) {
@@ -804,7 +804,7 @@ if (isset($_POST['type'])) {
                 $tmp_res = mysql_query("SELECT * FROM ".$pre."log_items WHERE action = 'at_modification' AND raison LIKE 'at_pw %'");
                 while ($tmp_data = mysql_fetch_array($tmp_res)) {
                     $reason = explode(':', $tmp_data['raison']);
-                    $text = Encryption\Crypt\AesCtr::encrypt(trim($reason[1]), $_SESSION['encrypt_key'], 256);
+                    $text = Encryption\Crypt\aesctr::encrypt(trim($reason[1]), $_SESSION['encrypt_key'], 256);
                     //mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmp_data['id_item']." AND date = ".$tmp_data['date']." AND id_user = ".$tmp_data['id_user']." AND action = ".$tmp_data['action']) or die(mysql_error());
                 }
                 mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");

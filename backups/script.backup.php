@@ -76,7 +76,7 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
     }
 
     if (!empty($settings['bck_script_key'])) {
-        $return = Encryption\Crypt\AesCtr::encrypt($return, $settings['bck_script_key'], 256);
+        $return = Encryption\Crypt\aesctr::encrypt($return, $settings['bck_script_key'], 256);
     }
 
     //save the file

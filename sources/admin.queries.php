@@ -259,7 +259,7 @@ switch ($_POST['type']) {
             //generate 2d key
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
-            $pwgen = new Encryption\PwGen\PwGen();
+            $pwgen = new Encryption\PwGen\pwgen();
             $pwgen->setLength(20);
             $pwgen->setSecure(true);
             $pwgen->setSymbols(false);
@@ -422,7 +422,7 @@ switch ($_POST['type']) {
                 $return .= fgets($inF, 4096);
             }
             fclose($inF);
-            $return = Encryption\Crypt\AesCtr::decrypt($return, $settings['bck_script_key'], 256);
+            $return = Encryption\Crypt\aesctr::decrypt($return, $settings['bck_script_key'], 256);
 
             //save the file
             $handle = fopen($settings['bck_script_path'].'/'.$_POST['option'].'_DECRYPTED'.'.sql', 'w+');
@@ -455,7 +455,7 @@ switch ($_POST['type']) {
                )
             );
 
-        $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\AesCtr::decrypt($_POST['option'], SALT, 256));
+        $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
 
         //change all passwords in DB
         $rows = $db->fetchAllArray("SELECT id,pw FROM ".$pre."items WHERE perso = '0'");

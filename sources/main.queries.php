@@ -40,7 +40,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
-        $data_received = json_decode(Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
+        $data_received = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
         // Prepare variables
         $new_pw = encrypt(htmlspecialchars_decode($data_received['new_pw']));
         // User has decided to change is PW
@@ -180,7 +180,7 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], SALT, 256)), true);
+        $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], SALT, 256)), true);
         // Prepare variables
         $password_clear = htmlspecialchars_decode($data_received['pw']);
         $password = encrypt(htmlspecialchars_decode($data_received['pw']));
@@ -321,7 +321,7 @@ switch ($_POST['type']) {
                 //Load PWGEN
                 $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
                 $pwgen->register();
-                $pwgen = new Encryption\PwGen\PwGen();
+                $pwgen = new Encryption\PwGen\pwgen();
 
                 // Generate a ramdom ID
                 $key = "";
@@ -553,7 +553,7 @@ switch ($_POST['type']) {
             //Load PWGEN
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
-            $pwgen = new Encryption\PwGen\PwGen();
+            $pwgen = new Encryption\PwGen\pwgen();
 
             // Generate a ramdom ID
             $key = "";
@@ -626,7 +626,7 @@ switch ($_POST['type']) {
             //Load PWGEN
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
-            $pwgen = new Encryption\PwGen\PwGen();
+            $pwgen = new Encryption\PwGen\pwgen();
 
             // Generate and change pw
             $new_pw = "";

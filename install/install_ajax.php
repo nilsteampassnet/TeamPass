@@ -65,7 +65,7 @@ if (isset($_POST['type'])) {
         case "step2":
                 //decrypt the password
                 require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-                $db_password = Encryption\Crypt\AesCtr::decrypt($_POST['db_password'], "cpm", 128);
+                $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             $res = "";
             // connexion

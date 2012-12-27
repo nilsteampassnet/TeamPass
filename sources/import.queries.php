@@ -164,7 +164,7 @@ switch ($_POST['type']) {
     //Insert into DB the items the user has selected
     case "import_items":
         //decrypt and retreive data in JSON format
-        $data_received = (Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256));
+        $data_received = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
 
         //Get some info about personal folder
         if ($_POST['folder'] == $_SESSION['user_id']) {

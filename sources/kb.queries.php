@@ -47,7 +47,7 @@ if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         case "kb_in_db":
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);

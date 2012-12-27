@@ -196,7 +196,7 @@ elseif (isset($_POST['type'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
 
             //Prepare variables
             $title = htmlspecialchars_decode($data_received['title']);
@@ -289,7 +289,7 @@ elseif (isset($_POST['type'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\AesCtr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
 
             //Prepare variables
             $title = htmlspecialchars_decode($data_received['title']);

@@ -551,9 +551,9 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //load library
-    $mail = new SplClassLoader('Email\PhpMailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+    $mail = new SplClassLoader('Email\Phpmailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $mail->register();
-    $mail = new Email\PhpMailer\PHPMailer();
+    $mail = new Email\Phpmailer\PHPMailer();
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
