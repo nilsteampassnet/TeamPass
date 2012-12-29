@@ -834,14 +834,12 @@ if (isset($_POST['type'])) {
                     unlink($filename);
                 }
 
-                if (isset($_POST['sk_path'])) {
-                    if (empty($_POST['sk_path'])) {
-                        $sk_file = $_SESSION['abspath'].'/includes/sk.php';
-                    } else {
-                        $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
-                    }
-                } else {
+                if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
+                    $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                } elseif (isset($_SESSION['sk_path']) && !empty($_SESSION['sk_path'])) {
                     $sk_file = $_SESSION['sk_path'];
+                } else {
+                    $sk_file = $_SESSION['abspath'].'/includes/sk.php';
                 }
 
                 $fh = fopen($filename, 'w');
