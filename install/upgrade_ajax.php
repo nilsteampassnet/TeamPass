@@ -142,7 +142,7 @@ if (isset($_POST['type'])) {
             //decrypt the password
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
-            echo $db_password;
+            
             // connexion
             if (@mysql_connect($_POST['db_host'],$_POST['db_login'],$db_password)) {
                 $db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
