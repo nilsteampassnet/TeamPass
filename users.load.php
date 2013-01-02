@@ -534,8 +534,8 @@ function migrate_pf(user_id)
      }
 }
 
-function loginCreation(name, lastname)
+function loginCreation()
 {
-    $("#new_login").val(name+"."+lastname);
+	$("#new_login").val($("#new_name").val().toLowerCase().replace(/ /g,"")+"."+$("#new_lastname").val().toLowerCase().replace(/ /g,""));
 }
 </script>

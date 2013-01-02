@@ -200,7 +200,7 @@ if (!empty($_POST['type'])) {
                 // Send email to new user
                 @sendEmail(
                     $txt['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(string_utf8_decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
                     $_POST['email']
                 );
                 // update LOG
@@ -427,14 +427,14 @@ if (!empty($_POST['type'])) {
             $rows = $db->fetchAllArray("SELECT id,title,creator_id FROM ".$pre."roles_title");
             foreach ($rows as $reccord) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
-                $text .= '<input type="checkbox" id="cb_change_function-'.$reccord['id'].'"';
-                if (in_array($reccord['id'], $users_functions)) {
-                    $text .= ' checked';
-                }
-                /*if ((!in_array($reccord['id'], $my_functions) && $_SESSION['is_admin'] != 1) && !($_SESSION['user_manager'] == 1 && $reccord['creator_id'] == $_SESSION['user_id'])) {
-                    $text .= ' disabled="disabled"';
-                }*/
-                $text .= '>&nbsp;'.$reccord['title'].'<br />';
+                    $text .= '<input type="checkbox" id="cb_change_function-'.$reccord['id'].'"';
+                    if (in_array($reccord['id'], $users_functions)) {
+                        $text .= ' checked';
+                    }
+                    /*if ((!in_array($reccord['id'], $my_functions) && $_SESSION['is_admin'] != 1) && !($_SESSION['user_manager'] == 1 && $reccord['creator_id'] == $_SESSION['user_id'])) {
+                        $text .= ' disabled="disabled"';
+                    }*/
+                    $text .= '>&nbsp;'.$reccord['title'].'<br />';
                 }
             }
             // return data

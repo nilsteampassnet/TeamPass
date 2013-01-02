@@ -553,7 +553,7 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     //load library
     $mail = new SplClassLoader('Email\Phpmailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $mail->register();
-    $mail = new Email\Phpmailer\PHPMailer();
+    $mail = new Email\Phpmailer\phpmailer();
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
