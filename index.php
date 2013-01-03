@@ -462,7 +462,7 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
-                        <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                        <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" autofocus="autofocus" />
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">
                         <label for="pw" class="form_label">'.$txt['index_password'].'</label>
