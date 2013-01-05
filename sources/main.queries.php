@@ -265,7 +265,7 @@ switch ($_POST['type']) {
         $proceed_identification = false;
         if (mysql_num_rows($row) > 0) {
             $proceed_identification = true;
-        } elseif (mysql_num_rows($row) == 0 && $ldap_connection == true) {
+        } elseif (mysql_num_rows($row) == 0 && $ldap_connection == true&& isset($_SESSION['settings']['ldap_elusers']) && ($_SESSION['settings']['ldap_elusers'] == 0 )) {
             // If LDAP enabled, create user in CPM if doesn't exist
             $new_user_id = $db->queryInsert(
                 "users",
