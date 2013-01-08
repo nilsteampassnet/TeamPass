@@ -2900,4 +2900,4 @@ class adLDAP
 *   exit();
 * }
 */
-class AdLDAPException extends Exception;
+class adLDAPException extends \Exception {}
