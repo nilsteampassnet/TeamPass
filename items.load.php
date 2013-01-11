@@ -22,17 +22,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
-    function escape_special_chars(string)
-    {
-        // special characters
-        string = string.replace(/\n/g, "<br></br>")
-
-        // div tag
-        string = string.replace(/\<.*?div\>/g, "");
-
-        return string;  
-    }
-
     function AddNewNode()
     {
         //Select first child node in tree
@@ -486,7 +475,10 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
-            description = escape_special_chars(description)
+            //  The fix for 'ERROR!!' message
+            description = JSON.stringify(description)
+                                            .slice(1, -1)
+                                            .replace(/\\n/g, '<br />');
 
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
@@ -497,7 +489,7 @@ function AjouterItem()
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
 
-            console.log(data)
+            console.log(data);
 
             //Send query
             $.post(
