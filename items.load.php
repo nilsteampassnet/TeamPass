@@ -22,6 +22,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
+    function strip_html_tags(html)
+    {
+       var tmp = document.createElement("DIV");
+       tmp.innerHTML = html;
+       return tmp.textContent||tmp.innerText;
+    }
+
     function AddNewNode()
     {
         //Select first child node in tree
@@ -474,6 +481,10 @@ function AjouterItem()
             } else {
                 var to_be_deleted = "";
             }
+
+            //  Removing HTML tags from description, since this seems to break TeamPass
+            //  (any tags, practically always result in 'ERROR!!')
+            description = strip_html_tags(description)
 
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
