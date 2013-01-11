@@ -38,8 +38,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     function clean_up_html(input)
     {
         //  remove strange tags
-        allowed_tags = '<strong><em><strike><ol><li><ul><a><br>'
-        input = strip_tags(input, allowed_tags)
+        allowed_tags = '<strong><em><strike><ol><li><ul><a><br>';
+        input = strip_tags(input, allowed_tags);
 
         //  replace special characters
         input = input.replace(/(\r\n|\n|\r)/gm, '<br>')
@@ -48,7 +48,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                             .replace(/\v/g, '')
                                             .replace(/\r/g, '');
 
-        return input
+        return input;
     }
 
     function AddNewNode()
@@ -505,7 +505,7 @@ function AjouterItem()
             }
 
             //  Escape the description
-            description = clean_up_html(description)
+            description = clean_up_html(description);
 
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
@@ -674,7 +674,7 @@ function EditerItem()
             }
 
              //  Escape the description
-            description = clean_up_html(description)
+            description = clean_up_html(description);
 
               //prepare data
             var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
