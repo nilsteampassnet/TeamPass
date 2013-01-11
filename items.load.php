@@ -33,6 +33,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                       .replace(/\\t/g, "\\t")
                                       .replace(/\\b/g, "\\b")
                                       .replace(/\\f/g, "\\f");
+        return escaped_json;  
     }
 
     function AddNewNode()
