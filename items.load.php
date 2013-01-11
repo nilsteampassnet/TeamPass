@@ -22,11 +22,17 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
-    function strip_html_tags(html)
+    function escape_special_chars_in_json(json_data)
     {
-       var tmp = document.createElement("DIV");
-       tmp.innerHTML = html;
-       return tmp.textContent||tmp.innerText;
+        var json_string = JSON.stringify(json_data);
+        var escaped_json = json_string.replace(/\\n/g, "\\n")
+                                      .replace(/\\'/g, "\\'")
+                                      .replace(/\\"/g, "\\\"")
+                                      .replace(/\\&/g, "\\&")
+                                      .replace(/\\r/g, "\\r")
+                                      .replace(/\\t/g, "\\t")
+                                      .replace(/\\b/g, "\\b")
+                                      .replace(/\\f/g, "\\f");
     }
 
     function AddNewNode()
@@ -482,10 +488,6 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
-            //  Removing HTML tags from description, since this seems to break TeamPass
-            //  (any tags, practically always result in 'ERROR!!')
-            description = strip_html_tags(description)
-
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
             '"login":"'+sanitizeString($('#item_login').val())+'", "is_pf":"'+is_pf+'", '+
@@ -494,6 +496,8 @@ function AjouterItem()
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
+
+            data = escape_special_chars_in_json(data)
 
             //Send query
             $.post(
