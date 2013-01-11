@@ -22,6 +22,35 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
+    //  Remove all tags except a list of allowed ones
+    //  original snippet: http://phpjs.org/functions/strip_tags/
+    function strip_tags(input, allowed) {
+        allowed = (((allowed || "") + "").toLowerCase().match(/<[a-z][a-z0-9]*>/g) || []).join(''); 
+
+        var tags = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi,
+            commentsAndPhpTags = /<!--[\s\S]*?-->|<\?(?:php)?[\s\S]*?\?>/gi;
+        return input.replace(commentsAndPhpTags, '').replace(tags, function ($0, $1) {
+            return allowed.indexOf('<' + $1.toLowerCase() + '>') > -1 ? $0 : '';
+      });
+    }
+
+    //  clean up HTML for sending via JSON to PHP code
+    function clean_up_html(input)
+    {
+        //  remove strange tags
+        allowed_tags = '<strong><em><strike><ol><li><ul><a><br>'
+        input = strip_tags(input, allowed_tags)
+
+        //  replace special characters
+        input = input.replace(/(\r\n|\n|\r)/gm, '<br>')
+                                            .replace(/\t/g, '')
+                                            .replace(/\f/g, '')
+                                            .replace(/\v/g, '')
+                                            .replace(/\r/g, '');
+
+        return input
+    }
+
     function AddNewNode()
     {
         //Select first child node in tree
@@ -475,10 +504,8 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
-            //  The fix for 'ERROR!!' message
-            description = JSON.stringify(description)
-                                            .slice(1, -1)
-                                            .replace(/\\n/g, '<br />');
+            //  Escape the description
+            description = clean_up_html(description)
 
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
@@ -488,8 +515,6 @@ function AjouterItem()
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
-
-            console.log(data);
 
             //Send query
             $.post(
@@ -647,6 +672,9 @@ function EditerItem()
                 var to_be_deleted = "";
                 //var to_be_deleted_after_date = "";
             }
+
+             //  Escape the description
+            description = clean_up_html(description)
 
               //prepare data
             var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
