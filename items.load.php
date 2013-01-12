@@ -514,9 +514,6 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
-            console.log(description);
-            console.log(description.replace(/\t/g,'\\t').replace(/\r\n/g,'\\r\\n').replace(/\r/g,'\\r').replace(/\n/g,'\\n'));
-
             //  Escape the description
             description = clean_up_html_safari(description);
 
@@ -528,8 +525,6 @@ function AjouterItem()
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
-
-            console.log(data)
 
             //Send query
             $.post(
