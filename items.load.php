@@ -22,6 +22,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
+    //  Part of Safari 6 OS X fix
     //  Remove all tags except a list of allowed ones
     //  original snippet: http://phpjs.org/functions/strip_tags/
     function strip_tags(input, allowed) {
@@ -34,19 +35,25 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
       });
     }
 
+    //  Part of Safari 6 OS X fix
     //  clean up HTML for sending via JSON to PHP code
     function clean_up_html(input)
     {
-        //  remove strange tags
-        allowed_tags = '<strong><em><strike><ol><li><ul><a><br>';
-        input = strip_tags(input, allowed_tags);
+        //  applies to Safari 6 on OS X only, so check for that
+        user_agent = navigator.userAgent;
+        if (/Mac OS X.+6\.\d\.\d\sSafari/.test(user_agent))
+        {
+            //  remove strange tags
+            allowed_tags = '<strong><em><strike><ol><li><ul><a><br>';
+            input = strip_tags(input, allowed_tags);
 
-        //  replace special characters
-        input = input.replace(/(\r\n|\n|\r)/gm, '<br>')
-                                            .replace(/\t/g, '')
-                                            .replace(/\f/g, '')
-                                            .replace(/\v/g, '')
-                                            .replace(/\r/g, '');
+            //  replace special characters
+            input = input.replace(/(\r\n|\n|\r)/gm, '<br>')
+                                                .replace(/\t/g, '')
+                                                .replace(/\f/g, '')
+                                                .replace(/\v/g, '')
+                                                .replace(/\r/g, '');
+        }
 
         return input;
     }
