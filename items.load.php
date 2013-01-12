@@ -37,13 +37,16 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
     //  Part of Safari 6 OS X fix
     //  clean up HTML for sending via JSON to PHP code
-    function clean_up_html(input)
+    function clean_up_html_safari(input)
     {
         //  applies to Safari 6 on OS X only, so check for that
         user_agent = navigator.userAgent;
         if (/Mac OS X.+6\.\d\.\d\sSafari/.test(user_agent))
         {
-            //  remove strange tags
+            // remove strange divs
+            input = input.replace(/<\/*div.+>\n/g, '')
+
+            //  remove other strange tags
             allowed_tags = '<strong><em><strike><ol><li><ul><a><br>';
             input = strip_tags(input, allowed_tags);
 
@@ -511,8 +514,11 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
+            console.log(description);
+            console.log(description.replace(/\t/g,'\\t').replace(/\r\n/g,'\\r\\n').replace(/\r/g,'\\r').replace(/\n/g,'\\n'));
+
             //  Escape the description
-            description = clean_up_html(description);
+            description = clean_up_html_safari(description);
 
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
@@ -522,6 +528,8 @@ function AjouterItem()
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
+
+            console.log(data)
 
             //Send query
             $.post(
@@ -681,7 +689,7 @@ function EditerItem()
             }
 
              //  Escape the description
-            description = clean_up_html(description);
+            description = clean_up_html_safari(description);
 
               //prepare data
             var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
