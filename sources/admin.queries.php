@@ -47,40 +47,23 @@ switch ($_POST['type']) {
     # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
-        $error ="";
-        // Chemin vers le fichier distant
-        $remote_file = 'cpm2_config.txt';
-        $local_file = $_SESSION['settings']['path_to_files_folder'].'/localfile.txt';
-        // Ouverture du fichier pour ?criture
-        $handle = fopen($local_file, 'w');
-
-        // Mise en place d'une connexion basique
-        $conn_id = ftp_connect("www.teampass.net") or die("Impossible to get connected to the server $ftp_server");
-
-        // Identification avec un nom d'utilisateur et un mot de passe
-        $login_result = ftp_login($conn_id, "robot@teampass.net", "Cm3_Pc9l");
-        
-        // Enable PASV mode
-        ftp_pasv($conn_id, true);
-
+        $error ="";        
+        $handle_distant = file("http://www.teampass.net/TP/cpm2_config.txt");
         // Tente de t?l?chargement le fichier $remote_file et de le sauvegarder dans $handle
-        if (ftp_fget($conn_id, $handle, $remote_file, FTP_ASCII, 0)) {
+        if (count($handle_distant) > 0) {
             //READ FILE
-            if (file_exists($local_file)) {
-                $tableau = file($local_file);
-                while (list($cle,$val) = each($tableau)) {
-                    if (substr($val, 0, 1) <> "#") {
-                        $tab = explode('|', $val);
-                        foreach ($tab as $elem) {
-                            $tmp = explode('#', $elem);
-                            $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                            if ($tmp[0] == "version") {
-                                $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
-                                if (floatval($k['version']) < floatval($tmp[1])) {
-                                    $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
-                                }
-                                $text .= '</li>';
+            while (list($cle,$val) = each($handle_distant)) {
+                if (substr($val, 0, 1) <> "#") {
+                    $tab = explode('|', $val);
+                    foreach ($tab as $elem) {
+                        $tmp = explode('#', $elem);
+                        $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
+                        if ($tmp[0] == "version") {
+                            $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
+                            if (floatval($k['version']) < floatval($tmp[1])) {
+                                $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
                             }
+                            $text .= '</li>';
                         }
                     }
                 }
@@ -88,13 +71,6 @@ switch ($_POST['type']) {
         } else {
             $error = "connection";
         }
-
-        // Fermeture de la connexion et du pointeur de fichier
-        ftp_close($conn_id);
-        fclose($handle);
-
-        //DELETE FILE
-        unlink($local_file);
 
         echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';
         break;
@@ -435,6 +411,7 @@ switch ($_POST['type']) {
     * Change SALT Key
     */
     case "admin_action_change_salt_key":
+        $error = "";
         include 'main.functions.php';
         //put tool in maintenance.
             $db->queryUpdate(
@@ -484,44 +461,31 @@ switch ($_POST['type']) {
             );
         }
 
-        //change salt key in settings.php file
+        // get path to sk.php
         $filename = "../includes/settings.php";
-        $error = "";
         if (file_exists($filename)) {
-            //Do a copy of the existing file
-            if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                $error = "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";
-                break;
-            } else {
-                unlink($filename);
+            //copy some constants from this existing file
+            $settings_file = file($filename);
+            while (list($key,$val) = each($settings_file)) {
+                if (substr_count($val, 'require_once "')>0) {
+                    $skfile = substr($val, 14, strpos($val, '";')-14);
+                    break;
+                }
             }
-
-            $fh = fopen($filename, 'w');
-
-            fwrite(
-                $fh,
-                utf8_encode(
-"<?php
-global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db;
-
-@define('SALT', '". $new_salt_key ."'); //Define your encryption key => NeverChange it once it has been used !!!!!
-
-### DATABASE connexion parameters ###
-\$server = \"". $server ."\";
-\$user = \"". $user ."\";
-\$pass = \"". str_replace("$", "\\$", $pass) ."\";
-\$database = \"". $database ."\";
-\$pre = \"". $pre ."\";
-
-@date_default_timezone_set(\$_SESSION['settings']['timezone']);
-
-?>"
-                )
-            );
-
-            fclose($fh);
         }
+        //Do a copy of the existing file
+        @copy($skfile, $skfile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))));
+        unlink($skfile);
+        $fh = fopen($skfile, 'w');
+        fwrite(
+            $fh,
+            utf8_encode(
+                "<?php
+@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!       
+?>"
+            )
+        );
+        fclose($fh);
 
         echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
         break;

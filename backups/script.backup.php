@@ -12,14 +12,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include '../includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
-//require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/veness/crypt/aes.class.php';     // AES PHP implementation
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/veness/crypt/aesctr.class.php';  // AES Counter Mode implementation
-
 // connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once '../sources/SplClassLoader.php';
 $db = new SplClassLoader('Database\Core', '../includes/libraries');
 $db->register();
 $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);

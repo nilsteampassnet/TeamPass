@@ -156,6 +156,29 @@ $_SESSION['CPM'] = 1;
                 }
             }
         }
+
+        /**
+         *  * Generate a new password and copy it to the password input areas
+         *   *
+         *    * @param   object   the form that holds the password fields
+         *     *
+         *      * @return  boolean  always true
+         *       */
+        function suggestKey(passwd_form) {
+            // restrict the password to just letters and numbers to avoid problems:
+            // "editors and viewers regard the password as multiple words and
+            // things like double click no longer work"
+                 var pwchars = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
+                 var passwordlength = 28;    // length of the salt
+                 var passwd = passwd_form.encrypt_key;
+                 passwd.value = '';
+           
+                 for ( i = 0; i < passwordlength; i++ ) {
+                    passwd.value += pwchars.charAt( Math.floor( Math.random() * pwchars.length ) )
+                 }
+                 passwd_form.encrypt_key.value = passwd.value;
+                 return true;
+        }
         // ]]>
         </script>
     </head>
@@ -222,8 +245,11 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
     // define root path
     $abs_path = "";
-    if (strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT']) - 1;
-    else $abs_path = $_SERVER['DOCUMENT_ROOT'];
+    if (strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1) {
+        $abs_path = strlen($_SERVER['DOCUMENT_ROOT']) - 1;
+    } else {
+        $abs_path = $_SERVER['DOCUMENT_ROOT'];
+    }
     $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
     // ETAPE 1
     echo '
@@ -276,7 +302,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <label for="encrypt_key" style="width:300px;">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="For security reasons, salt key must be more than 15 characters and less than 32, should contains upper and lower case letters, special characters and numbers, and SHALL NOT CONTAINS single quotes!!!">
                         <span style="font-size:9pt;font-weight:normal;"><br />for passwords encryption in database</span>
                     </label>
-                    <input type="text" id="encrypt_key" name="encrypt_key" class="step" value="whateveryouwant" /><span style="padding-left:10px;" id="encrypt_key_res"></span><br /><br />
+                    <input type="text" id="encrypt_key" name="encrypt_key" class="step"  /><input type="button" id="button_generate_key" value="Generate" onclick="suggestKey(this.form)" /><span style="padding-left:10px;" id="encrypt_key_res"></span><br /><br />
 
                     <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
                         <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \"/includes\".">

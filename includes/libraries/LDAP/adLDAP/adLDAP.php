@@ -63,6 +63,7 @@ define('ADLDAP_CONTAINER', 'CN');
 * Before asking questions, please read the Documentation at
 * http://adldap.sourceforge.net/wiki/doku.php?id = api
 */
+
 class adLDAP
 {
     /**
@@ -2900,4 +2901,4 @@ class adLDAP
 *   exit();
 * }
 */
-class AdLDAPException extends Exception;
+class adLDAPException extends \Exception {}

@@ -300,7 +300,7 @@ if (isset($_POST['type'])) {
                 //Check if exists before inserting
                 $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"));
                 if ($res_tmp[0] == 0) {
-                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".$elem[2]."');");
+                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'","",$elem[2])."');");
                     if (!$res1) break;
                 } else {
                     // Force update for some settings

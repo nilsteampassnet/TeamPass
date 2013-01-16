@@ -724,12 +724,12 @@ if (isset($_POST['type'])) {
                         $icon_image = fileFormatImage($reccord['extension']);
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if (in_array($reccord['extension'], $k['image_file_ext'])) {
-                            $files .= '<img src="includes/images/$icon_image" /><a class="image_dialog" href="'.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'" title="'.$reccord['name'].'">'.$reccord['name'].'</a><br />';
+                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$icon_image.'" /><a class="image_dialog" href="'.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'" title="'.$reccord['name'].'">'.$reccord['name'].'</a><br />';
                         } else {
-                            $files .= '<img src="includes/images/$icon_image" /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\' target=\'_blank\'>'.$reccord['name'].'</a><br />';
+                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$icon_image.'" /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\' target=\'_blank\'>'.$reccord['name'].'</a><br />';
                         }
                         // Prepare list of files for edit dialogbox
-                        $files_edit .= '<span id="span_edit_file_'.$reccord['id'].'"><img src="includes/images/'.$icon_image.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$reccord['id'].'\")" />&nbsp;'.$reccord['name']."</span><br />";
+                        $files_edit .= '<span id="span_edit_file_'.$reccord['id'].'"><img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$icon_image.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$reccord['id'].'\")" />&nbsp;'.$reccord['name']."</span><br />";
                     }
                     // Send email
                     if (!empty($data_received['diffusion'])) {
@@ -744,9 +744,9 @@ if (isset($_POST['type'])) {
                     }
                     // Prepare some stuff to return
                     $arrData = array(
-                        "files" => str_replace('"', '&quot;', $files),
+                        "files" => $files,//str_replace('"', '&quot;', $files),
                         "history" => str_replace('"', '&quot;', $history),
-                        "files_edit" => str_replace('"', '&quot;', $files_edit),
+                        "files_edit" => $files_edit,//str_replace('"', '&quot;', $files_edit),
                         "id_tree" => $data_item['id_tree'],
                         "id" => $data_item['id'],
                         "reload_page" => $reload_page,
@@ -1393,7 +1393,7 @@ if (isset($_POST['type'])) {
             $create_new_folder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if ($data[0] != $data_received['folder']) {
+                if (!empty($data[0])) {
                     echo '[ { "error" : "'.addslashes($txt['error_group_exist']).'" } ]';
                     break;
                 }
@@ -2176,8 +2176,8 @@ if (isset($_POST['type'])) {
                         ),
                         $_POST['receipt']
                     );
-                    echo '[{'.$ret.'}]';
                 }
+                echo '[{'.$ret.'}]';
             }
             break;
 

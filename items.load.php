@@ -22,6 +22,31 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
 
+//  Part of Safari 6 OS X fix
+    //  clean up HTML for sending via JSON to PHP code
+    function clean_up_html_safari(input)
+    {
+        //  applies to Safari 6 on OS X only, so check for that
+        user_agent = navigator.userAgent;
+        if (/Mac OS X.+6\.\d\.\d\sSafari/.test(user_agent))
+        {
+            // remove strange divs
+            input = input.replace(/<\/*div.+>\n/g, '');
+
+            //  remove other strange tags
+            allowed_tags = '<strong><em><strike><ol><li><ul><a><br>';
+            input = strip_tags(input, allowed_tags);
+
+            //  replace special characters
+            input = input.replace(/(\r\n|\n|\r)/gm, '<br>')
+                                                .replace(/\t/g, '')
+                                                .replace(/\f/g, '')
+                                                .replace(/\v/g, '')
+                                                .replace(/\r/g, '');
+        }
+        return input;
+    }
+
     function AddNewNode()
     {
         //Select first child node in tree
@@ -457,6 +482,9 @@ function AjouterItem()
                 var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />');
             }
 
+            // Sanitize description with Safari
+            description = clean_up_html_safari(description);
+
             //Is PF
             if ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1) {
                 var is_pf = 1;
@@ -619,6 +647,9 @@ function EditerItem()
             } else {
                 var description = sanitizeString($("#edit_desc").val());
             }
+
+            // Sanitize description with Safari
+            description = clean_up_html_safari(description);
 
             //Is PF
             if ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1) {
@@ -1096,7 +1127,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         //Dont show details
                         $("#item_details_nok").show();
-                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\')"><?php echo addslashes($txt['request_access_ot_item']);?></a></u></div>');
+                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($txt['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($txt['request_access_ot_item']);?></a></u></div>');
                         $("#item_details_ok").hide();
                         $("#item_details_expired").hide();
                         $("#item_details_expired_full").hide();

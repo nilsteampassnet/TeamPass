@@ -1,5 +1,4 @@
 <?php
-//namespace PDF\FDPF;
 
 /****************************************************************************
  * Software: FPDF_Protection                                                 *
@@ -15,12 +14,12 @@
 require 'tfpdf.class.php';
 
 if (function_exists('mcrypt_encrypt')) {
-    public function RC4($key, $data)
+    function RC4($key, $data)
     {
         return mcrypt_encrypt(MCRYPT_ARCFOUR, $key, $data, MCRYPT_MODE_STREAM, '');
     }
 } else {
-    public function RC4($key, $data)
+    function RC4($key, $data)
     {
         static $last_key, $last_state;
 
@@ -76,7 +75,7 @@ class FPDF_Protection extends TFPDF
      * - If an owner password is set, document can be opened in privilege mode with no
      *   restriction if that password is entered
      */
-    public function SetProtection($permissions=array(), $user_pass='', $owner_pass=null)
+    public function SetProtection($permissions = array(), $user_pass = '', $owner_pass = null)
     {
         $options = array('print' => 4, 'modify' => 8, 'copy' => 16, 'annot-forms' => 32);
         $protection = 192;

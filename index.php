@@ -81,7 +81,6 @@ if (isset($_GET['page']) && $_GET['page'] == "kb") {
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 // Load links, css and javascripts
 @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
-
 ?>
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -111,7 +110,7 @@ if (isset($_SESSION['login'])) {
                 <button title="'.$txt['home'].'" onclick="MenuAction(\'\');">
                     <img src="includes/images/home.png" alt="" />
                 </button>';
-    if ($_SESSION['user_admin'] == 0) {
+    if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <button style="margin-left:10px;" title="'.$txt['pw'].'" onclick="MenuAction(\'items\');"', (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '', '>
                     <img src="includes/images/menu_key.png" alt="" />
@@ -498,6 +497,7 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
                 <br />
                 <label for="forgot_pw_login">'.$txt['login'].'</label>
                 <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
+                <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
             </div>';
 }
 echo '

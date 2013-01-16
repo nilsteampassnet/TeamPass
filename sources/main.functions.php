@@ -553,7 +553,7 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     //load library
     $mail = new SplClassLoader('Email\Phpmailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $mail->register();
-    $mail = new Email\Phpmailer\phpmailer();
+    $mail = new Email\Phpmailer\PhpMailer();
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
@@ -577,7 +577,7 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     if (!$mail->send()) {
         return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
     } else {
-        return '"error":"" , "message":""';
+        return '"error":"" , "message":"'.$txt['forgot_my_pw_email_sent'].'"';
     }
 }
 

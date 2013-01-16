@@ -91,11 +91,12 @@ function updateSettings ($setting, $val, $type = '')
         }
     }
     // save in variable
-    if ($type == "admin") {
+    /*if ($type == "admin") {
         $_SESSION['settings'][$setting] = $val;
     } elseif ($type == "settings") {
         $settings[$setting] = $val;
-    }
+    }*/
+    $_SESSION['settings'][$setting] = $val;
 }
 // SAVE CHANGES
 if (isset($_POST['save_button'])) {
@@ -332,13 +333,13 @@ if (isset($_POST['save_button'])) {
         updateSettings('email_port', $_POST['email_port']);
     }
     // store backups settings
-    if (isset($_POST['bck_script_filename'])) {
+    if (@$_SESSION['settings']['bck_script_filename'] != $_POST['bck_script_filename']) {
         updateSettings('bck_script_filename', $_POST['bck_script_filename'], 'settings');
     }
-    if (isset($_POST['bck_script_path'])) {
+    if (@$_SESSION['settings']['bck_script_path'] != $_POST['bck_script_path']) {
         updateSettings('bck_script_path', $_POST['bck_script_path'], 'settings');
     }
-    if (isset($_POST['bck_script_key'])) {
+    if (@$_SESSION['settings']['bck_script_key'] != $_POST['bck_script_key']) {
         updateSettings('bck_script_key', $_POST['bck_script_key'], 'settings');
     }
     // Update insert_manual_entry_item_history
@@ -1200,7 +1201,7 @@ echo '
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <input id="bck_script_path" name="bck_script_path" type="text" size="80px" value="', isset($settings['bck_script_path']) ? $settings['bck_script_path'] : $_SESSION['settings']['cpassman_dir'].'/backups', '" />
+                        <input id="bck_script_path" name="bck_script_path" type="text" size="80px" value="', isset($_SESSION['settings']['bck_script_path']) ? $_SESSION['settings']['bck_script_path'] : $_SESSION['settings']['cpassman_dir'].'/backups', '" />
                         </td>
                     </tr>';
 // Backups script name
@@ -1213,7 +1214,7 @@ echo '
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <input id="bck_script_filename" name="bck_script_filename" type="text" size="50px" value="', isset($settings['bck_script_filename']) ? $settings['bck_script_filename'] : 'bck_cpassman', '" />
+                        <input id="bck_script_filename" name="bck_script_filename" type="text" size="50px" value="', isset($_SESSION['settings']['bck_script_filename']) ? $_SESSION['settings']['bck_script_filename'] : 'bck_cpassman', '" />
                         </td>
                     </tr>';
 // Backups script encryption
@@ -1226,7 +1227,7 @@ echo '
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <input id="bck_script_key" name="bck_script_key" type="password" size="50px" value="', isset($settings['bck_script_key']) ? $settings['bck_script_key'] : '', '" />
+                        <input id="bck_script_key" name="bck_script_key" type="password" size="50px" value="', isset($_SESSION['settings']['bck_script_key']) ? $_SESSION['settings']['bck_script_key'] : '', '" />
                         </td>
                     </tr>';
 // Decrypt SQL file

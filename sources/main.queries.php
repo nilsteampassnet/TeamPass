@@ -236,6 +236,29 @@ switch ($_POST['type']) {
                     'use_tls' => $_SESSION['settings']['ldap_tls']
                 )
             );
+
+            /*try {
+                $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+            $adldap->register();
+                $adldap = new LDAP\adLDAP\adLDAP( array(
+                        'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                        'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                        'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                        'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                        'use_tls' => $_SESSION['settings']['ldap_tls']
+                ) );
+            }
+            catch(Exception $e)
+            {
+                echo $e->getMessage();
+            }*/
+            /*$adldap = new adLDAP( array(
+                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                    'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                    'use_tls' => $_SESSION['settings']['ldap_tls']
+            ) );*/
             if ($debug_ldap == 1) {
                 fputs($dbg_ldap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
             }
@@ -545,24 +568,54 @@ switch ($_POST['type']) {
      * Used in order to send the password to the user by email
      */
     case "send_pw_by_email":
-        // found account and pw associated to email
+        //Load PWGEN
+        $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+        $pwgen->register();
+        $pwgen = new Encryption\PwGen\pwgen();
+        // Generate a ramdom ID
+        $key = "";
+        $pwgen->setLength(50);
+        $pwgen->setSecure(true);
+        $pwgen->setSymbols(false);
+        $pwgen->setCapitalize(true);
+        $pwgen->setNumerals(true);
+        $key = $pwgen->generate();
+
+        // Get account and pw associated to email
         $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE email = '".mysql_real_escape_string(stripslashes(($_POST['email'])))."'");
+        $text_mail = $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
+        $text_mail_alt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
+
         if ($data[0] != 0) {
             $data = $db->fetchArray("SELECT login,pw FROM ".$pre."users WHERE email = '".mysql_real_escape_string(stripslashes(($_POST['email'])))."'");
 
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
+            // Check if email has already a key in DB
+            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");
+            if ($data[0] != 0) {
+                $db->queryUpdate(
+                        "misc",
+                        array(
+                                'valeur' => $key
+                        ),
+                        array(
+                                'type' => 'password_recovery',
+                                'intitule' => $_POST['login']
+                        )
+                );
+            } else {
+                // store in DB the password recovery informations
+                $db->queryInsert(
+                        'misc',
+                        array(
+                                'type' => 'password_recovery',
+                                'intitule' => $_POST['login'],
+                                'valeur' => $key
+                        )
+                );
+            }
 
-            // Generate a ramdom ID
-            $key = "";
-            $pwgen->setLength(50);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $key = $pwgen->generate();
+            echo '[{'.sendEmail($txt['forgot_pw_email_subject'], $text_mail, $_POST['email'], $text_mail_alt).'}]';
+            /*
             // load library
             $mail = new SplClassLoader('Email\PhpMailer', '../includes/libraries');
             $mail->register();
@@ -583,36 +636,13 @@ switch ($_POST['type']) {
             $mail->Subject = $txt['forgot_pw_email_subject'];
             $mail->AltBody = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
             $mail->Body = $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
-            // Check if email has already a key in DB
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");
-            if ($data[0] != 0) {
-                $db->queryUpdate(
-                    "misc",
-                    array(
-                        'valeur' => $key
-                       ),
-                    array(
-                        'type' => 'password_recovery',
-                        'intitule' => $_POST['login']
-                       )
-                );
-            } else {
-                // store in DB the password recovery informations
-                $db->queryInsert(
-                    'misc',
-                    array(
-                        'type' => 'password_recovery',
-                        'intitule' => $_POST['login'],
-                        'valeur' => $key
-                       )
-                );
-            }
+            
             // send email
             if (!$mail->send()) {
                 echo '[{"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"}]';
             } else {
                 echo '[{"error":"no" , "message":"'.$txt['forgot_my_pw_email_sent'].'"}]';
-            }
+            }*/
         } else {
             // no one has this email ... alert
             echo '[{"error":"error_email" , "message":"'.$txt['forgot_my_pw_error_email_not_exist'].'"}]';

@@ -380,6 +380,7 @@ if (!isset($_GET['page']) && !isset($_SESSION['key'])) {
             buttons: {
                 "'.$txt['send'].'": function() {
                     $("#div_forgot_pw_alert").html("");
+                    $("#div_forgot_pw_status").show();
                     $.post(
                     "sources/main.queries.php",
                     {
@@ -388,11 +389,14 @@ if (!isset($_GET['page']) && !isset($_SESSION['key'])) {
                         login    : $("#forgot_pw_login").val()
                     },
                         function(data) {
-                            if (data[0].error != "no") {
+                            $("#div_forgot_pw_status").hide();
+                            if (data[0].error != "") {
                                 $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
                             } else {
-                                $("#div_forgot_pw_alert").html(data[0].message);
+                                $("#div_forgot_pw_alert").html("");
+                                $("#div_dialog_message_text").html(data[0].message);
                                 $("#div_forgot_pw").dialog("close");
+        	                    $("#div_dialog_message").dialog("open");
                             }
                         },
                         "json"

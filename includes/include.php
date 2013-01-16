@@ -11,7 +11,7 @@
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languages_list;
 
-$k['version'] = "2.1.13";
+$k['version'] = "2.1.14";
 $k['tool_name'] = "TeamPass";
 $k['jquery-version'] = "1.8.3";
 $k['jquery-ui-version'] = "1.9.2";
@@ -28,4 +28,4 @@ $mngPages = array(
     'manage_views' => 'views.php',
     'manage_main' => 'admin.php',
     'manage_settings' => 'admin.settings.php'
-   );
+);

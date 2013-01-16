@@ -162,14 +162,19 @@ function sanitizeString(string){
 /**
 *	Send email
 **/
-function SendMail(cat, content){
+function SendMail(cat, content, key, message){
 	$.post(
 		"sources/items.queries.php",
 		{
 			type    : "send_email",
-			cat    : cat,
-			content	: content
-		}
+			cat     : cat,
+			content	: content,
+			key     : key
+		},
+        function(data){
+        	$("#div_dialog_message_text").html(message);
+        	$("#div_dialog_message").dialog("open");
+        }
 	);
 }
 
