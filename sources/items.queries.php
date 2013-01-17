@@ -1802,6 +1802,10 @@ if (isset($_POST['type'])) {
             }
             // Get folder complexity
             $folder_complexity = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$_POST['id']."'");
+
+            //  Fixing items not being displayed
+            $html = iconv('UTF-8', 'UTF-8//IGNORE', $html);
+
             // Prepare returned values
             $return_values = array(
                 "recherche_group_pf" => $recherche_group_pf,
