@@ -77,6 +77,10 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.15
+ * MySQL hashing => todo
+ * KB creation #240
+
 2.1.14
  * list of bugs corrected: #238 - #235 - #239 - #203 - #201 - #233 - #226 - #236
    #228 - #189 - #234 - #225 - #239 - #194 - #86

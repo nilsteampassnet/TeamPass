@@ -40,7 +40,7 @@ $sql .= " ORDER BY category ASC";
 $sOutput = '';
 
 $rows = $db->fetchAllArray($sql);
-if ($rows[0]>0) {
+if (count($rows)>0) {
     foreach ($rows as $reccord) {
         if (empty($sOutput)) {
             $sOutput = '"'.$reccord['category'].'"';
