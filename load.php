@@ -107,7 +107,7 @@ $htmlHeaders .= '
 
     function aes_encrypt(text)
     {
-        return Aes.Ctr.encrypt(text, "'.SALT.'", 256);
+        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
     //Identify user
@@ -414,11 +414,6 @@ if (!isset($_GET['page']) && !isset($_SESSION['key'])) {
 
 if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $htmlHeaders .= '
-    function aes_encrypt(text)
-    {
-        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
-    }
-
     $(function() {
         //build nice buttonset
         $("#radio_import_type, #connect_ldap_mode").buttonset();

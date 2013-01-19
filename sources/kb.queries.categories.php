@@ -19,6 +19,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/x-json; charset=".$k['charset']);
 
 //Connect to DB

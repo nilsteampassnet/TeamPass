@@ -117,7 +117,7 @@ if (!empty($_SESSION['fin_session'])) {
     $data_session[0] = "";
 }
 
-if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || $_SESSION['key'] != $data_session[0])) {
+if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || empty($data_session[0]))) {
     // Update table by deleting ID
     $db->queryUpdate(
         "users",
@@ -211,7 +211,6 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
     }
 }
 
-
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
@@ -247,7 +246,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             $_SESSION['groupes_interdits'] = @implode(';', $data['groupes_interdits']);
         }
 
-        if(!isset($_SESSION['fin_session'])) {
+        if (!isset($_SESSION['fin_session'])) {
             $db->queryUpdate(
                 "users",
                 array(
@@ -315,3 +314,16 @@ if (isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_st
 /* CHECK NUMBER OF USER ONLINE */
 $query_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(time() - 600)."'");
 $_SESSION['nb_users_online'] = $query_count[0];
+
+/*
+ * Generate temporary key for encryption
+ */
+    //Generate a ramdom ID
+    $pwgen = new SplClassLoader('Encryption\PwGen', 'includes/libraries');
+    $pwgen->register();
+    $pwgen = new Encryption\PwGen\pwgen();
+    $pwgen->setLength(30);
+    $pwgen->setSecure(true);
+    $pwgen->setCapitalize(true);
+    $pwgen->setNumerals(true);
+    $_SESSION['key'] = $pwgen->generate();

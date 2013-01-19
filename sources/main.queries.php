@@ -180,7 +180,7 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], SALT, 256)), true);
+        $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
         // Prepare variables
         $password_clear = htmlspecialchars_decode($data_received['pw']);
         $password = encrypt(htmlspecialchars_decode($data_received['pw']));
@@ -369,7 +369,7 @@ switch ($_POST['type']) {
                 $_SESSION['last_pw_change'] = $data['last_pw_change'];
                 $_SESSION['last_pw'] = $data['last_pw'];
                 $_SESSION['can_create_root_folder'] = $data['can_create_root_folder'];
-                $_SESSION['key'] = $key;
+                //$_SESSION['key'] = $key;
                 $_SESSION['personal_folder'] = $data['personal_folder'];
                 $_SESSION['fin_session'] = time() + $data_received['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];

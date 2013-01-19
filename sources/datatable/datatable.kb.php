@@ -19,10 +19,11 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
+$db = new SplClassLoader('Database\Core', '../../includes/libraries');
 $db->register();
 $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
 $db->connect();
