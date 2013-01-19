@@ -338,10 +338,13 @@ echo '
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="change_user_pw_error"></div>' .
 $txt['give_new_pw'].'
     <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_pw_show_login"></div>
-    <div style="margin-top:10px;text-align:center;">
-        <input type="text" size="30" id="change_user_pw_newpw" /><br />
-        '.$txt['index_change_pw_confirmation'].' : <input type="text" size="30" id="change_user_pw_newpw_confirm" />
+    <div style="margin-top:20px; width:100%;">
+        <label class="form_label" for="change_user_pw_newpw">'.$txt['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
+        <label class="form_label" for="change_user_pw_newpw_confirm">'.$txt['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
     </div>
+    <div style="width:100%;height:20px;">
+                <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+            </div>
     <input type="hidden" id="change_user_pw_id" />
 </div>';
 // DIV FOR CHANGING EMAIL

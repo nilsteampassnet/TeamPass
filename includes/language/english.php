@@ -64,7 +64,7 @@ $txt['admin_email_test_configuration'] = "Test the Email configuration";
 $txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['admin_email_test_subject'] = "[TeamPass] Test email";
 $txt['admin_email_test_body'] = "Hi,<br><br>Email sent successfully.<br><br>Cheers.";
-$txt['admin_email_result_ok'] = "Email sent ... check your inbox.";
+$txt['admin_email_result_ok'] = "Email sent to #email# ... check your inbox.";
 $txt['admin_email_result_nok'] = "Email not sent ... check your configuration. See associated error: ";
 $txt['email_subject_item_updated'] = "Password has been updated";
 $txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";

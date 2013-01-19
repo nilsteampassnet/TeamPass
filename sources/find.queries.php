@@ -63,7 +63,7 @@ foreach ($rows as $reccord) {
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength']) ;
+    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength']);
 }
 
 //Ordering
@@ -140,6 +140,7 @@ $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": [ ';
+$sOutput_const = "";
 
 $rows = $db->fetchAllArray($sql);
 foreach ($rows as $reccord) {
@@ -177,10 +178,12 @@ foreach ($rows as $reccord) {
     $sOutput_item .= '], ';
 
     if ($get_item_in_list == true) {
-        $sOutput .= $sOutput_item;
+        $sOutput_const .= $sOutput_item;
     }
 }
-$sOutput = substr_replace($sOutput, "", -2);
+if (!empty($sOutput_const)) {
+    $sOutput .= substr_replace($sOutput_const, "", -2);
+}
 $sOutput .= '] }';
 
 echo $sOutput;

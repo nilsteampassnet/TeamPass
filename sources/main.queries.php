@@ -139,6 +139,16 @@ switch ($_POST['type']) {
                     'field_1' => $_SESSION['user_id']
                    )
             );
+            //Send email to user
+            $row = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id=".$data_received['user_id']);
+            if (!empty($row[0])) {
+                sendEmail(
+                    $txt['forgot_pw_email_subject'],
+                    $txt['forgot_pw_email_body'] . " " . htmlspecialchars_decode($data_received['new_pw']),
+                    $row[0],
+                    $txt['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($data_received['new_pw'])
+                );
+            }
 
             echo '[ { "error" : "none" } ]';
             break;
@@ -373,6 +383,7 @@ switch ($_POST['type']) {
                 $_SESSION['personal_folder'] = $data['personal_folder'];
                 $_SESSION['fin_session'] = time() + $data_received['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
+                $_SESSION['user_email'] = $data['email'];
 
                 @syslog(LOG_WARNING, "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
                 // user type
@@ -593,24 +604,24 @@ switch ($_POST['type']) {
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");
             if ($data[0] != 0) {
                 $db->queryUpdate(
-                        "misc",
-                        array(
-                                'valeur' => $key
-                        ),
-                        array(
-                                'type' => 'password_recovery',
-                                'intitule' => $_POST['login']
-                        )
+                    "misc",
+                    array(
+                            'valeur' => $key
+                    ),
+                    array(
+                            'type' => 'password_recovery',
+                            'intitule' => $_POST['login']
+                    )
                 );
             } else {
                 // store in DB the password recovery informations
                 $db->queryInsert(
-                        'misc',
-                        array(
-                                'type' => 'password_recovery',
-                                'intitule' => $_POST['login'],
-                                'valeur' => $key
-                        )
+                    'misc',
+                    array(
+                            'type' => 'password_recovery',
+                            'intitule' => $_POST['login'],
+                            'valeur' => $key
+                    )
                 );
             }
 
@@ -636,7 +647,6 @@ switch ($_POST['type']) {
             $mail->Subject = $txt['forgot_pw_email_subject'];
             $mail->AltBody = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
             $mail->Body = $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
-            
             // send email
             if (!$mail->send()) {
                 echo '[{"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"}]';
@@ -899,5 +909,22 @@ switch ($_POST['type']) {
                 )
             );
         }
+        break;
+    /**
+     * Generate a password generic
+     */
+    case "generate_a_password":
+        //Load PWGEN
+        $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+        $pwgen->register();
+        $pwgen = new Encryption\PwGen\pwgen();
+        //Generate
+        $pwgen->setLength($_POST['length']);
+        $pwgen->setSecure($_POST['secure']);
+        $pwgen->setSymbols($_POST['symbols']);
+        $pwgen->setCapitalize($_POST['capitalize']);
+        $pwgen->setNumerals($_POST['numerals']);
+
+        echo Encryption\Crypt\aesctr::encrypt($pwgen->generate(), $_SESSION['key'], 256);
         break;
 }

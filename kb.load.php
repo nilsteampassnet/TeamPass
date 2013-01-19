@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
     die('Hacking attempt...');
 }
 
@@ -26,7 +26,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
             "sources/kb.queries.php",
             {
             type    : "open_kb",
-            id      : id
+            id      : id,
+            key     : $_SESSION['key']
             },
             function(data) {
                 data = $.parseJSON(data);
@@ -88,9 +89,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
             buttons: {
                 "<?php echo $txt['del_button'];?>": function() {
                     $.post(
-                        "sources/kb.queries.php",
-                        "type=delete_kb&"+
-                        "&id="+$("#kb_id").val(),
+                		"sources/kb.queries.php",
+                        {
+                        type    : "delete_kb",
+                        id      : $("#kb_id").val(),
+                        key     : $_SESSION['key']
+                        },
                         function(data) {
                             $("#div_kb_delete").dialog("close");
                             oTable = $("#t_kb").dataTable();
@@ -134,7 +138,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                          $.post("sources/kb.queries.php",
                               {
                                   type     : "kb_in_db",
-                                  data : aes_encrypt(data)
+                                  data     : aes_encrypt(data),
+                                  key      : $_SESSION['key']
                               },
                             function(data) {
                                 if (data[0].status == "done") {

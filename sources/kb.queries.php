@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
     die('Hacking attempt...');
 }
 
@@ -47,6 +47,11 @@ function utf8Urldecode($value)
 if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         case "kb_in_db":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
             //decrypt and retreive data in JSON format
             $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
 
@@ -141,6 +146,11 @@ if (!empty($_POST['type'])) {
          * Open KB
          */
         case "open_kb":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
             $row = $db->query(
                 "SELECT k.id as id, k.label as label, k.description as description, k.category_id as category_id, k.author_id as author_id, k.anyone_can_modify as anyone_can_modify,
                 u.login as login, c.category as category
@@ -177,6 +187,11 @@ if (!empty($_POST['type'])) {
          * Delete the KB
          */
         case "delete_kb":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
             $db->queryDelete(
                 "kb",
                 array(

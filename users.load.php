@@ -36,6 +36,47 @@ $(function() {
           name : "newValue"
     });
 
+    $("#change_user_pw_newpw").simplePassMeter({
+        "requirements": {},
+          "container": "#pw_strength",
+          "defaultText" : "<?php echo $txt['index_pw_level_txt'];?>",
+        "ratings": [
+            {"minScore": 0,
+                "className": "meterFail",
+                "text": "<?php echo $txt['complex_level0'];?>"
+            },
+            {"minScore": 25,
+                "className": "meterWarn",
+                "text": "<?php echo $txt['complex_level1'];?>"
+            },
+            {"minScore": 50,
+                "className": "meterWarn",
+                "text": "<?php echo $txt['complex_level2'];?>"
+            },
+            {"minScore": 60,
+                "className": "meterGood",
+                "text": "<?php echo $txt['complex_level3'];?>"
+            },
+            {"minScore": 70,
+                "className": "meterGood",
+                "text": "<?php echo $txt['complex_level4'];?>"
+            },
+            {"minScore": 80,
+                "className": "meterExcel",
+                "text": "<?php echo $txt['complex_level5'];?>"
+            },
+            {"minScore": 90,
+                "className": "meterExcel",
+                "text": "<?php echo $txt['complex_level6'];?>"
+            }
+        ]
+    });
+    $("#change_user_pw_newpw").bind({
+        "score.simplePassMeter" : function(jQEvent, score) {
+            //$("#pw_strength").val(score);
+        }
+    });
+
     $("#change_user_functions").dialog({
         bgiframe: true,
         modal: true,
@@ -170,10 +211,30 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 400,
-        height: 200,
+        width: 430,
+        height: 230,
         title: "<?php echo $txt['admin_action'];?>",
         buttons: {
+        	"<?php echo $txt['pw_generate'];?>": function() {
+            	$.post(
+                        "sources/main.queries.php",
+                        {
+                            type       : "generate_a_password",
+                            length     : 8,
+                            secure     : true,
+                            symbols    : false,
+                            capitalize : true,
+                            numerals   : true,
+                        },
+                        function(data) {
+                            var pw = htmlspecialchars_decode(aes_decrypt(data));
+                        	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(pw);
+                    		$("#change_user_pw_newpw").focus();
+                        }
+                   );
+            	
+        		
+        	},
             "<?php echo $txt['save_button'];?>": function() {
                 if ($("#change_user_pw_newpw").val() == $("#change_user_pw_newpw_confirm").val()) {
                                 var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
@@ -203,6 +264,7 @@ $(function() {
                 }
             },
             "<?php echo $txt['cancel_button'];?>": function() {
+            	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
                 $(this).dialog("close");
             }
         }
@@ -537,5 +599,57 @@ function migrate_pf(user_id)
 function loginCreation()
 {
 	$("#new_login").val($("#new_name").val().toLowerCase().replace(/ /g,"")+"."+$("#new_lastname").val().toLowerCase().replace(/ /g,""));
+}
+
+function aes_decrypt(text)
+{
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+function htmlspecialchars_decode (string, quote_style)
+{
+    if (string != null && string != "") {
+        // Convert special HTML entities back to characters
+        var optTemp = 0, i = 0, noquotes= false;
+        if (typeof quote_style === 'undefined') {        quote_style = 2;
+        }
+        string = string.toString().replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        var OPTS = {
+            'ENT_NOQUOTES': 0,
+            'ENT_HTML_QUOTE_SINGLE' : 1,
+            'ENT_HTML_QUOTE_DOUBLE' : 2,
+            'ENT_COMPAT': 2,
+            'ENT_QUOTES': 3,
+            'ENT_IGNORE' : 4
+        };
+        if (quote_style === 0) {
+            noquotes = true;
+        }
+        if (typeof quote_style !== 'number') { // Allow for a single string or an array of string flags
+            quote_style = [].concat(quote_style);
+            for (i=0; i < quote_style.length; i++) {
+                // Resolve string input to bitwise e.g. 'PATHINFO_EXTENSION' becomes 4
+                if (OPTS[quote_style[i]] === 0) {
+                    noquotes = true;
+                } else if (OPTS[quote_style[i]]) {
+                    optTemp = optTemp | OPTS[quote_style[i]];
+                }
+            }
+            quote_style = optTemp;
+        }
+        if (quote_style & OPTS.ENT_HTML_QUOTE_SINGLE) {
+            string = string.replace(/&#0*39;/g, "'"); // PHP doesn't currently escape if more than one 0, but it should
+            // string = string.replace(/&apos;|&#x0*27;/g, "'"); // This would also be useful here, but not a part of PHP
+        }
+        if (!noquotes) {
+            string = string.replace(/&quot;/g, '"');
+        }
+
+        string = string.replace(/&nbsp;/g, ' ');
+
+        // Put this in last place to avoid escape being double-decoded    string = string.replace(/&amp;/g, '&');
+    }
+
+    return string;
 }
 </script>

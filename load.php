@@ -1079,15 +1079,14 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         if (data[0].error != "") {
                             $("#email_testing_results").html("'.addslashes($txt['admin_email_result_nok']).' "+data[0].message).show().attr("class","ui-state-error ui-corner-all");
                         } else {
-                            $("#email_testing_results").html("'.addslashes($txt['admin_email_result_ok']).' ").show().attr("class","ui-corner-all ui-state-focus");
+                            $("#email_testing_results").html("'.addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok'])).'").show().attr("class","ui-corner-all ui-state-focus");
                         }
                     }
                 }
             },
             "json"
        );
-    }
-    ';
+    }';
 }
 
 $htmlHeaders .= '

@@ -373,12 +373,24 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         // Show page for user favourites
         include 'favorites.php';
     } elseif ($_GET['page'] == "kb") {
-        // Show page for user favourites
-        include 'kb.php';
+        // Show page KB
+        if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
+            include 'kb.php';
+        } else {
+            $_SESSION['error'] = "1000"; //not allowed page
+            include 'error.php';
+        }
     } elseif (in_array($_GET['page'], array_keys($mngPages))) {
         // Define if user is allowed to see management pages
-        if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
+        if ($_SESSION['user_admin'] == 1) {
             include($mngPages[$_GET['page']]);
+        } elseif ($_SESSION['user_manager'] == 1) {
+            if (($_GET['page'] != "manage_main" &&  $_GET['page'] != "manage_settings")) {
+                include($mngPages[$_GET['page']]);
+            } else {
+                $_SESSION['error'] = "1000"; //not allowed page
+                include 'error.php';
+            }
         } else {
             $_SESSION['error'] = "1000"; //not allowed page
             include 'error.php';

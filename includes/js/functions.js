@@ -124,6 +124,7 @@ function CreateRandomString(size,type){
     if ( type == "num" ) chars = "0123456789";
     else if ( type == "num_no_0" ) chars = "123456789";
     else if ( type == "alpha" ) chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+    else if ( type == "secure" ) chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz&#@;!+-$*%";
     else chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
 
     //generate it

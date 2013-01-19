@@ -47,7 +47,7 @@ switch ($_POST['type']) {
     # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
-        $error ="";        
+        $error ="";
         $handle_distant = file("http://www.teampass.net/TP/cpm2_config.txt");
         // Tente de t?l?chargement le fichier $remote_file et de le sauvegarder dans $handle
         if (count($handle_distant) > 0) {
@@ -495,7 +495,7 @@ switch ($_POST['type']) {
     */
     case "admin_email_test_configuration":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-        echo '[{"result":"email_test_conf", '.sendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
+        echo '[{"result":"email_test_conf", '.sendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['user_email']).'}]';
         break;
 
     /*
