@@ -5,6 +5,11 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
+$txt['admin_proxy_ip'] = "Proxy IP used";
+$txt['admin_proxy_ip_tip'] = "<span style='font-size:11px;max-width:300px;'>If your Internet connection goes through a proxy. Indicate here its IP.<br />Leave empty if no Proxy.</span>";
+$txt['admin_proxy_port'] = "Proxy PORT used";
+$txt['admin_proxy_port_tip'] = "<span style='font-size:11px;max-width:300px;'>If you have set an IP for the Proxy, now indicate its PORT. Could be 8080.<br />Leave empty if no Proxy.</span>";
 
 $txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
 $txt['item_updated_text'] = "This Item has been edited. You need to update it before you can change it.";

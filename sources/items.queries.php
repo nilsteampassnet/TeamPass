@@ -1393,7 +1393,7 @@ if (isset($_POST['type'])) {
             $create_new_folder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if (!empty($data[0])) {
+                if (!empty($data[0]) && $data_received['folder'] != $data[0]) {
                     echo '[ { "error" : "'.addslashes($txt['error_group_exist']).'" } ]';
                     break;
                 }

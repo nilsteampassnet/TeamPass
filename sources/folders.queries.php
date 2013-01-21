@@ -306,8 +306,8 @@ elseif (isset($_POST['type'])) {
             //Check if duplicate folders name are allowed
             $create_new_folder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if ($data[0] != 0) {
+                $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                if (!empty($data[0]) && $data_received['id'] != $data[0]) {
                     echo '[ { "error" : "error_group_exist" } ]';
                     break;
                 }

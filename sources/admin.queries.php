@@ -48,12 +48,28 @@ switch ($_POST['type']) {
     case "cpm_status":
         $text = "<ul>";
         $error ="";
-        $handle_distant = file("http://www.teampass.net/TP/cpm2_config.txt");
-        // Tente de t?l?chargement le fichier $remote_file et de le sauvegarder dans $handle
+        $handle_distant = array();
+        if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
+            $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
+        } else {
+            $fp = fsockopen("www.teampass.net", 80);
+        }
+        if (!$fp) {
+            $error = "connection";
+        } else {
+            $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
+            $out .= "Host: www.teampass.net\r\n";
+            $out .= "Connection: Close\r\n\r\n";
+            fwrite($fp, $out);
+        }
+        while (!feof($fp)) {
+            $line = fgets($fp, 4096);
+            $handle_distant[] = $line;
+        }
+        fclose($fp);
         if (count($handle_distant) > 0) {
-            //READ FILE
             while (list($cle,$val) = each($handle_distant)) {
-                if (substr($val, 0, 1) <> "#") {
+                if (substr($val, 0, 3) == "nom") {
                     $tab = explode('|', $val);
                     foreach ($tab as $elem) {
                         $tmp = explode('#', $elem);
@@ -68,8 +84,6 @@ switch ($_POST['type']) {
                     }
                 }
             }
-        } else {
-            $error = "connection";
         }
 
         echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';

@@ -294,6 +294,9 @@ if (isset($_POST['type'])) {
                 array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
                 array('admin', '2factors_authentication', 0, 0),
                 array('admin', 'delay_item_edition', 0, 0),
+                array('admin', 'allow_import',0,0),
+                array('admin', 'proxy_port',0,0),
+                array('admin', 'proxy_port',0,0)
            );
             $res1 = "na";
             foreach ($val as $elem) {

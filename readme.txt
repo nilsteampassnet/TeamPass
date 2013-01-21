@@ -78,7 +78,8 @@ folder
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.15
- * list of bugs corrected: #242 - #254 - #244 - #247
+ * list of bugs corrected: #242 - #254 - #244 - #247 - #256 - #250 - #254 - #248
+   #243 - #252
  * MySQL hashing => todo
  * KB creation #240
 

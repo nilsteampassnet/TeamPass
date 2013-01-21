@@ -209,6 +209,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['allow_print'] != $_POST['allow_print']) {
         updateSettings('allow_print', $_POST['allow_print']);
     }
+    // Update allow_import
+    if (@$_SESSION['settings']['allow_import'] != $_POST['allow_import']) {
+        updateSettings('allow_import', $_POST['allow_import']);
+    }
     // Update show_description
     if (@$_SESSION['settings']['show_description'] != $_POST['show_description']) {
         updateSettings('show_description', $_POST['show_description']);
@@ -350,6 +354,14 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['2factors_authentication'])) {
         updateSettings('2factors_authentication', $_POST['2factors_authentication']);
     }
+    // Update proxy_ip setting
+    if (@$_SESSION['settings']['proxy_ip'] != $_POST['proxy_ip']) {
+        updateSettings('proxy_ip', $_POST['proxy_ip']);
+    }
+    // Update proxy_port setting
+    if (@$_SESSION['settings']['proxy_port'] != $_POST['proxy_port']) {
+        updateSettings('proxy_port', $_POST['proxy_port']);
+    }
 }
 
 echo '
@@ -480,6 +492,8 @@ echo '
 
 echo '
             <table>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
 // Maintenance mode
 echo '
             <tr style="margin-bottom:3px">
@@ -492,11 +506,37 @@ $txt['settings_maintenance_mode'].'
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
             </tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
+//Proxy
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label for="proxy_ip">'.$txt['admin_proxy_ip'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_proxy_ip_tip'].'" />
+                </td>
+                <td>
+                    <input type="text" size="15" id="proxy_ip" name="proxy_ip" value="', isset($_SESSION['settings']['proxy_ip']) ? $_SESSION['settings']['proxy_ip'] : "", '" class="text ui-widget-content" />
+                <td>
+            </tr>
+            <tr style="margin-bottom:3px">
+                <td>
+                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label for="proxy_port">'.$txt['admin_proxy_port'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_proxy_port_tip'].'" />
+                </td>
+                <td>
+                    <input type="text" size="10" id="proxy_port" name="proxy_port" value="', isset($_SESSION['settings']['proxy_port']) ? $_SESSION['settings']['proxy_port'] : "", '" class="text ui-widget-content" />
+                <td>
+            </tr>';
+
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // pwd_maximum_length
@@ -523,8 +563,9 @@ echo '
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_2factors_authentication"><img src="includes/images/status', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
             </tr>';
@@ -651,8 +692,9 @@ echo '
                     <label>'.$txt['settings_log_connections'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="log_connections_radio1" name="log_connections" value="1"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? ' checked="checked"' : '', ' /><label for="log_connections_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="log_connections_radio2" name="log_connections" value="0"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_connections']) ? ' checked="checked"':''), ' /><label for="log_connections_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="log_connections_radio1" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? ' checked="checked"' : '', ' /><label for="log_connections_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="log_connections_radio2" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_connections']) ? ' checked="checked"':''), ' /><label for="log_connections_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_log_connections"><img src="includes/images/status', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // Enable log accessed
@@ -662,8 +704,9 @@ echo '
                     <label>'.$txt['settings_log_accessed'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="log_accessed_radio1" name="log_accessed" value="1"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? ' checked="checked"' : '', ' /><label for="log_accessed_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="log_accessed_radio2" name="log_accessed" value="0"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_accessed']) ? ' checked="checked"':''), ' /><label for="log_accessed_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="log_accessed_radio1" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? ' checked="checked"' : '', ' /><label for="log_accessed_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="log_accessed_radio2" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_accessed']) ? ' checked="checked"':''), ' /><label for="log_accessed_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_log_accessed"><img src="includes/images/status', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -675,8 +718,9 @@ echo '
                 <label>'.$txt['enable_personal_folder_feature'].'</label>
             </td><td>
             <div class="div_radio">
-                <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
-                <input type="radio" id="enable_pf_feature_radio2" name="enable_pf_feature" value="0"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_pf_feature']) ? ' checked="checked"':''), ' /><label for="enable_pf_feature_radio2">'.$txt['no'].'</label>
+                <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
+                <input type="radio" id="enable_pf_feature_radio2" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_pf_feature']) ? ' checked="checked"':''), ' /><label for="enable_pf_feature_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_pf_feature"><img src="includes/images/status', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '' : '-busy', '.png" /></span>
             </div>
             </td</tr>';
 // enable PF cookie for Personal SALTKEY
@@ -686,8 +730,9 @@ echo '
                 <label>'.$txt['enable_personal_saltkey_cookie'].'</label>
             </td><td>
             <div class="div_radio">
-                <input type="radio" id="enable_personal_saltkey_cookie_radio1" name="enable_personal_saltkey_cookie" value="1"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_personal_saltkey_cookie_radio1">'.$txt['yes'].'</label>
-                <input type="radio" id="enable_personal_saltkey_cookie_radio2" name="enable_personal_saltkey_cookie" value="0"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_personal_saltkey_cookie']) ? ' checked="checked"':''), ' /><label for="enable_personal_saltkey_cookie_radio2">'.$txt['no'].'</label>
+                <input type="radio" id="enable_personal_saltkey_cookie_radio1" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_personal_saltkey_cookie_radio1">'.$txt['yes'].'</label>
+                <input type="radio" id="enable_personal_saltkey_cookie_radio2" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_personal_saltkey_cookie']) ? ' checked="checked"':''), ' /><label for="enable_personal_saltkey_cookie_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_personal_saltkey_cookie"><img src="includes/images/status', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? '' : '-busy', '.png" /></span>
             </div>
             </td</tr>';
 // PF cookie for Personal SALTKEY duration
@@ -712,8 +757,9 @@ echo '
                         </label>
                         </td><td>
                         <div class="div_radio">
-                            <input type="radio" id="enable_kb_radio1" name="enable_kb" value="1"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_kb_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="enable_kb_radio2" name="enable_kb" value="0"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_kb']) ? ' checked="checked"':''), ' /><label for="enable_kb_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="enable_kb_radio1" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_kb_radio1">'.$txt['yes'].'</label>
+                            <input type="radio" id="enable_kb_radio2" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_kb']) ? ' checked="checked"':''), ' /><label for="enable_kb_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_kb"><img src="includes/images/status', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
 
@@ -730,8 +776,9 @@ $txt['settings_send_stats'].'
                     </td>
                     <td>
                         <div class="div_radio">
-                            <input type="radio" id="send_stats_radio1" name="send_stats" value="1"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? ' checked="checked"' : '', ' /><label for="send_stats_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="send_stats_radio2" name="send_stats" value="0"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['send_stats']) ? ' checked="checked"':''), ' /><label for="send_stats_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="send_stats_radio1" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? ' checked="checked"' : '', ' /><label for="send_stats_radio1">'.$txt['yes'].'</label>
+                            <input type="radio" id="send_stats_radio2" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['send_stats']) ? ' checked="checked"':''), ' /><label for="send_stats_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_send_stats"><img src="includes/images/status', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     <td>
                 </tr>
@@ -820,8 +867,9 @@ echo '
                     <label>'.$txt['settings_manager_edit'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="manager_edit_radio1" name="manager_edit" value="1"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? ' checked="checked"' : '', ' /><label for="manager_edit_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="manager_edit_radio2" name="manager_edit" value="0"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['manager_edit']) ? ' checked="checked"':''), ' /><label for="manager_edit_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="manager_edit_radio1" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? ' checked="checked"' : '', ' /><label for="manager_edit_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="manager_edit_radio2" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['manager_edit']) ? ' checked="checked"':''), ' /><label for="manager_edit_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_manager_edit"><img src="includes/images/status', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -841,8 +889,9 @@ echo '
                     <label>'.$txt['show_last_items'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="show_last_items_radio1" name="show_last_items" value="1"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? ' checked="checked"' : '', ' /><label for="show_last_items_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="show_last_items_radio2" name="show_last_items" value="0"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_last_items']) ? ' checked="checked"':''), ' /><label for="show_last_items_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="show_last_items_radio1" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? ' checked="checked"' : '', ' /><label for="show_last_items_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="show_last_items_radio2" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_last_items']) ? ' checked="checked"':''), ' /><label for="show_last_items_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_show_last_items"><img src="includes/images/status', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -854,8 +903,9 @@ echo '
                     <label>'.$txt['duplicate_folder'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="duplicate_folder_radio1" name="duplicate_folder" value="1"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_folder_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="duplicate_folder_radio2" name="duplicate_folder" value="0"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_folder']) ? ' checked="checked"':''), ' /><label for="duplicate_folder_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="duplicate_folder_radio1" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_folder_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="duplicate_folder_radio2" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_folder']) ? ' checked="checked"':''), ' /><label for="duplicate_folder_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_duplicate_folder"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // Duplicate item name
@@ -865,8 +915,9 @@ echo '
                     <label>'.$txt['duplicate_item'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="duplicate_item_radio1" name="duplicate_item" value="1"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_item_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="duplicate_item_radio2" name="duplicate_item" value="0"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_item']) ? ' checked="checked"':''), ' /><label for="duplicate_item_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="duplicate_item_radio1" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_item_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="duplicate_item_radio2" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_item']) ? ' checked="checked"':''), ' /><label for="duplicate_item_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_duplicate_item"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -878,8 +929,9 @@ echo '
                     <label>'.$txt['enable_favourites'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_favourites_radio1" name="enable_favourites" value="1"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_favourites_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_favourites_radio2" name="enable_favourites" value="0"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_favourites']) ? ' checked="checked"':''), ' /><label for="enable_favourites_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_favourites_radio1" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_favourites_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="enable_favourites_radio2" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_favourites']) ? ' checked="checked"':''), ' /><label for="enable_favourites_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_favourites"><img src="includes/images/status', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // enable USER can create folders
@@ -889,8 +941,9 @@ echo '
                     <label>'.$txt['enable_user_can_create_folders'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_user_can_create_folders_radio1" name="enable_user_can_create_folders" value="1"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_user_can_create_folders_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_user_can_create_folders_radio2" name="enable_user_can_create_folders" value="0"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_user_can_create_folders']) ? ' checked="checked"':''), ' /><label for="enable_user_can_create_folders_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_user_can_create_folders_radio1" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_user_can_create_folders_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="enable_user_can_create_folders_radio2" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_user_can_create_folders']) ? ' checked="checked"':''), ' /><label for="enable_user_can_create_folders_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_user_can_create_folders"><img src="includes/images/status', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -905,8 +958,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="activate_expiration_radio1" name="activate_expiration" value="1"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? ' checked="checked"' : '', ' /><label for="activate_expiration_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="activate_expiration_radio2" name="activate_expiration" value="0"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['activate_expiration']) ? ' checked="checked"':''), ' /><label for="activate_expiration_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="activate_expiration_radio1" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? ' checked="checked"' : '', ' /><label for="activate_expiration_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="activate_expiration_radio2" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['activate_expiration']) ? ' checked="checked"':''), ' /><label for="activate_expiration_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_activate_expiration"><img src="includes/images/status', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // Enable enable_delete_after_consultation
@@ -919,8 +973,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_delete_after_consultation_radio1" name="enable_delete_after_consultation" value="1"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_delete_after_consultation_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_delete_after_consultation_radio2" name="enable_delete_after_consultation" value="0"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_delete_after_consultation']) ? ' checked="checked"':''), ' /><label for="enable_delete_after_consultation_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_delete_after_consultation_radio1" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_delete_after_consultation_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="enable_delete_after_consultation_radio2" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_delete_after_consultation']) ? ' checked="checked"':''), ' /><label for="enable_delete_after_consultation_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_delete_after_consultation"><img src="includes/images/status', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -935,8 +990,23 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="allow_print_radio1" name="allow_print" value="1"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_print_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="allow_print_radio2" name="allow_print" value="0"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_print']) ? ' checked="checked"':''), ' /><label for="allow_print_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="allow_print_radio1" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_print_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="allow_print_radio2" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_print']) ? ' checked="checked"':''), ' /><label for="allow_print_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_allow_print"><img src="includes/images/status', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
+// Enable IMPORT
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_importing'].'
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="allow_import_radio1" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_import_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="allow_import_radio2" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_import']) ? ' checked="checked"':''), ' /><label for="allow_import_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_allow_import"><img src="includes/images/status', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 
@@ -951,8 +1021,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_anyone_can_modify"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 // enable restricted_to option
@@ -962,8 +1033,9 @@ echo '
                     <label>'.$txt['settings_restricted_to'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="restricted_to_radio1" name="restricted_to" value="1"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="restricted_to_radio2" name="restricted_to" value="0"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to']) ? ' checked="checked"':''), ' /><label for="restricted_to_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="restricted_to_radio1" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="restricted_to_radio2" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to']) ? ' checked="checked"':''), ' /><label for="restricted_to_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_restricted_to"><img src="includes/images/status', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // enable restricted_to_roles
@@ -973,8 +1045,9 @@ echo '
                     <label>'.$txt['restricted_to_roles'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="restricted_to_roles_radio1" name="restricted_to_roles" value="1"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_roles_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="restricted_to_roles_radio2" name="restricted_to_roles" value="0"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to_roles']) ? ' checked="checked"':''), ' /><label for="restricted_to_roles_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="restricted_to_roles_radio1" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_roles_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="restricted_to_roles_radio2" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to_roles']) ? ' checked="checked"':''), ' /><label for="restricted_to_roles_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_restricted_to_roles"><img src="includes/images/status', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -989,8 +1062,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="copy_to_clipboard_small_icons_radio1" name="copy_to_clipboard_small_icons" value="1"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? ' checked="checked"' : '', ' /><label for="copy_to_clipboard_small_icons_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="copy_to_clipboard_small_icons_radio2" name="copy_to_clipboard_small_icons" value="0"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['copy_to_clipboard_small_icons']) ? ' checked="checked"':''), ' /><label for="copy_to_clipboard_small_icons_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="copy_to_clipboard_small_icons_radio1" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? ' checked="checked"' : '', ' /><label for="copy_to_clipboard_small_icons_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="copy_to_clipboard_small_icons_radio2" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['copy_to_clipboard_small_icons']) ? ' checked="checked"':''), ' /><label for="copy_to_clipboard_small_icons_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_copy_to_clipboard_small_icons"><img src="includes/images/status', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // Enable Show description in items list
@@ -1002,8 +1076,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="show_description_radio1" name="show_description" value="1"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? ' checked="checked"' : '', ' /><label for="show_description_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="show_description_radio2" name="show_description" value="0"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_description']) ? ' checked="checked"':''), ' /><label for="show_description_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="show_description_radio1" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? ' checked="checked"' : '', ' /><label for="show_description_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="show_description_radio2" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_description']) ? ' checked="checked"':''), ' /><label for="show_description_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_show_description"><img src="includes/images/status', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 // nb of items to display by ajax query
@@ -1024,8 +1099,9 @@ echo '
                     <label>'.$txt['enable_send_email_on_user_login'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_send_email_on_user_login_radio1" name="enable_send_email_on_user_login" value="1"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_send_email_on_user_login_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_send_email_on_user_login_radio1" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_send_email_on_user_login_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_send_email_on_user_login"><img src="includes/images/status', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // enable email notification on item shown
@@ -1035,8 +1111,9 @@ echo '
                     <label>'.$txt['enable_email_notification_on_item_shown'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_email_notification_on_item_shown"><img src="includes/images/status', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -1051,8 +1128,9 @@ echo '
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="insert_manual_entry_item_history_radio1" name="insert_manual_entry_item_history" value="1"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? ' checked="checked"' : '', ' /><label for="insert_manual_entry_item_history_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="insert_manual_entry_item_history_radio2" name="insert_manual_entry_item_history" value="0"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['insert_manual_entry_item_history']) ? ' checked="checked"':''), ' /><label for="insert_manual_entry_item_history_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="insert_manual_entry_item_history_radio1" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? ' checked="checked"' : '', ' /><label for="insert_manual_entry_item_history_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="insert_manual_entry_item_history_radio2" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['insert_manual_entry_item_history']) ? ' checked="checked"':''), ' /><label for="insert_manual_entry_item_history_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_insert_manual_entry_item_history"><img src="includes/images/status', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 
@@ -1081,8 +1159,9 @@ if (!extension_loaded('ldap')) {
             &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_mode_tip'].'" />
                     </label>
                     <span class="div_radio">
-            <input type="radio" id="ldap_mode_radio1" name="ldap_mode" value="1"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? ' checked="checked"' : '', ' onclick="javascript:$(\'#div_ldap_configuration\').show();" /><label for="ldap_mode_radio1">'.$txt['yes'].'</label>
-            <input type="radio" id="ldap_mode_radio2" name="ldap_mode" value="0"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_mode']) ? ' checked="checked"':''), ' onclick="javascript:$(\'#div_ldap_configuration\').hide();" /><label for="ldap_mode_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="ldap_mode_radio1" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? ' checked="checked"' : '', ' onclick="javascript:$(\'#div_ldap_configuration\').show();" /><label for="ldap_mode_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="ldap_mode_radio2" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_mode']) ? ' checked="checked"':''), ' onclick="javascript:$(\'#div_ldap_configuration\').hide();" /><label for="ldap_mode_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_ldap_mode"><img src="includes/images/status', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </span>
                 </div>';
 }
@@ -1115,8 +1194,9 @@ echo '
                         <td><label>'.$txt['settings_ldap_ssl'].'</label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_ssl_radio2" name="ldap_ssl" value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_ssl']) ? ' checked="checked"':''), ' /><label for="ldap_ssl_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="ldap_ssl_radio2" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_ssl']) ? ' checked="checked"':''), ' /><label for="ldap_ssl_radio2">'.$txt['no'].'</label>
+                                <span class="setting_flag" id="flag_ldap_ssl"><img src="includes/images/status', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';
@@ -1126,8 +1206,9 @@ echo '
                         <td><label>'.$txt['settings_ldap_tls'].'</label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$txt['no'].'</label>
+                                <span class="setting_flag" id="flag_ldap_tls"><img src="includes/images/status', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';
@@ -1280,8 +1361,9 @@ echo '
                         </td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1) value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0) value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$txt['no'].'</label>
+                                <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';

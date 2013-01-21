@@ -1028,6 +1028,14 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         });
     });
 
+    function changeSettingStatus(id, val) {
+        if (val == 1) {
+            $("#flag_"+id).html(\'<img src="includes/images/status.png" />\');
+        } else {
+            $("#flag_"+id).html(\'<img src="includes/images/status-busy.png" />\');
+        }
+    }
+
     //###########
     //## FUNCTION : Launch the action the admin wants
     //###########

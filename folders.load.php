@@ -78,6 +78,13 @@ $(function() {
         },
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
+                if ($('#edit_folder_complexite').val() == "") {
+                	 $("#edit_folder_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
+                	 return;
+                }if ($('#edit_folder_title').val() == "") {
+                	 $("#edit_folder_show_error").html("<?php echo $txt['error_group_label'];?>").show();
+                	 return;
+                }
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
                 '"parent_id":"'+$('#edit_parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#edit_folder_renewal_period').val().replace(/"/g,'&quot;')+'"}';

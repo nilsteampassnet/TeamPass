@@ -745,8 +745,7 @@ $select_visible_folders_options .
         </tr>
         <tr>
             <td>'.$txt['complex_asked'].' : </td>
-            <td><select id="new_rep_complexite">
-                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' ;
+            <td><select id="new_rep_complexite">';
 foreach ($pw_complexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }

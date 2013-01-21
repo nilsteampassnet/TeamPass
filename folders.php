@@ -201,8 +201,7 @@ echo '
     </select>
 
     <label for="new_rep_complexite" class="label_cpm">'.$txt['complex_asked'].' :</label>
-    <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">
-        <option value="">---</option>';
+    <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($pw_complexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
@@ -248,8 +247,7 @@ echo '
     </select>
 
     <label for="edit_folder_complexite" class="label_cpm">'.$txt['complex_asked'].' :</label>
-    <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">
-<option value="">---</option>';
+    <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($pw_complexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }

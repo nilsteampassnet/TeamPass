@@ -1243,8 +1243,11 @@ function open_add_item_div()
 //###########
 function open_edit_item_div(restricted_to_roles)
 {
+	$("#div_loading").show();
+    
     // If no Item selected, no edition possible
 	if ($("#selected_items").val() == "") {
+		$("#div_loading").hide();
 	    return;
 	}    
 
@@ -1264,11 +1267,9 @@ function open_edit_item_div(restricted_to_roles)
         tmp = tmp.substring(20,tmp.indexOf(")"));
         tmp = tmp.replace(/'/g, "").split(',');
         AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
-        //LoadingPage();
+        $("#div_loading").hide();
         return;
     }
-    
-    LoadingPage();
 
     // Show WYGIWYG editor
     CKEDITOR.replace(
