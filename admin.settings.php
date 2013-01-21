@@ -1131,12 +1131,26 @@ echo '
                             </div>
                         </td>
                     </tr>';
+					
+// Enable only localy declared users with tips help
+echo '
+                    <tr>
+                        <td><label>'.$txt['settings_ldap_elusers'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_elusers_tip'].'" /></label></td>
+                        <td>
+                            <div class="div_radio">
+                                <input type="radio" id="ldap_elusers_radio1" name="ldap_elusers" value="1"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_elusers_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="ldap_elusers_radio2" name="ldap_elusers" value="0"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_elusers']) ? ' checked="checked"':''), ' /><label for="ldap_elusers_radio2">'.$txt['no'].'</label>
+                            </div>
+                        </td>
+                    </tr>';
 echo '
                 </table>
             </div>';
 
 echo '
             </div>';
+			
+
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 // TAB Né5

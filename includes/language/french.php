@@ -543,9 +543,11 @@ $txt['settings_ldap_domain_controler'] = "Tableau des contrôleurs de votre doma
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Vous pouvez spécifier plusieurs controlleurs si vous désirez que la classe balance les requetes LDAP sur plusieurs serveurs.<br />Attention, vous devez délimiter les domaines par une virgule ( , )!<br />Par exemple : domaine_1,domaine_2,domaine_3</span>";
 $txt['settings_ldap_domain_dn'] = "Base dn de votre domaine LDAP";
 $txt['settings_ldap_mode'] = "Activer l'identification LDAP des utilisateurs";
-$txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
+$txt['settings_ldap_mode_tip'] = "Activer uniquement si vous avez un serveur LDAP et si vous voulez l'utiliser pour authentifier les utilisateurs TeamPass à travers elle.";
 $txt['settings_ldap_ssl'] = "Connexion SSL de votre LDAP (LDAPS)";
 $txt['settings_ldap_tls'] = "Connexion TLS de votre LDAP";
+$txt['settings_ldap_elusers'] = " Utilisateurs locaux Teampass uniquement ";
+$txt['settings_ldap_elusers_tip'] = " Cette fonction permet aux utilisateurs présents dans la base de s'authentifier via LDAP. Désactivez-là si vous voulez parcourir tout l'annuaire Ldap. ";
 $txt['settings_log_accessed'] = "Activer l'enregistrement (log) des accès aux éléments";
 $txt['settings_log_connections'] = "Activer la sauvegarde en base de données des connextions utilisateurs.";
 $txt['settings_maintenance_mode'] = "Passer TeamPass en mode Maintenance";
