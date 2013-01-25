@@ -94,10 +94,10 @@ if (!in_array($ext, $valid_exts)) {
     handleError('Invalid file extension');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once '../../../sources/SplClassLoader.php';
 
 //Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once '../../settings.php';
 $db = new SplClassLoader('Database\Core', '../');
 $db->register();
 $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);

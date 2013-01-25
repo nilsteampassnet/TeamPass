@@ -2236,24 +2236,19 @@ function htmlspecialchars_decode (string, quote_style)
 
         // Put this in last place to avoid escape being double-decoded    string = string.replace(/&amp;/g, '&');
     }
-
     return string;
 }
 
-
-/*
-* Forces load Items when user reaches end of scrollbar
-*/
-/*$('#items_list').scroll(function() {
-    if ($("#query_next_start").val() != "end" && $('#items_list').scrollTop() + $('#items_list').outerHeight() == $('#items_list')[0].scrollHeight) {
-        ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val())+1);
-    }
-});*/
-
+/**
+ * Permit to load dynamically the list of Items
+ */
 function proceed_list_update()
 {
     if ($("#query_next_start").val() != "end") {
-        ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val()));
+        //Check if nb of items do display > to 0
+        if ($("#nb_items_to_display_once").val() > 0) {
+            ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val()));
+        }
     } else {
         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
         $("#items_list_loader").hide();
@@ -2269,12 +2264,6 @@ function items_list_filter(id)
 {
     $("#full_items_list").find("li").show();
     if (id) {
-        //$("#full_items_list").find("a:not(:contains(" + id + "))").parent().hide();
-        //$("#full_items_list").find("a:contains(" + id + ")").parent().show();
-
-        /*$("#full_items_list").filter(function (index) {
-                  return index == 1 || $(this).attr("name") == "999";alert('ici');
-                }).show();*/
         $("#full_items_list").find("a:not(:contains(" + id + "))").parent().hide();
         $("#full_items_list").find("a:contains(" + id + ")").parent().show();
     }

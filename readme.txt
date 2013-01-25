@@ -56,13 +56,10 @@ LANGUAGES:
 
 -------------------------------  TODO  -----------------------------------------
 * IMAP login
-* translations
 * PostgreSQL database support
 * DB2 database support
 * Issue 187:	After LDAP support is configured every user (except admin) must
 exist in ldap
-* The folder structure is automatically expanded can there be a feature /
-option to disable that
 * import from "Password safe" tool
 * settings page. manage settings via table and do a loop in order to display
 options.
@@ -79,9 +76,9 @@ folder
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.15
  * list of bugs corrected: #242 - #254 - #244 - #247 - #256 - #250 - #254 - #248
-   #243 - #252 - #232
+   #243 - #252 - #232 - #240 - #260
  * MySQL hashing => todo
- * KB creation #240
+ * CSV importation
 
 2.1.14
  * list of bugs corrected: #238 - #235 - #239 - #203 - #201 - #233 - #226 - #236

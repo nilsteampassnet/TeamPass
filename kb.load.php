@@ -27,7 +27,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             {
             type    : "open_kb",
             id      : id,
-            key     : $_SESSION['key']
+            key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
                 data = $.parseJSON(data);
@@ -93,7 +93,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         {
                         type    : "delete_kb",
                         id      : $("#kb_id").val(),
-                        key     : $_SESSION['key']
+                        key     : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
                             $("#div_kb_delete").dialog("close");
@@ -139,7 +139,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                               {
                                   type     : "kb_in_db",
                                   data     : aes_encrypt(data),
-                                  key      : $_SESSION['key']
+                                  key      : "<?php echo $_SESSION['key'];?>"
                               },
                             function(data) {
                                 if (data[0].status == "done") {

@@ -851,7 +851,7 @@ switch ($_POST['type']) {
                 $mail->WordWrap = 80; // set word wrap
                 $mail->isHtml(true); // send as HTML
                 $status = "";
-                $rows = $db->fetchAllArray("SELECT * FROM ".$pre."emails WHERE status='not sent'");
+                $rows = $db->fetchAllArray("SELECT * FROM ".$pre."emails WHERE status!='sent'");
                 foreach ($rows as $reccord) {
                     // send email
                     $ret = json_decode(

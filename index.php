@@ -359,7 +359,7 @@ if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['upda
 }
 
 // Display pages
-if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page'])) {
+if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
     if (!extension_loaded('mcrypt')) {
         $_SESSION['error'] = "1003";
         include 'error.php';
@@ -401,7 +401,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     }
 }
 // case where user not logged and can't access a direct link
-elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw'])) && !empty($_GET['page'])) {
+elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
     $_SESSION['error'] = "1002";
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
     include 'error.php';
@@ -519,7 +519,7 @@ echo '
 echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;&copy;&nbsp;copyright 2009-2012</a>
+            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;&copy;&nbsp;copyright 2009-2013</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '

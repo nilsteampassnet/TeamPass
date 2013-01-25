@@ -108,7 +108,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <button title="'.$txt['index_change_pw'].'" onclick="OpenDialogBox(\'div_changer_mdp\')">
                             <img src="includes/images/lock--pencil.png" alt="Change pw" />
                         </button>',
-                        $_SESSION['user_admin'] == 1 ? '' : 
+                        $_SESSION['user_admin'] == 1 ? '' :
                         (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) ? '
                         &nbsp;
                         <button title="'.$txt['import_csv_menu_title'].'" onclick="$(\'#div_import_from_csv\').dialog(\'open\')">
