@@ -56,16 +56,16 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
 } else {
     echo '
     <div style="width:800px;margin:auto;">';
-    if (@$_SESSION['error'] == 1000) {
+    if (@$_SESSION['error']['code'] == ERR_NOT_ALLOWED) {
         echo '
         <div class="ui-state-error ui-corner-all error" >'.$txt['error_not_authorized'].'</div>';
-    } elseif (@$_SESSION['error'] == 1001) {
+    } elseif (@$_SESSION['error']['code'] == ERR_NOT_EXIST) {
         echo '
         <div class="ui-state-error ui-corner-all error" >'.$txt['error_not_exists'].'</div>';
-    } elseif (@$_SESSION['error'] == 1002) {
+    } elseif (@$_SESSION['error']['code'] == ERR_SESS_EXPIRED) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['index_session_expired'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
-    } elseif (@$_SESSION['error'] == 1003) {
+    } elseif (@$_SESSION['error']['code'] == ERR_NO_MCRYPT) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
     }

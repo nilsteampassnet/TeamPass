@@ -22,4 +22,4 @@ header("Content-Type: application/octet-stream");
 header("Pragma: public");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
-readfile('../'.$_GET['sub'].'/'.basename($_GET['file']));
+readfile($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']));

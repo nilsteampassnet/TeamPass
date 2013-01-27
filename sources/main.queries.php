@@ -199,9 +199,9 @@ switch ($_POST['type']) {
         //Check 2-Factors pw
         if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
             include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
-            $Google2FA=new Google2FA();
+            $google2FA=new Google2FA();
 
-            if ($Google2FA->verify_key($_SESSION['initKey'], $data_received['onetimepw']) != true) {
+            if ($google2FA->verify_key($_SESSION['initKey'], $data_received['onetimepw']) != true) {
                 echo '[{"value" : "false_onetimepw", "user_admin":"", "initial_url" : ""}]';
                 $_SESSION['initial_url'] = "";
                 break;

@@ -854,7 +854,7 @@ if (isset($_POST['type'])) {
                 if (empty($_SESSION['email_from_name'])) $_SESSION['email_from_name'] = 'false';
 
                 $result1 = fwrite($fh, utf8_encode("<?php
-global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
+global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
 ### DATABASE connexion parameters ###

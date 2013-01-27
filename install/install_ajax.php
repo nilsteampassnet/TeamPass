@@ -711,7 +711,7 @@ if (isset($_POST['type'])) {
                 $fh,
                 utf8_encode(
 "<?php
-global \$lang, \$txt, \$k, \$chemin_passman, \$url_passman, \$pw_complexity, \$mngPages;
+global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db;
 
 ### DATABASE connexion parameters ###

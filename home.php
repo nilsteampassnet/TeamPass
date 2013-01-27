@@ -98,7 +98,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                    '.$txt['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$txt['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
                    <br />
                     <span class="ui-icon ui-icon-key" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$txt['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $nb_jours_avant_expiration_du_mdp == "infinite" ? '' : $txt['index_pw_expiration'].' '.$nb_jours_avant_expiration_du_mdp.' '.$txt['days'].'.';
+                '.$txt['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $numDaysBeforePwExpiration == "infinite" ? '' : $txt['index_pw_expiration'].' '.$numDaysBeforePwExpiration.' '.$txt['days'].'.';
 
     //Personnal menu
     echo '

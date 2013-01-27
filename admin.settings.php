@@ -644,7 +644,7 @@ echo '
                     <td>
                         <select id="default_language" name="default_language" class="text ui-widget-content">
                             <option value="">-- '.$txt['select'].' --</option>';
-foreach ($languages_list as $lang) {
+foreach ($languagesList as $lang) {
     echo '
     <option value="'.$lang.'"', isset($_SESSION['settings']['default_language']) && $_SESSION['settings']['default_language'] == $lang ? ' selected="selected"' : '', '>'.$lang.'</option>';
 }

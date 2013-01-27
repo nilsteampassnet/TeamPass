@@ -108,8 +108,8 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
                     if (document.getElementById("sk_path") == null)
                     	var data = "type="+step;
                     else
-                    	var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value); 
-                    
+                    	var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
+
                 }
                 httpRequest("upgrade_ajax.php",data);
             }
@@ -226,7 +226,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
                      <label for="db_db">dataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
                      <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
-                     <label for="db_pw">Password :</label><input type="password" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
+                     <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
                      <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
                      </fieldset>
 
@@ -341,7 +341,7 @@ if (!isset($_POST['step'])) {
 } elseif ($_POST['step'] == 6) {
     echo '
                  <div id="buttons_bottom">
-                     <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
+                     <input type="button" id="but_next" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
                  </div>';
 } else {
     echo '

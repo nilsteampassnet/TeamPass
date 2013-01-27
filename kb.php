@@ -12,7 +12,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1
+        || !isset($_SESSION['settings']['enable_kb'])
+        || $_SESSION['settings']['enable_kb'] != 1
+) {
     die('Hacking attempt...');
 }
 

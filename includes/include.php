@@ -9,7 +9,7 @@
  * @link
  */
 // DONT'T CHANGE BELOW THIS LINE
-global $settings, $languages_list;
+global $settings, $languagesList;
 
 $k['version'] = "2.1.15";
 $k['tool_name'] = "TeamPass";
@@ -20,6 +20,12 @@ $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
 $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');
 $k['admin_full_right'] = true;
+
+@define('ERR_NOT_ALLOWED', "1000");
+@define('ERR_NOT_EXIST', "1001");
+@define('ERR_SESS_EXPIRED', "1002");
+@define('ERR_NO_MCRYPT', "1003");
+
 // Management Pages
 $mngPages = array(
     'manage_users' => 'users.php',

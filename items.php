@@ -745,7 +745,7 @@ $select_visible_folders_options .
         <tr>
             <td>'.$txt['complex_asked'].' : </td>
             <td><select id="new_rep_complexite">';
-foreach ($pw_complexity as $complex) {
+foreach ($pwComplexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -788,7 +788,7 @@ $select_visible_folders_options .
             <td>'.$txt['complex_asked'].' : </td>
             <td><select id="edit_folder_complexity">
                 <option value="">---</option>';
-foreach ($pw_complexity as $complex) {
+foreach ($pwComplexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '

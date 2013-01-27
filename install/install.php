@@ -172,7 +172,7 @@ $_SESSION['CPM'] = 1;
                  var passwordlength = 28;    // length of the salt
                  var passwd = passwd_form.encrypt_key;
                  passwd.value = '';
-           
+
                  for ( i = 0; i < passwordlength; i++ ) {
                     passwd.value += pwchars.charAt( Math.floor( Math.random() * pwchars.length ) )
                  }
@@ -408,7 +408,7 @@ if (!isset($_POST['step'])) {
 } elseif ($_POST['step'] == 6) {
     echo '
                     <div id="buttons_bottom">
-                        <input type="button" id="but_next" onclick="javascript:window.location.href=\'http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
+                        <input type="button" id="but_next" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="Open TeamPass" />
                     </div>';
 } else {
     echo '

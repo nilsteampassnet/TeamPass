@@ -53,12 +53,13 @@ require_once 'sources/main.functions.php';
 /* DEFINE WHAT LANGUAGE TO USE */
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
-    $data_language = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
-    if (empty($data_language[0])) {
+    $dataLanguage =
+        $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
+    if (empty($dataLanguage[0])) {
         $_SESSION['user_language'] = "english";
         $_SESSION['user_language_flag'] = "us.png";
     } else {
-        $_SESSION['user_language'] = $data_language[0];
+        $_SESSION['user_language'] = $dataLanguage[0];
         $_SESSION['user_language_flag'] = "us.png";
     }
 } elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
@@ -182,7 +183,7 @@ echo '
                 <dt><img src="includes/images/flags/'.$_SESSION['user_language_flag'].'" alt="" /></dt>
                 <dd>
                     <ul>
-                    '.$languages_dropmenu.'
+                    '.$languagesDropmenu.'
                     </ul>
                 </dd>
             </dl>
@@ -336,13 +337,6 @@ if (!empty($errorAdmin)) {
             </div>';
 }
 // -----------
-// Display system errors
-if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
-    echo '
-        <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
-            ', (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == true) ? '<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'].'' : '', '
-        </div>';
-}
 // Display Maintenance mode information
 if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
     echo '
@@ -361,7 +355,7 @@ if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['upda
 // Display pages
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
     if (!extension_loaded('mcrypt')) {
-        $_SESSION['error'] = "1003";
+        $_SESSION['error']['code'] = ERR_NO_MCRYPT;
         include 'error.php';
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
@@ -377,7 +371,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
             include 'kb.php';
         } else {
-            $_SESSION['error'] = "1000"; //not allowed page
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include 'error.php';
         }
     } elseif (in_array($_GET['page'], array_keys($mngPages))) {
@@ -388,21 +382,21 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             if (($_GET['page'] != "manage_main" &&  $_GET['page'] != "manage_settings")) {
                 include($mngPages[$_GET['page']]);
             } else {
-                $_SESSION['error'] = "1000"; //not allowed page
+                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                 include 'error.php';
             }
         } else {
-            $_SESSION['error'] = "1000"; //not allowed page
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include 'error.php';
         }
     } else {
-        $_SESSION['error'] = "1001"; //page don't exists
+        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
         include 'error.php';
     }
 }
 // case where user not logged and can't access a direct link
 elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
-    $_SESSION['error'] = "1002";
+    $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
     include 'error.php';
 }
