@@ -144,7 +144,7 @@ if (!empty($_POST['type'])) {
         #CASE refresh the matrix
         case "refresh_roles_matrix":
             //pw complexity levels
-            $pw_complexity = array(
+            $pwComplexity = array(
                 0=>array(0,$txt['complex_level0']),
                 25=>array(25,$txt['complex_level1']),
                 50=>array(50,$txt['complex_level2']),
@@ -198,7 +198,7 @@ if (!empty($_POST['type'])) {
                         '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
                         '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.
-                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pw_complexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pwComplexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
 
                     array_push($arrRoles, $reccord['id']);
                 }
