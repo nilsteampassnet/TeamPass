@@ -75,7 +75,7 @@ function countdown()
     }
 
     //G?rer la fin de la session
-    if ( DayTill == "00:00:00" )
+    if ( $("#temps_restant").val() != "" && DayTill <= "00:00:00" )
         document.location = "index.php?session=expired";
 
     //Rewrite the string to the correct information.

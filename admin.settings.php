@@ -1197,8 +1197,8 @@ echo '
                     <tr>
                         <td><label>'.$txt['settings_ldap_ssl'].'</label></td>
                         <td>
-                            <div class="div_radio">
-                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$txt['yes'].'</label>
+                            <div class="div_radio" id="rad1">
+                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_tls\', 0);$(\'input[name=ldap_tls]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$txt['yes'].'</label>
                                 <input type="radio" id="ldap_ssl_radio2" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_ssl']) ? ' checked="checked"':''), ' /><label for="ldap_ssl_radio2">'.$txt['no'].'</label>
                                 <span class="setting_flag" id="flag_ldap_ssl"><img src="includes/images/status', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
@@ -1210,8 +1210,8 @@ echo '
                         <td><label>'.$txt['settings_ldap_tls'].'</label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_ssl\', 0);$(\'input[name=ldap_ssl]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$txt['no'].'</label>
                                 <span class="setting_flag" id="flag_ldap_tls"><img src="includes/images/status', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
@@ -1222,8 +1222,9 @@ echo '
                         <td><label>'.$txt['settings_ldap_elusers'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_elusers_tip'].'" /></label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_elusers_radio1" name="ldap_elusers" value="1"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_elusers_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_elusers_radio2" name="ldap_elusers" value="0"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_elusers']) ? ' checked="checked"':''), ' /><label for="ldap_elusers_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_elusers_radio1" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_elusers_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="ldap_elusers_radio2" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_elusers']) ? ' checked="checked"':''), ' /><label for="ldap_elusers_radio2">'.$txt['no'].'</label>
+                                <span class="setting_flag" id="flag_ldap_elusers"><img src="includes/images/status', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';

@@ -104,13 +104,13 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
     echo '
                 <div style="margin-top:15px;" id="personal_menu_actions">
                     <span class="ui-icon ui-icon-script" style="float: left; margin-right: .3em;">&nbsp;</span><b>'.$txt['home_personal_menu'].'</b>
-                    <div style="margin-left:30px;">
-                        <button title="'.$txt['index_change_pw'].'" onclick="OpenDialogBox(\'div_changer_mdp\')">
+                    <div style="margin-left:30px;">',
+                        isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
+                        '<button title="'.$txt['index_change_pw'].'" onclick="OpenDialogBox(\'div_changer_mdp\')">
                             <img src="includes/images/lock--pencil.png" alt="Change pw" />
-                        </button>',
+                        </button>&nbsp;',
                         $_SESSION['user_admin'] == 1 ? '' :
                         (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) ? '
-                        &nbsp;
                         <button title="'.$txt['import_csv_menu_title'].'" onclick="$(\'#div_import_from_csv\').dialog(\'open\')">
                             <img src="includes/images/database-import.png" alt="Import" />
                         </button>' : '' ,

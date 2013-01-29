@@ -11,7 +11,7 @@
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languagesList;
 
-$k['version'] = "2.1.15";
+$k['version'] = "2.1.16";
 $k['tool_name'] = "TeamPass";
 $k['jquery-version'] = "1.8.3";
 $k['jquery-ui-version'] = "1.9.2";
