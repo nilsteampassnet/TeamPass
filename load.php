@@ -366,7 +366,7 @@ $htmlHeaders .= '
 
     });';
 
-if (!isset($_GET['page']) && !isset($_SESSION['key'])) {
+if (!isset($_GET['page'])) {
     $htmlHeaders .= '
     $(function() {
         // DIALOG BOX FOR ASKING PASSWORD
