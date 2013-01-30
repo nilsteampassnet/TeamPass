@@ -48,7 +48,9 @@ switch ($_POST['type']) {
             // Get a string with the old pw array
             $lastPw = explode(';', $_SESSION['last_pw']);
             // if size is bigger then clean the array
-            if (sizeof($lastPw) > $_SESSION['settings']['number_of_used_pw'] && $_SESSION['settings']['number_of_used_pw'] > 0) {
+            if (sizeof($lastPw) > $_SESSION['settings']['number_of_used_pw']
+                    && $_SESSION['settings']['number_of_used_pw'] > 0
+            ) {
                 for ($x = 0; $x < $_SESSION['settings']['number_of_used_pw']; $x++) {
                     unset($lastPw[$x]);
                 }
@@ -193,8 +195,11 @@ switch ($_POST['type']) {
         $username = htmlspecialchars_decode($dataReceived['login']);
 
         //Check 2-Factors pw
-        if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-            include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
+        if (isset($_SESSION['settings']['2factors_authentication'])
+                && $_SESSION['settings']['2factors_authentication'] == 1
+        ) {
+            include $_SESSION['settings']['cpassman_dir'].
+                '/includes/libraries/Authentication/Twofactors/twofactors.php';
             $google2FA=new Google2FA();
 
             if ($google2FA->verify_key($_SESSION['initKey'], $dataReceived['onetimepw']) != true) {
@@ -218,7 +223,9 @@ switch ($_POST['type']) {
             $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w"); //create temp file
         }
 
-        if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 && $username != "admin") {
+        if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                && $username != "admin"
+        ) {
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
@@ -294,7 +301,9 @@ switch ($_POST['type']) {
         $proceedIdentification = false;
         if (mysql_num_rows($row) > 0) {
             $proceedIdentification = true;
-        } elseif (mysql_num_rows($row) == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers']) && ($_SESSION['settings']['ldap_elusers'] == 0 )) {
+        } elseif (mysql_num_rows($row) == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers'])
+                && ($_SESSION['settings']['ldap_elusers'] == 0)
+        ) {
             // If LDAP enabled, create user in CPM if doesn't exist
             $newUserId = $db->queryInsert(
                 "users",
@@ -339,11 +348,17 @@ switch ($_POST['type']) {
             // 3-  LDAP mode + user enabled + pw ok + usre is admin
             // This in order to allow admin by default to connect even if LDAP is activated
             if (
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0 && $password == $data['pw'] && $data['disabled'] == 0)
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
+                    && $password == $data['pw'] && $data['disabled'] == 0
+                )
                 ||
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin")
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                    && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                )
                 ||
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 && $username == "admin" && $password == $data['pw'] && $data['disabled'] == 0)
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                    && $username == "admin" && $password == $data['pw'] && $data['disabled'] == 0
+                )
             ) {
                 $_SESSION['autoriser'] = true;
 
@@ -381,7 +396,11 @@ switch ($_POST['type']) {
                 $_SESSION['user_language'] = $data['user_language'];
                 $_SESSION['user_email'] = $data['email'];
 
-                @syslog(LOG_WARNING, "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
+                @syslog(
+                    LOG_WARNING,
+                    "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s").
+                    " {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
+                );
                 // user type
                 if ($_SESSION['user_admin'] == 1) {
                     $_SESSION['user_privilege'] = $txt['god'];
@@ -427,14 +446,14 @@ switch ($_POST['type']) {
                 $_SESSION['user_pw_complexity'] = 0;
                 $_SESSION['arr_roles'] = array();
                 foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                    $res_roles = $db->queryFirst("SELECT title, complexity FROM ".$pre."roles_title WHERE id = ".$role);
+                    $resRoles = $db->queryFirst("SELECT title, complexity FROM ".$pre."roles_title WHERE id = ".$role);
                     $_SESSION['arr_roles'][$role] = array(
                         'id' => $role,
-                        'title' => $res_roles['title']
+                        'title' => $resRoles['title']
                        );
                     // get highest complexity
-                    if ($_SESSION['user_pw_complexity'] < $res_roles['complexity']) {
-                        $_SESSION['user_pw_complexity'] = $res_roles['complexity'];
+                    if ($_SESSION['user_pw_complexity'] < $resRoles['complexity']) {
+                        $_SESSION['user_pw_complexity'] = $resRoles['complexity'];
                     }
                 }
                 // build complete array of roles
@@ -467,7 +486,13 @@ switch ($_POST['type']) {
                     "id=".$data['id']
                 );
                 // Get user's rights
-                identifyUserRights($data['groupes_visibles'], $_SESSION['groupes_interdits'], $data['admin'], $data['fonction_id'], false);
+                identifyUserRights(
+                    $data['groupes_visibles'],
+                    $_SESSION['groupes_interdits'],
+                    $data['admin'],
+                    $data['fonction_id'],
+                    false
+                );
                 // Get some more elements
                 $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
                 // Get last seen items
@@ -485,7 +510,10 @@ switch ($_POST['type']) {
                 // send back the random key
                 $return = $dataReceived['randomstring'];
                 // Send email
-                if (isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 && $_SESSION['user_admin'] != 1) {
+                if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
+                    && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
+                    && $_SESSION['user_admin'] != 1
+                ) {
                     // get all Admin users
                     $receivers = "";
                     $rows = $db->fetchAllArray("SELECT email FROM ".$pre."users WHERE admin = 1");
@@ -502,7 +530,19 @@ switch ($_POST['type']) {
                         array(
                             'timestamp' => time(),
                             'subject' => $txt['email_subject_on_user_login'],
-                            'body' => str_replace(array('#tp_user#', '#tp_date#', '#tp_time#'), array(" ".$_SESSION['login'], date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']), date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])), $txt['email_body_on_user_login']),
+                            'body' => str_replace(
+                                array(
+                                    '#tp_user#',
+                                    '#tp_date#',
+                                    '#tp_time#'
+                                ),
+                                array(
+                                    " ".$_SESSION['login'],
+                                    date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']),
+                                    date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])
+                                ),
+                                $txt['email_body_on_user_login']
+                            ),
                             'receivers' => $receivers,
                             'status' => "not sent"
                            )
@@ -514,12 +554,16 @@ switch ($_POST['type']) {
             } else {
                 // User exists in the DB but Password is false
                 // check if user is locked
-                $user_is_locked = 0;
-                $nb_attempts = intval($data['no_bad_attempts'] + 1);
-                if ($_SESSION['settings']['nb_bad_authentication'] > 0 && intval($_SESSION['settings']['nb_bad_authentication']) < $nb_attempts) {
-                    $user_is_locked = 1;
+                $userIsLocked = 0;
+                $nbAttempts = intval($data['no_bad_attempts'] + 1);
+                if ($_SESSION['settings']['nb_bad_authentication'] > 0
+                    && intval($_SESSION['settings']['nb_bad_authentication']) < $nbAttempts
+                ) {
+                    $userIsLocked = 1;
                     // log it
-                    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+                    if (isset($_SESSION['settings']['log_connections'])
+                        && $_SESSION['settings']['log_connections'] == 1
+                    ) {
                         logEvents('user_locked', 'connection', $data['id']);
                     }
                 }
@@ -528,24 +572,26 @@ switch ($_POST['type']) {
                     array(
                         'key_tempo' => $_SESSION['key'],
                         'last_connexion' => time(),
-                        'disabled' => $user_is_locked,
-                        'no_bad_attempts' => $nb_attempts
+                        'disabled' => $userIsLocked,
+                        'no_bad_attempts' => $nbAttempts
                        ),
                     "id=".$data['id']
                 );
                 // What return shoulb we do
-                if ($user_is_locked == 1) {
+                if ($userIsLocked == 1) {
                     $return = "user_is_locked";
                 } elseif ($_SESSION['settings']['nb_bad_authentication'] == 0) {
                     $return = "false";
                 } else {
-                    $return = $nb_attempts;
+                    $return = $nbAttempts;
                 }
             }
         } else {
             $return = "false";
         }
-        echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'"}]';
+        echo '[{"value" : "'.$return.'", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+            '", "initial_url" : "'.@$_SESSION['initial_url'].'"}]';
         $_SESSION['initial_url'] = "";
         break;
     /**
@@ -589,15 +635,28 @@ switch ($_POST['type']) {
         $key = $pwgen->generate();
 
         // Get account and pw associated to email
-        $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE email = '".mysql_real_escape_string(stripslashes(($_POST['email'])))."'");
-        $text_mail = $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
-        $text_mail_alt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
+        $data = $db->fetchRow(
+            "SELECT COUNT(*) FROM ".$pre."users WHERE email = '".
+            mysql_real_escape_string(stripslashes(($_POST['email'])))."'"
+        );
+        $textMail = $txt['forgot_pw_email_body_1']." <a href=\"".
+            $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+            "&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url'].
+            "/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
+        $textMailAlt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".
+            $txt['index_password']." : ".md5($data['pw']);
 
         if ($data[0] != 0) {
-            $data = $db->fetchArray("SELECT login,pw FROM ".$pre."users WHERE email = '".mysql_real_escape_string(stripslashes(($_POST['email'])))."'");
+            $data = $db->fetchArray(
+                "SELECT login,pw FROM ".$pre."users WHERE email = '".
+                mysql_real_escape_string(stripslashes(($_POST['email'])))."'"
+            );
 
             // Check if email has already a key in DB
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");
+            $data = $db->fetchRow(
+                "SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".
+                $_POST['login']."' AND type = 'password_recovery'"
+            );
             if ($data[0] != 0) {
                 $db->queryUpdate(
                     "misc",
@@ -621,34 +680,7 @@ switch ($_POST['type']) {
                 );
             }
 
-            echo '[{'.sendEmail($txt['forgot_pw_email_subject'], $text_mail, $_POST['email'], $text_mail_alt).'}]';
-            /*
-            // load library
-            $mail = new SplClassLoader('Email\PhpMailer', '../includes/libraries');
-            $mail->register();
-            $mail = new Email\PhpMailer\PHPMailer();
-            // send to user
-            $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
-            $mail->isSmtp(); // send via SMTP
-            $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
-            $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth']; // turn on SMTP authentication
-            $mail->Username = $_SESSION['settings']['email_auth_username']; // SMTP username
-            $mail->Password = $_SESSION['settings']['email_auth_pwd']; // SMTP password
-            $mail->From = $_SESSION['settings']['email_from'];
-            $mail->FromName = $_SESSION['settings']['email_from_name'];
-            $mail->addAddress($_POST['email']); //Destinataire
-            $mail->WordWrap = 80; // set word wrap
-            $mail->isHtml(true); // send as HTML
-            $mail->SMTPDebug = 0;
-            $mail->Subject = $txt['forgot_pw_email_subject'];
-            $mail->AltBody = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".$txt['index_password']." : ".md5($data['pw']);
-            $mail->Body = $txt['forgot_pw_email_body_1']." <a href=\"".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
-            // send email
-            if (!$mail->send()) {
-                echo '[{"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"}]';
-            } else {
-                echo '[{"error":"no" , "message":"'.$txt['forgot_my_pw_email_sent'].'"}]';
-            }*/
+            echo '[{'.sendEmail($txt['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
         } else {
             // no one has this email ... alert
             echo '[{"error":"error_email" , "message":"'.$txt['forgot_my_pw_error_email_not_exist'].'"}]';
@@ -657,7 +689,10 @@ switch ($_POST['type']) {
     // Send to user his new pw if key is conform
     case "generate_new_password":
         // check if key is okay
-        $data = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE intitule = '".$_POST['login']."' AND type = 'password_recovery'");
+        $data = $db->fetchRow(
+            "SELECT valeur FROM ".$pre."misc WHERE intitule = '".
+            $_POST['login']."' AND type = 'password_recovery'"
+        );
         if ($_POST['key'] == $data[0]) {
             //Load PWGEN
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
@@ -753,7 +788,12 @@ switch ($_POST['type']) {
     case "store_personal_saltkey":
         if ($_POST['sk'] != "**************************") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
-            setcookie("TeamPass_PFSK_".md5($_SESSION['user_id']), $_SESSION['my_sk'], time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'], '/');
+            setcookie(
+                "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                $_SESSION['my_sk'],
+                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                '/'
+            );
         }
         break;
     /**
@@ -774,11 +814,30 @@ switch ($_POST['type']) {
         while ($reccord = mysql_fetchArray($rows)) {
             if (!empty($reccord['pw'])) {
                 // get pw
-                $pw = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $oldPersonalSaltkey, base64_decode($reccord['pw']), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+                $pw = trim(
+                    mcrypt_decrypt(
+                        MCRYPT_RIJNDAEL_256,
+                        $oldPersonalSaltkey,
+                        base64_decode($reccord['pw']),
+                        MCRYPT_MODE_ECB,
+                        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)
+                    )
+                );
                 // encrypt
-                $encryptedPw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $newPersonalSaltkey, $pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+                $encryptedPw = trim(
+                    base64_encode(
+                        mcrypt_encrypt(
+                            MCRYPT_RIJNDAEL_256,
+                            $newPersonalSaltkey,
+                            $pw,
+                            MCRYPT_MODE_ECB,
+                            mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)
+                        )
+                    )
+                );
                 // update pw in ITEMS table
-                mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
+                mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'")
+                    or die(mysql_error());
             }
         }
         // change salt
@@ -828,11 +887,17 @@ switch ($_POST['type']) {
      * Send emails not sent
      */
     case "send_wainting_emails":
-        if (isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 && isset($_SESSION['key'])) {
+        if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
+            && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
+            && isset($_SESSION['key'])
+        ) {
             $row = $db->queryFirst("SELECT valeur FROM ".$pre."misc WHERE type='cron' AND intitule='sending_emails'");
             if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                 //load library
-                $mail = new SplClassLoader('Email\PhpMailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+                $mail = new SplClassLoader(
+                    'Email\PhpMailer',
+                    $_SESSION['settings']['cpassman_dir'].'/includes/libraries'
+                );
                 $mail->register();
                 $mail = new Email\PhpMailer\PHPMailer();
 
