@@ -98,7 +98,13 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                    '.$txt['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$txt['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
                    <br />
                     <span class="ui-icon ui-icon-key" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$txt['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $numDaysBeforePwExpiration == "infinite" ? '' : $txt['index_pw_expiration'].' '.$numDaysBeforePwExpiration.' '.$txt['days'].'.';
+                   '.$txt['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $numDaysBeforePwExpiration == "infinite" ? '' : $txt['index_pw_expiration'].' '.$numDaysBeforePwExpiration.' '.$txt['days'].'.';
+    echo '
+                   <br /><span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
+                   <div id="upload_info">
+                        <div id="plupload_runtime">Upload feature: No runtime found.</div>
+                        <input type="hidden" id="upload_enabled" value="" />
+                    </div>';
 
     //Personnal menu
     echo '
@@ -111,7 +117,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         </button>&nbsp;',
                         $_SESSION['user_admin'] == 1 ? '' :
                         (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) ? '
-                        <button title="'.$txt['import_csv_menu_title'].'" onclick="$(\'#div_import_from_csv\').dialog(\'open\')">
+                        <button title="'.$txt['import_csv_menu_title'].'" onclick="$(\'#csv_import_options, #kp_import_options\').hide();$(\'#div_import_from_csv\').dialog(\'open\');">
                             <img src="includes/images/database-import.png" alt="Import" />
                         </button>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1) ? '
@@ -201,9 +207,14 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                             <div style="margin-bottom:5px;margin-top:5px;padding:5px;" class="ui-widget ui-state-active ui-corner-all">'.$txt['import_csv_dialog_info'].'</div>
                             <!-- show input file + uploadify call -->
                             <div style="text-align:center;margin-top:10px;">
-                                <input id="fileInput_csv" name="fileInput_csv" type="file" /><br />
-                                <input type="checkbox" id="import_csv_anyone_can_modify" /><label for="import_csv_anyone_can_modify">'.$txt['import_csv_anyone_can_modify_txt'].'</label><br />
-                                <input type="checkbox" id="import_csv_anyone_can_modify_in_role" /><label for="import_csv_anyone_can_modify_in_role">'.$txt['import_csv_anyone_can_modify_in_role_txt'].'</label>
+                                <div id="upload_container_csv">
+                                    <div id="filelist_csv"></div><br />
+                                    <a id="pickfiles_csv" href="#">'.$txt['csv_import_button_text'].'</a>
+                                </div>
+                                <div id="csv_import_options" style="display:none;">
+                                    <input type="checkbox" id="import_csv_anyone_can_modify" /><label for="import_csv_anyone_can_modify">'.$txt['import_csv_anyone_can_modify_txt'].'</label><br />
+                                    <input type="checkbox" id="import_csv_anyone_can_modify_in_role" /><label for="import_csv_anyone_can_modify_in_role">'.$txt['import_csv_anyone_can_modify_in_role_txt'].'</label>
+                                </div>
                             </div>
                         </div>';
 
@@ -212,7 +223,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <div id="import_type_keepass" style="display:none;">
                             <div style="margin-bottom:5px;margin-top:5px;padding:5px;" class="ui-widget ui-state-active ui-corner-all">'.$txt['import_keepass_dialog_info'].'</div>
                              <!-- Prepare a list of all folders that the user can choose -->
-                            <div style="margin-top:10px;">
+                            <div style="margin-top:10px;" id="keypass_import_options">
                                 <label><b>'.$txt['import_keepass_to_folder'].'</b></label>&nbsp;
                                 <select id="import_keepass_items_to">
                                     <option value="0">'.$txt['root'].'</option>';
@@ -240,8 +251,10 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                             </div>';
 
                         echo '
-                            <!-- show input file + uploadify call -->
-                            <div style="text-align:center;margin-top:10px;"><input id="fileInput_keepass" name="fileInput_keepass" type="file" /></div>
+                            <div id="upload_container_kp" style="text-align:center;margin-top:10px;">
+                                <div id="filelist_kp"></div><br />
+                                <a id="pickfiles_kp" href="#">'.$txt['keepass_import_button_text'].'</a>
+                            </div>
                         </div>';
 
                         // Import results

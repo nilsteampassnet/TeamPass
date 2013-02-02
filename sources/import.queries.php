@@ -164,31 +164,31 @@ switch ($_POST['type']) {
     //Insert into DB the items the user has selected
     case "import_items":
         //decrypt and retreive data in JSON format
-        $data_received = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
+        $dataReceived = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
 
         //Get some info about personal folder
         if ($_POST['folder'] == $_SESSION['user_id']) {
-            $personal_folder = 1;
+            $personalFolder = 1;
         } else {
-            $personal_folder = 0;
+            $personalFolder = 0;
         }
         $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
 
         //Prepare variables
-        $list_items = htmlspecialchars_decode($data_received);
+        $listItems = htmlspecialchars_decode($dataReceived);
         $list = "";
 
         include 'main.functions.php';
-        foreach (explode('@_#sep#_@', mysql_real_escape_string(stripslashes($list_items))) as $item) {
+        foreach (explode('@_#sep#_@', mysql_real_escape_string(stripslashes($listItems))) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
 
             //Encryption key
-            $random_key = generateKey();
-            $pw = $random_key.$item[2];
+            $randomKey = generateKey();
+            $pw = $randomKey.$item[2];
 
             // Insert new item in table ITEMS
-            $new_id = $db->queryInsert(
+            $newId = $db->queryInsert(
                 "items",
                 array(
                     'label' => $item[0],
@@ -206,8 +206,8 @@ switch ($_POST['type']) {
                 'keys',
                 array(
                     'table' => 'items',
-                    'id' => $new_id,
-                    'rand_key' => $random_key
+                    'id' => $newId,
+                    'rand_key' => $randomKey
                )
             );
 
@@ -218,7 +218,7 @@ switch ($_POST['type']) {
                         'restriction_to_roles',
                         array(
                             'role_id' => $role['id'],
-                            'item_id' => $new_id
+                            'item_id' => $newId
                        )
                     );
                 }
@@ -228,7 +228,7 @@ switch ($_POST['type']) {
             $db->queryInsert(
                 'log_items',
                 array(
-                    'id_item' => $new_id,
+                    'id_item' => $newId,
                     'date' => time(),
                     'id_user' => $_SESSION['user_id'],
                     'action' => 'at_creation'
@@ -245,11 +245,11 @@ switch ($_POST['type']) {
             $db->queryInsert(
                 'cache',
                 array(
-                    'id' => $new_id,
+                    'id' => $newId,
                     'label' => $item[0],
                     'description' => $item[4],
                     'id_tree' => $_POST['folder'],
-                    'perso' => $personal_folder == 0 ? 0 : 1,
+                    'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => $item[1],
                     'folder' => $data_fld[0],
                     'author' => $_SESSION['user_id']
@@ -266,20 +266,20 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         //Initialization
-        $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $not_a_keepass_file = $new_item = $history = $generator_found = false;
-        $name = $level_in_progress = $previous_level = $full_path = $history_level = $path = $display = $keepass_version = "";
-        $num_groups = $num_items = 0;
-        $temp_array = $arrFolders = array();
-        $level_min = 2;
-        $folders_separator = '@&##&@';
-        $items_separator = '<=|#|=>';
-        $line_end_separator = '@*1|#9*|@';
+        $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
+        $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = "";
+        $numGroups = $numItems = 0;
+        $tempArray = $arrFolders = array();
+        $levelMin = 2;
+        $foldersSeparator = '@&##&@';
+        $itemsSeparator = '<=|#|=>';
+        $lineEndSeparator = '@*1|#9*|@';
 
         //prepare CACHE files
-        $cacheFile_name = $_SESSION['settings']['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
-        $cacheFile_name_folder = $cacheFile_name."_folders";
-        $cacheFile = fopen($cacheFile_name, "w");
-        $cacheFileF = fopen($cacheFile_name_folder, "w");
+        $cacheFileName = $_SESSION['settings']['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
+        $cacheFileNameFolder = $cacheFileName."_folders";
+        $cacheFile = fopen($cacheFileName, "w");
+        $cacheFileF = fopen($cacheFileNameFolder, "w");
 
         //read xml file
         if (file_exists("'".$_SESSION['settings']['url_to_files_folder']."/".$_POST['file'])."'") {
@@ -289,78 +289,87 @@ switch ($_POST['type']) {
         /**
         Recursive function that will permit to read each level of XML nodes
         */
-        function recursiveKeepassXML($xml_root, $xml_level = 0)
+        function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
-            global $meta, $root, $group, $name, $entry, $level_min, $key, $title, $notes, $pw, $username, $url, $new_item, $temp_array, $history, $level_in_progress, $history_level, $nb_items, $path, $previous_level, $generator_found, $cacheFile, $cacheFileF, $num_groups, $num_items, $folders_separator, $items_separator, $line_end_separator, $keepass_version, $arrFolders;
+            global $meta, $root, $group, $name, $entry, $levelMin, $key, $title, $notes, $pw, $username, $url,
+                $newItem, $tempArray, $history, $levelInProgress, $historyLevel, $nbItems,
+                $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
+                $numItems, $foldersSeparator, $itemsSeparator, $lineEndSeparator, $keepassVersion, $arrFolders;
 
             // For each node, get the name and SimpleXML balise
-            foreach ($xml_root as $nom => $elem) {
+            foreach ($xmlRoot as $nom => $elem) {
                 /*
                 * check if file is generated by keepass 1
                 * key "pwentry" is only used in KP1.xx XML files
                 */
+                //echo $nom."-";
                 if ($nom == "pwentry") {
-                    if (empty($keepass_version)) {
-                        $keepass_version = 1;
-                        $generator_found = true;
+                    if (empty($keepassVersion)) {
+                        $keepassVersion = 1;
+                        $generatorFound = true;
                         $entry = true;
                     } else {
                         $entry = true;
                     }
 
                     //get children
-                    $xml_children = $elem->children();
+                    $xmlChildren = $elem->children();
 
                     //recursive call
-                    //recursiveKeepassXML($xml_children, $xml_level + 1);
+                    recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
                 }
                 //IMPORTING KEEPASS 1 XML FILE
-                if ($keepass_version == 1) {
+                if ($keepassVersion == 1) {
                     if ($entry == true && $nom == "expiretime") {
                         //save previous keepass entry
-                        $tree = preg_replace('/\\\\/', $folders_separator, $temp_array['tree']);
-                        fputs($cacheFile, $tree.$items_separator.$temp_array['group'].$items_separator.$temp_array['title'].$items_separator.$temp_array['pw'].$items_separator.$temp_array['username'].$items_separator.$temp_array['notes'].$items_separator.$temp_array['url']."\n");
+                        $tree = preg_replace('/\\\\/', $foldersSeparator, $tempArray['tree']);
+                        fputs(
+                            $cacheFile,
+                            $tree.$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].
+                            $itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
+                            $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+                        );
 
-                        if (!in_array($temp_array['tree'], $arrFolders)) {
+                        if (!in_array($tempArray['tree'], $arrFolders)) {
                             fwrite($cacheFileF, $tree."\n");
-                            array_push($arrFolders, $temp_array['tree']);
+                            array_push($arrFolders, $tempArray['tree']);
                         }
 
-                        $temp_array = array();
-                        $new_item++;
+                        $tempArray = array();
+                        $newItem++;
                     }
 
                     if ($entry == true && $nom == "group") {
-                        $temp_array['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $tempArray['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         foreach ($elem->attributes() as $attributeskey0 => $attributesvalue1) {
                             if ($attributeskey0 == "tree") {
                                 $path = explode('\\', $attributesvalue1);
                                 if (count($path) > 1) {
                                     unset($path[0]);
-                                    $temp_array['tree'] = implode('\\', $path).'\\'.$temp_array['group'];
+                                    $tempArray['tree'] = implode('\\', $path).'\\'.$tempArray['group'];
                                 } else {
-                                    $temp_array['tree'] = $temp_array['group'];
+                                    $tempArray['tree'] = $tempArray['group'];
                                 }
                             }
                         }
-                        $num_groups ++;
+                        $numGroups ++;
                     } elseif ($entry == true && $nom == "title") {
-                        $temp_array['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $tempArray['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "username") {
-                        $temp_array['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $tempArray['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "url") {
-                        $temp_array['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $tempArray['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "password") {
-                        $temp_array['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $tempArray['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "notes") {
-                        $temp_array['notes'] = addslashes(preg_replace('#[\r\n]#', $line_end_separator, $elem));
+                        $tempArray['notes'] = addslashes(preg_replace('#[\r\n]#', $lineEndSeparator, $elem));
                     }
                 }
 
                 /*
                    * check if file is generated by keepass 2
                 */
-                if (trim($elem) == "" && $keepass_version != 1) {
+                if (trim($elem) == "" && $keepassVersion != 1) {
                     //check if file is generated by keepass 2
                     if ($nom == "Meta") {
                         $meta = true;
@@ -375,59 +384,63 @@ switch ($_POST['type']) {
                         $name = "";
 
                         // recap previous info
-                        if (!empty($temp_array['title'])) {
+                        if (!empty($tempArray['title'])) {
                             //store data
-                            fputs($cacheFile, $temp_array['path'].$items_separator.$temp_array['group'].$items_separator.$temp_array['title'].$items_separator.$temp_array['pw'].$items_separator.$temp_array['username'].$items_separator.$temp_array['notes'].$items_separator.$temp_array['url']."\n");
+                            fputs(
+                                $cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].
+                                $itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].
+                                $itemsSeparator.$tempArray['username'].$itemsSeparator.
+                                $tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+                            );
 
                             //Clean temp array
-                            $temp_array['title'] = $temp_array['notes'] = $temp_array['pw'] = $temp_array['username'] = $temp_array['url'] = "";
+                            $tempArray['title'] = $tempArray['notes'] =
+                                $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = "";
 
                             //increment number
-                            $num_items++;
+                            $numItems++;
                         }
-                        $history_level = 0;
+                        $historyLevel = 0;
                     }
 
                     //History node needs to be managed in order to not polluate final list
                     if ($nom == "History") {
                         $history = true;
                         $entry = false;
-                        $history_level = $xml_level;
+                        $historyLevel = $xmlLevel;
                     }
 
-                    if ($nom == "Entry" && ($xml_level < $history_level || empty($history_level))) {
+                    if ($nom == "Entry" && ($xmlLevel < $historyLevel || empty($historyLevel))) {
                         $entry = true;
                         $group = false;
 
                         // recap previous info
-                        if (!empty($temp_array['title'])) {
+                        if (!empty($tempArray['title'])) {
                             //store data
-                            fputs($cacheFile, $temp_array['path'].$items_separator.$temp_array['group'].$items_separator.$temp_array['title'].$items_separator.$temp_array['pw'].$items_separator.$temp_array['username'].$items_separator.$temp_array['notes'].$items_separator.$temp_array['url']."\n");
+                            fputs($cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].$itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n");
 
                             //Clean temp array
-                            $temp_array['title'] = $temp_array['notes'] = $temp_array['pw'] = $temp_array['username'] = $temp_array['url'] = "";
+                            $tempArray['title'] = $tempArray['notes'] = $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = "";
 
                             //increment number
-                            $num_items++;
+                            $numItems++;
                         }
-                        $history_level = 0;
+                        $historyLevel = 0;
                     }
 
                     //get children
-                    $xml_children = $elem->children();
+                    $xmlChildren = $elem->children();
 
                     //recursive call
-                    recursiveKeepassXML($xml_children, $xml_level + 1);
-                }
-
+                    recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
                 //IMPORTING KEEPASS 2 XML FILE
-                elseif ($keepass_version != 1) {
+                } elseif ($keepassVersion != 1) {
                     // exit if XML file not generated by KeePass
                     if ($meta == true && $nom == "Generator" && $elem == "KeePass") {
-                        $generator_found = true;
-                        $keepass_version = 2;
+                        $generatorFound = true;
+                        $keepassVersion = 2;
                         break;
-                    } elseif ($root == true && $xml_level > $level_min) {
+                    } elseif ($root == true && $xmlLevel > $levelMin) {
                         //echo $nom.",".$elem." - ";
                         //Check each node name and get data from some of them
                         if ($entry == true && $nom == "Key" && $elem == "Title") {
@@ -446,65 +459,65 @@ switch ($_POST['type']) {
                             $username = true;
                             $notes = $pw = $url = $title = false;
                         } elseif ($group == true && $nom == "Name") {
-                            $temp_array['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
-                            $temp_array['level'] = $xml_level;
+                            $tempArray['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['level'] = $xmlLevel;
                             //build current path
-                            if ($xml_level > $level_in_progress) {
-                                if (!empty($temp_array['path'])) {
-                                    $temp_array['path'] .= $folders_separator.$temp_array['group'];
+                            if ($xmlLevel > $levelInProgress) {
+                                if (!empty($tempArray['path'])) {
+                                    $tempArray['path'] .= $foldersSeparator.$tempArray['group'];
                                 } else {
-                                    $temp_array['path'] = $temp_array['group'];
+                                    $tempArray['path'] = $tempArray['group'];
                                 }
-                            } elseif ($xml_level == $level_in_progress) {
-                                if ($level_in_progress == 3) {
-                                    $temp_array['path'] = $temp_array['group'];
+                            } elseif ($xmlLevel == $levelInProgress) {
+                                if ($levelInProgress == 3) {
+                                    $tempArray['path'] = $tempArray['group'];
                                 } else {
-                                    $temp_array['path'] = substr($temp_array['path'], 0, strrpos($temp_array['path'], $folders_separator)+strlen($folders_separator)).$temp_array['group'];
+                                    $tempArray['path'] = substr($tempArray['path'], 0, strrpos($tempArray['path'], $foldersSeparator)+strlen($foldersSeparator)).$tempArray['group'];
                                 }
                             } else {
-                                $diff = abs($xml_level-$level_in_progress)+1;
-                                $tmp = explode($folders_separator, $temp_array['path']);
-                                $temp_array['path'] = "";
+                                $diff = abs($xmlLevel-$levelInProgress)+1;
+                                $tmp = explode($foldersSeparator, $tempArray['path']);
+                                $tempArray['path'] = "";
                                 for ($x=0; $x<(count($tmp)-$diff); $x++) {
-                                    if (!empty($temp_array['path'])) {
-                                        $temp_array['path'] = $temp_array['path']. $folders_separator.$tmp[$x];
+                                    if (!empty($tempArray['path'])) {
+                                        $tempArray['path'] = $tempArray['path']. $foldersSeparator.$tmp[$x];
                                     } else {
-                                        $temp_array['path'] = $tmp[$x];
+                                        $tempArray['path'] = $tmp[$x];
                                     }
                                 }
-                                if (!empty($temp_array['path'])) {
-                                    $temp_array['path'] .= $folders_separator.$temp_array['group'];
+                                if (!empty($tempArray['path'])) {
+                                    $tempArray['path'] .= $foldersSeparator.$tempArray['group'];
                                 } else {
-                                    $temp_array['path'] = $temp_array['group'];
+                                    $tempArray['path'] = $tempArray['group'];
                                 }
                             }
 
                             //store folders
-                            if (!in_array($temp_array['path'], $groups_array)) {
-                                fwrite($cacheFileF, $temp_array['path']."\n");
+                            if (!in_array($tempArray['path'], $groupsArray)) {
+                                fwrite($cacheFileF, $tempArray['path']."\n");
 
                                 //increment number
-                                $num_groups ++;
+                                $numGroups ++;
                             }
 
                             //Store actual level
-                            $level_in_progress = $xml_level;
-                            $previous_level = $temp_array['group'];
+                            $levelInProgress = $xmlLevel;
+                            $previousLevel = $tempArray['group'];
                         } elseif ($title == true && $nom == "Value") {
                             $title = false;
-                            $temp_array['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         } elseif ($notes == true && $nom == "Value") {
                             $notes = false;
-                            $temp_array['notes'] = addslashes(preg_replace('#[\r\n]#', $line_end_separator, $elem));
+                            $tempArray['notes'] = addslashes(preg_replace('#[\r\n]#', $lineEndSeparator, $elem));
                         } elseif ($pw == true && $nom == "Value") {
                             $pw = false;
-                            $temp_array['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         } elseif ($url == true && $nom == "Value") {
                             $url = false;
-                            $temp_array['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         } elseif ($username == true && $nom == "Value") {
                             $username = false;
-                            $temp_array['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         }
                     }
                 }
@@ -515,27 +528,42 @@ switch ($_POST['type']) {
         recursiveKeepassXML($xml);
 
         //Stop if not a keepass file
-        if ($generator_found == false) {
+        if ($generatorFound == false) {
+            //Close file & delete it
+            fclose($cacheFileF);
+            fclose($cacheFile);
+            unlink($cacheFile);
+            unlink($cacheFileF);
+            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+
             echo '[{"error":"not_kp_file" , "message":"'.$txt['import_error_no_read_possible_kp'].'"}]';
             break;
         }
 
         //save last item
-        if (!empty($temp_array['title'])) {
+        if (!empty($tempArray['title'])) {
             //store data
-            fputs($cacheFile, $temp_array['path'].$items_separator.$temp_array['group'].$items_separator.$temp_array['title'].$items_separator.$temp_array['pw'].$items_separator.$temp_array['username'].$items_separator.$temp_array['notes'].$items_separator.$temp_array['url']."\n");
+            fputs(
+                $cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.
+                $tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
+                $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+            );
 
             //increment number
-            $num_items++;
+            $numItems++;
         }
 
         ##################
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
-        if ($num_items>0 || $num_groups>0) {
-            $items_array = array();
-            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$txt['nb_folders'].': '.$num_groups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$txt['nb_items'].': '.$num_items.'<br /><br />';
-            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<a href="#" onclick="toggle_importing_details()">'.$txt['importing_details'].'</a><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.$txt['importing_folders'].':</b><br />';
+        if ($numItems>0 || $numGroups>0) {
+            $itemsArray = array();
+            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$txt['nb_folders'].': '.
+                $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$txt['nb_items'].': '.
+                $numItems.'<br /><br />';
+            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<a href="#" onclick="toggle_importing_details()">'.
+                $txt['importing_details'].'</a><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
+                $txt['importing_folders'].':</b><br />';
 
             //if destination is not ROOT then get the complexity level
             if ($_POST['destination'] > 0) {
@@ -546,42 +574,42 @@ switch ($_POST['type']) {
                     WHERE m.type = 'complex'
                     AND m.intitule = '".$_POST['destination']."'"
                 );
-                $level_pw_complexity = $data[0];
-                $start_path_level = $data[1];
+                $levelPwComplexity = $data[0];
+                $startPathLevel = $data[1];
             } else {
-                $level_pw_complexity = 50;
-                $start_path_level = 0;
+                $levelPwComplexity = 50;
+                $startPathLevel = 0;
             }
 
             //Get all folders from file
             fclose($cacheFileF);
-            $cacheFileF = fopen($cacheFile_name_folder, "r");
+            $cacheFileF = fopen($cacheFileNameFolder, "r");
 
             //Create folders
             $i=1;
             $level = 0;
-            $folders_array = array();
-            $nb_folders_imported = 0;
+            $foldersArray = array();
+            $nbFoldersImported = 0;
 
             while (!feof($cacheFileF)) {
                 $folder = fgets($cacheFileF, 4096);
                 if (!empty($folder)) {
                     $folder = str_replace(array("\r\n", "\n", "\r"), '', $folder);
                     //get number of levels in path
-                    $path = explode($folders_separator, $folder);
-                    $folder_level = count($path);
+                    $path = explode($foldersSeparator, $folder);
+                    $folderLevel = count($path);
 
                     //get folder name
-                    if (strrpos($folder, $folders_separator) > 0) {
-                        $fold = substr($folder, strrpos($folder, $folders_separator)+strlen($folders_separator));
-                        $parent_id = $folders_array[$path[$folder_level-2]]['id'];
+                    if (strrpos($folder, $foldersSeparator) > 0) {
+                        $fold = substr($folder, strrpos($folder, $foldersSeparator)+strlen($foldersSeparator));
+                        $parent_id = $foldersArray[$path[$folderLevel-2]]['id'];
                     } else {
                         $fold = $folder;
                         $parent_id = $_POST['destination']; //permits to select the folder destination
                     }
 
                     //create folder - if not exists at the same level
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folder_level+$start_path_level)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
+                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
                     if ($data[0] == 0) {
                         //do query
                         $id = $db->queryInsert(
@@ -589,7 +617,7 @@ switch ($_POST['type']) {
                             array(
                                 'parent_id' => $parent_id,
                                 'title' => stripslashes($fold),
-                                'nlevel' => $folder_level
+                                'nlevel' => $folderLevel
                            )
                         );
                         //Add complexity level => level is set to "medium" by default.
@@ -598,7 +626,7 @@ switch ($_POST['type']) {
                             array(
                                 'type' => 'complex',
                                 'intitule' => $id,
-                                'valeur' => $level_pw_complexity
+                                'valeur' => $levelPwComplexity
                            )
                         );
 
@@ -619,17 +647,17 @@ switch ($_POST['type']) {
                         //show
                         $text .= '- '.(($fold)).'<br />';
                         //increment number of imported folders
-                        $nb_folders_imported++;
+                        $nbFoldersImported++;
                     } else {
                         //get forlder actual ID
-                        $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folder_level+$start_path_level)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
+                        $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
                         $id = $data[0];
                     }
 
                     //store in array
-                    $folders_array[$fold] = array(
+                    $foldersArray[$fold] = array(
                         'folder' => $fold,
-                        'nlevel' => $folder_level,
+                        'nlevel' => $folderLevel,
                         'id' => $id
                     );
 
@@ -637,16 +665,14 @@ switch ($_POST['type']) {
                     $i++;
                 }
             }
-            //Close file & delete it
-            fclose($cacheFileF);
-            unlink($cacheFile_name_folder);
+
 
             //if no new folders them inform
-            if ($nb_folders_imported == 0) {
+            if ($nbFoldersImported == 0) {
                 $text .= $txt['none'].'<br />';
             } else {
                 //Refresh the rights of actual user
-                identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$new_id, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+                identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$newId, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
 
                 //rebuild full tree
                 $tree->rebuild();
@@ -655,42 +681,42 @@ switch ($_POST['type']) {
             $text .= '<br /><b>'.$txt['importing_items'].':</b><br />';
 
             // Now import ITEMS
-            $nb_items_imported = 0;
+            $nbItemsImported = 0;
 
             //Get some info about personal folder
             if ($_POST['destination'] == $_SESSION['user_id']) {
-                $personal_folder = 1;
+                $personalFolder = 1;
             } else {
-                $personal_folder = 0;
+                $personalFolder = 0;
             }
 
             //prepare file to be read
             fclose($cacheFile);
-            $cacheFile = fopen($cacheFile_name, "r");
+            $cacheFile = fopen($cacheFileName, "r");
 
             while (!feof($cacheFile)) {
                 //prepare an array with item to import
                 $item = fgets($cacheFile, 4096);
-                $item = explode($items_separator, str_replace(array("\r\n", "\n", "\r"), '', $item));
+                $item = explode($itemsSeparator, str_replace(array("\r\n", "\n", "\r"), '', $item));
 
                 if (!empty($item[2])) {
                     //check if not exists
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$folders_array[$item[1]]['id']."' AND label = \"".$item[2]."\"");
+                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
 
                     if ($data[0] == 0) {
                         //Encryption key
-                        $random_key = generateKey();
-                        $pw = $random_key.$item[3];
+                        $randomKey = generateKey();
+                        $pw = $randomKey.$item[3];
 
                         //ADD item
-                        $new_id = $db->queryInsert(
+                        $newId = $db->queryInsert(
                             'items',
                             array(
                                 'label' => stripslashes($item[2]),
-                                'description' => str_replace($line_end_separator, '<br />', $item[5]),
+                                'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
                                 'pw' => encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk']))),
                                 'url' => stripslashes($item[6]),
-                                'id_tree' => count($folders_array)==0 ? $_POST['destination'] : $folders_array[$item[1]]['id'],
+                                'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[1]]['id'],
                                 'login' => stripslashes($item[4]),
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
@@ -701,8 +727,8 @@ switch ($_POST['type']) {
                             'keys',
                             array(
                                 'table' => 'items',
-                                'id' => $new_id,
-                                'rand_key' => $random_key
+                                'id' => $newId,
+                                'rand_key' => $randomKey
                            )
                         );
 
@@ -713,7 +739,7 @@ switch ($_POST['type']) {
                                     'restriction_to_roles',
                                     array(
                                         'role_id' => $role['id'],
-                                        'item_id' => $new_id
+                                        'item_id' => $newId
                                    )
                                 );
                             }
@@ -723,7 +749,7 @@ switch ($_POST['type']) {
                         $db->queryInsert(
                             'log_items',
                             array(
-                                'id_item' => $new_id,
+                                'id_item' => $newId,
                                 'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
                                 'action' => 'at_creation'
@@ -731,22 +757,22 @@ switch ($_POST['type']) {
                         );
 
                         //Get folder label
-                        if (count($folders_array)==0) {
-                            $folder_id = $_POST['destination'];
+                        if (count($foldersArray)==0) {
+                            $folderId = $_POST['destination'];
                         } else {
-                            $folder_id = $folders_array[$item[1]]['id'];
+                            $folderId = $foldersArray[$item[1]]['id'];
                         }
-                        $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folder_id."'");
+                        $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
 
                         //Add entry to cache table
                         $db->queryInsert(
                             'cache',
                             array(
-                                'id' => $new_id,
+                                'id' => $newId,
                                 'label' => stripslashes($item[2]),
-                                'description' => str_replace($line_end_separator, '<br />', $item[5]),
-                                'id_tree' => $folder_id,
-                                'perso' => $personal_folder == 0 ? 0 : 1,
+                                'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
+                                'id_tree' => $folderId,
+                                'perso' => $personalFolder == 0 ? 0 : 1,
                                 'login' => stripslashes($item[4]),
                                 'folder' => $data[0],
                                 'author' => $_SESSION['user_id']
@@ -757,13 +783,13 @@ switch ($_POST['type']) {
                         $text .= '- '.addslashes($item[2]).'<br />';
 
                         //increment number of imported items
-                        $nb_items_imported++;
+                        $nbItemsImported++;
                     }
                 }
             }
 
             //if no new items them inform
-            if ($nb_items_imported == 0) {
+            if ($nbItemsImported == 0) {
                 $text .= $txt['none'].'<br />';
             }
 
@@ -771,11 +797,16 @@ switch ($_POST['type']) {
             $text .= '</div><br /><br /><b>'.$txt['import_kp_finished'].'</b>';
 
             //Delete cache file
+            fclose($cacheFileF);
             fclose($cacheFile);
-            unlink($cacheFile_name);
+            unlink($cacheFile);
+            unlink($cacheFileF);
+            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
+        } else {
+            echo '[{"error":"yes" , "message":""}]';
         }
         break;
 }

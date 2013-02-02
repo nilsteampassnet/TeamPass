@@ -80,10 +80,11 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
 } else if (!isset($_GET['page'])) {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
+    if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+        $htmlHeaders .= '
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
+    }
 }
 // Get Favicon
 $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
@@ -417,7 +418,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $(function() {
         //build nice buttonset
         $("#radio_import_type, #connect_ldap_mode").buttonset();
-        $("#personal_sk, #change_personal_sk, #reset_personal_sk").button();
+        $("#personal_sk, #change_personal_sk, #reset_personal_sk, #pickfiles_csv, #pickfiles_kp").button();
 
         if ($("#personal_saltkey_set").val() != 1) {
             $("#change_personal_sk").button("disable");
@@ -553,33 +554,10 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                     $("#import_status").html("");
                     $(this).dialog("close");
                 }
+            },
+            close: function() {
+                $("#csv_import_options").hide();
             }
-        });
-
-        //CALL TO UPLOADIFY FOR CSV IMPORT
-        $("#fileInput_csv").uploadify({
-            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
-            "scriptData": {"type_upload":"import_items_from_csv"},
-            "script"    : "includes/libraries/Uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
-            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
-            "auto"      : true,
-            "fileDesc"  : "csv",
-            "fileExt"   : "*.csv",
-            "onComplete": function(event, queueID, fileObj, reponse, data) {$("#import_status_ajax_loader").show();ImportCSV(fileObj.name);},
-            "buttonText": \''.$txt['csv_import_button_text'].'\'
-        });
-
-        //CALL TO UPLOADIFY FOR KEEPASS IMPORT
-        $("#fileInput_keepass").uploadify({
-            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
-            "scriptData": {"type_upload":"import_items_from_file"},
-            "script"    : "includes/libraries/Uploadify/uploadify.php?PHPSESSID='.$_SESSION['user_id'].'",
-            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
-            "auto"      : true,
-            "fileDesc"  : "xml",
-            "fileExt"   : "*.xml",
-            "onComplete": function(event, queueID, fileObj, reponse, data) {$("#import_status_ajax_loader").show();ImportKEEPASS(fileObj.name);},//
-            "buttonText": \''.$txt['keepass_import_button_text'].'\'
         });
 
         // DIALOG BOX FOR PRINT OUT ITEMS
@@ -687,7 +665,139 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             function(data) {
                 //
             }
-       );
+       );';
+
+    if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+        $htmlHeaders .= '
+        // CSV IMPORT
+        var uploader_csv = new plupload.Uploader({
+    		runtimes : "gears,html5,flash,silverlight,browserplus",
+    		browse_button : "pickfiles_csv",
+    		container : "upload_container_csv",
+    		max_file_size : "10mb",
+            chunk_size : "1mb",
+    		unique_names : true,
+            dragdrop : true,
+            multiple_queues : false,
+            multi_selection : false,
+            max_file_count : 1,
+    		url : "sources/upload/upload.csv.php",
+    		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+    		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+    		filters : [
+    			{title : "CSV files", extensions : "csv"}
+    		],
+    		init: {
+    		    FilesAdded: function(up, files) {
+                    up.start();
+                },
+                BeforeUpload: function (up, file) {
+                    $("#import_status_ajax_loader").show();
+                    up.settings.multipart_params = {
+                        "PHPSESSID":"'.$_SESSION['user_id'].'",
+                        "csvFile":file.name,
+                        "type_upload":"import_items_from_csv"
+                    };
+                },
+                UploadComplete: function(up, files) {
+                    $.each(files, function(i, file) {
+                        ImportCSV(file.name);
+                        $("#csv_import_options").show();
+                    });
+                    $("#import_status_ajax_loader").hide();
+                }
+    		}
+    	});
+        // Uploader options
+    	uploader_csv.bind("UploadProgress", function(up, file) {
+    		$("#" + file.id + " b").html(file.percent + "%");
+    	});
+    	uploader_csv.bind("Error", function(up, err) {
+    		$("#filelist_csv").html("<div class=\'ui-state-error ui-corner-all\'>Error: " + err.code +
+    			", Message: " + err.message +
+    			(err.file ? ", File: " + err.file.name : "") +
+    			"</div>"
+    		);
+    		up.refresh(); // Reposition Flash/Silverlight
+    	});
+    	uploader_csv.bind("+", function(up, file) {
+    		$("#" + file.id + " b").html("100%");
+    	});
+
+    	// Load CSV click
+    	$("#uploadfiles_csv").click(function(e) {
+    		uploader_csv.start();
+    		e.preventDefault();
+    	});
+    	uploader_csv.init();
+
+    	// Show runtime status
+        uploader_csv.bind("Init", function(up, params) {
+    		$("#plupload_runtime").html("Upload feature: runtime " + params.runtime);
+    		$("#upload_enabled").val("1");
+    	});
+
+        // KEYPASS IMPORT
+        var uploader_kp = new plupload.Uploader({
+    		runtimes : "gears,html5,flash,silverlight,browserplus",
+    		browse_button : "pickfiles_kp",
+    		container : "upload_container_kp",
+    		max_file_size : "10mb",
+            chunk_size : "1mb",
+    		unique_names : true,
+            dragdrop : true,
+            multiple_queues : false,
+            multi_selection : false,
+            max_file_count : 1,
+    		url : "sources/upload/upload.csv.php",
+    		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+    		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+    		filters : [
+    			{title : "Keypass files", extensions : "xml"}
+    		],
+    		init: {
+    		    FilesAdded: function(up, files) {
+                    up.start();
+                },
+                BeforeUpload: function (up, file) {
+                    $("#import_status_ajax_loader").show()
+                    up.settings.multipart_params = {
+                        "PHPSESSID":"'.$_SESSION['user_id'].'",
+                        "xmlFile":file.name,
+                        "type_upload":"import_items_from_keypass"
+                    };
+                },
+                UploadComplete: function(up, files) {
+                    ImportKEEPASS(files[0].name);
+                    $("#import_status_ajax_loader").hide();
+                }
+    		}
+    	});
+        // Uploader options
+    	uploader_kp.bind("UploadProgress", function(up, file) {
+    		$("#" + file.id + " b").html(file.percent + "%");
+    	});
+    	uploader_kp.bind("Error", function(up, err) {
+    		$("#filelist_kp").html("<div class=\'ui-state-error ui-corner-all\'>Error: " + err.code +
+    			", Message: " + err.message +
+    			(err.file ? ", File: " + err.file.name : "") +
+    			"</div>"
+    		);
+    		up.refresh(); // Reposition Flash/Silverlight
+    	});
+    	uploader_kp.bind("+", function(up, file) {
+    		$("#" + file.id + " b").html("100%");
+    	});
+
+    	// Load CSV click
+    	$("#uploadfiles_kp").click(function(e) {
+    		uploader_kp.start();
+    		e.preventDefault();
+    	});
+    	uploader_kp.init();';
+    }
+
+    $htmlHeaders .= '
     })
 
     function ChangeMyPass()
