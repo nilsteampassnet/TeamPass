@@ -40,9 +40,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
 
-        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
 
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
@@ -708,6 +706,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 }
     		}
     	});
+
+    	// Show runtime status
+        uploader_csv.bind("Init", function(up, params) {
+    		$("#plupload_runtime").html("Upload feature: runtime " + params.runtime).removeClass(\'ui-state-error\');
+    		$("#upload_enabled").val("1");
+    	});
+
         // Uploader options
     	uploader_csv.bind("UploadProgress", function(up, file) {
     		$("#" + file.id + " b").html(file.percent + "%");
@@ -730,12 +735,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     		e.preventDefault();
     	});
     	uploader_csv.init();
-
-    	// Show runtime status
-        uploader_csv.bind("Init", function(up, params) {
-    		$("#plupload_runtime").html("Upload feature: runtime " + params.runtime);
-    		$("#upload_enabled").val("1");
-    	});
 
         // KEYPASS IMPORT
         var uploader_kp = new plupload.Uploader({

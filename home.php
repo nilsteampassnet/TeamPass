@@ -24,7 +24,7 @@ $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
 $tree->rebuild();
-$full_tree = $tree->getDescendants();
+$fullTree = $tree->getDescendants();
 
 echo '
             <div style="line-height: 24px;margin-top:10px;min-height:220px;">
@@ -102,7 +102,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
     echo '
                    <br /><span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
                    <div id="upload_info">
-                        <div id="plupload_runtime">Upload feature: No runtime found.</div>
+                        <div id="plupload_runtime" class="ui-state-error ui-corner-all" style="width:400px;">Upload feature: No runtime found.</div>
                         <input type="hidden" id="upload_enabled" value="" />
                     </div>';
 
@@ -227,21 +227,21 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                                 <label><b>'.$txt['import_keepass_to_folder'].'</b></label>&nbsp;
                                 <select id="import_keepass_items_to">
                                     <option value="0">'.$txt['root'].'</option>';
-    $prev_level = "";
-    foreach ($full_tree as $t) {
+    $prevLevel = "";
+    foreach ($fullTree as $t) {
         if (in_array($t->id, $_SESSION['groupes_visibles'])) {
             $ident="&nbsp;&nbsp;";
             for ($x=1; $x<$t->nlevel; $x++) {
                 $ident .= "&nbsp;&nbsp;";
             }
-            if ($prev_level < $t->nlevel) {
+            if ($prevLevel < $t->nlevel) {
                 echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-            } elseif ($prev_level == $t->nlevel) {
+            } elseif ($prevLevel == $t->nlevel) {
                 echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
             } else {
                 echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
             }
-            $prev_level = $t->nlevel;
+            $prevLevel = $t->nlevel;
         }
     }
     echo '

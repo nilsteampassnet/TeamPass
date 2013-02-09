@@ -715,11 +715,11 @@ echo '
                 <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
                 '.$txt['upload_files'].'
             </div>
-            <div id="item_edit_file_queue"></div>
-            <input type="file" name="item_edit_files_upload" id="item_edit_files_upload" />
-            <br />
-            <a href="#" onclick="upload_attached_files_edit_mode()">'.$txt['start_upload'].'</a>
-
+            <div id="item_edit_upload">
+                <div id="item_edit_upload_list"></div><br />
+                <a id="item_edit_attach_pickfiles" href="#" class="button">'.$txt['select'].'</a>
+                <a id="item_edit_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
+            </div>
         </div>
     </div>';
 echo '
