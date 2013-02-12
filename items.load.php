@@ -1867,6 +1867,7 @@ $(function() {
                 CKEDITOR.instances["edit_desc"].destroy();
             }
             $("#div_loading, #edit_show_error").hide();
+            $("#item_edit_upload_list").html("");
             //Unlock the Item
             $.post(
                 "sources/items.queries.php",
@@ -1997,26 +1998,107 @@ $(function() {
     });
     //<=
 
-
-	var edit_uploader_attachments = new plupload.Uploader({
+    // => ATTACHMENTS INIT
+    var uploader_attachments = new plupload.Uploader({
 		runtimes : "gears,html5,flash,silverlight,browserplus",
-		browse_button : "item_edit_attach_pickfiles",
-		container : "item_edit_upload",
-		max_file_size : "10mb",
+		browse_button : "item_attach_pickfiles",
+		container : "item_upload",
+		max_file_size : "<?php echo $_SESSION['settings']['upload_maxfilesize'];?>mb",
+        chunk_size : "1mb",
         dragdrop : true,
 		url : "sources/upload/upload.attachments.php",
 		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
 		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
 		filters : [
-			{title : "Image files", extensions : "jpg,gif,png"},
-			{title : "Zip files", extensions : "zip"}
-		],
-		resize : {width : 800, height : 600, quality : 90},
+			{title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
+			{title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
+			{title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext'];?>"},
+			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"},
+		],<?php
+if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+        ?>
+		resize : {
+			width : <?php echo $_SESSION['settings']['upload_imageresize_width'];?>,
+			height : <?php echo $_SESSION['settings']['upload_imageresize_height'];?>,
+			quality : <?php echo $_SESSION['settings']['upload_imageresize_quality'];?>
+		},
+        <?php
+}
+?>
 		init: {
             BeforeUpload: function (up, file) {
                 up.settings.multipart_params = {
-                    "PHPSESSID":$_SESSION['user_id'],
-                    "type_upload":"item_attachments"
+                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
+                    "itemId":$('#selected_items').val(),
+                    "type_upload":"item_attachments",
+                    "edit_item":false
+                };
+            }
+		}
+	});
+
+    // Uploader options
+	uploader_attachments.bind("UploadProgress", function(up, file) {
+		$("#" + file.id + " b").html(file.percent + "%");
+	});
+	uploader_attachments.bind("Error", function(up, err) {
+		$("#item_upload_list").html(
+			"<div class=\'ui-state-error ui-corner-all\' style=\'padding:2px;\'>Error: " + err.code +
+			", Message: " + err.message +
+			(err.file ? ", File: " + err.file.name : "") +
+			"</div>"
+		);
+		up.refresh(); // Reposition Flash/Silverlight
+	});
+	uploader_attachments.bind("+", function(up, file) {
+		$("#" + file.id + " b").html("100%");
+	});
+
+	// Load edit uploaded click
+	$("#item_edit_attach_uploadfiles").click(function(e) {
+		uploader_attachments.start();
+		e.preventDefault();
+	});
+	uploader_attachments.init();
+	uploader_attachments.bind('FilesAdded', function(up, files) {
+		$.each(files, function(i, file) {
+			$('#item_upload_list').append(
+				'<div id="' + file.id + '">' +
+				file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
+			'</div>');
+		});
+		up.refresh(); // Reposition Flash/Silverlight
+	});
+    
+    // Prepare uplupload object for attachments upload
+	var edit_uploader_attachments = new plupload.Uploader({
+		runtimes : "gears,html5,flash,silverlight,browserplus",
+		browse_button : "item_edit_attach_pickfiles",
+		container : "item_edit_upload",
+		max_file_size : "<?php echo $_SESSION['settings']['upload_maxfilesize'];?>mb",
+        chunk_size : "1mb",
+        dragdrop : true,
+		url : "sources/upload/upload.attachments.php",
+		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+		filters : [
+			{title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
+			{title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
+			{title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext'];?>"},
+			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"},
+		],
+		resize : {
+			width : <?php echo $_SESSION['settings']['upload_imageresize_width'];?>,
+			height : <?php echo $_SESSION['settings']['upload_imageresize_height'];?>,
+			quality : <?php echo $_SESSION['settings']['upload_imageresize_quality'];?>
+		},
+		init: {
+            BeforeUpload: function (up, file) {
+                up.settings.multipart_params = {
+                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
+                    "itemId":$('#selected_items').val(),
+                    "type_upload":"item_attachments",
+                    "edit_item":true
                 };
             }
 		}
@@ -2039,7 +2121,7 @@ $(function() {
 		$("#" + file.id + " b").html("100%");
 	});
 
-	// Load CSV click
+	// Load edit uploaded click
 	$("#item_edit_attach_uploadfiles").click(function(e) {
 		edit_uploader_attachments.start();
 		e.preventDefault();
@@ -2047,7 +2129,7 @@ $(function() {
 	edit_uploader_attachments.init();
 	edit_uploader_attachments.bind('FilesAdded', function(up, files) {
 		$.each(files, function(i, file) {
-			$('#filelist').append(
+			$('#item_edit_upload_list').append(
 				'<div id="' + file.id + '">' +
 				file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
 			'</div>');

@@ -218,7 +218,16 @@ if (isset($_POST['type'])) {
                 ('admin', 'delay_item_edition', '0'),
                 ('admin','allow_import','0'),
                 ('admin','proxy_ip',''),
-                ('admin','proxy_port','')
+                ('admin','proxy_port',''),
+                ('admin','upload_maxfilesize','10mb'),
+                ('admin','upload_docext','doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx'),
+                ('admin','upload_imagesext','jpg,jpeg,gif,png'),
+                ('admin','upload_pkgext','7z,rar,tar,zip'),
+                ('admin','upload_otherext','sql,xml'),
+                ('admin','upload_imageresize_options','1'),
+                ('admin','upload_imageresize_width','800'),
+                ('admin','upload_imageresize_height','600'),
+                ('admin','upload_imageresize_quality','90')
                 ;"
             );
 

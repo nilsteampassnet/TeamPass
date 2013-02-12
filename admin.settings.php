@@ -366,6 +366,43 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['proxy_port'] != $_POST['proxy_port']) {
         updateSettings('proxy_port', $_POST['proxy_port']);
     }
+
+    // Update settings_upload_maxfilesize
+    if (@$_SESSION['settings']['upload_maxfilesize'] != $_POST['upload_maxfilesize']) {
+        updateSettings('upload_maxfilesize', $_POST['upload_maxfilesize']);
+    }
+    // Update upload_docext
+    if (@$_SESSION['settings']['upload_docext'] != $_POST['upload_docext']) {
+        updateSettings('upload_docext', $_POST['upload_docext']);
+    }
+    // Update upload_imagesext
+    if (@$_SESSION['settings']['upload_imagesext'] != $_POST['upload_imagesext']) {
+        updateSettings('upload_imagesext', $_POST['upload_imagesext']);
+    }
+    // Update upload_pkgext
+    if (@$_SESSION['settings']['upload_pkgext'] != $_POST['upload_pkgext']) {
+        updateSettings('upload_pkgext', $_POST['upload_pkgext']);
+    }
+    // Update upload_othext
+    if (@$_SESSION['settings']['upload_otherext'] != $_POST['upload_otherext']) {
+        updateSettings('upload_otherext', $_POST['upload_otherext']);
+    }
+    // Update upload_imageresize_options
+    if (@$_SESSION['settings']['upload_imageresize_options'] != $_POST['upload_imageresize_options']) {
+        updateSettings('upload_imageresize_options', $_POST['upload_imageresize_options']);
+    }
+    // Update upload_imageresize_width
+    if (@$_SESSION['settings']['upload_imageresize_width'] != @$_POST['upload_imageresize_width']) {
+        @updateSettings('upload_imageresize_width', $_POST['upload_imageresize_width']);
+    }
+    // Update upload_imageresize_height
+    if (@$_SESSION['settings']['upload_imageresize_height'] != @$_POST['upload_imageresize_height']) {
+        @updateSettings('upload_imageresize_height', $_POST['upload_imageresize_height']);
+    }
+    // Update upload_imageresize_quality
+    if (@$_SESSION['settings']['upload_imageresize_quality'] != @$_POST['upload_imageresize_quality']) {
+        @updateSettings('upload_imageresize_quality', $_POST['upload_imageresize_quality']);
+    }
 }
 
 echo '
@@ -379,6 +416,7 @@ echo '
             <ul>
                 <li><a href="#tabs-1">'.$txt['admin_settings_title'].'</a></li>
                 <li><a href="#tabs-3">'.$txt['admin_misc_title'].'</a></li>
+                <li><a href="#tabs-7">'.$txt['admin_upload_title'].'</a></li>
                 <li><a href="#tabs-2">'.$txt['admin_actions_title'].'</a></li>
                 <li><a href="#tabs-4">'.$txt['admin_ldap_menu'].'</a></li>
                 <li><a href="#tabs-5">'.$txt['admin_backups'].'</a></li>
@@ -1273,7 +1311,10 @@ echo '
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <span id="result_admin_action_db_restore_get_file" style="margin-left:10px;"><input id="fileInput_restore_sql" name="fileInput_restore_sql" type="file" /></span>
+                        <div id="upload_container_restoreDB">
+                            <div id="filelist_restoreDB"></div><br />
+                            <a id="pickfiles_restoreDB" class="button" href="#">'.$txt['select'].'</a>
+                        </div>
                         </td>
                     </tr>';
 
@@ -1483,6 +1524,115 @@ echo '
                 </div>
             </div>';
 // --------------------------------------------------------------------------------
+// TAB N°7
+echo '
+            <div id="tabs-7">
+                <table width="100%">';
+// Max file size
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_maxfilesize'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+// Extension for Documents
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_docext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+// Extension for Images
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_imagesext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+// Extension for Packages
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_pkgext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+// Extension for Other
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_otherext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+echo '<tr><td colspan="3"><hr></td></tr>';
+// Image resize width / height / quality
+echo '
+                <tr style="margin-bottom:3px">
+                    <td>
+                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <label>' .
+                        $txt['settings_upload_imageresize_options'].'
+                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_imageresize_options_tip'].'" />
+                        </label>
+                    </td>
+                    <td>
+                        <div class="div_radio">
+                            <input type="radio" id="upload_imageresize_options_radio1" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 1);" value="1"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? ' checked="checked"' : '', ' /><label for="upload_imageresize_options_radio1">'.$txt['yes'].'</label>
+                            <input type="radio" id="upload_imageresize_options_radio2" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 0);" value="0"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['upload_imageresize_options']) ? ' checked="checked"':''), ' /><label for="upload_imageresize_options_radio2">'.$txt['no'].'</label>
+                                <span class="setting_flag" id="flag_upload_imageresize_options"><img src="includes/images/status', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? '' : '-busy', '.png" /></span>
+                        </div>
+                    <td>
+                </tr>
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_imageresize_options_w'].
+                    '</label>
+                    </td><td>
+                    <input type="text" size="5" id="upload_imageresize_width" name="upload_imageresize_width" value="',
+                        isset($_SESSION['settings']['upload_imageresize_width']) ? $_SESSION['settings']['upload_imageresize_width'] :
+                        '800', '" class="text ui-widget-content upl_img_opt" />
+                    <td>
+                </tr>
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_imageresize_options_h'].
+                    '</label>
+                    </td><td>
+                    <input type="text" size="5" id="upload_imageresize_height" name="upload_imageresize_height" value="',
+                        isset($_SESSION['settings']['upload_imageresize_height']) ? $_SESSION['settings']['upload_imageresize_height'] :
+                        '600', '" class="text ui-widget-content upl_img_opt" />
+                    <td>
+                </tr>
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_upload_imageresize_options_q'].
+                    '</label>
+                    </td><td>
+                    <input type="text" size="5" id="upload_imageresize_quality" name="upload_imageresize_quality" value="',
+                        isset($_SESSION['settings']['upload_imageresize_quality']) ? $_SESSION['settings']['upload_imageresize_quality'] :
+                        '90', '" class="text ui-widget-content upl_img_opt" />
+                </td</tr>';
+echo '
+                <tr><td colspan="3"><hr></td></tr>';
+echo '
+                </table>
+            </div>';
+// --------------------------------------------------------------------------------
+
 // Save button
 echo '
             <div style="margin:auto;">

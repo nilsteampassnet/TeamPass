@@ -296,8 +296,17 @@ if (isset($_POST['type'])) {
                 array('admin', 'delay_item_edition', 0, 0),
                 array('admin', 'allow_import',0,0),
                 array('admin', 'proxy_port',0,0),
-                array('admin', 'proxy_port',0,0)
-           );
+                array('admin', 'proxy_port',0,0),
+                array('admin','upload_maxfilesize','10mb',0),
+                array('admin','upload_docext','doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx',0),
+                array('admin','upload_imagesext','jpg,jpeg,gif,png',0),
+                array('admin','upload_pkgext','7z,rar,tar,zip',0),
+                array('admin','upload_otherext','sql,xml',0),
+                array('admin','upload_imageresize_options','1',0),
+                array('admin','upload_imageresize_width','800',0),
+                array('admin','upload_imageresize_height','600',0),
+                array('admin','upload_imageresize_quality','90',0)
+            );
             $res1 = "na";
             foreach ($val as $elem) {
                 //Check if exists before inserting

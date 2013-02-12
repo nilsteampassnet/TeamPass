@@ -5,6 +5,17 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_upload_maxfilesize']="Max file size (in Mb)";
+$txt['settings_upload_docext']="Allowed document extensions";
+$txt['settings_upload_imagesext']="Allowed image extensions";
+$txt['settings_upload_pkgext']="Allowed package extensions";
+$txt['settings_upload_otherext']="Allowed other extensions";
+$txt['settings_upload_imageresize_options']="Should Images being resized";
+$txt['settings_upload_imageresize_options_tip'] = "";
+$txt['settings_upload_imageresize_options_w'] = "Resized image Width (in pixels)";
+$txt['settings_upload_imageresize_options_h'] = "Resized image Height (in pixels)";
+$txt['settings_upload_imageresize_options_q'] = "Resized image Quality";
+$txt['admin_upload_title']="Uploads";
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['admin_proxy_ip'] = "Proxy IP used";
 $txt['admin_proxy_ip_tip'] = "<span style='font-size:11px;max-width:300px;'>If your Internet connection goes through a proxy. Indicate here its IP.<br />Leave empty if no Proxy.</span>";

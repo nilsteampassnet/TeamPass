@@ -62,9 +62,11 @@ switch ($_POST['type']) {
             $out .= "Connection: Close\r\n\r\n";
             fwrite($fp, $out);
         }
-        while (!feof($fp)) {
-            $line = fgets($fp, 4096);
+        while (($line = fgets($fp, 4096)) !== false) {
             $handle_distant[] = $line;
+        }
+        if (!feof($fp)) {
+            $error = "Error: unexpected fgets() fail\n";
         }
         fclose($fp);
         if (count($handle_distant) > 0) {

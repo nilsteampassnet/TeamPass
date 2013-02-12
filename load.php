@@ -53,9 +53,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/libraries/Uploadify/uploadify.css" />
-        <script type="text/javascript" src="includes/libraries/Uploadify/jquery.uploadify.v2.1.4.min.js"></script>
-        <script type="text/javascript" src="includes/libraries/Uploadify/swfobject.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
@@ -679,7 +677,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             multiple_queues : false,
             multi_selection : false,
             max_file_count : 1,
-    		url : "sources/upload/upload.csv.php",
+    		url : "sources/upload/upload.files.php",
     		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
     		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
     		filters : [
@@ -748,7 +746,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             multiple_queues : false,
             multi_selection : false,
             max_file_count : 1,
-    		url : "sources/upload/upload.csv.php",
+    		url : "sources/upload/upload.files.php",
     		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
     		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
     		filters : [
@@ -1053,6 +1051,12 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     // JAVASCRIPT FOR ADMIN_SETTIGNS PAGE
     $htmlHeaders .= '
     $(function() {
+        $(".button").button();
+        $("#upload_imageresize_quality").spinner({
+            min: 0,
+            max: 100,
+            value: 90
+        });
         $("#restore_bck_encryption_key_dialog").dialog({
             bgiframe: true,
             modal: true,
@@ -1069,37 +1073,70 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 }
             }
         });
-
-        //CALL TO UPLOADIFY FOR RESTORE SQL FILE
-        $("#fileInput_restore_sql").uploadify({
-            "uploader"  : "includes/libraries/Uploadify/uploadify.swf",
-            "script"    : "includes/libraries/Uploadify/uploadify.php?user_id='.$_SESSION['user_id'].'&key_tempo='.$_SESSION['key'].'",
-            "cancelImg" : "includes/libraries/Uploadify/cancel.png",
-            "scriptData": {"type_upload":"restore_db"},
-            "auto"      : true,
-            "fileDesc"  : "sql",
-            "fileExt"   : "*.sql",
-            "wmode"     : "transparent",
-            "buttonImg" : "includes/images/inbox--plus.png",
-            "onComplete": function(event, queueID, fileObj, reponse, data) {
-                $("#restore_bck_fileObj").val(fileObj.name);
-                $("#restore_bck_encryption_key_dialog").dialog("open");
-            }
-        });
+        
+        // SQL IMPORT FOR RESTORING
+        var uploader_restoreDB = new plupload.Uploader({
+    		runtimes : "gears,html5,flash,silverlight,browserplus",
+    		browse_button : "pickfiles_restoreDB",
+    		container : "upload_container_restoreDB",
+    		max_file_size : "10mb",
+            chunk_size : "1mb",
+    		unique_names : true,
+            dragdrop : true,
+            multiple_queues : false,
+            multi_selection : false,
+            max_file_count : 1,
+    		url : "sources/upload/upload.files.php",
+    		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+    		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+    		filters : [
+    			{title : "SQL files", extensions : "sql"}
+    		],
+    		init: {
+    		    FilesAdded: function(up, files) {
+                    up.start();
+                },
+                BeforeUpload: function (up, file) {
+                    $("#import_status_ajax_loader").show();
+                    up.settings.multipart_params = {
+                        "PHPSESSID":"'.$_SESSION['user_id'].'",
+                        "File":file.name,
+                        "type_upload":"restore_db"
+                    };
+                },
+                UploadComplete: function(up, files) {
+                    $.each(files, function(i, file) {
+                        $("#restore_bck_fileObj").val(file.name);
+                        $("#restore_bck_encryption_key_dialog").dialog("open");
+                    });
+                }
+    		}
+    	});
+        // Uploader options
+    	uploader_restoreDB.bind("UploadProgress", function(up, file) {
+    		$("#" + file.id + " b").html(file.percent + "%");
+    	});
+    	uploader_restoreDB.bind("Error", function(up, err) {
+    		$("#filelist_restoreDB").html("<div class=\'ui-state-error ui-corner-all\'>Error: " + err.code +
+    			", Message: " + err.message +
+    			(err.file ? ", File: " + err.file.name : "") +
+    			"</div>"
+    		);
+    		up.refresh(); // Reposition Flash/Silverlight
+    	});
+    	uploader_restoreDB.bind("+", function(up, file) {
+    		$("#" + file.id + " b").html("100%");
+    	});
+    	// Load CSV click
+    	$("#uploadfiles_restoreDB").click(function(e) {
+    		uploader_restoreDB.start();
+    		e.preventDefault();
+    	});
+    	uploader_restoreDB.init();
+        // -end
 
         // Build Tabs
-        $("#tabs").tabs({
-            //MASK SAVE BUTTON IF tab 3 selected
-            select: function(event, ui) {
-                if (ui.index == 2) {
-                    $("#save_button").hide();
-                } else {
-                    $("#save_button").show();
-                }
-
-                return true;
-            }
-        });
+        $("#tabs").tabs();
 
         //BUILD BUTTONS
         $("#save_button").button();
