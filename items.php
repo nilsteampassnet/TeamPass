@@ -570,6 +570,7 @@ echo '
         <div id="tabs-03">
             <div id="item_upload">
                 <div id="item_upload_list"></div><br />
+                <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$txt['please_wait'].'...</div>
                 <a id="item_attach_pickfiles" href="#" class="button">'.$txt['select'].'</a>
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
             </div>
@@ -719,6 +720,7 @@ echo '
             </div>
             <div id="item_edit_upload">
                 <div id="item_edit_upload_list"></div><br />
+                <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$txt['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$txt['select'].'</a>
                 <a id="item_edit_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
             </div>

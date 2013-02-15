@@ -78,7 +78,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_POST['key'], 256)), true);
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $url = htmlspecialchars_decode($dataReceived['url']);

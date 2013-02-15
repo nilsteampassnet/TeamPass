@@ -50,7 +50,7 @@ $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1
 if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier*(int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
     handleError('POST exceeded maximum allowed size.', 111);
 }
-echo filesize($_FILES['file']['tmp_name']);
+
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if (!$file_size || $file_size > $max_file_size_in_bytes) {

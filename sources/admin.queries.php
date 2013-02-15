@@ -52,7 +52,7 @@ switch ($_POST['type']) {
         if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
             $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
         } else {
-            $fp = fsockopen("www.teampass.net", 80);
+            $fp = @fsockopen("www.teampass.net", 80);
         }
         if (!$fp) {
             $error = "connection";
@@ -61,12 +61,13 @@ switch ($_POST['type']) {
             $out .= "Host: www.teampass.net\r\n";
             $out .= "Connection: Close\r\n\r\n";
             fwrite($fp, $out);
-        }
-        while (($line = fgets($fp, 4096)) !== false) {
-            $handle_distant[] = $line;
-        }
-        if (!feof($fp)) {
-            $error = "Error: unexpected fgets() fail\n";
+
+            while (($line = fgets($fp, 4096)) !== false) {
+                $handle_distant[] = $line;
+            }
+            if (!feof($fp)) {
+                $error = "Error: unexpected fgets() fail\n";
+            }
         }
         fclose($fp);
         if (count($handle_distant) > 0) {

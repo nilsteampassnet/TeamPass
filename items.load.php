@@ -1439,53 +1439,6 @@ function clear_html_tags()
 }
 
 //###########
-//## FUNCTION : Permits to start uploading files in EDIT ITEM mode
-//###########
-function upload_attached_files_edit_mode()
-{
-    // Pass dynamic ITEM id
-    var post_id = $('#selected_items').val();
-    var user_id = $('#form_user_id').val();
-
-    $('#item_edit_files_upload').uploadifySettings('scriptData', {'post_id':post_id, 'user_id':user_id, 'type':'modification', 'timezone':'<?php echo $_SESSION['settings']['timezone'];?>', 'session_id':'nils'});
-
-    // Launch upload
-    $("#item_edit_files_upload").uploadifyUpload();
-}
-
-//###########
-//## FUNCTION : Permits to start uploading files in NEW ITEM mode
-//###########
-function upload_attached_files()
-{
-    // Pass dynamic ITEM id
-    var post_id  = "";
-    var user_id = $('#form_user_id').val();
-
-    //generate fake id if needed
-    if ($("#random_id").val() == "") {
-        var post_id = CreateRandomString(9,"num_no_0");
-        //Save fake id
-        $("#random_id").val(post_id);
-    } else {
-        var post_id = $("#random_id").val();
-    }
-
-    $('#item_files_upload').uploadifySettings(
-        'scriptData',
-        {
-            'post_id':post_id,
-            'user_id':user_id,
-            'type':'creation',
-            'timezone':'<?php echo $_SESSION['settings']['timezone'];?>'
-        }
-   );
-
-    // Launch upload
-    $("#item_files_upload").uploadifyUpload();
-}
-
-//###########
 //## FUNCTION : Permits to delete an attached file
 //###########
 function delete_attached_file(file_id)
@@ -1837,6 +1790,7 @@ $(function() {
             if (CKEDITOR.instances["desc"]) {
                 CKEDITOR.instances["desc"].destroy();
             }
+            $("#item_upload_list").html("");
             $("#div_loading").hide();
         }
     });
@@ -2027,13 +1981,19 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 ?>
 		init: {
             BeforeUpload: function (up, file) {
+                $("#item_upload_wait").show();
+            	var post_id = CreateRandomString(9,"num_no_0");
+            	$("#random_id").val(post_id);
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":$('#selected_items').val(),
+                    "itemId":post_id,
                     "type_upload":"item_attachments",
                     "edit_item":false
                 };
-            }
+            },
+            UploadComplete: function(up, files) {
+                $("#item_upload_wait").hide();
+            } 
 		}
 	});
 
@@ -2055,7 +2015,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 	});
 
 	// Load edit uploaded click
-	$("#item_edit_attach_uploadfiles").click(function(e) {
+	$("#item_attach_uploadfiles").click(function(e) {
 		uploader_attachments.start();
 		e.preventDefault();
 	});
@@ -2063,7 +2023,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 	uploader_attachments.bind('FilesAdded', function(up, files) {
 		$.each(files, function(i, file) {
 			$('#item_upload_list').append(
-				'<div id="' + file.id + '">' +
+				'<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
 				file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
 			'</div>');
 		});
@@ -2086,21 +2046,29 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 			{title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
 			{title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext'];?>"},
 			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"},
-		],
+		],<?php
+if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+        ?>
 		resize : {
 			width : <?php echo $_SESSION['settings']['upload_imageresize_width'];?>,
 			height : <?php echo $_SESSION['settings']['upload_imageresize_height'];?>,
 			quality : <?php echo $_SESSION['settings']['upload_imageresize_quality'];?>
-		},
+		},<?php
+}
+?>
 		init: {
             BeforeUpload: function (up, file) {
+                $("#item_edit_upload_wait").show();
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
                     "itemId":$('#selected_items').val(),
                     "type_upload":"item_attachments",
                     "edit_item":true
                 };
-            }
+            },
+            UploadComplete: function(up, files) {
+                $("#item_edit_upload_wait").hide();
+            }            
 		}
 	});
 
@@ -2130,7 +2098,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 	edit_uploader_attachments.bind('FilesAdded', function(up, files) {
 		$.each(files, function(i, file) {
 			$('#item_edit_upload_list').append(
-				'<div id="' + file.id + '">' +
+				'<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
 				file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
 			'</div>');
 		});
