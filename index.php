@@ -10,7 +10,7 @@ session_start();
  * @file          index.php
  * @author        Nils Laumaillé
  * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -216,7 +216,7 @@ echo '
     </form>';
 
 /* INSERT ITEM BUTTONS IN MENU BAR */
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items") {
+if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items" && $_SESSION['user_admin'] == false) {
     echo '
         <div style="" class="ui-corner-right" id="div_right_menu">
             <button title="'.$txt['item_menu_refresh'].'" id="menu_button_refresh_page" style="margin-bottom:5px;" onclick="javascript:document.new_item.submit()">
@@ -359,7 +359,12 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         include 'error.php';
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
-        include 'items.php';
+        if ($_SESSION['user_admin'] == 1) {
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+            include 'error.php';
+        } else {
+            include 'items.php';
+        }
     } elseif ($_GET['page'] == "find") {
         // Show page for items findind
         include 'find.php';

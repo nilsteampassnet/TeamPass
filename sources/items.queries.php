@@ -3,7 +3,7 @@
  * @file          items.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -1034,7 +1034,11 @@ if (isset($_POST['type'])) {
                 foreach ($rows as $reccord) {
                     $reason = explode(':', $reccord['raison']);
                     if ($reccord['action'] == "at_modification" && $reason[0] == "at_pw ") {
-                        $reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
+                        // don't do if item is PF
+                        if ($dataItem['perso'] != 1) {
+                            $reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
+                        }
+                        // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
                         if (!isUTF8($reason[1])) {
                             $reason[1] = "";
                         }

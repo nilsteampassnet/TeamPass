@@ -1,6 +1,6 @@
 |==============================================================================|
 |				TeamPass - A Collaborative Passwords Manager				   |
-|						2012 (c) Nils Laumaillé							   |
+|						2009-2013 (c) Nils Laumaillé							   |
 |==============================================================================|
 
 ********************************************************************************
@@ -8,7 +8,7 @@
 * 								LICENCE AGREEMENT							   *
 * Before installing and using TeamPass, you must accept its licence defined	as *
 * GNU AFFERO GPL.															   *
-* Copyright (c) 2012, Nils Laumaillé (Nils@TeamPass.net)					   *
+* Copyright (c) 2009-2013, Nils Laumaillé (Nils@TeamPass.net)					   *
 * 																			   *
 * This program is free software: you can redistribute it and/or modify		   *
 * it under the terms of the GNU Affero General Public License as			   *
@@ -76,6 +76,7 @@ folder
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273
+ * #277: Change personal saltkey error
 
 2.1.15
  * list of bugs corrected: #242 - #254 - #244 - #247 - #256 - #250 - #254 - #248

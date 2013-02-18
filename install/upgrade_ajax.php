@@ -49,12 +49,12 @@ function tableExists($tablename, $database = false)
         $database = mysql_result($res, 0);
     }
 
-    $res = mysql_query("
-        SELECT COUNT(*) as count
+    $res = mysql_query(
+        "SELECT COUNT(*) as count
         FROM information_schema.tables
         WHERE table_schema = '$database'
-        AND table_name = '$tablename'
-    ");
+        AND table_name = '$tablename'"
+    );
 
     return mysql_result($res, 0) == 1;
 
@@ -68,18 +68,21 @@ if (isset($_POST['type'])) {
             setcookie('pma_end_session');
             session_destroy();
 
-            $abspath = str_replace('\\','/',$_POST['abspath']);
+            $abspath = str_replace('\\', '/', $_POST['abspath']);
             $_SESSION['abspath'] = $abspath;
-            if (substr($abspath,strlen($abspath)-1) == "/") $abspath = substr($abspath,0,strlen($abspath)-1);
+            if (substr($abspath, strlen($abspath)-1) == "/") {
+                $abspath = substr($abspath, 0, strlen($abspath)-1);
+            }
             $ok_writable = true;
             $ok_extensions = true;
             $txt = "";
             $x=1;
-            $tab = array($abspath."/includes/settings.php",$abspath."/install/",$abspath."/includes/",$abspath."/files/",$abspath."/upload/");
+            $tab = array($abspath."/includes/settings.php",$abspath."/install/",$abspath."/includes/",
+                $abspath."/files/",$abspath."/upload/");
             foreach ($tab as $elem) {
-                if (is_writable($elem))
+                if (is_writable($elem)) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
-                else{
+                } else {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
                     $ok_writable = false;
                 }
@@ -116,19 +119,33 @@ if (isset($_POST['type'])) {
                 //copy some constants from this existing file
                 $settings_file = file($filename);
                 while (list($key,$val) = each($settings_file)) {
-                    if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-                    elseif (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-                    elseif (substr_count($val,'$smtp_server')>0) $_SESSION['smtp_server'] = getSettingValue($val);
-                    elseif (substr_count($val,'$smtp_auth')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
-                    elseif (substr_count($val,'$smtp_auth_username')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
-                    elseif (substr_count($val,'$smtp_auth_password')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
-                    elseif (substr_count($val,'$email_from')>0) $_SESSION['email_from'] = getSettingValue($val);
-                    elseif (substr_count($val,'$email_from_name')>0) $_SESSION['email_from_name'] = getSettingValue($val);
-                    elseif (substr_count($val,'$server')>0) $_SESSION['server'] = getSettingValue($val);
-                    elseif (substr_count($val,'$user')>0) $_SESSION['user'] = getSettingValue($val);
-                    elseif (substr_count($val,'$pass')>0) $_SESSION['pass'] = getSettingValue($val);
-                    elseif (substr_count($val,'$database')>0) $_SESSION['database'] = getSettingValue($val);
-                    elseif (substr_count($val,'$pre')>0) $_SESSION['pre'] = getSettingValue($val);
+                    if (substr_count($val, 'charset')>0) {
+                        $_SESSION['charset'] = getSettingValue($val);
+                    } elseif (substr_count($val, '@define(')>0) {
+                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
+                    } elseif (substr_count($val, '$smtp_server')>0) {
+                        $_SESSION['smtp_server'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_auth')>0) {
+                        $_SESSION['smtp_auth'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_auth_username')>0) {
+                        $_SESSION['smtp_auth_username'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_auth_password')>0) {
+                        $_SESSION['smtp_auth_password'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$email_from')>0) {
+                        $_SESSION['email_from'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$email_from_name')>0) {
+                        $_SESSION['email_from_name'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$server')>0) {
+                        $_SESSION['server'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$user')>0) {
+                        $_SESSION['user'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$pass')>0) {
+                        $_SESSION['pass'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$database')>0) {
+                        $_SESSION['database'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$pre')>0) {
+                        $_SESSION['pre'] = getSettingValue($val);
+                    }
                 }
             }
 
@@ -142,11 +159,11 @@ if (isset($_POST['type'])) {
             //decrypt the password
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
-            
+
             // connexion
-            if (@mysql_connect($_POST['db_host'],$_POST['db_login'],$db_password)) {
+            if (@mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password)) {
                 $db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
-                if (@mysql_select_db($_POST['db_bdd'],$db_tmp)) {
+                if (@mysql_select_db($_POST['db_bdd'], $db_tmp)) {
                     echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                     $res = "Connection is successfull";
                     echo 'document.getElementById("but_next").disabled = "";';
@@ -186,17 +203,17 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
-            @mysql_connect($_SESSION['db_host'],$_SESSION['db_login'],$_SESSION['db_pw']);
+            @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
             $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'],$db_tmp);
+            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
             $status = "";
 
             //rename tables
             if (isset($_POST['prefix_before_convert']) && $_POST['prefix_before_convert'] == "true") {
                 $tables =mysql_query('SHOW TABLES');
                 while ($table = mysql_fetch_row($tables)) {
-                    if (tableExists("old_".$table[0]) != 1 && substr($table[0],0,4) != "old_") {
+                    if (tableExists("old_".$table[0]) != 1 && substr($table[0], 0, 4) != "old_") {
                         mysql_query("CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
                         mysql_query("INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
                     }
@@ -209,7 +226,7 @@ if (isset($_POST['type'])) {
             //convert tables
             $res = mysql_query("SHOW TABLES FROM `".$_SESSION['db_bdd']."`");
             while ($table = mysql_fetch_row($res)) {
-                if (substr($table[0],0,4) != "old_") {
+                if (substr($table[0], 0, 4) != "old_") {
                     mysql_query("ALTER TABLE ".$_SESSION['db_bdd'].".`{$table[0]}` CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci");
                     mysql_query("ALTER TABLE".$_SESSION['db_bdd'].".`{$table[0]}` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
                 }
@@ -234,10 +251,10 @@ if (isset($_POST['type'])) {
             // dataBase
             $res = "";
 
-            @mysql_connect($_SESSION['db_host'],$_SESSION['db_login'],$_SESSION['db_pw']);
+            @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
             $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'],$db_tmp);
+            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
 
             ## Populate table MISC
             $val = array(

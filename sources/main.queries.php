@@ -4,7 +4,7 @@
  * @file          main.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -56,11 +56,11 @@ switch ($_POST['type']) {
                 }
                 // reinit SESSION
                 $_SESSION['last_pw'] = implode(';', $lastPw);
-            // specific case where admin setting "number_of_used_pw" is 0
+                // specific case where admin setting "number_of_used_pw" is 0
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
-            // check if new pw is different that old ones
+                // check if new pw is different that old ones
             } if (in_array($newPw, $lastPw)) {
                 echo '[ { "error" : "already_used" } ]';
                 break;
@@ -111,7 +111,7 @@ switch ($_POST['type']) {
                 echo '[ { "error" : "none" } ]';
                 break;
             }
-        // ADMIN has decided to change the USER's PW
+            // ADMIN has decided to change the USER's PW
         } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "admin_change") {
             // Check KEY
             if ($dataReceived['key'] != $_SESSION['key']) {
@@ -151,7 +151,8 @@ switch ($_POST['type']) {
 
             echo '[ { "error" : "none" } ]';
             break;
-        // ADMIN first login
+
+            // ADMIN first login
         } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change") {
             // update DB
             $db->queryUpdate(
@@ -290,7 +291,7 @@ switch ($_POST['type']) {
             }
         }
         // Check if user exists in cpassman
-        $sql = "SELECT * FROM ".$pre."users WHERE login = '".($username)."'";
+        $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
         $row = $db->query($sql);
         if ($row == 0) {
             $row = $db->fetchRow("SELECT label FROM ".$pre."log_system WHERE ");
@@ -803,7 +804,7 @@ switch ($_POST['type']) {
         $oldPersonalSaltkey = $_SESSION['my_sk'];
         $newPersonalSaltkey = str_replace(" ", "+", urldecode($_POST['sk']));
         // Change encryption
-        $rows = mysql_query(
+        $rows = $db->fetchAllArray(
             "SELECT i.id as id, i.pw as pw
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
@@ -811,7 +812,7 @@ switch ($_POST['type']) {
             AND l.id_user=".$_SESSION['user_id']."
             AND l.action = 'at_creation'"
         );
-        while ($reccord = mysql_fetchArray($rows)) {
+        foreach ($rows as $reccord) {
             if (!empty($reccord['pw'])) {
                 // get pw
                 $pw = trim(
@@ -835,6 +836,7 @@ switch ($_POST['type']) {
                         )
                     )
                 );
+                echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
                 // update pw in ITEMS table
                 mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'")
                     or die(mysql_error());

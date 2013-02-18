@@ -363,7 +363,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px;">
-            '.$k['tool_name'].' '.$k['version'].' &#169; copyright 2009-2012
+            '.$k['tool_name'].' '.$k['version'].' &#169; copyright 2009-2013
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>

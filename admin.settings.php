@@ -4,7 +4,7 @@
  * @file        admin.settings.php
  * @author      Nils Laumaillé
  * @version     2.1.13
- * @copyright   (c) 2009-2012 Nils Laumaillé
+ * @copyright   (c) 2009-2013 Nils Laumaillé
  * @licensing   GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -1533,7 +1533,7 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$txt['settings_upload_maxfilesize'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_maxfilesize_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
@@ -1543,7 +1543,7 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$txt['settings_upload_docext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_docext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
@@ -1553,7 +1553,7 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$txt['settings_upload_imagesext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_imagesext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
@@ -1563,7 +1563,7 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$txt['settings_upload_pkgext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_pkgext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
@@ -1573,7 +1573,7 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$txt['settings_upload_otherext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_otherext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>

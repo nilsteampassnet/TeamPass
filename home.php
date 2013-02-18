@@ -3,7 +3,7 @@
  * @file          home.php
  * @author        Nils Laumaillé
  * @version       2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -205,7 +205,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         echo '
                         <div id="import_type_csv">
                             <div style="margin-bottom:5px;margin-top:5px;padding:5px;" class="ui-widget ui-state-active ui-corner-all">'.$txt['import_csv_dialog_info'].'</div>
-                            <!-- show input file + uploadify call -->
+                            <!-- show input file -->
                             <div style="text-align:center;margin-top:10px;">
                                 <div id="upload_container_csv">
                                     <div id="filelist_csv"></div><br />

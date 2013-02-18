@@ -5,13 +5,18 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
+$txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_imagesext_tip'] = "Image types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_pkgext_tip'] = "Package types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_otherext_tip'] = "Other types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_imageresize_options_tip'] = "When activated, this option resizes the Images to the format indicated just below.";
 $txt['settings_upload_maxfilesize']="Max file size (in Mb)";
 $txt['settings_upload_docext']="Allowed document extensions";
 $txt['settings_upload_imagesext']="Allowed image extensions";
 $txt['settings_upload_pkgext']="Allowed package extensions";
 $txt['settings_upload_otherext']="Allowed other extensions";
 $txt['settings_upload_imageresize_options']="Should Images being resized";
-$txt['settings_upload_imageresize_options_tip'] = "";
 $txt['settings_upload_imageresize_options_w'] = "Resized image Width (in pixels)";
 $txt['settings_upload_imageresize_options_h'] = "Resized image Height (in pixels)";
 $txt['settings_upload_imageresize_options_q'] = "Resized image Quality";

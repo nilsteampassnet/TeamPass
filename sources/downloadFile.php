@@ -1,11 +1,11 @@
 <?php
 /**
- * @file           downloadFile.php
+ * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version         2.1.13
- * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @version       2.1.13
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link            http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -22,4 +22,4 @@ header("Content-Type: application/octet-stream");
 header("Pragma: public");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
-readfile($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']));
+readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
