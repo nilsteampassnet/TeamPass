@@ -193,7 +193,7 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-                    'pw' => encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk']))),
+                    'pw' => encrypt($pw),
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
@@ -564,8 +564,8 @@ switch ($_POST['type']) {
             $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$txt['nb_folders'].': '.
                 $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$txt['nb_items'].': '.
                 $numItems.'<br /><br />';
-            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<a href="#" onclick="toggle_importing_details()">'.
-                $txt['importing_details'].'</a><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
+            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
+                $txt['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
                 $txt['importing_folders'].':</b><br />';
 
             //if destination is not ROOT then get the complexity level
@@ -717,7 +717,7 @@ switch ($_POST['type']) {
                             array(
                                 'label' => stripslashes($item[2]),
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
-                                'pw' => encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk']))),
+                                'pw' => encrypt($pw),
                                 'url' => stripslashes($item[6]),
                                 'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[1]]['id'],
                                 'login' => stripslashes($item[4]),
@@ -755,7 +755,8 @@ switch ($_POST['type']) {
                                 'id_item' => $newId,
                                 'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_import'
+                                'action' => 'at_creation',
+                                'raison' => 'at_import'
                            )
                         );
 

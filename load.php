@@ -477,12 +477,11 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             modal: true,
             autoOpen: false,
             width: 400,
-            height: 200,
+            height: 230,
             title: "'.$txt['menu_title_new_personal_saltkey'].'",
             buttons: {
                 "'.$txt['ok'].'": function() {
-                    $("#div_loading").show();
-
+                    $("#div_change_personal_saltkey_wait").show();
                     //Send query
                     $.post(
                         "sources/main.queries.php",
@@ -491,7 +490,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                            sk    : encodeURIComponent($("#new_personal_saltkey").val())
                         },
                         function(data) {
-                            $("#div_loading").hide();
+                            $("#div_change_personal_saltkey_wait").hide();
                             $("#div_change_personal_saltkey").dialog("close");
                         }
                    );
@@ -757,7 +756,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                     up.start();
                 },
                 BeforeUpload: function (up, file) {
-                    $("#import_status_ajax_loader").show()
+                    $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'].'",
                         "xmlFile":file.name,
@@ -766,7 +765,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 },
                 UploadComplete: function(up, files) {
                     ImportKEEPASS(files[0].name);
-                    $("#import_status_ajax_loader").hide();
                 }
     		}
     	});
@@ -834,13 +832,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             },
             function(data) {
                 $("#div_loading").hide();
-                if (data[0].error == "not_kp_file") {
-                    $("#import_status").html(data[0].message);
-                    $("#import_status_ajax_loader").hide();
-                } else {
-                    $("#import_status").html(data[0].message);
-                    $("#import_status_ajax_loader").hide();
-                }
+                $("#import_status").html(data[0].message);
+                $("#import_status_ajax_loader").hide();
             },
             "json"
        );

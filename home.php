@@ -157,6 +157,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                        <div style="margin-top:20px;" class="ui-state-highlight">
                            '.$txt['new_saltkey_warning'].'
                        </div>
+                       <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$txt['please_wait'].'</b></div>
                    </div>';
 
         //saltkey LOST dialogbox
