@@ -221,7 +221,8 @@ switch ($_POST['type']) {
 
         /* LDAP connection */
         if ($debugLdap == 1) {
-            $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w"); //create temp file
+            // create temp file
+            $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w");
         }
 
         if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
