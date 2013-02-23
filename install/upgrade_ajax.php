@@ -322,7 +322,12 @@ if (isset($_POST['type'])) {
                 array('admin','upload_imageresize_options','1',0),
                 array('admin','upload_imageresize_width','800',0),
                 array('admin','upload_imageresize_height','600',0),
-                array('admin','upload_imageresize_quality','90',0)
+                array('admin','upload_imageresize_quality','90',0),
+                array('admin','enable_send_email_on_user_login','0', 0),
+                array('admin','enable_user_can_create_folders','0', 0),
+                array('admin','insert_manual_entry_item_history','0', 0),
+                array('admin','enable_kb','0', 0),
+                array('admin','enable_email_notification_on_item_shown','0', 0),
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -375,7 +380,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","lastname","VARCHAR(100) DEFAULT NULL");
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","session_end","VARCHAR(30) DEFAULT NULL");
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
-            
+
             // Clean timestamp for users table
             mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
 
@@ -900,7 +905,7 @@ require_once \"".$sk_file."\";
                 //Create sk.php file
                 if (!file_exists($sk_file)) {
                     $fh = fopen($sk_file, 'w');
-    
+
                     $result2 = fwrite(
                         $fh,
                         utf8_encode(
@@ -910,7 +915,7 @@ require_once \"".$sk_file."\";
                     );
                     fclose($fh);
                 }
-                
+
                 if ($result1 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
                 } elseif (isset($result2) && $result2 === false) {

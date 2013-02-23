@@ -1957,7 +1957,13 @@ $(function() {
 		runtimes : "gears,html5,flash,silverlight,browserplus",
 		browse_button : "item_attach_pickfiles",
 		container : "item_upload",
-		max_file_size : "<?php echo $_SESSION['settings']['upload_maxfilesize'];?>mb",
+		max_file_size : "<?php
+if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
+    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+} else {
+	echo $_SESSION['settings']['upload_maxfilesize'];
+}
+?>",
         chunk_size : "1mb",
         dragdrop : true,
 		url : "sources/upload/upload.attachments.php",
@@ -1993,7 +1999,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
-            } 
+            }
 		}
 	});
 
@@ -2029,13 +2035,19 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 		});
 		up.refresh(); // Reposition Flash/Silverlight
 	});
-    
+
     // Prepare uplupload object for attachments upload
 	var edit_uploader_attachments = new plupload.Uploader({
 		runtimes : "gears,html5,flash,silverlight,browserplus",
 		browse_button : "item_edit_attach_pickfiles",
 		container : "item_edit_upload",
-		max_file_size : "<?php echo $_SESSION['settings']['upload_maxfilesize'];?>mb",
+		max_file_size : "<?php
+if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
+    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+} else {
+	echo $_SESSION['settings']['upload_maxfilesize'];
+}
+?>",
         chunk_size : "1mb",
         dragdrop : true,
 		url : "sources/upload/upload.attachments.php",
@@ -2068,7 +2080,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
-            }            
+            }
 		}
 	});
 
