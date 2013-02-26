@@ -151,7 +151,7 @@ function displayLogs(type, page, order)
         $("#div_show_items_logs").show();
         filter = $("#filter_itemslogs").val();
     } else {
-        $("#filter_logs_div, #div_show_items_log").hide();
+        $("#filter_logs_div, #div_show_items_logs").hide();
         $("#div_show_system_logs").show()
     }
 
@@ -226,6 +226,44 @@ $(function() {
     });
 
     $("#radio_logs, #radio_database").buttonset();
+    $("#radio_logs").click(function(e) {
+        $("#div_log_purge").show();
+    });
+    $("#butPurge").button().click(function(e) {
+    	$("#div_loading").show();
+    	$.post(
+	        "sources/views.queries.php",
+	        {
+	            type       : "purgeLogs",
+	            purgeTo    : $("#purgeTo").val(),
+	            purgeFrom  : $("#purgeFrom").val(),
+	            logType    : $("#type_log_displayed").val()
+	        },
+	        function(data) {
+	            $("#div_loading").hide();
+	        },
+	        "json"
+	   );
+    });
+
+    $( "#purgeFrom" ).datepicker({
+    	defaultDate: "+1w",
+    	changeMonth: true,
+    	changeYear: true,
+    	numberOfMonths: 1,
+    	onClose: function( selectedDate ) {
+    	    $( "#to" ).datepicker( "option", "minDate", selectedDate );
+    	}
+	});
+	$( "#purgeTo" ).datepicker({
+    	defaultDate: "+1w",
+    	changeMonth: true,
+    	changeYear: true,
+    	numberOfMonths: 1,
+    	onClose: function( selectedDate ) {
+    	    $( "#from" ).datepicker( "option", "maxDate", selectedDate );
+    	}
+	});
 
     ListerElemDel();
 });

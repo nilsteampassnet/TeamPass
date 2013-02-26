@@ -479,7 +479,7 @@ switch ($_POST['type']) {
         if ($data[0] != 0) {
             $nb_pages = ceil($data[0]/$nb_elements);
             for ($i=1; $i<=$nb_pages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"copy_logs\", '.$i.', \'\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                $pages .= '<td onclick=\'displayLogs(\"items_logs\", '.$i.', \"\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
@@ -661,5 +661,20 @@ switch ($_POST['type']) {
         $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
         echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'"}]';
+        break;
+
+    /**
+     * CASE purging logs
+     */
+    case "purgeLogs":
+        if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])) {
+            if ($_POST['logType'] == "items_logs") {
+                //$db->query("DELETE FROM ".$pre."log_items WHERE action='at_shown' AND date BETWEEN '".$_POST['purgeFrom']."' AND '".$_POST['purgeTo']."'");
+            }
+
+            echo '[{"status" : "ok"}]';
+        } else {
+            echo '[{"status" : "nok"}]';
+        }
         break;
 }

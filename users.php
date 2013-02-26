@@ -152,7 +152,7 @@ foreach ($rows as $reccord) {
         echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).'"', '>
                     <td align="center">'.$reccord['id'].'</td>
                     <td align="center">', $reccord['disabled'] == 1 ?'
-                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />' : 
+                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />' :
                     '', '
                     </td>
                     <td align="center">
@@ -205,17 +205,17 @@ foreach ($rows as $reccord) {
                     <td align="center">
                         <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only'] == 1 ? 'checked' : '', ' ', ($show_user_folders != true) ? 'disabled="disabled"':'', ' />
                     </td>';
-        // Personal folder privilege
-        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
+        // Can create at root
             echo '
                     <td align="center">
                         <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"', $reccord['can_create_root_folder'] == 1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
                     </td>';
-        }
+        /*if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
         echo '
                     <td align="center">
                         <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"', $reccord['personal_folder'] == 1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
                     </td>';
+        }*/
         // If user is active, then you could lock it
         // If user is locked, you could delete it
         if ($reccord['disabled'] == 1) {

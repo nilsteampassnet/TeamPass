@@ -74,6 +74,9 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.17
+ #287 - Rights on a folder created at root are set.
+
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273
  * #277: Change personal saltkey error
