@@ -8,6 +8,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 $txt['purge_log'] = "Purge logs from";
 $txt['to'] = "to";
 $txt['purge_now'] = "Purge Now!";
+$txt['purge_done'] = "The purge has been performed!<br />Number of elements deleted: ";
 
 $txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";

@@ -55,7 +55,7 @@ echo '
         <div id="radio_logs">
             <input type="radio" id="radio1" name="radio" onclick="displayLogs(\'connections_logs\',1, \'date\')" /><label for="radio1">'.$txt['connections'].'</label>
             <input type="radio" id="radio2" name="radio" onclick="displayLogs(\'errors_logs\',1, \'date\')" /><label for="radio2">'.$txt['errors'].'</label>
-            <input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>
+            <!--<input type="radio" id="radio3" name="radio" onclick="displayLogs(\'access_logs\',1, \'date\')" /><label for="radio3">'.$txt['at_shown'].'</label>-->
             <input type="radio" id="radio4" name="radio" onclick="displayLogs(\'copy_logs\',1, \'date\')" /><label for="radio4">'.$txt['at_copy'].'</label>
             <input type="radio" id="radio5" name="radio" onclick="displayLogs(\'admin_logs\',1, \'date\')" /><label for="radio5">'.$txt['admin'].'</label>
             <input type="radio" id="radio6" name="radio" onclick="displayLogs(\'items_logs\',1, \'date\')" /><label for="radio6">'.$txt['items'].'</label>

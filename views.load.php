@@ -230,7 +230,6 @@ $(function() {
         $("#div_log_purge").show();
     });
     $("#butPurge").button().click(function(e) {
-    	$("#div_loading").show();
     	$.post(
 	        "sources/views.queries.php",
 	        {
@@ -240,14 +239,18 @@ $(function() {
 	            logType    : $("#type_log_displayed").val()
 	        },
 	        function(data) {
-	            $("#div_loading").hide();
+	        	if (data[0].status == "ok") {
+	        		$("#div_dialog_message_text").html("<?php echo $txt['purge_done'];?> "+data[0].nb);
+	        	    $("#div_dialog_message").dialog("open");
+	        	}
+	        	$("#purgeTo, #purgeFrom").val("");
 	        },
 	        "json"
 	   );
     });
 
     $( "#purgeFrom" ).datepicker({
-    	defaultDate: "+1w",
+    	defaultDate: "today",
     	changeMonth: true,
     	changeYear: true,
     	numberOfMonths: 1,
