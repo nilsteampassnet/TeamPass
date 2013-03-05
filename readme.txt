@@ -75,7 +75,8 @@ folder
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.17
- #287 - Rights on a folder created at root are set.
+ #283 - Rights on a folder created at root are set.
+ #285 - New settings: Anyone can modify option can be activated by default
 
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273

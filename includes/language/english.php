@@ -5,6 +5,9 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
+$txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_failed'] = "Authentication failed!";
 $txt['purge_log'] = "Purge logs from";
 $txt['to'] = "to";
 $txt['purge_now'] = "Purge Now!";

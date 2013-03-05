@@ -30,7 +30,7 @@ $htmlHeaders = '
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
 
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
-        
+
         <script type="text/javascript" src="includes/libraries/jCryption/jquery.jcryption.min.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
@@ -236,7 +236,7 @@ $htmlHeaders .= '
         }
     });*/
 
-    $(function() {        
+    $(function() {
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
 
@@ -359,7 +359,7 @@ $htmlHeaders .= '
                 }
             }
         });
-        
+
         /**
         * Creates a random string
         * @returns {string} A random string
@@ -386,18 +386,26 @@ $htmlHeaders .= '
             var hashObj = new jsSHA(randomString(), "ASCII");
             password = hashObj.getHash("SHA-512", "HEX");
             // Authenticate with the server
-            $.jCryption.authenticate(password, "includes/libraries/jCryption/encrypt.php?generateKeypair=true", "includes/libraries/jCryption/encrypt.php?handshake=true", function(AESKey) {
-                // Enable the buttons and the textfield
-                $("#text, #send,#clearSessionStorage").attr("disabled",false);
-                $("#channel_status").hide();
-                $("#form_identify").show();
-                // Save the current AES key into the sessionStorage
-                sessionStorage.setItem("isConnected","1");
-                sessionStorage.setItem("password",password);
-            }, function() {
-                // Authentication failed
-                $("#channel_status").html("<span style=\"font-size: 16px;\">Authentication failed!</span><br /><button id=\"clearSessionStorage\" onclick=\"sessionStorage.clear();window.location = window.location;\">Clear sessionStorage</button>").show();
-            })
+            $.jCryption.authenticate(
+                password,
+                "includes/libraries/jCryption/encrypt.php?generateKeypair=true",
+                "includes/libraries/jCryption/encrypt.php?handshake=true",
+                function(AESKey) {
+                    // Enable the buttons and the textfield
+                    $("#text, #send,#clearSessionStorage").attr("disabled",false);
+                    $("#channel_status").hide();
+                    $("#form_identify").show();
+                    // Save the current AES key into the sessionStorage
+                    sessionStorage.setItem("isConnected","1");
+                    sessionStorage.setItem("password",password);
+                }, function() {
+                    // Authentication failed
+                    $("#channel_status").html("<span style=\"font-size: 16px;\">"+
+                        "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
+                        "onclick=\"sessionStorage.clear();window.location = window.location;\">"+
+                        "Clear sessionStorage</button>").show();
+                }
+            )
         } else {
             // Enable the buttons and the textfield
             //$("#text, #send,#clearSessionStorage").attr("disabled",false);
@@ -1111,7 +1119,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 }
             }
         });
-        
+
         // SQL IMPORT FOR RESTORING
         var uploader_restoreDB = new plupload.Uploader({
     		runtimes : "gears,html5,flash,silverlight,browserplus",
@@ -1183,16 +1191,22 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $(".div_radio").buttonset();
 
         //Enable/disable option
-        $("input[name=\'restricted_to\']").bind("click", radioClicks);
-        function radioClicks()
-        {
+        $("input[name=\'restricted_to\']").bind("click", function() {
             if ($(this).val()== 1) {
                 $("#tr_option_restricted_to_roles").show();
             } else {
                 $("#tr_option_restricted_to_roles").hide();
                 $("input[name=restricted_to_roles]").val(["0"]).button("refresh");
             }
-        }
+        });
+        $("input[name=\'anyone_can_modify\']").bind("click", function() {
+            if ($(this).val()== 1) {
+                $("#tr_option_anyone_can_modify_bydefault").show();
+            } else {
+                $("#tr_option_anyone_can_modify_bydefault").hide();
+                $("input[name=anyone_can_modify_bydefault]").val(["0"]).button("refresh");
+            }
+        });
 
         //check NEW SALT KEY
         $("#new_salt_key").keypress(function (e) {
@@ -1230,7 +1244,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $("#result_admin_action_db_backup").html("");
         if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
         else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
-        else if (action == "admin_action_change_salt_key") {        
+        else if (action == "admin_action_change_salt_key") {
             option = $.jCryption.encrypt(sanitizeString($("#new_salt_key").val()), sessionStorage.password);
         } else if (action == "admin_email_send_backlog") {
             $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");

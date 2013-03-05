@@ -249,6 +249,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify']) {
         updateSettings('anyone_can_modify', $_POST['anyone_can_modify']);
     }
+    // Update anyone_can_modify_bydefault
+    if (@$_SESSION['settings']['anyone_can_modify_bydefault'] != $_POST['anyone_can_modify_bydefault']) {
+        updateSettings('anyone_can_modify_bydefault', $_POST['anyone_can_modify_bydefault']);
+    }
     // Update enable_kb
     if (@$_SESSION['settings']['enable_kb'] != $_POST['enable_kb']) {
         updateSettings('enable_kb', $_POST['enable_kb']);
@@ -1066,6 +1070,20 @@ echo '
                         <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$txt['yes'].'</label>
                         <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_anyone_can_modify"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
+// Enable Item modification by anyone by default
+echo '
+                <tr id="tr_option_anyone_can_modify_bydefault" style="display:', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? 'inline':'none', ';"><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_anyone_can_modify_bydefault'].'
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="anyone_can_modify_bydefault_radio1" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_bydefault_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="anyone_can_modify_bydefault_radio2" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify_bydefault']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_bydefault_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_anyone_can_modify_bydefault"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 // enable restricted_to option

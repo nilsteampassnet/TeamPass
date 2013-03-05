@@ -540,7 +540,10 @@ echo '
 // Line for Item modification
 echo '
             <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify" />
+                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
+                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                    ' checked="checked"' : '', ' />
                 <label for="anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
             </div>';
 // Line for Item automatically deleted
@@ -681,7 +684,10 @@ echo '
 // Line for Item modification
 echo '
             <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify" />
+                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify"',
+                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                    ' checked="checked"' : '', ' />
                 <label for="edit_anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
             </div>';
 // Line for Item automatically deleted

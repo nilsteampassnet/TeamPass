@@ -392,7 +392,7 @@ switch ($_POST['type']) {
                 $_SESSION['last_pw_change'] = $data['last_pw_change'];
                 $_SESSION['last_pw'] = $data['last_pw'];
                 $_SESSION['can_create_root_folder'] = $data['can_create_root_folder'];
-                //$_SESSION['key'] = $key;
+                $_SESSION['key'] = $key;
                 $_SESSION['personal_folder'] = $data['personal_folder'];
                 $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];

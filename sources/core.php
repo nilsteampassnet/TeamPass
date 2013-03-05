@@ -63,7 +63,9 @@ if (empty($languagesDropmenu)) {
     $languagesList = array();
     $rows = $db->fetchAllArray("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
     foreach ($rows as $reccord) {
-        $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.$reccord['flag'].'" alt="'.$reccord['label'].'" title="'.$reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
+        $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
+            $reccord['flag'].'"alt="'.$reccord['label'].'" title="'.
+            $reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
         array_push($languagesList, $reccord['name']);
         if (isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']) {
             $_SESSION['user_language_flag'] = $reccord['flag'];
@@ -121,7 +123,11 @@ if (!empty($_SESSION['fin_session'])) {
     $dataSession[0] = "";
 }
 
-if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION['fin_session'] < time() || empty($_SESSION['key']) || empty($dataSession[0]))) {
+if (
+    isset($_SESSION['user_id']) && (empty($_SESSION['fin_session'])
+    || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
+    || empty($dataSession[0]))
+) {
     // Update table by deleting ID
     $db->queryUpdate(
         "users",
@@ -154,7 +160,10 @@ if (isset($_SESSION['user_id']) && (empty($_SESSION['fin_session']) || $_SESSION
 }
 
 /* CHECK IF UPDATE IS NEEDED */
-if (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false || empty($_SESSION['settings']['update_needed']))) {
+if (
+    isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
+    || empty($_SESSION['settings']['update_needed']))
+) {
     $row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
     if ($row[0] != $k['version']) {
         $_SESSION['settings']['update_needed'] = true;
@@ -166,7 +175,12 @@ if (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['upd
 /**
  * Set the personal SaltKey if authorized
  */
-if (isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 && isset($_SESSION['user_id']) && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])) {
+if (
+    isset($_SESSION['settings']['enable_personal_saltkey_cookie'])
+    && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1
+    && isset($_SESSION['user_id'])
+    && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
+) {
     $_SESSION['my_sk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
 }
 
@@ -194,7 +208,10 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
             logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
         }
 
-        syslog(LOG_WARNING, "Unlog user: ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})");
+        syslog(
+            LOG_WARNING,
+            "Unlog user: ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
+        );
 
         // erase session table
         $_SESSION = array();
@@ -261,9 +278,17 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         }
 
         // get access rights
-        identifyUserRights($data['groupes_visibles'], $data['groupes_interdits'], $data['admin'], $data['fonction_id'], false);
+        identifyUserRights(
+            $data['groupes_visibles'],
+            $data['groupes_interdits'],
+            $data['admin'],
+            $data['fonction_id'],
+            false
+        );
     }
-} elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+} elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication'])
+    && $_SESSION['settings']['2factors_authentication'] == 1
+) {
     //2 Factors authentication is asked
     include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
     $google2FA=new Google2FA();
@@ -293,7 +318,9 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
             $numDaysBeforePwExpiration = "infinite";
             $_SESSION['validite_pw'] = true;
         } else {
-            $numDaysBeforePwExpiration = $_SESSION['settings']['pw_life_duration'] - round((mktime(0, 0, 0, date('m'), date('d'), date('y'))-$_SESSION['last_pw_change'])/(24*60*60));
+            $numDaysBeforePwExpiration = $_SESSION['settings']['pw_life_duration'] - round(
+                (mktime(0, 0, 0, date('m'), date('d'), date('y'))-$_SESSION['last_pw_change'])/(24*60*60)
+            );
             if ($numDaysBeforePwExpiration <= 0) {
                 $_SESSION['validite_pw'] = false;
             } else {
@@ -308,7 +335,12 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 /*
 * CHECK IF SENDING ANONYMOUS STATS
 */
-if (isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 && isset($_SESSION['settings']['send_stats_time']) && !isset($_SESSION['temporary']['send_stats_done'])) {
+if (
+    isset($_SESSION['settings']['send_stats'])
+    && $_SESSION['settings']['send_stats'] == 1
+    && isset($_SESSION['settings']['send_stats_time'])
+    && !isset($_SESSION['temporary']['send_stats_done'])
+) {
     if (($_SESSION['settings']['send_stats_time'] + $k['one_month_seconds']) <= time()) {
         teampassStats();
         $_SESSION['temporary']['send_stats_done'] = true;   //permits to test only once by session
@@ -318,16 +350,3 @@ if (isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_st
 /* CHECK NUMBER OF USER ONLINE */
 $queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(time() - 600)."'");
 $_SESSION['nb_users_online'] = $queryCount[0];
-
-/*
- * Generate temporary key for encryption
- */
-    //Generate a ramdom ID
-    $pwgen = new SplClassLoader('Encryption\PwGen', 'includes/libraries');
-    $pwgen->register();
-    $pwgen = new Encryption\PwGen\pwgen();
-    $pwgen->setLength(30);
-    $pwgen->setSecure(true);
-    $pwgen->setCapitalize(true);
-    $pwgen->setNumerals(true);
-    $_SESSION['key'] = $pwgen->generate();

@@ -299,7 +299,10 @@ if (isset($_POST['newtitle'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+            $dataReceived = json_decode(
+                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256),
+                true
+            );
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -316,8 +319,10 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if (!empty($data[0]) && $dataReceived['id'] != $data[0]) {
+                $data = $db->fetchRow(
+                    "SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                );
+                if (!empty($data[0]) && $dataReceived['id'] != $data[0] && $title != $data[1] ) {
                     echo '[ { "error" : "error_group_exist" } ]';
                     break;
                 }

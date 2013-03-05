@@ -282,6 +282,7 @@ if (isset($_POST['type'])) {
                 array('admin', 'allow_print',0,0),
                 array('admin', 'show_description',1,0),
                 array('admin', 'anyone_can_modify',0,0),
+                array('admin', 'anyone_can_modify_bydefault',0,0),
                 array('admin', 'nb_bad_authentication',0,0),
                 array('admin', 'restricted_to',0,0),
                 array('admin', 'restricted_to_roles',0,0),
