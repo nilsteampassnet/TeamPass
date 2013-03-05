@@ -29,7 +29,9 @@ $htmlHeaders = '
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
+        
+        <script type="text/javascript" src="includes/libraries/jCryption/jquery.jcryption.min.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -93,6 +95,7 @@ $htmlHeaders .= '
     function MenuAction(val)
     {
         if (val == "deconnexion") {
+            sessionStorage.clear();
             $("#menu_action").val(val);
             document.main_form.submit();
         } else {
@@ -100,11 +103,6 @@ $htmlHeaders .= '
             if (val == "") document.location.href="index.php";
             else document.location.href="index.php?page="+val;
         }
-    }
-
-    function aes_encrypt(text)
-    {
-        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
     //Identify user
@@ -135,7 +133,7 @@ $htmlHeaders .= '
                 "sources/main.queries.php",
                 {
                     type : "identify_user",
-                    data : aes_encrypt(data)
+                    data : $.jCryption.encrypt(data, sessionStorage.password)
                 },
                 function(data) {
                     if (data[0].value == randomstring) {
@@ -228,6 +226,7 @@ $htmlHeaders .= '
     *
        $(window).bind("beforeunload", function() {
         if ($("#menu_action").val() == "") {
+            sessionStorage.clear();
             //Forces the disconnection of the user
             $.ajax({
                 type: "POST",
@@ -237,7 +236,7 @@ $htmlHeaders .= '
         }
     });*/
 
-    $(function() {
+    $(function() {        
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
 
@@ -360,7 +359,53 @@ $htmlHeaders .= '
                 }
             }
         });
-
+        
+        /**
+        * Creates a random string
+        * @returns {string} A random string
+        */
+        function randomString() {
+            var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+            var string_length = 128;
+            var randomstring = "";
+            for (var i=0; i<string_length; i++) {
+                var rnum = Math.floor(Math.random() * chars.length);
+                randomstring += chars.substring(rnum,rnum+1);
+            }
+            //randomstring += cursor.x;
+            //randomstring += cursor.y;
+            return randomstring;
+        }
+        // Initialize the password variable
+        var password;
+        // If a connection has not been made
+        if(!sessionStorage.isConnected){
+            $("#form_identify").hide();
+            $("#channel_status").show();
+            // Create a random AES key
+            var hashObj = new jsSHA(randomString(), "ASCII");
+            password = hashObj.getHash("SHA-512", "HEX");
+            // Authenticate with the server
+            $.jCryption.authenticate(password, "includes/libraries/jCryption/encrypt.php?generateKeypair=true", "includes/libraries/jCryption/encrypt.php?handshake=true", function(AESKey) {
+                // Enable the buttons and the textfield
+                $("#text, #send,#clearSessionStorage").attr("disabled",false);
+                $("#channel_status").hide();
+                $("#form_identify").show();
+                // Save the current AES key into the sessionStorage
+                sessionStorage.setItem("isConnected","1");
+                sessionStorage.setItem("password",password);
+            }, function() {
+                // Authentication failed
+                $("#channel_status").html("<span style=\"font-size: 16px;\">Authentication failed!</span><br /><button id=\"clearSessionStorage\" onclick=\"sessionStorage.clear();window.location = window.location;\">Clear sessionStorage</button>").show();
+            })
+        } else {
+            // Enable the buttons and the textfield
+            //$("#text, #send,#clearSessionStorage").attr("disabled",false);
+            $("#channel_status").hide();
+            $("#form_identify").show();
+            // Store the password from sessionStorage in the password variables
+            password = sessionStorage.password;
+        }
     });';
 
 if (!isset($_GET['page'])) {
@@ -444,7 +489,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                                     type    : "change_pw",
                                     change_pw_origine    : "user_change",
                                     complexity:    $("#pw_strength_value").val(),
-                                    data :    aes_encrypt(data)
+                                    data :    $.jCryption.encrypt(data, sessionStorage.password)
                                 },
                                 function(data) {
                                     if (data[0].error == "already_used") {
@@ -804,7 +849,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 type                : "change_pw",
                 change_pw_origine    : "first_change",
                 complexity            :    "",
-                data                 :    aes_encrypt(data)
+                data                 :    $.jCryption.encrypt(data, sessionStorage.password)
             },
             function(data) {
                 document.main_form.submit();
@@ -889,7 +934,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             {
                type        : "import_items",
                folder    : $("#import_items_to").val(),
-               data        : aes_encrypt(items),
+               data        : $.jCryption.encrypt(items, sessionStorage.password),
                import_csv_anyone_can_modify    : $("#import_csv_anyone_can_modify").prop("checked"),
                import_csv_anyone_can_modify_in_role    : $("#import_csv_anyone_can_modify_in_role").prop("checked")
             },
@@ -1185,8 +1230,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $("#result_admin_action_db_backup").html("");
         if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
         else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
-        else if (action == "admin_action_change_salt_key") option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
-        else if (action == "admin_email_send_backlog") {
+        else if (action == "admin_action_change_salt_key") {        
+            option = $.jCryption.encrypt(sanitizeString($("#new_salt_key").val()), sessionStorage.password);
+        } else if (action == "admin_email_send_backlog") {
             $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
         }
         //Lauchn ajax query
@@ -1221,6 +1267,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                     } else if (data[0].result == "changed_salt_key") {
                         //deconnect user
                         $("#menu_action").val("deconnexion");
+                        sessionStorage.clear();
                         document.main_form.submit();
                     } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
                         if (data[0].error != "") {

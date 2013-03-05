@@ -19,11 +19,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
 $(function() {
     $(".button").button();
     //inline editing
@@ -243,7 +238,7 @@ $(function() {
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : aes_encrypt(data)
+                            data    : $.jCryption.encrypt(data, sessionStorage.password)
                         },
                         function(data) {
                             if (data[0].error == "none") {

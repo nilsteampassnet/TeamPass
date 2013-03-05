@@ -40,7 +40,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256), true);
         // Prepare variables
         $newPw = encrypt(htmlspecialchars_decode($dataReceived['new_pw']));
         // User has decided to change is PW
@@ -189,7 +189,7 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["encKey"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $password = encrypt(htmlspecialchars_decode($dataReceived['pw']));

@@ -55,12 +55,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
         $("#div_kb_delete").dialog("open");
     }
 
-    //encrypt
-    function aes_encrypt(text)
-    {
-        return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-    }
-
     $(function() {
         //buttons
         $("#button_new_kb").button();
@@ -138,7 +132,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                          $.post("sources/kb.queries.php",
                               {
                                   type     : "kb_in_db",
-                                  data     : aes_encrypt(data),
+                                  data     : $.jCryption.encrypt(data, sessionStorage.password),
                                   key      : "<?php echo $_SESSION['key'];?>"
                               },
                             function(data) {

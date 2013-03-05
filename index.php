@@ -447,10 +447,15 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;" class="ui-state-error ui-corner-all">
                     <b>'.$txt['index_session_expired'].'</b>
                 </div>';
-    }
+    }    
+    //Encryption info
+    echo '
+    <div id="channel_status" style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
+        <span style="font-size: 16px;">&nbsp;Encrypting channel ...</span> <img src="includes/images/ajax-loader.gif" alt="Loading..." title="Loading..." style="margin-right:15px;" />
+    </div>';
     // CONNECTION FORM
     echo '
-            <form method="post" name="form_identify" action="">
+            <form method="post" name="form_identify" id="form_identify" action="" style="display:none;">
                 <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
@@ -458,7 +463,6 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
                     <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
-
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>

@@ -518,7 +518,7 @@ function AjouterItem()
                 "sources/items.queries.php",
                 {
                     type    : "new_item",
-                    data     : aes_encrypt(data),
+                    data     : $.jCryption.encrypt(data, sessionStorage.password),
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
@@ -687,7 +687,7 @@ function EditerItem()
                 "sources/items.queries.php",
                 {
                     type    : "update_item",
-                    data      : aes_encrypt(data),
+                    data      : $.jCryption.encrypt(data, sessionStorage.password),
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
@@ -808,7 +808,7 @@ function AjouterFolder()
             "sources/folders.queries.php",
             {
                 type    : "add_folder",
-                data      : aes_encrypt(data),
+                data      : $.jCryption.encrypt(data, sessionStorage.password),
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
@@ -1716,7 +1716,7 @@ $(function() {
                         "sources/items.queries.php",
                         {
                             type    : "update_rep",
-                            data      : aes_encrypt(data),
+                            data      : $.jCryption.encrypt(data, sessionStorage.password),
                             key        : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
@@ -2272,11 +2272,6 @@ if (!empty($first_group)) {
         });
 });
 
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
 function aes_decrypt(text)
 {
     return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
@@ -2369,7 +2364,7 @@ function manage_history_entry(action, entry_id)
             "sources/items.queries.php",
             {
                 type    : "history_entry_add",
-                data    : aes_encrypt(data),
+                data    : $.jCryption.encrypt(data, sessionStorage.password),
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
