@@ -385,8 +385,11 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
     // ETAPE 5
     echo '
-                    <h3>Step 5 - Update setting file</h3>
-                    This step will write the new setting.php file for your server configuration.<br />
+                    <h3>Step 5 - Miscellaneous</h3>
+                    This step will:<br />
+                    - write the new setting.php file for your server configuration <span id="step5_settingFile"></span><br />
+                    - write the new sk.php file for data encryption <span id="step5_skFile"></span><br />
+                    - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
                     Click on the button when ready.
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';

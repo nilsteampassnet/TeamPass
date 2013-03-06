@@ -20,7 +20,7 @@
 	// If the GET parameter "generateKeypair" is set
 	if(isset($_GET["generateKeypair"])) {
 		// Include some RSA keys
-		require_once("100_1024_keys.inc.php");
+		require_once(substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path'])-6)."/100_1024_keys.inc.php");
 		// Pick a random RSA key from the array
 		$keys = $arrKeys[mt_rand(0, 100)];
 		// Save the RSA keypair into the session

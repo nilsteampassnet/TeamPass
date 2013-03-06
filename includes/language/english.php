@@ -5,6 +5,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['admin_action_generate_encrypt_keys'] = "Generate new encryption keys set";
+$txt['admin_action_generate_encrypt_keys_tip'] = "Encryption keys set is a very important aspect in the security of your TeamPass installation. Indeed those keys are used in order to encrypt the channel between Server and Client. Even if this file is securized outside the WWW zone of your server, it is recommanded to regenerate the keys time to time. Notice that this operation can take up to 1 minute.";
 $txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
 $txt['channel_encryption_in_progress'] = "Encrypting channel ...";
 $txt['channel_encryption_failed'] = "Authentication failed!";

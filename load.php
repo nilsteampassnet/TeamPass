@@ -1289,6 +1289,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         } else {
                             $("#email_testing_results").html("'.addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok'])).'").show().attr("class","ui-corner-all ui-state-focus");
                         }
+                    } else if (data[0].result == "generated_keys_file") {
+                        $("#result_admin_action_generate_encrypt_keys").html("<img src=\'includes/images/tick.png\' alt=\'\' />");
                     }
                 }
             },

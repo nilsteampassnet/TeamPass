@@ -212,6 +212,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
@@ -292,8 +294,11 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
     //ETAPE 5
     echo '
-                     <h3>Step 5 - Update setting file</h3>
-                     This step will write the new setting.php file for your server configuration.<br />
+                     <h3>Step 5 - Miscellaneous</h3>
+                     This step will:<br />
+                    - update setting.php file for your server configuration <span id="step5_settingFile"></span><br />
+                    - update sk.php file for data encryption <span id="step5_skFile"></span><br />
+                    - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
                      Click on the button when ready.';
 
     if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {

@@ -37,6 +37,18 @@ if (isset($_POST['type'])) {
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('openssl')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('gmp')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
 
             if (version_compare(phpversion(), '5.3.0', '<')) {
                 $ok_version = false;
@@ -722,7 +734,7 @@ if (isset($_POST['type'])) {
             }
             $fh = fopen($filename, 'w');
 
-            fwrite(
+            $result1 = fwrite(
                 $fh,
                 utf8_encode(
 "<?php
@@ -743,6 +755,11 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
                 )
             );
             fclose($fh);
+            if ($result1 === false) {
+                echo 'document.getElementById("res_step4").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
+            } else {
+                echo 'document.getElementById("step4_settingFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
 
             //Create sk.php file
             if (file_exists($sk_file)) {
@@ -757,7 +774,7 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
             }
             $fh = fopen($sk_file, 'w');
 
-            $result = fwrite(
+            $result2 = fwrite(
                 $fh,
                 utf8_encode(
 "<?php
@@ -765,9 +782,34 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
 ?>")
             );
             fclose($fh);
-            if ($result === false) {
+            if ($result2 === false) {
                 echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
             } else {
+                echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
+                
+            //Generate Keys file
+            require_once("../includes/libraries/jCryption/jCryption.php");
+            $keyLength = 1024;
+            $jCryption = new jCryption();
+            $numberOfPairs = 100;
+            $arrKeyPairs = array();
+            for ($i=0; $i < $numberOfPairs; $i++) {
+                $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
+            }
+            $file = array();
+            $file[] = '<?php';
+            $file[] = '$arrKeys = ';
+            $file[] = var_export($arrKeyPairs, true);
+            $file[] = ';';
+            $result3 = file_put_contents(substr($sk_file, 0, strlen($sk_file)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+            if (isset($result3) && $result3 === false) {
+                echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
+            } else {
+                echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
+                
+            if (isset($result2) && $result2 != false && $result1 != false && $result3 != false) {
                 echo 'gauge.modify($("pbar"),{values:[1,1]});';
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.";';
