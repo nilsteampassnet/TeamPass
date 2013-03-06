@@ -53,6 +53,8 @@ $txt['admin_action_db_restore_key'] = "暗号化キーを入力してくださ�
 
 $txt['admin_action_db_restore_tip'] = "バックアップ機能で作成したSQLバックアップファイルを使用し、リストアします";
 
+$txt['admin_action_generate_encrypt_keys'] = "Generate new encryption keys set";
+$txt['admin_action_generate_encrypt_keys_tip'] = "Encryption keys set is a very important aspect in the security of your TeamPass installation. Indeed those keys are used in order to encrypt the channel between Server and Client. Even if this file is securized outside the WWW zone of your server, it is recommanded to regenerate the keys time to time. Notice that this operation can take up to 1 minute.";
 $txt['admin_action_purge_old_files'] = "古いキャッシュファイルを削除";
 
 $txt['admin_action_purge_old_files_result'] = "files have been deleted.";
@@ -115,6 +117,10 @@ $txt['admin_path_to_files_folder'] = "Path to Files folder";
 $txt['admin_path_to_files_folder_tip'] = "<span style='font-size:11px;max-width:300px;'>Files folder is used to store all generated files by TeamPass and also some uploaded files.<br />IMPORTANT: for security reason, this folder should not be in the WWW folder of your website. It should be set in a protected area with a specific redirection rule in your Server configuration.<br />IMPORTANT 2:It could be good to set a CRON task in order to clean up periodically this folder.</span>";
 $txt['admin_path_to_upload_folder'] = "Path to Upload folder";
 $txt['admin_path_to_upload_folder_tip'] = "<span style='font-size:11px;max-width:300px;'>Upload folder is used to store all uploaded files associated to Items.<br />IMPORTANT: for security reason, this folder should not be in the WWW folder of your website. It should be set in a protected area with a specific redirection rule in your Server configuration.<br />IMPORTANT 2:This folder should never be clean up! Those files are associated to the Items.</span>";
+$txt['admin_proxy_ip'] = "Proxy IP used";
+$txt['admin_proxy_ip_tip'] = "<span style='font-size:11px;max-width:300px;'>If your Internet connection goes through a proxy. Indicate here its IP.<br />Leave empty if no Proxy.</span>";
+$txt['admin_proxy_port'] = "Proxy PORT used";
+$txt['admin_proxy_port_tip'] = "<span style='font-size:11px;max-width:300px;'>If you have set an IP for the Proxy, now indicate its PORT. Could be 8080.<br />Leave empty if no Proxy.</span>";
 $txt['admin_pwd_maximum_length'] = "Maximum length for passwords";
 $txt['admin_pwd_maximum_length_tip'] = "The default value for passwords length is set to 40. It is important to know that setting a high value length will have impact on performances. Indeed more long is this value, more time the server needs to encrypt and decrypt, and to display passwords.";
 $txt['admin_script_backups'] = "Settings for Backups script";
@@ -137,6 +143,7 @@ $txt['admin_setting_activate_expiration_tip'] = "When enabled, items expired wil
 
 $txt['admin_setting_enable_delete_after_consultation'] = "Item consulted can be automatically deleted";
 $txt['admin_setting_enable_delete_after_consultation_tip'] = "<span style='font-size:11px;max-width:300px;'>When enabled, the Item creator can decide that Item will be automatically deleted after being seen X times.</span>";
+$txt['admin_upload_title'] = "Uploads";
 $txt['admin_url_to_files_folder'] = "URL to Files folder";
 $txt['admin_url_to_upload_folder'] = "URL to Upload folder";
 $txt['admin_users'] = "ユーザー管理";
@@ -262,6 +269,9 @@ $txt['change_user_functions_info'] = "Select the functions associated to this ac
 
 $txt['change_user_functions_title'] = "Customize associated functions";
 
+$txt['channel_encryption_failed'] = "Authentication failed!";
+$txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['check_all_text'] = "Check all";
 
 $txt['close'] = "Close";
@@ -806,6 +816,9 @@ $txt['print_out_pdf_title'] = "TeamPass - List of exported Items";
 
 $txt['print_out_warning'] = "All passwords and all confidential data will be written in this file without any encryption! By writing the file containing unencrypted items/passwords, you are accepting the full responsibility for further protection of this list!";
 
+$txt['purge_done'] = "The purge has been performed!<br />Number of elements deleted: ";
+$txt['purge_log'] = "Purge logs from";
+$txt['purge_now'] = "Purge Now!";
 $txt['pw'] = "パスワード";
 
 $txt['pw_change'] = "アカウントのパスワード変更";
@@ -878,10 +891,12 @@ $txt['send'] = "Send";
 
 $txt['settings_anyone_can_modify'] = "Activate an option for each item that allows anyone to modify it";
 
+$txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a checkbox in the item form that permits the creator to allow the modification of this item by anyone.</span>";
 $txt['settings_default_language'] = "Define the Default Language";
 $txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token after un certain delay. If the value is set to 0 then the token will never be deleted.</span>";
+$txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
@@ -892,6 +907,8 @@ $txt['settings_ldap_domain_controler'] = "ドメインコントローラーのLD
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "あなたのドメインのLDAPベース dn";
 
+$txt['settings_ldap_elusers'] = "Teampass local users only";
+$txt['settings_ldap_elusers_tip'] = "This feature allows users in the database to authenticate via LDAP. Disable this if you want to browse any LDAP directory.";
 $txt['settings_ldap_mode'] = "LDAPサーバーを使ったユーザー認証を有効にする。";
 
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
@@ -920,6 +937,21 @@ $txt['settings_send_stats'] = "TeamPassの利用状況を伝えるために、�
 
 $txt['settings_send_stats_tip'] = "These statistics are entirely anonymous!<br /><span style='font-size:10px;max-width:300px;'>Your IP is not sent, just the following data are transmitted: amount of Items, Folders, Users, TeamPass version, personal folders enabled, ldap enabled.<br />Many thanks if you enable those statistics. By this you help me further develop TeamPass.</span>";
 $txt['settings_show_description'] = "Show Description in list of Items";
+$txt['settings_upload_docext'] = "Allowed document extensions";
+$txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_imageresize_options'] = "Should Images being resized";
+$txt['settings_upload_imageresize_options_h'] = "Resized image Height (in pixels)";
+$txt['settings_upload_imageresize_options_q'] = "Resized image Quality";
+$txt['settings_upload_imageresize_options_tip'] = "When activated, this option resizes the Images to the format indicated just below.";
+$txt['settings_upload_imageresize_options_w'] = "Resized image Width (in pixels)";
+$txt['settings_upload_imagesext'] = "Allowed image extensions";
+$txt['settings_upload_imagesext_tip'] = "Image types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_maxfilesize'] = "Max file size (in Mb)";
+$txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
+$txt['settings_upload_otherext'] = "Allowed other extensions";
+$txt['settings_upload_otherext_tip'] = "Other types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['settings_upload_pkgext'] = "Allowed package extensions";
+$txt['settings_upload_pkgext_tip'] = "Package types. Indicate the file extensions allowed separated with a coma (,)";
 $txt['share'] = "Share this Item";
 $txt['share_sent_ok'] = "Email has been sent";
 $txt['show'] = "Show";
@@ -947,6 +979,7 @@ $txt['timezone_selection'] = "タイムゾーン";
 
 $txt['time_format'] = "時間フォーマット";
 
+$txt['to'] = "to";
 $txt['uncheck_all_text'] = "Uncheck all";
 
 $txt['unlock_user'] = "User is locked. Do you want to unlock this account?";

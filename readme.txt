@@ -75,6 +75,8 @@ folder
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.17
+ * New exchange encryption protocol. No key is visible. The channel is 
+ encrypted at start of session.
  #283 - Rights on a folder created at root are set.
  #285 - New settings: Anyone can modify option can be activated by default
 

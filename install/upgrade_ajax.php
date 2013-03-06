@@ -883,10 +883,13 @@ if (isset($_POST['type'])) {
 
                 if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
                     $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
                 } elseif (isset($_SESSION['sk_path']) && !empty($_SESSION['sk_path'])) {
                     $sk_file = $_SESSION['sk_path'];
+                    $securePath = $_SESSION['sk_path'];
                 } else {
                     $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                    $securePath = $_SESSION['abspath'];
                 }
 
                 $fh = fopen($filename, 'w');
@@ -909,7 +912,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-
+@define('SECUREPATH', '".substr($sk_file, 0, strlen($sk_file)-7)."');
 require_once \"".$sk_file."\";
 ?>"));
 
@@ -932,13 +935,13 @@ require_once \"".$sk_file."\";
 ?>")
                     );
                     fclose($fh);
-                }                
+                }
                 if (isset($result2) && $result2 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = "$sk_file could not be created. Please check the path and the rights.";';
                 } else {
                     echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
                 }
-                
+
                 //Generate Keys file
                 require_once("../includes/libraries/jCryption/jCryption.php");
                 $keyLength = 1024;
@@ -959,9 +962,9 @@ require_once \"".$sk_file."\";
                 } else {
                     echo 'document.getElementById("step5_keysFile").innerHTML = "<img src=\"images/tick.png\">";';
                 }
-                
+
                 //Finished
-                if ($result1 != false && $result3 != false && (!isset($result2) || (isset($result2) && $result2 != false))) {                    
+                if ($result1 != false && $result3 != false && (!isset($result2) || (isset($result2) && $result2 != false))) {
                     echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step5").innerHTML = "Done.";';

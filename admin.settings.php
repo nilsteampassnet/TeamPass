@@ -1084,9 +1084,7 @@ echo '
 echo '
                 <tr id="tr_option_anyone_can_modify_bydefault" style="display:', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? 'inline':'none', ';"><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>
-                        '.$txt['settings_anyone_can_modify_bydefault'].'
-                    </label>
+                    <label>'.$txt['settings_anyone_can_modify_bydefault'].'</label>
                     </td><td>
                     <div class="div_radio">
                         <input type="radio" id="anyone_can_modify_bydefault_radio1" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_bydefault_radio1">'.$txt['yes'].'</label>

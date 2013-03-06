@@ -481,7 +481,8 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     //Encryption info
     echo '
     <div id="channel_status" style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
-        <span style="font-size: 16px;">&nbsp;'.$txt['channel_encryption_in_progress'].'</span> <img src="includes/images/ajax-loader.gif" alt="Loading..." title="Loading..." style="margin-right:15px;" />
+        ', !file_exists(SECUREPATH."/100_1024_keys.inc.php") ? $txt['channel_encryption_no_file'] :
+        '<span style="font-size: 16px;">&nbsp;'.$txt['channel_encryption_in_progress'].'</span> <img src="includes/images/ajax-loader.gif" alt="Loading..." title="Loading..." style="margin-right:15px;" />', '
     </div>';
     // CONNECTION FORM
     echo '

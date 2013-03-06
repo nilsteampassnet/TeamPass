@@ -265,7 +265,10 @@ switch ($_POST['type']) {
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
             for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"connections_logs\", '.$i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                $pages .= '<td onclick=\'displayLogs(\"connections_logs\", '.
+                $i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.
+                ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:
+                '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
@@ -288,7 +291,10 @@ switch ($_POST['type']) {
         );
 
         foreach ($rows as $reccord) {
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.$txt[$reccord['label']].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+            $logs .= '<tr><td>'.date(
+                $_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']
+            ).'</td><td align=\"center\">'.$txt[$reccord['label']].'</td><td align=\"center\">'.
+            $reccord['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -312,7 +318,9 @@ switch ($_POST['type']) {
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
             for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"errors_logs\", '.$i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                $pages .= '<td onclick=\'displayLogs(\"errors_logs\", '.$i.', \"'.$_POST['order'].
+                '\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ?
+                'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
@@ -667,7 +675,8 @@ switch ($_POST['type']) {
      * CASE purging logs
      */
     case "purgeLogs":
-        if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])) {
+        if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
+            && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_shown' ".
@@ -700,28 +709,6 @@ switch ($_POST['type']) {
                     "DELETE FROM ".$pre."log_items WHERE type='error' ".
                     "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
                 );
-            /*} elseif ($_POST['logType'] == "access_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".
-                    strtotime($_POST['purgeTo'])."'"
-                );
-                // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
-                );
-            } elseif ($_POST['logType'] == "admin_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".
-                    strtotime($_POST['purgeTo'])."'"
-                );
-                // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
-                );*/
             } elseif ($_POST['logType'] == "copy_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_copy' ".

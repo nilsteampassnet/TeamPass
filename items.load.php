@@ -829,8 +829,9 @@ function AjouterFolder()
 
 function SupprimerFolder()
 {
-    if ($("#delete_rep_groupe").val() == "0") alert("<?php echo $txt['error_group'];?>");
-    else if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
+    if ($("#delete_rep_groupe").val() == "0") {
+        alert("<?php echo $txt['error_group'];?>");
+    } else if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
         $.post(
             "sources/folders.queries.php",
             {
@@ -1290,10 +1291,14 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
     $('#edit_categorie').val($('#id_categorie').val());
-    if ($('#edit_restricted_to').val() != undefined) $('#edit_restricted_to').val($('#hid_restricted_to').val());
-    if ($('#edit_restricted_to_roles').val() != undefined) $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
+    if ($('#edit_restricted_to').val() != undefined) {
+        $('#edit_restricted_to').val($('#hid_restricted_to').val());
+    }
+    if ($('#edit_restricted_to_roles').val() != undefined) {
+        $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
+    }
     $('#edit_tags').val($('#hid_tags').val());
-    if ($('#id_anyone_can_modify:checked').val() == "on") {
+    if ($('#hid_anyone_can_modify').val() == "1") {
         $('#edit_anyone_can_modify').attr("checked","checked");
         $('#edit_anyone_can_modify').button("refresh");
     } else {

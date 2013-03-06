@@ -36,7 +36,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right']) && $k['admin_
 }
 // Get list of users
 $liste_utilisateurs = array();
-$users_string = "";
+$usersString = "";
 $rows = $db->fetchAllArray("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $record) {
     $liste_utilisateurs[$record['login']] = array(
@@ -44,7 +44,7 @@ foreach ($rows as $record) {
         "login" => $record['login'],
         "email" => $record['email'],
        );
-    $users_string .= $record['id']."#".$record['login'].";";
+    $usersString .= $record['id']."#".$record['login'].";";
 }
 // Get list of roles
 $arrRoles = array();
@@ -68,7 +68,7 @@ echo '
 <input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? $_GET['group'] : "", '" />
 <input type="hidden" id="complexite_groupe" />
 <input type="hidden" name="selected_items" id="selected_items" />
-<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$users_string.'" />
+<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlentities($listRoles, ENT_QUOTES, 'UTF-8').'" />
 <input type="hidden" id="bloquer_creation_complexite" />
 <input type="hidden" id="bloquer_modification_complexite" />

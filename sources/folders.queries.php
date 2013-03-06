@@ -253,24 +253,26 @@ if (isset($_POST['newtitle'])) {
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                //Get user's rights
-                @identifyUserRights(
-                    $_SESSION['groupes_visibles'].';'.$newId,
-                    $_SESSION['groupes_interdits'],
-                    $_SESSION['is_admin'],
-                    $_SESSION['fonction_id'],
-                    true
-                );
-
-                //add access to this new folder
-                foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                    $db->queryInsert(
-                        'roles_values',
-                        array(
-                            'role_id' => $role,
-                            'folder_id' => $newId
-                        )
+                if($isPersonal != 1){
+                    //Get user's rights
+                    @identifyUserRights(
+                        $_SESSION['groupes_visibles'].';'.$newId,
+                        $_SESSION['groupes_interdits'],
+                        $_SESSION['is_admin'],
+                        $_SESSION['fonction_id'],
+                        true
                     );
+
+                    //add access to this new folder
+                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                        $db->queryInsert(
+                            'roles_values',
+                            array(
+                                'role_id' => $role,
+                                'folder_id' => $newId
+                            )
+                        );
+                    }
                 }
 
                 //If it is a subfolder, then give access to it for all roles that allows the parent folder

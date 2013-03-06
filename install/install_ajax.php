@@ -715,9 +715,11 @@ if (isset($_POST['type'])) {
          */
         case "step5":
             if (empty($_SESSION['sk_path'])) {
-                $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                $skFile = $_SESSION['abspath'].'/includes/sk.php';
+                $securePath = $_SESSION['abspath'];
             } else {
-                $sk_file = $_SESSION['sk_path'].'/sk.php';
+                $skFile = $_SESSION['sk_path'].'/sk.php';
+                $securePath = $_SESSION['sk_path'];
             }
 
             $filename = "../includes/settings.php";
@@ -749,8 +751,8 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-
-require_once \"".str_replace('\\', '/', $sk_file)."\";
+@define('SECUREPATH', '".$securePath."');
+require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>"
                 )
             );
@@ -762,17 +764,17 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
             }
 
             //Create sk.php file
-            if (file_exists($sk_file)) {
-                if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                    echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
+            if (file_exists($skFile)) {
+                if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                    echo 'document.getElementById("res_step4").innerHTML = "'.$skFile.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     break;
                 } else {
-                    $events .= "The file $sk_file already exist. A copy has been created.<br />";
-                    unlink($sk_file);
+                    $events .= "The file $skFile already exist. A copy has been created.<br />";
+                    unlink($skFile);
                 }
             }
-            $fh = fopen($sk_file, 'w');
+            $fh = fopen($skFile, 'w');
 
             $result2 = fwrite(
                 $fh,
@@ -783,11 +785,11 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
             );
             fclose($fh);
             if ($result2 === false) {
-                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$skFile could not be created. Please check the path and the rights.";';
             } else {
                 echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
             }
-                
+
             //Generate Keys file
             require_once("../includes/libraries/jCryption/jCryption.php");
             $keyLength = 1024;
@@ -802,13 +804,13 @@ require_once \"".str_replace('\\', '/', $sk_file)."\";
             $file[] = '$arrKeys = ';
             $file[] = var_export($arrKeyPairs, true);
             $file[] = ';';
-            $result3 = file_put_contents(substr($sk_file, 0, strlen($sk_file)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+            $result3 = file_put_contents(substr($skFile, 0, strlen($skFile)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
             if (isset($result3) && $result3 === false) {
                 echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
             } else {
                 echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
             }
-                
+
             if (isset($result2) && $result2 != false && $result1 != false && $result3 != false) {
                 echo 'gauge.modify($("pbar"),{values:[1,1]});';
                 echo 'document.getElementById("but_next").disabled = "";';

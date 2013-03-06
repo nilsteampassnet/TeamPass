@@ -1122,7 +1122,13 @@ if (isset($_POST['type'])) {
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
-                $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1) {
+                    $arrData['anyone_can_modify'] = 1;
+                } else {
+                    $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                }
+
                 $arrData['history_of_pwds'] = str_replace('"', '&quot;', $historyOfPws);
                 // Add this item to the latests list
                 if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {

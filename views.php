@@ -97,14 +97,15 @@ echo '
                 </tbody>
             </table>
             <div id="itemslogs_pages" style="margin-top:10px;"></div>
-        </div>
+        </div>' ,
+        isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1 ? '
         <div id="div_log_purge" style="margin-top:30px;padding:10px;display:none;" class="ui-state-highlight ">
             <label for="purgeFrom">'.$txt['purge_log'].'</label>
             <input type="text" id="purgeFrom" name="purgeFrom" />
             <label for="purgeTo">'.$txt['to'].'</label>
             <input type="text" id="purgeTo" name="purgeTo" />
             <input type="button" id="butPurge" value="'.$txt['purge_now'].'" />
-        </div>
+        </div>' : '', '
     </div>';
 
     //TAB 4 - RENEWAL
