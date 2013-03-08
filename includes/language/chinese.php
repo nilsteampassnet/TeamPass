@@ -542,6 +542,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "启用知识库(beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>启用后，将会添加一个可以用于建立知识库的页面</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "域名的LDAP账户前缀";
 $txt['settings_ldap_domain_controler'] = "LDAP array of domain controllers";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma ( , )!<br />By example: domain_1,domain_2,domain_3</span>";

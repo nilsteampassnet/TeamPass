@@ -9,7 +9,7 @@
  * @link
  */
 
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
+$debugLdap = 1; //Can be used in order to debug LDAP authentication
 
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -242,10 +242,19 @@ switch ($_POST['type']) {
 
             $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
             $adldap->register();
+
+            // Posix style LDAP handles user searches a bit differently
+            if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+            }
+            elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+                $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+            }
+
             $adldap = new LDAP\adLDAP\adLDAP(
                 array(
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                    'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
@@ -276,6 +285,11 @@ switch ($_POST['type']) {
             ) );*/
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+            }
+
+            // openLDAP expects an attribute=value pair
+            if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                $username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
             }
             // authenticate the user
             if ($adldap->authenticate($username, $passwordClear)) {

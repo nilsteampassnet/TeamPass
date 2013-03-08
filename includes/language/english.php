@@ -587,7 +587,11 @@ $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:
 $txt['settings_default_language'] = "Define the Default Language";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
+$txt['settings_ldap_user_attribute'] = "LDAP username attribute";
+$txt['settings_ldap_user_attribute_tip'] = "This will be the attribute used in the LDAP search filter. Typically on OpenLDAP systems this is 'uid'. I.e., 'uid=bobsmith'.";
 $txt['settings_ldap_domain'] = "LDAP account suffix for your domain";
+$txt['settings_ldap_domain_posix'] = "LDAP users subtree";
 $txt['settings_ldap_domain_controler'] = "LDAP array of domain controllers";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn for your domain";

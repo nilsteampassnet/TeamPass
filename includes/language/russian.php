@@ -542,6 +542,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Включить Базу Знаний (beta)";
 $txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой ( , )!<br />Например: домен_1,домен_2,домен_3</span>";

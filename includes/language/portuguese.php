@@ -548,6 +548,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Ativa Base de Conhecimento (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'> Quando ativado, isto irá adicionar uma página onde você pode construir sua base de conhecimento. </ span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "Conta sufixo para LDAP para seu dominio";
 $txt['settings_ldap_domain_controler'] = "Se tiver mais de um LDAP, defina aqui";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'> controladores especifique múltiplas se você gostaria que a classe para equilibrar as consultas LDAP entre vários servidores. <br /> Você deve delimitar os domínios por uma vírgula (,) <br /> Por exemplo: domain_1, domain_2, domain_3 </ span>";

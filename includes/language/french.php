@@ -544,6 +544,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Autoriser l'importation de données depuis des fichiers CSV et Keepass";
 $txt['settings_kb'] = "Activer la Base de Connaissance (béta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Quand activé, cela ajoutera la possibilité de créer votre propre Base de Connaissance au travers d'une page dédiée.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "Suffix LDAP de votre domaine";
 $txt['settings_ldap_domain_controler'] = "Tableau des contrôleurs de votre domaine LDAP";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Vous pouvez spécifier plusieurs controlleurs si vous désirez que la classe balance les requetes LDAP sur plusieurs serveurs.<br />Attention, vous devez délimiter les domaines par une virgule ( , )!<br />Par exemple : domaine_1,domaine_2,domaine_3</span>";

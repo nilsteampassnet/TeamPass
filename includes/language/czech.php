@@ -541,6 +541,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style=\"font-size:11px;max-
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Povolit databázi znalostí a zkušeností (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Aktivací bude přidána stránka, kde můžete vybudovat Vaší databázi znalostí a zkušeností.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "Přípona účtu LDAP pro Vaši doménu";
 $txt['settings_ldap_domain_controler'] = "Pole LDAP správců domény";
 $txt['settings_ldap_domain_controler_tip'] = "<span style=\"max-width: 300px;\">Zadejte více správců, pokud chcete, aby třída rozdělovala dotazy na LDAP na více serverů.<br>Domény musí být odděleny čárkou ( , )!<br>Např.: doména_1,doména_2,doména_3</span>";
