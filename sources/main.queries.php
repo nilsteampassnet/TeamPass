@@ -289,10 +289,13 @@ switch ($_POST['type']) {
 
             // openLDAP expects an attribute=value pair
             if ($_SESSION['settings']['ldap_type'] == 'posix') {
-                $username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+                $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+            }
+            else {
+                $auth_username = $username;
             }
             // authenticate the user
-            if ($adldap->authenticate($username, $passwordClear)) {
+            if ($adldap->authenticate($auth_username, $passwordClear)) {
                 $ldapConnection = true;
             } else {
                 $ldapConnection = false;
