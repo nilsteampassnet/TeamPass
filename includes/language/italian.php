@@ -541,6 +541,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Abilita Knowledge Base (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Se attivo, verrà aggiunta una pagina dove puoi costruire la knowledge base.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "Suffisso LDAP per gli account del dominio";
 $txt['settings_ldap_domain_controler'] = "Lista di DC LDAP";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifica più DC se vuoi che le query LDAP vengano bilanciate su più server.<br />Devi separare i DC con una virgola ( , ).<br />Per esempio: dominio_1,dominio_2,dominio_3</span>";

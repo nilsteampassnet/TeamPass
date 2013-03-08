@@ -541,6 +541,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Habilitar Base de Conocimientos (beta)";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Una vez activado, esto agregara una pagina en la cual usted puede construir su base de conocimientos.</span>";
+$txt['settings_ldap_type'] = "Tipo de servidor LDAP";
 $txt['settings_ldap_domain'] = "Sufijo de cuentas LDAP para su dominio";
 $txt['settings_ldap_domain_controler'] = "Array de controladores de dominio LDAP";
 $txt['settings_ldap_domain_controler_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Especifique multiples controladores si desea que la clase balancee las consultas LDAP entre los multiples servidores.<br>Debe delimitar los dominios con una coma ( , )!<br>Por ejemplo: dominio_1,dominio_2,dominio_3</span>";

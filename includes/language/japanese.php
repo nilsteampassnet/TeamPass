@@ -891,6 +891,7 @@ $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)\";
 <b";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "あなたのドメインのLDAPアカウントサフィックス\";
 <b";
 $txt['settings_ldap_domain_controler'] = "ドメインコントローラーのLDAPアレイ\";

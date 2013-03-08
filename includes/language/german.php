@@ -541,6 +541,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Wissensdatenbank aktivieren (beta)";
 $txt['settings_kb_tip'] = "Durch Aktivierung dieser Option wird eine zusätzliche Seite hinzugefügt, auf der Sie Ihre Wissensdatenbank aufbauen können.";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "LDAP Suffix Ihrer Domäne";
 $txt['settings_ldap_domain_controler'] = "LDAP Serverliste";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Geben Sie mehrere Server an, falls Sie die Verteilung der LDAP-Anfragen auf mehrere Server wünschen.<br />Sie müssen die Domänennamen durch Kommazeichen trennen ( , )!<br />Bsp.: domain_1,domain_2,domain_3</span>";

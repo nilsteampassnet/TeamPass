@@ -542,6 +542,7 @@ $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-w
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Knowledge Base activeren";
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Door dit aan te zetten wordt er een pagina toegevoegd waar u uw knowledge base kan opzetten.</span>";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_ldap_domain'] = "LDAP account voorzetsel voor het domein";
 $txt['settings_ldap_domain_controler'] = "Komma gescheiden lijst van domein controllers";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specificeer meerdere domein controllers om de LDAP queries tussen verschillende servers te verdelen<br />De lijst moet komma gescheiden zijn ( , )!<br />Bijvoorbeeld: domein_1,domein_2,domein_3</span>";

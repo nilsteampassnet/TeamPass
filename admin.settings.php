@@ -221,6 +221,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode']) {
         updateSettings('ldap_mode', $_POST['ldap_mode']);
     }
+    // Update LDAP type
+    if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
+        updateSettings('ldap_type', $_POST['ldap_type']);
+    }
     // Update LDAP ldap_suffix
     if (@$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
         updateSettings('ldap_suffix', $_POST['ldap_suffix']);
@@ -233,6 +237,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
+    // Update LDAP ldap_user_attribute
+    if (@$_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
+        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
+    }
     // Update LDAP ssl
     if (@$_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl']) {
         updateSettings('ldap_ssl', $_POST['ldap_ssl']);
@@ -242,6 +250,10 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_tls', $_POST['ldap_tls']);
     }
     // Update LDAP ldap_elusers
+    if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
+        updateSettings('ldap_elusers', $_POST['ldap_elusers']);
+    }
+    // Update LDAP ldap_group
     if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
         updateSettings('ldap_elusers', $_POST['ldap_elusers']);
     }
@@ -1206,30 +1218,65 @@ if (!extension_loaded('ldap')) {
                         <span class="setting_flag" id="flag_ldap_mode"><img src="includes/images/status', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </span>
                 </div>';
+// Type
+$ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
+echo '
+    <div style="margin-bottom:3px;">
+        <label for="ldap_type">'.$txt['settings_ldap_type'].'</label>
+        <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
+            <option value="windows">Windows / Active Directory</option>
+            <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
+        </select>
+    </div>';
 }
-// AD inputs
+// LDAP inputs
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$txt['admin_ldap_configuration'].'</div>
                 <table>';
 // Domain
+if ($ldap_type != 'posix') {
 echo '
                     <tr>
                         <td><label for="ldap_suffix">'.$txt['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
                     </tr>';
+}
+
 // Domain DN
 echo '
                     <tr>
                         <td><label for="ldap_domain_dn">'.$txt['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" /></td>
                     </tr>';
+
+// Subtree for posix / openldap
+if ($ldap_type == 'posix') {
+echo '
+                    <tr>
+                        <td><label for="ldap_suffix">'.$txt['settings_ldap_domain_posix'].'</label></td>
+                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
+                    </tr>';
+}
+
+// LDAP username attribute
+if ($ldap_type == 'posix') {
+echo '
+                    <tr>
+                        <td><label for="ldap_user_attribute">'.$txt['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
+                            $txt['settings_ldap_user_attribute_tip'].'" /></label></td>
+                        <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
+                            isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
+                    </tr>';
+}
+
 // Domain controler
 echo '
                     <tr>
                         <td><label for="ldap_domain_controler">'.$txt['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_domain_controler_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
                     </tr>';
+
 // AD SSL
 echo '
                     <tr>
