@@ -73,7 +73,7 @@ echo '
 <input type="hidden" id="bloquer_creation_complexite" />
 <input type="hidden" id="bloquer_modification_complexite" />
 <input type="hidden" id="error_detected" />
-<input type="hidden" name="random_id" id="random_id" />
+<input type="text" name="random_id" id="random_id" />
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />

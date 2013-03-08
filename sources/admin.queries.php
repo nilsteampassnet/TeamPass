@@ -578,7 +578,7 @@ switch ($_POST['type']) {
         $file[] = '$arrKeys = ';
         $file[] = var_export($arrKeyPairs, true);
         $file[] = ';';
-        file_put_contents(substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path'])-6)."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+        file_put_contents(SECUREPATH."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
         
         echo '[{"result":"generated_keys_file", "error":""}]';
         break;

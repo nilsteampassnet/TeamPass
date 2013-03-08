@@ -788,6 +788,7 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
+        $dataReceived = Encryption\Crypt\aesctr::decrypt($_POST['sk'], $_SESSION['encKey'], 256);
         if ($_POST['sk'] != "**************************") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
             setcookie(

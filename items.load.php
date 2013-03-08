@@ -175,7 +175,7 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //decrypt data
                 try {
-                    data = $.parseJSON(aes_decrypt(data));
+                    data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                 } catch (e) {
                     // error
                     $("#div_loading").hide();
@@ -339,7 +339,7 @@ function pwGenerate(elem)
             force      : "false"
         },
         function(data) {
-            data = $.parseJSON(data);
+            data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
             $("#"+elem+"pw1, #"+elem+"pw1_txt").val(data.key).focus();
             $("#"+elem+"pw_wait").hide();
         }
@@ -524,7 +524,7 @@ function AjouterItem()
                 function(data) {
                     //decrypt data
                     try {
-                        data = $.parseJSON(aes_decrypt(data));
+                        data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -693,7 +693,7 @@ function EditerItem()
                 function(data) {
                     //decrypt data
                     try {
-                        data = $.parseJSON(aes_decrypt(data));
+                        data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -919,7 +919,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 function(data) {
                     //decrypt data
                     try {
-                        data = $.parseJSON(aes_decrypt(data));
+                        data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -1501,7 +1501,7 @@ function get_clipboard_item(field,id)
                 id         : id
             },
             function(data) {
-                data = aes_decrypt(data);
+                data = $.jCryption.encrypt(data, sessionStorage.password);
                 clip = new ZeroClipboard.Client();
                 clip.setText(data);
                 if (field == "pw") {
@@ -1993,11 +1993,13 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 		init: {
             BeforeUpload: function (up, file) {
                 $("#item_upload_wait").show();
-            	var post_id = CreateRandomString(9,"num_no_0");
-            	$("#random_id").val(post_id);
+                if ($("#random_id").val() == "") {
+                	var post_id = CreateRandomString(9,"num_no_0");
+                	$("#random_id").val(post_id);
+                }
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":post_id,
+                    "itemId":$("#random_id").val(),
                     "type_upload":"item_attachments",
                     "edit_item":false
                 };
@@ -2276,11 +2278,6 @@ if (!empty($first_group)) {
             }
         });
 });
-
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
 
 function htmlspecialchars_decode (string, quote_style)
 {

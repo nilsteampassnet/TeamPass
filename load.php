@@ -395,11 +395,12 @@ $htmlHeaders .= '
                     $("#text, #send,#clearSessionStorage").attr("disabled",false);
                     $("#channel_status").hide();
                     $("#form_identify").show();
+                    $("#login").focus();
                     // Save the current AES key into the sessionStorage
                     sessionStorage.setItem("isConnected","1");
                     sessionStorage.setItem("password",password);
-                }, function() {
-                    // Authentication failed
+                },
+                function() {
                     $("#channel_status").html("<span style=\"font-size: 16px;\">"+
                         "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
                         "onclick=\"sessionStorage.clear();window.location = window.location;\">"+
@@ -998,7 +999,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             "sources/main.queries.php",
             {
                type    : "store_personal_saltkey",
-               sk    : encodeURIComponent($("#input_personal_saltkey").val())
+               sk    : $.jCryption.encrypt($("#input_personal_saltkey").val(), sessionStorage.password)
             },
             function(data) {
                 if ($("#input_personal_saltkey").val() != "") {

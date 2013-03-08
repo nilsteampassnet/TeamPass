@@ -88,9 +88,9 @@ echo '
                 <thead>
                     <tr>
                         <th onclick="displayLogs(\'reorder\', \'\', \'date\')" style="cursor:pointer;" title="">'.$txt['date'].'</th>
-                        <th id="th_url">'.$txt['url'].'</th>
-                        <th onclick="displayLogs(\'reorder\', \'\', \'label\')" style="cursor:pointer;" title="">'.$txt['label'].'</th>
-                        <th onclick="displayLogs(\'reorder\', \'\', \'login\')" style="cursor:pointer;" title="">'.$txt['user'].'</th>
+                        <th id="th_url">'.$txt['label'].'</th>
+                        <th onclick="displayLogs(\'reorder\', \'\', \'label\')" style="cursor:pointer;" title="">'.$txt['user'].'</th>
+                        <!--<th onclick="displayLogs(\'reorder\', \'\', \'login\')" style="cursor:pointer;" title="">'.$txt['user'].'</th>-->
                     </tr>
                 </thead>
                 <tbody id="tbody_itemslogs">

@@ -131,7 +131,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 320,
-        height: 400,
+        height: 490,
         title: "<?php echo $txt['new_user_title'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {

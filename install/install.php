@@ -144,6 +144,7 @@ $_SESSION['CPM'] = 1;
                     data = "type="+step;
                 } else
                 if (step == "step5") {
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"/images/ajax-loader.gif\" />";                	
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 }
@@ -188,7 +189,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/include.php';
 // # LOADER
 echo '
-    <div style="position:absolute;top:49%;left:49%;display:none;" id="loader"><img src="images/ajax-loader.gif" /></div>';
+    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>';
 // # HEADER ##
 echo '
         <div id="top">
@@ -268,6 +269,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                     </div>
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="status_step1"></div>';
@@ -390,7 +393,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     - write the new setting.php file for your server configuration <span id="step5_settingFile"></span><br />
                     - write the new sk.php file for data encryption <span id="step5_skFile"></span><br />
                     - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
-                    Click on the button when ready.
+                    This operation could potentially take up to 1 minute. Please be patient.<br />
+                    Click on the button when ready. 
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';
 } elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {

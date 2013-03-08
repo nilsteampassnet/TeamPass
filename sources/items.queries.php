@@ -73,7 +73,7 @@ if (isset($_POST['type'])) {
         case "new_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
                 echo $returnValues;
                 break;
             }
@@ -90,7 +90,7 @@ if (isset($_POST['type'])) {
                 // Check length
                 if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
                     $returnValues = array("error" => "pw_too_long");
-                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
                     echo $returnValues;
                     break;
                 }
@@ -298,7 +298,7 @@ if (isset($_POST['type'])) {
                 $returnValues = array("error" => "something_wrong");
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
             echo $returnValues;
             break;
 
@@ -764,7 +764,7 @@ if (isset($_POST['type'])) {
                 $arrData = array("error" => "format");
             }
             // return data
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
             echo $returnValues;
             break;
 
@@ -1314,7 +1314,7 @@ if (isset($_POST['type'])) {
             $arrData['timestamp'] = time();
             // print_r($arrData);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
             // return data
             echo $returnValues;
             break;
@@ -1345,7 +1345,10 @@ if (isset($_POST['type'])) {
                 $pwgen->setSecure(false);
             }
 
-            echo json_encode(array("key" => $pwgen->generate()), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo Encryption\Crypt\aesctr::encrypt(json_encode(
+                array("key" => $pwgen->generate()), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP),
+                $_SESSION['encKey'], 256
+            );
             break;
 
         /*
@@ -1837,7 +1840,7 @@ if (isset($_POST['type'])) {
             }
             //print_r($returnValues);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
             // return data
             echo $returnValues;
 
@@ -1943,7 +1946,7 @@ if (isset($_POST['type'])) {
                 $data = $dataItem['login'];
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['key'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['encKey'], 256);
             echo $returnValues;
             break;
 

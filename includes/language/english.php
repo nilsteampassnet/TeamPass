@@ -5,6 +5,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['admin_action_generate_encrypt_keys'] = "Generate new encryption keys set";
 $txt['admin_action_generate_encrypt_keys_tip'] = "Encryption keys set is a very important aspect in the security of your TeamPass installation. Indeed those keys are used in order to encrypt the channel between Server and Client. Even if this file is securized outside the WWW zone of your server, it is recommanded to regenerate the keys time to time. Notice that this operation can take up to 1 minute.";

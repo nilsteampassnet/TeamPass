@@ -22,12 +22,14 @@
 * @version    1.2
 * @link       http://jcryption.org/
 */
-class jCryption {
+class jCryption
+{
 
 	private $_key_len;
 	private $_e;
 
-	public function __construct($e="\x01\x00\x01") {
+	public function __construct($e = "\x01\x00\x01")
+	{
 		$this->_e = $e;
 	}
 
@@ -38,7 +40,8 @@ class jCryption {
 	* @param int $keyLength
 	* @return array
 	*/
-	public function generateKeypair($keyLength) {
+	public function generateKeypair($keyLength)
+	{
 		$this->_key_len = intval($keyLength);
 		if ($this->_key_len < 8) {
 			$this->_key_len = 8;
@@ -95,7 +98,8 @@ class jCryption {
 	* @param string $num2
 	* @return string
 	*/
-	private function _gcd($num1, $num2) {
+	private function _gcd($num1, $num2)
+	{
 		do {
 			$tmp = bcmod($num1, $num2);
 			$num1 = $num2;
@@ -115,7 +119,8 @@ class jCryption {
 	* @return string
 	* @access public
 	*/
-	private function _bin2int($str) {
+	private function _bin2int($str)
+	{
 		$result = '0';
 		$n = strlen($str);
 		do {
@@ -135,7 +140,8 @@ class jCryption {
 	* @return string
 	* @access public
 	*/
-	private function _int2bin($num) {
+	private function _int2bin($num)
+	{
 		$result = '';
 		do {
 			$result .= chr(bcmod($num, '256'));
@@ -149,7 +155,8 @@ class jCryption {
 	*
 	* @param int $bits_cnt
 	*/
-	public function getPrime($bits_cnt) {
+	public function getPrime($bits_cnt)
+	{
 		$bytes_n = intval($bits_cnt / 8);
 		do {
 			$str = '';
@@ -168,7 +175,8 @@ class jCryption {
 	* @param string $mod
 	* @return string
 	*/
-	private function _invmod($num, $mod) {
+	private function _invmod($num, $mod)
+	{
 		$x = '1';
 		$y = '0';
 		$num1 = $mod;
@@ -193,7 +201,8 @@ class jCryption {
 	* @param string $num
 	* @return int
 	*/
-	private function _bitLen($num) {
+	private function _bitLen($num)
+	{
 		$tmp = $this->_int2bin($num);
 		$bit_len = strlen($tmp) * 8;
 		$tmp = ord($tmp {strlen($tmp) - 1} );
@@ -214,7 +223,8 @@ class jCryption {
 	* @param string $hex
 	* @return string
 	*/
-	private function _hex2bint($hex) {
+	private function _hex2bint($hex)
+	{
 		$result = '0';
 		for ($i=0; $i < strlen($hex); $i++) {
 			$result = bcmul($result, '16');
@@ -236,7 +246,8 @@ class jCryption {
 	* @return int
 	* @access public
 	*/
-	private function _hex2int($hex) {
+	private function _hex2int($hex)
+	{
 		$result = 0;
 		for ($i=0; $i < strlen($hex); $i++) {
 			$result *= 16;
@@ -257,7 +268,8 @@ class jCryption {
 	* @param string $bigint
 	* @return string
 	*/
-	private function _bint2char($bigint) {
+	private function _bint2char($bigint)
+	{
 		$message = '';
 		while (bccomp($bigint, '0') != 0) {
 			$ascii = bcmod($bigint, '256');
@@ -273,7 +285,8 @@ class jCryption {
 	* @param string $string
 	* @return mixed
 	*/
-	private function _redundacyCheck($string) {
+	private function _redundacyCheck($string)
+	{
 		$r1 = substr($string, 0, 2);
 		$r2 = substr($string, 2);
 		$check = $this->_hex2int($r1);
@@ -297,14 +310,15 @@ class jCryption {
 	* @param int $enc_mod
 	* @return string
 	*/
-	public function decrypt($encrypted, $dec_key, $enc_mod) {
+	public function decrypt($encrypted, $dec_key, $enc_mod)
+	{
 		//replaced split with explode
 		$blocks = explode(' ', $encrypted);
 		$result = "";
 		$max = count($blocks);
 		for ($i=0; $i < $max; $i++) {
 			$dec = $this->_hex2bint($blocks[$i]);
-			if (function_exists('gmp_strval') && function_exists('gmp_powm')){
+			if (function_exists('gmp_strval') && function_exists('gmp_powm')) {
 				$dec = gmp_strval(gmp_powm($dec, $dec_key, $enc_mod));
 			} else {
 				$dec = bcpowmod($dec, $dec_key, $enc_mod);
@@ -322,7 +336,8 @@ class jCryption {
 	* @param int $base
 	* @return string
 	*/
-	public function dec2string($decimal, $base) {
+	public function dec2string($decimal, $base)
+	{
 		$string = null;
 		$base = (int) $base;
 		if ($base < 2 | $base > 36 | $base == 10) {

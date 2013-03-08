@@ -967,7 +967,7 @@ require_once \"".$sk_file."\";
                 if ($result1 != false && $result3 != false && (!isset($result2) || (isset($result2) && $result2 != false))) {
                     echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';
-                    echo 'document.getElementById("res_step5").innerHTML = "Done.";';
+                    echo 'document.getElementById("res_step5").innerHTML = "Operations are successfully completed.";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     echo 'document.getElementById("but_launch").disabled = "disabled";';
                 }

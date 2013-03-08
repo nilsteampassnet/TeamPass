@@ -104,6 +104,7 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step5") {
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />"; 
                     document.getElementById("loader").style.display = "";
                     if (document.getElementById("sk_path") == null)
                     	var data = "type="+step;
@@ -137,7 +138,7 @@ if (isset($_POST['db_host'])) {
 // LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
-        <img src="images/ajax-loader.gif" />
+        <img src="../includes/images/76.gif" />
     </div>';
 
 // HEADER
@@ -296,9 +297,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     echo '
                      <h3>Step 5 - Miscellaneous</h3>
                      This step will:<br />
-                    - update setting.php file for your server configuration <span id="step5_settingFile"></span><br />
-                    - update sk.php file for data encryption <span id="step5_skFile"></span><br />
-                    - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
+                     - update setting.php file for your server configuration <span id="step5_settingFile"></span><br />
+                     - update sk.php file for data encryption <span id="step5_skFile"></span><br />
+                     - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
+                     This operation could potentially take up to 1 minute. Please be patient.<br />
                      Click on the button when ready.';
 
     if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {

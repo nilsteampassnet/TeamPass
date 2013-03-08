@@ -758,15 +758,15 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             );
             fclose($fh);
             if ($result1 === false) {
-                echo 'document.getElementById("res_step4").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
             } else {
-                echo 'document.getElementById("step4_settingFile").innerHTML = "<img src=\"images/tick.png\">";';
+                echo 'document.getElementById("step5_settingFile").innerHTML = "<img src=\"images/tick.png\">";';
             }
 
             //Create sk.php file
             if (file_exists($skFile)) {
                 if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                    echo 'document.getElementById("res_step4").innerHTML = "'.$skFile.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
+                    echo 'document.getElementById("res_step5").innerHTML = "'.$skFile.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     break;
                 } else {
@@ -808,13 +808,13 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             if (isset($result3) && $result3 === false) {
                 echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
             } else {
-                echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
+                echo 'document.getElementById("step5_keysFile").innerHTML = "<img src=\"images/tick.png\">";';
             }
 
             if (isset($result2) && $result2 != false && $result1 != false && $result3 != false) {
                 echo 'gauge.modify($("pbar"),{values:[1,1]});';
                 echo 'document.getElementById("but_next").disabled = "";';
-                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.";';
+                echo 'document.getElementById("res_step5").innerHTML = "Operations are successfully completed.";';
                 echo 'document.getElementById("loader").style.display = "none";';
             }
             break;
