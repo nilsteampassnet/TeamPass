@@ -1045,6 +1045,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             function(data) {
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
+                } else if (data[0].error == "conf_block") {
+                    $("#CPM_infos").html("No display available. Feature disabled in configuration.");
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$txt['admin_info'].'</span>"+data[0].output+"</ul>");
                 }

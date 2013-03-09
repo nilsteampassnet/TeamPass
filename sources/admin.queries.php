@@ -48,45 +48,49 @@ switch ($_POST['type']) {
     case "cpm_status":
         $text = "<ul>";
         $error ="";
-        $handle_distant = array();
-        if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
-            $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
-        } else {
-            $fp = @fsockopen("www.teampass.net", 80);
-        }
-        if (!$fp) {
-            $error = "connection";
-        } else {
-            $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
-            $out .= "Host: www.teampass.net\r\n";
-            $out .= "Connection: Close\r\n\r\n";
-            fwrite($fp, $out);
+        if (!isset($k['admin_no_info']) || (isset($k['admin_no_info']) && $k['admin_no_info'] == 0)) {
+            $handle_distant = array();
+            if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
+                $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
+            } else {
+                $fp = @fsockopen("www.teampass.net", 80);
+            }
+            if (!$fp) {
+                $error = "connection";
+            } else {
+                $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
+                $out .= "Host: www.teampass.net\r\n";
+                $out .= "Connection: Close\r\n\r\n";
+                fwrite($fp, $out);
 
-            while (($line = fgets($fp, 4096)) !== false) {
-                $handle_distant[] = $line;
+                while (($line = fgets($fp, 4096)) !== false) {
+                    $handle_distant[] = $line;
+                }
+                if (!feof($fp)) {
+                    $error = "Error: unexpected fgets() fail\n";
+                }
             }
-            if (!feof($fp)) {
-                $error = "Error: unexpected fgets() fail\n";
-            }
-        }
-        fclose($fp);
-        if (count($handle_distant) > 0) {
-            while (list($cle,$val) = each($handle_distant)) {
-                if (substr($val, 0, 3) == "nom") {
-                    $tab = explode('|', $val);
-                    foreach ($tab as $elem) {
-                        $tmp = explode('#', $elem);
-                        $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                        if ($tmp[0] == "version") {
-                            $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
-                            if (floatval($k['version']) < floatval($tmp[1])) {
-                                $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+            fclose($fp);
+            if (count($handle_distant) > 0) {
+                while (list($cle,$val) = each($handle_distant)) {
+                    if (substr($val, 0, 3) == "nom") {
+                        $tab = explode('|', $val);
+                        foreach ($tab as $elem) {
+                            $tmp = explode('#', $elem);
+                            $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
+                            if ($tmp[0] == "version") {
+                                $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
+                                if (floatval($k['version']) < floatval($tmp[1])) {
+                                    $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+                                }
+                                $text .= '</li>';
                             }
-                            $text .= '</li>';
                         }
                     }
                 }
             }
+        } else {
+            $error = "conf_block";
         }
 
         echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';
@@ -498,7 +502,7 @@ switch ($_POST['type']) {
             $fh,
             utf8_encode(
                 "<?php
-@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!       
+@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
 ?>"
             )
         );
@@ -579,7 +583,7 @@ switch ($_POST['type']) {
         $file[] = var_export($arrKeyPairs, true);
         $file[] = ';';
         file_put_contents(SECUREPATH."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
-        
+
         echo '[{"result":"generated_keys_file", "error":""}]';
         break;
 }

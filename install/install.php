@@ -127,24 +127,25 @@ $_SESSION['CPM'] = 1;
                         document.getElementById("encrypt_key_res").innerHTML = "<img src='images/tick.png'>";
 
                     //check if sk path is okay
-                    if (document.getElementById("sk_path").value != "")
-                        document.getElementById("sk_path_res").innerHTML = "<img src='images/tick.png'>";
-                    else{
+                    if (document.getElementById("sk_path").value != "") {
+                        data = "type="+step+
+                        "&skPath="+document.getElementById("sk_path").value;
+                    } else{
                         document.getElementById("sk_path_res").innerHTML = "<img src='images/exclamation-red.png'>";
                         status = false;
                     }
 
-                    if (status == true) {
+                    /*if (status == true) {
                         gauge.modify($('pbar'),{values:[0.60,1]});
                         document.getElementById("but_next").disabled = "";
-                    }
+                    }*/
                 } else
                 if (step == "step4") {
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 } else
                 if (step == "step5") {
-                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"/images/ajax-loader.gif\" />";                	
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"/images/ajax-loader.gif\" />";
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 }
@@ -394,7 +395,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     - write the new sk.php file for data encryption <span id="step5_skFile"></span><br />
                     - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
                     This operation could potentially take up to 1 minute. Please be patient.<br />
-                    Click on the button when ready. 
+                    Click on the button when ready.
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';
 } elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {

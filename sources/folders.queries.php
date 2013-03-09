@@ -195,7 +195,10 @@ if (isset($_POST['newtitle'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+            $dataReceived = json_decode(
+                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256),
+                true
+            );
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -211,7 +214,9 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                $data = $db->fetchRow(
+                    "SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                );
                 if ($data[0] != 0) {
                     $error = 'error_group_exist';
                     $createNewFolder = false;
@@ -253,7 +258,7 @@ if (isset($_POST['newtitle'])) {
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                if($isPersonal != 1){
+                if ($isPersonal != 1){
                     //Get user's rights
                     @identifyUserRights(
                         $_SESSION['groupes_visibles'].';'.$newId,

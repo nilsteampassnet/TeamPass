@@ -75,9 +75,9 @@ if (isset($_POST['type'])) {
          * STEP 2
          */
         case "step2":
-                //decrypt the password
-                require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-                $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
+            //decrypt the password
+            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             $res = "";
             // connexion
@@ -98,6 +98,28 @@ if (isset($_POST['type'])) {
             }
             echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
             echo 'document.getElementById("loader").style.display = "none";';
+            break;
+
+        /**
+         * STEP 3
+         */
+        case "step3":
+            if (is_dir($_POST['skPath'])) {
+                if (is_writable(dirname($_POST['skPath']))) {
+                    echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/tick.png\">";
+                    gauge.modify($("pbar"),{values:[0.60,1]});
+                    document.getElementById("but_next").disabled = "";
+                    document.getElementById("loader").style.display = "none";';
+                } else {
+                    echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/exclamation-red.png\"> The Directory must be writable!";
+                    document.getElementById("loader").style.display = "none";
+                    document.getElementById("but_next").disabled = "disabled";';
+                }
+            } else {
+                echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/exclamation-red.png\"> This is not a Directory!";
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("but_next").disabled = "disabled";';
+            }
             break;
 
         /**

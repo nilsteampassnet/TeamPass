@@ -79,6 +79,8 @@ folder
  encrypted at start of session.
  #283 - Rights on a folder created at root are set.
  #285 - New settings: Anyone can modify option can be activated by default
+ #287 - newly created personal folders ar propergated to the group
+ #289 - Personal folder name badly constructed
 
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273
