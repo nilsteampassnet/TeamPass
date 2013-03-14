@@ -943,7 +943,7 @@ require_once \"".$sk_file."\";
                 }
 
                 //Generate Keys file
-                require_once("../includes/libraries/jCryption/jCryption.php");
+                require_once("../includes/libraries/jCryption/jcryption.php");
                 $keyLength = 1024;
                 $jCryption = new jCryption();
                 $numberOfPairs = 100;

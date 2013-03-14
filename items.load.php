@@ -1501,7 +1501,7 @@ function get_clipboard_item(field,id)
                 id         : id
             },
             function(data) {
-                data = $.jCryption.encrypt(data, sessionStorage.password);
+                data = $.jCryption.decrypt(data, sessionStorage.password);
                 clip = new ZeroClipboard.Client();
                 clip.setText(data);
                 if (field == "pw") {

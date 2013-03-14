@@ -813,7 +813,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             }
 
             //Generate Keys file
-            require_once("../includes/libraries/jCryption/jCryption.php");
+            require_once("../includes/libraries/jCryption/jcryption.php");
             $keyLength = 1024;
             $jCryption = new jCryption();
             $numberOfPairs = 100;

@@ -105,7 +105,7 @@ $("#div_item_data").dialog({
                 },
                 function(data) {
                     //decrypt data
-                    data = $.parseJSON(aes_decrypt(data));
+                    data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired

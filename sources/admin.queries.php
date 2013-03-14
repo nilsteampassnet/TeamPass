@@ -569,7 +569,7 @@ switch ($_POST['type']) {
     * Generate exchanges encryption keys
     */
     case "admin_action_generate_encrypt_keys":
-        require_once("../includes/libraries/jCryption/jCryption.php");
+        require_once("../includes/libraries/jCryption/jcryption.php");
         $keyLength = 1024;
         $jCryption = new jCryption();
         $numberOfPairs = 100;
