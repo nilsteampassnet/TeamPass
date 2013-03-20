@@ -32,10 +32,10 @@ $txt['settings_ldap_elusers_tip'] = " This feature allows users in the database 
 $txt['error_role_complex_not_set'] = "The Role must have a minimum required passwords complexity level!";
 $txt['item_updated_text'] = "This Item has been edited. You need to update it before you can change it.";
 $txt['database_menu'] = "Database";
-$txt['db_items_edited'] = "Items actually in edition";
-$txt['item_edition_start_hour'] = "Edition started since";
-$txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
-$txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token. If the value is set to 0 then the token will never be deleted (unless by Administrator)</span>";
+$txt['db_items_edited'] = "Items actually being edited";
+$txt['item_edition_start_hour'] = "Editing started since";
+$txt['settings_delay_for_item_edition'] = "Length of time until an item edit is considered to have failed (in minutes)";
+$txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel editing can be performed. A kind of token is reserved.<br />This setting permits to delete the token. If the value is set to 0 then the token will never be deleted (unless by Administrator)</span>";
 $txt['db_users_logged'] = "Users actually logged";
 $txt['action'] = "Action";
 $txt['login_time'] = "Logged since";
@@ -56,7 +56,7 @@ $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['bad_onetime_password'] = "Wrong One-Time password!";
 $txt['error_string_not_utf8'] = "An error appears because string format is not UTF8!";
 $txt['error_role_exist'] = "This Role already exists!";
-$txt['error_no_edition_possible_locked'] = "Edition not possible. This Item is presently edited!";
+$txt['error_no_edition_possible_locked'] = "Cannot edit. This Item is already being edited!";
 $txt['error_mcrypt_not_loaded'] = "Extension 'mcrypt' is actually not loaded in PHP module. This module is required for TeamPass to work. Please inform your administrator if you see this message.";
 
 $txt['at_user_added'] = "User #user_login# added";
@@ -475,8 +475,8 @@ $txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to
 $txt['item_menu_add_elem'] = "Add item";
 $txt['item_menu_add_rep'] = "Add a Folder";
 $txt['item_menu_add_to_fav'] = "Add to Favourites";
-$txt['item_menu_collab_disable'] = "Edition is not allowed";
-$txt['item_menu_collab_enable'] = "Edition is allowed";
+$txt['item_menu_collab_disable'] = "Editing is not allowed";
+$txt['item_menu_collab_enable'] = "Editing is allowed";
 $txt['item_menu_copy_elem'] = "Copy item";
 $txt['item_menu_copy_login'] = "Copy login";
 $txt['item_menu_copy_pw'] = "Copy password";
