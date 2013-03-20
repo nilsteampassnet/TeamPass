@@ -17,6 +17,28 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+function redirect($url)
+{
+    if (!headers_sent()) {    //If headers not sent yet... then do php redirect
+        header('Location: '.$url);
+        exit;
+    } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
+        echo '<script type="text/javascript">';
+        echo 'window.location.href="'.$url.'";';
+        echo '</script>';
+        echo '<noscript>';
+        echo '<meta http-equiv="refresh" content="0;url='.$url.'" />';
+        echo '</noscript>';
+        exit;
+    }
+}
+
+if ($_SERVER['HTTPS'] != 'on') {
+	$url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+	redirect($url);
+}
+
+
 /* LOAD CPASSMAN SETTINGS */
 if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
     $_SESSION['settings']['duplicate_folder'] = 0;  //by default, this is false;
@@ -229,6 +251,28 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
         -->
         </script>';
         exit;
+    }
+}
+
+/* Force HTTPS Strict Transport Security */
+if (
+    isset($_SESSION['settings']['enable_sts']) &&
+    $_SESSION['settings']['enable_sts'] == 1 &&
+    $_SESSION['settings']['force_ssl'] == 1
+) {
+    //do a check to make sure that the certificate is not self signed. In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
+    $server_cert=openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
+    $cert_name=$server_cert['name'];
+    foreach ($server_cert['issuer'] as $key => $value) {
+        $cert_issuer .= "/$key=$value";
+    }
+    if (isset($cert_name) && !empty($cert_name) && $cert_name != $cert_issuer) {
+        if (isset($_SERVER['HTTPS'])) {
+            header('Strict-Transport-Security: max-age=500');
+            $_SESSION['error']['sts'] = 0;
+        }
+    } elseif ($cert_name == $cert_issuer) {
+        $_SESSION['error']['sts'] = 1;
     }
 }
 

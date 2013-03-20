@@ -347,7 +347,7 @@ if (isset($_POST['type'])) {
                 //Check if exists before inserting
                 $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"));
                 if ($res_tmp[0] == 0) {
-                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'","",$elem[2])."');");
+                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'", "",$elem[2])."');");
                     if (!$res1) break;
                 } else {
                     // Force update for some settings
@@ -368,9 +368,9 @@ if (isset($_POST['type'])) {
             }
 
             ## Alter ITEMS table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","email","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","notification","VARCHAR(250) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "anyone_can_modify", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "email", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "notification", "VARCHAR(250) DEFAULT NULL");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
             # Alter tables
@@ -378,28 +378,29 @@ if (isset($_POST['type'])) {
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY role_id INT(12)");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY item_id INT(12)");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw TEXT");
+            mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(200)");
 
             ## Alter USERS table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","latest_items","VARCHAR(300)");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","personal_folder","INT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","disabled","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","no_bad_attempts","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","can_create_root_folder","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","read_only","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","timestamp","VARCHAR(30) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","user_language","VARCHAR(30) NOT null DEFAULT 'english'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","name","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","lastname","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","session_end","VARCHAR(30) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "favourites", "VARCHAR(300)");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "latest_items", "VARCHAR(300)");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "personal_folder", "INT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "disabled", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "no_bad_attempts", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "can_create_root_folder", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "read_only", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "timestamp", "VARCHAR(30) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "user_language", "VARCHAR(30) NOT null DEFAULT 'english'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "name", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "lastname", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "session_end", "VARCHAR(30) DEFAULT NULL");
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
             mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
 
             ## Alter nested_tree table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree","personal_folder","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree","renewal_period","TINYINT(4) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree", "personal_folder", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree", "renewal_period", "TINYINT(4) NOT null DEFAULT '0'");
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
             #to 1.08
@@ -548,9 +549,9 @@ if (isset($_POST['type'])) {
                 `complexity` INT(5) NOT null DEFAULT '0',
                 `creator_id` int(11) NOT null DEFAULT '0'
                );");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","allow_pw_change","TINYINT(1) NOT null DEFAULT '0'");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","complexity","INT(5) NOT null DEFAULT '0'");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","creator_id","INT(11) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "allow_pw_change", "TINYINT(1) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "complexity", "INT(5) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "creator_id", "INT(11) NOT null DEFAULT '0'");
 
             $res10 = mysql_query("
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_values` (
@@ -592,7 +593,7 @@ if (isset($_POST['type'])) {
                 //Now alter table roles_title in order to create a primary index
                 mysql_query("ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title` ADD PRIMARY KEY(`id`)");
                 mysql_query("ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title` CHANGE `id` `id` INT(12) NOT null AUTO_INCREMENT ");
-                addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","allow_pw_change","TINYINT(1) NOT null DEFAULT '0'");
+                addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "allow_pw_change", "TINYINT(1) NOT null DEFAULT '0'");
 
                 //Drop old table
                 mysql_query("DROP TABLE ".$_SESSION['tbl_prefix']."functions");
@@ -880,7 +881,32 @@ if (isset($_POST['type'])) {
                     $events .= "The file $filename already exist. A copy has been created.<br />";
                     unlink($filename);
                 }
-
+                
+                //manage SK path
+                if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
+                    $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
+                } else {
+                    echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be indicated.";
+                    document.getElementById("loader").style.display = "none";';
+                    break;
+                }
+                
+                //Check if path is ok
+                if (is_dir($securePath)) {
+                    if (is_writable(dirname($securePath))) {
+                        //Do nothing
+                    } else {
+                        echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be writable!";
+                        document.getElementById("loader").style.display = "none";';
+                        break;
+                    }
+                } else {
+                    echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> Path for SK is not a Directory!";
+                    document.getElementById("loader").style.display = "none";';
+                    break;
+                }
+/*
                 if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
                     $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
                     $securePath = str_replace('\\', '/', $_POST['sk_path']);
@@ -888,10 +914,10 @@ if (isset($_POST['type'])) {
                     $sk_file = $_SESSION['sk_path'];
                     $securePath = $_SESSION['sk_path'];
                 } else {
-                    $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                    $skfile = $_SESSION['abspath'].'/includes/sk.php';
                     $securePath = $_SESSION['abspath'];
                 }
-
+*/
                 $fh = fopen($filename, 'w');
 
                 //prepare smtp_auth variable
@@ -932,6 +958,7 @@ require_once \"".$sk_file."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>")
                     );
                     fclose($fh);

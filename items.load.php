@@ -870,7 +870,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#item_details_expired").hide();
         $("#item_details_expired_full").hide();
         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
-
+        $("#request_ongoing").val("");
         return false;
     }
     $("#div_loading").show();//LoadingPage();
@@ -1115,10 +1115,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (open_edit == true && (data.restricted == "1" || data.user_can_modify == "1")) {
                             open_edit_item_div(
                             <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
-        echo 1;
-    } else {
-        echo 0;
-    }?>);
+    echo 1;
+} else {
+    echo 0;
+}?>);
                         }
                     } else if (data.show_details == "1" && data.show_detail_option == "2") {
                         $("#item_details_nok").hide();

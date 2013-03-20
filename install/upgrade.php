@@ -310,6 +310,12 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
             <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \'/includes\'.">
         </label><input type="text" id="sk_path" name="sk_path" value="" size="75" /><br />
         ';
+    } else {
+        echo '<br /><br />
+        <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
+            <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder. <br> If this field remains empty, this file will be stored in folder \'/includes\'.">
+        </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path'])-7).'" size="75" /><br />
+        ';
     }
     echo '
         <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';

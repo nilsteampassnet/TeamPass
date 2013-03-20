@@ -200,7 +200,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['maintenance_mode'] != $_POST['maintenance_mode']) {
         updateSettings('maintenance_mode', $_POST['maintenance_mode']);
     }
-
+    // Update sts mode
+    if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
+        updateSettings('enable_sts', $_POST['enable_sts']);
+    }
     // Update send_stats
     if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats']) {
         updateSettings('send_stats', $_POST['send_stats']);
@@ -558,7 +561,25 @@ $txt['settings_maintenance_mode'].'
                 </div>
               <td>
             </tr>';
-
+echo '<tr><td colspan="3"><hr></td></tr>';
+//Enable SSL STS
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <label>' .
+                          $txt['settings_enable_sts'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_enable_sts_tip'] . '" />
+                      </label>
+                </td>
+                <td>
+                    <div class="div_radio">
+                        <input type="radio" id="enable_sts_radio1" name="enable_sts" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="enable_sts_radio2" name="enable_sts" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
+                        <span class="setting_flag" id="flag_enable_sts"><img src="includes/images/status', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                <td>
+            </tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
 //Proxy
 echo '

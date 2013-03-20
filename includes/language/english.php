@@ -5,6 +5,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
+$txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
 $txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";

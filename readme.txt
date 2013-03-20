@@ -77,10 +77,15 @@ folder
 2.1.17
  * New exchange encryption protocol. No key is visible. The channel is 
  encrypted at start of session.
+ * HTTPS connection can be activated (be carefull, you need a certificate)
+ * Change Users passwords encryption
+ * Corrected - once clicked on not authorized Item, any Item selection was
+ no more possible.
  #283 - Rights on a folder created at root are set.
  #285 - New settings: Anyone can modify option can be activated by default
  #287 - newly created personal folders ar propergated to the group
  #289 - Personal folder name badly constructed
+ #270 - Restricted items visible in Find results
 
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273

@@ -625,15 +625,14 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         if (ids == "") ids = $(selected).val();
                         else ids = ids + ";" + $(selected).val();
                     });
-                    $("#div_loading").show();
+                    $("#div_print_out_wait").show();
                     $("#print_out_error").hide();
                     $("#download_link").html("");
 
                     // Get PDF encryption password and make sure it is set
                     if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
                         $("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
-                        $("#div_loading").hide();
-
+                        $("#div_print_out_wait").hide();
                         return;
                     }
 
@@ -647,7 +646,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         },
                         function(data) {
                             $("#download_link").html(data[0].text);
-                            $("#div_loading").hide();
+                            $("#div_print_out_wait").hide();
                         },
                         "json"
                    );

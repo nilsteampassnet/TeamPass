@@ -343,8 +343,9 @@ $txt['give_new_pw'].'
         <label class="form_label" for="change_user_pw_newpw_confirm">'.$txt['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
     </div>
     <div style="width:100%;height:20px;">
-                <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
-            </div>
+        <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+    </div>
+    <div style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" /></div>
     <input type="hidden" id="change_user_pw_id" />
 </div>';
 // DIV FOR CHANGING EMAIL

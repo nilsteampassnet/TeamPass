@@ -1499,8 +1499,18 @@ if (isset($_POST['type'])) {
                 $whereArg = " AND i.id IN (".implode(',', $_SESSION['list_folders_limited'][$_POST['id']]).")";
             }
             // check if this folder is visible
-            elseif (!in_array($_POST['id'], array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items'])))) {
-                echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "not_authorized"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            elseif (!in_array(
+                $_POST['id'],
+                array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items']))
+            )) {
+                echo Encryption\Crypt\aesctr::encrypt(
+                    json_encode(
+                        array("error" => "not_authorized"),
+                        JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                    ),
+                    $_SESSION['key'],
+                    256
+                );
                 break;
             } else {
                 $data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
@@ -1521,9 +1531,9 @@ if (isset($_POST['type'])) {
                 }*/
                 // List all ITEMS
                 if ($folderIsPf == 0) {
-                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label,
-                        i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                        l.date as date,
+                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        i.anyone_can_modify as anyone_can_modify, l.date as date,
                         n.renewal_period as renewal_period,
                         l.action as log_action, l.id_user as log_user,
                         k.rand_key as rand_key
@@ -1546,8 +1556,9 @@ if (isset($_POST['type'])) {
                     }
                     $rows = $db->fetchAllArray($query);
                 } else {
-                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                        l.date as date,
+                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        i.anyone_can_modify as anyone_can_modify,l.date as date,
                         n.renewal_period as renewal_period,
                         l.action as log_action, l.id_user as log_user
                     FROM ".$pre."items as i
@@ -1577,7 +1588,10 @@ if (isset($_POST['type'])) {
                         $expired_item = 0;
                         if ($_SESSION['settings']['activate_expiration'] == 1) {
                             $expirationFlag = '<img src="includes/images/flag-green.png">';
-                            if ($reccord['renewal_period'] > 0 && ($reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds'])) < time()) {
+                            if (
+                                $reccord['renewal_period'] > 0 &&
+                                ($reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds'])) < time()
+                            ) {
                                 $expirationFlag = '<img src="includes/images/flag-red.png">';
                                 $expired_item = 1;
                             }
@@ -1589,7 +1603,9 @@ if (isset($_POST['type'])) {
                         // TODO: Element is restricted to a group. Check if element can be seen by user
                         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
                         $user_is_included_in_role = 0;
-                        $roles = $db->fetchAllArray("SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id=".$reccord['id']);
+                        $roles = $db->fetchAllArray(
+                            "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id=".$reccord['id']
+                        );
                         if (count($roles) > 0) {
                             $item_is_restricted_to_role = 1;
                             foreach ($roles as $val) {
@@ -1614,7 +1630,10 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Can user modify it?
-                        if ($reccord['anyone_can_modify'] == 1 || ($_SESSION['user_id'] == $reccord['log_user']) || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)) {
+                        if ($reccord['anyone_can_modify'] == 1 ||
+                            $_SESSION['user_id'] == $reccord['log_user'] ||
+                            ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
+                        ) {
                             $canMove = 1;
                         }
                         // CASE where item is restricted to a role to which the user is not associated
@@ -1790,6 +1809,7 @@ if (isset($_POST['type'])) {
 
                 $rights = recupDroitCreationSansComplexite($_POST['id']);
             }
+
             // Identify of it is a personal folder
             if (in_array($_POST['id'], $_SESSION['personal_visible_groups'])) {
                 $findPfGroup = 1;
@@ -1851,38 +1871,43 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "recup_complex":
-            // Lock Item (if already locked), go back and warn
-            $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
+            if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
+                // Lock Item (if already locked), go back and warn
+                $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
 
-            // If token is taken for this Item and delay is passed then delete it.
-            if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] > 0 && !empty($dataTmp[0]) && round(abs(time()-$dataTmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']) {
-                $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-                //reload the previous data
-                $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-            }
+                // If token is taken for this Item and delay is passed then delete it.
+                if (isset($_SESSION['settings']['delay_item_edition']) &&
+                    $_SESSION['settings']['delay_item_edition'] > 0 && !empty($dataTmp[0]) &&
+                    round(abs(time()-$dataTmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']
+                ) {
+                    $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                    //reload the previous data
+                    $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                }
 
-            // If edition by same user (and token not freed before for any reason, then update timestamp)
-            if (!empty($dataTmp[0]) && $dataTmp[1] == $_SESSION['user_id']) {
-                $db->query("UPDATE ".$pre."items_edition SET timestamp = '".time()."' WHERE user_id = '".$_SESSION['user_id']."' AND item_id = '".$_POST['item_id']."'");
-                // If no token for this Item, then initialize one
-            } elseif (empty($dataTmp[0])) {
-                $db->queryInsert(
-                    'items_edition',
-                    array(
-                            'timestamp' => time(),
-                            'item_id' => $_POST['item_id'],
-                            'user_id' => $_SESSION['user_id']
-                    )
-                );
-                // Edition not possible
-            } else {
-                $returnValues = array(
-                    "error" => "no_edition_possible",
-                    "error_msg" => $txt['error_no_edition_possible_locked']
-                );
+                // If edition by same user (and token not freed before for any reason, then update timestamp)
+                if (!empty($dataTmp[0]) && $dataTmp[1] == $_SESSION['user_id']) {
+                    $db->query("UPDATE ".$pre."items_edition SET timestamp = '".time()."' WHERE user_id = '".$_SESSION['user_id']."' AND item_id = '".$_POST['item_id']."'");
+                    // If no token for this Item, then initialize one
+                } elseif (empty($dataTmp[0])) {
+                    $db->queryInsert(
+                        'items_edition',
+                        array(
+                                'timestamp' => time(),
+                                'item_id' => $_POST['item_id'],
+                                'user_id' => $_SESSION['user_id']
+                        )
+                    );
+                    // Edition not possible
+                } else {
+                    $returnValues = array(
+                        "error" => "no_edition_possible",
+                        "error_msg" => $txt['error_no_edition_possible_locked']
+                    );
 
-                echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-                break;
+                    echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+                    break;
+                }
             }
 
             // Get required Complexity for this Folder

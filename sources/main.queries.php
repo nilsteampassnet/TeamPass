@@ -42,7 +42,7 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256), true);
         // Prepare variables
-        $newPw = encrypt(htmlspecialchars_decode($dataReceived['new_pw']));
+        $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
             // Get a string with the old pw array
@@ -56,7 +56,7 @@ switch ($_POST['type']) {
                 }
                 // reinit SESSION
                 $_SESSION['last_pw'] = implode(';', $lastPw);
-                // specific case where admin setting "number_of_used_pw" is 0
+                // specific case where admin setting "number_of_used_pw"
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
@@ -192,7 +192,7 @@ switch ($_POST['type']) {
         $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["encKey"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-        $password = encrypt(htmlspecialchars_decode($dataReceived['pw']));
+        $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
         $username = htmlspecialchars_decode($dataReceived['login']);
 
         //Check 2-Factors pw
@@ -344,6 +344,23 @@ switch ($_POST['type']) {
         if ($proceedIdentification === true) {
             // User exists in the DB
             $data = $db->fetchArray($row);
+
+            //v2.1.17 -> change encryption for users password
+            if (
+                    $passwordOldEncryption == $data['pw'] &&
+                    !empty($data['pw'])
+            ) {
+                //update user's password
+                $data['pw'] = bCrypt($passwordClear, COST);
+                $db->queryUpdate(
+                    "users",
+                    array(
+                            'pw' => $data['pw']
+                    ),
+                    "id=".$data['id']
+                );
+            }
+
             // Can connect if
             // 1- no LDAP mode + user enabled + pw ok
             // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -351,7 +368,7 @@ switch ($_POST['type']) {
             // This in order to allow admin by default to connect even if LDAP is activated
             if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                    && $password == $data['pw'] && $data['disabled'] == 0
+                    && crypt($passwordClear, $data['pw']) == $data['pw'] && $data['disabled'] == 0
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -709,7 +726,8 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
             $newPwNotCrypted = $pwgen->generate();
-            $newPw = encrypt(stringUtf8Decode($newPwNotCrypted));
+            //$newPw = encrypt(stringUtf8Decode($newPwNotCrypted));
+            $newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
             // update DB
             $db->queryUpdate(
                 "users",

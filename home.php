@@ -83,14 +83,14 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                     </div>';
     }
     //ADMIN INFORMATION
-    if ($_SESSION['user_admin'] == 1) {
+    /*if ($_SESSION['user_admin'] == 1) {
         echo '
                     <div style="position:relative;float:right;margin-top:-25px;padding:4px;width:250px;" class="ui-state-highlight ui-corner-all">
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <span style="font-weight:bold;margin-bottom:10px;">'.$txt['block_admin_info'].'</span><br />'.
                         $txt['admin_new1'].'
                     </div>';
-    }
+    }*/
 
     //some informations
     echo '
@@ -288,6 +288,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         </div>
 
                         <div id="download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
+                        <div style="text-align:center;margin-top:8px; display:none;" id="div_print_out_wait"><img src="includes/images/ajax-loader.gif" /></div>
                     </div>
                 </div>';
 }

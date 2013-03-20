@@ -220,6 +220,7 @@ if (isset($_POST['type'])) {
                 ('admin', 'activate_expiration', '0'),
                 ('admin','pw_life_duration','0'),
                 ('admin','maintenance_mode','1'),
+                ('admin','enable_sts','0'),
                 ('admin','cpassman_version','".$k['version']."'),
                 ('admin','ldap_mode','0'),
                 ('admin','richtext','0'),
@@ -337,7 +338,7 @@ if (isset($_POST['type'])) {
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."users` (
                   `id` int(12) NOT null AUTO_INCREMENT,
                   `login` varchar(50) NOT NULL,
-                  `pw` varchar(50) NOT NULL,
+                  `pw` varchar(200) NOT NULL,
                   `groupes_visibles` varchar(250) NOT NULL,
                   `derniers` text NOT NULL,
                   `key_tempo` varchar(100) NOT NULL,
@@ -372,7 +373,7 @@ if (isset($_POST['type'])) {
                 $tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE login = 'admin'"));
                 if ($tmp[0] == 0) {
                     $res8 = mysql_query(
-                        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES (NULL, 'admin', '".encrypt('admin', $_SESSION['encrypt_key'])."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES (NULL, 'admin', '".bCrypt('admin','13' )."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                     );
                     if ($res8) {
                         echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
@@ -384,7 +385,7 @@ if (isset($_POST['type'])) {
                         break;
                     }
                 } else {
-                    mysql_query("UPDATE `".$_SESSION['tbl_prefix']."users` SET `pw` = '".encrypt('admin', $_SESSION['encrypt_key'])."' WHERE login = 'admin' AND id = '1'");
+                    mysql_query("UPDATE `".$_SESSION['tbl_prefix']."users` SET `pw` = '".bCrypt('admin','13' )."' WHERE login = 'admin' AND id = '1'");
                     echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
                 }
             } else {
@@ -803,6 +804,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                 utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>")
             );
             fclose($fh);
