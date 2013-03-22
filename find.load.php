@@ -80,9 +80,10 @@ $("#div_copy_item_to_folder").dialog({
 /*
 * Open a dialogbox with item data
 */
-function see_item(item_id)
+function see_item(item_id, personalItem)
 {
     $('#id_selected_item').val(item_id);
+    $("#personalItem").val(personalItem);
     $('#div_item_data').dialog('open');
 }
 
@@ -101,6 +102,8 @@ $("#div_item_data").dialog({
                 {
                     type    : "show_details_item",
                     id         : $('#id_selected_item').val(),
+                    salt_key_required : $('#personalItem').val(),
+                    salt_key_set : $('#personalItem').val(),
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {

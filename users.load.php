@@ -131,7 +131,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 320,
-        height: 490,
+        height: 540,
         title: "<?php echo $txt['new_user_title'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
@@ -154,6 +154,7 @@ $(function() {
                             personal_folder    :$("#new_personal_folder").prop("checked"),
                             new_folder_role_domain    :$("#new_folder_role_domain").prop("checked"),
                             domain    :$("#new_domain").val(),
+                            isAdministratedByRole    :$("#new_is_admin_by").val(),
                             key    : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {

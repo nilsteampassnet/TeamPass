@@ -57,8 +57,134 @@ function tableExists($tablename, $database = false)
     );
 
     return mysql_result($res, 0) == 1;
-
 }
+
+//define pbkdf2 iteration count
+@define('ITCOUNT', '2072');
+
+//Generate N# of random bits for use as salt
+function getBits($n)
+{
+    $str = '';
+    $x = $n + 10;
+    for ($i=0; $i<$x; $i++) {
+        $str .= base_convert(mt_rand(1, 36), 10, 36);
+    }
+    return substr($str, 0, $n);
+}
+
+//generate pbkdf2 compliant hash
+function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
+{
+    $kb = $st+$kl;  // Key blocks to compute
+    $dk = '';    // Derived key
+
+    for ($block=1; $block<=$kb; $block++) { // Create key
+        $ib = $h = hash_hmac($a, $s . pack('N', $block), $p, true); // Initial hash for this block
+        for ($i=1; $i<$c; $i++) { // Perform block iterations
+            $ib ^= ($h = hash_hmac($a, $h, $p, true));  // XOR each iterate
+        }
+        $dk .= $ib; // Append iterated block
+    }
+    return substr($dk, $st, $kl); // Return derived key of correct length
+}
+
+/**
+ * encryptOld()
+ *
+ * crypt a string
+ */
+function encryptOld($text, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    } else {
+        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    }
+}
+
+/**
+ * decryptOld()
+ *
+ * decrypt a crypted string
+ */
+function decryptOld($text, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    } else {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    }
+}
+
+/**
+ * encrypt()
+ *
+ * crypt a string
+ */
+function encrypt($decrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        $staticSalt = $personal_salt;
+    } else {
+        $staticSalt = SALT;
+    }
+    //set our salt to a variable
+    // Get 64 random bits for the salt for pbkdf2
+    $pbkdf2Salt = getBits(64);
+    // generate a pbkdf2 key to use for the encryption.
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Build $iv and $iv_base64.  We use a block size of 256 bits (AES compliant) and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
+    $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+    //base64 trim
+    if (strlen($iv_base64 = rtrim(base64_encode($iv), '=')) != 43) {
+        return false;
+    }
+    // Encrypt $decrypted
+    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $iv);
+    // MAC the encrypted text
+    $MAC = hash_hmac('sha256', $encrypted, $staticSalt);
+    // We're done!
+    return base64_encode($iv_base64 . $encrypted . $MAC . $pbkdf2Salt);
+}
+
+/**
+ * decrypt()
+ *
+ * decrypt a crypted string
+ */
+function decrypt($encrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        $staticSalt = $personal_salt;
+    } else {
+        $staticSalt = SALT;
+    }
+    //base64 decode the entire payload
+    $encrypted = base64_decode($encrypted);
+    // get the salt
+    $pbkdf2Salt = substr($encrypted, -64);
+    //remove the salt from the string
+    $encrypted = substr($encrypted, 0, -64);
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
+    $iv = base64_decode(substr($encrypted, 0, 43) . '==');
+    // Remove $iv from $encrypted.
+    $encrypted = substr($encrypted, 43);
+    // Retrieve $MAC which is the last 64 characters of $encrypted.
+    $MAC = substr($encrypted, -64);
+    // Remove the last 64 chars from encrypted (remove MAC)
+    $encrypted = substr($encrypted, 0, -64);
+    //verify the sha256hmac from the encrypted data before even trying to decrypt it
+    if (hash_hmac('sha256', $encrypted, $staticSalt) != $MAC) {
+        return false;
+    }
+    // Decrypt the data.
+    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4");
+    // Yay!
+    return $decrypted;
+}
+
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -393,6 +519,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "name", "VARCHAR(100) DEFAULT NULL");
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "lastname", "VARCHAR(100) DEFAULT NULL");
             $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "session_end", "VARCHAR(30) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "IsAdministratedByRole", "TINYINT(5) NOT null DEFAULT '0'");
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
@@ -857,6 +984,24 @@ if (isset($_POST['type'])) {
                 }
                 mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
             }
+            
+            // Since 2.1.17, encrypt process is changed.
+            // Previous PW need to be re-encrypted
+            if (@mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'")) {
+                $tmp_result = mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'");
+                $tmp = mysql_fetch_row($tmp_result);
+                if ($tmp[0] != "ctr") {
+                    //count elem
+                    $res = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0'");
+                    $data = mysql_fetch_row($res);
+                    
+                    echo '$("#change_pw_encryption, #change_pw_encryption_progress").show();';
+                    echo '$("#change_pw_encryption_progress").html("Number of Passwords to re-encrypt: '.$data[0].'");';
+                    echo '$("#change_pw_encryption_total").val("'.$data[0].'")';
+                    break;
+                    
+                }
+            }
 
             /* Unlock this step */
             echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
@@ -1004,6 +1149,35 @@ require_once \"".$sk_file."\";
                 echo 'document.getElementById("loader").style.display = "none";';
             }
 
+            break;
+            
+        case "new_encryption_of_pw":
+            $finish = false;
+            $next = ($_POST['nb']+$_POST['start']);
+            
+            @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            @mysql_select_db($_SESSION['db_bdd']);
+            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+            
+            $res = mysql_query("SELECT * FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']) or die(mysql_error());
+             while ($data = mysql_fetch_array($res)) {
+                // check if pw already well encrypted
+                $pw = decrypt($data['pw']);//echo $pw;
+                if (empty($pw)) {
+                    $pw = decryptOld($data['pw']);
+                    //echo " -- old=> ".$pw;
+                    $pw = encrypt($pw);
+                    mysql_query("UPDATE ".$_SESSION['tbl_prefix']."items SET pw = '".$pw."' WHERE id=".$data['id']);
+                }
+                
+                //echo $pw."<br>";
+            }
+            
+            if ($next >= $_POST['total']) {
+                $finish = true;
+            }
+            echo '[{"finish":"'.$finish.'" , "next":"'.$next.'" , "progress":"'.round($next*100/$_POST['total'], 0).'"}]';
             break;
     }
 }

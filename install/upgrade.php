@@ -115,6 +115,38 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
                 httpRequest("upgrade_ajax.php",data);
             }
         }
+
+        function newEncryptPw(){
+            var nb = 1;
+            var start = 1;
+            if ($("#change_pw_encryption_start").val() != "") {
+                start = $("#change_pw_encryption_start").val();
+            } else {
+                $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"../includes/images/76.gif\" />");
+            }
+            request = $.post("upgrade_ajax.php",
+                {
+                    type     : "new_encryption_of_pw",
+                    start         : start,
+                    total         : $("#change_pw_encryption_total").val(),
+                    nb : nb
+                },
+                function(data) {
+                    if (data[0].finish != 1) {
+                    	$("#change_pw_encryption_start").val(data[0].next);
+                    	$("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
+                    	if (start < $("#change_pw_encryption_total").val()) {
+                    	    newEncryptPw();
+                    	}
+                    } else {
+                    	$("#change_pw_encryption_progress").html("Done");
+                    	$("#but_encrypt_continu").hide();
+                    }
+                },
+                "json"
+            );
+            
+        }
         </script>
     </head>
     <body>
@@ -289,6 +321,17 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
                          <tr><td>Add table "items_edition"</td><td><span id="tbl_19"></span></td></tr>
                      </table>
+                     <div style="display:none;" id="change_pw_encryption">
+                         <br />
+                         <p><b>Encryption protocol of existing passwords has now to be started. It may take several minutes.</b></p>
+                         <p>
+                             <div style="display:none;" id="change_pw_encryption_progress"></div>
+                         </p>
+                         <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(1);" />
+                         <input type="text" id="change_pw_encryption_start" value="" />
+                         <input type="text" id="change_pw_encryption_total" value="" />
+                     </div>
+                     
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
                      <input type="hidden" id="step4" name="step4" value="" />';

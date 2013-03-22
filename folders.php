@@ -31,7 +31,7 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $tst = $tree->getDescendants();
 
 /* Build list of all folders */
-if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+if ($_SESSION['is_admin'] == 1 || $_SESSION['settings']['can_create_root_folder'] == 1) {
     $folders_list = "\'0\':\'".$txt['root']."\'";
 } else {
     $folders_list = "";

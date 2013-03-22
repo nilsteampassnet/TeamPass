@@ -86,6 +86,10 @@ folder
  #287 - newly created personal folders ar propergated to the group
  #289 - Personal folder name badly constructed
  #270 - Restricted items visible in Find results
+ #298 - Protection against bad actions on personal folders
+ #299 - User can be explicetly administrated by Managers of specific Roles
+ #300 - Personal SK is encrypted in COOKIE
+ #301 - Corrected query call error
 
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273

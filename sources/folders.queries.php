@@ -135,30 +135,28 @@ if (isset($_POST['newtitle'])) {
             // this will delete all sub folders and items associated
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-            // Get through each subfolder
-            $folders = $tree->getDescendants($_POST['id'], true);
-            foreach ($folders as $folder) {
-                //Store the deleted folder (recycled bin)
-                $db->queryInsert(
-                    'misc',
-                    array(
-                        'type' => 'folder_deleted',
-                        'intitule' => "f".$_POST['id'],
-                        'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                            $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
-                            $folder->nlevel.', 0, 0, 0, 0'
-                   )
-                );
-                //delete folder
-                $db->query("DELETE FROM ".$pre."nested_tree WHERE id = ".$folder->id);
+            if ($folder->parent_id > 0 && $folder->title != $_SESSION['user_id'] ) {
+                // Get through each subfolder
+                $folders = $tree->getDescendants($_POST['id'], true);
+                foreach ($folders as $folder) {
+                    //Store the deleted folder (recycled bin)
+                    $db->queryInsert(
+                        'misc',
+                        array(
+                            'type' => 'folder_deleted',
+                            'intitule' => "f".$_POST['id'],
+                            'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
+                                $folder->nlevel.', 0, 0, 0, 0'
+                       )
+                    );
+                    //delete folder
+                    $db->query("DELETE FROM ".$pre."nested_tree WHERE id = ".$folder->id);
+                }
 
                 //delete items & logs
                 $items = $db->fetchAllArray("SELECT id FROM ".$pre."items WHERE id_tree='".$folder->id."'");
                 foreach ($items as $item) {
-                    //Delete item
-                    //$db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
-                    //$db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
-
                     $db->queryUpdate(
                         "items",
                         array(

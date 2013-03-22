@@ -24,7 +24,7 @@ function getBits($n)
         $str .= base_convert(mt_rand(1, 36), 10, 36);
     }
     return substr($str, 0, $n);
-} 
+}
 
 //generate pbkdf2 compliant hash
 function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
@@ -63,6 +63,20 @@ function encryptOld($text, $personal_salt = "")
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
     } else {
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    }
+}
+
+/**
+ * decryptOld()
+ *
+ * decrypt a crypted string
+ */
+function decryptOld($text, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    } else {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
     }
 }
 

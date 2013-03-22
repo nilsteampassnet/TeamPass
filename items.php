@@ -757,7 +757,7 @@ echo '
         <tr>
             <td>'.$txt['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe">
-                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ?
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
                 '<option value="0">---</option>' : '', '' .
                 $selectVisibleFoldersOptions .'
             </select></td>

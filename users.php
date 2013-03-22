@@ -31,10 +31,10 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 
 $tree_desc = $tree->getDescendants();
 // Build FUNCTIONS list
-$liste_fonctions = array();
+$rolesList = array();
 $rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
 foreach ($rows as $reccord) {
-    $liste_fonctions[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
+    $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
 }
 // Display list of USERS
 echo '
@@ -55,6 +55,7 @@ echo '
                     <th>'.$txt['user_login'].'</th>
                     <th>'.$txt['name'].'</th>
                     <th>'.$txt['lastname'].'</th>
+                    <th>'.$txt['managed_by'].'</th>
                     <th>'.$txt['functions'].'</th>
                     <th>'.$txt['authorized_groups'].'</th>
                     <th>'.$txt['forbidden_groups'].'</th>
@@ -79,8 +80,8 @@ foreach ($rows as $reccord) {
     // Get list of allowed functions
     $list_allo_fcts = "";
     if ($reccord['admin'] != 1) {
-        if (count($liste_fonctions) > 0) {
-            foreach ($liste_fonctions as $fonction) {
+        if (count($rolesList) > 0) {
+            foreach ($rolesList as $fonction) {
                 if (in_array($fonction['id'], explode(";", $reccord['fonction_id']))) {
                     $list_allo_fcts .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
                 }
@@ -121,34 +122,46 @@ foreach ($rows as $reccord) {
     // is user locked?
     if ($reccord['disabled'] == 1) {
     }
-    // Check if user has the same roles accessible as the manager
+
+    //Show user only if can be administrated by the adapted Roles manager
+    if (
+        $_SESSION['is_admin'] ||
+        ($reccord['IsAdministratedByRole'] > 0 &&
+        in_array($reccord['IsAdministratedByRole'], $_SESSION['user_roles']))
+    ) {
+        $showUserFolders = true;
+    } else {
+        $showUserFolders = false;
+    }
+
+    /*// Check if user has the same roles accessible as the manager
     if ($_SESSION['user_manager']) {
-        $show_user_folders = false;
+        $showUserFolders = false;
         // Check if the user is a manager. If yes, not allowed to modifier
         if (($_SESSION['user_manager'] == 1 && $reccord['gestionnaire'] == 1) || $reccord['admin'] == 1) {
-            $show_user_folders = false;
+            $showUserFolders = false;
         } else {
             // Check if the user has at least a same role as the manager
             foreach ($_SESSION['user_roles'] as $role_id) {
                 if (in_array($role_id, explode(";", $reccord['fonction_id']))) {
-                    $show_user_folders = true;
+                    $showUserFolders = true;
                     break;
                 }
             }
             // if user has no role, Manager could add
             if (empty($reccord['fonction_id'])) {
-                $show_user_folders = true;
+                $showUserFolders = true;
             }
         }
     } else {
-        $show_user_folders = true;
-    }
+        $showUserFolders = true;
+    }*/
     // Build list of available users
     if ($reccord['admin'] != 1 && $reccord['disabled'] != 1) {
         $list_available_users .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
     }
     // Display Grid
-    if ($show_user_folders == true) {
+    if ($showUserFolders == true) {
         echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).'"', '>
                     <td align="center">'.$reccord['id'].'</td>
                     <td align="center">', $reccord['disabled'] == 1 ?'
@@ -156,20 +169,26 @@ foreach ($rows as $reccord) {
                     '', '
                     </td>
                     <td align="center">
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
                     </td>
-                    <td>
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="name_'.$reccord['id'].'">'.@$reccord['name'].'</p>
+                    <td align="center">
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="name_'.$reccord['id'].'">'.@$reccord['name'].'</p>
                     </td>
-                    <td>
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $show_user_folders == true) ? 'class="editable_textarea"' : '', 'id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
+                    <td align="center">
+                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
+                    </td>
+                    <td align="center">
+                        ', $reccord['IsAdministratedByRole'] > 0 ?
+                        $rolesList[$reccord['IsAdministratedByRole']]['title']
+                        :
+                        '<span title="'.$txt['administrators_only'].'">'.$txt['admin_small'].'</span>', '  
                     </td>
                     <td>
                         <div>
                             <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
                                 '.$list_allo_fcts.'
                             </div>
-                            <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
+                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
                             </div>', '
                         </div>
@@ -179,7 +198,7 @@ foreach ($rows as $reccord) {
                             <div id="list_autgroups_user_'.$reccord['id'].'" style="text-align:center;">'
         .$list_allo_grps.'
                             </div>
-                            <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
+                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$txt['change_authorized_groups'].'" />
                             </div>
                         </div>
@@ -189,7 +208,7 @@ foreach ($rows as $reccord) {
                             <div id="list_forgroups_user_'.$reccord['id'].'" style="text-align:center;">'
         .$list_forb_grps.'
                             </div>
-                            <div style="text-align:center;', $show_user_folders == false ? 'display:none;':'', '">
+                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$txt['change_forbidden_groups'].'" />
                             </div>
                         </div>
@@ -203,7 +222,7 @@ foreach ($rows as $reccord) {
         // Read Only privilege
         echo '
                     <td align="center">
-                        <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only'] == 1 ? 'checked' : '', ' ', ($show_user_folders != true) ? 'disabled="disabled"':'', ' />
+                        <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only'] == 1 ? 'checked' : '', ' ', ($showUserFolders != true) ? 'disabled="disabled"':'', ' />
                     </td>';
         // Can create at root
             echo '
@@ -230,14 +249,14 @@ foreach ($rows as $reccord) {
 
         echo '
                     <td align="center">
-                        <img ', ($show_user_folders == true) ? 'src="includes/images/'.$user_icon.'.png" onclick="'.$action_on_user.'" class="button" style="padding:2px;" title="'.$user_txt.'"':'src="includes/images/user--minus_disabled.png"', ' />
+                        <img ', ($showUserFolders == true) ? 'src="includes/images/'.$user_icon.'.png" onclick="'.$action_on_user.'" class="button" style="padding:2px;" title="'.$user_txt.'"':'src="includes/images/user--minus_disabled.png"', ' />
                     </td>
                     <td align="center">
-                        &nbsp;<img ', ($show_user_folders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"', ' />
+                        &nbsp;<img ', ($showUserFolders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"', ' />
                     </td>
                     <td align="center">
                         &nbsp;';
-        if ($show_user_folders != true) {
+        if ($showUserFolders != true) {
             echo '<img src="includes/images/mail--pencil_disabled.png" />';
         } else {
             echo '<img src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
@@ -245,7 +264,7 @@ foreach ($rows as $reccord) {
         echo '
                     </td>
                     <td align="center">
-                        &nbsp;<img ', ($show_user_folders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['see_logs'].'"', ' />
+                        &nbsp;<img ', ($showUserFolders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['see_logs'].'"', ' />
                     </td>
                 </tr>';
         $x++;
@@ -299,12 +318,25 @@ echo '
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
 '<label for="new_pwd" class="label_cpm">'.$txt['pw'].'&nbsp;<img src="includes/images/refresh.png" onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;" /></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" />', '
-
-       <label for="new_email" class="label_cpm">'.$txt['email'].'</label>
+    <label for="new_email" class="label_cpm">'.$txt['email'].'</label>
     <input type="text" id="new_email" class="input_text text ui-widget-content ui-corner-all" onchange="check_domain(this.value)" />
-    &nbsp;<img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+    <label for="new_is_admin_by" class="label_cpm">'.$txt['is_administrated_by_role'].'</label>
+    <select id="new_is_admin_by" class="input_text text ui-widget-content ui-corner-all">';
+        // If administrator then all roles are shown
+        // else only the Roles the users is associated to.
+if ($_SESSION['is_admin']) {
+    echo '
+        <option value="0">'.$txt['administrators_only'].'</option>';
+}
+foreach ($rolesList as $fonction) {
+    if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+        echo '
+        <option value="'.$fonction['id'].'">'.$txt['managers_of'].' "'.$fonction['title'].'"</option>';
+    }
+}
+echo '
+    </select>
     <br />
-
     <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
        <label for="new_admin">'.$txt['is_admin'].'</label>
     <br />
@@ -317,9 +349,10 @@ echo '
     <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked':'', ' />
        <label for="new_personal_folder">'.$txt['personal_folder'].'</label>
     <div id="auto_create_folder_role">
-        <input type="checkbox" id="new_folder_role_domain" disabled />
-           <label for="new_folder_role_domain">'.$txt['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
-        <input type="hidden" id="new_domain">
+    <input type="checkbox" id="new_folder_role_domain" disabled />
+    <label for="new_folder_role_domain">'.$txt['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
+    <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+    <input type="hidden" id="new_domain">
     </div>
     <div style="display:none;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
 </div>';

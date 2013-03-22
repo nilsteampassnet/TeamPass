@@ -410,6 +410,11 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['upload_imageresize_quality'] != @$_POST['upload_imageresize_quality']) {
         @updateSettings('upload_imageresize_quality', $_POST['upload_imageresize_quality']);
     }
+    // Update can_create_root_folder
+    if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder']) {
+        updateSettings('can_create_root_folder', $_POST['can_create_root_folder']);
+    }
+    
 }
 
 echo '
@@ -1019,6 +1024,18 @@ echo '
                         <input type="radio" id="enable_user_can_create_folders_radio1" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_user_can_create_folders_radio1">'.$txt['yes'].'</label>
                         <input type="radio" id="enable_user_can_create_folders_radio2" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_user_can_create_folders']) ? ' checked="checked"':''), ' /><label for="enable_user_can_create_folders_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_enable_user_can_create_folders"><img src="includes/images/status', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
+// enable can_create_root_folder
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['setting_can_create_root_folder'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="can_create_root_folder_radio1" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="can_create_root_folder_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="can_create_root_folder_radio2" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['can_create_root_folder']) ? ' checked="checked"':''), ' /><label for="can_create_root_folder_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_can_create_root_folder"><img src="includes/images/status', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 

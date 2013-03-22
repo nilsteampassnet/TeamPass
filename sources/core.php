@@ -203,7 +203,7 @@ if (
     && isset($_SESSION['user_id'])
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
 ) {
-    $_SESSION['my_sk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
+    $_SESSION['my_sk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
 }
 
 /* CHECK IF MAINTENANCE MODE

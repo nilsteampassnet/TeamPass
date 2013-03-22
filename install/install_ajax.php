@@ -362,6 +362,7 @@ if (isset($_POST['type'])) {
                   `name` varchar(100) NULL,
                   `lastname` varchar(100) NULL,
                   `session_end` varchar(30) NULL,
+                  `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                   PRIMARY KEY (`id`),
                   UNIQUE KEY `login` (`login`)
                ) CHARSET=utf8;"

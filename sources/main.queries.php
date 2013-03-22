@@ -811,7 +811,7 @@ switch ($_POST['type']) {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                $_SESSION['my_sk'],
+                encrypt($_SESSION['my_sk'], ""),
                 time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
             );
@@ -871,7 +871,7 @@ switch ($_POST['type']) {
     case "reset_personal_saltkey":
         if (!empty($_SESSION['user_id']) && !empty($_POST['sk'])) {
             // delete all previous items of this user
-            $rows = mysql_query(
+            $rows = $db->fetchAllArray(
                 "SELECT i.id as id
                 FROM ".$pre."items as i
                 INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
@@ -879,7 +879,7 @@ switch ($_POST['type']) {
                 AND l.id_user=".$_SESSION['user_id']."
                 AND l.action = 'at_creation'"
             );
-            while ($reccord = mysql_fetchArray($rows)) {
+            foreach ($rows as $reccord) {
                 // delete in ITEMS table
                 mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
                 // delete in LOGS table

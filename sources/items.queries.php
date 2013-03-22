@@ -309,7 +309,7 @@ if (isset($_POST['type'])) {
         case "update_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
                 echo $returnValues;
                 break;
             }
@@ -363,7 +363,7 @@ if (isset($_POST['type'])) {
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
                         $returnValues = array("error" => "pw_too_long");
-                        $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                        $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
                         echo $returnValues;
                         break;
                     }
@@ -892,7 +892,7 @@ if (isset($_POST['type'])) {
             $dataRestored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
             if ($dataDeleted[0] != 0 && $dataDeleted[0] > $dataRestored[0]) {
                 // This item is deleted => exit
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
 
                 echo $returnValues;
                 break;
@@ -970,14 +970,20 @@ if (isset($_POST['type'])) {
             );
             $myTest = 0;
             if (in_array($_SESSION['user_id'], $rows_tmp)) {
-                $myTest = 1; //echo $myTest." ;; ";
+                $myTest = 1;
             }
             // Uncrypt PW
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                if (empty($pw)) {
+                    $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                }
                 $arrData['edit_item_salt_key'] = 1;
             } else {
                 $pw = decrypt($dataItem['pw']);
+                if (empty($pw)) {
+                    $pw = decryptOld($dataItem['pw']);
+                }
                 $arrData['edit_item_salt_key'] = 0;
             }
             // extract real pw from salt
@@ -1412,23 +1418,28 @@ if (isset($_POST['type'])) {
                 }
             }
             // update Folders table
-            $db->queryUpdate(
-                "nested_tree",
-                array(
-                    'title' => $title
-                   ),
-                'id='.$dataReceived['folder']
+            $tmp = $db->fetchRow(
+                "SELECT title, parent_id, personal_folder FROM ".$pre."nested_tree WHERE id = ".$dataReceived['folder']
             );
-            // update complixity value
-            $db->queryUpdate(
-                "misc",
-                array(
-                    'valeur' => $dataReceived['complexity']
-                   ),
-                'intitule = "'.$dataReceived['folder'].'" AND type = "complex"'
-            );
-            // rebuild fuild tree folder
-            $tree->rebuild();
+            if ( $tmp[1] != 0 || $tmp[0] != $_SESSION['user_id'] || $tmp[2] != 1 ) {
+                $db->queryUpdate(
+                    "nested_tree",
+                    array(
+                        'title' => $title
+                       ),
+                    'id='.$dataReceived['folder']
+                );
+                // update complixity value
+                $db->queryUpdate(
+                    "misc",
+                    array(
+                        'valeur' => $dataReceived['complexity']
+                       ),
+                    'intitule = "'.$dataReceived['folder'].'" AND type = "complex"'
+                );
+                // rebuild fuild tree folder
+                $tree->rebuild();
+            }
             // send data
             echo '[{"error" : ""}]';
             break;
@@ -1508,7 +1519,7 @@ if (isset($_POST['type'])) {
                         array("error" => "not_authorized"),
                         JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
                     ),
-                    $_SESSION['key'],
+                    $_SESSION['encKey'],
                     256
                 );
                 break;
@@ -1860,7 +1871,14 @@ if (isset($_POST['type'])) {
             }
             //print_r($returnValues);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+            $returnValues = Encryption\Crypt\aesctr::encrypt(
+                json_encode(
+                    $returnValues,
+                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                ),
+                $_SESSION['encKey'],
+                256
+            );
             // return data
             echo $returnValues;
 
@@ -2321,7 +2339,7 @@ if (isset($_POST['type'])) {
                     // send back
                     echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
                 } else {
-                    echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
                     break;
                 }
             }

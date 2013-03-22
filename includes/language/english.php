@@ -5,6 +5,12 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['is_administrated_by_role'] = "User is administrated by";
+$txt['administrators_only'] = "Administrators only";
+$txt['managers_of'] = "Managers of role";
+$txt['managed_by'] = "Managed by";
+$txt['admin_small'] = "Admin";
+$txt['setting_can_create_root_folder'] = "Authorize new folder to be created at Root level";
 $txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
 $txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
 $txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
