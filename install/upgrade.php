@@ -104,7 +104,7 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step5") {
-                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />"; 
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
                     document.getElementById("loader").style.display = "";
                     if (document.getElementById("sk_path") == null)
                     	var data = "type="+step;
@@ -135,17 +135,23 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
                     if (data[0].finish != 1) {
                     	$("#change_pw_encryption_start").val(data[0].next);
                     	$("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
-                    	if (start < $("#change_pw_encryption_total").val()) {
+                    	if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
                     	    newEncryptPw();
                     	}
                     } else {
                     	$("#change_pw_encryption_progress").html("Done");
                     	$("#but_encrypt_continu").hide();
+                    	/* Unlock this step */
+                        gauge.modify($("pbar"),{values:[0.75,1]});
+                        document.getElementById("but_next").disabled = "";
+                        document.getElementById("but_launch").disabled = "disabled";
+                        document.getElementById("res_step4").innerHTML = "dataBase has been populated";
+                        document.getElementById("loader").style.display = "none";
                     }
                 },
                 "json"
             );
-            
+
         }
         </script>
     </head>
@@ -328,10 +334,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                              <div style="display:none;" id="change_pw_encryption_progress"></div>
                          </p>
                          <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(1);" />
-                         <input type="text" id="change_pw_encryption_start" value="" />
-                         <input type="text" id="change_pw_encryption_total" value="" />
+                         <input type="hidden" id="change_pw_encryption_start" value="" />
+                         <input type="hidden" id="change_pw_encryption_total" value="" />
                      </div>
-                     
+
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
                      <input type="hidden" id="step4" name="step4" value="" />';
@@ -365,10 +371,11 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
     //ETAPE 5
     echo '
-                     <h3>Step 6</h3>
-                     Upgrade is now finished!<br />
-                     You can delete "Install" directory from your server for more security.<br /><br />
-                     For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.';
+        <h3>Step 6</h3>
+        Upgrade is now finished!<br />
+        You can delete "Install" directory from your server for more security.<br /><br />
+        For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.<br /><br />
+        IMPORTANT: Due to encryption credentials changed during update, you need to clean the cache of your Internet Browser in order to log yourself successfully.';
 }
 
 //buttons

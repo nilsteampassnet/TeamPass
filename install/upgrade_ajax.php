@@ -984,7 +984,7 @@ if (isset($_POST['type'])) {
                 }
                 mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
             }
-            
+
             // Since 2.1.17, encrypt process is changed.
             // Previous PW need to be re-encrypted
             if (@mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'")) {
@@ -994,12 +994,12 @@ if (isset($_POST['type'])) {
                     //count elem
                     $res = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0'");
                     $data = mysql_fetch_row($res);
-                    
+
                     echo '$("#change_pw_encryption, #change_pw_encryption_progress").show();';
                     echo '$("#change_pw_encryption_progress").html("Number of Passwords to re-encrypt: '.$data[0].'");';
                     echo '$("#change_pw_encryption_total").val("'.$data[0].'")';
                     break;
-                    
+
                 }
             }
 
@@ -1026,7 +1026,7 @@ if (isset($_POST['type'])) {
                     $events .= "The file $filename already exist. A copy has been created.<br />";
                     unlink($filename);
                 }
-                
+
                 //manage SK path
                 if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
                     $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
@@ -1036,7 +1036,7 @@ if (isset($_POST['type'])) {
                     document.getElementById("loader").style.display = "none";';
                     break;
                 }
-                
+
                 //Check if path is ok
                 if (is_dir($securePath)) {
                     if (is_writable(dirname($securePath))) {
@@ -1150,30 +1150,27 @@ require_once \"".$sk_file."\";
             }
 
             break;
-            
+
         case "new_encryption_of_pw":
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
-            
+
             @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
             $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             mysql_select_db($_SESSION['db_bdd'], $db_tmp);
-            
+
             $res = mysql_query("SELECT * FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']) or die(mysql_error());
-             while ($data = mysql_fetch_array($res)) {
+            while ($data = mysql_fetch_array($res)) {
                 // check if pw already well encrypted
-                $pw = decrypt($data['pw']);//echo $pw;
+                $pw = decrypt($data['pw']);
                 if (empty($pw)) {
                     $pw = decryptOld($data['pw']);
-                    //echo " -- old=> ".$pw;
                     $pw = encrypt($pw);
                     mysql_query("UPDATE ".$_SESSION['tbl_prefix']."items SET pw = '".$pw."' WHERE id=".$data['id']);
                 }
-                
-                //echo $pw."<br>";
             }
-            
+
             if ($next >= $_POST['total']) {
                 $finish = true;
             }
