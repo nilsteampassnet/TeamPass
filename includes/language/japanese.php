@@ -21,6 +21,7 @@ $txt['add_role_tip'] = "Add a new role.";
 
 $txt['admin'] = "Administration";
 
+$txt['administrators_only'] = "Administrators only";
 $txt['admin_2factors_authentication_setting'] = "Enable Google 2-Factors authentication";
 $txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Google 2-Factors autentication permits to add one more security level for user autentication. When user wants to login TeamPass, a QR code is generated. This QR code needs to be scanned by the user to get a one-time password.<br />WARNING: this extra needs an Internet connection and a scanner such as a smartphone.</span>";
 $txt['admin_action'] = "確認";
@@ -143,6 +144,7 @@ $txt['admin_setting_activate_expiration_tip'] = "When enabled, items expired wil
 
 $txt['admin_setting_enable_delete_after_consultation'] = "Item consulted can be automatically deleted";
 $txt['admin_setting_enable_delete_after_consultation_tip'] = "<span style='font-size:11px;max-width:300px;'>When enabled, the Item creator can decide that Item will be automatically deleted after being seen X times.</span>";
+$txt['admin_small'] = "Admin";
 $txt['admin_upload_title'] = "Uploads";
 $txt['admin_url_to_files_folder'] = "URL to Files folder";
 $txt['admin_url_to_upload_folder'] = "URL to Upload folder";
@@ -272,6 +274,9 @@ $txt['change_user_functions_title'] = "Customize associated functions";
 $txt['channel_encryption_failed'] = "Authentication failed!";
 $txt['channel_encryption_in_progress'] = "Encrypting channel ...";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
+$txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
+$txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['check_all_text'] = "Check all";
 
 $txt['close'] = "Close";
@@ -648,6 +653,7 @@ $txt['info_click_to_edit'] = "この値を編集するにはセルをクリッ�
 $txt['info_list_of_connected_users_approximation'] = "Note: This list may show more connected users than it is really the case.";
 $txt['is_admin'] = "Is Admin";
 
+$txt['is_administrated_by_role'] = "User is administrated by";
 $txt['is_manager'] = "Is Manager";
 
 $txt['is_read_only'] = "Is Read Only";
@@ -725,6 +731,8 @@ $txt['logs_passwords'] = "パスワード生成ログ";
 
 $txt['maj'] = "Uppercase letters";
 
+$txt['managed_by'] = "Managed by";
+$txt['managers_of'] = "Managers of role";
 $txt['mask_pw'] = "パスワードを表示する/隠す";
 
 $txt['max_last_items'] = "Maximum number of last items seen by user (default is 10)";
@@ -896,6 +904,8 @@ $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:
 $txt['settings_default_language'] = "Define the Default Language";
 $txt['settings_delay_for_item_edition'] = "After how long an Item edition is considered as failed (in minutes)";
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel edition can be performed. A kind of token is reserved.<br />This setting permits to delete the token after un certain delay. If the value is set to 0 then the token will never be deleted.</span>";
+$txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
+$txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 
@@ -952,6 +962,7 @@ $txt['settings_upload_otherext'] = "Allowed other extensions";
 $txt['settings_upload_otherext_tip'] = "Other types. Indicate the file extensions allowed separated with a coma (,)";
 $txt['settings_upload_pkgext'] = "Allowed package extensions";
 $txt['settings_upload_pkgext_tip'] = "Package types. Indicate the file extensions allowed separated with a coma (,)";
+$txt['setting_can_create_root_folder'] = "Authorize new folder to be created at Root level";
 $txt['share'] = "Share this Item";
 $txt['share_sent_ok'] = "Email has been sent";
 $txt['show'] = "Show";

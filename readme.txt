@@ -90,6 +90,9 @@ folder
  #299 - User can be explicetly administrated by Managers of specific Roles
  #300 - Personal SK is encrypted in COOKIE
  #301 - Corrected query call error
+ #302 - Under "Views" users can see items that exist in personal folders 
+ that have been accessed
+ #307 - fclose() statement badly placed
 
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273

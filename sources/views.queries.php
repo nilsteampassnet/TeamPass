@@ -398,7 +398,6 @@ switch ($_POST['type']) {
             LIMIT $start, $nbElements"
         );
         foreach ($rows as $reccord) {
-            //$label = explode('@', addslashes(cleanString($reccord['label'])));
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
         }
 
@@ -501,7 +500,8 @@ switch ($_POST['type']) {
 
         //launch query
         $rows = $db->fetchAllArray(
-            "SELECT l.date as date, u.login as login, i.label as label
+            "SELECT l.date as date, u.login as login, i.label as label,
+            i.perso as perso
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
@@ -511,7 +511,11 @@ switch ($_POST['type']) {
         );
 
         foreach ($rows as $reccord) {
-            $label = explode('@', addslashes(cleanString($reccord['label'])));
+            if ($reccord['perso'] == 1) {
+                $label[0] = "** ".$txt['at_personnel']." **";
+            } else {
+                $label = explode('@', addslashes(cleanString($reccord['label'])));
+            }
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
         }
 
