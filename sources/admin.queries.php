@@ -68,8 +68,9 @@ switch ($_POST['type']) {
             if (!feof($fp)) {
                 $error = "Error: unexpected fgets() fail\n";
             }
+            fclose($fp);
         }
-        fclose($fp);
+        
         if (count($handle_distant) > 0) {
             while (list($cle,$val) = each($handle_distant)) {
                 if (substr($val, 0, 3) == "nom") {
