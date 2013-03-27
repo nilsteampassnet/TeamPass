@@ -505,6 +505,26 @@ if (!empty($_POST['type'])) {
             break;
 
         /**
+         * CHANGE ADMINISTRATED BY
+         */
+        case "change_user_adminby";
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+            // save data
+            $db->queryUpdate(
+                "users",
+                array(
+                    'isAdministratedByRole' => $_POST['isAdministratedByRole']
+                   ),
+                "id = ".$_POST['userId']
+            );
+            echo '[{"done":""}]';
+            break;
+
+        /**
          * Change authorized groups
          */
         case "change_user_autgroups";

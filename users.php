@@ -29,7 +29,7 @@ $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_di
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-$tree_desc = $tree->getDescendants();
+$treeDesc = $tree->getDescendants();
 // Build FUNCTIONS list
 $rolesList = array();
 $rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
@@ -94,8 +94,8 @@ foreach ($rows as $reccord) {
     // Get list of allowed groups
     $list_allo_grps = "";
     if ($reccord['admin'] != 1) {
-        if (count($tree_desc) > 0) {
-            foreach ($tree_desc as $t) {
+        if (count($treeDesc) > 0) {
+            foreach ($treeDesc as $t) {
                 if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident = "";
                     if (in_array($t->id, explode(";", $reccord['groupes_visibles']))) {
@@ -109,8 +109,8 @@ foreach ($rows as $reccord) {
     // Get list of forbidden groups
     $list_forb_grps = "";
     if ($reccord['admin'] != 1) {
-        if (count($tree_desc) > 0) {
-            foreach ($tree_desc as $t) {
+        if (count($treeDesc) > 0) {
+            foreach ($treeDesc as $t) {
                 $ident = "";
                 if (in_array($t->id, explode(";", $reccord['groupes_interdits']))) {
                     $list_forb_grps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
@@ -178,13 +178,21 @@ foreach ($rows as $reccord) {
                         <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
                     </td>
                     <td align="center">
-                        ', $reccord['IsAdministratedByRole'] > 0 ?
-                        $rolesList[$reccord['IsAdministratedByRole']]['title']
-                        :
-                        '<span title="'.$txt['administrators_only'].'">'.$txt['admin_small'].'</span>', '  
+                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
+                            <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
+                                ', $reccord['IsAdministratedByRole'] > 0 ?
+                                $rolesList[$reccord['IsAdministratedByRole']]['title']
+                                :
+                                '<span title="'.$txt['administrators_only'].'">'.$txt['admin_small'].'</span>', '
+                            </div>
+                            <div style="text-align:center;">
+                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')" />
+                            </div>', '
+                        </div>
+
                     </td>
                     <td>
-                        <div>
+                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
                             <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
                                 '.$list_allo_fcts.'
                             </div>
@@ -300,6 +308,22 @@ $txt['change_user_forgroups_info'].'
 <form name="tmp_forgroups" action="">
 <div id="change_user_forgroups_list" style="margin-left:15px;"></div>
 </form>
+</div>';
+// DIV FOR CHANGING ADMINISTRATED BY
+echo '
+<div id="change_user_adminby" style="display:none;">
+    <div id="change_user_adminby_list" style="margin:20px 0 0 15px;">
+        <select id="user_admin_by" class="input_text text ui-widget-content ui-corner-all">
+            <option value="0">'.$txt['administrators_only'].'</option>';
+    foreach ($rolesList as $fonction) {
+        if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+            echo '
+            <option value="'.$fonction['id'].'">'.$txt['managers_of'].' "'.$fonction['title'].'"</option>';
+        }
+    }
+    echo '
+        </select>
+    </div>
 </div>';
 
 /* DIV FOR ADDING A USER */

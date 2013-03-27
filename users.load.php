@@ -124,6 +124,41 @@ $(function() {
                 $(this).dialog("close");
             }
         }
+    });;
+
+    $("#change_user_adminby").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 160,
+        title: "<?php echo $txt['is_administrated_by_role'];?>",
+        buttons: {
+            "<?php echo $txt['save_button'];?>": function() {
+            	$.post(
+                    "sources/users.queries.php",
+                    {
+                        type    :"change_user_adminby",
+                        userId : $("#selected_user").val(),
+                        isAdministratedByRole : $("#user_admin_by").val(),
+                        key    : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        if ($("#user_admin_by").val() == "0") {
+                        	$("#list_adminby_"+$("#selected_user").val()).
+                            html("<?php echo $txt['admin_small'];?>");
+                        } else {
+                        	$("#list_adminby_"+$("#selected_user").val()).
+                            html($("#user_admin_by option:selected").text().match(/"([^"]+)"/)[1]);
+                        }
+                    	$("#change_user_adminby").dialog("close");
+                    }
+               )
+            },
+            "<?php echo $txt['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
     });
 
     $("#add_new_user").dialog({
@@ -295,7 +330,7 @@ $(function() {
         },
         close: function(event,ui) {
             $("#change_user_pw_newpw, change_user_pw_newpw_confirm").val("");
-            
+
         }
     });
 
@@ -465,6 +500,12 @@ function Open_Div_Change(id,type)
             }
         }
    );
+}
+
+function ChangeUSerAdminBy(id)
+{
+	$("#selected_user").val(id);
+    $("#change_user_adminby").dialog("open");
 }
 
 function Change_user_rights(id,type)
