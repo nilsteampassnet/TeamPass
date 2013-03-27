@@ -180,7 +180,7 @@ foreach ($rows as $reccord) {
                     <td align="center">
                         <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
                             <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
-                                ', $reccord['IsAdministratedByRole'] > 0 ?
+                                ', isset($reccord['IsAdministratedByRole']) && $reccord['IsAdministratedByRole'] > 0 ?
                                 $rolesList[$reccord['IsAdministratedByRole']]['title']
                                 :
                                 '<span title="'.$txt['administrators_only'].'">'.$txt['admin_small'].'</span>', '
