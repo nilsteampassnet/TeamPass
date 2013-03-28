@@ -72,34 +72,34 @@ echo '
             </thead>
             <tbody>';
 
-$list_available_users = $list_admins = "";
+$listAvailableUsers = $listAdmins = "";
 $x = 0;
 // Get through all users
 $rows = $db->fetchAllArray("SELECT * FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $reccord) {
     // Get list of allowed functions
-    $list_allo_fcts = "";
+    $listAlloFcts = "";
     if ($reccord['admin'] != 1) {
         if (count($rolesList) > 0) {
             foreach ($rolesList as $fonction) {
                 if (in_array($fonction['id'], explode(";", $reccord['fonction_id']))) {
-                    $list_allo_fcts .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
+                    $listAlloFcts .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
                 }
             }
         }
-        if (empty($list_allo_fcts)) {
-            $list_allo_fcts = '<img src="includes/images/error.png" title="'.$txt['user_alarm_no_function'].'" />';
+        if (empty($listAlloFcts)) {
+            $listAlloFcts = '<img src="includes/images/error.png" title="'.$txt['user_alarm_no_function'].'" />';
         }
     }
     // Get list of allowed groups
-    $list_allo_grps = "";
+    $listAlloGrps = "";
     if ($reccord['admin'] != 1) {
         if (count($treeDesc) > 0) {
             foreach ($treeDesc as $t) {
                 if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident = "";
                     if (in_array($t->id, explode(";", $reccord['groupes_visibles']))) {
-                        $list_allo_grps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                        $listAlloGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
                     }
                     $prev_level = $t->nlevel;
                 }
@@ -107,13 +107,13 @@ foreach ($rows as $reccord) {
         }
     }
     // Get list of forbidden groups
-    $list_forb_grps = "";
+    $listForbGrps = "";
     if ($reccord['admin'] != 1) {
         if (count($treeDesc) > 0) {
             foreach ($treeDesc as $t) {
                 $ident = "";
                 if (in_array($t->id, explode(";", $reccord['groupes_interdits']))) {
-                    $list_forb_grps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                    $listForbGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
                 }
                 $prev_level = $t->nlevel;
             }
@@ -158,7 +158,7 @@ foreach ($rows as $reccord) {
     }*/
     // Build list of available users
     if ($reccord['admin'] != 1 && $reccord['disabled'] != 1) {
-        $list_available_users .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
+        $listAvailableUsers .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
     }
     // Display Grid
     if ($showUserFolders == true) {
@@ -194,7 +194,7 @@ foreach ($rows as $reccord) {
                     <td>
                         <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
                             <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
-                                '.$list_allo_fcts.'
+                                '.$listAlloFcts.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
@@ -204,7 +204,7 @@ foreach ($rows as $reccord) {
                     <td>
                         <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
                             <div id="list_autgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-        .$list_allo_grps.'
+        .$listAlloGrps.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$txt['change_authorized_groups'].'" />
@@ -214,7 +214,7 @@ foreach ($rows as $reccord) {
                     <td>
                         <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
                             <div id="list_forgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-        .$list_forb_grps.'
+        .$listForbGrps.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
                                 <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$txt['change_forbidden_groups'].'" />
@@ -246,18 +246,18 @@ foreach ($rows as $reccord) {
         // If user is active, then you could lock it
         // If user is locked, you could delete it
         if ($reccord['disabled'] == 1) {
-            $action_on_user = "action_on_user('".$reccord['id']."','delete')";
-            $user_icon = "user--minus";
-            $user_txt = $txt['user_del'];
+            $actionOnUser = "action_on_user('".$reccord['id']."','delete')";
+            $userIcon = "user--minus";
+            $userTxt = $txt['user_del'];
         } else {
-            $action_on_user = "action_on_user('".$reccord['id']."','lock')";
-            $user_icon = "user-locked";
-            $user_txt = $txt['user_lock'];
+            $actionOnUser = "action_on_user('".$reccord['id']."','lock')";
+            $userIcon = "user-locked";
+            $userTxt = $txt['user_lock'];
         }
 
         echo '
                     <td align="center">
-                        <img ', ($showUserFolders == true) ? 'src="includes/images/'.$user_icon.'.png" onclick="'.$action_on_user.'" class="button" style="padding:2px;" title="'.$user_txt.'"':'src="includes/images/user--minus_disabled.png"', ' />
+                        <img ', ($showUserFolders == true) ? 'src="includes/images/'.$userIcon.'.png" onclick="'.$actionOnUser.'" class="button" style="padding:2px;" title="'.$userTxt.'"':'src="includes/images/user--minus_disabled.png"', ' />
                     </td>
                     <td align="center">
                         &nbsp;<img ', ($showUserFolders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"', ' />
@@ -424,7 +424,7 @@ echo '
 // USER MANAGER
 echo '
 <div id="manager_dialog" style="display:none;">
-    <div style="text-align:center;padding:2^x;display:none;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
 </div>';
 
 /*// MIGRATE PERSONAL ITEMS FROM ADMIN TO A USER
@@ -434,7 +434,7 @@ echo '
     <div>
         <label>'.$txt['migrate_pf_select_to'].'</label>:
         <select id="migrate_pf_to_user">
-            <option value="">-- '.$txt['select'].' --</option>'.$list_available_users.'
+            <option value="">-- '.$txt['select'].' --</option>'.$listAvailableUsers.'
         </select>
         <br /><br />
         <label>'.$txt['migrate_pf_user_salt'].'</label>: <input type="text" id="migrate_pf_user_salt" size="30" /><br />
