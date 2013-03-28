@@ -98,7 +98,7 @@ switch ($_POST['type']) {
                         if (!empty($line[0]) && !empty($line[2]) && !empty($account)) {
                             if ($continue_on_next_line == false) {
                                 // Prepare listing that will be shown to user
-                                $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                                $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
                                 // Initialize this variable in order to restart from scratch
                                 $account = "";
@@ -130,7 +130,7 @@ switch ($_POST['type']) {
 
         if ($line_number > 0) {
             //add last line
-            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
             $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$txt['all'].'</td></tr>';
@@ -193,7 +193,7 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-                    'pw' => encrypt($pw),
+                    'pw' => encrypt(str_replace('&quote;', '"', $pw)),
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
