@@ -251,7 +251,7 @@ $txt['email_body1'] = "Dobrý den,<br><br>Položka '";
 $txt['email_body2'] = "byla vytvořena.<br><br>Můžete ji nahlédnout kliknutím <a href=\"%5C%22%3C/div%3E%3C/td%3E%0A%09%09%09%3C/tr%3E%0A%09%09%09%3Ctr%3E%0A%09%09%09%09%3Ctd%20style=%22font-size:8pt;%20background:#D0D0D0;%22%3E%5C%22\" &gt;here&lt;=\"\&quot;\&quot;\" a&gt;&lt;br=\"\&quot;\&quot;\" &gt;&lt;br=\"\&quot;\&quot;\" &gt;regards.=\"\&quot;\&quot;\"></a>";
 $txt['email_body3'] = "'>ZDE</a><br /><br />Na shledanou.";
 $txt['email_bodyalt_item_updated'] = "Heslo pro #item_label# bylo obnoveno.";
-$txt['email_body_item_updated'] = "Dobrý den,<br><br>heslo pro '#item_label#' bylo obnoveno.<br><br>Můžete jej zkontrolovat <a href=\"\".@$_SESSION['settings']['cpassman_url'].\"/index.php?page=items&;group=#item_category#&id=#item_id#\\">ZDE</a>.<br><br>Na shledanou";
+$txt['email_body_item_updated'] = "Dobrý den,<br><br>heslo pro '#item_label#' bylo obnoveno.<br><br>Můžete jej zkontrolovat <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">ZDE</a>.<br><br>Na shledanou";
 $txt['email_body_on_user_login'] = "Dobrý den,<br><br>Uživatel #tp_user# se přihlásil do TeamPass dne #tp_date# v #tp_time#.<br><br>Na shledanou.";
 $txt['email_change'] = "Změnit emailovou adresu uživatelského účtu";
 $txt['email_changed'] = "Emailová adresa byla změněna!";

@@ -252,7 +252,7 @@ $txt['email_body1'] = "Oi,<br><br>Item '";
 $txt['email_body2'] = "Foi criado<br /><br />Você pode ver clicando <a href='";
 $txt['email_body3'] = "'>AQUI</a><br /><br />Agradecimentos.";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Altera e-mail desta conta";
 $txt['email_changed'] = "E-mail alterado";

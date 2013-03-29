@@ -254,7 +254,7 @@ Elemento '";
 $txt['email_body2'] = "ha sido creado.<br /><br />Puede verlo haciendo click en <a href='";
 $txt['email_body3'] = "'>este enlace</a><br /><br />Saludos.";
 $txt['email_bodyalt_item_updated'] = "La clave para #item_label# ha sido actualizada.";
-$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">aquí</a><br /><br />Saludos.";
+$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">aquí</a><br /><br />Saludos.";
 $txt['email_body_on_user_login'] = "Hola,<br /><br />El usuario #tp_user# se ha conectado a TeamPass el día #tp_date# a las #tp_time#.<br />Saludos.";
 $txt['email_change'] = "Cambiar el email de la cuenta";
 $txt['email_changed'] = "Email cambiado";

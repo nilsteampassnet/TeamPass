@@ -254,7 +254,7 @@ $txt['email_body1'] = "Bonjour,<br><br>Le mot de passe de '";
 $txt['email_body2'] = "a été créé.<br /><br />Vous pouvez le consulter <a href='";
 $txt['email_body3'] = "'>ICI</a><br /><br />A bientot.";
 $txt['email_bodyalt_item_updated'] = "Le mot de passe de #item_label# a été mis à jour.";
-$txt['email_body_item_updated'] = "Bonjour,<br><br>Le mot de passe de l'élément '#item_label#' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">ICI</a><br /><br />Salutation";
+$txt['email_body_item_updated'] = "Bonjour,<br><br>Le mot de passe de l'élément '#item_label#' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">ICI</a><br /><br />Salutation";
 $txt['email_body_on_user_login'] = "Bonjour,<br><br>L'utilisateur #tp_user# s'est connecté à TeamPass le #tp_date# à #tp_time#.<br><br>Cordialement.";
 $txt['email_change'] = "Changer l'email";
 $txt['email_changed'] = "Email changé !";
