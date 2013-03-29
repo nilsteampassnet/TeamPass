@@ -145,7 +145,7 @@ $_SESSION['CPM'] = 1;
                     data = "type="+step;
                 } else
                 if (step == "step5") {
-                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"/images/ajax-loader.gif\" />";
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"install/images/ajax-loader.gif\" />";
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 }

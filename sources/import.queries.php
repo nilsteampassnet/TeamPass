@@ -53,7 +53,7 @@ switch ($_POST['type']) {
         $tst = $tree->getDescendants();
 
         // do some initializations
-        $file = $_SESSION['settings']['url_to_files_folder']."/".$_POST['file'];
+        $file = $_SESSION['settings']['path_to_files_folder']."/".$_POST['file'];
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -282,8 +282,8 @@ switch ($_POST['type']) {
         $cacheFileF = fopen($cacheFileNameFolder, "w");
 
         //read xml file
-        if (file_exists("'".$_SESSION['settings']['url_to_files_folder']."/".$_POST['file'])."'") {
-            $xml = simplexml_load_file($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+        if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
+            $xml = simplexml_load_file($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
         }
 
         /**
