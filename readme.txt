@@ -74,6 +74,26 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.17
+ * New exchange encryption protocol. No key is visible. The channel is 
+ encrypted at start of session.
+ * HTTPS connection can be activated (be carefull, you need a certificate)
+ * Change Users passwords encryption
+ * Corrected - once clicked on not authorized Item, any Item selection was
+ no more possible.
+ #283 - Rights on a folder created at root are set.
+ #285 - New settings: Anyone can modify option can be activated by default
+ #287 - newly created personal folders ar propergated to the group
+ #289 - Personal folder name badly constructed
+ #270 - Restricted items visible in Find results
+ #298 - Protection against bad actions on personal folders
+ #299 - User can be explicetly administrated by Managers of specific Roles
+ #300 - Personal SK is encrypted in COOKIE
+ #301 - Corrected query call error
+ #302 - Under "Views" users can see items that exist in personal folders 
+ that have been accessed
+ #307 - fclose() statement badly placed
+
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273
  * #277: Change personal saltkey error

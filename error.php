@@ -47,12 +47,6 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
     }
-
-    // erase session table
-    $_SESSION = array();
-
-    // Kill session
-    session_destroy();
 } else {
     echo '
     <div style="width:800px;margin:auto;">';
@@ -70,6 +64,12 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
     }
 }
+
+// erase session table
+$_SESSION = array();
+
+// Kill session
+session_destroy();
 
 echo '
 </div>';

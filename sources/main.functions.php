@@ -12,6 +12,35 @@
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
+//define pbkdf2 iteration count
+@define('ITCOUNT', '2072');
+
+//Generate N# of random bits for use as salt
+function getBits($n)
+{
+    $str = '';
+    $x = $n + 10;
+    for ($i=0; $i<$x; $i++) {
+        $str .= base_convert(mt_rand(1, 36), 10, 36);
+    }
+    return substr($str, 0, $n);
+}
+
+//generate pbkdf2 compliant hash
+function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
+{
+    $kb = $st+$kl;  // Key blocks to compute
+    $dk = '';    // Derived key
+
+    for ($block=1; $block<=$kb; $block++) { // Create key
+        $ib = $h = hash_hmac($a, $s . pack('N', $block), $p, true); // Initial hash for this block
+        for ($i=1; $i<$c; $i++) { // Perform block iterations
+            $ib ^= ($h = hash_hmac($a, $h, $p, true));  // XOR each iterate
+        }
+        $dk .= $ib; // Append iterated block
+    }
+    return substr($dk, $st, $kl); // Return derived key of correct length
+}
 
 /**
  * stringUtf8Decode()
@@ -24,11 +53,11 @@ function stringUtf8Decode($string)
 }
 
 /**
- * encrypt()
+ * encryptOld()
  *
  * crypt a string
  */
-function encrypt($text, $personal_salt = "")
+function encryptOld($text, $personal_salt = "")
 {
     if (!empty($personal_salt)) {
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
@@ -38,11 +67,11 @@ function encrypt($text, $personal_salt = "")
 }
 
 /**
- * decrypt()
+ * decryptOld()
  *
  * decrypt a crypted string
  */
-function decrypt($text, $personal_salt = "")
+function decryptOld($text, $personal_salt = "")
 {
     if (!empty($personal_salt)) {
         return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
@@ -50,6 +79,91 @@ function decrypt($text, $personal_salt = "")
         return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
     }
 }
+
+/**
+ * encrypt()
+ *
+ * crypt a string
+ */
+function encrypt($decrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+ 	    $staticSalt = $personal_salt;
+    } else {
+ 	    $staticSalt = SALT;
+    }
+    //set our salt to a variable
+    // Get 64 random bits for the salt for pbkdf2
+    $pbkdf2Salt = getBits(64);
+    // generate a pbkdf2 key to use for the encryption.
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Build $iv and $iv_base64.  We use a block size of 256 bits (AES compliant) and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
+    $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+    //base64 trim
+    if (strlen($iv_base64 = rtrim(base64_encode($iv), '=')) != 43) {
+        return false;
+    }
+    // Encrypt $decrypted
+    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $iv);
+    // MAC the encrypted text
+    $MAC = hash_hmac('sha256', $encrypted, $staticSalt);
+    // We're done!
+    return base64_encode($iv_base64 . $encrypted . $MAC . $pbkdf2Salt);
+}
+
+/**
+ * decrypt()
+ *
+ * decrypt a crypted string
+ */
+function decrypt($encrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+	    $staticSalt = $personal_salt;
+    } else {
+	    $staticSalt = SALT;
+    }
+    //base64 decode the entire payload
+    $encrypted = base64_decode($encrypted);
+    // get the salt
+    $pbkdf2Salt = substr($encrypted, -64);
+    //remove the salt from the string
+    $encrypted = substr($encrypted, 0, -64);
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
+    $iv = base64_decode(substr($encrypted, 0, 43) . '==');
+    // Remove $iv from $encrypted.
+    $encrypted = substr($encrypted, 43);
+    // Retrieve $MAC which is the last 64 characters of $encrypted.
+    $MAC = substr($encrypted, -64);
+    // Remove the last 64 chars from encrypted (remove MAC)
+    $encrypted = substr($encrypted, 0, -64);
+    //verify the sha256hmac from the encrypted data before even trying to decrypt it
+    if (hash_hmac('sha256', $encrypted, $staticSalt) != $MAC) {
+        return false;
+    }
+    // Decrypt the data.
+    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4");
+    // Yay!
+    return $decrypted;
+}
+
+
+/**
+ * genHash()
+ *
+ * Generate a hash for user login
+ */
+function bCrypt($password, $cost)
+{
+    $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    $salt = sprintf('$2y$%02d$', $cost);
+    for ($i=0; $i<22; $i++) {
+        $salt.=$chars[mt_rand(0, 63)];
+    }
+    return crypt($password, $salt);
+}
+
 
 /**
  * trimElement()

@@ -7,7 +7,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 
-$txt['category'] = "Categoria";
+$txt['category'] = "Categoría";
 $txt['kb'] = "Base de Conocimiento";
 $txt['kb_anyone_can_modify'] = "Cualquiera puede modificarlo";
 $txt['kb_form'] = "Administrar entradas en la KB";

@@ -57,8 +57,134 @@ function tableExists($tablename, $database = false)
     );
 
     return mysql_result($res, 0) == 1;
-
 }
+
+//define pbkdf2 iteration count
+@define('ITCOUNT', '2072');
+
+//Generate N# of random bits for use as salt
+function getBits($n)
+{
+    $str = '';
+    $x = $n + 10;
+    for ($i=0; $i<$x; $i++) {
+        $str .= base_convert(mt_rand(1, 36), 10, 36);
+    }
+    return substr($str, 0, $n);
+}
+
+//generate pbkdf2 compliant hash
+function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
+{
+    $kb = $st+$kl;  // Key blocks to compute
+    $dk = '';    // Derived key
+
+    for ($block=1; $block<=$kb; $block++) { // Create key
+        $ib = $h = hash_hmac($a, $s . pack('N', $block), $p, true); // Initial hash for this block
+        for ($i=1; $i<$c; $i++) { // Perform block iterations
+            $ib ^= ($h = hash_hmac($a, $h, $p, true));  // XOR each iterate
+        }
+        $dk .= $ib; // Append iterated block
+    }
+    return substr($dk, $st, $kl); // Return derived key of correct length
+}
+
+/**
+ * encryptOld()
+ *
+ * crypt a string
+ */
+function encryptOld($text, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    } else {
+        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    }
+}
+
+/**
+ * decryptOld()
+ *
+ * decrypt a crypted string
+ */
+function decryptOld($text, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    } else {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    }
+}
+
+/**
+ * encrypt()
+ *
+ * crypt a string
+ */
+function encrypt($decrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        $staticSalt = $personal_salt;
+    } else {
+        $staticSalt = SALT;
+    }
+    //set our salt to a variable
+    // Get 64 random bits for the salt for pbkdf2
+    $pbkdf2Salt = getBits(64);
+    // generate a pbkdf2 key to use for the encryption.
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Build $iv and $iv_base64.  We use a block size of 256 bits (AES compliant) and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
+    $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+    //base64 trim
+    if (strlen($iv_base64 = rtrim(base64_encode($iv), '=')) != 43) {
+        return false;
+    }
+    // Encrypt $decrypted
+    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $iv);
+    // MAC the encrypted text
+    $MAC = hash_hmac('sha256', $encrypted, $staticSalt);
+    // We're done!
+    return base64_encode($iv_base64 . $encrypted . $MAC . $pbkdf2Salt);
+}
+
+/**
+ * decrypt()
+ *
+ * decrypt a crypted string
+ */
+function decrypt($encrypted, $personal_salt = "")
+{
+    if (!empty($personal_salt)) {
+        $staticSalt = $personal_salt;
+    } else {
+        $staticSalt = SALT;
+    }
+    //base64 decode the entire payload
+    $encrypted = base64_decode($encrypted);
+    // get the salt
+    $pbkdf2Salt = substr($encrypted, -64);
+    //remove the salt from the string
+    $encrypted = substr($encrypted, 0, -64);
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
+    $iv = base64_decode(substr($encrypted, 0, 43) . '==');
+    // Remove $iv from $encrypted.
+    $encrypted = substr($encrypted, 43);
+    // Retrieve $MAC which is the last 64 characters of $encrypted.
+    $MAC = substr($encrypted, -64);
+    // Remove the last 64 chars from encrypted (remove MAC)
+    $encrypted = substr($encrypted, 0, -64);
+    //verify the sha256hmac from the encrypted data before even trying to decrypt it
+    if (hash_hmac('sha256', $encrypted, $staticSalt) != $MAC) {
+        return false;
+    }
+    // Decrypt the data.
+    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4");
+    // Yay!
+    return $decrypted;
+}
+
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -94,6 +220,18 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('openssl')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('gmp')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (version_compare(phpversion(), '5.3.0', '<')) {
                 $ok_version = false;
@@ -282,6 +420,7 @@ if (isset($_POST['type'])) {
                 array('admin', 'allow_print',0,0),
                 array('admin', 'show_description',1,0),
                 array('admin', 'anyone_can_modify',0,0),
+                array('admin', 'anyone_can_modify_bydefault',0,0),
                 array('admin', 'nb_bad_authentication',0,0),
                 array('admin', 'restricted_to',0,0),
                 array('admin', 'restricted_to_roles',0,0),
@@ -334,12 +473,12 @@ if (isset($_POST['type'])) {
                 //Check if exists before inserting
                 $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"));
                 if ($res_tmp[0] == 0) {
-                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'","",$elem[2])."');");
+                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'", "",$elem[2])."');");
                     if (!$res1) break;
                 } else {
                     // Force update for some settings
                     if ($elem[3] == 1) {
-                        mysql_query("UPDATE `".$_SESSION['tbl_prefix']."misc` SET `valeur` = '".$elem[2]."' WHERE type = 'admin' AND intitule = '".$elem[1]."'");
+                        mysql_query("UPDATE `".$_SESSION['tbl_prefix']."misc` SET `valeur` = '".$elem[2]."' WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'");
                     }
                 }
             }
@@ -355,9 +494,9 @@ if (isset($_POST['type'])) {
             }
 
             ## Alter ITEMS table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","anyone_can_modify","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","email","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items","notification","VARCHAR(250) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "anyone_can_modify", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "email", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."items", "notification", "VARCHAR(250) DEFAULT NULL");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)");
 
             # Alter tables
@@ -365,28 +504,30 @@ if (isset($_POST['type'])) {
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY role_id INT(12)");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY item_id INT(12)");
             mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw TEXT");
+            mysql_query("ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(200)");
 
             ## Alter USERS table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","favourites","VARCHAR(300)");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","latest_items","VARCHAR(300)");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","personal_folder","INT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","disabled","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","no_bad_attempts","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","can_create_root_folder","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","read_only","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","timestamp","VARCHAR(30) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","user_language","VARCHAR(30) NOT null DEFAULT 'english'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","name","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","lastname","VARCHAR(100) DEFAULT NULL");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users","session_end","VARCHAR(30) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "favourites", "VARCHAR(300)");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "latest_items", "VARCHAR(300)");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "personal_folder", "INT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "disabled", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "no_bad_attempts", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "can_create_root_folder", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "read_only", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "timestamp", "VARCHAR(30) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "user_language", "VARCHAR(30) NOT null DEFAULT 'english'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "name", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "lastname", "VARCHAR(100) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "session_end", "VARCHAR(30) DEFAULT NULL");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."users", "IsAdministratedByRole", "TINYINT(5) NOT null DEFAULT '0'");
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
             mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
 
             ## Alter nested_tree table
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree","personal_folder","TINYINT(1) NOT null DEFAULT '0'");
-            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree","renewal_period","TINYINT(4) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree", "personal_folder", "TINYINT(1) NOT null DEFAULT '0'");
+            $res2 = addColumnIfNotExist($_SESSION['tbl_prefix']."nested_tree", "renewal_period", "TINYINT(4) NOT null DEFAULT '0'");
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
             #to 1.08
@@ -535,9 +676,9 @@ if (isset($_POST['type'])) {
                 `complexity` INT(5) NOT null DEFAULT '0',
                 `creator_id` int(11) NOT null DEFAULT '0'
                );");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","allow_pw_change","TINYINT(1) NOT null DEFAULT '0'");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","complexity","INT(5) NOT null DEFAULT '0'");
-            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","creator_id","INT(11) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "allow_pw_change", "TINYINT(1) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "complexity", "INT(5) NOT null DEFAULT '0'");
+            addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "creator_id", "INT(11) NOT null DEFAULT '0'");
 
             $res10 = mysql_query("
                 CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_values` (
@@ -579,7 +720,7 @@ if (isset($_POST['type'])) {
                 //Now alter table roles_title in order to create a primary index
                 mysql_query("ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title` ADD PRIMARY KEY(`id`)");
                 mysql_query("ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title` CHANGE `id` `id` INT(12) NOT null AUTO_INCREMENT ");
-                addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title","allow_pw_change","TINYINT(1) NOT null DEFAULT '0'");
+                addColumnIfNotExist($_SESSION['tbl_prefix']."roles_title", "allow_pw_change", "TINYINT(1) NOT null DEFAULT '0'");
 
                 //Drop old table
                 mysql_query("DROP TABLE ".$_SESSION['tbl_prefix']."functions");
@@ -844,6 +985,24 @@ if (isset($_POST['type'])) {
                 mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
             }
 
+            // Since 2.1.17, encrypt process is changed.
+            // Previous PW need to be re-encrypted
+            if (@mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'")) {
+                $tmp_result = mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'");
+                $tmp = mysql_fetch_row($tmp_result);
+                if ($tmp[0] != "ctr") {
+                    //count elem
+                    $res = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0'");
+                    $data = mysql_fetch_row($res);
+
+                    echo '$("#change_pw_encryption, #change_pw_encryption_progress").show();';
+                    echo '$("#change_pw_encryption_progress").html("Number of Passwords to re-encrypt: '.$data[0].'");';
+                    echo '$("#change_pw_encryption_total").val("'.$data[0].'")';
+                    break;
+
+                }
+            }
+
             /* Unlock this step */
             echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
             echo 'document.getElementById("but_next").disabled = "";';
@@ -868,14 +1027,42 @@ if (isset($_POST['type'])) {
                     unlink($filename);
                 }
 
+                //manage SK path
                 if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
                     $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
-                } elseif (isset($_SESSION['sk_path']) && !empty($_SESSION['sk_path'])) {
-                    $sk_file = $_SESSION['sk_path'];
+                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
                 } else {
-                    $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                    echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be indicated.";
+                    document.getElementById("loader").style.display = "none";';
+                    break;
                 }
 
+                //Check if path is ok
+                if (is_dir($securePath)) {
+                    if (is_writable(dirname($securePath))) {
+                        //Do nothing
+                    } else {
+                        echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be writable!";
+                        document.getElementById("loader").style.display = "none";';
+                        break;
+                    }
+                } else {
+                    echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> Path for SK is not a Directory!";
+                    document.getElementById("loader").style.display = "none";';
+                    break;
+                }
+/*
+                if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
+                    $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
+                } elseif (isset($_SESSION['sk_path']) && !empty($_SESSION['sk_path'])) {
+                    $sk_file = $_SESSION['sk_path'];
+                    $securePath = $_SESSION['sk_path'];
+                } else {
+                    $skfile = $_SESSION['abspath'].'/includes/sk.php';
+                    $securePath = $_SESSION['abspath'];
+                }
+*/
                 $fh = fopen($filename, 'w');
 
                 //prepare smtp_auth variable
@@ -896,11 +1083,16 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-
+@define('SECUREPATH', '".substr($sk_file, 0, strlen($sk_file)-7)."');
 require_once \"".$sk_file."\";
 ?>"));
 
                 fclose($fh);
+                if ($result1 === false) {
+                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
+                } else {
+                    echo 'document.getElementById("step5_settingFile").innerHTML = "<img src=\"images/tick.png\">";';
+                }
 
                 //Create sk.php file
                 if (!file_exists($sk_file)) {
@@ -911,19 +1103,43 @@ require_once \"".$sk_file."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>")
                     );
                     fclose($fh);
                 }
-
-                if ($result1 === false) {
-                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
-                } elseif (isset($result2) && $result2 === false) {
+                if (isset($result2) && $result2 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = "$sk_file could not be created. Please check the path and the rights.";';
                 } else {
+                    echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
+                }
+
+                //Generate Keys file
+                require_once("../includes/libraries/jCryption/jcryption.php");
+                $keyLength = 1024;
+                $jCryption = new jCryption();
+                $numberOfPairs = 100;
+                $arrKeyPairs = array();
+                for ($i=0; $i < $numberOfPairs; $i++) {
+                    $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
+                }
+                $file = array();
+                $file[] = '<?php';
+                $file[] = '$arrKeys = ';
+                $file[] = var_export($arrKeyPairs, true);
+                $file[] = ';';
+                $result3 = file_put_contents(substr($sk_file, 0, strlen($sk_file)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+                if (isset($result3) && $result3 === false) {
+                    echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
+                } else {
+                    echo 'document.getElementById("step5_keysFile").innerHTML = "<img src=\"images/tick.png\">";';
+                }
+
+                //Finished
+                if ($result1 != false && $result3 != false && (!isset($result2) || (isset($result2) && $result2 != false))) {
                     echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';
-                    echo 'document.getElementById("res_step5").innerHTML = "Setting.php and sk.php files have been created.";';
+                    echo 'document.getElementById("res_step5").innerHTML = "Operations are successfully completed.";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     echo 'document.getElementById("but_launch").disabled = "disabled";';
                 }
@@ -933,6 +1149,32 @@ require_once \"".$sk_file."\";
                 echo 'document.getElementById("loader").style.display = "none";';
             }
 
+            break;
+
+        case "new_encryption_of_pw":
+            $finish = false;
+            $next = ($_POST['nb']+$_POST['start']);
+
+            @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            @mysql_select_db($_SESSION['db_bdd']);
+            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+
+            $res = mysql_query("SELECT * FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']) or die(mysql_error());
+            while ($data = mysql_fetch_array($res)) {
+                // check if pw already well encrypted
+                $pw = decrypt($data['pw']);
+                if (empty($pw)) {
+                    $pw = decryptOld($data['pw']);
+                    $pw = encrypt($pw);
+                    mysql_query("UPDATE ".$_SESSION['tbl_prefix']."items SET pw = '".$pw."' WHERE id=".$data['id']);
+                }
+            }
+
+            if ($next >= $_POST['total']) {
+                $finish = true;
+            }
+            echo '[{"finish":"'.$finish.'" , "next":"'.$next.'" , "progress":"'.round($next*100/$_POST['total'], 0).'"}]';
             break;
     }
 }

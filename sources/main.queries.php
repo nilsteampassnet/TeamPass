@@ -40,9 +40,9 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256), true);
         // Prepare variables
-        $newPw = encrypt(htmlspecialchars_decode($dataReceived['new_pw']));
+        $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
             // Get a string with the old pw array
@@ -56,7 +56,7 @@ switch ($_POST['type']) {
                 }
                 // reinit SESSION
                 $_SESSION['last_pw'] = implode(';', $lastPw);
-                // specific case where admin setting "number_of_used_pw" is 0
+                // specific case where admin setting "number_of_used_pw"
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
@@ -189,10 +189,10 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["encKey"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-        $password = encrypt(htmlspecialchars_decode($dataReceived['pw']));
+        $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
         $username = htmlspecialchars_decode($dataReceived['login']);
 
         //Check 2-Factors pw
@@ -344,6 +344,23 @@ switch ($_POST['type']) {
         if ($proceedIdentification === true) {
             // User exists in the DB
             $data = $db->fetchArray($row);
+
+            //v2.1.17 -> change encryption for users password
+            if (
+                    $passwordOldEncryption == $data['pw'] &&
+                    !empty($data['pw'])
+            ) {
+                //update user's password
+                $data['pw'] = bCrypt($passwordClear, COST);
+                $db->queryUpdate(
+                    "users",
+                    array(
+                            'pw' => $data['pw']
+                    ),
+                    "id=".$data['id']
+                );
+            }
+
             // Can connect if
             // 1- no LDAP mode + user enabled + pw ok
             // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -351,7 +368,7 @@ switch ($_POST['type']) {
             // This in order to allow admin by default to connect even if LDAP is activated
             if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                    && $password == $data['pw'] && $data['disabled'] == 0
+                    && crypt($passwordClear, $data['pw']) == $data['pw'] && $data['disabled'] == 0
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -392,7 +409,7 @@ switch ($_POST['type']) {
                 $_SESSION['last_pw_change'] = $data['last_pw_change'];
                 $_SESSION['last_pw'] = $data['last_pw'];
                 $_SESSION['can_create_root_folder'] = $data['can_create_root_folder'];
-                //$_SESSION['key'] = $key;
+                $_SESSION['key'] = $key;
                 $_SESSION['personal_folder'] = $data['personal_folder'];
                 $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
@@ -709,7 +726,8 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
             $newPwNotCrypted = $pwgen->generate();
-            $newPw = encrypt(stringUtf8Decode($newPwNotCrypted));
+            //$newPw = encrypt(stringUtf8Decode($newPwNotCrypted));
+            $newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
             // update DB
             $db->queryUpdate(
                 "users",
@@ -788,11 +806,12 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
+        $dataReceived = Encryption\Crypt\aesctr::decrypt($_POST['sk'], $_SESSION['encKey'], 256);
         if ($_POST['sk'] != "**************************") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                $_SESSION['my_sk'],
+                encrypt($_SESSION['my_sk'], ""),
                 time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
             );
@@ -852,7 +871,7 @@ switch ($_POST['type']) {
     case "reset_personal_saltkey":
         if (!empty($_SESSION['user_id']) && !empty($_POST['sk'])) {
             // delete all previous items of this user
-            $rows = mysql_query(
+            $rows = $db->fetchAllArray(
                 "SELECT i.id as id
                 FROM ".$pre."items as i
                 INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
@@ -860,7 +879,7 @@ switch ($_POST['type']) {
                 AND l.id_user=".$_SESSION['user_id']."
                 AND l.action = 'at_creation'"
             );
-            while ($reccord = mysql_fetchArray($rows)) {
+            foreach ($rows as $reccord) {
                 // delete in ITEMS table
                 mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
                 // delete in LOGS table

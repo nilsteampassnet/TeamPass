@@ -19,11 +19,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
 $(function() {
     $(".button").button();
     //inline editing
@@ -129,6 +124,41 @@ $(function() {
                 $(this).dialog("close");
             }
         }
+    });;
+
+    $("#change_user_adminby").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 160,
+        title: "<?php echo $txt['is_administrated_by_role'];?>",
+        buttons: {
+            "<?php echo $txt['save_button'];?>": function() {
+            	$.post(
+                    "sources/users.queries.php",
+                    {
+                        type    :"change_user_adminby",
+                        userId : $("#selected_user").val(),
+                        isAdministratedByRole : $("#user_admin_by").val(),
+                        key    : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        if ($("#user_admin_by").val() == "0") {
+                        	$("#list_adminby_"+$("#selected_user").val()).
+                            html("<?php echo $txt['admin_small'];?>");
+                        } else {
+                        	$("#list_adminby_"+$("#selected_user").val()).
+                            html($("#user_admin_by option:selected").text().match(/"([^"]+)"/)[1]);
+                        }
+                    	$("#change_user_adminby").dialog("close");
+                    }
+               )
+            },
+            "<?php echo $txt['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
     });
 
     $("#add_new_user").dialog({
@@ -136,7 +166,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 320,
-        height: 400,
+        height: 540,
         title: "<?php echo $txt['new_user_title'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
@@ -159,6 +189,7 @@ $(function() {
                             personal_folder    :$("#new_personal_folder").prop("checked"),
                             new_folder_role_domain    :$("#new_folder_role_domain").prop("checked"),
                             domain    :$("#new_domain").val(),
+                            isAdministratedByRole    :$("#new_is_admin_by").val(),
                             key    : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
@@ -216,6 +247,7 @@ $(function() {
         title: "<?php echo $txt['admin_action'];?>",
         buttons: {
         	"<?php echo $txt['pw_generate'];?>": function() {
+            	$("#change_user_pw_wait").show();
             	$.post(
                         "sources/main.queries.php",
                         {
@@ -230,10 +262,9 @@ $(function() {
                             var pw = htmlspecialchars_decode(aes_decrypt(data));
                         	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(pw);
                     		$("#change_user_pw_newpw").focus();
+                    		$("#change_user_pw_wait").hide();
                         }
                    );
-            	
-        		
         	},
             "<?php echo $txt['save_button'];?>": function() {
                 if ($("#change_user_pw_newpw").val() == $("#change_user_pw_newpw_confirm").val()) {
@@ -243,7 +274,7 @@ $(function() {
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : aes_encrypt(data)
+                            data    : $.jCryption.encrypt(data, sessionStorage.password)
                         },
                         function(data) {
                             if (data[0].error == "none") {
@@ -296,6 +327,10 @@ $(function() {
             "<?php echo $txt['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
+        },
+        close: function(event,ui) {
+            $("#change_user_pw_newpw, change_user_pw_newpw_confirm").val("");
+
         }
     });
 
@@ -465,6 +500,12 @@ function Open_Div_Change(id,type)
             }
         }
    );
+}
+
+function ChangeUSerAdminBy(id)
+{
+	$("#selected_user").val(id);
+    $("#change_user_adminby").dialog("open");
 }
 
 function Change_user_rights(id,type)

@@ -51,10 +51,10 @@ if (isset($_POST['newtitle'])) {
     );
     //Show value
     echo ($_POST['newtitle']);
-}
 
-// CASE where RENEWAL PERIOD is changed
-elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
+    // CASE where RENEWAL PERIOD is changed
+} elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
+
     //Check if renewal period is an integer
     if (parseInt(intval($_POST['renewal_period']))) {
         $id = explode('_', $_POST['id']);
@@ -72,10 +72,9 @@ elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
         //Show ERROR
         echo ($txt['error_renawal_period_not_integer']);
     }
-}
 
-// CASE where the parent is changed
-elseif (isset($_POST['newparent_id'])) {
+    // CASE where the parent is changed
+} elseif (isset($_POST['newparent_id'])) {
     $id = explode('_', $_POST['id']);
     //Store in DB
     $db->queryUpdate(
@@ -92,10 +91,9 @@ elseif (isset($_POST['newparent_id'])) {
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
     $tree->rebuild();
-}
 
-// CASE where complexity is changed
-elseif (isset($_POST['changer_complexite'])) {
+    // CASE where complexity is changed
+} elseif (isset($_POST['changer_complexite'])) {
     $id = explode('_', $_POST['id']);
 
     //Check if group exists
@@ -127,39 +125,38 @@ elseif (isset($_POST['changer_complexite'])) {
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
     $tree->rebuild();
-}
 
-// Several other cases
-elseif (isset($_POST['type'])) {
+    // Several other cases
+} elseif (isset($_POST['type'])) {
     switch ($_POST['type']) {
         // CASE where DELETING a group
         case "delete_folder":
-            $folders_deleted = "";
+            $foldersDeleted = "";
             // this will delete all sub folders and items associated
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-            // Get through each subfolder
-            $folders = $tree->getDescendants($_POST['id'], true);
-            foreach ($folders as $folder) {
-                //Store the deleted folder (recycled bin)
-                $db->queryInsert(
-                    'misc',
-                    array(
-                        'type' => 'folder_deleted',
-                        'intitule' => "f".$_POST['id'],
-                        'valeur' => $folder->id.', '.$folder->parent_id.', '.$folder->title.', '.$folder->nleft.', '.$folder->nright.', '.$folder->nlevel.', 0, 0, 0, 0'
-                   )
-                );
-                //delete folder
-                $db->query("DELETE FROM ".$pre."nested_tree WHERE id = ".$folder->id);
+            if ($folder->parent_id > 0 && $folder->title != $_SESSION['user_id'] ) {
+                // Get through each subfolder
+                $folders = $tree->getDescendants($_POST['id'], true);
+                foreach ($folders as $folder) {
+                    //Store the deleted folder (recycled bin)
+                    $db->queryInsert(
+                        'misc',
+                        array(
+                            'type' => 'folder_deleted',
+                            'intitule' => "f".$_POST['id'],
+                            'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
+                                $folder->nlevel.', 0, 0, 0, 0'
+                       )
+                    );
+                    //delete folder
+                    $db->query("DELETE FROM ".$pre."nested_tree WHERE id = ".$folder->id);
+                }
 
                 //delete items & logs
                 $items = $db->fetchAllArray("SELECT id FROM ".$pre."items WHERE id_tree='".$folder->id."'");
                 foreach ($items as $item) {
-                    //Delete item
-                    //$db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
-                    //$db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
-
                     $db->queryUpdate(
                         "items",
                         array(
@@ -196,13 +193,16 @@ elseif (isset($_POST['type'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $dataReceived = json_decode(
+                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256),
+                true
+            );
 
             //Prepare variables
-            $title = htmlspecialchars_decode($data_received['title']);
-            $complexity = htmlspecialchars_decode($data_received['complexity']);
-            $parent_id = htmlspecialchars_decode($data_received['parent_id']);
-            $renewal_period = htmlspecialchars_decode($data_received['renewal_period']);
+            $title = htmlspecialchars_decode($dataReceived['title']);
+            $complexity = htmlspecialchars_decode($dataReceived['complexity']);
+            $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
+            $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
@@ -210,32 +210,34 @@ elseif (isset($_POST['type'])) {
             }
 
             //Check if duplicate folders name are allowed
-            $create_new_folder = true;
+            $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                $data = $db->fetchRow(
+                    "SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                );
                 if ($data[0] != 0) {
                     $error = 'error_group_exist';
-                    $create_new_folder = false;
+                    $createNewFolder = false;
                 }
             }
 
-            if ($create_new_folder == true) {
+            if ($createNewFolder == true) {
                 //check if parent folder is personal
-                $data = $db->fetchRow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parent_id."'");
+                $data = $db->fetchRow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parentId."'");
                 if ($data[0] == 1) {
-                    $is_personal = 1;
+                    $isPersonal = 1;
                 } else {
-                    $is_personal = 0;
+                    $isPersonal = 0;
                 }
 
                 //create folder
-                $new_id=$db->queryInsert(
+                $newId=$db->queryInsert(
                     "nested_tree",
                     array(
-                        'parent_id' => $parent_id,
+                        'parent_id' => $parentId,
                         'title' => $title,
-                        'personal_folder' => $is_personal,
-                        'renewal_period' => $renewal_period,
+                        'personal_folder' => $isPersonal,
+                        'renewal_period' => $renewalPeriod,
                         'bloquer_creation' => '0',
                         'bloquer_modification' => '0'
                    )
@@ -246,7 +248,7 @@ elseif (isset($_POST['type'])) {
                     "misc",
                     array(
                         'type' => 'complex',
-                        'intitule' => $new_id,
+                        'intitule' => $newId,
                         'valeur' => $complexity
                    )
                 );
@@ -254,20 +256,33 @@ elseif (isset($_POST['type'])) {
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                //Get user's rights
-                @identifyUserRights(
-                    $_SESSION['groupes_visibles'].';'.$new_id,
-                    $_SESSION['groupes_interdits'],
-                    $_SESSION['is_admin'],
-                    $_SESSION['fonction_id'],
-                    true
-                );
+                if ($isPersonal != 1){
+                    //Get user's rights
+                    @identifyUserRights(
+                        $_SESSION['groupes_visibles'].';'.$newId,
+                        $_SESSION['groupes_interdits'],
+                        $_SESSION['is_admin'],
+                        $_SESSION['fonction_id'],
+                        true
+                    );
+
+                    //add access to this new folder
+                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                        $db->queryInsert(
+                            'roles_values',
+                            array(
+                                'role_id' => $role,
+                                'folder_id' => $newId
+                            )
+                        );
+                    }
+                }
 
                 //If it is a subfolder, then give access to it for all roles that allows the parent folder
                 $rows = $db->fetchAllArray(
                     "SELECT role_id
                     FROM ".$pre."roles_values
-                    WHERE folder_id = ".$parent_id
+                    WHERE folder_id = ".$parentId
                 );
                 foreach ($rows as $reccord) {
                     //add access to this subfolder
@@ -275,7 +290,7 @@ elseif (isset($_POST['type'])) {
                         'roles_values',
                         array(
                             'role_id' => $reccord['role_id'],
-                            'folder_id' => $new_id
+                            'folder_id' => $newId
                        )
                     );
                 }
@@ -289,13 +304,16 @@ elseif (isset($_POST['type'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $dataReceived = json_decode(
+                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256),
+                true
+            );
 
             //Prepare variables
-            $title = htmlspecialchars_decode($data_received['title']);
-            $complexity = htmlspecialchars_decode($data_received['complexity']);
-            $parent_id = htmlspecialchars_decode($data_received['parent_id']);
-            $renewal_period = htmlspecialchars_decode($data_received['renewal_period']);
+            $title = htmlspecialchars_decode($dataReceived['title']);
+            $complexity = htmlspecialchars_decode($dataReceived['complexity']);
+            $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
+            $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
@@ -304,10 +322,12 @@ elseif (isset($_POST['type'])) {
             }
 
             //Check if duplicate folders name are allowed
-            $create_new_folder = true;
+            $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
-                if (!empty($data[0]) && $data_received['id'] != $data[0]) {
+                $data = $db->fetchRow(
+                    "SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                );
+                if (!empty($data[0]) && $dataReceived['id'] != $data[0] && $title != $data[1] ) {
                     echo '[ { "error" : "error_group_exist" } ]';
                     break;
                 }
@@ -316,14 +336,14 @@ elseif (isset($_POST['type'])) {
             $db->queryUpdate(
                 "nested_tree",
                 array(
-                    'parent_id' => $parent_id,
+                    'parent_id' => $parentId,
                     'title' => $title,
                     'personal_folder' => 0,
-                    'renewal_period' => $renewal_period,
+                    'renewal_period' => $renewalPeriod,
                     'bloquer_creation' => '0',
                     'bloquer_modification' => '0'
                 ),
-                "id='".$data_received['id']."'"
+                "id='".$dataReceived['id']."'"
             );
 
             //Add complexity
@@ -333,7 +353,7 @@ elseif (isset($_POST['type'])) {
                     'valeur' => $complexity
                 ),
                 array(
-                    'intitule' => $data_received['id'],
+                    'intitule' => $dataReceived['id'],
                     'type' => 'complex'
                 )
             );
@@ -342,7 +362,7 @@ elseif (isset($_POST['type'])) {
             $tree->rebuild();
 
             //Get user's rights
-            identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$data_received['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+            identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
 
             echo '[ { "error" : "'.$error.'" } ]';
             break;

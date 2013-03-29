@@ -37,6 +37,18 @@ if (isset($_POST['type'])) {
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('openssl')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('gmp')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
 
             if (version_compare(phpversion(), '5.3.0', '<')) {
                 $ok_version = false;
@@ -63,9 +75,9 @@ if (isset($_POST['type'])) {
          * STEP 2
          */
         case "step2":
-                //decrypt the password
-                require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-                $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
+            //decrypt the password
+            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             $res = "";
             // connexion
@@ -86,6 +98,28 @@ if (isset($_POST['type'])) {
             }
             echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
             echo 'document.getElementById("loader").style.display = "none";';
+            break;
+
+        /**
+         * STEP 3
+         */
+        case "step3":
+            if (is_dir($_POST['skPath'])) {
+                if (is_writable(dirname($_POST['skPath']))) {
+                    echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/tick.png\">";
+                    gauge.modify($("pbar"),{values:[0.60,1]});
+                    document.getElementById("but_next").disabled = "";
+                    document.getElementById("loader").style.display = "none";';
+                } else {
+                    echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/exclamation-red.png\"> The Directory must be writable!";
+                    document.getElementById("loader").style.display = "none";
+                    document.getElementById("but_next").disabled = "disabled";';
+                }
+            } else {
+                echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/exclamation-red.png\"> This is not a Directory!";
+                document.getElementById("loader").style.display = "none";
+                document.getElementById("but_next").disabled = "disabled";';
+            }
             break;
 
         /**
@@ -186,12 +220,14 @@ if (isset($_POST['type'])) {
                 ('admin', 'activate_expiration', '0'),
                 ('admin','pw_life_duration','0'),
                 ('admin','maintenance_mode','1'),
+                ('admin','enable_sts','0'),
                 ('admin','cpassman_version','".$k['version']."'),
                 ('admin','ldap_mode','0'),
                 ('admin','richtext','0'),
                 ('admin','allow_print','0'),
                 ('admin','show_description','1'),
                 ('admin','anyone_can_modify','0'),
+                ('admin','anyone_can_modify_bydefault','0'),
                 ('admin','nb_bad_authentication','0'),
                 ('admin','utf8_enabled','1'),
                 ('admin','restricted_to','0'),
@@ -302,7 +338,7 @@ if (isset($_POST['type'])) {
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."users` (
                   `id` int(12) NOT null AUTO_INCREMENT,
                   `login` varchar(50) NOT NULL,
-                  `pw` varchar(50) NOT NULL,
+                  `pw` varchar(200) NOT NULL,
                   `groupes_visibles` varchar(250) NOT NULL,
                   `derniers` text NOT NULL,
                   `key_tempo` varchar(100) NOT NULL,
@@ -326,6 +362,7 @@ if (isset($_POST['type'])) {
                   `name` varchar(100) NULL,
                   `lastname` varchar(100) NULL,
                   `session_end` varchar(30) NULL,
+                  `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                   PRIMARY KEY (`id`),
                   UNIQUE KEY `login` (`login`)
                ) CHARSET=utf8;"
@@ -337,7 +374,7 @@ if (isset($_POST['type'])) {
                 $tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE login = 'admin'"));
                 if ($tmp[0] == 0) {
                     $res8 = mysql_query(
-                        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES (NULL, 'admin', '".encrypt('admin', $_SESSION['encrypt_key'])."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES (NULL, 'admin', '".bCrypt('admin','13' )."', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                     );
                     if ($res8) {
                         echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
@@ -349,7 +386,7 @@ if (isset($_POST['type'])) {
                         break;
                     }
                 } else {
-                    mysql_query("UPDATE `".$_SESSION['tbl_prefix']."users` SET `pw` = '".encrypt('admin', $_SESSION['encrypt_key'])."' WHERE login = 'admin' AND id = '1'");
+                    mysql_query("UPDATE `".$_SESSION['tbl_prefix']."users` SET `pw` = '".bCrypt('admin','13' )."' WHERE login = 'admin' AND id = '1'");
                     echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/tick.png\">";';
                 }
             } else {
@@ -702,9 +739,11 @@ if (isset($_POST['type'])) {
          */
         case "step5":
             if (empty($_SESSION['sk_path'])) {
-                $sk_file = $_SESSION['abspath'].'/includes/sk.php';
+                $skFile = $_SESSION['abspath'].'/includes/sk.php';
+                $securePath = $_SESSION['abspath'];
             } else {
-                $sk_file = $_SESSION['sk_path'].'/sk.php';
+                $skFile = $_SESSION['sk_path'].'/sk.php';
+                $securePath = $_SESSION['sk_path'];
             }
 
             $filename = "../includes/settings.php";
@@ -721,7 +760,7 @@ if (isset($_POST['type'])) {
             }
             $fh = fopen($filename, 'w');
 
-            fwrite(
+            $result1 = fwrite(
                 $fh,
                 utf8_encode(
 "<?php
@@ -736,40 +775,71 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-
-require_once \"".str_replace('\\', '/', $sk_file)."\";
+@define('SECUREPATH', '".$securePath."');
+require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>"
                 )
             );
             fclose($fh);
+            if ($result1 === false) {
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file could not be created. Please check the path and the rights.";';
+            } else {
+                echo 'document.getElementById("step5_settingFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
 
             //Create sk.php file
-            if (file_exists($sk_file)) {
-                if (!copy($sk_file, $sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                    echo 'document.getElementById("res_step4").innerHTML = "'.$sk_file.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
+            if (file_exists($skFile)) {
+                if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                    echo 'document.getElementById("res_step5").innerHTML = "'.$skFile.' file already exists and cannot be renamed. Please do it by yourself and click on button Launch.";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     break;
                 } else {
-                    $events .= "The file $sk_file already exist. A copy has been created.<br />";
-                    unlink($sk_file);
+                    $events .= "The file $skFile already exist. A copy has been created.<br />";
+                    unlink($skFile);
                 }
             }
-            $fh = fopen($sk_file, 'w');
+            $fh = fopen($skFile, 'w');
 
-            $result = fwrite(
+            $result2 = fwrite(
                 $fh,
                 utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>")
             );
             fclose($fh);
-            if ($result === false) {
-                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$sk_file could not be created. Please check the path and the rights.";';
+            if ($result2 === false) {
+                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.<br />$skFile could not be created. Please check the path and the rights.";';
             } else {
+                echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
+
+            //Generate Keys file
+            require_once("../includes/libraries/jCryption/jcryption.php");
+            $keyLength = 1024;
+            $jCryption = new jCryption();
+            $numberOfPairs = 100;
+            $arrKeyPairs = array();
+            for ($i=0; $i < $numberOfPairs; $i++) {
+                $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
+            }
+            $file = array();
+            $file[] = '<?php';
+            $file[] = '$arrKeys = ';
+            $file[] = var_export($arrKeyPairs, true);
+            $file[] = ';';
+            $result3 = file_put_contents(substr($skFile, 0, strlen($skFile)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+            if (isset($result3) && $result3 === false) {
+                echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
+            } else {
+                echo 'document.getElementById("step5_keysFile").innerHTML = "<img src=\"images/tick.png\">";';
+            }
+
+            if (isset($result2) && $result2 != false && $result1 != false && $result3 != false) {
                 echo 'gauge.modify($("pbar"),{values:[1,1]});';
                 echo 'document.getElementById("but_next").disabled = "";';
-                echo 'document.getElementById("res_step5").innerHTML = "Setting.php file has been created.";';
+                echo 'document.getElementById("res_step5").innerHTML = "Operations are successfully completed.";';
                 echo 'document.getElementById("loader").style.display = "none";';
             }
             break;

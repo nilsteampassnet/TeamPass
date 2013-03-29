@@ -48,45 +48,50 @@ switch ($_POST['type']) {
     case "cpm_status":
         $text = "<ul>";
         $error ="";
-        $handle_distant = array();
-        if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
-            $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
-        } else {
-            $fp = @fsockopen("www.teampass.net", 80);
-        }
-        if (!$fp) {
-            $error = "connection";
-        } else {
-            $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
-            $out .= "Host: www.teampass.net\r\n";
-            $out .= "Connection: Close\r\n\r\n";
-            fwrite($fp, $out);
+        if (!isset($k['admin_no_info']) || (isset($k['admin_no_info']) && $k['admin_no_info'] == 0)) {
+            $handleDistant = array();
+            if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
+                $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
+            } else {
+                $fp = @fsockopen("www.teampass.net", 80);
+            }
+            if (!$fp) {
+                $error = "connection";
+            } else {
+                $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
+                $out .= "Host: www.teampass.net\r\n";
+                $out .= "Connection: Close\r\n\r\n";
+                fwrite($fp, $out);
 
-            while (($line = fgets($fp, 4096)) !== false) {
-                $handle_distant[] = $line;
+                while (($line = fgets($fp, 4096)) !== false) {
+                    $handleDistant[] = $line;
+                }
+                if (!feof($fp)) {
+                    $error = "Error: unexpected fgets() fail\n";
+                }
+                fclose($fp);
             }
-            if (!feof($fp)) {
-                $error = "Error: unexpected fgets() fail\n";
-            }
-        }
-        fclose($fp);
-        if (count($handle_distant) > 0) {
-            while (list($cle,$val) = each($handle_distant)) {
-                if (substr($val, 0, 3) == "nom") {
-                    $tab = explode('|', $val);
-                    foreach ($tab as $elem) {
-                        $tmp = explode('#', $elem);
-                        $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                        if ($tmp[0] == "version") {
-                            $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
-                            if (floatval($k['version']) < floatval($tmp[1])) {
-                                $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+
+            if (count($handleDistant) > 0) {
+                while (list($cle,$val) = each($handleDistant)) {
+                    if (substr($val, 0, 3) == "nom") {
+                        $tab = explode('|', $val);
+                        foreach ($tab as $elem) {
+                            $tmp = explode('#', $elem);
+                            $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
+                            if ($tmp[0] == "version") {
+                                $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
+                                if (floatval($k['version']) < floatval($tmp[1])) {
+                                    $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+                                }
+                                $text .= '</li>';
                             }
-                            $text .= '</li>';
                         }
                     }
                 }
             }
+        } else {
+            $error = "conf_block";
         }
 
         echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';
@@ -154,19 +159,19 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         //init
-        $folders_ids = array();
+        $foldersIds = array();
         $text = "";
-        $nb_items_deleted = 0;
+        $nbItemsDeleted = 0;
 
         // Get an array of all folders
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
-            if (!in_array($folder->id, $folders_ids)) {
-                array_push($folders_ids, $folder->id);
+            if (!in_array($folder->id, $foldersIds)) {
+                array_push($foldersIds, $folder->id);
             }
         }
 
-        $items = $db->fetchAllArray("SELECT id,label FROM ".$pre."items WHERE id_tree NOT IN(".implode(',', $folders_ids).")");
+        $items = $db->fetchAllArray("SELECT id,label FROM ".$pre."items WHERE id_tree NOT IN(".implode(',', $foldersIds).")");
         foreach ($items as $item) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
@@ -174,14 +179,14 @@ switch ($_POST['type']) {
             //log
             $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
 
-            $nb_items_deleted++;
+            $nbItemsDeleted++;
         }
 
         //Update CACHE table
         updateCacheTable("reload");
 
         //show some info
-        echo '[{"result" : "db_clean_items","nb_items_deleted":"'.$nb_items_deleted.'"}]';
+        echo '[{"result" : "db_clean_items","nb_items_deleted":"'.$nbItemsDeleted.'"}]';
         break;
 
     ###########################################################
@@ -206,17 +211,17 @@ switch ($_POST['type']) {
         foreach ($tables as $table) {
             if (empty($pre) || substr_count($table, $pre) > 0) {
                 $result = $db->query('SELECT * FROM '.$table);
-                $num_fields = $db->queryNumFields('SELECT * FROM '.$table);
+                $numFields = $db->queryNumFields('SELECT * FROM '.$table);
                 // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
                 $row2 = $db->queryFirst('SHOW CREATE TABLE '.$table);
                 $return.= "\n\n".$row2["Create Table"].";\n\n";
 
                 //prepare all fields and datas
-                for ($i = 0; $i < $num_fields; $i++) {
+                for ($i = 0; $i < $numFields; $i++) {
                     while ($row = mysql_fetch_row($result)) {
                         $return.= 'INSERT INTO '.$table.' VALUES(';
-                        for ($j=0; $j<$num_fields; $j++) {
+                        for ($j=0; $j<$numFields; $j++) {
                             $row[$j] = addslashes($row[$j]);
                             $row[$j] = preg_replace("/\n/", "\\n", $row[$j]);
                             if (isset($row[$j])) {
@@ -224,7 +229,7 @@ switch ($_POST['type']) {
                             } else {
                                 $return.= '""';
                             }
-                            if ($j<($num_fields-1)) {
+                            if ($j<($numFields-1)) {
                                 $return.= ',';
                             }
                         }
@@ -280,14 +285,14 @@ switch ($_POST['type']) {
     case "admin_action_db_restore":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-        $data_post = explode('&', $_POST['option']);
-        $file = $data_post[0];
-        $key = $data_post[1];
+        $dataPost = explode('&', $_POST['option']);
+        $file = $dataPost[0];
+        $key = $dataPost[1];
 
         //create uncrypted file
         if (!empty($key)) {
             //read full file
-            $file_array = file($_SESSION['settings']['path_to_files_folder']."/".$file);
+            $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //delete file
             unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
@@ -295,7 +300,7 @@ switch ($_POST['type']) {
             //create new file with uncrypted data
             $file = $_SESSION['settings']['path_to_files_folder']."/".time().".log";
             $inF = fopen($file, "w");
-            while (list($cle, $val) = each($file_array)) {
+            while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
             }
             fclose($inF);
@@ -347,12 +352,12 @@ switch ($_POST['type']) {
             $row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
             if ($row[0] == 0) {
                 //Create new at_creation entry
-                $row_tmp = $db->queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
+                $rowTmp = $db->queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
                 $db->queryInsert(
                     'log_items',
                     array(
                         'id_item'     => $item['id'],
-                        'date'         => $row_tmp['date']-1,
+                        'date'         => $rowTmp['date']-1,
                         'id_user'     => "",
                         'action'     => "at_creation",
                         'raison'    => ""
@@ -368,7 +373,7 @@ switch ($_POST['type']) {
     ###########################################################
     #CASE for deleted old files in folder "files"
     case "admin_action_purge_old_files":
-        $nb_files_deleted = 0;
+        $nbFilesDeleted = 0;
 
         //read folder
         $dir = opendir($_SESSION['settings']['path_to_files_folder']);
@@ -377,14 +382,14 @@ switch ($_POST['type']) {
         while ($f = readdir($dir)) {
             if (is_file($dir.$f) && (time()-filectime($dir.$f)) > 604800) {
                 unlink($dir.$f);
-                $nb_files_deleted++;
+                $nbFilesDeleted++;
             }
         }
         //Close dir
         closedir($dir);
 
         //Show done
-        echo '[{"result":"purge_old_files","nb_files_deleted":"'.$nb_files_deleted.'"}]';
+        echo '[{"result":"purge_old_files","nb_files_deleted":"'.$nbFilesDeleted.'"}]';
         break;
 
     /*
@@ -498,7 +503,7 @@ switch ($_POST['type']) {
             $fh,
             utf8_encode(
                 "<?php
-@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!       
+@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
 ?>"
             )
         );
@@ -559,5 +564,27 @@ switch ($_POST['type']) {
         );
 
         echo '[{"result":"admin_email_send_backlog", '.@sendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
+        break;
+
+    /*
+    * Generate exchanges encryption keys
+    */
+    case "admin_action_generate_encrypt_keys":
+        require_once("../includes/libraries/jCryption/jcryption.php");
+        $keyLength = 1024;
+        $jCryption = new jCryption();
+        $numberOfPairs = 100;
+        $arrKeyPairs = array();
+        for ($i=0; $i < $numberOfPairs; $i++) {
+            $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
+        }
+        $file = array();
+        $file[] = '<?php';
+        $file[] = '$arrKeys = ';
+        $file[] = var_export($arrKeyPairs, true);
+        $file[] = ';';
+        file_put_contents(SECUREPATH."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+
+        echo '[{"result":"generated_keys_file", "error":""}]';
         break;
 }

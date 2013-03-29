@@ -5,6 +5,28 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['is_administrated_by_role'] = "User is administrated by";
+$txt['administrators_only'] = "Administrators only";
+$txt['managers_of'] = "Managers of role";
+$txt['managed_by'] = "Managed by";
+$txt['admin_small'] = "Admin";
+$txt['setting_can_create_root_folder'] = "Authorize new folder to be created at Root level";
+$txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
+$txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
+$txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
+
+$txt['admin_action_generate_encrypt_keys'] = "Generate new encryption keys set";
+$txt['admin_action_generate_encrypt_keys_tip'] = "Encryption keys set is a very important aspect in the security of your TeamPass installation. Indeed those keys are used in order to encrypt the channel between Server and Client. Even if this file is securized outside the WWW zone of your server, it is recommanded to regenerate the keys time to time. Notice that this operation can take up to 1 minute.";
+$txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
+$txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_failed'] = "Authentication failed!";
+$txt['purge_log'] = "Purge logs from";
+$txt['to'] = "to";
+$txt['purge_now'] = "Purge Now!";
+$txt['purge_done'] = "The purge has been performed!<br />Number of elements deleted: ";
+
 $txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";
 $txt['settings_upload_imagesext_tip'] = "Image types. Indicate the file extensions allowed separated with a coma (,)";

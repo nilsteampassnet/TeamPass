@@ -124,7 +124,7 @@ if (!empty($_POST['type'])) {
                         'login' => mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])),
                         'name' => mysql_real_escape_string(htmlspecialchars_decode($_POST['name'])),
                         'lastname' => mysql_real_escape_string(htmlspecialchars_decode($_POST['lastname'])),
-                        'pw' => encrypt(stringUtf8Decode($_POST['pw'])),
+                        'pw' => bCrypt(stringUtf8Decode($_POST['pw']), COST),
                         'email' => $_POST['email'],
                         'admin' => $_POST['admin'] == "true" ? '1' : '0',
                         'gestionnaire' => $_POST['manager'] == "true" ? '1' : '0',
@@ -133,6 +133,7 @@ if (!empty($_POST['type'])) {
                         'fonction_id' => $_POST['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
                         'groupes_interdits' => $_POST['manager'] == "true" ? $data['groupes_interdits'] : '0',
                         'groupes_visibles' => $_POST['manager'] == "true" ? $data['groupes_visibles'] : '0',
+                        'isAdministratedByRole' => $_POST['isAdministratedByRole']
                        )
                 );
                 // Create personnal folder
@@ -504,6 +505,26 @@ if (!empty($_POST['type'])) {
             break;
 
         /**
+         * CHANGE ADMINISTRATED BY
+         */
+        case "change_user_adminby";
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+            // save data
+            $db->queryUpdate(
+                "users",
+                array(
+                    'isAdministratedByRole' => $_POST['isAdministratedByRole']
+                   ),
+                "id = ".$_POST['userId']
+            );
+            echo '[{"done":""}]';
+            break;
+
+        /**
          * Change authorized groups
          */
         case "change_user_autgroups";
@@ -742,7 +763,7 @@ if (!empty($_POST['type'])) {
         */
         case "migrate_admin_pf":
             // decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
             // Prepare variables
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);

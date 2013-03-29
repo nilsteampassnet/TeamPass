@@ -105,7 +105,11 @@ if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
             <div style="font-size:12px; margin-left:65px; margin-top:-5px; width:100%; color:white;">
-                <img src="includes/images/user-black.png" /> <b>'.$_SESSION['login'].'</b> ['.$_SESSION['user_privilege'].']<img src="includes/images/alarm-clock.png" style="margin-left:30px;" /> '.$txt['index_expiration_in'].' <div style="display:inline;" id="countdown"></div>
+                <img src="includes/images/user-black.png" /> <b>'.$_SESSION['login'].'</b>
+                ['.$_SESSION['user_privilege'].']
+                <img src="includes/images/alarm-clock.png" style="margin-left:30px;" />&nbsp;
+                '.$txt['index_expiration_in'].'&nbsp;
+                <div style="display:inline;" id="countdown"></div>
             </div>
             <div style="margin-left:65px; margin-top:3px;width:100%;" id="main_menu">
                 <button title="'.$txt['home'].'" onclick="MenuAction(\'\');">
@@ -113,10 +117,16 @@ if (isset($_SESSION['login'])) {
                 </button>';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
-                <button style="margin-left:10px;" title="'.$txt['pw'].'" onclick="MenuAction(\'items\');"', (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '', '>
+                <button style="margin-left:10px;" title="'.$txt['pw'].'" onclick="MenuAction(\'items\');"',
+                (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
+                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
+                '>
                     <img src="includes/images/menu_key.png" alt="" />
                 </button>
-                <button title="'.$txt['find'].'" onclick="MenuAction(\'find\');"', (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '', '>
+                <button title="'.$txt['find'].'" onclick="MenuAction(\'find\');"',
+                (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
+                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
+                '>
                     <img src="includes/images/binocular.png" alt="" />
                 </button>
                 <button title="'.$txt['last_items_icon_title'].'" onclick="OpenDiv(\'div_last_items\')">
@@ -124,7 +134,11 @@ if (isset($_SESSION['login'])) {
                 </button>';
     }
     // Favourites menu
-    if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 && $_SESSION['user_admin'] == 0) {
+    if (
+        isset($_SESSION['settings']['enable_favourites'])
+        && $_SESSION['settings']['enable_favourites'] == 1
+        && $_SESSION['user_admin'] == 0
+    ) {
         echo '
                 <button title="'.$txt['my_favourites'].'" onclick="MenuAction(\'favourites\');">
                     <img src="includes/images/favourite.png" alt="" />
@@ -198,7 +212,12 @@ if (isset($_SESSION['latest_items_tab'])) {
     foreach ($_SESSION['latest_items_tab'] as $item) {
         if (!empty($item)) {
             echo '
-                    <span class="last_seen_item" onclick="javascript:$(\'#menu_action\').val(\'action\');window.location.href = \''.$item['url'].'\'"><img src="includes/images/tag-small.png" alt="" /><span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span></span>';
+                    <span class="last_seen_item"
+            onclick="javascript:$(\'#menu_action\').val(\'action\');
+            window.location.href = \''.$item['url'].'\'">
+            <img src="includes/images/tag-small.png" alt="" />
+            <span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span>
+            </span>';
         }
     }
 } else {
@@ -338,17 +357,29 @@ if (!empty($errorAdmin)) {
 }
 // -----------
 // Display Maintenance mode information
-if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
+if (
+    isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1
+        && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+    ) {
     echo '
         <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
             <b>'.$txt['index_maintenance_mode_admin'].'</b>
         </div>';
 }
 // Display UPDATE NEEDED information
-if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1 && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0) || !isset($_SESSION['hide_maintenance']))) {
+if (
+    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true
+        && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+        && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
+        || !isset($_SESSION['hide_maintenance']))
+    ) {
     echo '
-        <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all" id="div_maintenance">
-            <b>'.$txt['update_needed_mode_admin'].'</b><span style="float:right;cursor:pointer;"><img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" /></span>
+        <div style="text-align:center;margin-bottom:5px;padding:10px;"
+            class="ui-state-highlight ui-corner-all" id="div_maintenance">
+            <b>'.$txt['update_needed_mode_admin'].'</b>
+            <span style="float:right;cursor:pointer;">
+                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" />
+            </span>
         </div>';
 }
 
@@ -398,15 +429,13 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
         include 'error.php';
     }
-}
-// case where user not logged and can't access a direct link
-elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
+} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
+    // case where user not logged and can't access a direct link
     $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
     include 'error.php';
-}
-// Case where user has asked new PW
-elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
+} elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
+    // Case where user has asked new PW
     echo '
         <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
             <div style="text-align:center;font-weight:bold;margin-bottom:20px;">
@@ -422,9 +451,8 @@ elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action']
                 <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
             </div>
         </div>';
-}
-// When user identified
-elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+} elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+    // When user identified
     // PAGE BY DEFAULT
     include 'home.php';
     // When user is not identified
@@ -438,19 +466,27 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
     // MAINTENANCE MODE
     if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1) {
         echo '
-            <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;" class="ui-state-error ui-corner-all">
+            <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
+                class="ui-state-error ui-corner-all">
                 <b>'.$txt['index_maintenance_mode'].'</b>
             </div>';
     } else {
         // SESSION FINISHED => RECONNECTION ASKED
         echo '
-                <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;" class="ui-state-error ui-corner-all">
+                <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
+                    class="ui-state-error ui-corner-all">
                     <b>'.$txt['index_session_expired'].'</b>
                 </div>';
     }
+    //Encryption info
+    echo '
+    <div id="channel_status" style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
+        ', !file_exists(SECUREPATH."/100_1024_keys.inc.php") ? $txt['channel_encryption_no_file'] :
+        '<span style="font-size: 16px;">&nbsp;'.$txt['channel_encryption_in_progress'].'</span> <img src="includes/images/ajax-loader.gif" alt="Loading..." title="Loading..." style="margin-right:15px;" />', '
+    </div>';
     // CONNECTION FORM
     echo '
-            <form method="post" name="form_identify" action="">
+            <form method="post" name="form_identify" id="form_identify" action="" style="display:none;">
                 <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
@@ -458,7 +494,6 @@ elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
                     <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
-
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
