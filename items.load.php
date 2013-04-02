@@ -1635,6 +1635,10 @@ $(function() {
 
     //Build tree - "cookies",
     $("#jstree").jstree({
+    	"themes" : {
+    		"theme" : "default",
+    		"url" : "includes/js/jstree/themes/default"
+    	},
         "plugins" : ["themes", "html_data", "ui", "search", "cookies"]
     })
     //search in tree

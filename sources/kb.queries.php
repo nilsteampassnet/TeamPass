@@ -13,7 +13,10 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
+if (
+        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])
+        || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1
+) {
     die('Hacking attempt...');
 }
 

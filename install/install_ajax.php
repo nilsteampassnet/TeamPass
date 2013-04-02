@@ -31,6 +31,12 @@ if (isset($_POST['type'])) {
                 $x++;
             }
 
+            if (!extension_loaded('mysql')) {
+                $ok_extensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mysql\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mysql\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (!extension_loaded('mcrypt')) {
                 $ok_extensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';

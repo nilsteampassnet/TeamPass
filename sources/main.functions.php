@@ -9,7 +9,7 @@
  * @link
  */
 // session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 //define pbkdf2 iteration count

@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -135,10 +135,10 @@ if (isset($_POST['newtitle'])) {
             // this will delete all sub folders and items associated
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-            if ($folder->parent_id > 0 && $folder->title != $_SESSION['user_id'] ) {
-                // Get through each subfolder
-                $folders = $tree->getDescendants($_POST['id'], true);
-                foreach ($folders as $folder) {
+            // Get through each subfolder
+            $folders = $tree->getDescendants($_POST['id'], true);
+            foreach ($folders as $folder) {
+                if ($folder->parent_id > 0 && $folder->title != $_SESSION['user_id'] ) {
                     //Store the deleted folder (recycled bin)
                     $db->queryInsert(
                         'misc',
@@ -152,32 +152,32 @@ if (isset($_POST['newtitle'])) {
                     );
                     //delete folder
                     $db->query("DELETE FROM ".$pre."nested_tree WHERE id = ".$folder->id);
-                }
 
-                //delete items & logs
-                $items = $db->fetchAllArray("SELECT id FROM ".$pre."items WHERE id_tree='".$folder->id."'");
-                foreach ($items as $item) {
-                    $db->queryUpdate(
-                        "items",
-                        array(
-                            'inactif' => '1',
-                       ),
-                        "id = ".$item['id']
-                    );
-                    //log
-                    $db->queryInsert(
-                        "log_items",
-                        array(
-                            'id_item' => $item['id'],
-                            'date' => time(),
-                            'id_user' => $_SESSION['user_id'],
-                            'action' => 'at_delete'
-                       )
-                    );
-                }
+                    //delete items & logs
+                    $items = $db->fetchAllArray("SELECT id FROM ".$pre."items WHERE id_tree='".$folder->id."'");
+                    foreach ($items as $item) {
+                        $db->queryUpdate(
+                            "items",
+                            array(
+                                'inactif' => '1',
+                            ),
+                            "id = ".$item['id']
+                        );
+                        //log
+                        $db->queryInsert(
+                            "log_items",
+                            array(
+                                'id_item' => $item['id'],
+                                'date' => time(),
+                                'id_user' => $_SESSION['user_id'],
+                                'action' => 'at_delete'
+                            )
+                        );
+                    }
 
-                //Actualize the variable
-                $_SESSION['nb_folders'] --;
+                    //Actualize the variable
+                    $_SESSION['nb_folders'] --;
+                }
             }
 
             //rebuild tree

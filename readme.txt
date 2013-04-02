@@ -74,6 +74,10 @@ folder
 * G129 => 2.2
 * email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.18
+ #315 - jstree style.css badly referenced
+ #314 - Folder is not being deleted
+
 2.1.17
  * New exchange encryption protocol. No key is visible. The channel is 
  encrypted at start of session.

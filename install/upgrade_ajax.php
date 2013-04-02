@@ -199,8 +199,8 @@ if (isset($_POST['type'])) {
             if (substr($abspath, strlen($abspath)-1) == "/") {
                 $abspath = substr($abspath, 0, strlen($abspath)-1);
             }
-            $ok_writable = true;
-            $ok_extensions = true;
+            $okWritable = true;
+            $okExtensions = true;
             $txt = "";
             $x=1;
             $tab = array($abspath."/includes/settings.php",$abspath."/install/",$abspath."/includes/",
@@ -210,37 +210,37 @@ if (isset($_POST['type'])) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
                 } else {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
-                    $ok_writable = false;
+                    $okWritable = false;
                 }
                 $x++;
             }
 
             if (!extension_loaded('mcrypt')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (!extension_loaded('openssl')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (!extension_loaded('gmp')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (version_compare(phpversion(), '5.3.0', '<')) {
-                $ok_version = false;
+                $okVersion = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.phpversion().' is not OK (minimum is 5.3.0) &nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.phpversion().' is OK&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
 
-            if ($ok_writable == true && $ok_extensions == true) {
+            if ($okWritable == true && $okExtensions == true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
                 echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
@@ -255,8 +255,8 @@ if (isset($_POST['type'])) {
             $events = "";
             if (file_exists($filename)) {
                 //copy some constants from this existing file
-                $settings_file = file($filename);
-                while (list($key,$val) = each($settings_file)) {
+                $settingsFile = file($filename);
+                while (list($key,$val) = each($settingsFile)) {
                     if (substr_count($val, 'charset')>0) {
                         $_SESSION['charset'] = getSettingValue($val);
                     } elseif (substr_count($val, '@define(')>0) {
@@ -296,30 +296,30 @@ if (isset($_POST['type'])) {
             $res = "";
             //decrypt the password
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-            $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
+            $dbPassword = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             // connexion
-            if (@mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password)) {
-                $db_tmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password);
-                if (@mysql_select_db($_POST['db_bdd'], $db_tmp)) {
+            if (@mysql_connect($_POST['db_host'], $_POST['db_login'], $dbPassword)) {
+                $dbTmp = mysql_connect($_POST['db_host'], $_POST['db_login'], $dbPassword);
+                if (@mysql_select_db($_POST['db_bdd'], $dbTmp)) {
                     echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                     $res = "Connection is successfull";
                     echo 'document.getElementById("but_next").disabled = "";';
 
                     //What CPM version
                     if (@mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'")) {
-                        $tmp_result = mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'");
-                        $cpm_version = mysql_fetch_row($tmp_result);
-                        echo 'document.getElementById("actual_cpm_version").value = "'.$cpm_version[0].'";';
+                        $tmpResult = mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'cpassman_version'");
+                        $cpmVersion = mysql_fetch_row($tmpResult);
+                        echo 'document.getElementById("actual_cpm_version").value = "'.$cpmVersion[0].'";';
                     } else {
                         echo 'document.getElementById("actual_cpm_version").value = "0";';
                     }
 
                     //Get some infos from DB
                     if (@mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"))) {
-                        $cpm_isUTF8 = mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"));
-                        echo 'document.getElementById("cpm_isUTF8").value = "'.$cpm_isUTF8[0].'";';
-                        $_SESSION['utf8_enabled'] = $cpm_isUTF8[0];
+                        $cpmIsUTF8 = mysql_fetch_row(mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc WHERE type='admin' AND intitule = 'utf8_enabled'"));
+                        echo 'document.getElementById("cpm_isUTF8").value = "'.$cpmIsUTF8[0].'";';
+                        $_SESSION['utf8_enabled'] = $cpmIsUTF8[0];
                     } else {
                         echo 'document.getElementById("cpm_isUTF8").value = "0";';
                         $_SESSION['utf8_enabled'] = 0;
@@ -343,8 +343,8 @@ if (isset($_POST['type'])) {
         case "step3":
             @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
-            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+            $dbTmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $dbTmp);
             $status = "";
 
             //rename tables
@@ -375,7 +375,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("but_launch").disabled = "disabled";';
 
-            mysql_close($db_tmp);
+            mysql_close($dbTmp);
             break;
 
             #==========================
@@ -391,8 +391,8 @@ if (isset($_POST['type'])) {
 
             @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
-            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+            $dbTmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $dbTmp);
 
             ## Populate table MISC
             $val = array(
@@ -467,29 +467,40 @@ if (isset($_POST['type'])) {
                 array('admin','insert_manual_entry_item_history','0', 0),
                 array('admin','enable_kb','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
+                array('admin','enable_sts','0', 0),
             );
             $res1 = "na";
             foreach ($val as $elem) {
                 //Check if exists before inserting
-                $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"));
-                if ($res_tmp[0] == 0) {
-                    $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'", "",$elem[2])."');");
-                    if (!$res1) break;
+                $queryRes = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'");
+                if(mysql_error()) {
+                    echo 'document.getElementById("res_step4").innerHTML = "MySQL Error! '.addslashes($query_error).'";';
+                    echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                    echo 'document.getElementById("loader").style.display = "none";';
+                    break;
                 } else {
-                    // Force update for some settings
-                    if ($elem[3] == 1) {
-                        mysql_query("UPDATE `".$_SESSION['tbl_prefix']."misc` SET `valeur` = '".$elem[2]."' WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'");
+                    $resTmp = mysql_fetch_row();
+                    if ($resTmp[0] == 0) {
+                        $res1 = mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('".$elem[0]."', '".$elem[1]."', '".str_replace("'", "",$elem[2])."');");
+                        if (!$res1) break;
+                    } else {
+                        // Force update for some settings
+                        if ($elem[3] == 1) {
+                            $res1 = mysql_query("UPDATE `".$_SESSION['tbl_prefix']."misc` SET `valeur` = '".$elem[2]."' WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'");
+                        } else {
+                            $res1 = "";
+                        }
                     }
                 }
             }
+            mysql_close($dbTmp);
 
             if ($res1 || $res1 == "na") {
                 echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
-                echo 'document.getElementById("res_step4").innerHTML = "An error appears when inserting datas!";';
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears when inserting datas! '.addslashes($query_error).'";';
                 echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
                 break;
             }
 
@@ -548,7 +559,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table TAGS!";';
                 echo 'document.getElementById("tbl_3").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -569,7 +580,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LOG_SYSTEM!";';
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -591,7 +602,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table FILES!";';
                 echo 'document.getElementById("tbl_6").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
             mysql_query("ALTER TABLE `".$_SESSION['tbl_prefix']."files` CHANGE id id INT(11) AUTO_INCREMENT PRIMARY KEY;");
@@ -660,7 +671,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table CACHE!";';
                 echo 'document.getElementById("tbl_7").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -686,11 +697,11 @@ if (isset($_POST['type'])) {
                 `folder_id` int(12) NOT NULL
                );");
             if (tableExists($_SESSION['tbl_prefix']."functions")) {
-                $table_function_exists = true;
+                $tableFunctionExists = true;
             } else {
-                $table_function_exists = false;
+                $tableFunctionExists = false;
             }
-            if ($res9 && $res10 && $table_function_exists == true) {
+            if ($res9 && $res10 && $tableFunctionExists == true) {
                 //Get data from tables FUNCTIONS and populate new ROLES tables
                 $rows = mysql_query("SELECT * FROM ".$_SESSION['tbl_prefix']."functions");
                 while ($reccord = mysql_fetch_array($rows)) {
@@ -704,13 +715,13 @@ if (isset($_POST['type'])) {
                    );
 
                     //Add each folder in roles_values
-                    foreach (explode(';', $reccord['groupes_visibles']) as $folder_id) {
-                        if (!empty($folder_id)) {
+                    foreach (explode(';', $reccord['groupes_visibles']) as $folderId) {
+                        if (!empty($folderId)) {
                             mysql_query(
                             "INSERT INTO ".$_SESSION['tbl_prefix']."roles_values
                                 VALUES (
                                 '".$reccord['id']."',
-                                '".$folder_id."'
+                                '".$folderId."'
                                )"
                            );
                         }
@@ -726,13 +737,13 @@ if (isset($_POST['type'])) {
                 mysql_query("DROP TABLE ".$_SESSION['tbl_prefix']."functions");
 
                 echo 'document.getElementById("tbl_9").innerHTML = "<img src=\"images/tick.png\">";';
-            } elseif ($table_function_exists == false) {
+            } elseif ($tableFunctionExists == false) {
                 echo 'document.getElementById("tbl_9").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on tables ROLES creation!";';
                 echo 'document.getElementById("tbl_9").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -753,7 +764,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB!";';
                 echo 'document.getElementById("tbl_10").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -770,7 +781,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB_CATEGORIES!";';
                 echo 'document.getElementById("tbl_11").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -786,7 +797,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB_ITEMS!";';
                 echo 'document.getElementById("tbl_12").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -802,7 +813,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table restriction_to_roles!";';
                 echo 'document.getElementById("tbl_13").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -814,8 +825,8 @@ if (isset($_POST['type'])) {
                 `rand_key` varchar(25) NOT NULL
                ) CHARSET=utf8;");
 
-            $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys"));
-            if ($res && $res_tmp[0] == 0) {
+            $resTmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys"));
+            if ($res && $resTmp[0] == 0) {
                 echo 'document.getElementById("tbl_14").innerHTML = "<img src=\"images/tick.png\">";';
 
                 //increase size of PW field in ITEMS table
@@ -830,16 +841,16 @@ if (isset($_POST['type'])) {
                         $pw = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($reccord['pw']), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
 
                         //generate random key
-                        $random_key = substr(md5(rand().rand()), 0, 15);
+                        $randomKey = substr(md5(rand().rand()), 0, 15);
 
                         //Store generated key
-                        mysql_query("INSERT INTO ".$_SESSION['tbl_prefix']."keys VALUES('items', '".$reccord['id']."', '".$random_key."') ");
+                        mysql_query("INSERT INTO ".$_SESSION['tbl_prefix']."keys VALUES('items', '".$reccord['id']."', '".$randomKey."') ");
 
                         //encrypt
-                        $encrypted_pw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $random_key.$pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+                        $encryptedPw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $randomKey.$pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
 
                         //update pw in ITEMS table
-                        mysql_query("UPDATE ".$_SESSION['tbl_prefix']."items SET pw = '".$encrypted_pw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
+                        mysql_query("UPDATE ".$_SESSION['tbl_prefix']."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
                     }
                 }
                 /*TODO
@@ -851,16 +862,16 @@ if (isset($_POST['type'])) {
                         $pw = trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($reccord['pw']), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
 
                         //generate random key
-                        $random_key = substr(md5(rand().rand()), 0, rand(14,29));
+                        $randomKey = substr(md5(rand().rand()), 0, rand(14,29));
 
                         //Store generated key
-                        mysql_query("INSERT INTO ".$_SESSION['tbl_prefix']."keys VALUES('users', '".$reccord['id']."', '".$random_key."') ");
+                        mysql_query("INSERT INTO ".$_SESSION['tbl_prefix']."keys VALUES('users', '".$reccord['id']."', '".$randomKey."') ");
 
                         //encrypt
-                        $encrypted_pw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $random_key.$pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+                        $encryptedPw = trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $randomKey.$pw, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
 
                         //update pw in ITEMS table
-                        mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET pw = '".$encrypted_pw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
+                        mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'") or die(mysql_error());
                     }
                 }
                 */
@@ -881,7 +892,7 @@ if (isset($_POST['type'])) {
                 `flag` VARCHAR(30) NOT NULL
                ) CHARSET=utf8;");
 
-            $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."languages"));
+            $resTmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."languages"));
             mysql_query("TRUNCATE TABLE ".$_SESSION['tbl_prefix']."languages");
             mysql_query("
                     INSERT IGNORE INTO `".$_SESSION['tbl_prefix']."languages` (`id`, `name`, `label`, `code`, `flag`) VALUES
@@ -906,7 +917,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LANGUAGES!";';
                 echo 'document.getElementById("tbl_13").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -925,7 +936,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table EMAILS!";';
                 echo 'document.getElementById("tbl_17").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -943,7 +954,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOMATIC_DEL!";';
                 echo 'document.getElementById("tbl_18").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -961,26 +972,26 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table items_edition! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
             //CLEAN UP ITEMS TABLE
-            $allowed_tags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
-            $clean_res = mysql_query("SELECT id,description FROM `".$_SESSION['tbl_prefix']."items`");
-            while ($clean_data = mysql_fetch_array($clean_res)) {
-                mysql_query("UPDATE `".$_SESSION['tbl_prefix']."items` SET description = '".strip_tags($clean_data['description'], $allowed_tags)."' WHERE id = ".$clean_data['id']);
+            $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
+            $cleanRes = mysql_query("SELECT id,description FROM `".$_SESSION['tbl_prefix']."items`");
+            while ($cleanData = mysql_fetch_array($cleanRes)) {
+                mysql_query("UPDATE `".$_SESSION['tbl_prefix']."items` SET description = '".strip_tags($cleanData['description'], $allowedTags)."' WHERE id = ".$cleanData['id']);
             }
 
             //Encrypt passwords in log_items
-            $res_tmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'update' AND intitule = 'encrypt_pw_in_log_items' AND valeur = 1"));
-            if ($res_tmp[0] == 0) {
+            $resTmp = mysql_fetch_row(mysql_query("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'update' AND intitule = 'encrypt_pw_in_log_items' AND valeur = 1"));
+            if ($resTmp[0] == 0) {
                 require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-                $tmp_res = mysql_query("SELECT * FROM ".$pre."log_items WHERE action = 'at_modification' AND raison LIKE 'at_pw %'");
-                while ($tmp_data = mysql_fetch_array($tmp_res)) {
-                    $reason = explode(':', $tmp_data['raison']);
+                $tmpRes = mysql_query("SELECT * FROM ".$pre."log_items WHERE action = 'at_modification' AND raison LIKE 'at_pw %'");
+                while ($tmpData = mysql_fetch_array($tmpRes)) {
+                    $reason = explode(':', $tmpData['raison']);
                     $text = Encryption\Crypt\aesctr::encrypt(trim($reason[1]), $_SESSION['encrypt_key'], 256);
-                    //mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmp_data['id_item']." AND date = ".$tmp_data['date']." AND id_user = ".$tmp_data['id_user']." AND action = ".$tmp_data['action']) or die(mysql_error());
+                    //mysql_query("UPDATE ".$pre."log_items SET raison = 'at_pw : ".$text."' WHERE id_item = ".$tmpData['id_item']." AND date = ".$tmpData['date']." AND id_user = ".$tmpData['id_user']." AND action = ".$tmpData['action']) or die(mysql_error());
                 }
                 mysql_query("INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('update', 'encrypt_pw_in_log_items',1)");
             }
@@ -988,8 +999,8 @@ if (isset($_POST['type'])) {
             // Since 2.1.17, encrypt process is changed.
             // Previous PW need to be re-encrypted
             if (@mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'")) {
-                $tmp_result = mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'");
-                $tmp = mysql_fetch_row($tmp_result);
+                $tmpResult = mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'");
+                $tmp = mysql_fetch_row($tmpResult);
                 if ($tmp[0] != "ctr") {
                     //count elem
                     $res = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0'");
@@ -1009,7 +1020,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_launch").disabled = "disabled";';
             echo 'document.getElementById("res_step4").innerHTML = "dataBase has been populated";';
             echo 'document.getElementById("loader").style.display = "none";';
-            mysql_close($db_tmp);
+            mysql_close($dbTmp);
             break;
 
             //=============================
@@ -1157,8 +1168,8 @@ require_once \"".$sk_file."\";
 
             @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
-            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+            $dbTmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $dbTmp);
 
             $res = mysql_query("SELECT * FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']) or die(mysql_error());
             while ($data = mysql_fetch_array($res)) {
