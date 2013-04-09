@@ -77,6 +77,9 @@ folder
 2.1.18
  #315 - jstree style.css badly referenced
  #314 - Folder is not being deleted
+ #320 - Enabling LDAP prevents local admin login
+ #317 - server expected extensions are tested
+ #318 - Upgrade process badly creates sk.php file
 
 2.1.17
  * New exchange encryption protocol. No key is visible. The channel is 

@@ -94,10 +94,10 @@ function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
  *
  * crypt a string
  */
-function encryptOld($text, $personal_salt = "")
+function encryptOld($text, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    if (!empty($personalSalt)) {
+        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personalSalt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
     } else {
         return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
     }
@@ -108,10 +108,10 @@ function encryptOld($text, $personal_salt = "")
  *
  * decrypt a crypted string
  */
-function decryptOld($text, $personal_salt = "")
+function decryptOld($text, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    if (!empty($personalSalt)) {
+        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personalSalt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
     } else {
         return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
     }
@@ -122,10 +122,10 @@ function decryptOld($text, $personal_salt = "")
  *
  * crypt a string
  */
-function encrypt($decrypted, $personal_salt = "")
+function encrypt($decrypted, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        $staticSalt = $personal_salt;
+    if (!empty($personalSalt)) {
+        $staticSalt = $personalSalt;
     } else {
         $staticSalt = SALT;
     }
@@ -153,10 +153,10 @@ function encrypt($decrypted, $personal_salt = "")
  *
  * decrypt a crypted string
  */
-function decrypt($encrypted, $personal_salt = "")
+function decrypt($encrypted, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        $staticSalt = $personal_salt;
+    if (!empty($personalSalt)) {
+        $staticSalt = $personalSalt;
     } else {
         $staticSalt = SALT;
     }
@@ -485,8 +485,8 @@ if (isset($_POST['type'])) {
             foreach ($val as $elem) {
                 //Check if exists before inserting
                 $queryRes = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'");
-                if(mysql_error()) {
-                    echo 'document.getElementById("res_step4").innerHTML = "MySQL Error! '.addslashes($query_error).'";';
+                if (mysql_error()) {
+                    echo 'document.getElementById("res_step4").innerHTML = "MySQL Error! '.addslashes($queryError).'";';
                     echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                     echo 'document.getElementById("loader").style.display = "none";';
                     break;
@@ -510,7 +510,7 @@ if (isset($_POST['type'])) {
             if ($res1 || $res1 == "na") {
                 echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
-                echo 'document.getElementById("res_step4").innerHTML = "An error appears when inserting datas! '.addslashes($query_error).'";';
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears when inserting datas! '.addslashes($queryError).'";';
                 echo 'document.getElementById("tbl_1").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 break;
@@ -646,12 +646,12 @@ if (isset($_POST['type'])) {
                 while ($reccord = mysql_fetch_array($rows)) {
                     //Get all TAGS
                     $tags = "";
-                    $items_res = mysql_query("SELECT tag FROM ".$_SESSION['tbl_prefix']."tags WHERE item_id=".$reccord['id']) or die(mysql_error());
-                    $item_tags = mysql_fetch_array($items_res);
-                    if (!empty($item_tags))
-                        foreach ($item_tags as $item_tag) {
-                            if (!empty($item_tag['tag']))
-                                $tags .= $item_tag['tag']. " ";
+                    $itemsRes = mysql_query("SELECT tag FROM ".$_SESSION['tbl_prefix']."tags WHERE item_id=".$reccord['id']) or die(mysql_error());
+                    $itemTags = mysql_fetch_array($itemsRes);
+                    if (!empty($itemTags))
+                        foreach ($itemTags as $itemTag) {
+                            if (!empty($itemTag['tag']))
+                                $tags .= $itemTag['tag']. " ";
                         }
 
                     //form id_tree to full foldername
@@ -1052,7 +1052,7 @@ if (isset($_POST['type'])) {
 
                 //manage SK path
                 if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
-                    $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
+                    $skFile = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
                     $securePath = str_replace('\\', '/', $_POST['sk_path']);
                 } else {
                     echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be indicated.";
@@ -1074,18 +1074,7 @@ if (isset($_POST['type'])) {
                     document.getElementById("loader").style.display = "none";';
                     break;
                 }
-/*
-                if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
-                    $sk_file = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
-                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
-                } elseif (isset($_SESSION['sk_path']) && !empty($_SESSION['sk_path'])) {
-                    $sk_file = $_SESSION['sk_path'];
-                    $securePath = $_SESSION['sk_path'];
-                } else {
-                    $skfile = $_SESSION['abspath'].'/includes/sk.php';
-                    $securePath = $_SESSION['abspath'];
-                }
-*/
+
                 $fh = fopen($filename, 'w');
 
                 //prepare smtp_auth variable
@@ -1106,8 +1095,8 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-@define('SECUREPATH', '".substr($sk_file, 0, strlen($sk_file)-7)."');
-require_once \"".$sk_file."\";
+@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');
+require_once \"".$skFile."\";
 ?>"));
 
                 fclose($fh);
@@ -1118,8 +1107,8 @@ require_once \"".$sk_file."\";
                 }
 
                 //Create sk.php file
-                if (!file_exists($sk_file)) {
-                    $fh = fopen($sk_file, 'w');
+                if (!file_exists($skFile)) {
+                    $fh = fopen($skFile, 'w');
 
                     $result2 = fwrite(
                         $fh,
@@ -1130,9 +1119,24 @@ require_once \"".$sk_file."\";
 ?>")
                     );
                     fclose($fh);
+                } else {
+                    //Do a copy of the existing sk file and create it
+                    if (!copy($skFile, $skFile.'.'.date("Y_m_d",mktime(0,0,0, date('m'), date('d'), date('y'))))) {
+                        $result2 = false;
+                    } else {
+                        $result2 = fwrite(
+                            $fh,
+                            utf8_encode(
+"<?php
+@define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
+?>")
+                        );
+                        fclose($fh);
+                    }
                 }
                 if (isset($result2) && $result2 === false) {
-                    echo 'document.getElementById("res_step5").innerHTML = "$sk_file could not be created. Please check the path and the rights.";';
+                    echo 'document.getElementById("res_step5").innerHTML = "$skFile could not be created. Please check the path and the rights.";';
                 } else {
                     echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
                 }
@@ -1151,7 +1155,7 @@ require_once \"".$sk_file."\";
                 $file[] = '$arrKeys = ';
                 $file[] = var_export($arrKeyPairs, true);
                 $file[] = ';';
-                $result3 = file_put_contents(substr($sk_file, 0, strlen($sk_file)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+                $result3 = file_put_contents(substr($skFile, 0, strlen($skFile)-6).$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
                 if (isset($result3) && $result3 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = "Encryption Keys file could not be created. Please check the path and the rights.";';
                 } else {

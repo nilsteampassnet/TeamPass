@@ -11,8 +11,8 @@ if (isset($_POST['type'])) {
             if (substr($abspath, strlen($abspath)-1) == "/") {
                 $abspath = substr($abspath, 0, strlen($abspath)-1);
             }
-            $ok_writable = $ok_version = true;
-            $ok_extensions = true;
+            $okWritable = $okVersion = true;
+            $okExtensions = true;
             $txt = "";
             $x=1;
             $tab = array(
@@ -26,44 +26,56 @@ if (isset($_POST['type'])) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
                 } else {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.$elem.'&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
-                    $ok_writable = false;
+                    $okWritable = false;
                 }
                 $x++;
             }
 
             if (!extension_loaded('mysql')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mysql\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mysql\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (!extension_loaded('mcrypt')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (!extension_loaded('openssl')) {
-                $ok_extensions = false;
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (!extension_loaded('gmp')) {
-                $ok_extensions = false;
+                $okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('bcmath')) {
+                $okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('iconv')) {
+                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
 
             if (version_compare(phpversion(), '5.3.0', '<')) {
-                $ok_version = false;
+                $okVersion = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.phpversion().' is not OK (minimum is 5.3.0) &nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.phpversion().' is OK&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
 
-            if ($ok_writable == true && $ok_extensions == true && $ok_version == true) {
+            if ($okWritable == true && $okExtensions == true && $okVersion == true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("status_step1").innerHTML = "Elements are OK.";';
                 echo 'gauge.modify($("pbar"),{values:[0.20,1]});';
@@ -83,11 +95,11 @@ if (isset($_POST['type'])) {
         case "step2":
             //decrypt the password
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
-            $db_password = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
+            $dbPassword = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             $res = "";
             // connexion
-            if (@mysql_connect($_POST['db_host'], $_POST['db_login'], $db_password)) {
+            if (@mysql_connect($_POST['db_host'], $_POST['db_login'], $dbPassword)) {
                 if (@mysql_select_db($_POST['db_bdd'])) {
                     echo 'gauge.modify($("pbar"),{values:[0.40,1]});';
                     $res = "Connection is successfull";
@@ -137,8 +149,8 @@ if (isset($_POST['type'])) {
 
             @mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
             @mysql_select_db($_SESSION['db_bdd']);
-            $db_tmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysql_select_db($_SESSION['db_bdd'], $db_tmp);
+            $dbTmp = mysql_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
+            mysql_select_db($_SESSION['db_bdd'], $dbTmp);
 
             //FORCE UTF8 DATABASE
             mysql_query("ALTER DATABASE `".$_SESSION['db_bdd']."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
@@ -168,7 +180,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table ITEMS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -188,7 +200,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LOG_ITEMS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_3").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -284,7 +296,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table MISC! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_4").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -315,7 +327,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table NESTED_TREE! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -335,7 +347,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table RIGHTS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_6").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -388,7 +400,7 @@ if (isset($_POST['type'])) {
                         echo 'document.getElementById("res_step4").innerHTML = "Could not import admin account!";';
                         echo 'document.getElementById("tbl_8").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                         echo 'document.getElementById("loader").style.display = "none";';
-                        mysql_close($db_tmp);
+                        mysql_close($dbTmp);
                         break;
                     }
                 } else {
@@ -399,7 +411,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table USERS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_7").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -419,7 +431,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table TAGS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_9").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -441,7 +453,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LOG_SYSTEM! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_10").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -464,7 +476,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table FILES! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_11").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -489,7 +501,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table FILES! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_12").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -510,7 +522,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table ITEMS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_13").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -527,7 +539,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table ROLES! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_14").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -549,7 +561,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_15").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -567,7 +579,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB_CATEGORIES! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_16").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
             /*
@@ -583,7 +595,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table ITEMS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_14").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
             */
@@ -600,7 +612,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KB_ITEMS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_17").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -617,7 +629,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table restriction_to_roles! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_18").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -635,7 +647,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table KEYS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_19").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -672,7 +684,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table LANGUAGES! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_20").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -692,7 +704,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table EMAILS! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_21").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -711,7 +723,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table AUTOMATIC_DEL! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_22").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -729,7 +741,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table items_edition! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($db_tmp);
+                mysql_close($dbTmp);
                 break;
             }
 
@@ -737,7 +749,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("res_step4").innerHTML = "dataBase has been populated";';
             echo 'document.getElementById("loader").style.display = "none";';
-            mysql_close($db_tmp);
+            mysql_close($dbTmp);
             break;
 
         /**

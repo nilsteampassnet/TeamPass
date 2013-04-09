@@ -253,6 +253,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "iconv" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
@@ -357,7 +359,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         <h3>IMPORTANT: Since version 2.1.13, saltkey is stored in an independent file.</h3>
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
             <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
-        </label><input type="text" id="sk_path" name="sk_path" value="" size="75" /><br />
+        </label><input type="text" id="sk_path" name="sk_path" value="'.$abs_path.'/includes" size="75" /><br />
         ';
     } else {
         echo '<br /><br />

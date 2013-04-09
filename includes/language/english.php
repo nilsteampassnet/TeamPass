@@ -5,6 +5,12 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['channel_encryption_no_iconv'] = "Extension ICONV is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
+$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
+$txt['admin_actions_title'] = "Specific Actions";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
+
 $txt['is_administrated_by_role'] = "User is administrated by";
 $txt['administrators_only'] = "Administrators only";
 $txt['managers_of'] = "Managers of role";
@@ -203,8 +209,6 @@ $txt['add_new_group'] = "Add a new folder";
 $txt['add_role_tip'] = "Add a new role.";
 $txt['admin'] = "Administration";
 $txt['admin_action'] = "Please validate your action";
-$txt['admin_actions_title'] = "Specific Actions";
-$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 $txt['admin_action_db_backup'] = "Create a backup of the database";
 $txt['admin_action_db_backup_key_tip'] = "Please enter the encryption key. Save it somewhere, it will be asked when restoring. (leave empty to not encrypt)";
 $txt['admin_action_db_backup_start_tip'] = "Start";

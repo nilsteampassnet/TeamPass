@@ -376,7 +376,8 @@ switch ($_POST['type']) {
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                    && $username == "admin" && $password == $data['pw'] && $data['disabled'] == 0
+                    && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
+                    && $data['disabled'] == 0
                 )
             ) {
                 $_SESSION['autoriser'] = true;

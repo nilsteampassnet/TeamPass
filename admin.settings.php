@@ -414,7 +414,7 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder']) {
         updateSettings('can_create_root_folder', $_POST['can_create_root_folder']);
     }
-    
+
 }
 
 echo '
@@ -788,6 +788,7 @@ echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                 <label>'.$txt['enable_personal_folder_feature'].'</label>
+                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['enable_personal_folder_feature_tip'].'" /></span>
             </td><td>
             <div class="div_radio">
                 <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>

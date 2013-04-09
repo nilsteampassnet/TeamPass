@@ -24,11 +24,25 @@ $jCryption = new jCryption();
 if (isset($_GET["generateKeypair"])) {
     // Do some tests on server
     if (!file_exists(SECUREPATH."/100_1024_keys.inc.php")) {
-        echo '{"e":"encryption_cfg_error","msg":"'.htmlspecialchars(strip_tags($txt['channel_encryption_no_file']), ENT_QUOTES).'"}';
+        echo '{"e":"encryption_cfg_error","msg":"'.
+            htmlspecialchars(strip_tags($txt['channel_encryption_no_file']), ENT_QUOTES).
+            '"}';
     } elseif (!extension_loaded('openssl')) {
-        echo '{"e":"encryption_cfg_error","msg":"'.htmlspecialchars(strip_tags($txt['channel_encryption_no_openssl']), ENT_QUOTES).'"}';
+        echo '{"e":"encryption_cfg_error","msg":"'.
+            htmlspecialchars(strip_tags($txt['channel_encryption_no_openssl']), ENT_QUOTES).
+            '"}';
     } elseif (!extension_loaded('gmp')) {
-        echo '{"e":"encryption_cfg_error","msg":"'.htmlspecialchars(strip_tags($txt['channel_encryption_no_gmp']), ENT_QUOTES).'"}';
+        echo '{"e":"encryption_cfg_error","msg":"'.
+            htmlspecialchars(strip_tags($txt['channel_encryption_no_gmp']), ENT_QUOTES).
+            '"}';
+    } elseif (!extension_loaded('bcmath')) {
+        echo '{"e":"encryption_cfg_error","msg":"'.
+            htmlspecialchars(strip_tags($txt['channel_encryption_no_bcmath']), ENT_QUOTES).
+            '"}';
+    } elseif (!extension_loaded('iconv')) {
+        echo '{"e":"encryption_cfg_error","msg":"'.
+            htmlspecialchars(strip_tags($txt['channel_encryption_no_iconv']), ENT_QUOTES).
+            '"}';
     } else {
     	// Include some RSA keys
     	require_once(SECUREPATH."/100_1024_keys.inc.php");
