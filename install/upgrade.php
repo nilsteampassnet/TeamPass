@@ -8,8 +8,8 @@ $_SESSION['CPM'] = 1;
 ################
 function getSettingValue($val)
 {
-    $val = trim(strstr($val,"="));
-    return trim(str_replace('"','',substr($val,1,strpos($val,";")-1)));
+    $val = trim(strstr($val, "="));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
 }
 
 //get infos from SETTINGS.PHP file
@@ -20,7 +20,7 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
     $settings_file = file($filename);
     while (list($key,$val) = each($settings_file)) {
         if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-        elseif (substr_count($val,'@define(')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
+        elseif (substr_count($val,'@define(')>0 && substr_count($val, 'SALT')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
         elseif (substr_count($val,'$smtp_server = ')>0) $_SESSION['smtp_server'] = getSettingValue($val);
         elseif (substr_count($val,'$smtp_auth = ')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
         elseif (substr_count($val,'$smtp_auth_username = ')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
@@ -32,7 +32,19 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
         elseif (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
         elseif (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
         elseif (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
-        elseif (substr_count($val,'require_once "')>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+    }
+}
+if (
+    isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
+    && file_exists($_SESSION['sk_file'])
+) {
+    //copy some constants from this existing file
+    $skFile = file($_SESSION['sk_file']);
+    while (list($key,$val) = each($skFile)) {
+        if (substr_count($val, '@define(')>0) {
+            $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
+        }
     }
 }
 ?>
