@@ -291,13 +291,32 @@ switch ($_POST['type']) {
                 ); //Debug
             }
         }
-        // Check if user exists in cpassman
+        // Check if user exists
         $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
         $row = $db->query($sql);
         if ($row == 0) {
             $row = $db->fetchRow("SELECT label FROM ".$pre."log_system WHERE ");
             echo '[{"value" : "error", "text":"'.$row[0].'"}]';
             exit;
+        }
+        // Check PSK
+        if (isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1) {
+            $row = $db->queryFirst($sql);
+            if (empty($_POST['psk'])) {
+                echo '[{"value" : "psk_required"}]';
+                exit;
+            } elseif (empty($row['psk'])) {
+                if (empty($_POST['psk_confirm'])) {
+                    echo '[{"value" : "bad_psk_confirmation"}]';
+                    exit;
+                } else {
+                    // insert new psk
+                    $_SESSION['my_sk'] = $_POST['psk'];
+                }
+            } elseif (encrypt($row['psk'], "") != $_POST['psk']) {
+                echo '[{"value" : "bad_psk"}]';
+                exit;
+            }
         }
 
         $proceedIdentification = false;
@@ -501,7 +520,8 @@ switch ($_POST['type']) {
                         'timestamp' => time(),
                         'disabled' => 0,
                         'no_bad_attempts' => 0,
-                        'session_end' => $_SESSION['fin_session']
+                        'session_end' => $_SESSION['fin_session'],
+                        'psk' => encrypt($_SESSION['my_sk'], "")
                        ),
                     "id=".$data['id']
                 );
@@ -807,7 +827,7 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = Encryption\Crypt\aesctr::decrypt($_POST['sk'], $_SESSION['encKey'], 256);
+        //$dataReceived = Encryption\Crypt\aesctr::decrypt($_POST['sk'], $_SESSION['encKey'], 256);
         if ($_POST['sk'] != "**************************") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
             setcookie(

@@ -67,7 +67,17 @@ if (isset($_POST['type'])) {
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gmp\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
-
+            if (ini_get('max_execution_time')<60) {
+                $okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
+                    'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.
+                    ' Please try to set to 60s at least during installation.&nbsp;'.
+                    '&nbsp;<img src=\"images/minus-circle.png\"></span> <br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
+                    'execution time\" is set to '.ini_get('max_execution_time').' seconds'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (version_compare(phpversion(), '5.3.0', '<')) {
                 $okVersion = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.phpversion().' is not OK (minimum is 5.3.0) &nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';

@@ -54,7 +54,10 @@ require_once 'sources/main.functions.php';
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
     $dataLanguage =
-        $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'default_language'");
+        $db->fetchRow(
+            "SELECT valeur FROM ".$pre."misc 
+            WHERE type = 'admin' AND intitule = 'default_language'"
+        );
     if (empty($dataLanguage[0])) {
         $_SESSION['user_language'] = "english";
         $_SESSION['user_language_flag'] = "us.png";
@@ -62,7 +65,9 @@ if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
         $_SESSION['user_language'] = $dataLanguage[0];
         $_SESSION['user_language_flag'] = "us.png";
     }
-} elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
+} elseif (
+    isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])
+) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 } elseif (isset($_POST['language'])) {
     $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
@@ -501,10 +506,23 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">
                         <label for="pw" class="form_label">'.$txt['index_password'].'</label>
-                        <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" />
+                        <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
+    // Personal salt key
+    if (isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1) {
+        echo '
+        
+                    <div id="connect_psk" style="margin-bottom:3px;">
+                        <label for="personal_psk" class="form_label">'.$txt['home_personal_saltkey'].'</label>
+                        <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                    </div>
+                    <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
+                        <label for="psk_confirm" class="form_label">'.$txt['home_personal_saltkey'].'</label>
+                        <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                    </div>';
+    }
 
-    //2-Factors authentication is asked
+    // 2-Factors authentication is asked
     if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
         //Display QR
         echo '

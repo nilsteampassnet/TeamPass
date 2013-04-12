@@ -344,17 +344,6 @@ if (isset($_POST['type'])) {
                     '</span><br />';
             }
 
-            if ($okWritable == true && $okExtensions == true) {
-                echo 'document.getElementById("but_next").disabled = "";';
-                echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
-                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
-            } else {
-                echo 'document.getElementById("but_next").disabled = "disabled";';
-                echo 'document.getElementById("res_step1").innerHTML = "Correct the shown '.
-                    'errors and click on button Launch to refresh";';
-                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
-            }
-
             //get infos from SETTINGS.PHP file
             $filename = "../includes/settings.php";
             $events = "";
@@ -389,7 +378,7 @@ if (isset($_POST['type'])) {
                     } elseif (substr_count($val, '$pre')>0) {
                         $_SESSION['pre'] = getSettingValue($val);
                     } elseif (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-                        $_SESSION['sk_path'] = substr($val, 14, strpos($val, '";')-14);
+                        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
                     }
                 }
             }
@@ -397,13 +386,40 @@ if (isset($_POST['type'])) {
                 isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                 && file_exists($_SESSION['sk_file'])
             ) {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">sk.php file'.
+                    ' found in \"'.addslashes($_SESSION['sk_file']).'\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                    '</span><br />';
                 //copy some constants from this existing file
                 $skFile = file($_SESSION['sk_file']);
                 while (list($key,$val) = each($skFile)) {
                     if (substr_count($val, '@define(')>0) {
                         $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
+                        echo '$("#session_salt").val("'.$_SESSION['encrypt_key'].'");';
                     }
                 }
+            }
+            
+            if (!isset($_SESSION['encrypt_key']) || empty($_SESSION['encrypt_key'])) {
+                $okEncryptKey = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
+                    ' could not be recovered &nbsp;&nbsp;'.
+                    '<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $okEncryptKey = true;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is <b>'.
+                    $_SESSION['encrypt_key'].'</b>&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                    '</span><br />';
+            }
+
+            if ($okWritable == true && $okExtensions == true && $okEncryptKey == true) {
+                echo 'document.getElementById("but_next").disabled = "";';
+                echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
+                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
+            } else {
+                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("res_step1").innerHTML = "Correct the shown '.
+                    'errors and click on button Launch to refresh";';
+                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
             }
 
             echo 'document.getElementById("res_step1").innerHTML = "'.$txt.'";';
@@ -1598,6 +1614,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');
 require_once \"".$skFile."\";
+@define('COST', '13'); // Don't change this.
 ?>"
                     )
                 );
@@ -1620,42 +1637,11 @@ require_once \"".$skFile."\";
                         $fh,
                         utf8_encode(
 "<?php
-@define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
-@define('COST', '13'); // Don't change this.
+@define('SALT', '".$_POST['session_salt']."'); //Never Change it once it has been used !!!!!
 ?>"
                         )
                     );
                     fclose($fh);
-                } else {
-                    //read encryptkey
-                    $skFileRead = file($skFile);
-                    while (list($key,$val) = each($skFileRead)) {
-                        if (substr_count($val, '@define(')>0) {
-                            $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
-                        }
-                    }
-                    //Do a copy of the existing sk file and create it
-                    if (!copy(
-                        $skFile,
-                        $skFile.'.'.date(
-                            "Y_m_d",
-                            mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                        )
-                    )) {
-                        $result2 = false;
-                    } else {
-                        $fh = fopen($skFile, 'w');
-                        $result2 = fwrite(
-                            $fh,
-                            utf8_encode(
-"<?php
-@define('SALT', '".$_SESSION['encrypt_key']."'); //Never Change it once it has been used !!!!!
-@define('COST', '13'); // Don't change this.
-?>"
-                            )
-                        );
-                        fclose($fh);
-                    }
                 }
                 if (isset($result2) && $result2 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = '.

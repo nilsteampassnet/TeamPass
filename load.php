@@ -106,68 +106,92 @@ $htmlHeaders .= '
     }
 
     //Identify user
-    function identifyUser(redirect)
+    function identifyUser(redirect, psk)
     {
         $("#erreur_connexion").hide();
         if (redirect == undefined) redirect = ""; //Check if redirection
-        if ($("#login").val() != "" && $("#pw").val() != "") {
-            $("#pw").removeClass("ui-state-error");
-            $("#ajax_loader_connexion").show();
-
-            //create random string
-            var randomstring = "";
-            var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz".split("");
-            for (var i = 0; i < 10; i++) {
-                randomstring += chars[Math.floor(Math.random() * chars.length)];
-            }
-
-            var data = "";
-            if ($("#2factors_code").val() != undefined) {
-                data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
-            }
-
-            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
-
-            //send query
-            $.post(
-                "sources/main.queries.php",
-                {
-                    type : "identify_user",
-                    data : $.jCryption.encrypt(data, sessionStorage.password)
-                },
-                function(data) {
-                    if (data[0].value == randomstring) {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").hide();
-                        //redirection for admin is specific
-                        if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-                        else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-                        else window.location.href="index.php";
-                    } else if (data[0].value == "user_is_locked") {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
-                        $("#erreur_connexion").show();
-                    } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
-                        $("#erreur_connexion").show();
-                    } else if (data[0].value == "error") {
-                        $("#mysql_error_warning").html(data[0].text);
-                        $("#div_mysql_error").show().dialog("open");
-                    } else if (data[0].value == "false_onetimepw") {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
-                        $("#erreur_connexion").show();
-                    } else {
-                        $("#erreur_connexion").show();
-                        $("#ajax_loader_connexion").hide();
-                    }
-                },
-                "json"
-           );
+        // Check form data
+        if (psk == 1 && $("#psk").val() == "") {
+            $("#psk").addClass("ui-state-error");
+            return false;
         } else {
-            $("#pw").addClass("ui-state-error");
+            $("#psk").removeClass("ui-state-error");
         }
+        if ($("#pw").val() == "") {
+            $("#pw").addClass("ui-state-error");
+            return false;
+        }
+        if ($("#login").val() == "") {
+            $("#login").addClass("ui-state-error");
+            return false;
+        }
+        // launch identification
+        $("#pw, #login").removeClass("ui-state-error");
+        $("#ajax_loader_connexion").show();
+
+        //create random string
+        var randomstring = "";
+        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz".split("");
+        for (var i = 0; i < 10; i++) {
+            randomstring += chars[Math.floor(Math.random() * chars.length)];
+        }
+
+        var data = "";
+        if ($("#2factors_code").val() != undefined) {
+            data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
+        }
+        if ($("#psk").val() != undefined) {
+            data = \', "psk":"\'+sanitizeString($("#psk").val())+\'"\'+
+                \', "psk_confirm":"\'+sanitizeString($("#psk_confirm").val())+\'"\';
+        }
+
+        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
+
+        //send query
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "identify_user",
+                data : $.jCryption.encrypt(data, sessionStorage.password)
+            },
+            function(data) {
+                if (data[0].value == randomstring) {
+                    $("#erreur_connexion").hide();
+                    //redirection for admin is specific
+                    if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+                    else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
+                    else window.location.href="index.php";
+                } else if (data[0].value == "user_is_locked") {
+                    $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "bad_psk") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['bad_psk'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "bad_psk_confirmation") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['bad_psk_confirmation'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "psk_required") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['psk_required'].'");
+                    $("#erreur_connexion, #connect_psk_confirm").show();
+                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                    $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "error") {
+                    $("#mysql_error_warning").html(data[0].text);
+                    $("#div_mysql_error").show().dialog("open");
+                } else if (data[0].value == "false_onetimepw") {
+                    $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
+                    $("#erreur_connexion").show();
+                } else {
+                    $("#erreur_connexion").show();
+                }
+                $("#ajax_loader_connexion").hide();
+            },
+            "json"
+       );
     }
 
     /*

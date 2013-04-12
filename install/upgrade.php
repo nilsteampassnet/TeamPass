@@ -19,20 +19,34 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
     //copy some constants from this existing file
     $settings_file = file($filename);
     while (list($key,$val) = each($settings_file)) {
-        if (substr_count($val,'charset')>0) $_SESSION['charset'] = getSettingValue($val);
-        elseif (substr_count($val,'@define(')>0 && substr_count($val, 'SALT')>0) $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-        elseif (substr_count($val,'$smtp_server = ')>0) $_SESSION['smtp_server'] = getSettingValue($val);
-        elseif (substr_count($val,'$smtp_auth = ')>0) $_SESSION['smtp_auth'] = getSettingValue($val);
-        elseif (substr_count($val,'$smtp_auth_username = ')>0) $_SESSION['smtp_auth_username'] = getSettingValue($val);
-        elseif (substr_count($val,'$smtp_auth_password = ')>0) $_SESSION['smtp_auth_password'] = getSettingValue($val);
-        elseif (substr_count($val,'$email_from = ')>0) $_SESSION['email_from'] = getSettingValue($val);
-        elseif (substr_count($val,'$email_from_name = ')>0) $_SESSION['email_from_name'] = getSettingValue($val);
-        elseif (substr_count($val,'$server = ')>0) $_SESSION['server'] = getSettingValue($val);
-        elseif (substr_count($val,'$user = ')>0) $_SESSION['user'] = getSettingValue($val);
-        elseif (substr_count($val,'$pass = ')>0) $_SESSION['pass'] = getSettingValue($val);
-        elseif (substr_count($val,'$database = ')>0) $_SESSION['database'] = getSettingValue($val);
-        elseif (substr_count($val,'$pre = ')>0) $_SESSION['pre'] = getSettingValue($val);
-        elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        if (substr_count($val,'charset')>0) {
+            $_SESSION['charset'] = getSettingValue($val);
+        } elseif (substr_count($val,'@define(')>0 && substr_count($val, 'SALT')>0) {
+            $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
+        } elseif (substr_count($val,'$smtp_server = ')>0) {
+            $_SESSION['smtp_server'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_auth = ')>0) {
+            $_SESSION['smtp_auth'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_auth_username = ')>0) {
+            $_SESSION['smtp_auth_username'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_auth_password = ')>0) {
+            $_SESSION['smtp_auth_password'] = getSettingValue($val);
+        } elseif (substr_count($val,'$email_from = ')>0) {
+            $_SESSION['email_from'] = getSettingValue($val);
+        } elseif (substr_count($val,'$email_from_name = ')>0) {
+            $_SESSION['email_from_name'] = getSettingValue($val);
+        } elseif (substr_count($val,'$server = ')>0) {
+            $_SESSION['server'] = getSettingValue($val);
+        } elseif (substr_count($val,'$user = ')>0) {
+            $_SESSION['user'] = getSettingValue($val);
+        } elseif (substr_count($val,'$pass = ')>0) {
+            $_SESSION['pass'] = getSettingValue($val);
+        } elseif (substr_count($val,'$database = ')>0) {
+            $_SESSION['database'] = getSettingValue($val);
+        } elseif (substr_count($val,'$pre = ')>0) {
+            $_SESSION['pre'] = getSettingValue($val);
+        } elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+            $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
     }
 }
 if (
@@ -205,7 +219,8 @@ echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
                     <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version']:'', '" />
                     <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8']:'', '" />
-                    <input type="hidden" name="menu_action" id="menu_action" value="" />';
+                    <input type="hidden" name="menu_action" id="menu_action" value="" />
+                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt']:@$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
@@ -241,11 +256,17 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      &nbsp;
                      ';
 
-} elseif ((isset($_POST['step']) && $_POST['step'] == 1) || (isset($_GET['step']) && $_GET['step'] == 1)) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 1)
+    || (isset($_GET['step']) && $_GET['step'] == 1)
+) {
 //define root path
     $abs_path = "";
-    if (strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
-    else $abs_path = $_SERVER['DOCUMENT_ROOT'];
+    if (strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) {
+        $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
+    } else {
+        $abs_path = $_SERVER['DOCUMENT_ROOT'];
+    }
     $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
     //ETAPE 1
     echo '
@@ -273,7 +294,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
                      <input type="hidden" id="step1" name="step1" value="" />';
 
-} elseif ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 2)
+    || (isset($_GET['step']) && $_GET['step'] == 2)
+) {
     //ETAPE 2
     echo '
                      <h3>Step 2</h3>
@@ -293,7 +317,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
-} elseif ((isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3) && (isset($_POST['actual_cpm_version']))) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3)
+    && isset($_POST['actual_cpm_version'])
+) {
     //ETAPE 3
     echo '
                      <h3>Step 3 - Converting database to UTF-8</h3>';
@@ -314,7 +341,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
             The database seems already in UTF-8 charset';
         $conversion_utf8 = false;
     }
-} elseif ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step']) && $_GET['step'] == 4)) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step'])
+    && $_GET['step'] == 4)
+) {
     //ETAPE 4
 
     echo '
@@ -355,7 +385,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
                      <input type="hidden" id="step4" name="step4" value="" />';
-} elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 5)
+    || isset($_GET['step'] && $_GET['step'] == 5)
+) {
     //ETAPE 5
     echo '
                      <h3>Step 5 - Miscellaneous</h3>
@@ -382,7 +415,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     }
     echo '
         <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';
-} elseif ((isset($_POST['step']) && $_POST['step'] == 6) || (isset($_GET['step']) && $_GET['step'] == 6)) {
+} elseif (
+    (isset($_POST['step']) && $_POST['step'] == 6)
+    || (isset($_GET['step']) && $_GET['step'] == 6)
+) {
     //ETAPE 5
     echo '
         <h3>Step 6</h3>
