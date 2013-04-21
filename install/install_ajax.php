@@ -366,7 +366,7 @@ if (isset($_POST['type'])) {
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."users` (
                   `id` int(12) NOT null AUTO_INCREMENT,
                   `login` varchar(50) NOT NULL,
-                  `pw` varchar(200) NOT NULL,
+                  `pw` varchar(400) NOT NULL,
                   `groupes_visibles` varchar(250) NOT NULL,
                   `derniers` text NOT NULL,
                   `key_tempo` varchar(100) NOT NULL,
@@ -391,6 +391,7 @@ if (isset($_POST['type'])) {
                   `lastname` varchar(100) NULL,
                   `session_end` varchar(30) NULL,
                   `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
+                  `psk` varchar(400) NOT NULL,
                   PRIMARY KEY (`id`),
                   UNIQUE KEY `login` (`login`)
                ) CHARSET=utf8;"

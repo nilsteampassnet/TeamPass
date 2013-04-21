@@ -114,7 +114,7 @@ $htmlHeaders .= '
         if (psk == 1 && $("#psk").val() == "") {
             $("#psk").addClass("ui-state-error");
             return false;
-        } else {
+        } else if (psk == 1) {
             $("#psk").removeClass("ui-state-error");
         }
         if ($("#pw").val() == "") {
@@ -427,7 +427,7 @@ $htmlHeaders .= '
                 function() {
                     $("#channel_status").html("<span style=\"font-size: 16px;\">"+
                         "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
-                        "onclick=\"sessionStorage.clear();window.location = window.location;\">"+
+                        "onclick=\"sessionStorage.clear();localStorage.clear();window.location = window.location;\">"+
                         "Clear sessionStorage</button>").show();
                 }
             )
@@ -444,6 +444,42 @@ $htmlHeaders .= '
 if (!isset($_GET['page'])) {
     $htmlHeaders .= '
     $(function() {
+        $("#login").focusout(function() {
+            if ($("#login").val() != "" && $("#login").val() != "admin") {
+                $("#login_check_wait").show();
+                // check if login exists
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type    : "check_login_exists",
+                        userId    : $("#login").val()
+                    },
+                    function(data) {
+                        $("#login_check_wait").hide();
+                        if (data[0].login == "") {
+                            $("#login").addClass("ui-state-error");
+                        } else {
+                            $("#login").removeClass("ui-state-error");
+                        }
+                        if (data[0].psk == "") {
+                            $("#connect_psk_confirm").show();
+                        }
+                    },
+                    "json"
+                );
+            }
+        });
+
+        $("#psk_confirm").focusout(function() {
+            if ($("#psk_confirm").val() != $("#psk").val()) {
+                $("#but_identify_user").prop("disabled", true);
+                $("#psk, #psk_confirm").addClass("ui-state-error");
+            } else {
+                $("#but_identify_user").prop("disabled", false);
+                $("#psk, #psk_confirm").removeClass("ui-state-error");
+            }
+        });
+
         // DIALOG BOX FOR ASKING PASSWORD
         $("#div_forgot_pw").dialog({
             bgiframe: true,
@@ -457,12 +493,12 @@ if (!isset($_GET['page'])) {
                     $("#div_forgot_pw_alert").html("");
                     $("#div_forgot_pw_status").show();
                     $.post(
-                    "sources/main.queries.php",
-                    {
-                        type    : "send_pw_by_email",
-                        email    : $("#forgot_pw_email").val(),
-                        login    : $("#forgot_pw_login").val()
-                    },
+                        "sources/main.queries.php",
+                        {
+                            type    : "send_pw_by_email",
+                            email    : $("#forgot_pw_email").val(),
+                            login    : $("#forgot_pw_login").val()
+                        },
                         function(data) {
                             $("#div_forgot_pw_status").hide();
                             if (data[0].error != "") {
@@ -475,7 +511,7 @@ if (!isset($_GET['page'])) {
                             }
                         },
                         "json"
-                       );
+                    );
                 },
                 "'.$txt['cancel_button'].'": function() {
                     $("#div_forgot_pw_alert").html("");

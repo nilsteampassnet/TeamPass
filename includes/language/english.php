@@ -5,7 +5,13 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['bad_psk'] = "Bad Personal SaltKey";
+$txt['bad_psk_confirmation'] = "Bad Personal SaltKey confirmation";
+$txt['psk_required'] = "Personal SaltKey is required";
+$txt['admin_psk_authentication'] = "Enable Personal SaltKey authentication";
+$txt['admin_psk_authentication_tip'] = "In order to get connected, users have to use their own Personal SaltKey";
 $txt['channel_encryption_no_iconv'] = "Extension ICONV is not loaded! Encryption can't be initiated!";
+$txt['home_personal_saltkey_confirm'] = "Confirm Personal SaltKey";
 $txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
 $txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 $txt['admin_actions_title'] = "Specific Actions";

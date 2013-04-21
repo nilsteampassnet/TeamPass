@@ -365,6 +365,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['2factors_authentication'])) {
         updateSettings('2factors_authentication', $_POST['2factors_authentication']);
     }
+    //psk_authentication
+    if (isset($_POST['psk_authentication'])) {
+        updateSettings('psk_authentication', $_POST['psk_authentication']);
+    }
     // Update proxy_ip setting
     if (@$_SESSION['settings']['proxy_ip'] != $_POST['proxy_ip']) {
         updateSettings('proxy_ip', $_POST['proxy_ip']);
@@ -641,7 +645,25 @@ echo '
                 </div>
               <td>
             </tr>';
-
+/*
+// psk_authentication
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$txt['admin_psk_authentication'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_psk_authentication_tip'].'" />
+                  </label>
+            </td>
+            <td>
+                <div class="div_radio">
+                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_psk_authentication"><img src="includes/images/status', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? '' : '-busy', '.png" /></span>
+                </div>
+              <td>
+            </tr>';
+*/
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones

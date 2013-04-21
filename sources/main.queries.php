@@ -299,22 +299,27 @@ switch ($_POST['type']) {
             echo '[{"value" : "error", "text":"'.$row[0].'"}]';
             exit;
         }
+        $data = $db->fetchArray($row);
         // Check PSK
-        if (isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1) {
-            $row = $db->queryFirst($sql);
-            if (empty($_POST['psk'])) {
+        if (
+            isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            && $data['admin'] != 1
+        ) {
+            $psk = htmlspecialchars_decode($dataReceived['psk']);
+            $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
+            $rowTmp = $db->queryFirst($sql);
+            if (empty($psk)) {
                 echo '[{"value" : "psk_required"}]';
                 exit;
-            } elseif (empty($row['psk'])) {
-                if (empty($_POST['psk_confirm'])) {
+            } elseif (empty($rowTmp['psk'])) {
+                if (empty($pskConfirm)) {
                     echo '[{"value" : "bad_psk_confirmation"}]';
                     exit;
                 } else {
-                    // insert new psk
-                    $_SESSION['my_sk'] = $_POST['psk'];
+                    $_SESSION['my_sk'] = $psk;
                 }
-            } elseif (encrypt($row['psk'], "") != $_POST['psk']) {
-                echo '[{"value" : "bad_psk"}]';
+            } elseif (crypt($psk, $data['psk']) != $data['psk']) {
+                echo '[{"value" : "bad_psk"}]';echo $psk." - ".crypt($psk, $data['psk']) ." - ". $data['psk']." - ".bCrypt(htmlspecialchars_decode($psk), COST);
                 exit;
             }
         }
@@ -355,14 +360,14 @@ switch ($_POST['type']) {
                 );
             }
             // Get info for user
-            $sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
-            $row = $db->query($sql);
+            //$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
+            //$row = $db->query($sql);
             $proceedIdentification = true;
         }
 
         if ($proceedIdentification === true) {
             // User exists in the DB
-            $data = $db->fetchArray($row);
+            //$data = $db->fetchArray($row);
 
             //v2.1.17 -> change encryption for users password
             if (
@@ -521,7 +526,7 @@ switch ($_POST['type']) {
                         'disabled' => 0,
                         'no_bad_attempts' => 0,
                         'session_end' => $_SESSION['fin_session'],
-                        'psk' => encrypt($_SESSION['my_sk'], "")
+                        'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
                        ),
                     "id=".$data['id']
                 );
@@ -877,7 +882,7 @@ switch ($_POST['type']) {
                         )
                     )
                 );
-                echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
+                //echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
                 // update pw in ITEMS table
                 mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'")
                     or die(mysql_error());
@@ -885,6 +890,12 @@ switch ($_POST['type']) {
         }
         // change salt
         $_SESSION['my_sk'] = $newPersonalSaltkey;
+        setcookie(
+            "TeamPass_PFSK_".md5($_SESSION['user_id']),
+            encrypt($_SESSION['my_sk'], ""),
+            time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+            '/'
+        );
         break;
     /**
      * Reset the personal saltkey
@@ -908,6 +919,12 @@ switch ($_POST['type']) {
             }
             // change salt
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
+            setcookie(
+                "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                encrypt($_SESSION['my_sk'], ""),
+                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                '/'
+            );
         }
         break;
     /**
@@ -1030,5 +1047,28 @@ switch ($_POST['type']) {
         $pwgen->setNumerals($_POST['numerals']);
 
         echo Encryption\Crypt\aesctr::encrypt($pwgen->generate(), $_SESSION['key'], 256);
+        break;
+    /**
+     * Check if user exists and send back if psk is set
+     */
+    case "check_login_exists":
+        $sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($_POST['userId'])."'";
+        $row = $db->query($sql);
+        $data = $db->fetchArray($row);
+        if (empty($data['login'])) {
+            $userOk = false;
+        } else {
+            $userOk = true;
+        }
+        if (
+            isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            && !empty($data['psk'])
+        ) {
+            $pskSet = true;
+        } else {
+            $pskSet = false;
+        }
+
+        echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
         break;
 }

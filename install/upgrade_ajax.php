@@ -398,7 +398,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            
+
             if (!isset($_SESSION['encrypt_key']) || empty($_SESSION['encrypt_key'])) {
                 $okEncryptKey = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
@@ -815,7 +815,7 @@ if (isset($_POST['type'])) {
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw TEXT"
             );
             mysql_query(
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(200)"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(400)"
             );
 
             ## Alter USERS table
@@ -883,6 +883,11 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."users",
                 "IsAdministratedByRole",
                 "TINYINT(5) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "psk",
+                "VARCHAR(400) DEFAULT NULL"
             );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 

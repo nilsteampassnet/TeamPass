@@ -129,7 +129,10 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 </div>';
 
     //Personnal SALTKEY
-    if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
+    if (
+        isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+        //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
+    ) {
         echo '
                 <div style="margin-top:15px;" id="personal_saltkey">
                     <span class="ui-icon ui-icon-locked" style="float: left; margin-right: .3em;">&nbsp;</span><b>'.$txt['home_personal_saltkey'].'</b>

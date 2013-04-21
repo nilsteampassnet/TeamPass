@@ -55,7 +55,7 @@ if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
     $dataLanguage =
         $db->fetchRow(
-            "SELECT valeur FROM ".$pre."misc 
+            "SELECT valeur FROM ".$pre."misc
             WHERE type = 'admin' AND intitule = 'default_language'"
         );
     if (empty($dataLanguage[0])) {
@@ -503,22 +503,23 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
                         <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                        <img id="login_check_wait" src="includes/images/ajax-loader.gif" alt="" style="display:none;" />
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">
                         <label for="pw" class="form_label">'.$txt['index_password'].'</label>
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
     // Personal salt key
-    if (isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1) {
+    if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
         echo '
-        
+
                     <div id="connect_psk" style="margin-bottom:3px;">
                         <label for="personal_psk" class="form_label">'.$txt['home_personal_saltkey'].'</label>
-                        <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                        <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>
                     <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
-                        <label for="psk_confirm" class="form_label">'.$txt['home_personal_saltkey'].'</label>
-                        <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['authentication_security']) && $_SESSION['settings']['authentication_security'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                        <label for="psk_confirm" class="form_label">'.$txt['home_personal_saltkey_confirm'].'</label>
+                        <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
     }
 
