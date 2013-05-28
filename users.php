@@ -126,8 +126,8 @@ foreach ($rows as $reccord) {
     //Show user only if can be administrated by the adapted Roles manager
     if (
         $_SESSION['is_admin'] ||
-        ($reccord['IsAdministratedByRole'] > 0 &&
-        in_array($reccord['IsAdministratedByRole'], $_SESSION['user_roles']))
+        ($reccord['isAdministratedByRole'] > 0 &&
+        in_array($reccord['isAdministratedByRole'], $_SESSION['user_roles']))
     ) {
         $showUserFolders = true;
     } else {
