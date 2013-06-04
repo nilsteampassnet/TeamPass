@@ -174,19 +174,27 @@ function ListerItems(groupe_id, restricted, start)
             },
             function(data) {
                 //decrypt data
+                tmp = data;
                 try {
                     data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                 } catch (e) {
-                    // error
-                    $("#div_loading").hide();
-                    $("#request_ongoing").val("");
-                    store_error(
-                        escape(data),
-                        "div_dialog_message",
-                        "div_dialog_message_text"
-                    );
-
-                    return;
+                    if (e == "SyntaxError: JSON.parse: unexpected character") {
+                    	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+            		    'page in your Browser. The Items list will now be refreshed.');
+                    	InitializePasswordVariable(1);
+                    	return;
+                    } else {
+                        // error
+                        $("#div_loading").hide();
+                        $("#request_ongoing").val("");
+                        store_error(
+                            escape(data),
+                            "div_dialog_message",
+                            "div_dialog_message_text"
+                        );
+    
+                        return;
+                    }
                 }
 
                 $("#items_path").html(data.arborescence);
@@ -339,7 +347,15 @@ function pwGenerate(elem)
             force      : "false"
         },
         function(data) {
-            data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+            try {
+                data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+            } catch (e) {
+                if (e == "SyntaxError: JSON.parse: unexpected character") {
+                	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                		    'page in your Browser. The Items list will now be refreshed.');
+                	InitializePasswordVariable(1);
+                }
+            }
             $("#"+elem+"pw1, #"+elem+"pw1_txt").val(data.key).focus();
             $("#"+elem+"pw_wait").hide();
         }
@@ -372,7 +388,16 @@ function RecupComplexite(val, edit)
             item_id : $("#selected_items").val()
         },
         function(data) {
-            data = $.parseJSON(data);
+            try {
+                data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+            } catch (e) {
+                if (e == "SyntaxError: JSON.parse: unexpected character") {
+                	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                		    'page in your Browser. The Items list will now be refreshed.');        		    
+                	InitializePasswordVariable(1);
+                }
+            }
+            //data = $.parseJSON(data);
             if (data.error == undefined || data.error == 0) {
                 $("#complexite_groupe").val(data.val);
                 if (edit == 1) {
@@ -412,7 +437,16 @@ function CheckIfItemChanged()
             item_id     : $("#selected_items").val()
         },
         function(data) {
-            data = $.parseJSON(data);
+            try {
+                data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+            } catch (e) {
+                if (e == "SyntaxError: JSON.parse: unexpected character") {
+                	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                		    'page in your Browser. The Items list will now be refreshed.');
+                	InitializePasswordVariable(1);
+                }
+            }
+            //data = $.parseJSON(data);
             if (data.modified == 1) {
                 funcReturned = 1;
             } else {
@@ -526,13 +560,19 @@ function AjouterItem()
                     try {
                         data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
-                        // error
-                        $("#div_loading").hide();
-                        $("#request_ongoing").val("");
-                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
-                        $("#div_dialog_message").dialog("open");
-
-                        return;
+                        if (e == "SyntaxError: JSON.parse: unexpected character") {
+                        	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                        		    'page in your Browser. The Items list will now be refreshed.');
+                        	InitializePasswordVariable(1);
+                        } else {
+                            // error
+                            $("#div_loading").hide();
+                            $("#request_ongoing").val("");
+                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                            $("#div_dialog_message").dialog("open");
+    
+                            return;
+                        }
                     }
 
                     //Check errors
@@ -695,13 +735,19 @@ function EditerItem()
                     try {
                         data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
-                        // error
-                        $("#div_loading").hide();
-                        $("#request_ongoing").val("");
-                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
-                        $("#div_dialog_message").dialog("open");
-
-                        return;
+                        if (e == "SyntaxError: JSON.parse: unexpected character") {
+                        	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                        		    'page in your Browser. The Items list will now be refreshed.');
+                        	InitializePasswordVariable(1);
+                        } else {
+                            // error
+                            $("#div_loading").hide();
+                            $("#request_ongoing").val("");
+                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                            $("#div_dialog_message").dialog("open");
+    
+                            return;
+                        }
                     }
 
                     //check if format error
@@ -788,11 +834,16 @@ function EditerItem()
     }
 }
 
-function AjouterFolder()
+function AddNewFolder()
 {
-    if ($("#new_rep_titre").val() == "0") $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();
-    else if ($("#new_rep_complexite").val() == "") $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>").show();
-    else{
+    if ($("#new_rep_titre").val() == "") {
+        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();
+    } else if ($("#new_rep_groupe").val() == "0") {
+        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_noparent']);?>").show();
+    } else if ($("#new_rep_complexite").val() == "") {
+        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>").show();
+    } else{
+    	$("#new_rep_show_error").hide();
         if ($("#new_rep_role").val() == undefined) {
             role_id = "<?php echo $_SESSION['fonction_id'];?>";
         } else {
@@ -921,14 +972,20 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     try {
                         data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
                     } catch (e) {
-                        // error
-                        $("#div_loading").hide();
-                        $("#request_ongoing").val("");
-                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+aes_decrypt(data));
-                        $("#div_dialog_message").show();
-                        return;
+                        if (e == "SyntaxError: JSON.parse: unexpected character") {
+                        	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                        		    'page in your Browser. The Items list will now be refreshed.');
+                        	InitializePasswordVariable(1);
+                        } else {
+                            // error
+                            $("#div_loading").hide();
+                            $("#request_ongoing").val("");
+                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><a onclick='InitializePasswordVariable(1);'>REGENERATE ENCRYPTION TUNNEL</a><br />Returned data:<br />"+data);
+                            $("#div_dialog_message").show();
+                            return;
+                        }
                     }
-
+                    
                     // Show timestamp
                     $("#timestamp_item_displayed").val(data.timestamp);
 
@@ -1501,7 +1558,16 @@ function get_clipboard_item(field,id)
                 id         : id
             },
             function(data) {
-                data = $.jCryption.decrypt(data, sessionStorage.password);
+                //data = $.jCryption.decrypt(data, sessionStorage.password);
+                try {
+                    data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+                } catch (e) {
+                    if (e == "SyntaxError: JSON.parse: unexpected character") {
+                    	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                    		    'page in your Browser. The Items list will now be refreshed.');
+                    	InitializePasswordVariable(1);
+                    }
+                }
                 clip = new ZeroClipboard.Client();
                 clip.setText(data);
                 if (field == "pw") {
@@ -1599,7 +1665,7 @@ $(function() {
 
     //automatic height
     var window_height = $(window).height();
-    $("#div_items, #content").height(window_height-150);
+    $("#div_items, #content").height(window_height-170);
     $("#items_center").height(window_height-390);
     $("#items_list").height(window_height-440);
     $(".items_tree").height(window_height-160);
@@ -1684,7 +1750,7 @@ $(function() {
         title: "<?php echo $txt['item_menu_add_rep'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
-                AjouterFolder();
+                AddNewFolder();
             },
             "<?php echo $txt['cancel_button'];?>": function() {
                 $("#new_rep_show_error").html("").hide();
@@ -1729,6 +1795,15 @@ $(function() {
                             key        : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
+                            try {
+                                data = $.parseJSON($.jCryption.decrypt(data, sessionStorage.password));
+                            } catch (e) {
+                                if (e == "SyntaxError: JSON.parse: unexpected character") {
+                                	alert('It seems the encryption channel is broken! Perhaps did you open a new TeamPass ' +
+                                		    'page in your Browser. The Items list will now be refreshed.');
+                                	InitializePasswordVariable(1);
+                                }
+                            }
                             //check if format error
                             if (data[0].error == "") {
                                 $("#folder_name_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());
@@ -2128,27 +2203,27 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 		up.refresh(); // Reposition Flash/Silverlight
 	});
 
-    //Launch items loading
-    var first_group = <?php
-if (!empty($first_group)) {
-    echo $first_group;
-} else {
-    echo "1";
-}
-?>;
-    if ($("#hid_cat").val() != "") {
-        first_group = $("#hid_cat").val();
-    }
-
-    //load items
-    if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
-    else start = 0;
-    ListerItems(first_group,'', start);
-    //Load item if needed and display items list
-    if ($("#open_id").val() != "") {
-        AfficherDetailsItem($("#open_id").val());
-    }
-
+	if(sessionStorage.isConnected){
+        //Launch items loading
+        if ($("#jstree_group_selected").val() == "") {
+                    	var first_group = 1;
+                    } else {
+                    	var first_group = $("#jstree_group_selected").val();
+                    }
+    
+        if ($("#hid_cat").val() != "") {
+            first_group = $("#hid_cat").val();
+        }
+    
+        //load items
+        if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
+        else start = 0;
+        ListerItems(first_group,'', start);
+        //Load item if needed and display items list
+        if ($("#open_id").val() != "") {        
+            AfficherDetailsItem($("#open_id").val());
+        }
+	}
     //Password meter for item creation
     $("#pw1").simplePassMeter({
         "requirements": {},

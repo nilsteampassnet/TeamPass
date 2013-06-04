@@ -237,6 +237,7 @@ echo '
         <input type="text" style="display:none;" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
         <input type="hidden" name="language" id="language" value="" />
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
+        <input type="text" name="user_session" id="user_session" value=""/>
     </form>';
 
 /* INSERT ITEM BUTTONS IN MENU BAR */

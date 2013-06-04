@@ -41,9 +41,13 @@ function IncreaseSessionTime(){
 		type    : "increase_session_time"
 		},
         function(data){
-        	$("#temps_restant").val(data[0].new_value);
-        	$("#date_end_session").val(data[0].new_value);
-        	$('#countdown').css("color","white");
+			if (data[0].new_value != "expired") {
+	        	$("#temps_restant").val(data[0].new_value);
+	        	$("#date_end_session").val(data[0].new_value);
+	        	$('#countdown').css("color","white");
+			} else {
+				document.location = "index.php?session=expired";
+			}
         },
         "json"
 	);
@@ -74,7 +78,7 @@ function countdown()
         document.getElementById('countdown').style.color="red";
     }
 
-    //G?rer la fin de la session
+    // Manage end of session
     if ( $("#temps_restant").val() != "" && DayTill <= "00:00:00" )
         document.location = "index.php?session=expired";
 

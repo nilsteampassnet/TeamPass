@@ -643,18 +643,23 @@ switch ($_POST['type']) {
      * Increase the session time of User
      */
     case "increase_session_time":
-        // Calculate end of session
-        $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
-        // Update table
-        $db->queryUpdate(
-            "users",
-            array(
-                'session_end' => $_SESSION['fin_session']
-            ),
-            "id=".$_SESSION['user_id']
-        );
-        // Return data
-        echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
+        // check if session is not already expired.
+        if ($_SESSION['fin_session'] > time()) {
+            // Calculate end of session
+            $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
+            // Update table
+            $db->queryUpdate(
+                "users",
+                array(
+                    'session_end' => $_SESSION['fin_session']
+                ),
+                "id=".$_SESSION['user_id']
+            );
+            // Return data
+            echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
+        } else {
+            echo '[{"new_value":"expired"}]';
+        }
         break;
     /**
      * Hide maintenance message

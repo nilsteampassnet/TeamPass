@@ -5,6 +5,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['bad_psk'] = "Bad Personal SaltKey";
 $txt['bad_psk_confirmation'] = "Bad Personal SaltKey confirmation";
 $txt['psk_required'] = "Personal SaltKey is required";

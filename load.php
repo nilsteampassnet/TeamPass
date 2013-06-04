@@ -217,6 +217,89 @@ $htmlHeaders .= '
        );
     }
 
+    
+
+    /**
+    * Creates a random string
+    * @returns {string} A random string
+    */
+    function randomString() {
+        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+        var string_length = 128;
+        var randomstring = "";
+        for (var i=0; i<string_length; i++) {
+            var rnum = Math.floor(Math.random() * chars.length);
+            randomstring += chars.substring(rnum,rnum+1);
+        }
+        //randomstring += cursor.x;
+        //randomstring += cursor.y;
+        return randomstring;
+    }
+                                                        
+    /*
+    * Initialize the password variable
+    */
+    function InitializePasswordVariable(force)
+    {
+        var password;
+        // TODO: Warn the user that new tab is open => this should not been allowed!!!
+        // If a connection has not been made
+        if(!sessionStorage.isConnected || force == 1){
+            $("#form_identify").hide();
+            $("#channel_status").show();
+            // Create a random AES key
+            var hashObj = new jsSHA(randomString(), "ASCII");
+            password = hashObj.getHash("SHA-512", "HEX");
+            // Authenticate with the server
+            $.jCryption.authenticate(
+                password,
+                "includes/libraries/jCryption/encrypt.php?generateKeypair=true",
+                "includes/libraries/jCryption/encrypt.php?handshake=true",
+                function(AESKey) {
+                    // Enable the buttons and the textfield
+                    $("#text, #send,#clearSessionStorage").attr("disabled",false);
+                    $("#channel_status").hide();
+                    $("#form_identify").show();
+                    $("#login").focus();
+                    // Save the current AES key into the sessionStorage
+                    sessionStorage.setItem("isConnected","1");
+                    sessionStorage.setItem("password",password);
+                    if ($("#jstree_group_selected").val() != undefined) {
+                        // load list of items
+                        if ($("#hid_cat").val() != "") {
+                            first_group = $("#hid_cat").val();
+                        }
+                        if (parseInt($("#query_next_start").val()) > 0) {
+                            start = parseInt($("#query_next_start").val());
+                        } else {
+                            start = 0;
+                        }
+                        // load item if needed and display items list
+                        ListerItems(first_group, "", start);;
+                        if ($("#open_id").val() != "") {
+                            AfficherDetailsItem($("#open_id").val());                        
+                        } else {
+                            $("#div_loading").hide();
+                        }
+                    }
+                },
+                function() {
+                    $("#channel_status").html("<span style=\"font-size: 16px;\">"+
+                        "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
+                        "onclick=\"sessionStorage.clear();localStorage.clear();window.location = window.location;\">"+
+                        "Clear sessionStorage</button>").show();
+                }
+            )
+        } else {
+            // Enable the buttons and the textfield
+            //$("#text, #send,#clearSessionStorage").attr("disabled",false);
+            $("#channel_status").hide();
+            $("#form_identify").show();
+            // Store the password from sessionStorage in the password variables
+            password = sessionStorage.password;
+        }
+    }
+
     function OpenDiv(div)
     {
         $("#"+div).slideToggle("slow");
@@ -263,7 +346,12 @@ $htmlHeaders .= '
     $(function() {
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
-
+        $("#user_session").val(sessionStorage.password);
+                                
+        /*TODO: si on chope n\'importe quel click, il faut vérifier si les mdp
+        sont les memes 
+        if (sessionStorage.password)
+*/
         //Display Tabs
         $("#item_edit_tabs, #item_tabs").tabs();
 
@@ -384,66 +472,13 @@ $htmlHeaders .= '
             }
         });
 
-        /**
-        * Creates a random string
-        * @returns {string} A random string
-        */
-        function randomString() {
-            var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-            var string_length = 128;
-            var randomstring = "";
-            for (var i=0; i<string_length; i++) {
-                var rnum = Math.floor(Math.random() * chars.length);
-                randomstring += chars.substring(rnum,rnum+1);
-            }
-            //randomstring += cursor.x;
-            //randomstring += cursor.y;
-            return randomstring;
-        }
-        // Initialize the password variable
-        var password;
-        // If a connection has not been made
-        if(!sessionStorage.isConnected){
-            $("#form_identify").hide();
-            $("#channel_status").show();
-            // Create a random AES key
-            var hashObj = new jsSHA(randomString(), "ASCII");
-            password = hashObj.getHash("SHA-512", "HEX");
-            // Authenticate with the server
-            $.jCryption.authenticate(
-                password,
-                "includes/libraries/jCryption/encrypt.php?generateKeypair=true",
-                "includes/libraries/jCryption/encrypt.php?handshake=true",
-                function(AESKey) {
-                    // Enable the buttons and the textfield
-                    $("#text, #send,#clearSessionStorage").attr("disabled",false);
-                    $("#channel_status").hide();
-                    $("#form_identify").show();
-                    $("#login").focus();
-                    // Save the current AES key into the sessionStorage
-                    sessionStorage.setItem("isConnected","1");
-                    sessionStorage.setItem("password",password);
-                },
-                function() {
-                    $("#channel_status").html("<span style=\"font-size: 16px;\">"+
-                        "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
-                        "onclick=\"sessionStorage.clear();localStorage.clear();window.location = window.location;\">"+
-                        "Clear sessionStorage</button>").show();
-                }
-            )
-        } else {
-            // Enable the buttons and the textfield
-            //$("#text, #send,#clearSessionStorage").attr("disabled",false);
-            $("#channel_status").hide();
-            $("#form_identify").show();
-            // Store the password from sessionStorage in the password variables
-            password = sessionStorage.password;
-        }
+        InitializePasswordVariable(0);
     });';
 
 if (!isset($_GET['page'])) {
     $htmlHeaders .= '
     $(function() {
+/*
         $("#login").focusout(function() {
             if ($("#login").val() != "" && $("#login").val() != "admin") {
                 $("#login_check_wait").show();
@@ -469,7 +504,7 @@ if (!isset($_GET['page'])) {
                 );
             }
         });
-
+*/
         $("#psk_confirm").focusout(function() {
             if ($("#psk_confirm").val() != $("#psk").val()) {
                 $("#but_identify_user").prop("disabled", true);

@@ -205,10 +205,14 @@ function decrypt($encrypted, $personalSalt = "")
  */
 function bCrypt($password, $cost)
 {
-    $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     $salt = sprintf('$2y$%02d$', $cost);
-    for ($i=0; $i<22; $i++) {
-        $salt.=$chars[mt_rand(0, 63)];
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
+    } else {
+        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i=0; $i<22; $i++) {
+            $salt.=$chars[mt_rand(0, 63)];
+        }
     }
     return crypt($password, $salt);
 }

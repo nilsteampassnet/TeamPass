@@ -101,6 +101,14 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 // Is personal SK available
 echo '
 <input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+// define what group todisplay in Tree
+if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
+    $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
+} else {
+    $firstGroup = "";
+}
+echo '
+<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.$firstGroup.'" />';
 
 echo '
 <div id="div_items">';
@@ -121,11 +129,6 @@ $tabItems = array();
 $cptTotal = 0;
 $folderCpt = 1;
 $prevLevel = 1;
-if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
-    $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
-} else {
-    $firstGroup = "";
-}
 
 if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
     $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
