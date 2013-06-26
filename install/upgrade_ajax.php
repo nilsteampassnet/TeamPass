@@ -1039,7 +1039,7 @@ if (isset($_POST['type'])) {
 
                 //Check if path is ok
                 if (is_dir($securePath)) {
-                    if (is_writable(dirname($securePath))) {
+                    if (is_writable($securePath)) {
                         //Do nothing
                     } else {
                         echo 'document.getElementById("res_step5").innerHTML = "<img src=\"images/exclamation-red.png\"> The SK path must be writable!";
