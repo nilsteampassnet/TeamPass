@@ -503,7 +503,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
-                        <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                        <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" autofocus="autofocus" />
                         <img id="login_check_wait" src="includes/images/ajax-loader.gif" alt="" style="display:none;" />
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">

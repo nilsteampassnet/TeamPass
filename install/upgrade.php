@@ -47,6 +47,7 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
             $_SESSION['pre'] = getSettingValue($val);
         } elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) {
             $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        }
     }
 }
 if (
@@ -387,7 +388,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <input type="hidden" id="step4" name="step4" value="" />';
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 5)
-    || isset($_GET['step'] && $_GET['step'] == 5)
+    || (isset($_GET['step']) && $_GET['step'] == 5)
 ) {
     //ETAPE 5
     echo '
