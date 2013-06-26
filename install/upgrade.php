@@ -47,6 +47,7 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
             $_SESSION['pre'] = getSettingValue($val);
         } elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) {
             $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        }
     }
 }
 if (
