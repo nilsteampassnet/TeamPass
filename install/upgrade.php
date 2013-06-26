@@ -387,7 +387,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <input type="hidden" id="step4" name="step4" value="" />';
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 5)
-    || isset($_GET['step'] && $_GET['step'] == 5)
+    || (isset($_GET['step']) && $_GET['step'] == 5)
 ) {
     //ETAPE 5
     echo '
