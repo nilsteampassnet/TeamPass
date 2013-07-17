@@ -450,7 +450,7 @@ class adLDAP
         }
 
         // Bind as the user
-        $this->_bind = @ldap_bind($this->_conn, $username.$this->_account_suffix, $password);
+        $this->_bind = @ldap_bind($this->_conn, "uid=".$username.",".$this->_account_suffix, $password); 
         if (!$this->_bind) {
             return (false);
         }

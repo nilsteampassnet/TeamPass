@@ -94,6 +94,7 @@ $txt['user_activity'] = "User Activity";
 
 $txt['items'] = "Items";
 $txt['enable_personal_saltkey_cookie'] = "Enable personal SALTKey to be stored in a cookie";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['personal_saltkey_cookie_duration'] = "Personal SALTKey cookie DAYS life time before expiration";
 $txt['admin_emails'] = "Emails";
 $txt['admin_emails_configuration'] = "Emails Configuration";

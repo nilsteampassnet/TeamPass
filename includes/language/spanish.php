@@ -507,6 +507,7 @@ $txt['pdf_password'] = "Clave de encriptación PDF";
 $txt['pdf_password_warning'] = "Debe proporcionar una clave de encriptación";
 $txt['personal_folder'] = "Carpeta personal";
 $txt['personal_saltkey_change_button'] = "Cámbialo";
+$txt['use_md5_password_as_salt'] = "Usar contrasenya de login como llave de encriptación SALT";
 $txt['personal_saltkey_cookie_duration'] = "Tiempo de vida en DIAS de la clave Salt personal antes de que expire";
 $txt['personal_saltkey_lost'] = "La he perdido";
 $txt['personal_salt_key'] = "Su clave Salt personal";
