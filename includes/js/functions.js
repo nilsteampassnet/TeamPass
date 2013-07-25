@@ -41,9 +41,13 @@ function IncreaseSessionTime(){
 		type    : "increase_session_time"
 		},
         function(data){
-        	$("#temps_restant").val(data[0].new_value);
-        	$("#date_end_session").val(data[0].new_value);
-        	$('#countdown').css("color","white");
+			if (data[0].new_value != "expired") {
+	        	$("#temps_restant").val(data[0].new_value);
+	        	$("#date_end_session").val(data[0].new_value);
+	        	$('#countdown').css("color","white");
+			} else {
+				document.location = "index.php?session=expired";
+			}
         },
         "json"
 	);
@@ -57,16 +61,16 @@ function countdown()
     var DayTill
     var theDay =  document.getElementById('temps_restant').value;
     var today = new Date() //Create an Date Object that contains today's date.
-    var second = Math.floor(theDay - (today.getTime()/1000))
-    var minute = Math.floor(second/60) //Devide "second" into 60 to get the minute
-    var hour = Math.floor(minute/60) //Devide "minute" into 60 to get the hour
+    var second = Math.floor(theDay - (today.getTime()/1000));
+    var minute = Math.floor(second/60); //Devide "second" into 60 to get the minute
+    var hour = Math.floor(minute/60); //Devide "minute" into 60 to get the hour
     CHour= hour % 24 //Correct hour, after devide into 24, the remainder deposits here.
-    if (CHour<10) {CHour = "0" + CHour}
+    if (CHour<10) {CHour = "0" + CHour;}
     CMinute= minute % 60 //Correct minute, after devide into 60, the remainder deposits here.
-    if (CMinute<10) {CMinute = "0" + CMinute}
+    if (CMinute<10) {CMinute = "0" + CMinute;}
     CSecond= second % 60 //Correct second, after devide into 60, the remainder deposits here.
-    if (CSecond<10) {CSecond = "0" + CSecond}
-    DayTill = CHour+":"+CMinute+":"+CSecond
+    if (CSecond<10) {CSecond = "0" + CSecond;}
+    DayTill = CHour+":"+CMinute+":"+CSecond;
 
     //Avertir de la fin imminante de la session
     if ( DayTill == "00:01:00" ){
@@ -74,7 +78,7 @@ function countdown()
         document.getElementById('countdown').style.color="red";
     }
 
-    //G?rer la fin de la session
+    // Manage end of session
     if ( $("#temps_restant").val() != "" && DayTill <= "00:00:00" )
         document.location = "index.php?session=expired";
 

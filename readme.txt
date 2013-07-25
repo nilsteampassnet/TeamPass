@@ -1,6 +1,6 @@
 |==============================================================================|
 |				TeamPass - A Collaborative Passwords Manager				   |
-|						2009-2013 (c) Nils Laumaillé							   |
+|						2009-2013 (c) Nils Laumaillé						   |
 |==============================================================================|
 
 ********************************************************************************
@@ -8,7 +8,7 @@
 * 								LICENCE AGREEMENT							   *
 * Before installing and using TeamPass, you must accept its licence defined	as *
 * GNU AFFERO GPL.															   *
-* Copyright (c) 2009-2013, Nils Laumaillé (Nils@TeamPass.net)					   *
+* Copyright (c) 2009-2013, Nils Laumaillé (Nils@TeamPass.net)				   *
 * 																			   *
 * This program is free software: you can redistribute it and/or modify		   *
 * it under the terms of the GNU Affero General Public License as			   *
@@ -47,33 +47,46 @@ LANGUAGES:
 * FRENCH 		by Nils
 * CZECH 		by Petr and Philipp
 * GERMAN 		by Philipp
-* RUSSIAN 		by Anton (to be finished)
-* TURKISH 		by Ahmet (to be finished)
-* NORWEGIAN 	by Kai (to be finished)
-* JAPANESE		by Shinji (to be finished)
+* RUSSIAN 		by Anton
+* TURKISH 		by Ahmet 
+* NORWEGIAN 	by Kai
+* JAPANESE		by Shinji
 * PORTUGUESE 	by Luiz LeFort
 * ITALIAN		by Federico
 
--------------------------------  TODO  -----------------------------------------
-* IMAP login
-* PostgreSQL database support
-* DB2 database support
-* Issue 187:	After LDAP support is configured every user (except admin) must
-exist in ldap
-* import from "Password safe" tool
-* settings page. manage settings via table and do a loop in order to display
-options.
-* Would it be possible to add support for syslog? It would be a nice feature to
-be able to log all activity to a third syslog server. This would be mainly for
-security and auditing.
-* Do your think your can support yubikey ?
-* Issue 242:	Feature Request: SALT Key Sync with LDAP
-* Tree search => if big list then the view doesn't scroll down to the found
-folder
-* LDAP improvement => 2.1.10
-* G129 => 2.2
-* email concerning OpenDirectory from MdG
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.18
+ #315 - jstree style.css badly referenced
+ #314 - Folder is not being deleted
+ #320 - Enabling LDAP prevents local admin login
+ #317 - server expected extensions are tested
+ #318 - Upgrade process badly creates sk.php file
+ #348 - Fix for undefined index "isAdministratedByRole"
+ #350 - Fix for Lock and delete user actions don't refresh page
+ #354 - Fix for removing folders
+ * Fix - no possibility to update a Role 
+ * New - requested user password complexity shown when changing password
+
+2.1.17
+ * New exchange encryption protocol. No key is visible. The channel is 
+ encrypted at start of session.
+ * HTTPS connection can be activated (be carefull, you need a certificate)
+ * Change Users passwords encryption
+ * Corrected - once clicked on not authorized Item, any Item selection was
+ no more possible.
+ #283 - Rights on a folder created at root are set.
+ #285 - New settings: Anyone can modify option can be activated by default
+ #287 - newly created personal folders ar propergated to the group
+ #289 - Personal folder name badly constructed
+ #270 - Restricted items visible in Find results
+ #298 - Protection against bad actions on personal folders
+ #299 - User can be explicetly administrated by Managers of specific Roles
+ #300 - Personal SK is encrypted in COOKIE
+ #301 - Corrected query call error
+ #302 - Under "Views" users can see items that exist in personal folders 
+ that have been accessed
+ #307 - fclose() statement badly placed
+
 2.1.16
  * #245 - #248 - #249 - #265 - #266 - #267 - #268 - #273
  * #277: Change personal saltkey error

@@ -123,11 +123,6 @@ $(function() {
     });
 });
 
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
 function supprimer_groupe(id)
 {
     if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
@@ -187,8 +182,8 @@ function add_new_folder()
             $.post(
                 "sources/folders.queries.php",
                 {
-                type    : "add_folder",
-                data      : aes_encrypt(data)
+                    type    : "add_folder",
+                    data    : aes_encrypt(data)
                 },
                 function(data) {
                     //Check errors

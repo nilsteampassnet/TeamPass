@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -53,7 +53,7 @@ switch ($_POST['type']) {
         $tst = $tree->getDescendants();
 
         // do some initializations
-        $file = $_SESSION['settings']['url_to_files_folder']."/".$_POST['file'];
+        $file = $_SESSION['settings']['path_to_files_folder']."/".$_POST['file'];
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -98,7 +98,7 @@ switch ($_POST['type']) {
                         if (!empty($line[0]) && !empty($line[2]) && !empty($account)) {
                             if ($continue_on_next_line == false) {
                                 // Prepare listing that will be shown to user
-                                $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                                $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
                                 // Initialize this variable in order to restart from scratch
                                 $account = "";
@@ -130,7 +130,7 @@ switch ($_POST['type']) {
 
         if ($line_number > 0) {
             //add last line
-            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
             $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$txt['all'].'</td></tr>';
@@ -164,7 +164,7 @@ switch ($_POST['type']) {
     //Insert into DB the items the user has selected
     case "import_items":
         //decrypt and retreive data in JSON format
-        $dataReceived = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
+        $dataReceived = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256));
 
         //Get some info about personal folder
         if ($_POST['folder'] == $_SESSION['user_id']) {
@@ -193,7 +193,7 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-                    'pw' => encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk']))),
+                    'pw' => encrypt(str_replace('&quote;', '"', $pw)),
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
@@ -282,8 +282,8 @@ switch ($_POST['type']) {
         $cacheFileF = fopen($cacheFileNameFolder, "w");
 
         //read xml file
-        if (file_exists("'".$_SESSION['settings']['url_to_files_folder']."/".$_POST['file'])."'") {
-            $xml = simplexml_load_file($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+        if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
+            $xml = simplexml_load_file($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
         }
 
         /**
@@ -564,8 +564,8 @@ switch ($_POST['type']) {
             $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$txt['nb_folders'].': '.
                 $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$txt['nb_items'].': '.
                 $numItems.'<br /><br />';
-            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<a href="#" onclick="toggle_importing_details()">'.
-                $txt['importing_details'].'</a><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
+            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
+                $txt['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
                 $txt['importing_folders'].':</b><br />';
 
             //if destination is not ROOT then get the complexity level
@@ -717,7 +717,7 @@ switch ($_POST['type']) {
                             array(
                                 'label' => stripslashes($item[2]),
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
-                                'pw' => encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk']))),
+                                'pw' => encrypt($pw),
                                 'url' => stripslashes($item[6]),
                                 'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[1]]['id'],
                                 'login' => stripslashes($item[4]),
@@ -755,7 +755,8 @@ switch ($_POST['type']) {
                                 'id_item' => $newId,
                                 'date' => time(),
                                 'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_import'
+                                'action' => 'at_creation',
+                                'raison' => 'at_import'
                            )
                         );
 

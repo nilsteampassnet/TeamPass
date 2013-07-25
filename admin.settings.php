@@ -200,7 +200,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['maintenance_mode'] != $_POST['maintenance_mode']) {
         updateSettings('maintenance_mode', $_POST['maintenance_mode']);
     }
-
+    // Update sts mode
+    if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
+        updateSettings('enable_sts', $_POST['enable_sts']);
+    }
     // Update send_stats
     if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats']) {
         updateSettings('send_stats', $_POST['send_stats']);
@@ -248,6 +251,10 @@ if (isset($_POST['save_button'])) {
     // Update anyone_can_modify
     if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify']) {
         updateSettings('anyone_can_modify', $_POST['anyone_can_modify']);
+    }
+    // Update anyone_can_modify_bydefault
+    if (@$_SESSION['settings']['anyone_can_modify_bydefault'] != $_POST['anyone_can_modify_bydefault']) {
+        updateSettings('anyone_can_modify_bydefault', $_POST['anyone_can_modify_bydefault']);
     }
     // Update enable_kb
     if (@$_SESSION['settings']['enable_kb'] != $_POST['enable_kb']) {
@@ -358,6 +365,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['2factors_authentication'])) {
         updateSettings('2factors_authentication', $_POST['2factors_authentication']);
     }
+    //psk_authentication
+    if (isset($_POST['psk_authentication'])) {
+        updateSettings('psk_authentication', $_POST['psk_authentication']);
+    }
     // Update proxy_ip setting
     if (@$_SESSION['settings']['proxy_ip'] != $_POST['proxy_ip']) {
         updateSettings('proxy_ip', $_POST['proxy_ip']);
@@ -403,6 +414,11 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['upload_imageresize_quality'] != @$_POST['upload_imageresize_quality']) {
         @updateSettings('upload_imageresize_quality', $_POST['upload_imageresize_quality']);
     }
+    // Update can_create_root_folder
+    if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder']) {
+        updateSettings('can_create_root_folder', $_POST['can_create_root_folder']);
+    }
+
 }
 
 echo '
@@ -554,7 +570,25 @@ $txt['settings_maintenance_mode'].'
                 </div>
               <td>
             </tr>';
-
+echo '<tr><td colspan="3"><hr></td></tr>';
+//Enable SSL STS
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <label>' .
+                          $txt['settings_enable_sts'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_enable_sts_tip'] . '" />
+                      </label>
+                </td>
+                <td>
+                    <div class="div_radio">
+                        <input type="radio" id="enable_sts_radio1" name="enable_sts" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="enable_sts_radio2" name="enable_sts" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
+                        <span class="setting_flag" id="flag_enable_sts"><img src="includes/images/status', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                <td>
+            </tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
 //Proxy
 echo '
@@ -611,7 +645,25 @@ echo '
                 </div>
               <td>
             </tr>';
-
+/*
+// psk_authentication
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$txt['admin_psk_authentication'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_psk_authentication_tip'].'" />
+                  </label>
+            </td>
+            <td>
+                <div class="div_radio">
+                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_psk_authentication"><img src="includes/images/status', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? '' : '-busy', '.png" /></span>
+                </div>
+              <td>
+            </tr>';
+*/
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones
@@ -758,6 +810,7 @@ echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                 <label>'.$txt['enable_personal_folder_feature'].'</label>
+                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['enable_personal_folder_feature_tip'].'" /></span>
             </td><td>
             <div class="div_radio">
                 <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
@@ -988,6 +1041,18 @@ echo '
                         <span class="setting_flag" id="flag_enable_user_can_create_folders"><img src="includes/images/status', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
+// enable can_create_root_folder
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['setting_can_create_root_folder'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="can_create_root_folder_radio1" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="can_create_root_folder_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="can_create_root_folder_radio2" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['can_create_root_folder']) ? ' checked="checked"':''), ' /><label for="can_create_root_folder_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_can_create_root_folder"><img src="includes/images/status', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable activate_expiration
@@ -1066,6 +1131,18 @@ echo '
                         <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$txt['yes'].'</label>
                         <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_anyone_can_modify"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
+// Enable Item modification by anyone by default
+echo '
+                <tr id="tr_option_anyone_can_modify_bydefault" style="display:', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? 'inline':'none', ';"><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$txt['settings_anyone_can_modify_bydefault'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="anyone_can_modify_bydefault_radio1" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_bydefault_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="anyone_can_modify_bydefault_radio2" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify_bydefault']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_bydefault_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_anyone_can_modify_bydefault"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 // enable restricted_to option

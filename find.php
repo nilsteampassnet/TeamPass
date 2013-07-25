@@ -72,6 +72,7 @@ foreach ($folders as $folder) {
 }
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
+    <input type="hidden" id="personalItem" />
     <div class="title ui-widget-content ui-corner-all">'.$txt['find'].'</div>
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">

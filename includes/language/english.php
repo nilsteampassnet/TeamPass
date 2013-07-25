@@ -5,6 +5,35 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['error_group_noparent'] = "No parent has been selected!";
+$txt['channel_encryption_no_iconv'] = "Extension ICONV is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
+$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
+$txt['admin_actions_title'] = "Specific Actions";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
+
+$txt['is_administrated_by_role'] = "User is administrated by";
+$txt['administrators_only'] = "Administrators only";
+$txt['managers_of'] = "Managers of role";
+$txt['managed_by'] = "Managed by";
+$txt['admin_small'] = "Admin";
+$txt['setting_can_create_root_folder'] = "Authorize new folder to be created at Root level";
+$txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
+$txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
+$txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
+
+$txt['admin_action_generate_encrypt_keys'] = "Generate new encryption keys set";
+$txt['admin_action_generate_encrypt_keys_tip'] = "Encryption keys set is a very important aspect in the security of your TeamPass installation. Indeed those keys are used in order to encrypt the channel between Server and Client. Even if this file is securized outside the WWW zone of your server, it is recommanded to regenerate the keys time to time. Notice that this operation can take up to 1 minute.";
+$txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
+$txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_failed'] = "Authentication failed!";
+$txt['purge_log'] = "Purge logs from";
+$txt['to'] = "to";
+$txt['purge_now'] = "Purge Now!";
+$txt['purge_done'] = "The purge has been performed!<br />Number of elements deleted: ";
+
 $txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";
 $txt['settings_upload_imagesext_tip'] = "Image types. Indicate the file extensions allowed separated with a coma (,)";
@@ -181,8 +210,6 @@ $txt['add_new_group'] = "Add a new folder";
 $txt['add_role_tip'] = "Add a new role.";
 $txt['admin'] = "Administration";
 $txt['admin_action'] = "Please validate your action";
-$txt['admin_actions_title'] = "Specific Actions";
-$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 $txt['admin_action_db_backup'] = "Create a backup of the database";
 $txt['admin_action_db_backup_key_tip'] = "Please enter the encryption key. Save it somewhere, it will be asked when restoring. (leave empty to not encrypt)";
 $txt['admin_action_db_backup_start_tip'] = "Start";

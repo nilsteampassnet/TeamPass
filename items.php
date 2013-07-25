@@ -30,21 +30,22 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $tree->rebuild();
 $folders = $tree->getDescendants();
 
-if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
+if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
+    && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
 // Get list of users
-$liste_utilisateurs = array();
-$users_string = "";
+$usersList = array();
+$usersString = "";
 $rows = $db->fetchAllArray("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $record) {
-    $liste_utilisateurs[$record['login']] = array(
+    $usersList[$record['login']] = array(
         "id" => $record['id'],
         "login" => $record['login'],
         "email" => $record['email'],
        );
-    $users_string .= $record['id']."#".$record['login'].";";
+    $usersString .= $record['id']."#".$record['login'].";";
 }
 // Get list of roles
 $arrRoles = array();
@@ -62,13 +63,13 @@ foreach ($rows as $reccord) {
     }
 }
 // Build list of visible folders
-$select_visible_folders_options = $select_visible_nonpersonal_folders_options = "";
+$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
 // Hidden things
 echo '
 <input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? $_GET['group'] : "", '" />
 <input type="hidden" id="complexite_groupe" />
 <input type="hidden" name="selected_items" id="selected_items" />
-<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$users_string.'" />
+<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlentities($listRoles, ENT_QUOTES, 'UTF-8').'" />
 <input type="hidden" id="bloquer_creation_complexite" />
 <input type="hidden" id="bloquer_modification_complexite" />
@@ -100,6 +101,14 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 // Is personal SK available
 echo '
 <input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+// define what group todisplay in Tree
+if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
+    $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
+} else {
+    $firstGroup = "";
+}
+echo '
+<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.$firstGroup.'" />';
 
 echo '
 <div id="div_items">';
@@ -116,141 +125,145 @@ echo '
         </div>
         <div id="sidebar" class="sidebar">';
 
-$tab_items = array();
-$cpt_total = 0;
-$folder_cpt = 1;
-$prev_level = 1;
-if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
-    $first_group = str_replace("#li_", "", $_COOKIE['jstree_select']);
-} else {
-    $first_group = "";
-}
+$tabItems = array();
+$cptTotal = 0;
+$folderCpt = 1;
+$prevLevel = 1;
 
 if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-    $list_folders_limited_keys = @array_keys($_SESSION['list_folders_limited']);
+    $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
 } else {
-    $list_folders_limited_keys = array();
+    $listFoldersLimitedKeys = array();
 }
 // list of items accessible but not in an allowed folder
-if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['list_restricted_folders_for_items']) > 0) {
-    $list_restricted_folders_for_items_keys = @array_keys($_SESSION['list_restricted_folders_for_items']);
+if (isset($_SESSION['list_restricted_folders_for_items'])
+    && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+    $listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
 } else {
-    $list_restricted_folders_for_items_keys = array();
+    $listRestrictedFoldersForItemsKeys = array();
 }
 
 echo '
             <div id="jstree" style="overflow:auto;">
-                <ul id="node_'.$folder_cpt.'">'; //
+                <ul id="node_'.$folderCpt.'">'; //
 foreach ($folders as $folder) {
     // Be sure that user can only see folders he/she is allowed to
     if (
         !in_array($folder->id, $_SESSION['forbiden_pfs'])
         || in_array($folder->id, $_SESSION['groupes_visibles'])
-        || in_array($folder->id, $list_folders_limited_keys)
-        || in_array($folder->id, $list_restricted_folders_for_items_keys)
+        || in_array($folder->id, $listFoldersLimitedKeys)
+        || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
     ) {
-        $display_this_node = false;
+        $displayThisNode = false;
         // Check if any allowed folder is part of the descendants of this node
-        $node_descendants = $tree->getDescendants($folder->id, true, false, true);
-        foreach ($node_descendants as $node) {
+        $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
+        foreach ($nodeDescendants as $node) {
             if (
-                in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))
-                || in_array($node, $list_folders_limited_keys)
-                || in_array($node, $list_restricted_folders_for_items_keys)
+                in_array(
+                    $node,
+                    array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+                )
+                || in_array($node, $listFoldersLimitedKeys)
+                || in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
-                $display_this_node = true;
+                $displayThisNode = true;
                 break;
             }
         }
 
-        if ($display_this_node == true) {
+        if ($displayThisNode == true) {
             $ident = "";
             for ($x = 1; $x < $folder->nlevel; $x++) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $nb_items = $data[0];
+            $itemsNb = $data[0];
             // get 1st folder
-            if (empty($first_group)) {
-                $first_group = $folder->id;
+            if (empty($firstGroup)) {
+                $firstGroup = $folder->id;
             }
             // If personal Folder, convert id into user name
-            if ($folder->title == $_SESSION['user_id']) {
+            if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) {
                 $folder->title = $_SESSION['login'];
             }
             // Prepare folder
-            $folder_txt = '
+            $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
-                $folder_txt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$nb_items.'</span>)</a>';
+                $folderTxt .= '
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>)</a>';
                 // case for restriction_to_roles
-            } elseif (in_array($folder->id, $list_folders_limited_keys)) {
-                $folder_txt .= '
+            } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
+                $folderTxt .= '
                             <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
-            } elseif (in_array($folder->id, $list_restricted_folders_for_items_keys)) {
-                $folder_txt .= '
+            } elseif (in_array($folder->id, $listRestrictedFoldersForItemsKeys)) {
+                $folderTxt .= '
                             <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
             } else {
-                $folder_txt .= '
+                $folderTxt .= '
                             <a id="fld_'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</a>';
             }
             // build select for all visible folders
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                    $select_visible_folders_options .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                    //$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                    if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ){
+                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&", $folder->title).'</option>';
+                    } else {
+                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&", $folder->title).'</option>';
+                    }
                 } else {
-                    $select_visible_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
                 }
             } else {
-                $select_visible_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
             }
             // build select for non personal visible folders
             if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-                $select_visible_nonpersonal_folders_options .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
             } else {
-                $select_visible_nonpersonal_folders_options .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
             }
             // Construire l'arborescence
-            if ($cpt_total == 0) {
+            if ($cptTotal == 0) {
                 // Force the name of the personal folder with the login name
                 if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) {
                     $folder->title = $_SESSION['login'];
                 }
-                echo $folder_txt;
-                $folder_cpt++;
+                echo $folderTxt;
+                $folderCpt++;
             } else {
                 // Construire l'arborescence
-                if ($prev_level < $folder->nlevel) {
+                if ($prevLevel < $folder->nlevel) {
                     echo '
-                <ul  id="node_'.$folder_cpt.'">'.$folder_txt;
-                    $folder_cpt++;
-                } elseif ($prev_level == $folder->nlevel) {
+                <ul  id="node_'.$folderCpt.'">'.$folderTxt;
+                    $folderCpt++;
+                } elseif ($prevLevel == $folder->nlevel) {
                     echo '
-                    </li>'.$folder_txt;
-                    $folder_cpt++;
+                    </li>'.$folderTxt;
+                    $folderCpt++;
                 } else {
                     $tmp = '';
                     // Afficher les items de la derni?eres cat s'ils existent
-                    for ($x = $folder->nlevel; $x < $prev_level; $x++) {
+                    for ($x = $folder->nlevel; $x < $prevLevel; $x++) {
                         echo "
                     </li>
                 </ul>";
                     }
                     echo '
-                    </li>'.$folder_txt;
-                    $folder_cpt++;
+                    </li>'.$folderTxt;
+                    $folderCpt++;
                 }
             }
-            $prev_level = $folder->nlevel;
+            $prevLevel = $folder->nlevel;
 
-            $cpt_total++;
+            $cptTotal++;
         }
     }
 }
 // clore toutes les balises de l'arbo
-for ($x = 1; $x < $prev_level; $x++) {
+for ($x = 1; $x < $prevLevel; $x++) {
     echo "
                 </li>
             </ul>";
@@ -299,7 +312,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['label'].' :</td>
                     <td>
-                        <input type="hidden" id="hid_label" value="', isset($data_item) ? $data_item['label'] : '', '" />
+                        <input type="hidden" id="hid_label" value="', isset($dataItem) ? $dataItem['label'] : '', '" />
                         <div id="id_label" style="display:inline;"></div>
                     </td>
                 </tr>';
@@ -308,7 +321,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['description'].' :</td>
                     <td>
-                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($data_item) ? $data_item['description'] : '', '" />
+                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? $dataItem['description'] : '', '" />
                     </td>
                 </tr>';
 // Line for PW
@@ -448,7 +461,7 @@ echo '
 echo '
             <label for="" class="">'.$txt['group'].' : </label>
             <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px">' .
-$select_visible_folders_options .
+$selectVisibleFoldersOptions .
 '</select>';
 // Line for LOGIN
 echo '
@@ -512,7 +525,7 @@ if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['rest
             <label for="" class="label_cpm">'.$txt['restricted_to'].' : </label>
             <select name="restricted_to_list" id="restricted_to_list" multiple="multiple">', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '
                 <optgroup label="'.$txt['users'].'">' : '';
-    foreach ($liste_utilisateurs as $user) {
+    foreach ($usersList as $user) {
         echo '
                     <option value="'.$user['id'].'">'.$user['login'].'</option>';
     }
@@ -540,7 +553,10 @@ echo '
 // Line for Item modification
 echo '
             <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify" />
+                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
+                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                    ' checked="checked"' : '', ' />
                 <label for="anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
             </div>';
 // Line for Item automatically deleted
@@ -558,7 +574,7 @@ echo '
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
                 <h3>'.$txt['email_select'].'</h3>
                 <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($liste_utilisateurs as $user) {
+foreach ($usersList as $user) {
     echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
 }
 echo '
@@ -606,7 +622,7 @@ echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$txt['group'].' : </label>
             <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;">' .
-$select_visible_folders_options .
+$selectVisibleFoldersOptions .
 '
             </select>
             </div>';
@@ -681,7 +697,10 @@ echo '
 // Line for Item modification
 echo '
             <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify" />
+                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify"',
+                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                    ' checked="checked"' : '', ' />
                 <label for="edit_anyone_can_modify">'.$txt['anyone_can_modify'].'</label>
             </div>';
 // Line for Item automatically deleted
@@ -699,7 +718,7 @@ echo '
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
                 <h3>'.$txt['email_select'].'</h3>
                 <select id="edit_annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($liste_utilisateurs as $user) {
+foreach ($usersList as $user) {
     echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
 }
 echo '
@@ -741,9 +760,9 @@ echo '
         <tr>
             <td>'.$txt['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe">
-                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$select_visible_folders_options .
-'
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
+                '<option value="0">---</option>' : '', '' .
+                $selectVisibleFoldersOptions .'
             </select></td>
         </tr>
         <tr>
@@ -784,7 +803,7 @@ echo '
             <td>'.$txt['group_select'].' : </td>
             <td><select id="edit_folder_folder">
                 <option value="0">-choisir-</option>' .
-$select_visible_folders_options .
+$selectVisibleFoldersOptions .
 '
             </select></td>
         </tr>
@@ -808,7 +827,7 @@ echo '
             <td>'.$txt['group_select'].' : </td>
             <td><select id="delete_rep_groupe">
                 <option value="0">-choisir-</option>' .
-$select_visible_folders_options .
+$selectVisibleFoldersOptions .
 '
             </select></td>
         </tr>
@@ -835,7 +854,7 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$select_visible_nonpersonal_folders_options .
+$selectVisibleNonPersonalFoldersOptions .
 '</select>
     </div>
 </div>';

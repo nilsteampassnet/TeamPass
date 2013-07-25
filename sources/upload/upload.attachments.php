@@ -244,14 +244,14 @@ if (!$chunks || $chunk == $chunks - 1) {
         // Log upload into databse only if "item edition"
         if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
             $db->queryInsert(
-                    'log_items',
-                    array(
-                            'id_item' => $_POST['itemId'],
-                            'date' => time(),
-                            'id_user' => $_SESSION['user_id'],
-                            'action' => 'at_modification',
-                            'raison' => 'at_add_file : '.addslashes($fileName)
-                    )
+                'log_items',
+                array(
+                        'id_item' => $_POST['itemId'],
+                        'date' => time(),
+                        'id_user' => $_SESSION['user_id'],
+                        'action' => 'at_modification',
+                        'raison' => 'at_add_file : '.addslashes($fileName)
+                )
             );
         }
     }

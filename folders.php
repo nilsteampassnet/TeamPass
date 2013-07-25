@@ -31,7 +31,7 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $tst = $tree->getDescendants();
 
 /* Build list of all folders */
-if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+if ($_SESSION['is_admin'] == 1 || $_SESSION['settings']['can_create_root_folder'] == 1) {
     $folders_list = "\'0\':\'".$txt['root']."\'";
 } else {
     $folders_list = "";
@@ -120,7 +120,7 @@ foreach ($tst as $t) {
                             '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
                         </td>
                         <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            <span id="complexite_'.$t->id.'">'.$pwComplexity[$node_data[0]][1].'</span>
+                            <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data[0]][1].'</span>
                         </td>
                         <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
                             <span id="parent_'.$t->id.'">'.$data[0].'</span>

@@ -13,7 +13,10 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
+if (
+        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])
+        || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1
+) {
     die('Hacking attempt...');
 }
 
@@ -53,7 +56,7 @@ if (!empty($_POST['type'])) {
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);

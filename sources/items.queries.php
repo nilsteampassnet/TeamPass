@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -73,12 +73,13 @@ if (isset($_POST['type'])) {
         case "new_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-                echo $returnValues;
+                //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+                //echo $returnValues;
+                echo encryptReturnedData(array("error" => "something_wrong"));
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_POST['key'], 256)), true);
+            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $url = htmlspecialchars_decode($dataReceived['url']);
@@ -89,9 +90,10 @@ if (isset($_POST['type'])) {
             if (!empty($pw)) {
                 // Check length
                 if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
-                    $returnValues = array("error" => "pw_too_long");
-                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-                    echo $returnValues;
+                    //$returnValues = array("error" => "pw_too_long");
+                    //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+                    //echo $returnValues;
+                    echo encryptReturnedData(array("error" => "pw_too_long"));
                     break;
                 }
                 // ;check if element doesn't already exist
@@ -121,6 +123,10 @@ if (isset($_POST['type'])) {
                         $restictedTo = $_SESSION['user_id'];
                     } else {
                         $pw = encrypt($pw);
+                    }
+                    if (empty($pw)) {
+                        echo encryptReturnedData(array("error" => "something_wrong"));
+                        break;
                     }
                     // ADD item
                     $newID = $db->queryInsert(
@@ -298,8 +304,9 @@ if (isset($_POST['type'])) {
                 $returnValues = array("error" => "something_wrong");
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
-            echo $returnValues;
+            //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            //echo $returnValues;
+            echo encryptReturnedData($returnValues);
             break;
 
         /*
@@ -309,8 +316,9 @@ if (isset($_POST['type'])) {
         case "update_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-                echo $returnValues;
+                //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+                //echo $returnValues;
+                echo encryptReturnedData(array("error" => "something_wrong"));
                 break;
             }
             // init
@@ -362,9 +370,10 @@ if (isset($_POST['type'])) {
                  ) {
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
-                        $returnValues = array("error" => "pw_too_long");
-                        $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-                        echo $returnValues;
+                        //$returnValues = array("error" => "pw_too_long");
+                        //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+                        //echo $returnValues;
+                        echo encryptReturnedData(array("error" => "pw_too_long"));
                         break;
                     }
                     // Get existing values -> TODO
@@ -394,6 +403,10 @@ if (isset($_POST['type'])) {
                     } else {
                         $pw = encrypt($pw);
                     }
+                    if (empty($pw)) {
+                        echo encryptReturnedData(array("error" => "something_wrong"));
+                        break;
+                    }
                     // ---Manage tags
                     // deleting existing tags for this item
                     $db->query("DELETE FROM ".$pre."tags WHERE item_id = '".$dataReceived['id']."'");
@@ -406,7 +419,7 @@ if (isset($_POST['type'])) {
                                 array(
                                     'item_id' => $dataReceived['id'],
                                     'tag' => strtolower($tag)
-                                   )
+                                )
                             );
                         }
                     }
@@ -755,8 +768,9 @@ if (isset($_POST['type'])) {
                         "error" => ""
                        );
                 } else {
-                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
-                    echo $returnValues;
+                    //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
+                    //echo $returnValues;
+                    echo encryptReturnedData(array("error" => "something_wrong"));
                     break;
                 }
             } else {
@@ -764,8 +778,9 @@ if (isset($_POST['type'])) {
                 $arrData = array("error" => "format");
             }
             // return data
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-            echo $returnValues;
+            //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+            //echo $returnValues;
+            echo encryptReturnedData($arrData);
             break;
 
         /*
@@ -892,9 +907,9 @@ if (isset($_POST['type'])) {
             $dataRestored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
             if ($dataDeleted[0] != 0 && $dataDeleted[0] > $dataRestored[0]) {
                 // This item is deleted => exit
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
-
-                echo $returnValues;
+                //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+                //echo $returnValues;
+                echo encryptReturnedData(array('show_detail_option' => 2));
                 break;
             }
             // Get all informations for this item
@@ -970,14 +985,25 @@ if (isset($_POST['type'])) {
             );
             $myTest = 0;
             if (in_array($_SESSION['user_id'], $rows_tmp)) {
-                $myTest = 1; //echo $myTest." ;; ";
+                $myTest = 1;
             }
             // Uncrypt PW
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                if (empty($pw)) {
+                    /*if (isset($_SESSION['my_sk_tmp']) && !empty($_SESSION['my_sk_tmp'])) {
+                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk_tmp'])));
+                    }*/
+                    if (empty($pw)) {
+                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                    }
+                }
                 $arrData['edit_item_salt_key'] = 1;
             } else {
                 $pw = decrypt($dataItem['pw']);
+                if (empty($pw)) {
+                    $pw = decryptOld($dataItem['pw']);
+                }
                 $arrData['edit_item_salt_key'] = 0;
             }
             // extract real pw from salt
@@ -1122,7 +1148,13 @@ if (isset($_POST['type'])) {
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
-                $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1) {
+                    $arrData['anyone_can_modify'] = 1;
+                } else {
+                    $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                }
+
                 $arrData['history_of_pwds'] = str_replace('"', '&quot;', $historyOfPws);
                 // Add this item to the latests list
                 if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
@@ -1308,9 +1340,10 @@ if (isset($_POST['type'])) {
             $arrData['timestamp'] = time();
             // print_r($arrData);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
+            //$returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
             // return data
-            echo $returnValues;
+            //echo $returnValues;
+            echo encryptReturnedData($arrData);
             break;
 
             /*
@@ -1339,7 +1372,10 @@ if (isset($_POST['type'])) {
                 $pwgen->setSecure(false);
             }
 
-            echo json_encode(array("key" => $pwgen->generate()), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo Encryption\Crypt\aesctr::encrypt(json_encode(
+                array("key" => $pwgen->generate()), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP),
+                $_SESSION['key'], 256
+            );
             break;
 
         /*
@@ -1403,23 +1439,28 @@ if (isset($_POST['type'])) {
                 }
             }
             // update Folders table
-            $db->queryUpdate(
-                "nested_tree",
-                array(
-                    'title' => $title
-                   ),
-                'id='.$dataReceived['folder']
+            $tmp = $db->fetchRow(
+                "SELECT title, parent_id, personal_folder FROM ".$pre."nested_tree WHERE id = ".$dataReceived['folder']
             );
-            // update complixity value
-            $db->queryUpdate(
-                "misc",
-                array(
-                    'valeur' => $dataReceived['complexity']
-                   ),
-                'intitule = "'.$dataReceived['folder'].'" AND type = "complex"'
-            );
-            // rebuild fuild tree folder
-            $tree->rebuild();
+            if ( $tmp[1] != 0 || $tmp[0] != $_SESSION['user_id'] || $tmp[2] != 1 ) {
+                $db->queryUpdate(
+                    "nested_tree",
+                    array(
+                        'title' => $title
+                       ),
+                    'id='.$dataReceived['folder']
+                );
+                // update complixity value
+                $db->queryUpdate(
+                    "misc",
+                    array(
+                        'valeur' => $dataReceived['complexity']
+                       ),
+                    'intitule = "'.$dataReceived['folder'].'" AND type = "complex"'
+                );
+                // rebuild fuild tree folder
+                $tree->rebuild();
+            }
             // send data
             echo '[{"error" : ""}]';
             break;
@@ -1490,8 +1531,18 @@ if (isset($_POST['type'])) {
                 $whereArg = " AND i.id IN (".implode(',', $_SESSION['list_folders_limited'][$_POST['id']]).")";
             }
             // check if this folder is visible
-            elseif (!in_array($_POST['id'], array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items'])))) {
-                echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "not_authorized"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            elseif (!in_array(
+                $_POST['id'],
+                array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items']))
+            )) {
+                echo Encryption\Crypt\aesctr::encrypt(
+                    json_encode(
+                        array("error" => "not_authorized"),
+                        JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                    ),
+                    $_SESSION['key'],
+                    256
+                );
                 break;
             } else {
                 $data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
@@ -1512,9 +1563,9 @@ if (isset($_POST['type'])) {
                 }*/
                 // List all ITEMS
                 if ($folderIsPf == 0) {
-                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label,
-                        i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                        l.date as date,
+                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        i.anyone_can_modify as anyone_can_modify, l.date as date,
                         n.renewal_period as renewal_period,
                         l.action as log_action, l.id_user as log_user,
                         k.rand_key as rand_key
@@ -1537,8 +1588,9 @@ if (isset($_POST['type'])) {
                     }
                     $rows = $db->fetchAllArray($query);
                 } else {
-                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                        l.date as date,
+                    $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        i.anyone_can_modify as anyone_can_modify,l.date as date,
                         n.renewal_period as renewal_period,
                         l.action as log_action, l.id_user as log_user
                     FROM ".$pre."items as i
@@ -1568,7 +1620,10 @@ if (isset($_POST['type'])) {
                         $expired_item = 0;
                         if ($_SESSION['settings']['activate_expiration'] == 1) {
                             $expirationFlag = '<img src="includes/images/flag-green.png">';
-                            if ($reccord['renewal_period'] > 0 && ($reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds'])) < time()) {
+                            if (
+                                $reccord['renewal_period'] > 0 &&
+                                ($reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds'])) < time()
+                            ) {
                                 $expirationFlag = '<img src="includes/images/flag-red.png">';
                                 $expired_item = 1;
                             }
@@ -1580,7 +1635,9 @@ if (isset($_POST['type'])) {
                         // TODO: Element is restricted to a group. Check if element can be seen by user
                         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
                         $user_is_included_in_role = 0;
-                        $roles = $db->fetchAllArray("SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id=".$reccord['id']);
+                        $roles = $db->fetchAllArray(
+                            "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id=".$reccord['id']
+                        );
                         if (count($roles) > 0) {
                             $item_is_restricted_to_role = 1;
                             foreach ($roles as $val) {
@@ -1605,7 +1662,10 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Can user modify it?
-                        if ($reccord['anyone_can_modify'] == 1 || ($_SESSION['user_id'] == $reccord['log_user']) || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)) {
+                        if ($reccord['anyone_can_modify'] == 1 ||
+                            $_SESSION['user_id'] == $reccord['log_user'] ||
+                            ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
+                        ) {
                             $canMove = 1;
                         }
                         // CASE where item is restricted to a role to which the user is not associated
@@ -1781,6 +1841,7 @@ if (isset($_POST['type'])) {
 
                 $rights = recupDroitCreationSansComplexite($_POST['id']);
             }
+
             // Identify of it is a personal folder
             if (in_array($_POST['id'], $_SESSION['personal_visible_groups'])) {
                 $findPfGroup = 1;
@@ -1830,10 +1891,19 @@ if (isset($_POST['type'])) {
                 $returnValues = array_merge($returnValues, $rights);
             }
             //print_r($returnValues);
-            // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['key'], 256);
+            /*// Encrypt data to return
+            $returnValues = Encryption\Crypt\aesctr::encrypt(
+                json_encode(
+                    $returnValues,
+                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                ),
+                $_SESSION['encKey'],
+                256
+            );
             // return data
             echo $returnValues;
+            */
+            echo encryptReturnedData($returnValues);
 
             break;
 
@@ -1842,38 +1912,43 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "recup_complex":
-            // Lock Item (if already locked), go back and warn
-            $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
+            if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
+                // Lock Item (if already locked), go back and warn
+                $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
 
-            // If token is taken for this Item and delay is passed then delete it.
-            if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] > 0 && !empty($dataTmp[0]) && round(abs(time()-$dataTmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']) {
-                $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-                //reload the previous data
-                $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
-            }
+                // If token is taken for this Item and delay is passed then delete it.
+                if (isset($_SESSION['settings']['delay_item_edition']) &&
+                    $_SESSION['settings']['delay_item_edition'] > 0 && !empty($dataTmp[0]) &&
+                    round(abs(time()-$dataTmp[0]) / 60, 2) > $_SESSION['settings']['delay_item_edition']
+                ) {
+                    $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                    //reload the previous data
+                    $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                }
 
-            // If edition by same user (and token not freed before for any reason, then update timestamp)
-            if (!empty($dataTmp[0]) && $dataTmp[1] == $_SESSION['user_id']) {
-                $db->query("UPDATE ".$pre."items_edition SET timestamp = '".time()."' WHERE user_id = '".$_SESSION['user_id']."' AND item_id = '".$_POST['item_id']."'");
-                // If no token for this Item, then initialize one
-            } elseif (empty($dataTmp[0])) {
-                $db->queryInsert(
-                    'items_edition',
-                    array(
-                            'timestamp' => time(),
-                            'item_id' => $_POST['item_id'],
-                            'user_id' => $_SESSION['user_id']
-                    )
-                );
-                // Edition not possible
-            } else {
-                $returnValues = array(
-                    "error" => "no_edition_possible",
-                    "error_msg" => $txt['error_no_edition_possible_locked']
-                );
-
-                echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-                break;
+                // If edition by same user (and token not freed before for any reason, then update timestamp)
+                if (!empty($dataTmp[0]) && $dataTmp[1] == $_SESSION['user_id']) {
+                    $db->query("UPDATE ".$pre."items_edition SET timestamp = '".time()."' WHERE user_id = '".$_SESSION['user_id']."' AND item_id = '".$_POST['item_id']."'");
+                    // If no token for this Item, then initialize one
+                } elseif (empty($dataTmp[0])) {
+                    $db->queryInsert(
+                        'items_edition',
+                        array(
+                                'timestamp' => time(),
+                                'item_id' => $_POST['item_id'],
+                                'user_id' => $_SESSION['user_id']
+                        )
+                    );
+                    // Edition not possible
+                } else {
+                    $returnValues = array(
+                        "error" => "no_edition_possible",
+                        "error_msg" => $txt['error_no_edition_possible_locked']
+                    );
+                    //echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+                    echo encryptReturnedData($returnValues);
+                    break;
+                }
             }
 
             // Get required Complexity for this Folder
@@ -1910,9 +1985,9 @@ if (isset($_POST['type'])) {
                 "val" => $data[0],
                 "visibility" => $visibilite,
                 "complexity" => $complexity
-               );
-
-            echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            );
+            //echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo encryptReturnedData($returnValues);
             break;
 
         /*
@@ -1937,8 +2012,9 @@ if (isset($_POST['type'])) {
                 $data = $dataItem['login'];
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['key'], 256);
-            echo $returnValues;
+            //$returnValues = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['encKey'], 256);
+            //echo $returnValues;
+            echo encryptReturnedData($data);
             break;
 
         /*
@@ -2398,4 +2474,20 @@ function passwordReplacement($pw)
     $pwRemplacements = array('&', '+');
 
     return preg_replace($pwPatterns, $pwRemplacements, $pw);
+}
+
+/*
+* FUNCTION
+* permits to encrypt data
+*/
+function encryptReturnedData($data)
+{
+    return Encryption\Crypt\aesctr::encrypt(
+        json_encode(
+            $data,
+            JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+        ),
+        $_SESSION['key'],
+        256
+    );
 }

@@ -127,23 +127,25 @@ $_SESSION['CPM'] = 1;
                         document.getElementById("encrypt_key_res").innerHTML = "<img src='images/tick.png'>";
 
                     //check if sk path is okay
-                    if (document.getElementById("sk_path").value != "")
-                        document.getElementById("sk_path_res").innerHTML = "<img src='images/tick.png'>";
-                    else{
+                    if (document.getElementById("sk_path").value != "") {
+                        data = "type="+step+
+                        "&skPath="+document.getElementById("sk_path").value;
+                    } else{
                         document.getElementById("sk_path_res").innerHTML = "<img src='images/exclamation-red.png'>";
                         status = false;
                     }
 
-                    if (status == true) {
+                    /*if (status == true) {
                         gauge.modify($('pbar'),{values:[0.60,1]});
                         document.getElementById("but_next").disabled = "";
-                    }
+                    }*/
                 } else
                 if (step == "step4") {
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 } else
                 if (step == "step5") {
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"install/images/ajax-loader.gif\" />";
                     document.getElementById("loader").style.display = "";
                     data = "type="+step;
                 }
@@ -188,7 +190,7 @@ require_once '../includes/language/english.php';
 require_once '../includes/include.php';
 // # LOADER
 echo '
-    <div style="position:absolute;top:49%;left:49%;display:none;" id="loader"><img src="images/ajax-loader.gif" /></div>';
+    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>';
 // # HEADER ##
 echo '
         <div id="top">
@@ -268,6 +270,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "iconv" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                     </div>
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="status_step1"></div>';
@@ -385,8 +391,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif ((isset($_POST['step']) && $_POST['step'] == 5) || (isset($_GET['step']) && $_GET['step'] == 5)) {
     // ETAPE 5
     echo '
-                    <h3>Step 5 - Update setting file</h3>
-                    This step will write the new setting.php file for your server configuration.<br />
+                    <h3>Step 5 - Miscellaneous</h3>
+                    This step will:<br />
+                    - write the new setting.php file for your server configuration <span id="step5_settingFile"></span><br />
+                    - write the new sk.php file for data encryption <span id="step5_skFile"></span><br />
                     Click on the button when ready.
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';

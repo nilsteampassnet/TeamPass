@@ -93,6 +93,7 @@ $htmlHeaders .= '
     function MenuAction(val)
     {
         if (val == "deconnexion") {
+            sessionStorage.clear();
             $("#menu_action").val(val);
             document.main_form.submit();
         } else {
@@ -108,68 +109,92 @@ $htmlHeaders .= '
     }
 
     //Identify user
-    function identifyUser(redirect)
+    function identifyUser(redirect, psk)
     {
         $("#erreur_connexion").hide();
         if (redirect == undefined) redirect = ""; //Check if redirection
-        if ($("#login").val() != "" && $("#pw").val() != "") {
-            $("#pw").removeClass("ui-state-error");
-            $("#ajax_loader_connexion").show();
-
-            //create random string
-            var randomstring = "";
-            var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz".split("");
-            for (var i = 0; i < 10; i++) {
-                randomstring += chars[Math.floor(Math.random() * chars.length)];
-            }
-
-            var data = "";
-            if ($("#2factors_code").val() != undefined) {
-                data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
-            }
-
-            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
-
-            //send query
-            $.post(
-                "sources/main.queries.php",
-                {
-                    type : "identify_user",
-                    data : aes_encrypt(data)
-                },
-                function(data) {
-                    if (data[0].value == randomstring) {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").hide();
-                        //redirection for admin is specific
-                        if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-                        else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-                        else window.location.href="index.php";
-                    } else if (data[0].value == "user_is_locked") {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
-                        $("#erreur_connexion").show();
-                    } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
-                        $("#erreur_connexion").show();
-                    } else if (data[0].value == "error") {
-                        $("#mysql_error_warning").html(data[0].text);
-                        $("#div_mysql_error").show().dialog("open");
-                    } else if (data[0].value == "false_onetimepw") {
-                        $("#ajax_loader_connexion").hide();
-                        $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
-                        $("#erreur_connexion").show();
-                    } else {
-                        $("#erreur_connexion").show();
-                        $("#ajax_loader_connexion").hide();
-                    }
-                },
-                "json"
-           );
-        } else {
-            $("#pw").addClass("ui-state-error");
+        // Check form data
+        if (psk == 1 && $("#psk").val() == "") {
+            $("#psk").addClass("ui-state-error");
+            return false;
+        } else if (psk == 1) {
+            $("#psk").removeClass("ui-state-error");
         }
+        if ($("#pw").val() == "") {
+            $("#pw").addClass("ui-state-error");
+            return false;
+        }
+        if ($("#login").val() == "") {
+            $("#login").addClass("ui-state-error");
+            return false;
+        }
+        // launch identification
+        $("#pw, #login").removeClass("ui-state-error");
+        $("#ajax_loader_connexion").show();
+
+        //create random string
+        var randomstring = "";
+        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz".split("");
+        for (var i = 0; i < 10; i++) {
+            randomstring += chars[Math.floor(Math.random() * chars.length)];
+        }
+
+        var data = "";
+        if ($("#2factors_code").val() != undefined) {
+            data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
+        }
+        if ($("#psk").val() != undefined) {
+            data = \', "psk":"\'+sanitizeString($("#psk").val())+\'"\'+
+                \', "psk_confirm":"\'+sanitizeString($("#psk_confirm").val())+\'"\';
+        }
+
+        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
+
+        //send query
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "identify_user",
+                data : aes_encrypt(data)
+            },
+            function(data) {
+                if (data[0].value == randomstring) {
+                    $("#erreur_connexion").hide();
+                    //redirection for admin is specific
+                    if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+                    else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
+                    else window.location.href="index.php";
+                } else if (data[0].value == "user_is_locked") {
+                    $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "bad_psk") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['bad_psk'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "bad_psk_confirmation") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['bad_psk_confirmation'].'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "psk_required") {
+                    $("#ajax_loader_connexion").hide();
+                    $("#erreur_connexion").html("'.$txt['psk_required'].'");
+                    $("#erreur_connexion, #connect_psk_confirm").show();
+                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                    $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
+                    $("#erreur_connexion").show();
+                } else if (data[0].value == "error") {
+                    $("#mysql_error_warning").html(data[0].text);
+                    $("#div_mysql_error").show().dialog("open");
+                } else if (data[0].value == "false_onetimepw") {
+                    $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
+                    $("#erreur_connexion").show();
+                } else {
+                    $("#erreur_connexion").show();
+                }
+                $("#ajax_loader_connexion").hide();
+            },
+            "json"
+       );
     }
 
     /*
@@ -193,6 +218,25 @@ $htmlHeaders .= '
                 $("#ajax_loader_send_mail").hide();
             }
        );
+    }
+
+    
+
+    /**
+    * Creates a random string
+    * @returns {string} A random string
+    */
+    function randomString() {
+        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+        var string_length = 128;
+        var randomstring = "";
+        for (var i=0; i<string_length; i++) {
+            var rnum = Math.floor(Math.random() * chars.length);
+            randomstring += chars.substring(rnum,rnum+1);
+        }
+        //randomstring += cursor.x;
+        //randomstring += cursor.y;
+        return randomstring;
     }
 
     function OpenDiv(div)
@@ -228,6 +272,7 @@ $htmlHeaders .= '
     *
        $(window).bind("beforeunload", function() {
         if ($("#menu_action").val() == "") {
+            sessionStorage.clear();
             //Forces the disconnection of the user
             $.ajax({
                 type: "POST",
@@ -240,7 +285,12 @@ $htmlHeaders .= '
     $(function() {
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
-
+        $("#user_session").val(sessionStorage.password);
+                                
+        /*TODO: si on chope n\'importe quel click, il faut vérifier si les mdp
+        sont les memes 
+        if (sessionStorage.password)
+*/
         //Display Tabs
         $("#item_edit_tabs, #item_tabs").tabs();
 
@@ -360,12 +410,48 @@ $htmlHeaders .= '
                 }
             }
         });
-
     });';
 
 if (!isset($_GET['page'])) {
     $htmlHeaders .= '
     $(function() {
+/*
+        $("#login").focusout(function() {
+            if ($("#login").val() != "" && $("#login").val() != "admin") {
+                $("#login_check_wait").show();
+                // check if login exists
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type    : "check_login_exists",
+                        userId    : $("#login").val()
+                    },
+                    function(data) {
+                        $("#login_check_wait").hide();
+                        if (data[0].login == "") {
+                            $("#login").addClass("ui-state-error");
+                        } else {
+                            $("#login").removeClass("ui-state-error");
+                        }
+                        if (data[0].psk == "") {
+                            $("#connect_psk_confirm").show();
+                        }
+                    },
+                    "json"
+                );
+            }
+        });
+*/
+        $("#psk_confirm").focusout(function() {
+            if ($("#psk_confirm").val() != $("#psk").val()) {
+                $("#but_identify_user").prop("disabled", true);
+                $("#psk, #psk_confirm").addClass("ui-state-error");
+            } else {
+                $("#but_identify_user").prop("disabled", false);
+                $("#psk, #psk_confirm").removeClass("ui-state-error");
+            }
+        });
+
         // DIALOG BOX FOR ASKING PASSWORD
         $("#div_forgot_pw").dialog({
             bgiframe: true,
@@ -379,12 +465,12 @@ if (!isset($_GET['page'])) {
                     $("#div_forgot_pw_alert").html("");
                     $("#div_forgot_pw_status").show();
                     $.post(
-                    "sources/main.queries.php",
-                    {
-                        type    : "send_pw_by_email",
-                        email    : $("#forgot_pw_email").val(),
-                        login    : $("#forgot_pw_login").val()
-                    },
+                        "sources/main.queries.php",
+                        {
+                            type    : "send_pw_by_email",
+                            email    : $("#forgot_pw_email").val(),
+                            login    : $("#forgot_pw_login").val()
+                        },
                         function(data) {
                             $("#div_forgot_pw_status").hide();
                             if (data[0].error != "") {
@@ -397,7 +483,7 @@ if (!isset($_GET['page'])) {
                             }
                         },
                         "json"
-                       );
+                    );
                 },
                 "'.$txt['cancel_button'].'": function() {
                     $("#div_forgot_pw_alert").html("");
@@ -433,6 +519,12 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             width: 300,
             height: 250,
             title: "'.$txt['index_change_pw'].'",
+            open: function( event, ui ) {
+                $("#change_pwd_complexPw").html("'.
+                    $txt['complex_asked'].' : '.$pwComplexity[$_SESSION['user_pw_complexity']][1]
+                .'");
+                $("#change_pwd_error").hide();
+            },
             buttons: {
                 "'.$txt['index_change_pw_button'].'": function() {
                     if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
@@ -457,15 +549,15 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                                 "json"
                            );
                         } else {
-                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("'.$txt['error_complex_not_enought'].'");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['error_complex_not_enought'].'");
                         }
                     } else {
-                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").html("'.$txt['index_pw_error_identical'].'");
+                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['index_pw_error_identical'].'");
                     }
                 },
                 "'.$txt['cancel_button'].'": function() {
                     $("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
-                     $("#new_pw, #new_pw2").val("");
+                    $("#new_pw, #new_pw2").val("");
                     $(this).dialog("close");
                 }
             }
@@ -477,12 +569,11 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             modal: true,
             autoOpen: false,
             width: 400,
-            height: 200,
+            height: 230,
             title: "'.$txt['menu_title_new_personal_saltkey'].'",
             buttons: {
                 "'.$txt['ok'].'": function() {
-                    $("#div_loading").show();
-
+                    $("#div_change_personal_saltkey_wait").show();
                     //Send query
                     $.post(
                         "sources/main.queries.php",
@@ -491,7 +582,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                            sk    : encodeURIComponent($("#new_personal_saltkey").val())
                         },
                         function(data) {
-                            $("#div_loading").hide();
+                            $("#div_change_personal_saltkey_wait").hide();
                             $("#div_change_personal_saltkey").dialog("close");
                         }
                    );
@@ -572,15 +663,14 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         if (ids == "") ids = $(selected).val();
                         else ids = ids + ";" + $(selected).val();
                     });
-                    $("#div_loading").show();
+                    $("#div_print_out_wait").show();
                     $("#print_out_error").hide();
                     $("#download_link").html("");
 
                     // Get PDF encryption password and make sure it is set
                     if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
                         $("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
-                        $("#div_loading").hide();
-
+                        $("#div_print_out_wait").hide();
                         return;
                     }
 
@@ -594,7 +684,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         },
                         function(data) {
                             $("#download_link").html(data[0].text);
-                            $("#div_loading").hide();
+                            $("#div_print_out_wait").hide();
                         },
                         "json"
                    );
@@ -757,7 +847,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                     up.start();
                 },
                 BeforeUpload: function (up, file) {
-                    $("#import_status_ajax_loader").show()
+                    $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'].'",
                         "xmlFile":file.name,
@@ -766,7 +856,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 },
                 UploadComplete: function(up, files) {
                     ImportKEEPASS(files[0].name);
-                    $("#import_status_ajax_loader").hide();
                 }
     		}
     	});
@@ -834,13 +923,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             },
             function(data) {
                 $("#div_loading").hide();
-                if (data[0].error == "not_kp_file") {
-                    $("#import_status").html(data[0].message);
-                    $("#import_status_ajax_loader").hide();
-                } else {
-                    $("#import_status").html(data[0].message);
-                    $("#import_status_ajax_loader").hide();
-                }
+                $("#import_status").html(data[0].message);
+                $("#import_status_ajax_loader").hide();
             },
             "json"
        );
@@ -952,7 +1036,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             "sources/main.queries.php",
             {
                type    : "store_personal_saltkey",
-               sk    : encodeURIComponent($("#input_personal_saltkey").val())
+               sk    : aes_encrypt("{\"psk\":\""+sanitizeString($("#input_personal_saltkey").val())+"\"}")
             },
             function(data) {
                 if ($("#input_personal_saltkey").val() != "") {
@@ -998,6 +1082,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             function(data) {
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
+                } else if (data[0].error == "conf_block") {
+                    $("#CPM_infos").html("No display available. Feature disabled in configuration.");
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$txt['admin_info'].'</span>"+data[0].output+"</ul>");
                 }
@@ -1073,7 +1159,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 }
             }
         });
-        
+
         // SQL IMPORT FOR RESTORING
         var uploader_restoreDB = new plupload.Uploader({
     		runtimes : "gears,html5,flash,silverlight,browserplus",
@@ -1145,16 +1231,22 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $(".div_radio").buttonset();
 
         //Enable/disable option
-        $("input[name=\'restricted_to\']").bind("click", radioClicks);
-        function radioClicks()
-        {
+        $("input[name=\'restricted_to\']").bind("click", function() {
             if ($(this).val()== 1) {
                 $("#tr_option_restricted_to_roles").show();
             } else {
                 $("#tr_option_restricted_to_roles").hide();
                 $("input[name=restricted_to_roles]").val(["0"]).button("refresh");
             }
-        }
+        });
+        $("input[name=\'anyone_can_modify\']").bind("click", function() {
+            if ($(this).val()== 1) {
+                $("#tr_option_anyone_can_modify_bydefault").show();
+            } else {
+                $("#tr_option_anyone_can_modify_bydefault").hide();
+                $("input[name=anyone_can_modify_bydefault]").val(["0"]).button("refresh");
+            }
+        });
 
         //check NEW SALT KEY
         $("#new_salt_key").keypress(function (e) {
@@ -1192,8 +1284,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         $("#result_admin_action_db_backup").html("");
         if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
         else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
-        else if (action == "admin_action_change_salt_key") option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
-        else if (action == "admin_email_send_backlog") {
+        else if (action == "admin_action_change_salt_key") {
+            option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+        } else if (action == "admin_email_send_backlog") {
             $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
         }
         //Lauchn ajax query
@@ -1228,6 +1321,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                     } else if (data[0].result == "changed_salt_key") {
                         //deconnect user
                         $("#menu_action").val("deconnexion");
+                        sessionStorage.clear();
                         document.main_form.submit();
                     } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
                         if (data[0].error != "") {
