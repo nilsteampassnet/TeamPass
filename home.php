@@ -46,10 +46,11 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         </tr>
                         <tr><td>'.$txt['index_change_pw_confirmation'].' :</td><td><input type="password" size="15" name="new_pw2" id="new_pw2" onkeypress="if (event.keyCode == 13) ChangeMyPass();" /></td></tr>
                     </table>
+                    <input type="hidden" id="pw_strength_value" />
                     <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$txt['index_change_pw_button'].'" />
                 </div>
                 <script type="text/javascript">
-                    $("#new_pw").focus();                    
+                    $("#new_pw").focus();
                 </script>';
 } elseif (!empty($_SESSION['derniere_connexion'])) {
     //Last items created block

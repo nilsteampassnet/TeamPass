@@ -48,7 +48,7 @@ LANGUAGES:
 * CZECH 		by Petr and Philipp
 * GERMAN 		by Philipp
 * RUSSIAN 		by Anton
-* TURKISH 		by Ahmet 
+* TURKISH 		by Ahmet
 * NORWEGIAN 	by Kai
 * JAPANESE		by Shinji
 * PORTUGUESE 	by Luiz LeFort
@@ -64,11 +64,12 @@ LANGUAGES:
  #348 - Fix for undefined index "isAdministratedByRole"
  #350 - Fix for Lock and delete user actions don't refresh page
  #354 - Fix for removing folders
- * Fix - no possibility to update a Role 
+ #359 - Fix for initial user password change complexity check
+ * Fix - no possibility to update a Role
  * New - requested user password complexity shown when changing password
 
 2.1.17
- * New exchange encryption protocol. No key is visible. The channel is 
+ * New exchange encryption protocol. No key is visible. The channel is
  encrypted at start of session.
  * HTTPS connection can be activated (be carefull, you need a certificate)
  * Change Users passwords encryption
@@ -83,7 +84,7 @@ LANGUAGES:
  #299 - User can be explicetly administrated by Managers of specific Roles
  #300 - Personal SK is encrypted in COOKIE
  #301 - Corrected query call error
- #302 - Under "Views" users can see items that exist in personal folders 
+ #302 - Under "Views" users can see items that exist in personal folders
  that have been accessed
  #307 - fclose() statement badly placed
 
@@ -102,7 +103,7 @@ LANGUAGES:
    #228 - #189 - #234 - #225 - #239 - #194 - #86
  * Corrected bug for sending emails
  * Different small corrections
- 
+
 2.1.13
  * Code improvement for PSR compliance
  * jQueryUI updated to v1.9

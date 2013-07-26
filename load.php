@@ -220,7 +220,7 @@ $htmlHeaders .= '
        );
     }
 
-    
+
 
     /**
     * Creates a random string
@@ -286,9 +286,9 @@ $htmlHeaders .= '
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
         $("#user_session").val(sessionStorage.password);
-                                
+
         /*TODO: si on chope n\'importe quel click, il faut vérifier si les mdp
-        sont les memes 
+        sont les memes
         if (sessionStorage.password)
 */
         //Display Tabs
@@ -888,20 +888,28 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
     function ChangeMyPass()
     {
-        var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
-        $.post(
-            "sources/main.queries.php",
-            {
-                type                : "change_pw",
-                change_pw_origine    : "first_change",
-                complexity            :    "",
-                data                 :    aes_encrypt(data)
-            },
-            function(data) {
-                document.main_form.submit();
-            },
-            "json"
-       );
+    	if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
+	    	if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+		        var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
+		        $.post(
+		            "sources/main.queries.php",
+		            {
+		                type                : "change_pw",
+		                change_pw_origine    : "first_change",
+		                complexity            :    "",
+		                data                 :    aes_encrypt(data)
+		            },
+		            function(data) {
+		                document.main_form.submit();
+		            },
+		            "json"
+				);
+			} else {
+				$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['error_complex_not_enought'].'");
+			}
+		} else {
+			$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['index_pw_error_identical'].'");
+		}
     }
 
     //Permits to upload passwords from KEEPASS file
