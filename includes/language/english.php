@@ -5,6 +5,10 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_tree_counters'] = "Show more counters in folders tree";
+$txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders.<br />This feature needs more SQL queries and may require more time to display the Tree.";
+$txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
+$txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass.";
 $txt['error_group_noparent'] = "No parent has been selected!";
 $txt['channel_encryption_no_iconv'] = "Extension ICONV is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";

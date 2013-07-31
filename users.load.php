@@ -26,8 +26,8 @@ $(function() {
           indicator : "<img src=\'includes/images/loading.gif\' />",
           type   : "text",
           select : true,
-          submit : " <img src=\'includes/images/disk_black.png\' />",
-          cancel : " <img src=\'includes/images/cross.png\' />",
+          submit : "<br /><img src=\'includes/images/disk_black.png\' />",
+          cancel : "<img src=\'includes/images/cross.png\' />",
           name : "newValue"
     });
 

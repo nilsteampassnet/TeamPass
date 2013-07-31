@@ -155,9 +155,15 @@ foreach ($folders as $folder) {
         || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
     ) {
         $displayThisNode = false;
+        $nbChildrenItems = 0;
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
+            // manage tree counters
+            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
+                $nbChildrenItems += $data[0];
+            }
             if (
                 in_array(
                     $node,
@@ -167,7 +173,7 @@ foreach ($folders as $folder) {
                 || in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
-                break;
+                //break;
             }
         }
 
@@ -178,7 +184,8 @@ foreach ($folders as $folder) {
             }
 
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $itemsNb = $data[0];
+            $itemsNb = $data[0];            
+            
             // get 1st folder
             if (empty($firstGroup)) {
                 $firstGroup = $folder->id;
@@ -192,7 +199,12 @@ foreach ($folders as $folder) {
                     <li class="jstreeopen" id="li_'.$folder->id.'">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                // display tree counters
+                if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                    $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
+                }
+                $folderTxt .= ')</a>';
                 // case for restriction_to_roles
             } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
                 $folderTxt .= '
@@ -593,6 +605,7 @@ echo '
         </div>
     </div>
     </form>
+    <div style="display:none;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // Formulaire EDITION ITEM
 echo '
@@ -747,6 +760,7 @@ echo '
     </div>';
 echo '
     </form>
+    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // Formulaire AJOUT REPERTORIE
 echo '
@@ -863,7 +877,7 @@ echo '
 <div id="div_item_history" style="display:none;">
     <div id="item_history_log"></div>
     ', (isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1) ?
-'<div id="new_history_entry_form" style="display:none;">
+'<div id="new_history_entry_form" style="display:none; margin-top:10px;"><hr>
         <div id="div_add_history_entry">
             <div id="item_history_log_error"></div>
             '.$txt['label'].'&nbsp;<input type="text" id="add_history_entry_label" size="40" />&nbsp;

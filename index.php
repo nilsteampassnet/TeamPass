@@ -9,7 +9,7 @@ session_start();
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -238,6 +238,7 @@ echo '
         <input type="hidden" name="language" id="language" value="" />
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
         <input type="hidden" name="user_session" id="user_session" value=""/>
+        <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
     </form>';
 
 /* INSERT ITEM BUTTONS IN MENU BAR */

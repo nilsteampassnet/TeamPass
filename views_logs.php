@@ -3,7 +3,7 @@
  * @file           views_logs.php
  * @author         Nils Laumaill�
  * @version        2.1.13
- * @copyright      (c) 2009-2013 Nils Laumaill�
+ * @copyright      (c) 2009-2013 Nils Laumaillé
  * @licensing      GNU AFFERO GPL 3.0
  * @link           http://www.teampass.net
  *
@@ -60,9 +60,8 @@ echo '
                 <table id="t_errors" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
                         <th style="width-max:38px;">'.$txt['date'].'</th>
-                        <th style="width:40%;">'.$txt['user'].'</th>
-                        <th style="width:20%;">'.$txt['role'].'</th>
-                        <th style="width:20%;">'.$txt['login_time'].'</th>
+                        <th style="width:60%;">'.$txt['label'].'</th>
+                        <th style="width:20%;">'.$txt['user'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

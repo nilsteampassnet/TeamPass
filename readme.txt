@@ -66,7 +66,11 @@ LANGUAGES:
  #354 - Fix for removing folders
  #359 - Fix for initial user password change complexity check
  * Fix - no possibility to update a Role
+ * Fix - editing users by clicking on the fields broken
+ * Fix - parse error in database errors log
  * New - requested user password complexity shown when changing password
+ * New - option for deactivate client-server encryption (usage of SSL)
+ * New - in tree, new counters added (subfolders and items in subfolders numbers)
 
 2.1.17
  * New exchange encryption protocol. No key is visible. The channel is

@@ -201,8 +201,6 @@ function extractLast( term ) {
 }
 
 
-
-
 function store_error(message_error, dialog_div, text_div){
     //Store error in DB
     $.post(
@@ -215,4 +213,34 @@ function store_error(message_error, dialog_div, text_div){
     //Display
     $("#"+text_div).html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+message_error);
 	$("#"+dialog_div).dialog("open");
+}
+
+
+function aes_encrypt(text)
+{
+    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+
+function aes_decrypt(text)
+{
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+
+function prepareExchangedData(data, type)
+{
+    if (type == "decode") {
+        if ($("#encryptClientServer").val() == 0) {
+            return $.parseJSON(data);
+        } else {
+            return $.parseJSON(aes_decrypt(data));
+        }
+    } else if (type == "encode") {
+        if ($("#encryptClientServer").val() == 0) {
+            return data;
+        } else {
+            return aes_encrypt(data);
+        }
+    }
 }

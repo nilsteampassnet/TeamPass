@@ -819,3 +819,46 @@ function isUTF8($string)
         $string
     );
 }
+
+/*
+* FUNCTION
+* permits to prepare data to be exchanged
+*/
+function prepareExchangedData($data, $type)
+{
+    if ($type == "encode") {
+        if (
+            isset($_SESSION['settings']['encryptClientServer'])
+            && $_SESSION['settings']['encryptClientServer'] == 0
+        ) {
+            return json_encode(
+                $data,
+                JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+            );
+        } else {
+            return Encryption\Crypt\aesctr::encrypt(
+                json_encode(
+                    $data,
+                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                ),
+                $_SESSION['key'],
+                256
+            );
+        }
+    } elseif  ($type == "decode") {
+        if (
+            isset($_SESSION['settings']['encryptClientServer'])
+            && $_SESSION['settings']['encryptClientServer'] == 0
+        ) {
+            return json_decode(
+                $data,
+                true
+            );
+        } else {        
+            return json_decode(
+                Encryption\Crypt\aesctr::decrypt($data, $_SESSION['key'], 256),
+                true
+            );
+        }
+    }
+}

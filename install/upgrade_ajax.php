@@ -707,6 +707,7 @@ if (isset($_POST['type'])) {
                 array('admin','enable_kb','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
                 array('admin','enable_sts','0', 0),
+                array('admin','encryptClientServer','1', 0),
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -1553,7 +1554,7 @@ if (isset($_POST['type'])) {
 
                 //Check if path is ok
                 if (is_dir($securePath)) {
-                    if (is_writable(dirname($securePath))) {
+                    if (is_writable($securePath)) {
                         //Do nothing
                     } else {
                         echo 'document.getElementById("res_step5").innerHTML = '.

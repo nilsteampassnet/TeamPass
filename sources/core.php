@@ -37,8 +37,7 @@ if (
     isset($_SERVER['HTTPS']) &&
     $_SERVER['HTTPS'] != 'on' &&
     isset($_SESSION['settings']['enable_sts']) &&
-    $_SESSION['settings']['enable_sts'] == 1 &&
-    $_SESSION['settings']['force_ssl'] == 1
+    $_SESSION['settings']['enable_sts'] == 1
 ) {
 	$url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 	redirect($url);
@@ -264,8 +263,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 /* Force HTTPS Strict Transport Security */
 if (
     isset($_SESSION['settings']['enable_sts']) &&
-    $_SESSION['settings']['enable_sts'] == 1 &&
-    $_SESSION['settings']['force_ssl'] == 1
+    $_SESSION['settings']['enable_sts'] == 1
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled

@@ -48,7 +48,7 @@ function ListerElemDel()
             $("#liste_elems_del").html(data[0].text);
             $('#item_deleted_select_all').click(
                 function() {
-                    if ($('#item_deleted_select_all').attr('checked')) {
+                    if (!$('#item_deleted_select_all').attr('checked')) {
                         $("input[type='checkbox']:not([disabled='disabled'])").attr('checked', true);
                     } else {
                         $("input[type='checkbox']:not([disabled='disabled'])").removeAttr('checked');

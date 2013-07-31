@@ -56,7 +56,8 @@ if (!empty($_POST['type'])) {
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+            //$data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+            $data_received = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);

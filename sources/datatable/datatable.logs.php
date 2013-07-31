@@ -123,7 +123,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
@@ -222,15 +222,12 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['who']), ENT_QUOTES).'",';
-
-        //col4
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
 
         //Finish the line
@@ -335,7 +332,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';

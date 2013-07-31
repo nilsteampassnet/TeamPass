@@ -115,7 +115,7 @@ if (isset($_POST['type'])) {
          */
         case "step3":
             if (is_dir($_POST['skPath'])) {
-                if (is_writable(dirname($_POST['skPath']))) {
+                if (is_writable($_POST['skPath'])) {
                     echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/tick.png\">";
                     gauge.modify($("pbar"),{values:[0.60,1]});
                     document.getElementById("but_next").disabled = "";
@@ -231,6 +231,7 @@ if (isset($_POST['type'])) {
                 ('admin','pw_life_duration','0'),
                 ('admin','maintenance_mode','1'),
                 ('admin','enable_sts','0'),
+                ('admin','encryptClientServer','1'),
                 ('admin','cpassman_version','".$k['version']."'),
                 ('admin','ldap_mode','0'),
                 ('admin','richtext','0'),

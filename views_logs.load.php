@@ -2,9 +2,9 @@
 
 /**
  * @file           views_logs.load.php
- * @author         Nils Laumaill�
+ * @author         Nils Laumaillé
  * @version        2.1.13
- * @copyright      (c) 2009-2013 Nils Laumaill�
+ * @copyright      (c) 2009-2013 Nils Laumaillé
  * @licensing      GNU AFFERO GPL 3.0
  * @link           http://www.teampass.net
  *

@@ -204,6 +204,10 @@ if (isset($_POST['save_button'])) {
     if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
         updateSettings('enable_sts', $_POST['enable_sts']);
     }
+    // Update sts mode
+    if ( @$_SESSION['settings']['encryptClientServer'] != $_POST['encryptClientServer'] ) {
+        updateSettings('encryptClientServer', $_POST['encryptClientServer']);
+    }
     // Update send_stats
     if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats']) {
         updateSettings('send_stats', $_POST['send_stats']);
@@ -219,6 +223,10 @@ if (isset($_POST['save_button'])) {
     // Update show_description
     if (@$_SESSION['settings']['show_description'] != $_POST['show_description']) {
         updateSettings('show_description', $_POST['show_description']);
+    }
+    // Update tree_counters
+    if (@$_SESSION['settings']['tree_counters'] != $_POST['tree_counters']) {
+        updateSettings('tree_counters', $_POST['tree_counters']);
     }
     // Update LDAP mode
     if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode']) {
@@ -564,7 +572,7 @@ $txt['settings_maintenance_mode'].'
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
                     <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
@@ -583,9 +591,28 @@ echo '
                 </td>
                 <td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_sts_radio1" name="enable_sts" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
-                        <input type="radio" id="enable_sts_radio2" name="enable_sts" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
+                        <input type="radio" id="enable_sts_radio1" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="enable_sts_radio2" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
                         <span class="setting_flag" id="flag_enable_sts"><img src="includes/images/status', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                <td>
+            </tr>';
+echo '<tr><td colspan="3"><hr></td></tr>';
+//Enable data exchange encryption
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <label>' .
+                          $txt['settings_encryptClientServer'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_encryptClientServer_tip'] . '" />
+                      </label>
+                </td>
+                <td>
+                    <div class="div_radio">
+                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $txt['no'] . '</label>
+                        <span class="setting_flag" id="flag_encryptClientServer"><img src="includes/images/status', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 <td>
             </tr>';
@@ -1198,6 +1225,21 @@ echo '
                         <input type="radio" id="show_description_radio1" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? ' checked="checked"' : '', ' /><label for="show_description_radio1">'.$txt['yes'].'</label>
                         <input type="radio" id="show_description_radio2" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_description']) ? ' checked="checked"':''), ' /><label for="show_description_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_show_description"><img src="includes/images/status', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
+// In Tree, display number of Items in subfolders and number of subfolders - tree_counters
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_tree_counters'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_tree_counters_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="tree_counters_radio1" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? ' checked="checked"' : '', ' /><label for="tree_counters_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="tree_counters_radio2" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['tree_counters']) ? ' checked="checked"':''), ' /><label for="tree_counters_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_tree_counters"><img src="includes/images/status', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
 // nb of items to display by ajax query
