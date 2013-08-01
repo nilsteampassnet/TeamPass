@@ -863,7 +863,7 @@ if (isset($_POST['type'])) {
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
-                "IsAdministratedByRole",
+                "isAdministratedByRole",
                 "TINYINT(5) NOT null DEFAULT '0'"
             );
             $res2 = addColumnIfNotExist(

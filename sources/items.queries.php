@@ -1472,9 +1472,7 @@ if (isset($_POST['type'])) {
         case 'lister_items_groupe':
             $arboHtml = $html = "";
             $folderIsPf = $showError = 0;
-            $itemsIDList = $rights = array();
-            $html = '';
-            $returnedData = array();
+            $itemsIDList = $rights = $returnedData = array();
             // Build query limits
             if (empty($_POST['start'])) {
                 $start = 0;
@@ -1856,7 +1854,7 @@ if (isset($_POST['type'])) {
             // Prepare returned values
             $returnValues = array(
                 "recherche_group_pf" => $findPfGroup,
-                "arborescence" => "<img src='includes/images/folder-open.png' />&nbsp;".$arboHtml,
+                "arborescence" => $arboHtml,
                 "array_items" => $itemsIDList,
                 "items_html" => $html,
                 "error" => $showError,

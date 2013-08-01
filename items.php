@@ -290,7 +290,7 @@ echo '
 echo '
     <div id="items_content">
         <div id="items_center">
-            <div id="items_path" class="ui-corner-all"></div>
+            <div id="items_path" class="ui-corner-all"><img src="includes/images/folder-open.png" />&nbsp;<span id="items_path_var"></span></div>
             <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-idex:1000;"><img src="includes/images/76.gif" /></div>
             <!--<div id="alpha_select">
                 <span id="A" onclick="items_list_filter($(this).attr(\'id\'))">A</span>&nbsp;

@@ -215,19 +215,6 @@ function store_error(message_error, dialog_div, text_div){
 	$("#"+dialog_div).dialog("open");
 }
 
-
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
-
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
-}
-
-
 function prepareExchangedData(data, type)
 {
     if (type == "decode") {

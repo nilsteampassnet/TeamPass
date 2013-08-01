@@ -179,7 +179,7 @@ function ListerItems(groupe_id, restricted, start)
                 //get data
                 data = prepareExchangedData(data, "decode");
 
-                $("#items_path").html(data.arborescence);
+                $("#items_path_var").html(data.arborescence);
 
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
@@ -220,7 +220,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-                    $("#items_path").html(data.arborescence);
+                    $("#items_path_var").html(data.arborescence);
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -2363,5 +2363,17 @@ function manage_history_entry(action, entry_id)
             "json"
        );
     }
+}
+
+
+function aes_encrypt(text)
+{
+    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+
+function aes_decrypt(text)
+{
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
 }
 </script>
