@@ -161,7 +161,7 @@ function ListerItems(groupe_id, restricted, start)
 
         //Disable menu buttons
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share').attr('disabled', 'disabled');
-        
+
         // clear existing clips
         //ZeroClipboard.destroy();
 
@@ -501,7 +501,7 @@ function AjouterItem()
                 },
                 function(data) {
                     //decrypt data
-    
+
                     try {
                         data = prepareExchangedData(data, "decode");
                     } catch (e) {
@@ -917,7 +917,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    
+
                     // Show timestamp
                     $("#timestamp_item_displayed").val(data.timestamp);
 
@@ -1791,6 +1791,7 @@ $(function() {
         title: "<?php echo $txt['item_menu_edi_elem'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
+				$("#edit_pw1").focus();
                 EditerItem();
             },
             "<?php echo $txt['cancel_button'];?>": function() {
@@ -2111,17 +2112,17 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                     } else {
                     	var first_group = $("#jstree_group_selected").val();
                     }
-    
+
         if ($("#hid_cat").val() != "") {
             first_group = $("#hid_cat").val();
         }
-    
+
         //load items
         if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
         else start = 0;
         ListerItems(first_group,'', start);
         //Load item if needed and display items list
-        if ($("#open_id").val() != "") {        
+        if ($("#open_id").val() != "") {
             AfficherDetailsItem($("#open_id").val());
         }
 	//}
