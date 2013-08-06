@@ -22,4 +22,8 @@ header("Content-Type: application/octet-stream");
 header("Pragma: public");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
-readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
+if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
+	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
+} else {
+	readfile($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']));
+}

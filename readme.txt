@@ -65,6 +65,7 @@ LANGUAGES:
  #350 - Fix for Lock and delete user actions don't refresh page
  #354 - Fix for removing folders
  #359 - Fix for initial user password change complexity check
+ #371 - Fix for uploaded files corrupted
  * Fix - no possibility to update a Role
  * Fix - editing users by clicking on the fields broken
  * Fix - parse error in database errors log
