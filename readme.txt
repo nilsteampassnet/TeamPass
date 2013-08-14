@@ -72,6 +72,7 @@ LANGUAGES:
  * New - requested user password complexity shown when changing password
  * New - option for deactivate client-server encryption (usage of SSL)
  * New - in tree, new counters added (subfolders and items in subfolders numbers)
+ * New language added - Catalan
 
 2.1.17
  * New exchange encryption protocol. No key is visible. The channel is

@@ -670,7 +670,8 @@ if (isset($_POST['type'])) {
                 ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png'),
                 ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
                 ('', 'swedish', 'Swedish' , 'se', 'se.png'),
-                ('', 'dutch', 'Dutch' , 'nl', 'nl.png');"
+                ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
+                ('', 'catalan', 'Catalan' , 'ct', 'ct.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_20").innerHTML = "<img src=\"images/tick.png\">";';
@@ -826,7 +827,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             } else {
                 echo 'document.getElementById("step5_skFile").innerHTML = "<img src=\"images/tick.png\">";';
             }
-            if (isset($result2) && $result2 != false && $result1 != false && $result3 != false) {
+            if (isset($result2) && $result2 != false && $result1 != false) {
                 echo 'gauge.modify($("pbar"),{values:[1,1]});';
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step5").innerHTML = "Operations are successfully completed.";';

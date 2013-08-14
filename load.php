@@ -260,10 +260,11 @@ $htmlHeaders .= '
                 lang    : lang
             },
             function(data) {
-                $("#language").val(lang);
-                document.temp_form.submit();
-            },
-            "json"
+            	if (data == "done") {
+	                $("#language").val(lang);
+	                document.location.href="index.php";
+	            }
+            }
        );
     }
 

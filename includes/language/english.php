@@ -5,6 +5,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+$txt['settings_ldap_type'] = "LDAP server type";
+
 $txt['server_time'] = "Server time";
 $txt['settings_tree_counters'] = "Show more counters in folders tree";
 $txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders. This feature needs more SQL queries and may require more time to display the Tree.";

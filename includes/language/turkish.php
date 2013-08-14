@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -188,9 +188,11 @@ $txt['change_user_functions_info'] = "Bu hesap ile ilişkilendirilmiş eylemleri
 $txt['change_user_functions_title'] = "ilişkilendirilmiş eylemleri özelleştir";
 $txt['channel_encryption_failed'] = "Authentication failed!";
 $txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_iconv'] = "Extension ICONVis not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['check_all_text'] = "Hepsini seç";
 $txt['close'] = "Kapat";
@@ -254,12 +256,12 @@ $txt['email_body1'] = "Merhaba,<br><br>Öğe";
 $txt['email_body2'] = "oluşturuldu.<br><br><a href='";
 $txt['email_body3'] = "Saygılar";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "eposta adresini değiştirin";
 $txt['email_changed'] = "eposta değiştirildi";
 $txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
-$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
+$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item '#tp_item#'.<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification on Item open";
 $txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
 $txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
@@ -278,6 +280,7 @@ $txt['enable_favourites'] = "Kullanıcıların sık kullanılanlar özellğini k
 $txt['enable_notify'] = "Enable notify";
 $txt['enable_personal_folder'] = "Kişisel klasörü aktifleştir";
 $txt['enable_personal_folder_feature'] = "Kişisel klasör özelliğini aktifleştir";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
 $txt['enable_personal_saltkey_cookie'] = "Enable personal SALTKey to be stored in a cookie";
 $txt['enable_send_email_on_user_login'] = "Kullanıcı giriş yaptığında yöneticiye e-posta gönder";
 $txt['enable_user_can_create_folders'] = "Users are allowed to manage folders in allowed parent folders";
@@ -366,8 +369,8 @@ $txt['importing_details'] = "Detayların Listesi";
 $txt['importing_folders'] = "Klasörler içe aktarılıyor";
 $txt['importing_items'] = "Öğeler içe aktarılıyor";
 $txt['import_button'] = "İçe Aktar";
-$txt['import_csv_anyone_can_modify_in_role_txt'] = "Tüm içe aktarılan öğelerde \"aynı roldeki herhangi bir kimse değiştirebilir\" hakkını aktif et.";
-$txt['import_csv_anyone_can_modify_txt'] = "Tüm içe aktarılan öğelerde \"herhangi bir kimse değiştirebilir\" hakkını aktif et.";
+$txt['import_csv_anyone_can_modify_in_role_txt'] = "Tüm içe aktarılan öğelerde 'aynı roldeki herhangi bir kimse değiştirebilir' hakkını aktif et.";
+$txt['import_csv_anyone_can_modify_txt'] = "Tüm içe aktarılan öğelerde 'herhangi bir kimse değiştirebilir' hakkını aktif et.";
 $txt['import_csv_dialog_info'] = "Bilgi: içe aktarım işleminde CSV dosyası kullanılmalıdır. Genellikle, KeePass programından aktarılan içerik bu formata uyar. Başka bir program tarafından üretilmiş bir içerik kullanıyorsanız, CSV yapısının şu şekilde olduğundan emin olun: Hesap (Account), Giriş İsmi (login name), Şifre (password), Web Sitesi (Web Site), Yorumlar (Comments)";
 $txt['import_csv_menu_title'] = "Öğeleri Dosyadan içe aktar (CSV/KeePass XML)";
 $txt['import_error_no_file'] = "Bir dosya seçmelisiniz!";
@@ -552,6 +555,7 @@ $txt['select'] = "Select";
 $txt['select_folders'] = "Klasörleri seç";
 $txt['select_language'] = "Dil Seçimi";
 $txt['send'] = "Gönder";
+$txt['server_time'] = "Server time";
 $txt['settings_anyone_can_modify'] = "Activate an option for each item that allows anyone to modify it";
 $txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a checkbox in the item form that permits the creator to allow the modification of this item by anyone.</span>";
@@ -560,6 +564,8 @@ $txt['settings_delay_for_item_edition'] = "Length of time until an item edit is 
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel editing can be performed. A kind of token is reserved.<br />This setting permits to delete the token. If the value is set to 0 then the token will never be deleted (unless by Administrator)</span>";
 $txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
 $txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
+$txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
+$txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass. /!\ Remember that the safer and more securized solution is to use an SSL connection between Client and Server.";
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_insert_manual_entry_item_history'] = "Enable permitting manual insertions in Items History log";
 $txt['settings_insert_manual_entry_item_history_tip'] = "";
@@ -588,6 +594,8 @@ $txt['settings_richtext_tip'] = "<span style='font-size:11px;max-width:300px;'>B
 $txt['settings_send_stats'] = "TeamPass Aylık kullanım istatistiklerini kullanım profilini daha iyi anlamak için geliştiriciye gönder";
 $txt['settings_send_stats_tip'] = "These statistics are entirely anonymous!<br /><span style='font-size:10px;max-width:300px;'>Your IP is not sent; only the following data are transmitted: amount of Items, Folders, Users, TeamPass version, personal folders enabled, ldap enabled.<br />Many thanks if you enable those statistics. By doing this you help me further develop TeamPass.</span>";
 $txt['settings_show_description'] = "Show Description in list of Items";
+$txt['settings_tree_counters'] = "Show more counters in folders tree";
+$txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders. This feature needs more SQL queries and may require more time to display the Tree.";
 $txt['settings_upload_docext'] = "Allowed document extensions";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a comma (,)";
 $txt['settings_upload_imageresize_options'] = "Should Images be resized";

@@ -1356,7 +1356,8 @@ if (isset($_POST['type'])) {
                 ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png'),
                 ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
                 ('', 'swedish', 'Swedish' , 'se', 'se.png'),
-                ('', 'dutch', 'Dutch' , 'nl', 'nl.png');"
+                ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
+                ('', 'catalan', 'Catalan' , 'ct', 'ct.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_16").innerHTML = '.
