@@ -66,6 +66,8 @@ LANGUAGES:
  #354 - Fix for removing folders
  #359 - Fix for initial user password change complexity check
  #371 - Fix for uploaded files corrupted
+ #291 - Fix to support openLDAP / posix style LDAP
+ #361 - Option to use login password as SALT key
  * Fix - no possibility to update a Role
  * Fix - editing users by clicking on the fields broken
  * Fix - parse error in database errors log

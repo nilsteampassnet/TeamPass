@@ -7,6 +7,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 $txt['settings_ldap_type'] = "LDAP server type";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['2factors_confirm_text'] = "Introduzca el password de un solo uso";
 $txt['2factors_image_text'] = "Por favor, escanee el código QR";
 $txt['2factors_tile'] = "Autenticación en dos pasos";

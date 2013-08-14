@@ -459,6 +459,21 @@ switch ($_POST['type']) {
                 $_SESSION['user_language'] = $data['user_language'];
                 $_SESSION['user_email'] = $data['email'];
 
+            	/* If this option is set user password MD5 is used as personal SALTKey */
+				if (
+					isset($_SESSION['settings']['use_md5_password_as_salt']) &&
+					$_SESSION['settings']['use_md5_password_as_salt'] == 1
+				)
+				{
+				    $_SESSION['my_sk'] = md5($passwordClear);
+				     setcookie(
+				       "TeamPass_PFSK_".md5($_SESSION['user_id']),
+				       encrypt($_SESSION['my_sk'], ""),
+				       time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+				       '/'
+				    );
+				}
+
                 @syslog(
                     LOG_WARNING,
                     "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s").
