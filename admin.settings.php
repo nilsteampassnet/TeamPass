@@ -315,6 +315,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['enable_personal_saltkey_cookie'] != $_POST['enable_personal_saltkey_cookie']) {
         updateSettings('enable_personal_saltkey_cookie', $_POST['enable_personal_saltkey_cookie']);
     }
+    // Update use_md5_password_as_salt
+    if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
+        updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
+    }
     // Update personal_saltkey_cookie_duration
     if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
         updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
@@ -793,6 +797,18 @@ echo '
                 <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
                 <input type="radio" id="enable_pf_feature_radio2" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_pf_feature']) ? ' checked="checked"':''), ' /><label for="enable_pf_feature_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_enable_pf_feature"><img src="includes/images/status', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '' : '-busy', '.png" /></span>
+            </div>
+            </td</tr>';
+// enable Use MD5 passowrd as Personal SALTKEY
+echo '
+            <tr><td>
+                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                <label>'.$txt['use_md5_password_as_salt'].'</label>
+            </td><td>
+            <div class="div_radio">
+                <input type="radio" id="use_md5_password_as_salt_radio1" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? ' checked="checked"' : '', ' /><label for="use_md5_password_as_salt_radio1">'.$txt['yes'].'</label>
+                <input type="radio" id="use_md5_password_as_salt_radio2" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['use_md5_password_as_salt']) ? ' checked="checked"':''), ' /><label for="use_md5_password_as_salt_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_use_md5_password_as_salt"><img src="includes/images/status', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '' : '-busy', '.png" /></span>
             </div>
             </td</tr>';
 // enable PF cookie for Personal SALTKEY
