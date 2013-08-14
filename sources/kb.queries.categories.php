@@ -2,7 +2,7 @@
 /**
  * @file          kb.queries.categories.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net

@@ -2,7 +2,7 @@
 /**
  * @file          roles.load.php
  * @author        Nils Laumaillé
- * @version         2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -213,7 +213,7 @@ function allow_pw_change_for_role(id, value)
 function refresh_roles_matrix(order)
 {
 	$("#div_loading").show();
-	
+
     //clean up
     $("#roles_next, #roles_previous").hide();
 

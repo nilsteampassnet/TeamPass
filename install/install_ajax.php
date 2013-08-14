@@ -50,7 +50,6 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
             if (ini_get('max_execution_time')<60) {
-                $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.
                     ' Please try to set to 60s at least during installation.&nbsp;'.

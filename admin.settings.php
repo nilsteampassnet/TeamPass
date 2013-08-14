@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file        admin.settings.php
- * @author      Nils Laumaillé
- * @version     2.1.13
- * @copyright   (c) 2009-2013 Nils Laumaillé
- * @licensing   GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file          admin.settings.php
+ * @author        Nils Laumaillé
+ * @version       2.1.18
+ * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link		  http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
