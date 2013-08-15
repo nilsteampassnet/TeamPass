@@ -94,7 +94,7 @@ $(function() {
                     "sources/folders.queries.php",
                     {
                     type    : "update_folder",
-                    data      : $.jCryption.encrypt(data, sessionStorage.password)
+                    data      : aes_encrypt(data)
                     },
                     function(data) {
                         //Check errors

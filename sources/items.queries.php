@@ -1400,7 +1400,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
@@ -2276,7 +2276,7 @@ if (isset($_POST['type'])) {
                 break;
             } else {
                 // decrypt and retreive data in JSON format
-                $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+                $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
                 // Get all informations for this item
                 $sql = "SELECT *
                         FROM ".$pre."items as i

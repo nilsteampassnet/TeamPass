@@ -485,22 +485,10 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     <b>'.$txt['index_session_expired'].'</b>
                 </div>';
     }
-<<<<<<< HEAD
-    //Encryption info
-    echo '
-    <div id="channel_status" style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
-        ', !file_exists(SECUREPATH."/100_1024_keys.inc.php") ? $txt['channel_encryption_no_file'] :
-        '<span style="font-size: 16px;">&nbsp;'.$txt['channel_encryption_in_progress'].'</span> <img src="includes/images/ajax-loader.gif" alt="Loading..." title="Loading..." style="margin-right:15px;" />', '
-    </div>';
-    // CONNECTION FORM
-    echo '
-            <form method="post" name="form_identify" id="form_identify" action="" style="display:none;">
-=======
 
     // CONNECTION FORM
     echo '
             <form method="post" name="form_identify" id="form_identify" action="">
->>>>>>> 2.1.18
                 <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />

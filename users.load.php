@@ -274,7 +274,7 @@ $(function() {
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : $.jCryption.encrypt(data, sessionStorage.password)
+                            data    : aes_encrypt(data)
                         },
                         function(data) {
                             if (data[0].error == "none") {

@@ -29,9 +29,7 @@ $htmlHeaders = '
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
-
-        <script type="text/javascript" src="includes/libraries/jCryption/jquery.jcryption.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -103,6 +101,11 @@ $htmlHeaders .= '
             if (val == "") document.location.href="index.php";
             else document.location.href="index.php?page="+val;
         }
+    }
+
+    function aes_encrypt(text)
+    {
+        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
     //Identify user
@@ -408,65 +411,6 @@ $htmlHeaders .= '
                 }
             }
         });
-<<<<<<< HEAD
-
-        /**
-        * Creates a random string
-        * @returns {string} A random string
-        */
-        function randomString() {
-            var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-            var string_length = 128;
-            var randomstring = "";
-            for (var i=0; i<string_length; i++) {
-                var rnum = Math.floor(Math.random() * chars.length);
-                randomstring += chars.substring(rnum,rnum+1);
-            }
-            //randomstring += cursor.x;
-            //randomstring += cursor.y;
-            return randomstring;
-        }
-        // Initialize the password variable
-        var password;
-        // If a connection has not been made
-        if(!sessionStorage.isConnected){
-            $("#form_identify").hide();
-            $("#channel_status").show();
-            // Create a random AES key
-            var hashObj = new jsSHA(randomString(), "ASCII");
-            password = hashObj.getHash("SHA-512", "HEX");
-            // Authenticate with the server
-            $.jCryption.authenticate(
-                password,
-                "includes/libraries/jCryption/encrypt.php?generateKeypair=true",
-                "includes/libraries/jCryption/encrypt.php?handshake=true",
-                function(AESKey) {
-                    // Enable the buttons and the textfield
-                    $("#text, #send,#clearSessionStorage").attr("disabled",false);
-                    $("#channel_status").hide();
-                    $("#form_identify").show();
-                    $("#login").focus();
-                    // Save the current AES key into the sessionStorage
-                    sessionStorage.setItem("isConnected","1");
-                    sessionStorage.setItem("password",password);
-                },
-                function() {
-                    $("#channel_status").html("<span style=\"font-size: 16px;\">"+
-                        "'.$txt['channel_encryption_failed'].'</span><br /><button id=\"clearSessionStorage\" "+
-                        "onclick=\"sessionStorage.clear();window.location = window.location;\">"+
-                        "Clear sessionStorage</button>").show();
-                }
-            )
-        } else {
-            // Enable the buttons and the textfield
-            //$("#text, #send,#clearSessionStorage").attr("disabled",false);
-            $("#channel_status").hide();
-            $("#form_identify").show();
-            // Store the password from sessionStorage in the password variables
-            password = sessionStorage.password;
-        }
-=======
->>>>>>> 2.1.18
     });';
 
 if (!isset($_GET['page'])) {
@@ -593,7 +537,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                                     type    : "change_pw",
                                     change_pw_origine    : "user_change",
                                     complexity:    $("#pw_strength_value").val(),
-                                    data :    $.jCryption.encrypt(data, sessionStorage.password)
+                                    data :    aes_encrypt(data)
                                 },
                                 function(data) {
                                     if (data[0].error == "already_used") {
@@ -945,22 +889,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
     function ChangeMyPass()
     {
-<<<<<<< HEAD
-        var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
-        $.post(
-            "sources/main.queries.php",
-            {
-                type                : "change_pw",
-                change_pw_origine    : "first_change",
-                complexity            :    "",
-                data                 :    $.jCryption.encrypt(data, sessionStorage.password)
-            },
-            function(data) {
-                document.main_form.submit();
-            },
-            "json"
-       );
-=======
     	if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
 	    	if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
 		        var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
@@ -983,7 +911,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 		} else {
 			$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['index_pw_error_identical'].'");
 		}
->>>>>>> 2.1.18
     }
 
     //Permits to upload passwords from KEEPASS file
@@ -1062,7 +989,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             {
                type        : "import_items",
                folder    : $("#import_items_to").val(),
-               data        : $.jCryption.encrypt(items, sessionStorage.password),
+               data        : aes_encrypt(items),
                import_csv_anyone_can_modify    : $("#import_csv_anyone_can_modify").prop("checked"),
                import_csv_anyone_can_modify_in_role    : $("#import_csv_anyone_can_modify_in_role").prop("checked")
             },
@@ -1118,11 +1045,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             "sources/main.queries.php",
             {
                type    : "store_personal_saltkey",
-<<<<<<< HEAD
-               sk    : $.jCryption.encrypt($("#input_personal_saltkey").val(), sessionStorage.password)
-=======
                sk    : aes_encrypt("{\"psk\":\""+sanitizeString($("#input_personal_saltkey").val())+"\"}")
->>>>>>> 2.1.18
             },
             function(data) {
                 if ($("#input_personal_saltkey").val() != "") {
@@ -1371,11 +1294,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
         if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
         else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
         else if (action == "admin_action_change_salt_key") {
-<<<<<<< HEAD
-            option = $.jCryption.encrypt(sanitizeString($("#new_salt_key").val()), sessionStorage.password);
-=======
             option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
->>>>>>> 2.1.18
         } else if (action == "admin_email_send_backlog") {
             $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
         }
@@ -1419,8 +1338,6 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         } else {
                             $("#email_testing_results").html("'.addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok'])).'").show().attr("class","ui-corner-all ui-state-focus");
                         }
-                    } else if (data[0].result == "generated_keys_file") {
-                        $("#result_admin_action_generate_encrypt_keys").html("<img src=\'includes/images/tick.png\' alt=\'\' />");
                     }
                 }
             },

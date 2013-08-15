@@ -1011,15 +1011,6 @@ echo '
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
                     </span>
                 </div>';
-// ReGenerate the Keys encryption file
-echo '
-                <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_generate_encrypt_keys\')" style="cursor:pointer;">'.$txt['admin_action_generate_encrypt_keys'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_generate_encrypt_keys_tip'].'" /></span>
-                    <span id="result_admin_action_generate_encrypt_keys" style="margin-left:10px;"></span>
-                </div>';
-
 echo '
             </div>';
 // --------------------------------------------------------------------------------
