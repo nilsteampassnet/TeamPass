@@ -5,6 +5,20 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
+$txt['settings_ldap_type'] = "LDAP server type";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+$txt['server_time'] = "Server time";
+$txt['settings_tree_counters'] = "Show more counters in folders tree";
+$txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders. This feature needs more SQL queries and may require more time to display the Tree.";
+$txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
+$txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass. /!\ Remember that the safer and more securized solution is to use an SSL connection between Client and Server.";
+$txt['error_group_noparent'] = "No parent has been selected!";
+$txt['channel_encryption_no_iconv'] = "Extension ICONV is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
+$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
+$txt['admin_actions_title'] = "Specific Actions";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
 $txt['is_administrated_by_role'] = "User is administrated by";
 $txt['administrators_only'] = "Administrators only";
 $txt['managers_of'] = "Managers of role";
@@ -204,8 +218,6 @@ $txt['add_new_group'] = "Add a new folder";
 $txt['add_role_tip'] = "Add a new role.";
 $txt['admin'] = "Administration";
 $txt['admin_action'] = "Please validate your action";
-$txt['admin_actions_title'] = "Specific Actions";
-$txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 $txt['admin_action_db_backup'] = "Create a backup of the database";
 $txt['admin_action_db_backup_key_tip'] = "Please enter the encryption key. Save it somewhere, it will be asked when restoring. (leave empty to not encrypt)";
 $txt['admin_action_db_backup_start_tip'] = "Start";

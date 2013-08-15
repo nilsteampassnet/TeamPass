@@ -6,7 +6,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['settings_ldap_type'] = "LDAP server type";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['2factors_confirm_text'] = "Introduzca el password de un solo uso";
 $txt['2factors_image_text'] = "Por favor, escanee el código QR";
 $txt['2factors_tile'] = "Autenticación en dos pasos";
@@ -189,9 +190,11 @@ $txt['change_user_functions_info'] = "Seleccionar las funciones asociadas a esta
 $txt['change_user_functions_title'] = "Personalizar funciones asociadas";
 $txt['channel_encryption_failed'] = "Fallo de autenticación!";
 $txt['channel_encryption_in_progress'] = "Cifrando canal";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_file'] = "No se ha encontrado ningún juego de llaves!<br>Por favor inicie el proceso de actualización.";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_iconv'] = "Extension ICONVis not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['check_all_text'] = "Seleccionar todo";
 $txt['close'] = "Cerrar";
@@ -257,7 +260,7 @@ Elemento '";
 $txt['email_body2'] = "ha sido creado.<br /><br />Puede verlo haciendo click en <a href='";
 $txt['email_body3'] = "'>este enlace</a><br /><br />Saludos.";
 $txt['email_bodyalt_item_updated'] = "La clave para #item_label# ha sido actualizada.";
-$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">aquí</a><br /><br />Saludos.";
+$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>aquí</a><br /><br />Saludos.";
 $txt['email_body_on_user_login'] = "Hola,<br /><br />El usuario #tp_user# se ha conectado a TeamPass el día #tp_date# a las #tp_time#.<br />Saludos.";
 $txt['email_change'] = "Cambiar el email de la cuenta";
 $txt['email_changed'] = "Email cambiado";
@@ -281,6 +284,7 @@ $txt['enable_favourites'] = "Permitir a los usuarios almacenar Favoritos";
 $txt['enable_notify'] = "Activar notificaciones";
 $txt['enable_personal_folder'] = "Habilitar Carpeta Personal";
 $txt['enable_personal_folder_feature'] = "Habilitar la opción de Carpeta Personal";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
 $txt['enable_personal_saltkey_cookie'] = "Habilitar el almacenar la clave Salt personal en una cookie";
 $txt['enable_send_email_on_user_login'] = "Enviar un correo a los administradores cuando un usuario se conecte";
 $txt['enable_user_can_create_folders'] = "Los usuarios pueden administrar carpetas en las carpetas padre autorizadas";
@@ -507,7 +511,6 @@ $txt['pdf_password'] = "Clave de encriptación PDF";
 $txt['pdf_password_warning'] = "Debe proporcionar una clave de encriptación";
 $txt['personal_folder'] = "Carpeta personal";
 $txt['personal_saltkey_change_button'] = "Cámbialo";
-$txt['use_md5_password_as_salt'] = "Usar contrasenya de login como llave de encriptación SALT";
 $txt['personal_saltkey_cookie_duration'] = "Tiempo de vida en DIAS de la clave Salt personal antes de que expire";
 $txt['personal_saltkey_lost'] = "La he perdido";
 $txt['personal_salt_key'] = "Su clave Salt personal";
@@ -564,6 +567,7 @@ $txt['select'] = "Seleccionar";
 $txt['select_folders'] = "Seleccionar carpetas";
 $txt['select_language'] = "Seleccione su idioma";
 $txt['send'] = "Enviar";
+$txt['server_time'] = "Server time";
 $txt['settings_anyone_can_modify'] = "Activar una opción para cada elemento que le permita a cualquier persona modificarlo";
 $txt['settings_anyone_can_modify_bydefault'] = "Activate la opción de '<b><i>Cualquiera puede editar</b></i>' por defecto";
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:300px;'>Cuando está activado, añade una casilla en el elemento que permite a su creador posibilitar la modificación de este elemento por cualquier usuario.</span>";
@@ -572,6 +576,8 @@ $txt['settings_delay_for_item_edition'] = "Después de cuánto tiempo la edició
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>Cuando se edita un elemento, el elemento se bloquea para impedir ediciones paralelas. Para ello se reserva una especie de token.<br />Este parámetro permite borrar el token tras un cierto tiempo. Si el valor se establece a 0, el token nunca se borrará.</span>";
 $txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
 $txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
+$txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
+$txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass. /!\ Remember that the safer and more securized solution is to use an SSL connection between Client and Server.";
 $txt['settings_importing'] = "Habilitar importación de datos desde ficheros CVS/KeePass";
 $txt['settings_insert_manual_entry_item_history'] = "Enable permitting manual insertions in Items History log";
 $txt['settings_insert_manual_entry_item_history_tip'] = "";
@@ -600,6 +606,8 @@ $txt['settings_richtext_tip'] = "<span style='font-size:11px;max-width:300px;'>E
 $txt['settings_send_stats'] = "Enviar estadisticas mensuales al autor para un mejor entendimiento del uso de TeamPass";
 $txt['settings_send_stats_tip'] = "Estas estadísticas son completamente anónimas. Su IP no será enviada, solamente la siguiente información sera transmitida: cantidad de elementos, carpetas y usuarios, versión de TeamPass, carpetas personales habilitadas, LDAP habilitado. Le agradecemos por adelantado si habilita dichas estadísticas. Con esto me ayuda a seguir desarrollando TeamPass.";
 $txt['settings_show_description'] = "Mostrar descripción en la lista de elementos";
+$txt['settings_tree_counters'] = "Show more counters in folders tree";
+$txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders. This feature needs more SQL queries and may require more time to display the Tree.";
 $txt['settings_upload_docext'] = "Extensiones de documento permitidas";
 $txt['settings_upload_docext_tip'] = "Tipos de documento. Indicar las extensiones de fichero permitidas separadas por comas (,)";
 $txt['settings_upload_imageresize_options'] = "¿Deberían redimensionarse las imágenes?";

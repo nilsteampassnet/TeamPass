@@ -79,6 +79,7 @@ button{
 	color:#242D35;
 	margin:5px;
 	background-image: url(../images/canevas/menu_top_bckg.png);
+    min-height: 20px;
 }
 #items_list{
 	float:left;

@@ -2,11 +2,11 @@
 /**
  *
  * @file          folders.php
- * @author       Nils Laumaillé
- * @version        2.1.13
- * @copyright    (c) 2009-2013 Nils Laumaillé
- * @licensing    GNU AFFERO GPL 3.0
- * @link	     http://www.teampass.net
+ * @author        Nils Laumaillé
+ * @version       2.1.18
+ * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link	      http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -120,7 +120,7 @@ foreach ($tst as $t) {
                             '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
                         </td>
                         <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            <span id="complexite_'.$t->id.'">'.$pwComplexity[$node_data[0]][1].'</span>
+                            <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data[0]][1].'</span>
                         </td>
                         <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
                             <span id="parent_'.$t->id.'">'.$data[0].'</span>

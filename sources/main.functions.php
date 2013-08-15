@@ -3,7 +3,7 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -57,12 +57,38 @@ function stringUtf8Decode($string)
  *
  * crypt a string
  */
-function encryptOld($text, $personal_salt = "")
+function encryptOld($text, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $personal_salt, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+    if (!empty($personalSalt)) {
+        return trim(
+            base64_encode(
+                mcrypt_encrypt(
+                    MCRYPT_RIJNDAEL_256,
+                    $personalSalt,
+                    $text,
+                    MCRYPT_MODE_ECB,
+                    mcrypt_create_iv(
+                        mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                        MCRYPT_RAND
+                    )
+                )
+            )
+        );
     } else {
-        return trim(base64_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256, SALT, $text, MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND))));
+        return trim(
+            base64_encode(
+                mcrypt_encrypt(
+                    MCRYPT_RIJNDAEL_256,
+                    SALT,
+                    $text,
+                    MCRYPT_MODE_ECB,
+                    mcrypt_create_iv(
+                        mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                        MCRYPT_RAND
+                    )
+                )
+            )
+        );
     }
 }
 
@@ -71,14 +97,126 @@ function encryptOld($text, $personal_salt = "")
  *
  * decrypt a crypted string
  */
-function decryptOld($text, $personal_salt = "")
+function decryptOld($text, $personalSalt = "")
 {
-    if (!empty($personal_salt)) {
-        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $personal_salt, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+    if (!empty($personalSalt)) {
+        return trim(
+            mcrypt_decrypt(
+                MCRYPT_RIJNDAEL_256,
+                $personalSalt,
+                base64_decode($text),
+                MCRYPT_MODE_ECB,
+                mcrypt_create_iv(
+                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                    MCRYPT_RAND
+                )
+            )
+        );
     } else {
-        return trim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, SALT, base64_decode($text), MCRYPT_MODE_ECB, mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)));
+        return trim(
+            mcrypt_decrypt(
+                MCRYPT_RIJNDAEL_256,
+                SALT,
+                base64_decode($text),
+                MCRYPT_MODE_ECB,
+                mcrypt_create_iv(
+                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                    MCRYPT_RAND
+                )
+            )
+        );
     }
 }
+
+/**
+ * encrypt()
+ *
+ * crypt a string
+ */
+function encrypt($decrypted, $personalSalt = "")
+{
+    if (!empty($personalSalt)) {
+ 	    $staticSalt = $personalSalt;
+    } else {
+ 	    $staticSalt = SALT;
+    }
+    //set our salt to a variable
+    // Get 64 random bits for the salt for pbkdf2
+    $pbkdf2Salt = getBits(64);
+    // generate a pbkdf2 key to use for the encryption.
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
+    // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
+    $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+    //base64 trim
+    if (strlen($ivBase64 = rtrim(base64_encode($iv), '=')) != 43) {
+        return false;
+    }
+    // Encrypt $decrypted
+    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $iv);
+    // MAC the encrypted text
+    $mac = hash_hmac('sha256', $encrypted, $staticSalt);
+    // We're done!
+    return base64_encode($ivBase64 . $encrypted . $mac . $pbkdf2Salt);
+}
+
+/**
+ * decryptOld()
+ *
+ * decrypt a crypted string
+ */
+function decrypt($encrypted, $personalSalt = "")
+{
+    if (!empty($personalSalt)) {
+	    $staticSalt = $personalSalt;
+    } else {
+	    $staticSalt = SALT;
+    }
+    //base64 decode the entire payload
+    $encrypted = base64_decode($encrypted);
+    // get the salt
+    $pbkdf2Salt = substr($encrypted, -64);
+    //remove the salt from the string
+    $encrypted = substr($encrypted, 0, -64);
+    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
+    $iv = base64_decode(substr($encrypted, 0, 43) . '==');
+    // Remove $iv from $encrypted.
+    $encrypted = substr($encrypted, 43);
+    // Retrieve $mac which is the last 64 characters of $encrypted.
+    $mac = substr($encrypted, -64);
+    // Remove the last 64 chars from encrypted (remove MAC)
+    $encrypted = substr($encrypted, 0, -64);
+    //verify the sha256hmac from the encrypted data before even trying to decrypt it
+    if (hash_hmac('sha256', $encrypted, $staticSalt) != $mac) {
+        return false;
+    }
+    // Decrypt the data.
+    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4");
+    // Yay!
+    return $decrypted;
+}
+
+
+/**
+ * genHash()
+ *
+ * Generate a hash for user login
+ */
+function bCrypt($password, $cost)
+{
+    $salt = sprintf('$2y$%02d$', $cost);
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
+    } else {
+        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i=0; $i<22; $i++) {
+            $salt.=$chars[mt_rand(0, 63)];
+        }
+    }
+    return crypt($password, $salt);
+}
+
 
 /**
  * encrypt()
@@ -193,13 +331,13 @@ function trimElement($chaine, $element)
 function cleanString($string)
 {
     // Create temporary table for special characters escape
-    $tab_special_car = array();
+    $tabSpecialChar = array();
     for ($i = 0; $i <= 31; $i++) {
-        $tab_special_car[] = chr($i);
+        $tabSpecialChar[] = chr($i);
     }
-    array_push($tab_special_car, "<br />");
+    array_push($tabSpecialChar, "<br />");
 
-    return str_replace($tab_special_car, "", $string);
+    return str_replace($tabSpecialChar, "", $string);
 }
 
 /**
@@ -207,7 +345,7 @@ function cleanString($string)
  *
  * @return
  */
-function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is_admin, $id_fonctions, $refresh)
+function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions, $refresh)
 {
     global $server, $user, $pass, $database, $pre;
 
@@ -226,8 +364,8 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
-    if ($is_admin == 1) {
-        $groupes_visibles = array();
+    if ($isAdmin == 1) {
+        $groupesVisibles = array();
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
@@ -235,10 +373,10 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
         $_SESSION['groupes_visibles_list'] = "";
         $rows = $db->fetchAllArray("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
         foreach ($rows as $record) {
-            array_push($groupes_visibles, $record['id']);
+            array_push($groupesVisibles, $record['id']);
         }
-        $_SESSION['groupes_visibles'] = $groupes_visibles;
-        $_SESSION['all_non_personal_folders'] = $groupes_visibles;
+        $_SESSION['groupes_visibles'] = $groupesVisibles;
+        $_SESSION['all_non_personal_folders'] = $groupesVisibles;
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
         $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
@@ -263,7 +401,7 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
         }
 
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
-        $_SESSION['is_admin'] = $is_admin;
+        $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
         $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = $ret[0];
@@ -274,41 +412,41 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
-        $groupes_visibles = array();
-        $groupes_interdits = array();
-        $groupes_interdits_user = explode(';', trimElement($groupes_interdits_user, ";"));
-        if (!empty($groupes_interdits_user) && count($groupes_interdits_user) > 0) {
-            $groupes_interdits = $groupes_interdits_user;
+        $groupesVisibles = array();
+        $groupesInterdits = array();
+        $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+        if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
+            $groupesInterdits = $groupesInterditsUser;
         }
-        $_SESSION['is_admin'] = $is_admin;
-        $fonctions_associees = explode(';', trimElement($id_fonctions, ";"));
-        $new_liste_gp_visibles = array();
-        $liste_gp_interdits = array();
+        $_SESSION['is_admin'] = $isAdmin;
+        $fonctionsAssociees = explode(';', trimElement($idFonctions, ";"));
+        $newListeGpVisibles = array();
+        $listeGpInterdits = array();
 
-        $list_allowed_folders = $list_forbiden_folders = $list_folders_limited = $list_folders_editable_by_role = $list_restricted_folders_for_items = array();
+        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = array();
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
-        foreach ($fonctions_associees as $role_id) {
-            if (!empty($role_id)) {
+        foreach ($fonctionsAssociees as $roleId) {
+            if (!empty($roleId)) {
                 // Get allowed folders for each Role
                 $rows = $db->fetchAllArray(
                     "SELECT folder_id
                     FROM ".$pre."roles_values
-                    WHERE role_id=".$role_id
+                    WHERE role_id=".$roleId
                 );
                 if (count($rows) > 0) {
                     foreach ($rows as $reccord) {
-                        if (isset($reccord['folder_id']) && !in_array($reccord['folder_id'], $list_allowed_folders)) {
-                            array_push($list_allowed_folders, $reccord['folder_id']);
+                        if (isset($reccord['folder_id']) && !in_array($reccord['folder_id'], $listAllowedFolders)) {
+                            array_push($listAllowedFolders, $reccord['folder_id']);
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
                         $tmp = $db->queryFirst(
                             "SELECT allow_pw_change
                             FROM ".$pre."roles_title
-                            WHERE id = ".$role_id
+                            WHERE id = ".$roleId
                         );
-                        if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $list_folders_editable_by_role)) {
-                            array_push($list_folders_editable_by_role, $reccord['folder_id']);
+                        if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $listFoldersEditableByRole)) {
+                            array_push($listFoldersEditableByRole, $reccord['folder_id']);
                         }
                     }
                     // Check for the users roles if some specific rights exist on items
@@ -316,13 +454,13 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
                         "SELECT i.id_tree, r.item_id
                         FROM ".$pre."items as i
                         INNER JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
-                        WHERE r.role_id=".$role_id."
+                        WHERE r.role_id=".$roleId."
                         ORDER BY i.id_tree ASC"
                     );
                     $x = 0;
                     foreach ($rows as $reccord) {
                         if (isset($reccord['id_tree'])) {
-                            $list_folders_limited[$reccord['id_tree']][$x] = $reccord['item_id'];
+                            $listFoldersLimited[$reccord['id_tree']][$x] = $reccord['item_id'];
                             $x++;
                         }
                     }
@@ -331,60 +469,75 @@ function identifyUserRights($groupes_visibles_user, $groupes_interdits_user, $is
         }
         // Does this user is allowed to see other items
         $x = 0;
-        $rows = $db->fetchAllArray("SELECT id,id_tree FROM ".$pre."items WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'");
+        $rows = $db->fetchAllArray(
+            "SELECT id,id_tree FROM ".$pre."items
+            WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'"
+        );
         foreach ($rows as $reccord) {
-            $list_restricted_folders_for_items[$reccord['id_tree']][$x] = $reccord['id'];
+            $listRestrictedFoldersForItems[$reccord['id_tree']][$x] = $reccord['id'];
             $x++;
-            // array_push($list_restricted_folders_for_items, $reccord['id_tree']);
+            // array_push($listRestrictedFoldersForItems, $reccord['id_tree']);
         }
         // => Build final lists
         // Clean arrays
-        $allowed_folders_tmp = array();
-        $list_allowed_folders = array_unique($list_allowed_folders);
+        $allowedFoldersTmp = array();
+        $listAllowedFolders = array_unique($listAllowedFolders);
         // Add user allowed folders
-        $allowed_folders_tmp = array_unique(array_merge($list_allowed_folders, explode(';', trimElement($groupes_visibles_user, ";"))));
+        $allowedFoldersTmp = array_unique(
+            array_merge($listAllowedFolders, explode(';', trimElement($groupesVisiblesUser, ";")))
+        );
         // Exclude from allowed folders all the specific user forbidden folders
-        $allowed_folders = array();
-        foreach ($allowed_folders_tmp as $id) {
-            if (!in_array($id, $groupes_interdits_user) && !empty($id)) {
-                array_push($allowed_folders, $id);
+        $allowedFolders = array();
+        foreach ($allowedFoldersTmp as $id) {
+            if (!in_array($id, $groupesInterditsUser) && !empty($id)) {
+                array_push($allowedFolders, $id);
             }
         }
         // Clean array
-        $list_allowed_folders = array_filter(array_unique($allowed_folders));
+        $listAllowedFolders = array_filter(array_unique($allowedFolders));
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
         $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
-        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && isset($_SESSION['personal_folder']) && $_SESSION['personal_folder'] == 1) {
+        if (
+            isset($_SESSION['settings']['enable_pf_feature']) &&
+            $_SESSION['settings']['enable_pf_feature'] == 1 &&
+            isset($_SESSION['personal_folder']) &&
+            $_SESSION['personal_folder'] == 1
+        ) {
             $sql .= " AND title != '".$_SESSION['user_id']."'";
         }
 
         $pfs = $db->fetchAllArray($sql);
-        foreach ($pfs as $pf_id) {
-            array_push($_SESSION['forbiden_pfs'], $pf_id['id']);
+        foreach ($pfs as $pfId) {
+            array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
         // Get ID of personal folder
-        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && isset($_SESSION['personal_folder']) && $_SESSION['personal_folder'] == 1) {
+        if (
+            isset($_SESSION['settings']['enable_pf_feature']) &&
+            $_SESSION['settings']['enable_pf_feature'] == 1 &&
+            isset($_SESSION['personal_folder']) &&
+            $_SESSION['personal_folder'] == 1
+        ) {
             $pf = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_SESSION['user_id']."'");
             if (!empty($pf[0])) {
-                if (!in_array($pf[0], $list_allowed_folders)) {
+                if (!in_array($pf[0], $listAllowedFolders)) {
                     // get all descendants
                     $ids = $tree->getDescendants($pf[0], true);
                     foreach ($ids as $id) {
-                        array_push($list_allowed_folders, $id->id);
+                        array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
                     }
                 }
             }
         }
 
-        $_SESSION['all_non_personal_folders'] = $list_allowed_folders;
-        $_SESSION['groupes_visibles'] = $list_allowed_folders;
-        $_SESSION['groupes_visibles_list'] = implode(',', $list_allowed_folders);
+        $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
+        $_SESSION['groupes_visibles'] = $listAllowedFolders;
+        $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
 
-        $_SESSION['list_folders_limited'] = $list_folders_limited;
-        $_SESSION['list_folders_editable_by_role'] = $list_folders_editable_by_role;
-        $_SESSION['list_restricted_folders_for_items'] = $list_restricted_folders_for_items;
+        $_SESSION['list_folders_limited'] = $listFoldersLimited;
+        $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
+        $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
         $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = $ret[0];
@@ -453,10 +606,10 @@ function updateCacheTable($action, $id = "")
         foreach ($rows as $reccord) {
             // Get all TAGS
             $tags = "";
-            $item_tags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$reccord['id']);
-            foreach ($item_tags as $item_tag) {
-                if (!empty($item_tag['tag'])) {
-                    $tags .= $item_tag['tag']." ";
+            $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$reccord['id']);
+            foreach ($itemTags as $itemTag) {
+                if (!empty($itemTag['tag'])) {
+                    $tags .= $itemTag['tag']." ";
                 }
             }
             // form id_tree to full foldername
@@ -499,10 +652,10 @@ function updateCacheTable($action, $id = "")
         $data = $db->fetchArray($row);
         // Get all TAGS
         $tags = "";
-        $item_tags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
-        foreach ($item_tags as $item_tag) {
-            if (!empty($item_tag['tag'])) {
-                $tags .= $item_tag['tag']." ";
+        $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
+        foreach ($itemTags as $itemTag) {
+            if (!empty($itemTag['tag'])) {
+                $tags .= $itemTag['tag']." ";
             }
         }
         // form id_tree to full foldername
@@ -546,10 +699,10 @@ function updateCacheTable($action, $id = "")
         $data = $db->fetchArray($row);
         // Get all TAGS
         $tags = "";
-        $item_tags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
-        foreach ($item_tags as $item_tag) {
-            if (!empty($item_tag['tag'])) {
-                $tags .= $item_tag['tag']." ";
+        $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
+        foreach ($itemTags as $itemTag) {
+            if (!empty($itemTag['tag'])) {
+                $tags .= $itemTag['tag']." ";
             }
         }
         // form id_tree to full foldername
@@ -606,42 +759,46 @@ function teampassStats()
 
     // Prepare stats to be sent
     // Count no FOLDERS
-    $data_folders = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
+    $dataFolders = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
     // Count no USERS
-    $data_users = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users");
+    $dataUsers = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users");
     // Count no ITEMS
-    $data_items = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items");
+    $dataItems = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items");
     // Get info about installation
-    $data_system = array();
-    $rows = $db->fetchAllArray("SELECT valeur,intitule FROM ".$pre."misc WHERE type = 'admin' AND intitule IN ('enable_pf_feature','log_connections','cpassman_version')");
+    $dataSystem = array();
+    $rows = $db->fetchAllArray(
+        "SELECT valeur,intitule FROM ".$pre."misc
+        WHERE type = 'admin'
+        AND intitule IN ('enable_pf_feature','log_connections','cpassman_version')"
+    );
     foreach ($rows as $reccord) {
         if ($reccord['intitule'] == 'enable_pf_feature') {
-            $data_system['enable_pf_feature'] = $reccord['valeur'];
+            $dataSystem['enable_pf_feature'] = $reccord['valeur'];
         } elseif ($reccord['intitule'] == 'cpassman_version') {
-            $data_system['cpassman_version'] = $reccord['valeur'];
+            $dataSystem['cpassman_version'] = $reccord['valeur'];
         } elseif ($reccord['intitule'] == 'log_connections') {
-            $data_system['log_connections'] = $reccord['valeur'];
+            $dataSystem['log_connections'] = $reccord['valeur'];
         }
     }
     // Get the actual stats.
-    $stats_to_send = array(
+    $statsToSend = array(
         'uid' => md5(SALT),
         'time_added' => time(),
-        'users' => $data_users[0],
-        'folders' => $data_folders[0],
-        'items' => $data_items[0],
-        'cpm_version' => $data_system['cpassman_version'],
-        'enable_pf_feature' => $data_system['enable_pf_feature'],
-        'log_connections' => $data_system['log_connections'],
+        'users' => $dataUsers[0],
+        'folders' => $dataFolders[0],
+        'items' => $dataItems[0],
+        'cpm_version' => $dataSystem['cpassman_version'],
+        'enable_pf_feature' => $dataSystem['enable_pf_feature'],
+        'log_connections' => $dataSystem['log_connections'],
        );
     // Encode all the data, for security.
-    foreach ($stats_to_send as $k => $v) {
-        $stats_to_send[$k] = urlencode($k).'='.urlencode($v);
+    foreach ($statsToSend as $k => $v) {
+        $statsToSend[$k] = urlencode($k).'='.urlencode($v);
     }
     // Turn this into the query string!
-    $stats_to_send = implode('&', $stats_to_send);
+    $statsToSend = implode('&', $statsToSend);
 
-    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$stats_to_send, 'r');
+    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$statsToSend, 'r');
     // update the actual time
     $db->queryUpdate(
         "misc",
@@ -657,7 +814,7 @@ function teampassStats()
  *
  * @return
  */
-function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
+function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 {
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 
@@ -685,8 +842,8 @@ function sendEmail($subject, $text_mail, $email, $text_mail_alt = "")
     $mail->WordWrap = 80; // set word wrap
     $mail->isHtml(true); // send as HTML
     $mail->Subject = $subject;
-    $mail->Body = $text_mail;
-    $mail->AltBody = $text_mail_alt;
+    $mail->Body = $textMail;
+    $mail->AltBody = $textMailAlt;
     // send email
     if (!$mail->send()) {
         return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
@@ -746,4 +903,47 @@ function isUTF8($string)
         )*$%xs',
         $string
     );
+}
+
+/*
+* FUNCTION
+* permits to prepare data to be exchanged
+*/
+function prepareExchangedData($data, $type)
+{
+    if ($type == "encode") {
+        if (
+            isset($_SESSION['settings']['encryptClientServer'])
+            && $_SESSION['settings']['encryptClientServer'] == 0
+        ) {
+            return json_encode(
+                $data,
+                JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+            );
+        } else {
+            return Encryption\Crypt\aesctr::encrypt(
+                json_encode(
+                    $data,
+                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                ),
+                $_SESSION['key'],
+                256
+            );
+        }
+    } elseif  ($type == "decode") {
+        if (
+            isset($_SESSION['settings']['encryptClientServer'])
+            && $_SESSION['settings']['encryptClientServer'] == 0
+        ) {
+            return json_decode(
+                $data,
+                true
+            );
+        } else {        
+            return json_decode(
+                Encryption\Crypt\aesctr::decrypt($data, $_SESSION['key'], 256),
+                true
+            );
+        }
+    }
 }

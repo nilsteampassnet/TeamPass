@@ -3,7 +3,7 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -101,6 +101,14 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 // Is personal SK available
 echo '
 <input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+// define what group todisplay in Tree
+if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
+    $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
+} else {
+    $firstGroup = "";
+}
+echo '
+<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.$firstGroup.'" />';
 
 echo '
 <div id="div_items">';
@@ -152,9 +160,15 @@ foreach ($folders as $folder) {
         || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
     ) {
         $displayThisNode = false;
+        $nbChildrenItems = 0;
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
+            // manage tree counters
+            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
+                $nbChildrenItems += $data[0];
+            }
             if (
                 in_array(
                     $node,
@@ -164,7 +178,6 @@ foreach ($folders as $folder) {
                 || in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
-                break;
             }
         }
 
@@ -175,7 +188,8 @@ foreach ($folders as $folder) {
             }
 
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $itemsNb = $data[0];
+            $itemsNb = $data[0];            
+
             // get 1st folder
             if (empty($firstGroup)) {
                 $firstGroup = $folder->id;
@@ -189,7 +203,12 @@ foreach ($folders as $folder) {
                     <li class="jstreeopen" id="li_'.$folder->id.'">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                // display tree counters
+                if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                    $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
+                }
+                $folderTxt .= ')</a>';
                 // case for restriction_to_roles
             } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
                 $folderTxt .= '
@@ -275,7 +294,7 @@ echo '
 echo '
     <div id="items_content">
         <div id="items_center">
-            <div id="items_path" class="ui-corner-all"></div>
+            <div id="items_path" class="ui-corner-all"><img src="includes/images/folder-open.png" />&nbsp;<span id="items_path_var"></span></div>
             <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-idex:1000;"><img src="includes/images/76.gif" /></div>
             <!--<div id="alpha_select">
                 <span id="A" onclick="items_list_filter($(this).attr(\'id\'))">A</span>&nbsp;
@@ -590,6 +609,7 @@ echo '
         </div>
     </div>
     </form>
+    <div style="display:none;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // Formulaire EDITION ITEM
 echo '
@@ -744,6 +764,7 @@ echo '
     </div>';
 echo '
     </form>
+    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // Formulaire AJOUT REPERTORIE
 echo '
@@ -860,7 +881,7 @@ echo '
 <div id="div_item_history" style="display:none;">
     <div id="item_history_log"></div>
     ', (isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1) ?
-'<div id="new_history_entry_form" style="display:none;">
+'<div id="new_history_entry_form" style="display:none; margin-top:10px;"><hr>
         <div id="div_add_history_entry">
             <div id="item_history_log_error"></div>
             '.$txt['label'].'&nbsp;<input type="text" id="add_history_entry_label" size="40" />&nbsp;

@@ -103,7 +103,7 @@ class SMTP
         }
 
         #connect to the smtp server
-        $this->smtp_conn = fsockopen(
+        $this->smtp_conn = @fsockopen(
             $host, // the host of the server
             $port, // the port to use
             $errno, // error number if any
@@ -311,8 +311,8 @@ class SMTP
 
         if ($code != 354) {
             $this->error =
-                array("error" => "DATA command not accepted from server", 
-                      "smtp_code" => $code, 
+                array("error" => "DATA command not accepted from server",
+                      "smtp_code" => $code,
                       "smtp_msg" => substr($rply, 4));
             if ($this->do_debug >= 1) {
                 echo "SMTP -> ERROR: ".$this->error["error"] .
@@ -402,8 +402,8 @@ class SMTP
 
         if ($code != 250) {
             $this->error =
-                array("error" => "DATA not accepted from server", 
-                      "smtp_code" => $code, 
+                array("error" => "DATA not accepted from server",
+                      "smtp_code" => $code,
                       "smtp_msg" => substr($rply, 4));
             if ($this->do_debug >= 1) {
                 echo "SMTP -> ERROR: ".$this->error["error"] .

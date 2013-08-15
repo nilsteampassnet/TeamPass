@@ -272,6 +272,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "iconv" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
                     </div>
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="status_step1"></div>';
@@ -393,8 +395,6 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     This step will:<br />
                     - write the new setting.php file for your server configuration <span id="step5_settingFile"></span><br />
                     - write the new sk.php file for data encryption <span id="step5_skFile"></span><br />
-                    - generate the server/client exchanges encryption keys <span id="step5_keysFile"></span><br />
-                    This operation could potentially take up to 1 minute. Please be patient.<br />
                     Click on the button when ready.
 
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>  ';

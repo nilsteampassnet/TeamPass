@@ -1,11 +1,11 @@
 <?php
 /**
- * @file           views.php
+ * @file          views.php
  * @author        Nils Laumaillé
- * @version         2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link            http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -25,7 +25,7 @@ echo '
     <ul>
         <li><a href="#tabs-1">'.$txt['logs_passwords'].'</a></li>
         <li><a href="#tabs-2">'.$txt['deletion'].'</a></li>
-        <li><a href="#tabs-3">'.$txt['logs'].'</a></li>
+        <li><a href="views_logs.php">'.$txt['logs'].'</a></li>
         <li><a href="#tabs-4">'.$txt['renewal_menu'].'</a></li>
         <li><a href="views_database.php">'.$txt['database_menu'].'</a></li>
     </ul>';

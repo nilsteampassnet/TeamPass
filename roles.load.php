@@ -2,7 +2,7 @@
 /**
  * @file          roles.load.php
  * @author        Nils Laumaillé
- * @version         2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -112,6 +112,7 @@ $("#add_new_role").dialog({
                         } else {
                             $("#edit_role_title").val("");
                             $("#edit_role").dialog("close");
+                            $("#div_loading").show();
                             refresh_roles_matrix("reload");
                         }
                     },
@@ -119,6 +120,7 @@ $("#add_new_role").dialog({
                );
             },
             "<?php echo $txt["cancel_button"];?>": function() {
+                $("#edit_role_error").html("").hide();
                 $(this).dialog("close");
             }
         }
@@ -210,6 +212,8 @@ function allow_pw_change_for_role(id, value)
  **/
 function refresh_roles_matrix(order)
 {
+	$("#div_loading").show();
+
     //clean up
     $("#roles_next, #roles_previous").hide();
 
@@ -250,6 +254,7 @@ function refresh_roles_matrix(order)
             } else {
                 $("#matrice_droits").html(data.error);
             }
+            $("#div_loading").hide();
         }
    );
 }

@@ -2,7 +2,7 @@
 /**
  * @file          folders.load.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -182,8 +182,8 @@ function add_new_folder()
             $.post(
                 "sources/folders.queries.php",
                 {
-                type    : "add_folder",
-                data      : $.jCryption.encrypt(data, sessionStorage.password)
+                    type    : "add_folder",
+                    data    : aes_encrypt(data)
                 },
                 function(data) {
                     //Check errors

@@ -2,7 +2,7 @@
 /**
  * @file          kb.load.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -132,7 +132,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                          $.post("sources/kb.queries.php",
                               {
                                   type     : "kb_in_db",
-                                  data     : $.jCryption.encrypt(data, sessionStorage.password),
+                                  data     : prepareExchangedData(data, "encode"),
                                   key      : "<?php echo $_SESSION['key'];?>"
                               },
                             function(data) {

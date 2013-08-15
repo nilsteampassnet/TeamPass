@@ -2,7 +2,7 @@
 /**
  * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -22,4 +22,8 @@ header("Content-Type: application/octet-stream");
 header("Pragma: public");
 header("Cache-Control: must-revalidate, post-check=0, pre-check=0, public");
 header("Expires: 0");
-readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
+if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
+	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
+} else {
+	readfile($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']));
+}

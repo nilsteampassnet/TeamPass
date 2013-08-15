@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file        admin.settings.php
- * @author      Nils Laumaillé
- * @version     2.1.13
- * @copyright   (c) 2009-2013 Nils Laumaillé
- * @licensing   GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file          admin.settings.php
+ * @author        Nils Laumaillé
+ * @version       2.1.18
+ * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link		  http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -204,6 +204,10 @@ if (isset($_POST['save_button'])) {
     if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
         updateSettings('enable_sts', $_POST['enable_sts']);
     }
+    // Update sts mode
+    if ( @$_SESSION['settings']['encryptClientServer'] != $_POST['encryptClientServer'] ) {
+        updateSettings('encryptClientServer', $_POST['encryptClientServer']);
+    }
     // Update send_stats
     if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats']) {
         updateSettings('send_stats', $_POST['send_stats']);
@@ -220,9 +224,17 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['show_description'] != $_POST['show_description']) {
         updateSettings('show_description', $_POST['show_description']);
     }
+    // Update tree_counters
+    if (@$_SESSION['settings']['tree_counters'] != $_POST['tree_counters']) {
+        updateSettings('tree_counters', $_POST['tree_counters']);
+    }
     // Update LDAP mode
     if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode']) {
         updateSettings('ldap_mode', $_POST['ldap_mode']);
+    }
+	// Update LDAP type
+	if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
+        updateSettings('ldap_type', $_POST['ldap_type']);
     }
     // Update LDAP ldap_suffix
     if (@$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
@@ -236,6 +248,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
+	// Update LDAP ldap_user_attribute
+	if (@$_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
+	    updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
+	}
     // Update LDAP ssl
     if (@$_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl']) {
         updateSettings('ldap_ssl', $_POST['ldap_ssl']);
@@ -248,6 +264,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
         updateSettings('ldap_elusers', $_POST['ldap_elusers']);
     }
+	// Update LDAP ldap_group
+	if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
+	    updateSettings('ldap_elusers', $_POST['ldap_elusers']);
+	}
     // Update anyone_can_modify
     if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify']) {
         updateSettings('anyone_can_modify', $_POST['anyone_can_modify']);
@@ -369,6 +389,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['2factors_authentication'])) {
         updateSettings('2factors_authentication', $_POST['2factors_authentication']);
     }
+    //psk_authentication
+    if (isset($_POST['psk_authentication'])) {
+        updateSettings('psk_authentication', $_POST['psk_authentication']);
+    }
     // Update proxy_ip setting
     if (@$_SESSION['settings']['proxy_ip'] != $_POST['proxy_ip']) {
         updateSettings('proxy_ip', $_POST['proxy_ip']);
@@ -418,7 +442,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder']) {
         updateSettings('can_create_root_folder', $_POST['can_create_root_folder']);
     }
-    
+	// Update use_md5_password_as_salt
+	if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
+	    updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
+	}
 }
 
 echo '
@@ -564,7 +591,7 @@ $txt['settings_maintenance_mode'].'
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
                     <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
@@ -583,12 +610,50 @@ echo '
                 </td>
                 <td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_sts_radio1" name="enable_sts" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
-                        <input type="radio" id="enable_sts_radio2" name="enable_sts" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
+                        <input type="radio" id="enable_sts_radio1" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="enable_sts_radio2" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
                         <span class="setting_flag" id="flag_enable_sts"><img src="includes/images/status', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 <td>
             </tr>';
+//Enable data exchange encryption
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <label>' .
+                          $txt['settings_encryptClientServer'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_encryptClientServer_tip'] . '" />
+                      </label>
+                </td>
+                <td>
+                    <div class="div_radio">
+                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $txt['no'] . '</label>
+                        <span class="setting_flag" id="flag_encryptClientServer"><img src="includes/images/status', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                <td>
+            </tr>';
+/*
+//Enable secure admin access
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <label>' .
+                          $txt['settings_encryptClientServer'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_encryptClientServer_tip'] . '" />
+                      </label>
+                </td>
+                <td>
+                    <div class="div_radio">
+                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $txt['yes'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $txt['no'] . '</label>
+                        <span class="setting_flag" id="flag_encryptClientServer"><img src="includes/images/status', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                <td>
+            </tr>';
+*/
 echo '<tr><td colspan="3"><hr></td></tr>';
 //Proxy
 echo '
@@ -645,7 +710,25 @@ echo '
                 </div>
               <td>
             </tr>';
-
+/*
+// psk_authentication
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$txt['admin_psk_authentication'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_psk_authentication_tip'].'" />
+                  </label>
+            </td>
+            <td>
+                <div class="div_radio">
+                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$txt['yes'].'</label>
+                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_psk_authentication"><img src="includes/images/status', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? '' : '-busy', '.png" /></span>
+                </div>
+              <td>
+            </tr>';
+*/
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones
@@ -792,6 +875,7 @@ echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                 <label>'.$txt['enable_personal_folder_feature'].'</label>
+                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['enable_personal_folder_feature_tip'].'" /></span>
             </td><td>
             <div class="div_radio">
                 <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
@@ -801,16 +885,16 @@ echo '
             </td</tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
 echo '
-            <tr><td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label>'.$txt['use_md5_password_as_salt'].'</label>
-            </td><td>
-            <div class="div_radio">
-                <input type="radio" id="use_md5_password_as_salt_radio1" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? ' checked="checked"' : '', ' /><label for="use_md5_password_as_salt_radio1">'.$txt['yes'].'</label>
-                <input type="radio" id="use_md5_password_as_salt_radio2" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['use_md5_password_as_salt']) ? ' checked="checked"':''), ' /><label for="use_md5_password_as_salt_radio2">'.$txt['no'].'</label>
-                        <span class="setting_flag" id="flag_use_md5_password_as_salt"><img src="includes/images/status', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '' : '-busy', '.png" /></span>
-            </div>
-            </td</tr>';
+        <tr><td>
+            <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+            <label>'.$txt['use_md5_password_as_salt'].'</label>
+        </td><td>
+        <div class="div_radio">
+            <input type="radio" id="use_md5_password_as_salt_radio1" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? ' checked="checked"' : '', ' /><label for="use_md5_password_as_salt_radio1">'.$txt['yes'].'</label>
+            <input type="radio" id="use_md5_password_as_salt_radio2" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['use_md5_password_as_salt']) ? ' checked="checked"':''), ' /><label for="use_md5_password_as_salt_radio2">'.$txt['no'].'</label>
+                    <span class="setting_flag" id="flag_use_md5_password_as_salt"><img src="includes/images/status', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '' : '-busy', '.png" /></span>
+        </div>
+        </td</tr>';
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
@@ -1201,6 +1285,21 @@ echo '
                         <span class="setting_flag" id="flag_show_description"><img src="includes/images/status', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
+// In Tree, display number of Items in subfolders and number of subfolders - tree_counters
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_tree_counters'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_tree_counters_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="tree_counters_radio1" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? ' checked="checked"' : '', ' /><label for="tree_counters_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="tree_counters_radio2" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['tree_counters']) ? ' checked="checked"':''), ' /><label for="tree_counters_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_tree_counters"><img src="includes/images/status', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
 // nb of items to display by ajax query
 echo '
                 <tr><td>
@@ -1284,24 +1383,58 @@ if (!extension_loaded('ldap')) {
                         <span class="setting_flag" id="flag_ldap_mode"><img src="includes/images/status', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </span>
                 </div>';
+	// Type
+	$ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
+	echo '
+<div style="margin-bottom:3px;">
+    <label for="ldap_type">'.$txt['settings_ldap_type'].'</label>
+    <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
+        <option value="windows">Windows / Active Directory</option>
+        <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
+    </select>
+</div>';
 }
-// AD inputs
+// LDAP inputs
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$txt['admin_ldap_configuration'].'</div>
                 <table>';
 // Domain
+if ($ldap_type != 'posix') {
 echo '
                     <tr>
                         <td><label for="ldap_suffix">'.$txt['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
                     </tr>';
+}
+
 // Domain DN
 echo '
                     <tr>
                         <td><label for="ldap_domain_dn">'.$txt['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" /></td>
                     </tr>';
+
+// Subtree for posix / openldap
+if ($ldap_type == 'posix') {
+		echo '
+                <tr>
+                    <td><label for="ldap_suffix">'.$txt['settings_ldap_domain_posix'].'</label></td>
+                    <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
+                </tr>';
+}
+
+// LDAP username attribute
+if ($ldap_type == 'posix') {
+		echo '
+                <tr>
+                    <td><label for="ldap_user_attribute">'.$txt['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
+                        $txt['settings_ldap_user_attribute_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
+                        isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
+                </tr>';
+}
+
 // Domain controler
 echo '
                     <tr>

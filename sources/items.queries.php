@@ -2,7 +2,7 @@
 /**
  * @file          items.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -63,6 +63,10 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+//Load LWZ
+$lwz = new SplClassLoader('Compressor\Lwz', '../includes/libraries');
+$lwz->register();
+
 // Do asked action
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -73,12 +77,11 @@ if (isset($_POST['type'])) {
         case "new_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-                echo $returnValues;
+                echo prepareExchangedData(array("error" => "something_wrong"), "encode");
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256)), true);
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $url = htmlspecialchars_decode($dataReceived['url']);
@@ -89,9 +92,7 @@ if (isset($_POST['type'])) {
             if (!empty($pw)) {
                 // Check length
                 if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
-                    $returnValues = array("error" => "pw_too_long");
-                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-                    echo $returnValues;
+                    echo prepareExchangedData(array("error" => "pw_too_long"), "encode");
                     break;
                 }
                 // ;check if element doesn't already exist
@@ -121,6 +122,10 @@ if (isset($_POST['type'])) {
                         $restictedTo = $_SESSION['user_id'];
                     } else {
                         $pw = encrypt($pw);
+                    }
+                    if (empty($pw)) {
+                        echo prepareExchangedData(array("error" => "something_wrong"), "encode");
+                        break;
                     }
                     // ADD item
                     $newID = $db->queryInsert(
@@ -298,8 +303,7 @@ if (isset($_POST['type'])) {
                 $returnValues = array("error" => "something_wrong");
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-            echo $returnValues;
+            echo prepareExchangedData($returnValues, "encode");
             break;
 
         /*
@@ -309,15 +313,14 @@ if (isset($_POST['type'])) {
         case "update_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-                echo $returnValues;
+                echo prepareExchangedData(array("error" => "something_wrong"), "encode");
                 break;
             }
             // init
             $reloadPage = false;
             $returnValues = array();
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['encKey'], 256), true);
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
@@ -362,9 +365,7 @@ if (isset($_POST['type'])) {
                  ) {
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
-                        $returnValues = array("error" => "pw_too_long");
-                        $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-                        echo $returnValues;
+                        echo prepareExchangedData(array("error" => "pw_too_long"), "encode");
                         break;
                     }
                     // Get existing values -> TODO
@@ -394,6 +395,10 @@ if (isset($_POST['type'])) {
                     } else {
                         $pw = encrypt($pw);
                     }
+                    if (empty($pw)) {
+                        echo prepareExchangedData(array("error" => "something_wrong"), "encode");
+                        break;
+                    }
                     // ---Manage tags
                     // deleting existing tags for this item
                     $db->query("DELETE FROM ".$pre."tags WHERE item_id = '".$dataReceived['id']."'");
@@ -406,7 +411,7 @@ if (isset($_POST['type'])) {
                                 array(
                                     'item_id' => $dataReceived['id'],
                                     'tag' => strtolower($tag)
-                                   )
+                                )
                             );
                         }
                     }
@@ -691,7 +696,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - " .
                             $reccord['login']." - ".$txt[$reccord['action']]." - " .
-                            (!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : $txt[trim($reason[0])]):'');
+                            (!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] != "at_manual" ? $txt[trim($reason[0])] : trim($reason[0]))):'');
                         }
                     }
                     // decrypt PW
@@ -755,8 +760,7 @@ if (isset($_POST['type'])) {
                         "error" => ""
                        );
                 } else {
-                    $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_POST['key'], 256);
-                    echo $returnValues;
+                    echo prepareExchangedData(array("error" => "something_wrong"), "encode");
                     break;
                 }
             } else {
@@ -764,8 +768,7 @@ if (isset($_POST['type'])) {
                 $arrData = array("error" => "format");
             }
             // return data
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-            echo $returnValues;
+            echo prepareExchangedData($arrData, "encode");
             break;
 
         /*
@@ -892,9 +895,7 @@ if (isset($_POST['type'])) {
             $dataRestored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
             if ($dataDeleted[0] != 0 && $dataDeleted[0] > $dataRestored[0]) {
                 // This item is deleted => exit
-                $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode(array('show_detail_option' => 2), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-
-                echo $returnValues;
+                echo prepareExchangedData(array('show_detail_option' => 2), "encode");
                 break;
             }
             // Get all informations for this item
@@ -976,7 +977,12 @@ if (isset($_POST['type'])) {
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
                 if (empty($pw)) {
-                    $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                    /*if (isset($_SESSION['my_sk_tmp']) && !empty($_SESSION['my_sk_tmp'])) {
+                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk_tmp'])));
+                    }*/
+                    if (empty($pw)) {
+                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                    }
                 }
                 $arrData['edit_item_salt_key'] = 1;
             } else {
@@ -1320,9 +1326,7 @@ if (isset($_POST['type'])) {
             $arrData['timestamp'] = time();
             // print_r($arrData);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
-            // return data
-            echo $returnValues;
+            echo prepareExchangedData($arrData, "encode");
             break;
 
             /*
@@ -1350,11 +1354,7 @@ if (isset($_POST['type'])) {
             } else {
                 $pwgen->setSecure(false);
             }
-
-            echo Encryption\Crypt\aesctr::encrypt(json_encode(
-                array("key" => $pwgen->generate()), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP),
-                $_SESSION['encKey'], 256
-            );
+            echo prepareExchangedData(array("key" => $pwgen->generate()), "encode");
             break;
 
         /*
@@ -1469,9 +1469,7 @@ if (isset($_POST['type'])) {
         case 'lister_items_groupe':
             $arboHtml = $html = "";
             $folderIsPf = $showError = 0;
-            $itemsIDList = $rights = array();
-            $html = '';
-            $returnedData = array();
+            $itemsIDList = $rights = $returnedData = array();
             // Build query limits
             if (empty($_POST['start'])) {
                 $start = 0;
@@ -1519,7 +1517,7 @@ if (isset($_POST['type'])) {
                         array("error" => "not_authorized"),
                         JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
                     ),
-                    $_SESSION['encKey'],
+                    $_SESSION['key'],
                     256
                 );
                 break;
@@ -1853,7 +1851,7 @@ if (isset($_POST['type'])) {
             // Prepare returned values
             $returnValues = array(
                 "recherche_group_pf" => $findPfGroup,
-                "arborescence" => "<img src='includes/images/folder-open.png' />&nbsp;".$arboHtml,
+                "arborescence" => $arboHtml,
                 "array_items" => $itemsIDList,
                 "items_html" => $html,
                 "error" => $showError,
@@ -1871,17 +1869,7 @@ if (isset($_POST['type'])) {
             }
             //print_r($returnValues);
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt(
-                json_encode(
-                    $returnValues,
-                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
-                ),
-                $_SESSION['encKey'],
-                256
-            );
-            // return data
-            echo $returnValues;
-
+            echo prepareExchangedData($returnValues, "encode");  
             break;
 
         /*
@@ -1922,8 +1910,7 @@ if (isset($_POST['type'])) {
                         "error" => "no_edition_possible",
                         "error_msg" => $txt['error_no_edition_possible_locked']
                     );
-
-                    echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+                    echo prepareExchangedData($returnValues, "encode");
                     break;
                 }
             }
@@ -1962,9 +1949,8 @@ if (isset($_POST['type'])) {
                 "val" => $data[0],
                 "visibility" => $visibilite,
                 "complexity" => $complexity
-               );
-
-            echo json_encode($returnValues, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            );
+            echo prepareExchangedData($returnValues, "encode");
             break;
 
         /*
@@ -1989,8 +1975,7 @@ if (isset($_POST['type'])) {
                 $data = $dataItem['login'];
             }
             // Encrypt data to return
-            $returnValues = Encryption\Crypt\aesctr::encrypt($data, $_SESSION['encKey'], 256);
-            echo $returnValues;
+            echo prepareExchangedData($data, "encode");
             break;
 
         /*
@@ -2339,7 +2324,8 @@ if (isset($_POST['type'])) {
                     // send back
                     echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
                 } else {
-                    echo Encryption\Crypt\aesctr::encrypt(json_encode(array("error" => "something_wrong"), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP), $_SESSION['encKey'], 256);
+                    $data = array("error" => "something_wrong");
+                    echo prepareExchangedData($data, "encode");
                     break;
                 }
             }
@@ -2408,12 +2394,8 @@ function recupDroitCreationSansComplexite($groupe)
     $data = $db->fetchRow("SELECT bloquer_creation,bloquer_modification,personal_folder FROM ".$pre."nested_tree WHERE id = '".$groupe."'");
     // Check if it's in a personal folder. If yes, then force complexity overhead.
     if ($data[2] == 1) {
-        // echo 'document.getElementById("bloquer_modification_complexite").value = "1";';
-        // echo 'document.getElementById("bloquer_creation_complexite").value = "1";';
         return array("bloquer_modification_complexite" => 1, "bloquer_creation_complexite" => 1);
     } else {
-        // echo 'document.getElementById("bloquer_creation_complexite").value = "'.$data[0].'";';
-        // echo 'document.getElementById("bloquer_modification_complexite").value = "'.$data[1].'";';
         return array("bloquer_modification_complexite" => $data[1], "bloquer_creation_complexite" => $data[0]);
     }
 }

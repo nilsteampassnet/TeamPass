@@ -3,7 +3,7 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -242,10 +242,19 @@ switch ($_POST['type']) {
 
             $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
             $adldap->register();
+
+        	// Posix style LDAP handles user searches a bit differently
+	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
+	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+	        }
+			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+			}
+
             $adldap = new LDAP\adLDAP\adLDAP(
                 array(
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                    'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
@@ -277,8 +286,17 @@ switch ($_POST['type']) {
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
             }
+
+        	// openLDAP expects an attribute=value pair
+    	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
+ 		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+ 		    }
+        	else {
+        		$auth_username = $username;
+        	}
+
             // authenticate the user
-            if ($adldap->authenticate($username, $passwordClear)) {
+            if ($adldap->authenticate($auth_username, $passwordClear)) {
                 $ldapConnection = true;
             } else {
                 $ldapConnection = false;
@@ -291,13 +309,38 @@ switch ($_POST['type']) {
                 ); //Debug
             }
         }
-        // Check if user exists in cpassman
+        // Check if user exists
         $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
         $row = $db->query($sql);
         if ($row == 0) {
             $row = $db->fetchRow("SELECT label FROM ".$pre."log_system WHERE ");
             echo '[{"value" : "error", "text":"'.$row[0].'"}]';
             exit;
+        }
+        $data = $db->fetchArray($row);
+        // Check PSK
+        if (
+            isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            && $data['admin'] != 1
+        ) {
+            $psk = htmlspecialchars_decode($dataReceived['psk']);
+            $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
+            $rowTmp = $db->queryFirst($sql);
+            if (empty($psk)) {
+                echo '[{"value" : "psk_required"}]';
+                exit;
+            } elseif (empty($rowTmp['psk'])) {
+                if (empty($pskConfirm)) {
+                    echo '[{"value" : "bad_psk_confirmation"}]';
+                    exit;
+                } else {
+                    $_SESSION['my_sk'] = $psk;
+                }
+            } elseif (crypt($psk, $data['psk']) != $data['psk']) {
+                echo '[{"value" : "bad_psk"}]';
+                //echo $psk." - ".crypt($psk, $data['psk']) ." - ". $data['psk']." - ".bCrypt(htmlspecialchars_decode($psk), COST);
+                exit;
+            }
         }
 
         $proceedIdentification = false;
@@ -336,8 +379,8 @@ switch ($_POST['type']) {
                 );
             }
             // Get info for user
-            $sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
-            $row = $db->query($sql);
+            //$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
+            //$row = $db->query($sql);
             $proceedIdentification = true;
         }
 
@@ -376,7 +419,8 @@ switch ($_POST['type']) {
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                    && $username == "admin" && $password == $data['pw'] && $data['disabled'] == 0
+                    && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
+                    && $data['disabled'] == 0
                 )
             ) {
                 $_SESSION['autoriser'] = true;
@@ -415,17 +459,20 @@ switch ($_POST['type']) {
                 $_SESSION['user_language'] = $data['user_language'];
                 $_SESSION['user_email'] = $data['email'];
 
-                /* If this option is set user password MD5 is used as personal SALTKey */
-       if (isset($_SESSION['settings']['use_md5_password_as_salt']) &&
-                    $_SESSION['settings']['use_md5_password_as_salt'] == 1 ) {
-                    $_SESSION['my_sk'] = md5($passwordClear);
-                    setcookie(
-                       "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                       encrypt($_SESSION['my_sk'], ""),
-                       time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                       '/'
-                    );
-                }
+            	/* If this option is set user password MD5 is used as personal SALTKey */
+				if (
+					isset($_SESSION['settings']['use_md5_password_as_salt']) &&
+					$_SESSION['settings']['use_md5_password_as_salt'] == 1
+				)
+				{
+				    $_SESSION['my_sk'] = md5($passwordClear);
+				     setcookie(
+				       "TeamPass_PFSK_".md5($_SESSION['user_id']),
+				       encrypt($_SESSION['my_sk'], ""),
+				       time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+				       '/'
+				    );
+				}
 
                 @syslog(
                     LOG_WARNING,
@@ -512,7 +559,8 @@ switch ($_POST['type']) {
                         'timestamp' => time(),
                         'disabled' => 0,
                         'no_bad_attempts' => 0,
-                        'session_end' => $_SESSION['fin_session']
+                        'session_end' => $_SESSION['fin_session'],
+                        'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
                        ),
                     "id=".$data['id']
                 );
@@ -629,18 +677,23 @@ switch ($_POST['type']) {
      * Increase the session time of User
      */
     case "increase_session_time":
-        // Calculate end of session
-        $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
-        // Update table
-        $db->queryUpdate(
-            "users",
-            array(
-                'session_end' => $_SESSION['fin_session']
-            ),
-            "id=".$_SESSION['user_id']
-        );
-        // Return data
-        echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
+        // check if session is not already expired.
+        if ($_SESSION['fin_session'] > time()) {
+            // Calculate end of session
+            $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
+            // Update table
+            $db->queryUpdate(
+                "users",
+                array(
+                    'session_end' => $_SESSION['fin_session']
+                ),
+                "id=".$_SESSION['user_id']
+            );
+            // Return data
+            echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
+        } else {
+            echo '[{"new_value":"expired"}]';
+        }
         break;
     /**
      * Hide maintenance message
@@ -818,9 +871,9 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = Encryption\Crypt\aesctr::decrypt($_POST['sk'], $_SESSION['encKey'], 256);
-        if ($_POST['sk'] != "**************************") {
-            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt(urldecode($_POST['sk']), $_SESSION['key'], 256), true);
+        if ($dataReceived['psk'] != "**************************") {
+            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
@@ -868,7 +921,7 @@ switch ($_POST['type']) {
                         )
                     )
                 );
-                echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
+                //echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
                 // update pw in ITEMS table
                 mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'")
                     or die(mysql_error());
@@ -876,6 +929,12 @@ switch ($_POST['type']) {
         }
         // change salt
         $_SESSION['my_sk'] = $newPersonalSaltkey;
+        setcookie(
+            "TeamPass_PFSK_".md5($_SESSION['user_id']),
+            encrypt($_SESSION['my_sk'], ""),
+            time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+            '/'
+        );
         break;
     /**
      * Reset the personal saltkey
@@ -899,6 +958,12 @@ switch ($_POST['type']) {
             }
             // change salt
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
+            setcookie(
+                "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                encrypt($_SESSION['my_sk'], ""),
+                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                '/'
+            );
         }
         break;
     /**
@@ -915,6 +980,7 @@ switch ($_POST['type']) {
                 "id = ".$_SESSION['user_id']
             );
             $_SESSION['user_language'] = $_POST['lang'];
+        	echo "done";
         }
         break;
     /**
@@ -1021,5 +1087,28 @@ switch ($_POST['type']) {
         $pwgen->setNumerals($_POST['numerals']);
 
         echo Encryption\Crypt\aesctr::encrypt($pwgen->generate(), $_SESSION['key'], 256);
+        break;
+    /**
+     * Check if user exists and send back if psk is set
+     */
+    case "check_login_exists":
+        $sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($_POST['userId'])."'";
+        $row = $db->query($sql);
+        $data = $db->fetchArray($row);
+        if (empty($data['login'])) {
+            $userOk = false;
+        } else {
+            $userOk = true;
+        }
+        if (
+            isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            && !empty($data['psk'])
+        ) {
+            $pskSet = true;
+        } else {
+            $pskSet = false;
+        }
+
+        echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
         break;
 }

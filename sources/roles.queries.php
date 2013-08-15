@@ -1,11 +1,11 @@
 <?php
 /**
- * @file           roles.queries.php
+ * @file          roles.queries.php
  * @author        Nils Laumaillé
- * @version         2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link            http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,7 +13,7 @@
  */
 
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -78,7 +78,7 @@ if (!empty($_POST['type'])) {
         #CASE editing a role
         case "edit_role":
             //Check if role already exist : No similar roles
-            $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['title']))."'");
+            $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE id != '".$_POST['id']."' AND title = '".mysql_real_escape_string(stripslashes($_POST['title']))."'");
             if ($tmp[0] == 0) {
                 $db->queryUpdate(
                     "roles_title",

@@ -3,7 +3,7 @@
  *
  * @file          include.php
  * @author        Nils Laumaillé
- * @version       2.1.13
+ * @version       2.1.18
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -11,10 +11,10 @@
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languagesList;
 
-$k['version'] = "2.1.17";
+$k['version'] = "2.1.18";
 $k['tool_name'] = "TeamPass";
-$k['jquery-version'] = "1.8.3";
-$k['jquery-ui-version'] = "1.9.2";
+$k['jquery-version'] = "1.9.1";
+$k['jquery-ui-version'] = "1.10.3";
 $k['jquery-ui-theme'] = "overcast";
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');

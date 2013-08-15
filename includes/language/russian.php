@@ -6,7 +6,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['settings_ldap_type'] = "LDAP server type";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -30,7 +31,7 @@ $txt['admin_action_db_backup'] = "Создать Бэкап базы данны�
 $txt['admin_action_db_backup_key_tip'] = "Пожалуйста, введите ключ шифрования. Сохраните его где-нибудь, он будет запрошен во время восстановления. (Оставьте пустым, чтобы не шифровать)";
 $txt['admin_action_db_backup_start_tip'] = "Запустить";
 $txt['admin_action_db_backup_tip'] = "Это хорошая идея - создавать бэкапы, которые Вы сможете потом использовать для восстановления базы данных";
-$txt['admin_action_db_clean_items'] = "Удалить объекты-\"сироты\" из базы данных";
+$txt['admin_action_db_clean_items'] = "Удалить объекты-'сироты' из базы данных";
 $txt['admin_action_db_clean_items_result'] = "Объекты удалены";
 $txt['admin_action_db_clean_items_tip'] = "Это удалит только те элементы и связанные с ними протоколы, которые не были удалены после того, как была удалена папка, в которой находились эти элементы. Перед этой операцией рекомендуется сделать резервную копию базы данных.";
 $txt['admin_action_db_optimize'] = "Оптимизировать базу данных";
@@ -188,9 +189,11 @@ $txt['change_user_functions_info'] = "Select the functions associated to this ac
 $txt['change_user_functions_title'] = "Customize associated functions";
 $txt['channel_encryption_failed'] = "Authentication failed!";
 $txt['channel_encryption_in_progress'] = "Encrypting channel ...";
+$txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['channel_encryption_no_file'] = "No encryption keys file was found!<br>Please launch upgrade process.";
 $txt['channel_encryption_no_gmp'] = "Extension GMP is not loaded! Encryption can't be initiated!";
+$txt['channel_encryption_no_iconv'] = "Extension ICONVis not loaded! Encryption can't be initiated!";
 $txt['channel_encryption_no_openssl'] = "Extension OPENSSL is not loaded! Encryption can't be initiated!";
 $txt['check_all_text'] = "Проверить все";
 $txt['close'] = "Закрыть";
@@ -254,12 +257,12 @@ $txt['email_body1'] = "Hi,<br><br>Item '";
 $txt['email_body2'] = "has been created.<br /><br />You may view it by clicking <a href='";
 $txt['email_body3'] = "'>HERE</a><br /><br />Regards.";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Change the account's email";
 $txt['email_changed'] = "Email изменен!";
 $txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
-$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
+$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item '#tp_item#''.<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification on Item open";
 $txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
 $txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
@@ -278,6 +281,7 @@ $txt['enable_favourites'] = "Разрешить Пользователям со�
 $txt['enable_notify'] = "Включить уведомления";
 $txt['enable_personal_folder'] = "Разрешить Личную папку";
 $txt['enable_personal_folder_feature'] = "Разрешить функцию Личной папки";
+$txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
 $txt['enable_personal_saltkey_cookie'] = "Enable personal SALTKey to be stored in a cookie";
 $txt['enable_send_email_on_user_login'] = "Send an email to Admins on User log in";
 $txt['enable_user_can_create_folders'] = "Users are allowed to manage folders in allowed parent folders";
@@ -366,8 +370,8 @@ $txt['importing_details'] = "Список деталей";
 $txt['importing_folders'] = "Импорт папок";
 $txt['importing_items'] = "Импорт элементов";
 $txt['import_button'] = "Импорт";
-$txt['import_csv_anyone_can_modify_in_role_txt'] = "Set \"anyone in the same role can modify\" right on all imported items.";
-$txt['import_csv_anyone_can_modify_txt'] = "Set \"anyone can modify\" right on all imported items.";
+$txt['import_csv_anyone_can_modify_in_role_txt'] = "Set 'anyone in the same role can modify' right on all imported items.";
+$txt['import_csv_anyone_can_modify_txt'] = "Set 'anyone can modify' right on all imported items.";
 $txt['import_csv_dialog_info'] = "Информация: импорт должен осуществляться только из файла CSV. Обычно, файл, экспортированный из KeePass, имеет подходящую структуру.<br /> Если вы используете файл, сгенерированный другой программой, имейте ввиду, что структура файла CSV должна быть следующей: `Учетная запись`,`Имя`,`Пароль`,`URL`,`Комментарии`.";
 $txt['import_csv_menu_title'] = "Импортировать объекты из файла (CSV/KeePass XML)";
 $txt['import_error_no_file'] = "Вы должны выбрать файл!";
@@ -412,7 +416,7 @@ $txt['is_manager'] = "Менеджер";
 $txt['is_read_only'] = "Is Read Only";
 $txt['items'] = "Записи";
 $txt['items_browser_title'] = "Папки";
-$txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
+$txt['item_copy_to_folder'] = "'Please select a folder in which the item has to be copied.";
 $txt['item_edition_start_hour'] = "Time Editing";
 $txt['item_menu_add_elem'] = "Добавить объект";
 $txt['item_menu_add_rep'] = "Добавить папку";
@@ -552,6 +556,7 @@ $txt['select'] = "Select";
 $txt['select_folders'] = "Выберите папки";
 $txt['select_language'] = "Выберите язык";
 $txt['send'] = "Отправить";
+$txt['server_time'] = "Server time";
 $txt['settings_anyone_can_modify'] = "Добавить для каждого элемета опцию, позволяющую любому пользователю изменять этот элемент";
 $txt['settings_anyone_can_modify_bydefault'] = "Activate '<b><i>Anyone can modify</b></i>' option by default";
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size:11px;max-width:300px;'>Когда опция активна, становится доступен флажок в окне редактирования элемента, который позволяет создателю элемента разрешить любому пользователю изменение данного элемента.</span>";
@@ -560,11 +565,13 @@ $txt['settings_delay_for_item_edition'] = "Length of time until an item edit is 
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>When editing an Item, the Item is locked so that no other parallel editing can be performed. A kind of token is reserved.<br />This setting permits to delete the token. If the value is set to 0 then the token will never be deleted (unless by Administrator)</span>";
 $txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warning: Read ToolTip.";
 $txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
+$txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
+$txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass. /!\ Remember that the safer and more securized solution is to use an SSL connection between Client and Server.";
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_insert_manual_entry_item_history'] = "Enable permitting manual insertions in Items History log";
 $txt['settings_insert_manual_entry_item_history_tip'] = "";
 $txt['settings_kb'] = "Включить Базу Знаний (beta)";
-$txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
+$txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой ( , )!<br />Например: домен_1,домен_2,домен_3</span>";
@@ -588,6 +595,8 @@ $txt['settings_richtext_tip'] = "<span style='font-size:11px;max-width:300px;'>�
 $txt['settings_send_stats'] = "Отправлять ежемесячную статистику использования программы ее автору для лучшего понимания вашего использования TeamPass";
 $txt['settings_send_stats_tip'] = "Эти статистические данные являются полностью анонимными!<br> Не передаются IP-адрес, передается только следующие данные: количество элементов, папок, пользователей, версия TeamPass, включены ли личные папки, включен ли LDAP.<br>Большое спасибо, если Вы включите отправку статистических данных. Благодаря этому вы поможете дальнейшему развитию TeamPass.";
 $txt['settings_show_description'] = "Show Description in list of Items";
+$txt['settings_tree_counters'] = "Show more counters in folders tree";
+$txt['settings_tree_counters_tip'] = "This will display for each folder 3 counters: number of items in folder; number of items in all subfolders; number of subfolders. This feature needs more SQL queries and may require more time to display the Tree.";
 $txt['settings_upload_docext'] = "Allowed document extensions";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a comma (,)";
 $txt['settings_upload_imageresize_options'] = "Should Images be resized";
@@ -648,3 +657,4 @@ $txt['warning_screen_height'] = "WARNING: screen height is not enough for displa
 $txt['yes'] = "Да";
 $txt['your_version'] = "Ваша версия";
 ?>
+>>>>>>> 2.1.18
