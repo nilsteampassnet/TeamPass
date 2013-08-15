@@ -249,7 +249,7 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
 	// Update LDAP ldap_user_attribute
-	if (@$_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
+	if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
 	    updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
 	}
     // Update LDAP ssl
