@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -258,12 +257,12 @@ $txt['email_body1'] = "Oi,<br><br>Item '";
 $txt['email_body2'] = "Foi criado<br /><br />Você pode ver clicando <a href='";
 $txt['email_body3'] = "'>AQUI</a><br /><br />Agradecimentos.";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Altera e-mail desta conta";
 $txt['email_changed'] = "E-mail alterado";
 $txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
-$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item '#tp_item#''.<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
+$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification on Item open";
 $txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
 $txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
@@ -298,6 +297,7 @@ $txt['error_group'] = "O diretório é obrigatório";
 $txt['error_group_complex'] = "O diretório deve ter para senhas complexidade mínima nível exigido!";
 $txt['error_group_exist'] = "Este diretório já existe!";
 $txt['error_group_label'] = "O diretório necessita de um nome!";
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "Algum texto contem códigos HTML! Isto não é permitido.";
 $txt['error_item_exists'] = "O item já existe!";
 $txt['error_label'] = "O rótulo é obrigatório!";
@@ -589,6 +589,7 @@ $txt['settings_ldap_mode'] = "Ativa autenticação LDAP para os usuarios";
 $txt['settings_ldap_mode_tip'] = "Habilitar somente se você tiver um servidor LDAP e se você quiser usá-lo para autenticas os usuários TeamPass através dele.";
 $txt['settings_ldap_ssl'] = "Usar SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Use LDAP a traves de TLS";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Ativa registros de quem acessou aos itens";
 $txt['settings_log_connections'] = "Habilita todos os registros de todos os usuários ao banco de dados";
 $txt['settings_maintenance_mode'] = "Coloca TeamPass em modo de manutenção";
@@ -656,6 +657,7 @@ $txt['user_del'] = "Excluir conta";
 $txt['user_lock'] = "Bloquear conta";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Versão atual";
 $txt['views_confirm_items_deletion'] = "Você realmente deseja excluir os itens selecionados do banco de dados?";
 $txt['views_confirm_restoration'] = "Por favor, confirme a restauração deste item";

@@ -176,8 +176,9 @@ function ListerItems(groupe_id, restricted, start)
                 nb_items_to_display_once : $("#nb_items_to_display_once").val()
             },
             function(data) {
-				//get data
+                //get data
                 data = prepareExchangedData(data, "decode");
+
                 $("#items_path_var").html(data.arborescence);
 
                 if (data.error == "is_pf_but_no_saltkey") {
@@ -500,6 +501,7 @@ function AjouterItem()
                 },
                 function(data) {
                     //decrypt data
+
                     try {
                         data = prepareExchangedData(data, "decode");
                     } catch (e) {
@@ -2257,6 +2259,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         });
 });
+
 
 function htmlspecialchars_decode (string, quote_style)
 {

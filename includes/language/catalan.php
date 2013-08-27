@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -297,6 +296,7 @@ $txt['error_group'] = "A folder is mandatory.";
 $txt['error_group_complex'] = "The Folder must have a minimum required passwords complexity level.";
 $txt['error_group_exist'] = "This folder already exists.";
 $txt['error_group_label'] = "The Folder must be named.";
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "Some text contains HTML code. This is not allowed.";
 $txt['error_item_exists'] = "This Item already exists.";
 $txt['error_label'] = "A label is mandatory.";
@@ -582,6 +582,7 @@ $txt['settings_ldap_mode'] = "Habilita l'autenticació d'usuari a través del se
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authenticate TeamPass users through it.";
 $txt['settings_ldap_ssl'] = "Empra LDAP a través de SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Empra LDAP a través de TLS";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Enable logging of who accessed items";
 $txt['settings_log_connections'] = "Enable logging of all user connections into database.";
 $txt['settings_maintenance_mode'] = "Posa TeamPass en mode Manteniment";
@@ -650,6 +651,7 @@ $txt['user_del'] = "Delete account";
 $txt['user_lock'] = "Lock user";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Versió actual";
 $txt['views_confirm_items_deletion'] = "Do you really want to delete the selected items from the database?";
 $txt['views_confirm_restoration'] = "Please confirm the restoration of this Item";

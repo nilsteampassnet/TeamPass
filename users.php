@@ -237,7 +237,6 @@ foreach ($rows as $reccord) {
                     <td align="center">
                         <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"', $reccord['can_create_root_folder'] == 1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
                     </td>';
-
         if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
         echo '
                     <td align="center">

@@ -209,6 +209,7 @@ if (
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
 ) {
     $_SESSION['my_sk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
+    //echo $_SESSION['my_sk_tmp']." - ".$_SESSION['my_sk'] ;
 }
 
 /* CHECK IF MAINTENANCE MODE

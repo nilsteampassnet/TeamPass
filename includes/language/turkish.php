@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -257,7 +256,7 @@ $txt['email_body1'] = "Merhaba,<br><br>Öğe";
 $txt['email_body2'] = "oluşturuldu.<br><br><a href='";
 $txt['email_body3'] = "Saygılar";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "eposta adresini değiştirin";
 $txt['email_changed'] = "eposta değiştirildi";
@@ -297,6 +296,7 @@ $txt['error_group'] = "Bir klasör zorunlu!";
 $txt['error_group_complex'] = "Klasör minimum gerekli şifre karmaşıklık seviyesine sahip olmalı";
 $txt['error_group_exist'] = "Bu klasör tanımlı!";
 $txt['error_group_label'] = "Klasör ismi girilmeli";
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "Yazının içerisinde HTML kodları var! Buna izniniz yok.";
 $txt['error_item_exists'] = "Bu öğe tanımlı!";
 $txt['error_label'] = "Etiket zorunlu";
@@ -370,8 +370,8 @@ $txt['importing_details'] = "Detayların Listesi";
 $txt['importing_folders'] = "Klasörler içe aktarılıyor";
 $txt['importing_items'] = "Öğeler içe aktarılıyor";
 $txt['import_button'] = "İçe Aktar";
-$txt['import_csv_anyone_can_modify_in_role_txt'] = "Tüm içe aktarılan öğelerde 'aynı roldeki herhangi bir kimse değiştirebilir' hakkını aktif et.";
-$txt['import_csv_anyone_can_modify_txt'] = "Tüm içe aktarılan öğelerde 'herhangi bir kimse değiştirebilir' hakkını aktif et.";
+$txt['import_csv_anyone_can_modify_in_role_txt'] = "Tüm içe aktarılan öğelerde \"aynı roldeki herhangi bir kimse değiştirebilir\" hakkını aktif et.";
+$txt['import_csv_anyone_can_modify_txt'] = "Tüm içe aktarılan öğelerde \"herhangi bir kimse değiştirebilir\" hakkını aktif et.";
 $txt['import_csv_dialog_info'] = "Bilgi: içe aktarım işleminde CSV dosyası kullanılmalıdır. Genellikle, KeePass programından aktarılan içerik bu formata uyar. Başka bir program tarafından üretilmiş bir içerik kullanıyorsanız, CSV yapısının şu şekilde olduğundan emin olun: Hesap (Account), Giriş İsmi (login name), Şifre (password), Web Sitesi (Web Site), Yorumlar (Comments)";
 $txt['import_csv_menu_title'] = "Öğeleri Dosyadan içe aktar (CSV/KeePass XML)";
 $txt['import_error_no_file'] = "Bir dosya seçmelisiniz!";
@@ -582,6 +582,7 @@ $txt['settings_ldap_mode'] = "Kullanıcı Doğrulamasını LDAP sunucusu üzerin
 $txt['settings_ldap_mode_tip'] = "Eğer bir LDAP sunucunuz var ve kullanıcılarınızın LDAP sunucusu üzerinden doğrulanmasını istiyorsanız aktifleştirin";
 $txt['settings_ldap_ssl'] = "LDAP'ı SSL ile kullan (LDAPS)";
 $txt['settings_ldap_tls'] = "LDAP'ı TLS ile kullan";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Enable logging of who accessed items";
 $txt['settings_log_connections'] = "Tüm kullanıcı bağlantılarını veritabanına kaydet";
 $txt['settings_maintenance_mode'] = "TeamPass'i Bakım Moduna Sok";
@@ -649,6 +650,7 @@ $txt['user_del'] = "Hesabı sil";
 $txt['user_lock'] = "Kullanıcıyı kilitle";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Güncel versiyon";
 $txt['views_confirm_items_deletion'] = "Seçili öğeleri veritabanından silmek istediğinize emin misiniz?";
 $txt['views_confirm_restoration'] = "Lütfen bu öğelerin geri yüklenmesini onaylayın";

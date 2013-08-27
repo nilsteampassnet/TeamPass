@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -450,6 +449,7 @@ $txt['error_group_exist'] = "This folder already exists!";
 
 $txt['error_group_label'] = "The Folder must be named!";
 
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "Some text contains HTML codes! This is not allowed.";
 
 $txt['error_item_exists'] = "This Item already exists!";
@@ -938,6 +938,7 @@ $txt['settings_ldap_ssl'] = "SSL経由でLDAPを使用する(LDAPS)";
 
 $txt['settings_ldap_tls'] = "TLS経由でLDAPを使用する";
 
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Enable logging of who accessed items";
 $txt['settings_log_connections'] = "全てのユーザーのコネクションをDBにロギングする。";
 
@@ -1035,6 +1036,7 @@ $txt['user_del'] = "アカウントを削除";
 $txt['user_lock'] = "Lock user";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "User Management";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Current version";
 
 $txt['views_confirm_items_deletion'] = "Do you really want to delete the selected items from database?";

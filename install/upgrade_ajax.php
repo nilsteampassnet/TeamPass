@@ -707,6 +707,7 @@ if (isset($_POST['type'])) {
                 array('admin','enable_email_notification_on_item_shown','0', 0),
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
+                array('admin','use_md5_password_as_salt','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -1509,24 +1510,6 @@ if (isset($_POST['type'])) {
                 }
             }
 
-            // Since 2.1.17, encrypt process is changed.
-            // Previous PW need to be re-encrypted
-            if (@mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'")) {
-                $tmp_result = mysql_query("SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc WHERE type='admin' AND intitule = 'encryption_protocol'");
-                $tmp = mysql_fetch_row($tmp_result);
-                if ($tmp[0] != "ctr") {
-                    //count elem
-                    $res = mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items WHERE perso = '0'");
-                    $data = mysql_fetch_row($res);
-
-                    echo '$("#change_pw_encryption, #change_pw_encryption_progress").show();';
-                    echo '$("#change_pw_encryption_progress").html("Number of Passwords to re-encrypt: '.$data[0].'");';
-                    echo '$("#change_pw_encryption_total").val("'.$data[0].'")';
-                    break;
-
-                }
-            }
-
             /* Unlock this step */
             echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
             echo 'document.getElementById("but_next").disabled = "";';
@@ -1587,7 +1570,7 @@ if (isset($_POST['type'])) {
                     document.getElementById("loader").style.display = "none";';
                     break;
                 }
-*/
+
                 $fh = fopen($filename, 'w');
 
                 //prepare smtp_auth variable
@@ -1638,6 +1621,7 @@ require_once \"".$skFile."\";
                 //Create sk.php file
                 if (!file_exists($skFile)) {
                     $fh = fopen($skFile, 'w');
+
                     $result2 = fwrite(
                         $fh,
                         utf8_encode(
@@ -1683,7 +1667,7 @@ require_once \"".$skFile."\";
         case "new_encryption_of_pw":
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
-			
+
             @mysql_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],

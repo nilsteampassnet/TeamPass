@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Introduzca el password de un solo uso";
 $txt['2factors_image_text'] = "Por favor, escanee el código QR";
 $txt['2factors_tile'] = "Autenticación en dos pasos";
@@ -260,7 +259,7 @@ Elemento '";
 $txt['email_body2'] = "ha sido creado.<br /><br />Puede verlo haciendo click en <a href='";
 $txt['email_body3'] = "'>este enlace</a><br /><br />Saludos.";
 $txt['email_bodyalt_item_updated'] = "La clave para #item_label# ha sido actualizada.";
-$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>aquí</a><br /><br />Saludos.";
+$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">aquí</a><br /><br />Saludos.";
 $txt['email_body_on_user_login'] = "Hola,<br /><br />El usuario #tp_user# se ha conectado a TeamPass el día #tp_date# a las #tp_time#.<br />Saludos.";
 $txt['email_change'] = "Cambiar el email de la cuenta";
 $txt['email_changed'] = "Email cambiado";
@@ -300,6 +299,7 @@ $txt['error_group'] = "La carpeta es obligatoria";
 $txt['error_group_complex'] = "La Carpeta debe teber un nivel de complejidad de contraseña minimo requerido";
 $txt['error_group_exist'] = "Esa carpeta ya existe";
 $txt['error_group_label'] = "La Carpeta debe tener un nombre";
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "El texto contiene código HTML, esto no está permitido.";
 $txt['error_item_exists'] = "El elemento ya existe";
 $txt['error_label'] = "La etiqueta es obligatoria";
@@ -593,6 +593,7 @@ $txt['settings_ldap_mode'] = "Permitir autenticación de usuarios a traves de se
 $txt['settings_ldap_mode_tip'] = "Habilitar solamente si usted tiene un servidor LDAP y desea utilizarlo para autenticar los usuarios de TeamPass.";
 $txt['settings_ldap_ssl'] = "Usar LDAP a traves de SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Usar LDAP a traves de TSL";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Habilitar logs de quién accedió a los elementos";
 $txt['settings_log_connections'] = "Habilitar el logging de todas las conexiones de los usuarios a la base de datos.";
 $txt['settings_maintenance_mode'] = "Poner TeamPass en Modo Mantenimiento";
@@ -660,6 +661,7 @@ $txt['user_del'] = "Eliminar cuenta";
 $txt['user_lock'] = "Bloquear usuario";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "Gestión de usuarios";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Versión actual";
 $txt['views_confirm_items_deletion'] = "¿Desea eliminar los elementos seleccionados de la base de datos?";
 $txt['views_confirm_restoration'] = "Por favor confirme la restauracion de este elemento";

@@ -82,6 +82,7 @@ if (isset($_POST['type'])) {
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $url = htmlspecialchars_decode($dataReceived['url']);
@@ -1869,7 +1870,8 @@ if (isset($_POST['type'])) {
             }
             //print_r($returnValues);
             // Encrypt data to return
-            echo prepareExchangedData($returnValues, "encode");  
+            echo prepareExchangedData($returnValues, "encode");           
+
             break;
 
         /*

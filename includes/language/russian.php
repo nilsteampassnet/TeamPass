@@ -6,8 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['settings_ldap_type'] = "LDAP server type";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
+
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -31,7 +30,7 @@ $txt['admin_action_db_backup'] = "Создать Бэкап базы данны�
 $txt['admin_action_db_backup_key_tip'] = "Пожалуйста, введите ключ шифрования. Сохраните его где-нибудь, он будет запрошен во время восстановления. (Оставьте пустым, чтобы не шифровать)";
 $txt['admin_action_db_backup_start_tip'] = "Запустить";
 $txt['admin_action_db_backup_tip'] = "Это хорошая идея - создавать бэкапы, которые Вы сможете потом использовать для восстановления базы данных";
-$txt['admin_action_db_clean_items'] = "Удалить объекты-'сироты' из базы данных";
+$txt['admin_action_db_clean_items'] = "Удалить объекты-\"сироты\" из базы данных";
 $txt['admin_action_db_clean_items_result'] = "Объекты удалены";
 $txt['admin_action_db_clean_items_tip'] = "Это удалит только те элементы и связанные с ними протоколы, которые не были удалены после того, как была удалена папка, в которой находились эти элементы. Перед этой операцией рекомендуется сделать резервную копию базы данных.";
 $txt['admin_action_db_optimize'] = "Оптимизировать базу данных";
@@ -257,12 +256,12 @@ $txt['email_body1'] = "Hi,<br><br>Item '";
 $txt['email_body2'] = "has been created.<br /><br />You may view it by clicking <a href='";
 $txt['email_body3'] = "'>HERE</a><br /><br />Regards.";
 $txt['email_bodyalt_item_updated'] = "Password for #item_label# has been updated.";
-$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href='".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#'>HERE</a><br /><br />Cheers";
+$txt['email_body_item_updated'] = "Hello,<br><br>Password for '#item_label#' has been updated.<br /><br />You can check it <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">HERE</a><br /><br />Cheers";
 $txt['email_body_on_user_login'] = "Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.";
 $txt['email_change'] = "Change the account's email";
 $txt['email_changed'] = "Email изменен!";
 $txt['email_new_user_mail'] = "Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
-$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item '#tp_item#''.<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
+$txt['email_on_open_notification_mail'] = "Hello,<br><br>#tp_user# has opened and watched the Item \"#tp_item#'\".<br>Click the <a href='#tp_link#'>LINK</a> to access.<br><br>Best regards.";
 $txt['email_on_open_notification_subject'] = "[TeamPass] Notification on Item open";
 $txt['email_request_access_mail'] = "Hello #tp_item_author#,<br><br>User #tp_user# has required an access to '#tp_item#'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.";
 $txt['email_request_access_subject'] = "[TeamPass] Request an access to item";
@@ -297,6 +296,7 @@ $txt['error_group'] = "A folder is mandatory.";
 $txt['error_group_complex'] = "The Folder must have a minimum required passwords complexity level.";
 $txt['error_group_exist'] = "Эта папка уже присутствует!";
 $txt['error_group_label'] = "The Folder must be named.";
+$txt['error_group_noparent'] = "No parent has been selected!";
 $txt['error_html_codes'] = "Some text contains HTML code. This is not allowed.";
 $txt['error_item_exists'] = "This Item already exists.";
 $txt['error_label'] = "A label is mandatory.";
@@ -370,8 +370,8 @@ $txt['importing_details'] = "Список деталей";
 $txt['importing_folders'] = "Импорт папок";
 $txt['importing_items'] = "Импорт элементов";
 $txt['import_button'] = "Импорт";
-$txt['import_csv_anyone_can_modify_in_role_txt'] = "Set 'anyone in the same role can modify' right on all imported items.";
-$txt['import_csv_anyone_can_modify_txt'] = "Set 'anyone can modify' right on all imported items.";
+$txt['import_csv_anyone_can_modify_in_role_txt'] = "Set \"anyone in the same role can modify\" right on all imported items.";
+$txt['import_csv_anyone_can_modify_txt'] = "Set \"anyone can modify\" right on all imported items.";
 $txt['import_csv_dialog_info'] = "Информация: импорт должен осуществляться только из файла CSV. Обычно, файл, экспортированный из KeePass, имеет подходящую структуру.<br /> Если вы используете файл, сгенерированный другой программой, имейте ввиду, что структура файла CSV должна быть следующей: `Учетная запись`,`Имя`,`Пароль`,`URL`,`Комментарии`.";
 $txt['import_csv_menu_title'] = "Импортировать объекты из файла (CSV/KeePass XML)";
 $txt['import_error_no_file'] = "Вы должны выбрать файл!";
@@ -416,7 +416,7 @@ $txt['is_manager'] = "Менеджер";
 $txt['is_read_only'] = "Is Read Only";
 $txt['items'] = "Записи";
 $txt['items_browser_title'] = "Папки";
-$txt['item_copy_to_folder'] = "'Please select a folder in which the item has to be copied.";
+$txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
 $txt['item_edition_start_hour'] = "Time Editing";
 $txt['item_menu_add_elem'] = "Добавить объект";
 $txt['item_menu_add_rep'] = "Добавить папку";
@@ -571,7 +571,7 @@ $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_insert_manual_entry_item_history'] = "Enable permitting manual insertions in Items History log";
 $txt['settings_insert_manual_entry_item_history_tip'] = "";
 $txt['settings_kb'] = "Включить Базу Знаний (beta)";
-$txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
+$txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой ( , )!<br />Например: домен_1,домен_2,домен_3</span>";
@@ -582,6 +582,7 @@ $txt['settings_ldap_mode'] = "Включить аутентификацию по
 $txt['settings_ldap_mode_tip'] = "Включите, только если у вас есть сервер LDAP и если вы хотите использовать его для аутентификации пользователей TeamPass через него.";
 $txt['settings_ldap_ssl'] = "Использовать LDAP через SSL (LDAPS)";
 $txt['settings_ldap_tls'] = "Использовать LDAP поверх TLS";
+$txt['settings_ldap_type'] = "LDAP server type";
 $txt['settings_log_accessed'] = "Enable logging of who accessed items";
 $txt['settings_log_connections'] = "Включить протоколирование подключений пользователей к базе данных";
 $txt['settings_maintenance_mode'] = "Перевести TeamPass в режим обслуживания";
@@ -649,6 +650,7 @@ $txt['user_del'] = "Удалить аккаунт";
 $txt['user_lock'] = "Lock user";
 $txt['user_login'] = "Login";
 $txt['user_mngt'] = "Управление Пользователями";
+$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['version'] = "Текущая версия";
 $txt['views_confirm_items_deletion'] = "Вы действительно хотите удалить выбранные объекты из базы данных?";
 $txt['views_confirm_restoration'] = "Пожалуйста подтвердите восстановление этого объекта";
@@ -657,4 +659,3 @@ $txt['warning_screen_height'] = "WARNING: screen height is not enough for displa
 $txt['yes'] = "Да";
 $txt['your_version'] = "Ваша версия";
 ?>
->>>>>>> 2.1.18

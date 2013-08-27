@@ -189,7 +189,7 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["key"], 256), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["encKey"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
@@ -386,7 +386,7 @@ switch ($_POST['type']) {
 
         if ($proceedIdentification === true) {
             // User exists in the DB
-            $data = $db->fetchArray($row);
+            //$data = $db->fetchArray($row);
 
             //v2.1.17 -> change encryption for users password
             if (

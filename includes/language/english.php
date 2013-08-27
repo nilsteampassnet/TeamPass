@@ -5,7 +5,6 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
 $txt['settings_ldap_type'] = "LDAP server type";
 $txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['server_time'] = "Server time";
@@ -19,6 +18,7 @@ $txt['channel_encryption_no_bcmath'] = "Extension BCMATH is not loaded! Encrypti
 $txt['admin_action_check_pf'] = "Actualize Personal Folders for all users (creates them if not existing)";
 $txt['admin_actions_title'] = "Specific Actions";
 $txt['enable_personal_folder_feature_tip'] = "Once activated, you need to manually run a script that will create the personal folders for the existing users. Notice that this will only create personal folders for Users that do not have such a folder. The script '".$txt['admin_action_check_pf']."' is available in tab '".$txt['admin_actions_title']."'";
+
 $txt['is_administrated_by_role'] = "User is administrated by";
 $txt['administrators_only'] = "Administrators only";
 $txt['managers_of'] = "Managers of role";
@@ -108,7 +108,6 @@ $txt['user_activity'] = "User Activity";
 
 $txt['items'] = "Items";
 $txt['enable_personal_saltkey_cookie'] = "Enable personal SALTKey to be stored in a cookie";
-$txt['use_md5_password_as_salt'] = "Use the login password as SALTkey";
 $txt['personal_saltkey_cookie_duration'] = "Personal SALTKey cookie DAYS life time before expiration";
 $txt['admin_emails'] = "Emails";
 $txt['admin_emails_configuration'] = "Emails Configuration";

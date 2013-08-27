@@ -338,7 +338,7 @@ if (isset($_POST['save_button'])) {
     // Update use_md5_password_as_salt
     if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
         updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
-    }
+    }    
     // Update personal_saltkey_cookie_duration
     if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
         updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
@@ -1011,6 +1011,7 @@ echo '
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
                     </span>
                 </div>';
+
 echo '
             </div>';
 // --------------------------------------------------------------------------------

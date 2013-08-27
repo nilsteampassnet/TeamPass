@@ -134,7 +134,6 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 } else {
     $firstGroup = "";
 }
-
 if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
     $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
 } else {
@@ -178,6 +177,7 @@ foreach ($folders as $folder) {
                 || in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
+                //break;
             }
         }
 
@@ -189,7 +189,7 @@ foreach ($folders as $folder) {
 
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
             $itemsNb = $data[0];            
-
+            
             // get 1st folder
             if (empty($firstGroup)) {
                 $firstGroup = $folder->id;

@@ -92,11 +92,7 @@ LANGUAGES:
  #299 - User can be explicetly administrated by Managers of specific Roles
  #300 - Personal SK is encrypted in COOKIE
  #301 - Corrected query call error
-<<<<<<< HEAD
- #302 - Under "Views" users can see items that exist in personal folders 
-=======
  #302 - Under "Views" users can see items that exist in personal folders
->>>>>>> 2.1.18
  that have been accessed
  #307 - fclose() statement badly placed
 
