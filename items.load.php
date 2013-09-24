@@ -1222,6 +1222,11 @@ function open_add_item_div()
                 }
            );
         //}
+        if ($("#recherche_group_pf").val() == 1) {
+            $("#div_editRestricted").hide();
+        } else {
+        	$("#div_editRestricted").show();
+        }
 
         //open dialog
         $("#div_formulaire_saisi_info").hide().html("");
@@ -1297,60 +1302,64 @@ function open_edit_item_div(restricted_to_roles)
     }
 
     //Get list of people in restriction list
-    if ($('#edit_restricted_to').val() != undefined) {
-        $('#edit_restricted_to_list').empty();
-        if (restricted_to_roles == 1) {
+    if ($("#recherche_group_pf").val() == 1) {
+        $("#div_editRestricted").hide();
+    } else {
+    	$("#div_editRestricted").show();
+        if ($('#edit_restricted_to').val() != undefined) {
+            $('#edit_restricted_to_list').empty();
+            if (restricted_to_roles == 1) {
+                //add optgroup
+                var optgroup = $('<optgroup>');
+                optgroup.attr('label', "<?php echo $txt['users'];?>");
+                $("#edit_restricted_to_list option:last").wrapAll(optgroup);
+            }
+            var liste = $('#input_liste_utilisateurs').val().split(';');
+            for (var i=0; i<liste.length; i++) {
+                var elem = liste[i].split('#');
+                if (elem[0] != "") {
+                    $("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
+                    var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
+                    if (index != -1) {
+                        $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
+                    }
+                }
+            }
+        }
+    
+        //Add list of roles if option is set
+        if (restricted_to_roles == 1 && $('#edit_restricted_to').val() != undefined) {
+            var j = i;
             //add optgroup
             var optgroup = $('<optgroup>');
-            optgroup.attr('label', "<?php echo $txt['users'];?>");
-            $("#edit_restricted_to_list option:last").wrapAll(optgroup);
-        }
-        var liste = $('#input_liste_utilisateurs').val().split(';');
-        for (var i=0; i<liste.length; i++) {
-            var elem = liste[i].split('#');
-            if (elem[0] != "") {
-                $("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
-                var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
-                if (index != -1) {
-                    $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
+            optgroup.attr('label', "<?php echo $txt['roles'];?>");
+    
+            var liste = $('#input_list_roles').val().split(';');
+            for (var i=0; i<liste.length; i++) {
+                var elem = liste[i].split('#');
+                if (elem[0] != "") {
+                    $("#edit_restricted_to_list").append("<option value='role_"+elem[0]+"'>"+elem[1]+"</option>");
+                    var index = $('#edit_restricted_to_roles').val().lastIndexOf(elem[1]+";");
+                    if (index != -1) {
+                        $("#edit_restricted_to_list option[value='role_"+elem[0]+"']").attr('selected', true);
+                    }
+                    if (i==0) $("#edit_restricted_to_list option:last").wrapAll(optgroup);
                 }
+                j++;
             }
         }
+    
+        //Prepare multiselect widget
+        $("#edit_restricted_to_list").multiselect({
+            selectedList: 7,
+            minWidth: 430,
+            height: 145,
+            checkAllText: "<?php echo $txt['check_all_text'];?>",
+            uncheckAllText: "<?php echo $txt['uncheck_all_text'];?>",
+            noneSelectedText: "<?php echo $txt['none_selected_text'];?>"
+        });
+        $("#edit_restricted_to_list").multiselect('refresh');
     }
-
-    //Add list of roles if option is set
-    if (restricted_to_roles == 1 && $('#edit_restricted_to').val() != undefined) {
-        var j = i;
-        //add optgroup
-        var optgroup = $('<optgroup>');
-        optgroup.attr('label', "<?php echo $txt['roles'];?>");
-
-        var liste = $('#input_list_roles').val().split(';');
-        for (var i=0; i<liste.length; i++) {
-            var elem = liste[i].split('#');
-            if (elem[0] != "") {
-                $("#edit_restricted_to_list").append("<option value='role_"+elem[0]+"'>"+elem[1]+"</option>");
-                var index = $('#edit_restricted_to_roles').val().lastIndexOf(elem[1]+";");
-                if (index != -1) {
-                    $("#edit_restricted_to_list option[value='role_"+elem[0]+"']").attr('selected', true);
-                }
-                if (i==0) $("#edit_restricted_to_list option:last").wrapAll(optgroup);
-            }
-            j++;
-        }
-    }
-
-    //Prepare multiselect widget
-    $("#edit_restricted_to_list").multiselect({
-        selectedList: 7,
-        minWidth: 430,
-        height: 145,
-        checkAllText: "<?php echo $txt['check_all_text'];?>",
-        uncheckAllText: "<?php echo $txt['uncheck_all_text'];?>",
-        noneSelectedText: "<?php echo $txt['none_selected_text'];?>"
-    });
-    $("#edit_restricted_to_list").multiselect('refresh');
-
     //refresh pw complexity
     $("#edit_pw1").focus();
 
@@ -1705,7 +1714,6 @@ $(function() {
                             key        : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
-                        	data = prepareExchangedData(data, "decode");
                             //check if format error
                             if (data[0].error == "") {
                                 $("#folder_name_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());

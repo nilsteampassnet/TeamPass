@@ -854,7 +854,7 @@ function prepareExchangedData($data, $type)
                 $data,
                 true
             );
-        } else {        
+        } else {
             return json_decode(
                 Encryption\Crypt\aesctr::decrypt($data, $_SESSION['key'], 256),
                 true

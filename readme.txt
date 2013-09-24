@@ -55,6 +55,12 @@ LANGUAGES:
 * ITALIAN		by Federico
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.19
+ #407 - "Restricted to" feature improvement
+ #402 - In item list, description is cut with <br />
+ #393 - Password input and confirmation field location
+ * Dialogbox not closed when changing folder name
+
 2.1.18
  #315 - jstree style.css badly referenced
  #314 - Folder is not being deleted

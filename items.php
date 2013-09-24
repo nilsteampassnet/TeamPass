@@ -188,8 +188,8 @@ foreach ($folders as $folder) {
             }
 
             $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $itemsNb = $data[0];            
-            
+            $itemsNb = $data[0];
+
             // get 1st folder
             if (empty($firstGroup)) {
                 $firstGroup = $folder->id;
@@ -212,10 +212,10 @@ foreach ($folders as $folder) {
                 // case for restriction_to_roles
             } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
             } elseif (in_array($folder->id, $listRestrictedFoldersForItemsKeys)) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
             } else {
                 $folderTxt .= '
                             <a id="fld_'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</a>';
@@ -224,7 +224,7 @@ foreach ($folders as $folder) {
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
                     //$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
-                    if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ){
+                    if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
                         $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&", $folder->title).'</option>';
                     } else {
                         $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&", $folder->title).'</option>';
@@ -508,6 +508,8 @@ echo '
             </label>
             <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;" />
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" /><input type="hidden" id="mypassword_complex" />
+            <label for="" class="label_cpm">'.$txt['index_change_pw_confirmation'].' :</label>
+            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
@@ -531,10 +533,7 @@ echo '
             <div style="width:100%;">
                 <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
             </div>';
-// Line for PW CONFIRMATION
-echo '
-            <label for="" class="label_cpm">'.$txt['index_change_pw_confirmation'].' :</label>
-            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />';
+
 // Line for RESTRICTED TO
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
@@ -669,9 +668,12 @@ echo '
                 <label for="" class="label_cpm">'.$txt['used_pw'].' :
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
-                <input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:410px;" />
-                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:410px;" /><input type="hidden" id="edit_mypassword_complex" />
+                <input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:405px;" />
+                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" /><input type="hidden" id="edit_mypassword_complex" />
                 <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
+
+                <label for="" class="cpm_label">'.$txt['confirm'].' : </label>
+                <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />
             </div>
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="edit_custom_pw">
@@ -694,18 +696,17 @@ echo '
             </div>
             <div style="width:100%;">
                 <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
-            </div>
-
-            <label for="" class="cpm_label">'.$txt['confirm'].' : </label>
-            <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />';
+            </div>';
 
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
+            <div id="div_editRestricted">
                 <label for="" class="label_cpm">'.$txt['restricted_to'].' : </label>
                 <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
             <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
-            <div style="line-height:10px;">&nbsp;</div>';
+            <div style="line-height:10px;">&nbsp;</div>
+            </div>';
 }
 
 echo '

@@ -82,13 +82,19 @@ if (isset($_POST['type'])) {
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
-            
+
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $url = htmlspecialchars_decode($dataReceived['url']);
             $pw = htmlspecialchars_decode($dataReceived['pw']);
             $login = htmlspecialchars_decode($dataReceived['login']);
             $tags = htmlspecialchars_decode($dataReceived['tags']);
+
+            // is author authorized to create in this folder
+            if (in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))) {
+                echo prepareExchangedData(array("error" => "something_wrong"), "encode");
+                break;
+            }
 
             if (!empty($pw)) {
                 // Check length
@@ -1496,7 +1502,10 @@ if (isset($_POST['type'])) {
                 }
             }
             // Check if ID folder send is valid
-            if (!in_array($_POST['id'], $_SESSION['groupes_visibles'])) {
+            if (
+                    !in_array($_POST['id'], $_SESSION['groupes_visibles'])
+                    && !in_array($_POST['id'], array_keys($_SESSION['list_folders_limited']))
+            ) {
                 $_POST['id'] = 1;
             }
             // check if this folder is a PF. If yes check if saltket is set
@@ -1754,7 +1763,7 @@ if (isset($_POST['type'])) {
                         }
                         $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.';">'.substr(stripslashes($reccord['label']), 0, 65);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                            $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($reccord['description']), 0, 30))).']</font>';
+                            $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString(explode("<br />",$reccord['description'])[0]), 0, 30))).']</font>';
                         }
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -1870,7 +1879,7 @@ if (isset($_POST['type'])) {
             }
             //print_r($returnValues);
             // Encrypt data to return
-            echo prepareExchangedData($returnValues, "encode");           
+            echo prepareExchangedData($returnValues, "encode");
 
             break;
 
