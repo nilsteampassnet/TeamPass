@@ -375,7 +375,7 @@ if (isset($_POST['type'])) {
                         echo prepareExchangedData(array("error" => "pw_too_long"), "encode");
                         break;
                     }
-                    // Get existing values -> TODO
+                    // Get existing values
                     $data = $db->queryFirst(
                         "SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
                         i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
