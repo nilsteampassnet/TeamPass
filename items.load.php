@@ -659,7 +659,7 @@ function EditerItem()
               //prepare data
             var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
             '"login":"'+sanitizeString($('#edit_item_login').val())+'", "is_pf":"'+is_pf+'", '+
-            '"description":"'+description+'", "email":"'+$('#edit_email').val()+'", "url":"'+url+'", "categorie":"'+$('#hid_cat').val()+'", '+
+            '"description":"'+description+'", "email":"'+$('#edit_email').val()+'", "url":"'+url+'", "categorie":"'+$('#edit_categorie').val()+'", '+
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+'", "is_pf":"'+$('#recherche_group_pf').val()+'", '+
             '"annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#edit_anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#edit_tags').val())+'" ,'+
@@ -681,9 +681,10 @@ function EditerItem()
                         // error
                         $("#div_loading").hide();
                         $("#request_ongoing").val("");
-                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                        $("#div_dialog_message_text")
+                            .html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+
+                            data);
                         $("#div_dialog_message").dialog("open");
-
                         return;
                     }
 
@@ -702,10 +703,6 @@ function EditerItem()
                         $("#edit_show_error").html('<?php echo addslashes($txt['error_not_allowed_to']);?>');
                         $("#edit_show_error").show();
                         LoadingPage();
-                    }
-                    //if reload page is needed
-                    else if (data.reload_page == "1") {
-                        //window.location.href = "index.php?page=items&group="+data.id_tree+"&id="+data.id;
                     } else {
                         //refresh item in list
                         $("#fileclass"+data.id).text($('#edit_label').val());
@@ -751,6 +748,16 @@ function EditerItem()
                         $('#item_edit_file_queue').html('');
                         //Select 1st tab
                         $("#item_edit_tabs").tabs({ selected: 0 });
+
+                        //if reload page is needed
+                        if (data.reload_page == "1") {
+                            //reload list
+                            ListerItems($('#hid_cat').val(), "", 0)
+                        	//increment / decrement number of items in folders
+                            $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
+                            $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
+                        }
+                        
                         //Close dialogbox
                         $("#div_formulaire_edition_item").dialog('close');
                         //hide loader
