@@ -189,7 +189,7 @@ switch ($_POST['type']) {
     case "identify_user":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["encKey"], 256), true);
+        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["key"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
@@ -467,10 +467,10 @@ switch ($_POST['type']) {
 				{
 				    $_SESSION['my_sk'] = md5($passwordClear);
 				     setcookie(
-				       "TeamPass_PFSK_".md5($_SESSION['user_id']),
-				       encrypt($_SESSION['my_sk'], ""),
-				       time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-				       '/'
+                        "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                        encrypt($_SESSION['my_sk'], ""),
+                        time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                        '/'
 				    );
 				}
 
