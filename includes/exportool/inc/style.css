@@ -1,0 +1,27 @@
+body {
+    width:          90%;
+    margin-left:    auto;
+    margin-right:   auto;
+    /*background:   #000000 url(../images/canevas/background_cell.jpg) repeat;*/
+    font-family:    sans-serif;
+    font-size:      11pt;
+}
+
+main {
+    text-align:     center;
+    margin-left:    auto;
+    margin-right:   auto;
+}
+
+header {
+    width:      100%;
+    text-align: center;
+}
+
+center {
+
+}
+
+footer {
+
+}

@@ -383,6 +383,41 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 }
 
 /*
+* LOAD CATEGORIES
+*/
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty( $_SESSION['item_fields'])) {
+    $_SESSION['item_fields'] = array();
+    $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0");
+    foreach ($rows as $reccord) {
+        $arrFields = array();
+               
+        // get each field
+        $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$reccord['id']);
+        if (count($rows) > 0) {
+            foreach ($rows as $field) {
+                array_push(
+                    $arrFields, 
+                    array(
+                        $field['id'], 
+                        addslashes($field['title'])
+                    )
+                );
+            }
+        }
+        
+        // store the categories
+        array_push(
+            $_SESSION['item_fields'], 
+            array(
+                $reccord['id'], 
+                addslashes($reccord['title']),
+                $arrFields
+            )
+        );
+    }
+}
+
+/*
 * CHECK IF SENDING ANONYMOUS STATS
 */
 if (

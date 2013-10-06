@@ -384,6 +384,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <tr><td>Add table "emails"</td><td><span id="tbl_21"></span></td></tr>
                         <tr><td>Add table "automatic_del"</td><td><span id="tbl_22"></span></td></tr>
                         <tr><td>Add table "items_edition"</td><td><span id="tbl_23"></span></td></tr>
+                        <tr><td>Add table "categories"</td><td><span id="tbl_24"></span></td></tr>
+                        <tr><td>Add table "categories_items"</td><td><span id="tbl_25"></span></td></tr>
                     </table>
                     </fieldset>
 

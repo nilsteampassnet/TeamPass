@@ -275,6 +275,86 @@ switch ($_POST['type']) {
 
         echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
         break;
+
+    //CASE export in CSV format
+    case "export_to_html_format":
+        $full_listing = array();
+        $full_listing[0] = array(
+            'id' => "id",
+            'label' => "label",
+            'description' => "description",
+            'pw' => "pw",
+            'login' => "login",
+            'restricted_to' => "restricted_to",
+            'perso' => "perso"
+        );
+
+        $id_managed = '';
+        $i = 1;
+        $items_id_list = array();
+
+        foreach (explode(';', $_POST['ids']) as $id) {
+            if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
+                $rows = $db->fetchAllArray(
+                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
+                       l.date as date,
+                       n.renewal_period as renewal_period,
+                       k.rand_key
+                    FROM ".$pre."items as i
+                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
+                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
+                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+                    WHERE i.inactif = 0
+                    AND i.id_tree=".$id."
+                    AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
+                    ORDER BY i.label ASC, l.date DESC"
+                );
+                foreach ($rows as $reccord) {
+                    $restricted_users_array = explode(';', $reccord['restricted_to']);
+                    //exclude all results except the first one returned by query
+                    if (empty($id_managed) || $id_managed != $reccord['id']) {
+                        if (
+                            (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
+                            ||
+                            (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        ) {
+                            //exclude this case
+                        } else {
+                            // decrypt PW
+                            if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                                $pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+                            } else {
+                                $pw = decrypt($reccord['pw']);
+                            }
+                            $full_listing[$i] = array(
+                                'id' => $reccord['id'],
+                                'label' => $reccord['label'],
+                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysql_real_escape_string(stripslashes(utf8_decode($reccord['description']))))),
+                                'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
+                                'login' => $reccord['login'],
+                                'restricted_to' => $reccord['restricted_to'],
+                                'perso' => $reccord['perso']
+                            );
+                            $i++;
+                        }
+                    }
+                    $id_managed = $reccord['id'];
+                }
+            }
+        }
+        //save the file
+        $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
+        //print_r($full_listing);
+        $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
+        function outPutCsv(&$vals, $key, $filehandler)
+        {
+            fputcsv($filehandler, $vals, ";"); // add parameters if you want
+        }
+        array_walk($full_listing, "outPutCsv", $outstream);
+        fclose($outstream);
+
+        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+        break;
 }
 
 //SPECIFIC FUNCTIONS FOR FPDF

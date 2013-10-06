@@ -84,7 +84,7 @@ echo '
 <input type="hidden" id="request_lastItem" />
 <input type="hidden" id="item_editable" />
 <input type="hidden" id="timestamp_item_displayed" />';
-// Afficher mdp suite ? recherche
+// Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="'.$_GET['id'].'" />';
@@ -411,6 +411,25 @@ if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_k
                         </td>
                     </tr>';
 }
+// lines for FIELDS
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+    foreach ($_SESSION['item_fields'] as $elem) {
+    echo '
+                    <tr>
+                        <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$elem[1].' :</td>
+                        <td></td>
+                    </tr>';
+        foreach ($elem[2] as $field) {
+                    echo '
+                    <tr>
+                        <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span><i>'.$field[1].'</i> :</td>
+                        <td>
+                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.$field[0].'" class="fields" />
+                        </td>
+                    </tr>';
+        }
+    }
+}
 echo '
                 </table>
             </div>
@@ -447,7 +466,11 @@ echo '
 
 echo '
 </div>';
-// Formulaire NOUVEAU
+
+
+/********************************
+* NEW Item Form
+*/
 echo '
 <div id="div_formulaire_saisi" style="display:none;">
     <form method="post" name="new_item" action="">
@@ -460,6 +483,9 @@ echo '
             <li><a href="#tabs-01">'.$txt['definition'].'</a></li>
             <li><a href="#tabs-02">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
             <li><a href="#tabs-03">'.$txt['files_&_images'].'</a></li>
+            ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
+            '<li><a href="#tabs-04">'.$txt['more'].'</a></li>' :
+            '', '
         </ul>
         <div id="tabs-01">';
 // Line for LABEL
@@ -605,12 +631,42 @@ echo '
                 <a id="item_attach_pickfiles" href="#" class="button">'.$txt['select'].'</a>
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
             </div>
-        </div>
-    </div>
+        </div>';
+// Tabs EDIT N°4
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+echo '
+        <div id="tabs-04">
+            <div id="item_more">';
+                // load all categories and fields
+                foreach ($_SESSION['item_fields'] as $elem) {
+                    echo '
+                    <div style="font-weight:bold;font-size:12px;">
+                        <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        '.$elem[1].'
+                    </div>';
+                    foreach ($elem[2] as $field) {
+                        echo '
+                    <div style="margin:2px 0 2px 15px;">
+                        <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                        <label class="cpm_label">'.$field[1].'</span>
+                        <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                    </div>';
+                    }
+                }
+            echo '
+            </div>
+        </div>';
+}
+echo '
+    </div>';
+echo '
     </form>
     <div style="display:none;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
-// Formulaire EDITION ITEM
+
+/***************************
+* Edit Item Form
+*/
 echo '
 <div id="div_formulaire_edition_item" style="display:none;">
     <form method="post" name="form_edit" action="">
@@ -624,6 +680,9 @@ echo '
             <li><a href="#tabs-1">'.$txt['definition'].'</a></li>
             <li><a href="#tabs-2">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
             <li><a href="#tabs-3">'.$txt['files_&_images'].'</a></li>
+            ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
+            '<li><a href="#tabs-4">'.$txt['more'].'</a></li>' :
+            '', '
         </ul>
         <div id="tabs-1">
             <label for="" class="cpm_label">'.$txt['label'].' : </label>
@@ -743,7 +802,7 @@ echo '
                 </select>
             </div>
         </div>';
-// Tabs EDIT N?3
+// Tab EDIT N°3
 echo '
         <div id="tabs-3">
             <div style="font-weight:bold;font-size:12px;">
@@ -761,13 +820,42 @@ echo '
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$txt['select'].'</a>
                 <a id="item_edit_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
             </div>
+        </div>';
+// Tabs EDIT N°4 -> Categories
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+echo '
+        <div id="tabs-4">
+            <div id="edit_item_more">';
+                // load all categories and fields
+                foreach ($_SESSION['item_fields'] as $elem) {
+                    echo '
+                    <div style="font-weight:bold;font-size:12px;">
+                        <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        '.$elem[1].'
+                    </div>';
+                    foreach ($elem[2] as $field) {
+                        echo '
+                    <div style="margin:2px 0 2px 15px;">
+                        <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                        <label class="cpm_label">'.$field[1].'</label>
+                        <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                    </div>';
+                    }
+                }
+            echo '
+            </div>
         </div>
     </div>';
+}
 echo '
+    </div>
     </form>
     <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
 </div>';
-// Formulaire AJOUT REPERTORIE
+
+/*
+* ADD NEW FOLDER form
+*/
 echo '
 <div id="div_ajout_rep" style="display:none;">
     <div id="new_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>

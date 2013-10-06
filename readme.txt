@@ -56,9 +56,13 @@ LANGUAGES:
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.19
+ #419 - Password complexity not refreshed
+ #418 - English translation improvement
  #407 - "Restricted to" feature improvement
  #402 - In item list, description is cut with <br />
  #393 - Password input and confirmation field location
+ #388 - Unable to move items between folders
+ #400 - Extra fields for Item (not yet encrypted)
  * Dialogbox not closed when changing folder name
 
 2.1.18

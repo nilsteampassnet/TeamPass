@@ -674,12 +674,18 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         $("#div_print_out_wait").hide();
                         return;
                     }
+                    
+                    // export format?
+                    var export_format = "";
+                    if ($("input[name=\"export_format\"]:checked").val() == "pdf") export_format = "export_to_pdf_format";
+                    else if ($("input[name=\"export_format\"]:checked").val() == "csv") export_format = "export_to_csv_format";
+                    else if ($("input[name=\"export_format\"]:checked").val() == "html") export_format = "export_to_html_format";
 
                     //Send query
                     $.post(
                         "sources/export.queries.php",
                         {
-                            type    : $("input[name=\"export_format\"]:checked").val() == "pdf" ? "export_to_pdf_format" : "export_to_csv_format",
+                            type    : export_format,
                             ids        : ids,
                             pdf_password : $("#pdf_password").val()
                         },

@@ -981,6 +981,9 @@ switch ($_POST['type']) {
             );
             $_SESSION['user_language'] = $_POST['lang'];
         	echo "done";
+        } else {
+            $_SESSION['user_language'] = $_POST['lang'];
+            echo "done";
         }
         break;
     /**

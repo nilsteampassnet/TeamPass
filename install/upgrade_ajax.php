@@ -464,6 +464,13 @@ if (isset($_POST['type'])) {
                         echo 'document.getElementById("cpm_isUTF8").value = "0";';
                         $_SESSION['utf8_enabled'] = 0;
                     }
+
+                	// put TP in maintenance mode or not
+                	@mysql_query(
+                	"UPDATE `".$_SESSION['tbl_prefix']."misc`
+                        SET `valeur` = 'maintenance_mode'
+                        WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+                	);
                 } else {
                     echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                     $res = "Impossible to get connected to database. Error is ".mysql_error();
@@ -591,7 +598,7 @@ if (isset($_POST['type'])) {
                 array('admin', 'favicon', '',0),
                 array('admin', 'activate_expiration', '0',0),
                 array('admin', 'pw_life_duration','30',0),
-                array('admin', 'maintenance_mode','1',1),
+                //array('admin', 'maintenance_mode','1',1),
                 array('admin', 'cpassman_version',$k['version'],1),
                 array('admin', 'ldap_mode','0',0),
                 array('admin', 'richtext',0,0),
@@ -1432,6 +1439,53 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = '.
                     '"An error appears on table items_edition! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_19").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($dbTmp);
+                break;
+            }
+
+            ## TABLE categories
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories` (
+                `id` int(12) NOT NULL AUTO_INCREMENT,
+                `parent_id` int(12) NOT NULL,
+                `title` varchar(255) NOT NULL,
+                `level` int(2) NOT NULL,
+                `description` text NOT NULL,
+                `type` varchar(50) NOT NULL,
+                `order` int(12) NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_20").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table categories! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_20").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($dbTmp);
+                break;
+            }
+
+            ## TABLE categories_items
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_items` (
+                `id` int(12) NOT NULL AUTO_INCREMENT,
+                `field_id` int(11) NOT NULL,
+                `item_id` int(11) NOT NULL,
+                `data` text NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_21").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table categories_items! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_21").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysql_close($dbTmp);
