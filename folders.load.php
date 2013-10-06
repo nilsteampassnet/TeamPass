@@ -21,12 +21,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $(function() {
 
-      //Prepare creation dialogbox
-      $("#open_add_group_div").click(function() {
-            $("#div_add_group").dialog("open");
-      });
+    //Prepare creation dialogbox
+    $("#open_add_group_div").click(function() {
+        $("#div_add_group").dialog("open");
+    });
 
-      $("#div_add_group").dialog({
+	$("#div_add_group").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,

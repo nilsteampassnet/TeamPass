@@ -482,6 +482,14 @@ function AjouterItem()
                 var to_be_deleted = "";
             }
 
+            // get item field values
+            var fields = "";
+            $('.item_field').each(function(i){
+                id = $(this).attr('id').split('_');
+                if (fields == "") fields = id[1]+'~~'+$(this).val();
+                else fields += '_|_'+id[1]+'~~'+$(this).val();
+            });
+
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
             '"login":"'+sanitizeString($('#item_login').val())+'", "is_pf":"'+is_pf+'", '+
@@ -489,7 +497,7 @@ function AjouterItem()
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
-            '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'"}';
+            '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'", "fields":"'+sanitizeString(fields)+'"}';
 
             //Send query
             $.post(
@@ -550,6 +558,8 @@ function AjouterItem()
                         //$("#restricted_to_list").multiselect('uncheckall');TODO
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
+                        $(".fields").val("");
+                        $(".fields_div").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
                     }
@@ -656,6 +666,14 @@ function EditerItem()
                 //var to_be_deleted_after_date = "";
             }
 
+            // get item field values
+            var fields = "";
+            $('.edit_item_field').each(function(i){
+                id = $(this).attr('id').split('_');
+                if (fields == "") fields = id[2]+'~~'+$(this).val();
+                else fields += '_|_'+id[2]+'~~'+$(this).val();
+            });
+
               //prepare data
             var data = '{"pw":"'+sanitizeString($('#edit_pw1').val())+'", "label":"'+sanitizeString($('#edit_label').val())+'", '+
             '"login":"'+sanitizeString($('#edit_item_login').val())+'", "is_pf":"'+is_pf+'", '+
@@ -663,7 +681,7 @@ function EditerItem()
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+'", "is_pf":"'+$('#recherche_group_pf').val()+'", '+
             '"annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#edit_anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#edit_tags').val())+'" ,'+
-            '"to_be_deleted":"'+to_be_deleted+'"}';
+            '"to_be_deleted":"'+to_be_deleted+'" ,"fields":"'+sanitizeString(fields)+'"}';
 
             //send query
             $.post(
@@ -735,6 +753,18 @@ function EditerItem()
                         /*$("#id_categorie").html(data.id_tree);
                         $("#id_item").html(data.id);*/
 
+                        // refresh fields
+                        if ($('.edit_item_field').val() != undefined) {
+                            $('.edit_item_field').each(function(i){
+                                id = $(this).attr('id').split('_');
+                                // copy data from form to Item Div
+                                $('#id_field_'+id[2]).html($(this).val());
+                                $('#hid_field_'+id[2]).val($(this).val());
+                                // clear form
+                                $(this).val("");
+                            });
+                        }
+
                         //calling image lightbox when clicking on link
                         $("a.image_dialog").click(function(event) {
                             event.preventDefault();
@@ -757,7 +787,7 @@ function EditerItem()
                             $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
-                        
+
                         //Close dialogbox
                         $("#div_formulaire_edition_item").dialog('close');
                         //hide loader
@@ -993,6 +1023,16 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_kbs").html(data.links_to_kbs);
                         $("#edit_past_pwds").attr('title', data.history_of_pwds);
                         $(".tip").tooltip();
+
+                        // show Fields
+                        $(".fields").val("");
+                        $(".fields_div").html("");
+                        var liste = data.fields.split('_|_');
+                        for (var i=0; i<liste.length; i++) {
+                            var field = liste[i].split('~~');
+                            $('#id_field_'+field[0]).html(field[1]);
+                            $('#hid_field_'+field[0]).val(field[1]);
+                        }
 
                         //Anyone can modify button
                         if (data.anyone_can_modify == "1") {
@@ -1307,6 +1347,13 @@ function open_edit_item_div(restricted_to_roles)
         $('#edit_anyone_can_modify').attr("checked",false);
         $('#edit_anyone_can_modify').button("refresh");
     }
+    // fields display
+    if ($('.fields').val() != undefined) {
+        $('.fields').each(function(i){
+            id = $(this).attr('id').split('_');
+            $('#edit_field_'+id[2]).val(htmlspecialchars_decode($('#hid_field_'+id[2]).val()));
+        });
+    }
 
     //Get list of people in restriction list
     if ($("#recherche_group_pf").val() == 1) {
@@ -1333,14 +1380,14 @@ function open_edit_item_div(restricted_to_roles)
                 }
             }
         }
-    
+
         //Add list of roles if option is set
         if (restricted_to_roles == 1 && $('#edit_restricted_to').val() != undefined) {
             var j = i;
             //add optgroup
             var optgroup = $('<optgroup>');
             optgroup.attr('label', "<?php echo $txt['roles'];?>");
-    
+
             var liste = $('#input_list_roles').val().split(';');
             for (var i=0; i<liste.length; i++) {
                 var elem = liste[i].split('#');
@@ -1355,7 +1402,7 @@ function open_edit_item_div(restricted_to_roles)
                 j++;
             }
         }
-    
+
         //Prepare multiselect widget
         $("#edit_restricted_to_list").multiselect({
             selectedList: 7,
@@ -1367,8 +1414,6 @@ function open_edit_item_div(restricted_to_roles)
         });
         $("#edit_restricted_to_list").multiselect('refresh');
     }
-    //refresh pw complexity
-    $("#edit_pw1").focus();
 
     //open dialog
     $("#div_formulaire_edition_item_info").hide().html("");
@@ -1806,14 +1851,15 @@ $(function() {
         title: "<?php echo $txt['item_menu_edi_elem'];?>",
         buttons: {
             "<?php echo $txt['save_button'];?>": function() {
-				$("#edit_pw1").focus();
                 EditerItem();
+				$("#div_formulaire_edition_item_info").hide().html("");
             },
             "<?php echo $txt['cancel_button'];?>": function() {
                 //Clear upload queue
                 $('#item_edit_file_queue').html('');
                 //Select 1st tab
                 $("#item_edit_tabs").tabs({ selected: 0 });
+				$("#div_loading").hide();
                 //Close dialog box
                 $(this).dialog('close');
             }
@@ -1833,7 +1879,15 @@ $(function() {
                     key        : "<?php echo $_SESSION['key'];?>"
                 }
            );
-        }
+        },
+		open: function(event,ui) {
+			//refresh pw complexity
+			//setTimeout(function(){
+				$("#item_edit_tabs").tabs( "option", "active",1  );
+    			$("#edit_pw1").first().focus();
+				$("#item_edit_tabs").tabs( "option", "active",0  );
+			//}, 500);
+		}
     });
     //<=
     //=> SUPPRIMER UN ELEMENT

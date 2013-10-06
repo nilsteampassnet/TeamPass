@@ -113,6 +113,11 @@ if (isset($_POST['type'])) {
          * STEP 3
          */
         case "step3":
+            // check skpath
+            if (substr($_POST['skPath'], strlen($_POST['skPath'])-1) == "/" || substr($_POST['skPath'], strlen($_POST['skPath'])-1) == "\"") {
+                $_POST['skPath'] = substr($_POST['skPath'], 0, strlen($_POST['skPath'])-1);
+            }
+
             if (is_dir($_POST['skPath'])) {
                 if (is_writable($_POST['skPath'])) {
                     echo 'document.getElementById("sk_path_res").innerHTML = "<img src=\"images/tick.png\">";
@@ -735,6 +740,47 @@ if (isset($_POST['type'])) {
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = "An error appears on table items_edition! '.mysql_error().'";';
                 echo 'document.getElementById("tbl_23").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($dbTmp);
+                break;
+            }
+
+            ## TABLE categories
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories` (
+                `id` int(12) NOT NULL AUTO_INCREMENT,
+                `parent_id` int(12) NOT NULL,
+                `title` varchar(255)) NOT NULL,
+                `level` int(2) NOT NULL,
+                `description` text NOT NULL,
+                `type` varchar(50) NOT NULL,
+                `order` int(12) NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_24").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table categories! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_24").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysql_close($dbTmp);
+                break;
+            }
+
+            ## TABLE categories_items
+            $res = mysql_query(
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_items` (
+                `id` int(12) NOT NULL AUTO_INCREMENT,
+                `field_id` int(11) NOT NULL,
+                `item_id` int(11) NOT NULL,
+                `data` text NOT NULL
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table categories_items! '.mysql_error().'";';
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysql_close($dbTmp);
                 break;

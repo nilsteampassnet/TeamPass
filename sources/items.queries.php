@@ -151,6 +151,38 @@ if (isset($_POST['type'])) {
                             'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0'
                            )
                     );
+
+                    // update fields
+                    if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                        foreach (explode("_|_", $dataReceived['fields']) as $field) {
+                            $field_data = explode("~~", $field);
+                            if (count($field_data)>1 && !empty($field_data[1])) {
+                                $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE id = '".$field_data[0]."' AND id=".$newID);
+                                if ($dataTmp[0] == 0) {
+                                    $db->queryInsert(
+                                        'categories_items',
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field_data[0],
+                                            'data' => $field_data[1]
+                                        )
+                                    );
+                                } else {
+                                    $db->queryUpdate(
+                                        'categories_items',
+                                        array(
+                                            'data' => $field_data[1]
+                                        ),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id=' =>$field_data[0]
+                                        )
+                                    );
+                                }
+                            }
+                        }
+                    }
+
                     // If automatic deletion asked
                     if ($dataReceived['to_be_deleted'] != 0 && !empty($dataReceived['to_be_deleted'])) {
                         $date_stamp = dateToStamp($dataReceived['to_be_deleted']);
@@ -438,6 +470,35 @@ if (isset($_POST['type'])) {
                            ),
                         "id='".$dataReceived['id']."'"
                     );
+                    // update fields
+                    if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                        foreach (explode("_|_", $dataReceived['fields']) as $field) {
+                            $field_data = explode("~~", $field);
+                            $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE id = '".$field_data[0]."' AND id=".$dataReceived['id']);
+                            if ($dataTmp[0] == 0) {
+                                $db->queryInsert(
+                                    'categories_items',
+                                    array(
+                                        'item_id' => $dataReceived['id'],
+                                        'field_id' => $field_data[0],
+                                        'data' => $field_data[1]
+                                    )
+                                );
+                            } else {
+                                $db->queryUpdate(
+                                    'categories_items',
+                                    array(
+                                        'data' => $field_data[1]
+                                    ),
+                                    array(
+                                        'item_id' => $dataReceived['id'],
+                                        'field_id=' =>$field_data[0]
+                                    )
+                                );
+                            }
+                        }
+                    }
+
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                         // check if elem exists in Table. If not add it or update it.
@@ -906,12 +967,14 @@ if (isset($_POST['type'])) {
                 break;
             }
             // Get all informations for this item
-            $sql = "SELECT *
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-                    WHERE i.id=".$_POST['id']."
-                    AND l.action = 'at_creation'";
-            $dataItem = $db->queryFirst($sql);
+            $dataItem = $db->queryFirst(
+                "SELECT *
+                FROM ".$pre."items as i
+                INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+                WHERE i.id=".$_POST['id']."
+                AND l.action = 'at_creation'"
+            );
+            // LEFT JOIN ".$pre."categories_items as c ON (c.id_item = i.id)
             // INNER JOIN ".$pre."automatic_del as d ON (d.item_id = i.id)
             // Get all USERS infos
             $listNotif = array_filter(explode(";", $dataItem['notification']));
@@ -1218,6 +1281,25 @@ if (isset($_POST['type'])) {
                 } else {
                     $arrData['favourite'] = 0;
                 }
+
+                // get fields
+                $fieldsTmp = "";
+                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                    $rows_tmp = $db->fetchAllArray(
+                        "SELECT field_id, data
+                        FROM ".$pre."categories_items
+                        WHERE item_id=".$_POST['id']
+                    );
+                    foreach ($rows_tmp as $row) {
+                        if (empty($fieldsTmp)) {
+                            $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $row['data']);
+                        } else {
+                            $fieldsTmp .= "_|_".$row['field_id']."~~".str_replace('"', '&quot;', $row['data']);
+                        }
+                    }
+                }
+                $arrData['fields'] = $fieldsTmp;
+
                 // Manage user restriction
                 if (isset($_POST['restricted'])) {
                     $arrData['restricted'] = $_POST['restricted'];

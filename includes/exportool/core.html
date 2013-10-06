@@ -1,0 +1,47 @@
+<script type="text/javascript">
+function getParams() {
+    function decode(s) {
+        return decodeURIComponent(s).split(/\+/).join(" ");
+    }
+
+    var params = {};
+
+    document.location.search.replace(
+        /\??(?:([^=]+)=([^&]*)&?)/g,
+        function () {
+            params[decode(arguments[1])] = decode(arguments[2]);
+        });
+
+    return params;
+}
+
+var params = getParams();
+
+//alert("value1=" + params.pwd);
+// or massage the DOM with these values
+</script>
+
+<body>
+    <div id="main">
+    <div id="header">
+    
+    </div>
+    <div id="center">  
+        <table>
+            <th>
+                <td>Label</td>
+                <td>Password</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </th>
+            <tr>
+                <td><script type="text/javascript">params.pwd</script></td>
+            </tr>
+        </table>
+        </div>
+        <div id="footer">
+    
+    </div>
+    </div>
+</body>

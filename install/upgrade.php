@@ -112,12 +112,17 @@ if (
                 } else
                 if (step == "step2") {
                     document.getElementById("loader").style.display = "";
+                	var maintenance = 1;
+                	if (document.getElementById("no_maintenance_mode").checked==true) {
+                		maintenance = 0;
+                	}
                     var data = "type="+step+
                     "&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value;
+	            	"&db_bdd="+document.getElementById("db_bdd").value+
+	            	"&no_maintenance_mode="+maintenance;
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -231,8 +236,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      - have the database connection informations,<br />
                      - get some CHMOD rights on the server.<br />
                      <br />
-                     <span style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</span>
-                     <div style="" class="ui-widget ui-state-highlight">
+                     <div style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</div>
+                     <div class="">
                          <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
                         // Display the license file
                         $Fnm = "../license.txt";
@@ -305,10 +310,18 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
                      </fieldset>
 
+                     <fieldset><legend>Maintenance Mode</legend>
+                     <p>
+                     	<input type="checkbox" name="no_maintenance_mode" id="no_maintenance_mode"  />&nbsp;Don\'t activate the Maintenance mode
+					 </p>
+					 <i>By default, the maintenance mode is enabled when Update is performed. This prevents any user to use Teampass during the scripts are running.<br />
+					 Any how, some administrators may want to disturb the users. Then please disable the maintenance mode. Nevertheless keep in mind that update process may fail due to parallal queries.</i>
+					 </fieldset>
+
                      <fieldset><legend>Anonymous statistics</legend>
                      <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
-                     Please considere sending your statistics as a way to contribute to futur improvments of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
-                     This option can be enabled or disabled through the administration panel.
+                     <i>Please considere sending your statistics as a way to contribute to futur improvments of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
+                     This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
@@ -366,6 +379,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
                          <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
                          <tr><td>Add table "items_edition"</td><td><span id="tbl_19"></span></td></tr>
+                         <tr><td>Add table "categories"</td><td><span id="tbl_20"></span></td></tr>
+                         <tr><td>Add table "categories_items"</td><td><span id="tbl_21"></span></td></tr>
                      </table>
                      <div style="display:none;" id="change_pw_encryption">
                          <br />

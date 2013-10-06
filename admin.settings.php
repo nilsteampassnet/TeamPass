@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 /*
-   * FUNCTION permitting to store into DB the settings changes
+* FUNCTION permitting to store into DB the settings changes
 */
 function updateSettings ($setting, $val, $type = '')
 {
@@ -90,12 +90,6 @@ function updateSettings ($setting, $val, $type = '')
             }
         }
     }
-    // save in variable
-    /*if ($type == "admin") {
-        $_SESSION['settings'][$setting] = $val;
-    } elseif ($type == "settings") {
-        $settings[$setting] = $val;
-    }*/
     $_SESSION['settings'][$setting] = $val;
 }
 // SAVE CHANGES
@@ -228,6 +222,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['tree_counters'] != $_POST['tree_counters']) {
         updateSettings('tree_counters', $_POST['tree_counters']);
     }
+    // Update item_extra_fields
+    if (@$_SESSION['settings']['item_extra_fields'] != $_POST['item_extra_fields']) {
+        updateSettings('item_extra_fields', $_POST['item_extra_fields']);
+    }
     // Update LDAP mode
     if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode']) {
         updateSettings('ldap_mode', $_POST['ldap_mode']);
@@ -338,7 +336,7 @@ if (isset($_POST['save_button'])) {
     // Update use_md5_password_as_salt
     if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
         updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
-    }    
+    }
     // Update personal_saltkey_cookie_duration
     if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
         updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
@@ -464,6 +462,7 @@ echo '
                 <li><a href="#tabs-4">'.$txt['admin_ldap_menu'].'</a></li>
                 <li><a href="#tabs-5">'.$txt['admin_backups'].'</a></li>
                 <li><a href="#tabs-6">'.$txt['admin_emails'].'</a></li>
+                <li><a href="admin.settings_categories.php">'.$txt['categories'].'</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1
@@ -1092,6 +1091,21 @@ echo '
                         <span class="setting_flag" id="flag_duplicate_item"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
+// Enable extra fields for each Item
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_item_extra_fields'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_item_extra_fields_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="item_extra_fields_radio1" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? ' checked="checked"' : '', ' /><label for="item_extra_fields_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="item_extra_fields_radio2" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['item_extra_fields']) ? ' checked="checked"':''), ' /><label for="item_extra_fields_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_item_extra_fields"><img src="includes/images/status', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // enable FAVOURITES
