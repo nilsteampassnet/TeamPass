@@ -900,31 +900,17 @@ switch ($_POST['type']) {
         foreach ($rows as $reccord) {
             if (!empty($reccord['pw'])) {
                 // get pw
-                $pw = trim(
-                    mcrypt_decrypt(
-                        MCRYPT_RIJNDAEL_256,
-                        $oldPersonalSaltkey,
-                        base64_decode($reccord['pw']),
-                        MCRYPT_MODE_ECB,
-                        mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)
-                    )
-                );
+                $pw = decrypt($reccord['pw'], $oldPersonalSaltkey);
                 // encrypt
-                $encryptedPw = trim(
-                    base64_encode(
-                        mcrypt_encrypt(
-                            MCRYPT_RIJNDAEL_256,
-                            $newPersonalSaltkey,
-                            $pw,
-                            MCRYPT_MODE_ECB,
-                            mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB), MCRYPT_RAND)
-                        )
-                    )
-                );
-                //echo " -- ".$reccord['pw']." - ".$pw." - ".$encryptedPw;
+                $encryptedPw = encrypt($pw, $newPersonalSaltkey);
                 // update pw in ITEMS table
-                mysql_query("UPDATE ".$pre."items SET pw = '".$encryptedPw."' WHERE id='".$reccord['id']."'")
-                    or die(mysql_error());
+                $db->queryUpdate(
+                    'items',
+                    array(
+                        'pw' => $encryptedPw
+                       ),
+                    "id='".$reccord['id']."'"
+                );
             }
         }
         // change salt

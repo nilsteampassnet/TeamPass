@@ -128,8 +128,12 @@ $_SESSION['CPM'] = 1;
 
                     //check if sk path is okay
                     if (document.getElementById("sk_path").value != "") {
-                        data = "type="+step+
-                        "&skPath="+document.getElementById("sk_path").value;
+                    	if (document.getElementById("sk_path").value.lastIndexOf("/") == document.getElementById("sk_path").value.length-1) {
+                            document.getElementById("sk_path_res").innerHTML = "<img src='images/exclamation-red.png' /> No end slash!";
+                        } else {
+                            data = "type="+step+
+                            "&skPath="+document.getElementById("sk_path").value;
+                        }
                     } else{
                         document.getElementById("sk_path_res").innerHTML = "<img src='images/exclamation-red.png'>";
                         status = false;

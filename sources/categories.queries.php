@@ -1,8 +1,8 @@
 <?php
 /**
- * @file          folders.queries.php
+ * @file          categories.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net

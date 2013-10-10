@@ -239,6 +239,7 @@ echo '
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
+        <input type="hidden" name="please_login" id="please_login" value="" />
     </form>';
 
 /* INSERT ITEM BUTTONS IN MENU BAR */

@@ -3,7 +3,7 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -591,7 +591,7 @@ $txt['settings_maintenance_mode'].'
             <td>
                 <div class="div_radio">
                     <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
@@ -1636,8 +1636,8 @@ echo '
                         </td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1) value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0) value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$txt['yes'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$txt['no'].'</label>
                                 <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>

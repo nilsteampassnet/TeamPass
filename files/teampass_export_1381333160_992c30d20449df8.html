@@ -1,0 +1,52 @@
+<html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Collaborative Passwords Manager</title>
+</head>
+<body>
+<div>
+Please enter the decryption key : <input type="password" id="saltkey" />
+</div>
+<dir>
+<table>
+<tr>
+    <td width="200px">N1</td>
+    <td><span class="span_pw" id="span_11"><a href="#" onclick="decryptme(11, 'uH6oaxLOsKOcAOH9/CRzW1UeZ2Fnkcep3S5VpEZKWZU=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">N2</td>
+    <td><span class="span_pw" id="span_12"><a href="#" onclick="decryptme(12, '9UbR7uUIwh/PzhIHfk52AF+vu7IDr3GwPkvkoOHtMpk=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">N3</td>
+    <td><span class="span_pw" id="span_13"><a href="#" onclick="decryptme(13, 'XQrU/8UK3xZq4E5C019K0RB28G/tI+v1+sNNV/soFYw=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">N4</td>
+    <td><span class="span_pw" id="span_14"><a href="#" onclick="decryptme(14, 'cd83Ir75pNEkwVnE+wroZyqsAmqpbX5p3Ji1fxYinTE=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">N5</td>
+    <td><span class="span_pw" id="span_15"><a href="#" onclick="decryptme(15, 'WNEHcm6kBDOfCbpvwMXG1w0BqKOzBL7sWyvnK3ct5kY=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">obj 1</td>
+    <td><span class="span_pw" id="span_2"><a href="#" onclick="decryptme(2, '6oTb5sp0Vac0Jq4871omAElh3D0P/mMCx1SGr5h4Ss0=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">obj 2</td>
+    <td><span class="span_pw" id="span_3"><a href="#" onclick="decryptme(3, 'WlZWIxZdIJk7K1A0rNrj1pf+9Zj+UUlhNZ13D20HF5c=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">obj 3</td>
+    <td><span class="span_pw" id="span_5"><a href="#" onclick="decryptme(5, 'Sv85SxypYqZf8dYm1S8Q5qKDuwBtzbL3Tjf94zZ79pc=')">Decrypt</a></span></td></tr>
+<tr>
+    <td width="200px">obj 4</td>
+    <td><span class="span_pw" id="span_6"><a href="#" onclick="decryptme(6, 'HOSP3tr2lts9XFs8yHOqOHkO39e3B/tmHEedSKOoDfg=')">Decrypt</a></span></td></tr>
+    </table></div>
+    </body>
+</html>
+<script type="text/javascript">
+    function decryptme(id, string)
+    {
+        document.getElementById("span_"+id).innerHTML = decrypt(string);
+    }
+    function decrypt(string)
+    {        
+        var salt = document.getElementById("saltkey").value;
+        return string;
+    }
+</script>

@@ -750,17 +750,18 @@ if (isset($_POST['type'])) {
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories` (
                 `id` int(12) NOT NULL AUTO_INCREMENT,
                 `parent_id` int(12) NOT NULL,
-                `title` varchar(255)) NOT NULL,
+                `title` varchar(255) NOT NULL,
                 `level` int(2) NOT NULL,
                 `description` text NOT NULL,
                 `type` varchar(50) NOT NULL,
-                `order` int(12) NOT NULL
+                `order` int(12) NOT NULL,
+                 PRIMARY KEY (`id`)
                ) CHARSET=utf8;"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_24").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
-                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table categories! '.mysql_error().'";';
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table categories! '.addslashes(mysql_error()).'";';
                 echo 'document.getElementById("tbl_24").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysql_close($dbTmp);
@@ -773,7 +774,8 @@ if (isset($_POST['type'])) {
                 `id` int(12) NOT NULL AUTO_INCREMENT,
                 `field_id` int(11) NOT NULL,
                 `item_id` int(11) NOT NULL,
-                `data` text NOT NULL
+                `data` text NOT NULL,
+                 PRIMARY KEY (`id`)
                ) CHARSET=utf8;"
             );
             if ($res) {
