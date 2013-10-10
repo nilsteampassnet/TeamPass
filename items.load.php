@@ -196,6 +196,11 @@ function ListerItems(groupe_id, restricted, start)
                     $("#item_details_ok, #item_details_no_personal_saltkey").hide();
                     $("#items_list_loader").hide();
                 } else if ($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) {
+                    if (data.saltkey_is_required == 1) {
+                        if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                    } else {
+                    	if ($(".tr_fields") != undefined) $(".tr_fields").show();
+                    }
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
@@ -216,6 +221,11 @@ function ListerItems(groupe_id, restricted, start)
 
                     proceed_list_update();
                 } else {
+                    if (data.saltkey_is_required == 1) {
+                        if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                    } else {
+                    	if ($(".tr_fields") != undefined) $(".tr_fields").show();
+                    }
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
@@ -540,7 +550,6 @@ function AjouterItem()
                         LoadingPage();
                     } else if (data.new_id != "") {
                         $("#new_show_error").hide();
-                        $("#random_id").val("");
 
                         //add new line directly in list of items
                         $("#full_items_list").append(data.new_entry);
@@ -553,13 +562,11 @@ function AjouterItem()
                         //empty form
                         $("#label, #item_login, #email, #url, #pw1, #pw1_txt, #pw2, #item_tags, #deletion_after_date, #times_before_deletion").val("");
                         CKEDITOR.instances["desc"].setData("");
-                        $("#item_file_queue").html("");
-                        $("#categorie").val("");
                         //$("#restricted_to_list").multiselect('uncheckall');TODO
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
-                        $(".fields").val("");
-                        $(".fields_div").html("");
+                        $(".fields, .item_field, #categorie, #random_id").val("");
+                        $(".fields_div, #item_file_queue").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
                     }
@@ -1075,7 +1082,14 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             $("#menu_button_add_item, #menu_button_copy_item").removeAttr("disabled");
                             $("#new_history_entry_form").show();
                         }
-                        $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history, #menu_button_share").removeAttr("disabled");
+                        $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").removeAttr("disabled");
+
+                        // disable share button for personal folder
+                        if ($("#recherche_group_pf").val() == 1) {
+            		        $("#menu_button_share").attr('disabled', 'disabled');
+            		    } else {
+            		    	$("#menu_button_share").removeAttr('disabled');
+            		    }
 
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
@@ -1831,6 +1845,13 @@ $(function() {
         },
         open: function(event,ui) {
             $("#label").focus();
+            
+		    // show tab fields ? Not if PersonalFolder
+		    if ($("#recherche_group_pf").val() == 1) {
+		        if ($("#form_tab_fields") != undefined) $("#item_tabs").tabs( "option", "hidden",3  );
+		    } else {
+		    	if ($("#form_tab_fields") != undefined) $("#item_tabs").tabs( "option", "show",3  );
+		    }
         },
         close: function(event,ui) {
             if (CKEDITOR.instances["desc"]) {
@@ -1882,11 +1903,16 @@ $(function() {
         },
 		open: function(event,ui) {
 			//refresh pw complexity
-			//setTimeout(function(){
-				$("#item_edit_tabs").tabs( "option", "active",1  );
-    			$("#edit_pw1").first().focus();
-				$("#item_edit_tabs").tabs( "option", "active",0  );
-			//}, 500);
+			$("#item_edit_tabs").tabs( "option", "active",1  );
+			$("#edit_pw1").first().focus();
+			$("#item_edit_tabs").tabs( "option", "active",0  );
+
+		    // show tab fields ? Not if PersonalFolder
+		    if ($("#recherche_group_pf").val() == 1) {
+		        if ($("#edit_item_more") != undefined) $("#edit_item_more").hide();
+		    } else {
+		    	if ($("#edit_item_more") != undefined) $("#edit_item_more").show();
+		    }
 		}
     });
     //<=

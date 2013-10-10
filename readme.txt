@@ -62,7 +62,13 @@ LANGUAGES:
  #402 - In item list, description is cut with <br />
  #393 - Password input and confirmation field location
  #388 - Unable to move items between folders
- #400 - Extra fields for Item (not yet encrypted)
+ #400 - Extra fields for Item
+ #414 - Maintenance mode during upgrade can be disabled
+ #389 - Language dropdown not working
+ #392 - Check of absolute path for SK.PHP
+ #385 - Email not sent ... check your configuration (to be checked)
+ #379 - CSV importing not working (to be checked)
+ #134 - Login After Session Expires
  * Dialogbox not closed when changing folder name
 
 2.1.18

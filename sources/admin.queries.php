@@ -182,6 +182,22 @@ switch ($_POST['type']) {
             $nbItemsDeleted++;
         }
 
+        // delete orphan items
+        $rows = $db->fetchAllArray(
+            "SELECT id
+            FROM ".$pre."items
+            ORDER BY id ASC"
+        );
+        foreach ($rows as $item) {
+            $row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            if ($row[0] == 0) {
+                $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
+                $db->query("DELETE FROM ".$pre."categories_items WHERE item_id = ".$item['id']);
+                $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
+                $nbItemsDeleted++;
+            }
+        }
+
         //Update CACHE table
         updateCacheTable("reload");
 

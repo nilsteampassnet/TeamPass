@@ -276,10 +276,10 @@ switch ($_POST['type']) {
         echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
         break;
 
-    //CASE export in CSV format
+    //CASE export in HTML format
     case "export_to_html_format":
         $full_listing = array();
-        $full_listing[0] = array(
+        /*$full_listing[0] = array(
             'id' => "id",
             'label' => "label",
             'description' => "description",
@@ -287,10 +287,10 @@ switch ($_POST['type']) {
             'login' => "login",
             'restricted_to' => "restricted_to",
             'perso' => "perso"
-        );
+        );*/
 
         $id_managed = '';
-        $i = 1;
+        $i = 0;
         $items_id_list = array();
 
         foreach (explode(';', $_POST['ids']) as $id) {
@@ -326,7 +326,7 @@ switch ($_POST['type']) {
                             } else {
                                 $pw = decrypt($reccord['pw']);
                             }
-                            $full_listing[$i] = array(
+                            array_push($full_listing,array(
                                 'id' => $reccord['id'],
                                 'label' => $reccord['label'],
                                 'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysql_real_escape_string(stripslashes(utf8_decode($reccord['description']))))),
@@ -334,8 +334,9 @@ switch ($_POST['type']) {
                                 'login' => $reccord['login'],
                                 'restricted_to' => $reccord['restricted_to'],
                                 'perso' => $reccord['perso']
-                            );
+                            ));
                             $i++;
+                            array_push($items_id_list,$reccord['id']);
                         }
                     }
                     $id_managed = $reccord['id'];
@@ -346,15 +347,67 @@ switch ($_POST['type']) {
         $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
         //print_r($full_listing);
         $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
-        function outPutCsv(&$vals, $key, $filehandler)
-        {
-            fputcsv($filehandler, $vals, ";"); // add parameters if you want
+        fwrite(
+            $outstream,
+'<html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Collaborative Passwords Manager</title>
+</head>
+<body>
+<div>
+Please enter the decryption key : <input type="password" id="saltkey" />
+</div>
+<dir>
+<table>');
+        
+        foreach ($full_listing as $elem) {
+            fwrite($outstream, '
+<tr>
+    <td width="200px">'.addslashes($elem['label']).'</td>
+    <td><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.toto($elem['pw'], $_POST['pdf_password']).'\')">Decrypt</a></span></td></tr>'
+            );
         }
-        array_walk($full_listing, "outPutCsv", $outstream);
+        
+        fwrite(
+        $outstream,
+        '
+    </table></div>
+    </body>
+</html>
+<script type="text/javascript" src="aes.js"></script>
+<script type="text/javascript">
+    function decryptme(id, string)
+    {
+        document.getElementById("span_"+id).innerHTML = decrypt(string);
+    }
+    function decrypt(string)
+    {        
+        var salt = document.getElementById("saltkey").value;
+        var dec = CryptoJS.AES.decrypt(string, salt);
+        alert(string+" -- "+salt+" -- "+dec);
+        return dec;
+    }
+</script>');
+        
         fclose($outstream);
 
-        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$html_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
         break;
+}
+
+function toto($txt, $salt)
+{
+    return base64_encode(mcrypt_encrypt(
+        MCRYPT_RIJNDAEL_256,
+        $salt,
+        $text,
+        MCRYPT_MODE_ECB,
+        mcrypt_create_iv(
+        mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+        MCRYPT_RAND
+        ))
+    );
 }
 
 //SPECIFIC FUNCTIONS FOR FPDF

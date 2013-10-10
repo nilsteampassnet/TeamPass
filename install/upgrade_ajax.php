@@ -1454,7 +1454,8 @@ if (isset($_POST['type'])) {
                 `level` int(2) NOT NULL,
                 `description` text NOT NULL,
                 `type` varchar(50) NOT NULL,
-                `order` int(12) NOT NULL
+                `order` int(12) NOT NULL,
+                PRIMARY KEY (`id`)
                ) CHARSET=utf8;"
             );
             if ($res) {
@@ -1476,7 +1477,8 @@ if (isset($_POST['type'])) {
                 `id` int(12) NOT NULL AUTO_INCREMENT,
                 `field_id` int(11) NOT NULL,
                 `item_id` int(11) NOT NULL,
-                `data` text NOT NULL
+                `data` text NOT NULL,
+                PRIMARY KEY (`id`)
                ) CHARSET=utf8;"
             );
             if ($res) {

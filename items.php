@@ -415,13 +415,13 @@ if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_k
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
     foreach ($_SESSION['item_fields'] as $elem) {
     echo '
-                    <tr>
+                    <tr class="tr_fields">
                         <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$elem[1].' :</td>
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
                     echo '
-                    <tr>
+                    <tr class="tr_fields">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span><i>'.$field[1].'</i> :</td>
                         <td>
                             <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.$field[0].'" class="fields" />
@@ -484,7 +484,7 @@ echo '
             <li><a href="#tabs-02">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
             <li><a href="#tabs-03">'.$txt['files_&_images'].'</a></li>
             ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-            '<li><a href="#tabs-04">'.$txt['more'].'</a></li>' :
+            '<li id="form_tab_fields"><a href="#tabs-04">'.$txt['more'].'</a></li>' :
             '', '
         </ul>
         <div id="tabs-01">';
@@ -632,7 +632,7 @@ echo '
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$txt['start_upload'].'</a>
             </div>
         </div>';
-// Tabs EDIT N°4
+// Tabs N°4
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
 echo '
         <div id="tabs-04">
@@ -681,7 +681,7 @@ echo '
             <li><a href="#tabs-2">'.$txt['index_password'].' &amp; '.$txt['visibility'].'</a></li>
             <li><a href="#tabs-3">'.$txt['files_&_images'].'</a></li>
             ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-            '<li><a href="#tabs-4">'.$txt['more'].'</a></li>' :
+            '<li id="form_edit_tab_fields"><a href="#tabs-4">'.$txt['more'].'</a></li>' :
             '', '
         </ul>
         <div id="tabs-1">

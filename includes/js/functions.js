@@ -1,17 +1,14 @@
 /**
- * @file 		functions.js
- * @author		Nils Laumaillé
- * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file 		  functions.js
+ * @author        Nils Laumaillé
+ * @version       2.1.18
+ * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link    	  http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- */
-/**
- * @fileVersion		2.1.8
  */
 
 /**
@@ -59,16 +56,17 @@ function IncreaseSessionTime(){
 function countdown()
 {
     var DayTill
-    var theDay =  document.getElementById('temps_restant').value;
-    var today = new Date() //Create an Date Object that contains today's date.
+    //var theDay =  document.getElementById('temps_restant').value;
+    var theDay =  $('#temps_restant').val();
+    var today = new Date(); //Create an Date Object that contains today's date.
     var second = Math.floor(theDay - (today.getTime()/1000));
     var minute = Math.floor(second/60); //Devide "second" into 60 to get the minute
     var hour = Math.floor(minute/60); //Devide "minute" into 60 to get the hour
-    CHour= hour % 24 //Correct hour, after devide into 24, the remainder deposits here.
+    CHour= hour % 24; //Correct hour, after devide into 24, the remainder deposits here.
     if (CHour<10) {CHour = "0" + CHour;}
-    CMinute= minute % 60 //Correct minute, after devide into 60, the remainder deposits here.
+    CMinute= minute % 60; //Correct minute, after devide into 60, the remainder deposits here.
     if (CMinute<10) {CMinute = "0" + CMinute;}
-    CSecond= second % 60 //Correct second, after devide into 60, the remainder deposits here.
+    CSecond= second % 60; //Correct second, after devide into 60, the remainder deposits here.
     if (CSecond<10) {CSecond = "0" + CSecond;}
     DayTill = CHour+":"+CMinute+":"+CSecond;
 
@@ -79,13 +77,16 @@ function countdown()
     }
 
     // Manage end of session
-    if ( $("#temps_restant").val() != "" && DayTill <= "00:00:00" )
-        document.location = "index.php?session=expired";
+    if ($("#temps_restant").val() != "" && DayTill <= "00:00:00" && $("#please_login").val() != 1) {
+    	$("#please_login").val("1");
+    	document.location = "index.php?session=expired";
+    }
 
     //Rewrite the string to the correct information.
-    if ( document.getElementById('countdown') )
-        document.getElementById('countdown').innerHTML = DayTill //Make the particular form chart become "Daytill"
-    var counter = setTimeout("countdown()", 1000) //Create the timer "counter" that will automatic restart function countdown() again every second.
+    if ($('#countdown')){
+    	$('#countdown').html(DayTill); //Make the particular form chart become "Daytill"
+    }
+    var counter = setTimeout("countdown()", 1000); //Create the timer "counter" that will automatic restart function countdown() again every second.
 }
 
 /**

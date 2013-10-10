@@ -2,9 +2,9 @@
 /**
  *
  * @file          admin.settings_categories.php
- * @author        Nils Laumaill�
- * @version       2.1.18
- * @copyright     (c) 2009-2013 Nils Laumaill�
+ * @author        Nils Laumaillé
+ * @version       2.1.19
+ * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *

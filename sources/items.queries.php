@@ -157,31 +157,30 @@ if (isset($_POST['type'])) {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
                             if (count($field_data)>1 && !empty($field_data[1])) {
-                                $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE id = '".$field_data[0]."' AND id=".$newID);
-                                if ($dataTmp[0] == 0) {
-                                    $db->queryInsert(
-                                        'categories_items',
-                                        array(
-                                            'item_id' => $newID,
-                                            'field_id' => $field_data[0],
-                                            'data' => $field_data[1]
-                                        )
-                                    );
-                                } else {
-                                    $db->queryUpdate(
-                                        'categories_items',
-                                        array(
-                                            'data' => $field_data[1]
-                                        ),
-                                        array(
-                                            'item_id' => $newID,
-                                            'field_id=' =>$field_data[0]
-                                        )
-                                    );
-                                }
+                                // generate Key for fields
+                                $randomKeyFields = generateKey();
+                                // Store generated key for Field
+                                $db->queryInsert(
+                                    'keys',
+                                    array(
+                                        'table' => 'categories_items',
+                                        'id' => $newID,
+                                        'rand_key' => $randomKeyFields
+                                    )
+                                );
+
+                                $db->queryInsert(
+                                    'categories_items',
+                                    array(
+                                        'item_id' => $newID,
+                                        'field_id' => $field_data[0],
+                                        'data' => encrypt($randomKeyFields.$field_data[1])
+                                    )
+                                );
                             }
                         }
                     }
+
 
                     // If automatic deletion asked
                     if ($dataReceived['to_be_deleted'] != 0 && !empty($dataReceived['to_be_deleted'])) {
@@ -425,10 +424,11 @@ if (isset($_POST['type'])) {
                             FROM `".$pre."keys`
                             WHERE `table` LIKE 'items' AND `id`=".$dataReceived['id']
                         );
-                        $pw = $originalKey['rand_key'].$pw;
+                        $pw = $sentPw = $originalKey['rand_key'].$pw;
                     }
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
+                        $sentPw = $pw;
                         $pw = encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
                         $restictedTo = $_SESSION['user_id'];
                     } else {
@@ -474,27 +474,59 @@ if (isset($_POST['type'])) {
                     if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
-                            $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE id = '".$field_data[0]."' AND id=".$dataReceived['id']);
-                            if ($dataTmp[0] == 0) {
-                                $db->queryInsert(
-                                    'categories_items',
+                            if (count($field_data)>1 && !empty($field_data[1])) {
+                                $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE field_id = '".$field_data[0]."' AND item_id=".$dataReceived['id']);
+                                // store Field text in DB
+                                if ($dataTmp[0] == 0) {
+                                    // generate Key for fields
+                                    $randomKeyFields = generateKey();
+                                    // Store generated key for Field
+                                    $db->queryInsert(
+                                        'keys',
+                                        array(
+                                                'table' => 'categories_items',
+                                                'id' => $dataReceived['id'],
+                                                'rand_key' => $randomKeyFields
+                                        )
+                                    );
+                                    // store field text
+                                    $db->queryInsert(
+                                        'categories_items',
+                                        array(
+                                            'item_id' => $dataReceived['id'],
+                                            'field_id' => $field_data[0],
+                                            'data' => encrypt($randomKeyFields.$field_data[1])
+                                        )
+                                    );
+                                } else {
+                                    // get key for original Field
+                                    $originalKeyField = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table` LIKE "categories_items" AND `id` ='.$dataReceived['id']);
+
+                                    // update value
+                                    $db->queryUpdate(
+                                        'categories_items',
+                                        array(
+                                            'data' => encrypt($originalKeyField['rand_key'].$field_data[1])
+                                        ),
+                                        'item_id = "'.$dataReceived['id'].'" AND field_id = "'.$field_data[0].'"'
+                                    );
+                                }
+
+                                // update LOG
+                                /*$db->queryInsert(
+                                    'log_items',
                                     array(
-                                        'item_id' => $dataReceived['id'],
-                                        'field_id' => $field_data[0],
-                                        'data' => $field_data[1]
+                                        'id_item' => $dataReceived['id'],
+                                        'date' => time(),
+                                        'id_user' => $_SESSION['user_id'],
+                                        'action' => 'at_modification',
+                                        'raison' => 'at_field : '.$dataReceived['to_be_deleted']
                                     )
-                                );
+                                );*/
                             } else {
-                                $db->queryUpdate(
-                                    'categories_items',
-                                    array(
-                                        'data' => $field_data[1]
-                                    ),
-                                    array(
-                                        'item_id' => $dataReceived['id'],
-                                        'field_id=' =>$field_data[0]
-                                    )
-                                );
+                                if (empty($field_data[1])) {
+                                    $db->query("DELETE FROM ".$pre."categories_items WHERE item_id = '".$dataReceived['id']."' AND field_id = '".$field_data[0]."'");
+                                }
                             }
                         }
                     }
@@ -710,12 +742,12 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if ($data['pw'] != $pw) {
-                        if (isset($dataReceived['salt_key']) && !empty($dataReceived['salt_key'])) {
-                            $oldPw = decrypt($data['pw'], $dataReceived['salt_key']);
-                        } else {
-                            $oldPw = decrypt($data['pw']);
-                        }
+                    if (isset($dataReceived['salt_key']) && !empty($dataReceived['salt_key'])) {
+                        $oldPw = decrypt($data['pw'], $dataReceived['salt_key']);
+                    } else {
+                        $oldPw = decrypt($data['pw']);
+                    }
+                    if ($sentPw != $oldPw) {
                         $db->queryInsert(
                             'log_items',
                             array(
@@ -1047,12 +1079,7 @@ if (isset($_POST['type'])) {
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
                 if (empty($pw)) {
-                    /*if (isset($_SESSION['my_sk_tmp']) && !empty($_SESSION['my_sk_tmp'])) {
-                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk_tmp'])));
-                    }*/
-                    if (empty($pw)) {
-                        $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
-                    }
+                    $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
                 }
                 $arrData['edit_item_salt_key'] = 1;
             } else {
@@ -1291,10 +1318,15 @@ if (isset($_POST['type'])) {
                         WHERE item_id=".$_POST['id']
                     );
                     foreach ($rows_tmp as $row) {
+                        $fieldText = decrypt($row['data']);
+                        // extract real pw from salt
+                        $dataItemKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="categories_items" AND `id`='.$_POST['id']);
+                        $fieldText = substr($fieldText, strlen($dataItemKey['rand_key']));
+                        // build returned list of Fields text
                         if (empty($fieldsTmp)) {
-                            $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $row['data']);
+                            $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $fieldText);
                         } else {
-                            $fieldsTmp .= "_|_".$row['field_id']."~~".str_replace('"', '&quot;', $row['data']);
+                            $fieldsTmp .= "_|_".$row['field_id']."~~".str_replace('"', '&quot;', $fieldText);
                         }
                     }
                 }
