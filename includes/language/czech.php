@@ -658,4 +658,11 @@ $txt['visibility'] = "Viditelnost";
 $txt['warning_screen_height'] = "POZOR: výška obrazovky nestačí na zobrazení seznamu položek!";
 $txt['yes'] = "Ano";
 $txt['your_version'] = "Vaše verze";
+$txt['settings_ldap_bind_dn'] = 'Ldap Bind Dn';
+$txt['settings_ldap_bind_passwd'] = 'Ldap Bind Passwd'; 
+$txt['settings_ldap_search_base'] = 'Ldap Search Base'; 
+$txt['settings_ldap_bind_dn_tip'] = 'A Bind dn which can bind and search users in the tree'; 
+$txt['settings_ldap_bind_passwd_tip'] = 'Password for the bind dn which can bind and search users in the tree'; 
+$txt['settings_ldap_search_base_tip'] = 'Search root dn for searches on the tree'; 
+
 ?>
