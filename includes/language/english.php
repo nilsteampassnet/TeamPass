@@ -7,7 +7,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 $txt['settings_offline_mode'] = "Activate Off-line mode";
-$txt['settings_offline_mode_tip'] = "Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User.";
+$txt['settings_offline_mode_tip'] = "Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User. You need to 'Enable printing items to PDF file'.";
 
 $txt['categories'] = "Categories";
 $txt['new_category_label'] = "Create a new Category - Enter label";
