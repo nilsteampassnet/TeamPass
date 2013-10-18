@@ -341,6 +341,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
         updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
     }
+	// Update settings_offline_mode
+	if (@$_SESSION['settings']['settings_offline_mode'] != $_POST['settings_offline_mode']) {
+		updateSettings('settings_offline_mode', $_POST['settings_offline_mode']);
+	}
     // Update email_smtp_server
     if (@$_SESSION['settings']['email_smtp_server'] != $_POST['email_smtp_server']) {
         updateSettings('email_smtp_server', $_POST['email_smtp_server']);
@@ -1356,6 +1360,23 @@ echo '
                         <input type="radio" id="insert_manual_entry_item_history_radio1" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? ' checked="checked"' : '', ' /><label for="insert_manual_entry_item_history_radio1">'.$txt['yes'].'</label>
                         <input type="radio" id="insert_manual_entry_item_history_radio2" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['insert_manual_entry_item_history']) ? ' checked="checked"':''), ' /><label for="insert_manual_entry_item_history_radio2">'.$txt['no'].'</label>
                         <span class="setting_flag" id="flag_insert_manual_entry_item_history"><img src="includes/images/status', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
+// OffLine mode options
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$txt['settings_offline_mode'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_offline_mode_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="settings_offline_mode_radio1" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="settings_offline_mode_radio1">'.$txt['yes'].'</label>
+                        <input type="radio" id="settings_offline_mode_radio2" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['settings_offline_mode']) ? ' checked="checked"':''), ' /><label for="settings_offline_mode_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_settings_offline_mode"><img src="includes/images/status', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 

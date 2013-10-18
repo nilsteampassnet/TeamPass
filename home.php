@@ -284,11 +284,13 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <div class="div_radio" stle="text-align:center;">
                             <input type="radio" id="export_format_radio1" name="export_format" value="pdf" /><label for="export_format_radio1">'.$txt['pdf'].'</label>
                             <input type="radio" id="export_format_radio2" name="export_format" value="csv" /><label for="export_format_radio2">'.$txt['csv'].'</label>
-                            <!--<input type="radio" id="export_format_radio3" name="export_format" value="html" /><label for="export_format_radio3">'.$txt['html'].'</label>-->
+                            ', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ?
+                            '<input type="radio" id="export_format_radio3" name="export_format" value="html" /><label for="export_format_radio3">'.$txt['html'].'</label>':
+                            '', '
                         </div>
 
                         <br /><br />
-                        <label for="pdf_password" class="form_label">'.$txt['pdf_password'].' :</label>
+                        <label for="pdf_password" class="">'.$txt['admin_action_db_restore_key'].' :</label>
                         <input type="password" id="pdf_password" name="pdf_password" />
 
                         <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
