@@ -6,6 +6,9 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['settings_offline_mode'] = "Activate Off-line mode";
+$txt['settings_offline_mode_tip'] = "Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User.";
+
 $txt['categories'] = "Categories";
 $txt['new_category_label'] = "Create a new Category - Enter label";
 $txt['no_category_defined'] = "No category yet defined";

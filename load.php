@@ -674,12 +674,18 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         $("#div_print_out_wait").hide();
                         return;
                     }
-                    
+
                     // export format?
                     var export_format = "";
                     if ($("input[name=\"export_format\"]:checked").val() == "pdf") export_format = "export_to_pdf_format";
                     else if ($("input[name=\"export_format\"]:checked").val() == "csv") export_format = "export_to_csv_format";
                     else if ($("input[name=\"export_format\"]:checked").val() == "html") export_format = "export_to_html_format";
+
+                    if (export_format == "export_to_html_format" && $("#pdf_password").val() == "") {
+                    	$("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+                        $("#div_print_out_wait").hide();
+                        return;
+                    }
 
                     //Send query
                     $.post(
