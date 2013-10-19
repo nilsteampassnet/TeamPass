@@ -57,6 +57,7 @@ LANGUAGES:
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.19
  #399 - Export encrypted passwords (off-line mode)
+ #408 - Personal Salt Key changing doesn't work
  #419 - Password complexity not refreshed
  #418 - English translation improvement
  #407 - "Restricted to" feature improvement

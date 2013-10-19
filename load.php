@@ -708,6 +708,59 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             }
         });
 
+        // DIALOG BOX FOR OFF-LINE MODE
+        $("#div_offline_mode").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 400,
+            height: 450,
+            title: "'.$txt['offline_menu_title'].'",
+            buttons: {
+                "'.$txt['pw_generate'].'": function() {
+                    //Get list of selected folders
+                    var ids = "";
+                    $("#offline_mode_selected_folders :selected").each(function(i, selected) {
+                        if (ids == "") ids = $(selected).val();
+                        else ids = ids + ";" + $(selected).val();
+                    });
+                    $("#div_offline_mode_wait").show();
+                    $("#offline_mode_error").hide();
+                    $("#offline_download_link").html("");
+
+                    if ($("#offline_password").val() == "") {
+                    	$("#offline_mode_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+                        $("#offline_download_link, #div_offline_mode_wait").hide();
+                        return;
+                    }
+
+                    if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
+                        $("#offline_mode_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['error_complex_not_enought'].'");
+                        $("#offline_download_link, #div_offline_mode_wait").hide();
+                        return;
+                    }
+
+                    //Send query
+                    $.post(
+                        "sources/export.queries.php",
+                        {
+                            type    : "export_to_html_format",
+                            ids        : ids,
+                            pdf_password : sanitizeString($("#offline_password").val())
+                        },
+                        function(data) {
+                            $("#offline_download_link").html(data[0].text);
+                            $("#div_offline_mode_wait").hide();
+                        },
+                        "json"
+                   );
+                },
+                "'.$txt['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+
         //Password meter
         if ($("#new_pw").length) {
             $("#new_pw").simplePassMeter({
@@ -751,6 +804,51 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                 $("#pw_strength_value").val(score);
             }
         });
+
+
+        if ($("#offline_password").length) {
+            $("#offline_password").simplePassMeter({
+                "requirements": {},
+                  "container": "#offline_pw_strength",
+                  "defaultText" : "'.$txt['index_pw_level_txt'].'",
+                "ratings": [
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "'.$txt['complex_level0'].'"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "'.$txt['complex_level1'].'"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "'.$txt['complex_level2'].'"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "'.$txt['complex_level3'].'"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "'.$txt['complex_level4'].'"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "'.$txt['complex_level5'].'"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "'.$txt['complex_level6'].'"
+                }
+                ]
+            });
+        }
+        $("#offline_password").bind({
+            "score.simplePassMeter" : function(jQEvent, score) {
+                $("#offline_pw_strength_value").val(score);
+            }
+        });
+
 
         //only numerics
         $(".numeric_only").numeric();
@@ -1047,6 +1145,30 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
 
         //Open dialogbox
         $("#div_print_out").dialog("open");
+    }
+
+    // OFF-LINE mode -> select folder and key
+    function offlineModeLaunch()
+    {
+    	$("#offline_mode_selected_folders").empty();
+
+        //Lauchn ajax query that will build the select list
+        $.post(
+            "sources/main.queries.php",
+            {
+               type        : "get_folders_list",
+               div_id    : "offline_mode_selected_folders"
+            },
+            function(data) {
+                data = $.parseJSON(data);
+                for (reccord in data) {
+                    $("#offline_mode_selected_folders").append("<option value=\'"+reccord+"\'>"+data[reccord]+"</option>");
+                }
+            }
+       );
+
+        //Open dialogbox
+        $("#div_offline_mode").dialog("open");
     }
 
     //Store PSK

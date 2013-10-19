@@ -128,7 +128,12 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         &nbsp;
                         <button title="'.$txt['print_out_menu_title'].'" onclick="print_out_items()">
                             <img src="includes/images/printer.png" alt="Print" />
-                        </button>' : '' ,'
+                        </button>' : '' ,
+						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '
+						&nbsp;
+						<button title="'.$txt['offline_menu_title'].'" onclick="offlineModeLaunch()">
+						<img src="includes/images/block-share.png" alt="Print" />
+						</button>' : '' , '
                     </div>
                 </div>';
 
@@ -272,7 +277,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                     </div>
                 </div>';
 
-                //Data Export (PDF/CSV/HTML)
+                //Data Export (PDF/CSV)
                 echo '
                 <div>
                     <div id="div_print_out" style="display:none;padding:4px;">
@@ -284,9 +289,6 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <div class="div_radio" stle="text-align:center;">
                             <input type="radio" id="export_format_radio1" name="export_format" value="pdf" /><label for="export_format_radio1">'.$txt['pdf'].'</label>
                             <input type="radio" id="export_format_radio2" name="export_format" value="csv" /><label for="export_format_radio2">'.$txt['csv'].'</label>
-                            ', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ?
-                            '<input type="radio" id="export_format_radio3" name="export_format" value="html" /><label for="export_format_radio3">'.$txt['html'].'</label>':
-                            '', '
                         </div>
 
                         <br /><br />
@@ -301,6 +303,34 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <div style="text-align:center;margin-top:8px; display:none;" id="div_print_out_wait"><img src="includes/images/ajax-loader.gif" /></div>
                     </div>
                 </div>';
+
+	// Off line mode
+	if (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1) {
+		echo '
+                <div>
+                    <div id="div_offline_mode" style="display:none;padding:4px;">
+                        <div style="height:20px;text-align:center;margin:2px;" id="offline_mode_error" class=""></div>
+						<div style="margin:10px 0 10px 0;">
+                        <label for="offline_mode_selected_folders" class="form_label">'.$txt['select_folders'].' :</label>
+                        <select id="offline_mode_selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
+						</div>
+						<div style="margin:10px 0 10px 0;">
+	                        <label for="pdf_password" class="">'.$txt['admin_action_db_restore_key'].' :</label>
+	                        <input type="password" id="offline_password" name="offline_password" />
+	                        <div id="offline_pw_strength" style="margin:10px 0 0 50px;"></div>
+		                    <input type="hidden" id="offline_pw_strength_value" />
+		                    <input type="hidden" id="min_offline_pw_strength_value" value="'.$_SESSION['settings']['offline_key_level'].'" />
+						</div>
+						<div style="margin:10px 0 10px 0;">
+                        <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
+						<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['offline_mode_warning'].'
+                        </div>
+						</div>
+                        <div id="offline_download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
+                        <div style="text-align:center;margin-top:8px; display:none;" id="div_offline_mode_wait"><img src="includes/images/ajax-loader.gif" /></div>
+                    </div>
+                </div>';
+	}
 }
 echo '
             </div>';
