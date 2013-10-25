@@ -81,7 +81,7 @@ class adLDAP
     protected $_base_dn = "dc = example, dc = com";
 
     /**
-    * Array of domain controllers. Specifiy multiple controllers if you
+    * Array of domain controllers. Specify multiple controllers if you
     * would like the class to balance the LDAP queries amongst multiple servers
     *
     * @var array
@@ -234,11 +234,12 @@ class adLDAP
     }
 
     /**
-    * Set whether to detect the true primary group
-    *
-    * @param bool $_real_primary_group
-    * @return void
-    */
+     * Set whether to detect the true primary group
+     *
+     * @param $_real_primarygroup
+     * @internal param bool $_real_primary_group
+     * @return void
+     */
     public function set_real_primarygroup($_real_primarygroup)
     {
           $this->_real_primarygroup = $_real_primarygroup;
@@ -318,17 +319,17 @@ class adLDAP
     }
 
     /**
-    * Default Constructor
-    *
-    * Tries to bind to the AD domain over LDAP or LDAPs
-    *
-    * @param array $options Array of options to pass to the constructor
-    * @throws Exception - if unable to bind to Domain Controller
-    * @return bool
-    */
+     * Default Constructor
+     *
+     * Tries to bind to the AD domain over LDAP or LDAPs
+     *
+     * @param array $options Array of options to pass to the constructor
+     * @throws adLDAPException
+     * @return \LDAP\adLDAP\adLDAP
+     */
     public function __construct($options = array())
     {
-        // You can specifically overide any of the default configuration options setup above
+        // You can specifically override any of the default configuration options setup above
         if (count($options) > 0) {
             if (array_key_exists("account_suffix", $options)) {
                 $this->_account_suffix = $options["account_suffix"];
@@ -379,10 +380,11 @@ class adLDAP
     }
 
     /**
-    * Connects and Binds to the Domain Controller
-    *
-    * @return bool
-    */
+     * Connects and Binds to the Domain Controller
+     *
+     * @throws adLDAPException
+     * @return bool
+     */
     public function connect()
     {
         // Connect to the AD/LDAP server as the username/password
@@ -403,7 +405,7 @@ class adLDAP
 
         // Bind as a domain admin if they've set it up
         if ($this->_ad_username != null && $this->_ad_password!= null) {
-            $this->_bind = @ldap_bind($this->_conn, $this->_ad_username.$this->_account_suffix, $this->_ad_password);
+            $this->_bind = ldap_bind($this->_conn, $this->_ad_username.$this->_account_suffix, $this->_ad_password);
             if (!$this->_bind) {
                 if ($this->_use_ssl && !$this->_use_tls) {
                     // If you have problems troubleshooting, remove the @ character from the ldap_bind command above to get the actual error message
@@ -432,13 +434,14 @@ class adLDAP
     }
 
     /**
-    * Validate a user's login credentials
-    *
-    * @param string $username A user's AD username
-    * @param string $password A user's AD password
-    * @param bool optional $prevent_rebind
-    * @return bool
-    */
+     * Validate a user's login credentials
+     *
+     * @param string $username A user's AD username
+     * @param string $password A user's AD password
+     * @param bool $prevent_rebind
+     * @throws adLDAPException
+     * @return bool
+     */
     public function authenticate($username, $password, $prevent_rebind = false)
     {
         // Prevent null binding
@@ -889,14 +892,14 @@ class adLDAP
     }
 
     /**
-    * Returns a complete list of the groups in AD based on a SAM Account Type
-    *
-    * @param string $samaccounttype The account type to return
-    * @param bool $include_desc Whether to return a description
-    * @param string $search Search parameters
-    * @param bool $sorted Whether to sort the results
-    * @return array
-    */
+     * Returns a complete list of the groups in AD based on a SAM Account Type
+     *
+     * @param int|string $samaccounttype The account type to return
+     * @param bool $include_desc Whether to return a description
+     * @param string $search Search parameters
+     * @param bool $sorted Whether to sort the results
+     * @return array
+     */
     public function search_groups($samaccounttype = ADLDAP_SECURITY_GLOBAL_GROUP, $include_desc = false, $search = "*", $sorted = true)
     {
         if (!$this->_bind) {
@@ -979,13 +982,14 @@ class adLDAP
     // USER FUNCTIONS
 
     /**
-    * Create a user
-    *
-    * If you specify a password here, this can only be performed over SSL
-    *
-    * @param array $attributes The attributes to set to the user account
-    * @return bool
-    */
+     * Create a user
+     *
+     * If you specify a password here, this can only be performed over SSL
+     *
+     * @param array $attributes The attributes to set to the user account
+     * @throws adLDAPException
+     * @return bool
+     */
     public function user_create($attributes)
     {
         // Check for compulsory fields
@@ -1182,13 +1186,13 @@ class adLDAP
     }
 
     /**
-    * Determine a user's password expiry date
-    *
-    * @param string $username The username to query
-    * @param book $isGUID Is the username passed a GUID or a samAccountName
-    * @requires bcmath http://www.php.net/manual/en/book.bc.php
-    * @return array
-    */
+     * Determine a user's password expiry date
+     *
+     * @param string $username The username to query
+     * @param bool|\LDAP\adLDAP\book $isGUID Is the username passed a GUID or a samAccountName
+     * @requires bcmath http://www.php.net/manual/en/book.bc.php
+     * @return array
+     */
     public function user_password_expiry($username, $isGUID = false)
     {
         if ($username === null) {
@@ -1260,13 +1264,14 @@ class adLDAP
     }
 
     /**
-    * Modify a user
-    *
-    * @param string $username The username to query
-    * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return bool
-    */
+     * Modify a user
+     *
+     * @param string $username The username to query
+     * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @throws adLDAPException
+     * @return bool
+     */
     public function user_modify($username, $attributes, $isGUID = false)
     {
         if ($username === null) {
@@ -1352,13 +1357,14 @@ class adLDAP
     }
 
     /**
-    * Set the password of a user - This must be performed over SSL
-    *
-    * @param string $username The username to modify
-    * @param string $password The new password
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return bool
-    */
+     * Set the password of a user - This must be performed over SSL
+     *
+     * @param string $username The username to modify
+     * @param string $password The new password
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @throws adLDAPException
+     * @return bool
+     */
     public function user_password($username, $password, $isGUID = false)
     {
         if ($username === null) {
@@ -1509,12 +1515,13 @@ class adLDAP
     }
 
     /**
-    * Determine the list of groups a contact is a member of
-    *
-    * @param string $distinguisedname The full DN of a contact
-    * @param bool $recursive Recursively check groups
-    * @return array
-    */
+     * Determine the list of groups a contact is a member of
+     *
+     * @param $distinguishedname
+     * @param bool $recursive Recursively check groups
+     * @internal param string $distinguisedname The full DN of a contact
+     * @return array
+     */
     public function contact_groups($distinguishedname, $recursive = null)
     {
         if ($distinguishedname === null) {
@@ -1542,12 +1549,13 @@ class adLDAP
     }
 
     /**
-    * Get contact information
-    *
-    * @param string $distinguisedname The full DN of a contact
-    * @param array $fields Attributes to be returned
-    * @return array
-    */
+     * Get contact information
+     *
+     * @param $distinguishedname
+     * @param array $fields Attributes to be returned
+     * @internal param string $distinguisedname The full DN of a contact
+     * @return array
+     */
     public function contact_info($distinguishedname, $fields = null)
     {
         if ($distinguishedname === null) {
@@ -1929,20 +1937,21 @@ class adLDAP
     }
 
     /**
-    * Add an X400 address to Exchange
-    * See http://tools.ietf.org/html/rfc1685 for more information.
-    * An X400 Address looks similar to this X400:c = US;a =  ;p = Domain;o = Organization;s = Doe;g = John;
-    *
-    * @param string $username The username of the user to add the X400 to to
-    * @param string $country Country
-    * @param string $admd Administration Management Domain
-    * @param string $pdmd Private Management Domain (often your AD domain)
-    * @param string $org Organization
-    * @param string $surname Surname
-    * @param string $givenName Given name
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return bool
-    */
+     * Add an X400 address to Exchange
+     * See http://tools.ietf.org/html/rfc1685 for more information.
+     * An X400 Address looks similar to this X400:c = US;a =  ;p = Domain;o = Organization;s = Doe;g = John;
+     *
+     * @param string $username The username of the user to add the X400 to to
+     * @param string $country Country
+     * @param string $admd Administration Management Domain
+     * @param string $pdmd Private Management Domain (often your AD domain)
+     * @param string $org Organization
+     * @param string $surname Surname
+     * @param $givenname
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @internal param string $givenName Given name
+     * @return bool
+     */
     public function exchange_add_X400($username, $country, $admd, $pdmd, $org, $surname, $givenname, $isGUID = false)
     {
         if ($username === null) {

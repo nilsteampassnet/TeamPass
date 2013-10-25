@@ -625,6 +625,8 @@ $txt['settings_ldap_domain'] = "LDAP account suffix for your domain";
 $txt['settings_ldap_domain_controler'] = "LDAP array of domain controllers";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Specifiy multiple controllers if you would like the class to balance the LDAP queries amongst multiple servers.<br />You must delimit the domains by a comma (,)!<br />By example: domain_1,domain_2,domain_3</span>";
 $txt['settings_ldap_domain_dn'] = "LDAP base dn for your domain";
+$txt['settings_ldap_bind_dn'] = "LDAP bind dn for your domain";
+$txt['settings_ldap_bind_pw'] = "LDAP password for binding account";
 $txt['settings_ldap_mode'] = "Enable users authentification through LDAP server";
 $txt['settings_ldap_mode_tip'] = "Enable only if you have an LDAP server and if you want to use it to authentify TeamPass users through it.";
 $txt['settings_ldap_ssl'] = "Use LDAP through SSL (LDAPS)";

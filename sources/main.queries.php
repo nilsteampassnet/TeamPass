@@ -257,6 +257,8 @@ switch ($_POST['type']) {
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                    'ad_username' => $_SESSION['settings']['ldap_bind_dn'],
+                    'ad_password' => $_SESSION['settings']['ldap_bind_pw'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
                 )
             );

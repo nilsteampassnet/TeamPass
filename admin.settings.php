@@ -244,6 +244,14 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
         updateSettings('ldap_domain_dn', $_POST['ldap_domain_dn']);
     }
+    // Update LDAP ldap_bind_dn
+    if (@$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
+        updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
+    }
+    // Update LDAP ldap_bind_pw
+    if (@$_SESSION['settings']['ldap_bind_pw'] != $_POST['ldap_bind_pw']) {
+        updateSettings('ldap_bind_pw', $_POST['ldap_bind_pw']);
+    }
     // Update LDAP ldap_domain_controler
     if (@$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
@@ -1432,6 +1440,18 @@ echo '
                     <tr>
                         <td><label for="ldap_domain_controler">'.$txt['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_domain_controler_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
+                    </tr>';
+// Domain Bind User
+echo '
+                    <tr>
+                        <td><label for="ldap_bind_dn">'.$txt['settings_ldap_bind_dn'].'</label></td>
+                        <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" /></td>
+                    </tr>';
+// Domain Bind Password
+echo '
+                    <tr>
+                        <td><label for="ldap_bind_pw">'.$txt['settings_ldap_bind_pw'].'</label></td>
+                        <td><input type="text" size="50" id="ldap_bind_pw" name="ldap_bind_pw" class="text ui-widget-content" title="" value="', isset($_SESSION['settings']['ldap_bind_pw']) ? $_SESSION['settings']['ldap_bind_pw'] : '', '" /></td>
                     </tr>';
 // AD SSL
 echo '
