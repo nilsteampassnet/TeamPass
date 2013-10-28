@@ -3,7 +3,7 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -78,6 +78,7 @@ echo '
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />
+<input type="hidden" id="display_categories" value="0" />
 <input type="hidden" id="nb_items_to_display_once" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : 'auto', '" />
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
 <input type="hidden" id="request_ongoing" />
@@ -414,15 +415,16 @@ if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_k
 // lines for FIELDS
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
     foreach ($_SESSION['item_fields'] as $elem) {
+        $itemCatName = $elem[0];
     echo '
-                    <tr class="tr_fields">
+                    <tr class="tr_fields itemCatName_'.$itemCatName.'">
                         <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$elem[1].' :</td>
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
                     echo '
-                    <tr class="tr_fields">
-                        <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span><i>'.$field[1].'</i> :</td>
+                    <tr class="tr_fields itemCatName_'.$itemCatName.'">
+                        <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin: 0 .3em 0 15px; font-size:9px;">&nbsp;</span><i>'.$field[1].'</i> :</td>
                         <td>
                             <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.$field[0].'" class="fields" />
                         </td>
@@ -639,19 +641,23 @@ echo '
             <div id="item_more">';
                 // load all categories and fields
                 foreach ($_SESSION['item_fields'] as $elem) {
+                    $itemCatName = $elem[0];
                     echo '
-                    <div style="font-weight:bold;font-size:12px;">
-                        <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$elem[1].'
-                    </div>';
+                    <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
+                        <div style="font-weight:bold;font-size:12px;">
+                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$elem[1].'
+                        </div>';
                     foreach ($elem[2] as $field) {
                         echo '
-                    <div style="margin:2px 0 2px 15px;">
-                        <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</span>
-                        <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
-                    </div>';
+                        <div style="margin:2px 0 2px 15px;">
+                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <label class="cpm_label">'.$field[1].'</span>
+                            <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        </div>';
                     }
+                    echo '
+                    </div>';
                 }
             echo '
             </div>
@@ -829,18 +835,21 @@ echo '
                 // load all categories and fields
                 foreach ($_SESSION['item_fields'] as $elem) {
                     echo '
-                    <div style="font-weight:bold;font-size:12px;">
-                        <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$elem[1].'
-                    </div>';
+                    <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
+                        <div style="font-weight:bold;font-size:12px;">
+                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$elem[1].'
+                        </div>';
                     foreach ($elem[2] as $field) {
                         echo '
-                    <div style="margin:2px 0 2px 15px;">
-                        <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</label>
-                        <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
-                    </div>';
+                        <div style="margin:2px 0 2px 15px;">
+                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <label class="cpm_label">'.$field[1].'</label>
+                            <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        </div>';
                     }
+                    echo '
+                    </div>';
                 }
             echo '
             </div>

@@ -2,7 +2,7 @@
 /**
  * @file          home.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -323,10 +323,10 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 						</div>
 						<div style="margin:10px 0 10px 0;">
                         <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
-						<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['offline_mode_warning'].'
+						<span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;d</span>'.$txt['offline_mode_warning'].'
                         </div>
 						</div>
-                        <div id="offline_download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
+                        <div id="offline_download_link" style="text-align:center; width:100%; margin-top:15px;">&nbsp;</div>
                         <div style="text-align:center;margin-top:8px; display:none;" id="div_offline_mode_wait"><img src="includes/images/ajax-loader.gif" /></div>
                     </div>
                 </div>';
@@ -334,3 +334,5 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 }
 echo '
             </div>';
+
+//require_once 'home.load.php';

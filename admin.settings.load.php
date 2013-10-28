@@ -25,6 +25,20 @@ function fieldAdd(id) {
 	$("#post_id").val(id);
 	$("#add_new_field").dialog("open");
 }
+/*
+* Edit category's folders
+*/
+function catInFolders(id) {
+	$("#post_id").val(id);
+    $("#catInFolder_title").html($("#item_"+id).html());    // display title
+    // pre-select folders
+    var folder = $("#catFoldersList_"+id).val().split(";");
+    for (var i=0; i<folder.length; i++) {
+        $("#cat_folders_selection option[value="+folder[0]+"]").attr('selected', true);
+    };
+    // open
+	$("#category_in_folder").dialog("open");
+}
 
 /*
 * Add a new category
@@ -46,13 +60,16 @@ function categoryAdd() {
                 '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
                 $("#new_category_label").val()+'</label><a href="#" title="<?php echo $txt['field_add_in_category'];?>" onclick="fieldAdd('+
-                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td><td></td>');
+                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td>'+
+                '<a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                '<?php echo $txt['category_in_folders_title'];?>:'+
+                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
+                '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td><td></td>');
             // Add new cat
         	$("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
         	// clean
             $("#new_category_label, #new_item_title").val("");
-            $("#no_category").hide();
-            $("#div_loading").hide();
+            $("#div_loading,#no_category").hide();
         },
         "json"
    );
@@ -151,7 +168,11 @@ function loadFieldsList() {
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
                     '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
                     '<a href="#" title="<?php echo $txt['field_add_in_category'];?>" onclick="fieldAdd('+val[1]+')" class="cpm_button tip" style="margin-left:20px;">'+
-                    '<img  src="includes/images/zone--plus.png"  /></a></td><td></td></tr>';
+                    '<img  src="includes/images/zone--plus.png"  /></a></td>'+
+                    '<td><a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                    '<?php echo $txt['category_in_folders_title'];?>:'+
+                    '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
+                    '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                 } else {
                     newList += '<tr id="t_field_'+val[1]+'"><td width="20px"></td>'+
                     '<td><input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
@@ -240,7 +261,7 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 150,
-        title: "<?php echo $txt['confirm_creation'];?>",
+        title: "<?php echo $txt['category_in_folders'];?>",
         buttons: {
             "<?php echo $txt['confirm'];?>": function() {
                 if ($("#new_field_title").val() != "" && $("#post_id").val() != "") {
@@ -258,6 +279,51 @@ $(function() {
                         	$("#new_field_title").val("");
                         	// reload table
                             loadFieldsList();
+                            $this.dialog("close");
+                        },
+                        "json"
+                    );
+                }
+            },
+            "<?php echo $txt['cancel_button'];?>": function() {
+                $("#div_loading").hide();
+                $(this).dialog("close");
+            }
+        }
+    });
+
+    $("#category_in_folder").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 300,
+        height: 350,
+        title: "<?php echo $txt['category_in_folders'];?>",
+        buttons: {
+            "<?php echo $txt['confirm'];?>": function() {
+                // get list of selected folders
+                var ids = "";
+                $("#cat_folders_selection :selected").each(function(i, selected) {
+                    if (ids == "") ids = $(selected).val();
+                    else ids = ids + ";" + $(selected).val();
+                });
+                if (ids != "") {
+                    $("#div_loading, #catInFolder_wait").show();
+                    var $this = $(this);
+                	//send query
+                    $.post(
+                        "sources/categories.queries.php",
+                        {
+                            type        : "categoryInFolders",
+                            foldersIds  : ids,
+                            id          : $("#post_id").val()
+                        },
+                        function(data) {
+                        	$("#new_field_title").val("");
+                        	// display new list
+                            $("#catFolders_"+$("#post_id").val()).html(data[0].list);
+                            // close
+                            $("#div_loading, #catInFolder_wait").hide();
                             $this.dialog("close");
                         },
                         "json"

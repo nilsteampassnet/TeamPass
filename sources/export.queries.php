@@ -82,13 +82,16 @@ switch ($_POST['type']) {
                             } else {
                                 $pw = decrypt($reccord['pw']);
                             }
+                            if ($reccord['perso'] != 1) {
+                                $pw = substr(addslashes($pw), strlen($reccord['rand_key']));
+                            }
                             /*$full_listing[$reccord['id']] = array(
                                'id' => $reccord['id'],
                                'label' => $reccord['label'],
                                'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
                                'login' => $reccord['login']
                             );*/
-                            $full_listing[$id][$reccord['id']] = array($reccord['label'], $reccord['login'], substr(addslashes($pw), strlen($reccord['rand_key'])), $reccord['description']);
+                            $full_listing[$id][$reccord['id']] = array($reccord['label'], $reccord['login'], $pw, $reccord['description']);
                         }
                     }
                     $id_managed = $reccord['id'];
@@ -167,12 +170,6 @@ switch ($_POST['type']) {
                         //Draw
                         $pdf->Rect($x, $y, $w, $h);
                         //Write
-                        /*if ($i == 2) {
-                            // change font for password
-                            $pdf->SetFont('LiberationMono', '', 9);
-                        } else {
-                            $pdf->SetFont('DejaVu', '', 9);
-                        }*/
                         if ($i==3) {
                             $item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
                         }
