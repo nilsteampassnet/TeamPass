@@ -6,6 +6,14 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['settings_get_tp_info'] = "Automatically load information about Teampass";
+$txt['settings_get_tp_info_tip'] = "This option permits the administration page to load information such as version and libraries usage from Teampass server.";
+
+$txt['at_field'] = "Field";
+$txt['category_in_folders_title'] = "Associated folders";
+$txt['category_in_folders'] = "Edit Folders for this Category";
+$txt['select_folders_for_category'] = "Select the Folders to associate to this Category of Fields";
+
 $txt['offline_mode_warning'] = "Off-line mode permits you to export into an HTML file your Items, so that you can access them when not connected to Teampass server. The passwords are encrypted by a Key you are given.";
 $txt['offline_menu_title'] = "Export Items for Off-Line mode";
 $txt['settings_offline_mode'] = "Activate Off-line mode";

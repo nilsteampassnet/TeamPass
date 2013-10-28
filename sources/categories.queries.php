@@ -50,6 +50,7 @@ if (isset($_POST['type'])) {
             break;
         case "deleteCategory":
             $db->query("DELETE FROM ".$pre."categories WHERE id = '".$_POST['id']."'");
+            $db->query("DELETE FROM ".$pre."categories_folders WHERE category_id = '".$_POST['id']."'");
             echo '[{"error" : ""}]';
             break;
         case "addNewField":
@@ -112,18 +113,38 @@ if (isset($_POST['type'])) {
             }
             break;
         case "loadFieldsList":
-
             $categoriesSelect = "";
             $arrCategories = $arrFields = array();
             $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0 ORDER BY ".$pre."categories.order ASC");
             foreach ($rows as $reccord) {
+                // get associated folders
+                $foldersList = $foldersNumList = "";
+                $rowsF = $db->fetchAllArray(
+                    "SELECT t.title AS title, c.id_folder as id_folder
+                    FROM ".$pre."categories_folders AS c
+                    INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
+                    WHERE c.id_category = ".$reccord['id']
+                );
+                foreach ($rowsF as $reccordF) {
+                    if (empty($foldersList)) {
+                        $foldersList = $reccordF['title'];
+                        $foldersNumList = $reccordF['id_folder'];
+                    } else {
+                        $foldersList .= " | ".$reccordF['title'];
+                        $foldersNumList .= ";".$reccordF['id_folder'];
+                    }
+                }
+                
+                // store
                 array_push(
                     $arrCategories,
                     array(
                         '1',
                         $reccord['id'],
                         $reccord['title'],
-                        $reccord['order']
+                        $reccord['order'],
+                        $foldersList,
+                        $foldersNumList
                     )
                 );
                 $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$reccord['id']." ORDER BY ".$pre."categories.order ASC");
@@ -135,13 +156,42 @@ if (isset($_POST['type'])) {
                                 '2',
                                 $field['id'],
                                 $field['title'],
-                                $field['order']
+                                $field['order'],
+                                '',
+                                ''
                             )
                         );
                     }
                 }
             }
             echo json_encode($arrCategories, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            break;
+        case "categoryInFolders":
+            // update order
+            if (!empty($_POST['foldersIds'])) {
+                // delete all existing inputs
+                $db->query("DELETE FROM ".$pre."categories_folders WHERE id_category = '".$_POST['id']."'");
+                // create new list
+                $list = "";
+                foreach (explode(';', $_POST['foldersIds']) as $folder) {
+                    $db->queryInsert(
+                        'categories_folders',
+                        array(
+                            'id_category' => $_POST['id'],
+                            'id_folder' => $folder
+                           )
+                    );
+                    
+                    // prepare a list
+                    $row = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id=".$folder);
+                    if (empty($list)) {
+                        $list = $row[0];
+                    } else {
+                        $list .= " | ".$row[0];
+                    }
+                }
+                echo '[{"list" : "'.$list.'"}]';
+            }
             break;
     }
 }

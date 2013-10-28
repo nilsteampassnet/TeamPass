@@ -206,6 +206,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats']) {
         updateSettings('send_stats', $_POST['send_stats']);
     }
+    // Update get_tp_info
+    if (@$_SESSION['settings']['get_tp_info'] != $_POST['get_tp_info']) {
+        updateSettings('get_tp_info', $_POST['get_tp_info']);
+    }
     // Update allow_print
     if (@$_SESSION['settings']['allow_print'] != $_POST['allow_print']) {
         updateSettings('allow_print', $_POST['allow_print']);
@@ -960,7 +964,24 @@ $txt['settings_send_stats'].'
                         <span class="setting_flag" id="flag_send_stats"><img src="includes/images/status', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     <td>
-                </tr>
+                </tr>';
+// Enable GET TP Information
+echo '
+                    <tr><td>
+                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <label>
+                            '.$txt['settings_get_tp_info'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_get_tp_info_tip'].'" /></span>
+                        </label>
+                        </td><td>
+                        <div class="div_radio">
+                            <input type="radio" id="get_tp_info_radio1" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? ' checked="checked"' : '', ' /><label for="get_tp_info_radio1">'.$txt['yes'].'</label>
+                            <input type="radio" id="get_tp_info_radio2" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['get_tp_info']) ? ' checked="checked"':''), ' /><label for="get_tp_info_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_get_tp_info"><img src="includes/images/status', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? '' : '-busy', '.png" /></span>
+                        </div>
+                    </td></tr>';
+                
+echo '
                 <tr><td colspan="3"><hr></td></tr>
                 </table>
             </div>';

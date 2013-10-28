@@ -2,7 +2,7 @@
 /**
  * @file          items.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -364,7 +364,7 @@ if (isset($_POST['type'])) {
                 // Prepare variables
                 $label = htmlspecialchars_decode($dataReceived['label']);
                 $url = htmlspecialchars_decode($dataReceived['url']);
-                $pw = $original_pw = htmlspecialchars_decode($dataReceived['pw']);
+                $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
                 $login = htmlspecialchars_decode($dataReceived['login']);
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 // Get all informations for this item
@@ -418,7 +418,7 @@ if (isset($_POST['type'])) {
                     );
                     // Manage salt key
                     if ($data['perso'] != 1) {
-                        // Get orginal key
+                        // Get original key
                         $originalKey = $db->queryFirst(
                             "SELECT `rand_key`
                             FROM `".$pre."keys`
@@ -475,18 +475,24 @@ if (isset($_POST['type'])) {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
                             if (count($field_data)>1 && !empty($field_data[1])) {
-                                $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."categories_items WHERE field_id = '".$field_data[0]."' AND item_id=".$dataReceived['id']);
+                                $dataTmp = $db->fetchRow(
+                                    "SELECT c.title AS title, i.data AS data
+                                    FROM ".$pre."categories_items AS i
+                                    INNER JOIN ".$pre."categories AS c ON (i.field_id=c.id)
+                                    WHERE i.field_id = '".$field_data[0]."'
+                                    AND i.item_id=".$dataReceived['id']
+                                );
                                 // store Field text in DB
-                                if ($dataTmp[0] == 0) {
+                                if (count($dataTmp[0]) == 0) {
                                     // generate Key for fields
                                     $randomKeyFields = generateKey();
                                     // Store generated key for Field
                                     $db->queryInsert(
                                         'keys',
                                         array(
-                                                'table' => 'categories_items',
-                                                'id' => $dataReceived['id'],
-                                                'rand_key' => $randomKeyFields
+                                            'table' => 'categories_items',
+                                            'id' => $dataReceived['id'],
+                                            'rand_key' => $randomKeyFields
                                         )
                                     );
                                     // store field text
@@ -498,31 +504,46 @@ if (isset($_POST['type'])) {
                                             'data' => encrypt($randomKeyFields.$field_data[1])
                                         )
                                     );
+                                    // update LOG
+                                    $db->queryInsert(
+                                        'log_items',
+                                        array(
+                                            'id_item' => $dataReceived['id'],
+                                            'date' => time(),
+                                            'id_user' => $_SESSION['user_id'],
+                                            'action' => 'at_creation',
+                                            'raison' => 'at_field : '.$dataTmp[0]
+                                        )
+                                    );
                                 } else {
                                     // get key for original Field
                                     $originalKeyField = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table` LIKE "categories_items" AND `id` ='.$dataReceived['id']);
 
-                                    // update value
-                                    $db->queryUpdate(
-                                        'categories_items',
-                                        array(
-                                            'data' => encrypt($originalKeyField['rand_key'].$field_data[1])
-                                        ),
-                                        'item_id = "'.$dataReceived['id'].'" AND field_id = "'.$field_data[0].'"'
-                                    );
-                                }
+                                    // compare the old and new value
+                                    $oldVal = substr(decrypt($dataTmp[1]), strlen($originalKeyField['rand_key']));
+                                    if ($field_data[1] != $oldVal) {
+                                        // update value
+                                        $db->queryUpdate(
+                                            'categories_items',
+                                            array(
+                                                'data' => encrypt($originalKeyField['rand_key'].$field_data[1])
+                                            ),
+                                            'item_id = "'.$dataReceived['id'].'" AND field_id = "'.$field_data[0].'"'
+                                        );
 
-                                // update LOG
-                                /*$db->queryInsert(
-                                    'log_items',
-                                    array(
-                                        'id_item' => $dataReceived['id'],
-                                        'date' => time(),
-                                        'id_user' => $_SESSION['user_id'],
-                                        'action' => 'at_modification',
-                                        'raison' => 'at_field : '.$dataReceived['to_be_deleted']
-                                    )
-                                );*/
+                                        // update LOG
+                                        $db->queryInsert(
+                                            'log_items',
+                                            array(
+                                                'id_item' => $dataReceived['id'],
+                                                'date' => time(),
+                                                'id_user' => $_SESSION['user_id'],
+                                                'action' => 'at_modification',
+                                                'raison' => 'at_field : '.$dataTmp[0].' => '.$oldVal
+                                            )
+                                        );
+                                    }
+                                }
                             } else {
                                 if (empty($field_data[1])) {
                                     $db->query("DELETE FROM ".$pre."categories_items WHERE item_id = '".$dataReceived['id']."' AND field_id = '".$field_data[0]."'");
@@ -1312,10 +1333,25 @@ if (isset($_POST['type'])) {
                 // get fields
                 $fieldsTmp = "";
                 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                    // get list of associated Categories
+                    $arrCatList = array();
                     $rows_tmp = $db->fetchAllArray(
-                        "SELECT field_id, data
-                        FROM ".$pre."categories_items
-                        WHERE item_id=".$_POST['id']
+                        "SELECT id_category
+                        FROM ".$pre."categories_folders
+                        WHERE id_folder=".$_POST['folder_id']
+                    );
+                    foreach ($rows_tmp as $row) {
+                        array_push($arrCatList, $row['id_category']);
+                    }
+                    $arrCatList = implode(",", $arrCatList);
+
+                    // get fields for this Item
+                    $rows_tmp = $db->fetchAllArray(
+                        "SELECT i.field_id AS field_id, i.data AS data
+                        FROM ".$pre."categories_items AS i
+                        INNER JOIN ".$pre."categories AS c ON (i.field_id=c.id)
+                        WHERE i.item_id=".$_POST['id']."
+                        AND c.parent_id IN (".$arrCatList.")"
                     );
                     foreach ($rows_tmp as $row) {
                         $fieldText = decrypt($row['data']);
@@ -1331,6 +1367,7 @@ if (isset($_POST['type'])) {
                     }
                 }
                 $arrData['fields'] = $fieldsTmp;
+                $arrData['categories'] = $arrCatList;
 
                 // Manage user restriction
                 if (isset($_POST['restricted'])) {
@@ -1970,7 +2007,24 @@ if (isset($_POST['type'])) {
             $folderComplexity = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$_POST['id']."'");
 
             //  Fixing items not being displayed
-            $html = iconv('UTF-8', 'UTF-8//IGNORE', $html);
+            $html = iconv('UTF-8', 'UTF-8//IGNORE', mb_convert_encoding($html, "UTF-8", "UTF-8"));
+
+            // Has this folder some categories to be displayed?
+            $displayCategories = "";
+            if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                $catRow = $db->fetchAllArray(
+                    "SELECT id_category FROM ".$pre."categories_folders WHERE id_folder = '".$_POST['id']."'"
+                );
+                if (count($catRow) > 0) {
+                    foreach ($catRow as $cat) {
+                        if (empty($displayCategories)) {
+                            $displayCategories = $cat['id_category'];
+                        } else {
+                            $displayCategories .= ";".$cat['id_category'];
+                        }
+                    }
+                }
+            }
 
             // Prepare returned values
             $returnValues = array(
@@ -1986,6 +2040,7 @@ if (isset($_POST['type'])) {
                 "items_count" => $countItems[0],
                 'folder_complexity' => $folderComplexity[0],
                 // "items" => $returnedData
+                'displayCategories' => $displayCategories
             );
             // Check if $rights is not null
             if (count($rights) > 0) {
@@ -2482,6 +2537,56 @@ if (isset($_POST['type'])) {
             } else {
                 echo '{ "modified" : "0" }';
             }
+            break;
+
+        /*
+        * CASE
+        * Display History of the selected Item
+        */
+        case "displayHistory":
+            // get Item info
+            $dataItem = $db->queryFirst(
+                "SELECT *
+                FROM ".$pre."items
+                WHERE id=".$_POST['id']
+            );
+
+            // get Item Key for decryption
+            $dataItemKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="items" AND `id`='.$_POST['id']);
+
+            // GET Audit trail
+            $historique = "";
+            $historyOfPws = "";
+            $rows = $db->fetchAllArray(
+                "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
+                FROM ".$pre."log_items as l
+                LEFT JOIN ".$pre."users as u ON (l.id_user=u.id)
+                WHERE id_item=".$_POST['id']."
+                AND action <> 'at_shown'
+                ORDER BY date ASC"
+            );
+            foreach ($rows as $reccord) {
+                $reason = explode(':', $reccord['raison']);
+                if ($reccord['action'] == "at_modification" && $reason[0] == "at_pw ") {
+                    // don't do if item is PF
+                    if ($dataItem['perso'] != 1) {
+                        $reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
+                    }
+                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+                    if (!isUTF8($reason[1])) {
+                        $reason[1] = "";
+                    }
+                }
+                if (!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation" || $reccord['action'] == "at_manual") {
+                    if (empty($historique)) {
+                        $historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+                    } else {
+                        $historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+                    }
+                }
+            }
+
+            echo '{ "history" : "'.str_replace('"', '&quot;', $historique).'" , "error" : "" }';
             break;
     }
 }

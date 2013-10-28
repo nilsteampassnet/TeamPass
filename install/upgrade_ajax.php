@@ -620,6 +620,7 @@ if (isset($_POST['type'])) {
                     empty($_SESSION['send_stats']) ? '0' : $_SESSION['send_stats'],
                     1
                 ),
+                array('admin', 'get_tp_info', '1', 0),
                 array('admin', 'send_mail_on_user_login', '0', 0),
                 array('cron', 'sending_emails', '0', 0),
                 array('admin', 'nb_items_by_query', 'auto', 0),
@@ -1493,6 +1494,26 @@ if (isset($_POST['type'])) {
                 mysql_close($dbTmp);
                 break;
             }
+
+        	## TABLE categories_folders
+        	$res = mysql_query(
+        	"CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_folders` (
+                `id_category` int(12) NOT NULL,
+                `id_folder` int(12) NOT NULL
+               ) CHARSET=utf8;"
+        	);
+        	if ($res) {
+        		echo 'document.getElementById("tbl_22").innerHTML = '.
+        		    '"<img src=\"images/tick.png\">";';
+        	} else {
+        		echo 'document.getElementById("res_step4").innerHTML = '.
+        		    '"An error appears on table categories_folders! '.mysql_error().'";';
+        		echo 'document.getElementById("tbl_22").innerHTML = '.
+        		    '"<img src=\"images/exclamation-red.png\">";';
+        		echo 'document.getElementById("loader").style.display = "none";';
+        		mysql_close($dbTmp);
+        		break;
+        	}
 
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.

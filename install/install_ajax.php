@@ -256,6 +256,7 @@ if (isset($_POST['type'])) {
                 ('admin','custom_login_text',''),
                 ('admin','default_language','english'),
                 ('admin', 'send_stats', '".$_SESSION['send_stats']."'),
+                ('admin', 'get_tp_info', '1'),
                 ('admin', 'send_mail_on_user_login', '0'),
                 ('cron', 'sending_emails', '0'),
                 ('admin', 'nb_items_by_query', 'auto'),
@@ -787,6 +788,23 @@ if (isset($_POST['type'])) {
                 mysql_close($dbTmp);
                 break;
             }
+
+        	## TABLE categories_folders
+        	$res = mysql_query(
+        	"CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_folders` (
+                `id_category` int(12) NOT NULL,
+                `id_folder` int(12) NOT NULL
+               ) CHARSET=utf8;"
+        	);
+        	if ($res) {
+        		echo 'document.getElementById("tbl_26").innerHTML = "<img src=\"images/tick.png\">";';
+        	} else {
+        		echo 'document.getElementById("res_step4").innerHTML = "An error appears on table categories_folders! '.mysql_error().'";';
+        		echo 'document.getElementById("tbl_26").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+        		echo 'document.getElementById("loader").style.display = "none";';
+        		mysql_close($dbTmp);
+        		break;
+        	}
 
             echo 'gauge.modify($("pbar"),{values:[0.80,1]});';
             echo 'document.getElementById("but_next").disabled = "";';

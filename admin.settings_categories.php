@@ -32,6 +32,12 @@ $db->register();
 $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
 $db->connect();
 
+//Build tree
+$tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
+$tree->register();
+$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+$tree->rebuild();
+
 /*
 * Loads the Item Categories
 */
@@ -60,18 +66,43 @@ echo '
 
 if (isset($arrCategories) && count($arrCategories) > 0) {
     // build table
-    foreach ($arrCategories as $category) {
+    foreach ($arrCategories as $category) {        
+        // get associated Folders
+        $foldersList = $foldersNumList = "";
+        $rows = $db->fetchAllArray(
+            "SELECT t.title AS title, c.id_folder as id_folder
+            FROM ".$pre."categories_folders AS c
+            INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
+            WHERE c.id_category = ".$category[0]
+        );
+        foreach ($rows as $reccord) {
+            if (empty($foldersList)) {
+                $foldersList = $reccord['title'];
+                $foldersNumList = $reccord['id_folder'];
+            } else {
+                $foldersList .= " | ".$reccord['title'];
+                $foldersNumList .= ";".$reccord['id_folder'];
+            }
+        }
+        // display each cat and fields
         echo '
         <tr id="t_cat_'.$category[0].'">
             <td colspan="2">
                 <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
                 <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
-                <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'">'.$category[1].'</label>
+                <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
                 <a href="#" title="'.$txt['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" class="cpm_button tip" style="margin-left:20px;">
-                    <img  src="includes/images/zone--plus.png"  />
+                    <img src="includes/images/zone--plus.png"  />
                 </a>
             </td>
-            <td></td>
+            <td>
+                <a href="#" title="'.$txt['category_in_folders'].'" onclick="catInFolders('.$category[0].')" class="cpm_button tip" style="margin-left:5px;">
+                    <img src="includes/images/folder_edit.png"  />
+                </a>
+                '.$txt['category_in_folders_title'].':
+                <span style="font-family:italic; margin-left:10px;" id="catFolders_'.$category[0].'">'.$foldersList.'</span>
+                <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
+            </td>
         </tr>';
         $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$category[0]." ORDER BY ".$pre."categories.order ASC");
         if (count($rows) > 0) {
@@ -142,10 +173,29 @@ echo '
         <span id="category_confirm_text"></span>?
     </div>';
 
-
 echo '
     <div id="add_new_field" style="display:none;">
         '.$txt['new_field_title'].'<input type="text" id="new_field_title" style="width: 200px; margin-left:20px;" />
+    </div>';
+
+echo '
+    <div id="category_in_folder" style="display:none;">
+        '.$txt['select_folders_for_category'].'
+        &nbsp;&quot;<span style="font-weight:bold;" id="catInFolder_title"></span>&quot;&nbsp;:
+        <br />
+        <div style="text-align:center; margin-top:10px;">
+        <select id="cat_folders_selection" multiple size="12">';
+        $folders = $tree->getDescendants();
+        foreach ($folders as $folder) {
+            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE personal_folder=0 AND id = ".$folder->id);
+            if ($data[0] > 0) {
+                echo '
+                <option value="'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</option>';
+            }
+        }
+echo '
+        </div>
+        <div id="catInFolder_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$txt['please_wait'].'...</div>
     </div>';
 
 require_once 'admin.settings.load.php';

@@ -2,9 +2,9 @@
 /**
  * @file          items.load.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
- * @licensing     OpenSource BSD 3-clause (OSI)
+ * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -158,6 +158,7 @@ function ListerItems(groupe_id, restricted, start)
         $("#items_list").css("display", "");
         $("#selected_items").val("");
         $("#hid_cat").val(groupe_id);
+        if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
 
         //Disable menu buttons
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share').attr('disabled', 'disabled');
@@ -179,7 +180,11 @@ function ListerItems(groupe_id, restricted, start)
                 //get data
                 data = prepareExchangedData(data, "decode");
 
+                // display path of folders
                 $("#items_path_var").html(data.arborescence);
+
+                // store the categories to be displayed
+                $("#display_categories").val(data.displayCategories);
 
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
@@ -196,11 +201,6 @@ function ListerItems(groupe_id, restricted, start)
                     $("#item_details_ok, #item_details_no_personal_saltkey").hide();
                     $("#items_list_loader").hide();
                 } else if ($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) {
-                    if (data.saltkey_is_required == 1) {
-                        if ($(".tr_fields") != undefined) $(".tr_fields").hide();
-                    } else {
-                    	if ($(".tr_fields") != undefined) $(".tr_fields").show();
-                    }
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
@@ -215,17 +215,23 @@ function ListerItems(groupe_id, restricted, start)
                     } else {
                         $("#full_items_list").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
+
+                        // display Categories if needed
+                        if ($(".tr_fields") != undefined && data.displayCategories != "") {
+                            var liste = data.displayCategories.split(';');
+                            for (var i=0; i<liste.length; i++) {
+                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
+                            }
+                        }
+                        if (data.saltkey_is_required == 1) {
+                            if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                        }
                     }
                     //disable buttons
                     $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item").attr('disabled', 'disabled');
 
                     proceed_list_update();
                 } else {
-                    if (data.saltkey_is_required == 1) {
-                        if ($(".tr_fields") != undefined) $(".tr_fields").hide();
-                    } else {
-                    	if ($(".tr_fields") != undefined) $(".tr_fields").show();
-                    }
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
@@ -242,6 +248,17 @@ function ListerItems(groupe_id, restricted, start)
                     } else {
                         $("#full_items_list").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
+
+                        // display Categories if needed
+                        if ($(".tr_fields") != undefined && data.displayCategories != "") {
+                            var liste = data.displayCategories.split(';');
+                            for (var i=0; i<liste.length; i++) {
+                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
+                            }
+                        }
+                        if (data.saltkey_is_required == 1) {
+                            if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                        }
                     }
 
                     //If restriction for role
@@ -1031,7 +1048,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#edit_past_pwds").attr('title', data.history_of_pwds);
                         $(".tip").tooltip();
 
-                        // show Fields
+                        // show Field values
                         $(".fields").val("");
                         $(".fields_div").html("");
                         var liste = data.fields.split('_|_');
@@ -1362,7 +1379,7 @@ function open_edit_item_div(restricted_to_roles)
         $('#edit_anyone_can_modify').button("refresh");
     }
     // fields display
-    if ($('.fields').val() != undefined) {
+    if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
         $('.fields').each(function(i){
             id = $(this).attr('id').split('_');
             $('#edit_field_'+id[2]).val(htmlspecialchars_decode($('#hid_field_'+id[2]).val()));
@@ -1633,6 +1650,7 @@ function notify_click(status)
 //###########
 $(function() {
     $('#toppathwrap').hide();
+    if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
     $("#jstree_close").click(function() {
         $("#jstree").jstree("close_all", -1);
@@ -1845,12 +1863,14 @@ $(function() {
         },
         open: function(event,ui) {
             $("#label").focus();
-            
+
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
-		        if ($("#form_tab_fields") != undefined) $("#item_tabs").tabs( "option", "hidden",3  );
+		        if ($("#form_tab_fields") != undefined)
+                    $("#item_tabs").tabs( "option", "hidden",3  );
 		    } else {
-		    	if ($("#form_tab_fields") != undefined) $("#item_tabs").tabs( "option", "show",3  );
+		    	if ($("#form_tab_fields") != undefined && $("#display_categories").val() != 1)
+                    $("#item_tabs").tabs( "option", "show",3  );
 		    }
         },
         close: function(event,ui) {
@@ -1858,6 +1878,7 @@ $(function() {
                 CKEDITOR.instances["desc"].destroy();
             }
             $("#item_upload_list").html("");
+            $(".item_field").val("");  // clean values in Fields
             $("#div_loading").hide();
         }
     });
@@ -1891,6 +1912,7 @@ $(function() {
             }
             $("#div_loading, #edit_show_error").hide();
             $("#item_edit_upload_list").html("");
+            $(".edit_item_field").val("");  // clean values in Fields
             //Unlock the Item
             $.post(
                 "sources/items.queries.php",
@@ -1911,7 +1933,8 @@ $(function() {
 		    if ($("#recherche_group_pf").val() == 1) {
 		        if ($("#edit_item_more") != undefined) $("#edit_item_more").hide();
 		    } else {
-		    	if ($("#edit_item_more") != undefined) $("#edit_item_more").show();
+		    	if ($("#edit_item_more") != undefined && $("#display_categories").val() != 1)
+                    $("#edit_item_more").show();
 		    }
 		}
     });
@@ -2432,33 +2455,30 @@ function items_list_filter(id)
     }
 }
 
-function manage_history_entry(action, entry_id)
+function displayHistory()
 {
-    if (action == "add_entry" && $("#add_history_entry_label").val() != "") {
-        //prepare
-        var data = '{"label":"'+sanitizeString($('#add_history_entry_label').val())+'", "item_id":"'+$('#id_item').val()+'"}';
-
-        //Send query
-        $.post(
-            "sources/items.queries.php",
-            {
-                type    : "history_entry_add",
-                data    : prepareExchangedData(data, "encode"),
-                key        : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data) {
-                //check if format error
-                if (data[0].error == "") {
-                    $("#item_history_log_error").html("").hide();
-                    $("#add_history_entry_label").val("");
-                    $("#item_history_log").append(data[0].new_line);
-                } else {
-                    $("#item_history_log_error").html(data[0].error).show();
-                }
-            },
-            "json"
-       );
-    }
+    //Send query
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "displayHistory",
+            id    : $("#id_item").val(),
+            salt_key_required   : $('#recherche_group_pf').val(),
+            salt_key_set        : $('#personal_sk_set').val(),
+            key        : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            //check if format error
+            if (data[0].error == "") {
+                $("#item_history_log_error").html("").hide();
+                $("#add_history_entry_label").val("");
+                $("#item_history_log").html(htmlspecialchars_decode(data.historique));
+            } else {
+                $("#item_history_log_error").html(data[0].error).show();
+            }
+            $("#div_item_history").dialog("open");
+        }
+   );
 }
 
 
