@@ -228,86 +228,115 @@ switch ($_POST['type']) {
         if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                 && $username != "admin"
         ) {
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "Get all ldap params : \n" .
-                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
-                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
-                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
-                    'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
-                );
-            }
+            if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
+                $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+                ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+                if ($ldapconn) {
+                    $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd'] );
+                    if ($ldapbind) {
+                        $filter="(&(" . $_SESSION[settings][ldap_user_attribute]. "=$username)(objectClass=posixAccount))";
+                        $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                        if (ldap_count_entries($ldapconn, $result)) {
+                            // try auth
+                            $result = ldap_get_entries($ldapconn, $result);
+                            $user_dn = $result[0]['dn'];
+                            $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear );
+                            if ($ldapbind) {
+                                $ldapConnection = true;
+                            } else {
+                                $ldapConnection = false;
+                            }
 
-            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
+                        }
+                    } else {
+                        $ldapConnection = false;
+                    }
+                } else {
+                    $ldapConnection = false;
+                }
+            } else {
+                if ($debugLdap == 1) {
+                    fputs(
+                        $dbgLdap,
+                        "Get all ldap params : \n" .
+                        'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
+                        'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+                        'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+                        'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+                        'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
+                    );
+                }
 
-        	// Posix style LDAP handles user searches a bit differently
-	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
-	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
-	        }
-			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
-			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
-			}
-
-            $adldap = new LDAP\adLDAP\adLDAP(
-                array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-                )
-            );
-
-            /*try {
                 $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-                $adldap = new LDAP\adLDAP\adLDAP( array(
+                $adldap->register();
+
+                // Posix style LDAP handles user searches a bit differently
+                if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                    $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+                }
+                elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+                    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+                }
+
+                $adldap = new LDAP\adLDAP\adLDAP(
+                    array(
+                        'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                        'account_suffix' => $ldap_suffix,
+                        'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
+                        'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                        'use_tls' => $_SESSION['settings']['ldap_tls']
+                    )
+                );
+
+                /*try {
+                    $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+                $adldap->register();
+                    $adldap = new LDAP\adLDAP\adLDAP( array(
+                            'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                            'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                            'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                            'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                            'use_tls' => $_SESSION['settings']['ldap_tls']
+                    ) );
+                }
+                catch(Exception $e)
+                {
+                    echo $e->getMessage();
+                }*/
+                /*$adldap = new adLDAP( array(
                         'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                         'account_suffix' => $_SESSION['settings']['ldap_suffix'],
                         'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
                         'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                         'use_tls' => $_SESSION['settings']['ldap_tls']
-                ) );
-            }
-            catch(Exception $e)
-            {
-                echo $e->getMessage();
-            }*/
-            /*$adldap = new adLDAP( array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                    'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-            ) );*/
-            if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
-            }
+                ) );*/
+                if ($debugLdap == 1) {
+                    fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+                }
 
-        	// openLDAP expects an attribute=value pair
-    	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
- 		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
- 		    }
-        	else {
-        		$auth_username = $username;
-        	}
+                // openLDAP expects an attribute=value pair
+                if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                    $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+                }
+                else {
+                    $auth_username = $username;
+                }
 
-            // authenticate the user
-            if ($adldap->authenticate($auth_username, $passwordClear)) {
-                $ldapConnection = true;
-            } else {
-                $ldapConnection = false;
+                // authenticate the user
+                if ($adldap->authenticate($auth_username, $passwordClear)) {
+                    $ldapConnection = true;
+                } else {
+                    $ldapConnection = false;
+                }
+                if ($debugLdap == 1) {
+                    fputs(
+                        $dbgLdap,
+                        "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
+                        "ldap status : ".$ldapConnection."\n\n\n"
+                    ); //Debug
+                }
             }
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
-                    "ldap status : ".$ldapConnection."\n\n\n"
-                ); //Debug
-            }
+        } else if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2) {
         }
         // Check if user exists
         $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
@@ -403,7 +432,6 @@ switch ($_POST['type']) {
                     "id=".$data['id']
                 );
             }
-
             // Can connect if
             // 1- no LDAP mode + user enabled + pw ok
             // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -415,6 +443,10 @@ switch ($_POST['type']) {
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                    && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                )
+                ||
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
                     && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||

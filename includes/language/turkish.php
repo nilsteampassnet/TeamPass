@@ -657,5 +657,11 @@ $txt['views_confirm_restoration'] = "Lütfen bu öğelerin geri yüklenmesini on
 $txt['visibility'] = "Görünürlük";
 $txt['warning_screen_height'] = "UYARI: ekran boyu öğeleri göstermek için yeterli değil!";
 $txt['yes'] = "Evet";
-$txt['your_version'] = "veriyonunuz";
+$txt['your_version'] = "sürümünüz";
+$txt['settings_ldap_bind_dn'] = 'Ldap Bind Dn';
+$txt['settings_ldap_bind_passwd'] = 'Ldap Bind Passwd'; 
+$txt['settings_ldap_search_base'] = 'Ldap Search Base'; 
+$txt['settings_ldap_bind_dn_tip'] = 'Ağaç içinde arama yapabilecek yetkili bir bind dn'; 
+$txt['settings_ldap_bind_passwd_tip'] = 'Ağaç içinde arama yapabilecek yetkili bind dn in parolası'; 
+$txt['settings_ldap_search_base_tip'] = 'LDAP ağacı içinde aramanın başlatılacağı kök dn'; 
 ?>
