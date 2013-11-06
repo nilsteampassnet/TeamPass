@@ -233,7 +233,8 @@ switch ($_POST['type']) {
                     $dbgLdap,
                     "Get all ldap params : \n" .
                     'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+                    'filter : '.$_SESSION['settings']['ldap_filter']."\n" .
+		    'ldap reader username: '.$_SESSION['settings']['ldap_domain_reader']."\n" .
                     'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
                     'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
@@ -245,44 +246,23 @@ switch ($_POST['type']) {
 
         	// Posix style LDAP handles user searches a bit differently
 	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
-	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+	            $ldap_filter = ','.$_SESSION['settings']['ldap_filter'].','.$_SESSION['settings']['ldap_domain_dn'];
 	        }
 			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
-			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+			    $filter = $_SESSION['settings']['ldap_filter'];
 			}
-
-            $adldap = new LDAP\adLDAP\adLDAP(
-                array(
+	    $ldap_arr = array(
+                    'filter' => $_SESSION['settings']['ldap_filter'],
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
+		    'service_account' => $_SESSION['settings']['ldap_domain_reader'],
+		    'service_password' => $_SESSION['settings']['ldap_domain_password'],
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
-                )
             );
 
-            /*try {
-                $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-                $adldap = new LDAP\adLDAP\adLDAP( array(
-                        'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                        'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                        'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                        'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                        'use_tls' => $_SESSION['settings']['ldap_tls']
-                ) );
-            }
-            catch(Exception $e)
-            {
-                echo $e->getMessage();
-            }*/
-            /*$adldap = new adLDAP( array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                    'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-            ) );*/
+            $adldap = new LDAP\adLDAP\adLDAP( $ldap_arr );
+
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
             }

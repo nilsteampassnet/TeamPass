@@ -67,18 +67,18 @@ define('ADLDAP_CONTAINER', 'CN');
 class adLDAP
 {
     /**
-    * The account suffix for your domain, can be set when the class is invoked
+    * The custom LDAP filter for your domain, can be set when the class is invoked
     *
     * @var string
     */
-    protected $_account_suffix = "dc = example, dc = com";
+    protected $_filter = "memberOf=CN=YourGroup,OU=Users,dc=example,dc=com";
 
     /**
     * The base dn for your domain
     *
     * @var string
     */
-    protected $_base_dn = "dc = example, dc = com";
+    protected $_base_dn = "dc=example,dc=com";
 
     /**
     * Array of domain controllers. Specifiy multiple controllers if you
@@ -88,15 +88,15 @@ class adLDAP
     */
     protected $_domain_controllers = array ("dc01.mydomain.local");
 
-    /**
-    * Optional account with higher privileges for searching
-    * This should be set to a domain admin account
+    /** Service account for searching
+    * Which should NOT be a domain admin
+    * Because that's FUCKING RETARDED
     *
     * @var string
     * @var string
     */
-    protected $_ad_username = null;
-    protected $_ad_password = null;
+    protected $_service_user = null;
+    protected $_service_pass = null;
 
     /**
     * AD does not return the primary group. http://support.microsoft.com/?kbid = 321360
@@ -150,24 +150,24 @@ class adLDAP
     */
 
     /**
-    * Set the account suffix
+    * Set the custom LDAP filter
     *
-    * @param string $_account_suffix
+    * @param string $_filter
     * @return void
     */
-    public function set_account_suffix($_account_suffix)
+    public function set_filter($_filter)
     {
-          $this->_account_suffix = $_account_suffix;
+          $this->_filter = $_filter;
     }
 
     /**
-    * Get the account suffix
+    * Get the custom LDAP filter
     *
     * @return string
     */
-    public function get_account_suffix()
+    public function get_filter()
     {
-          return $this->_account_suffix;
+          return $this->_filter;
     }
 
     /**
@@ -189,48 +189,6 @@ class adLDAP
     public function get_domain_controllers()
     {
           return $this->_domain_controllers;
-    }
-
-    /**
-    * Set the username of an account with higher priviledges
-    *
-    * @param string $_ad_username
-    * @return void
-    */
-    public function set_ad_username($_ad_username)
-    {
-          $this->_ad_username = $_ad_username;
-    }
-
-    /**
-    * Get the username of the account with higher priviledges
-    *
-    * This will throw an exception for security reasons
-    */
-    public function get_ad_username()
-    {
-          throw new adLDAPException('For security reasons you cannot access the domain administrator account details');
-    }
-
-    /**
-    * Set the password of an account with higher priviledges
-    *
-    * @param string $_ad_password
-    * @return void
-    */
-    public function set_ad_password($_ad_password)
-    {
-          $this->_ad_password = $_ad_password;
-    }
-
-    /**
-    * Get the password of the account with higher priviledges
-    *
-    * This will throw an exception for security reasons
-    */
-    public function get_ad_password()
-    {
-          throw new adLDAPException('For security reasons you cannot access the domain administrator account details');
     }
 
     /**
@@ -330,8 +288,8 @@ class adLDAP
     {
         // You can specifically overide any of the default configuration options setup above
         if (count($options) > 0) {
-            if (array_key_exists("account_suffix", $options)) {
-                $this->_account_suffix = $options["account_suffix"];
+            if (array_key_exists("filter", $options)) {
+                $this->_filter = $options["filter"];
             }
             if (array_key_exists("base_dn", $options)) {
                 $this->_base_dn = $options["base_dn"];
@@ -339,11 +297,11 @@ class adLDAP
             if (array_key_exists("domain_controllers", $options)) {
                 $this->_domain_controllers = $options["domain_controllers"];
             }
-            if (array_key_exists("ad_username", $options)) {
-                $this->_ad_username = $options["ad_username"];
+            if (array_key_exists("service_account", $options)) {
+                $this->_service_user = $options["service_account"];
             }
-            if (array_key_exists("ad_password", $options)) {
-                $this->_ad_password = $options["ad_password"];
+            if (array_key_exists("service_password", $options)) {
+                $this->_service_pass = $options["service_password"];
             }
             if (array_key_exists("real_primarygroup", $options)) {
                 $this->_real_primarygroup = $options["real_primarygroup"];
@@ -401,18 +359,6 @@ class adLDAP
             ldap_start_tls($this->_conn);
         }
 
-        // Bind as a domain admin if they've set it up
-        if ($this->_ad_username != null && $this->_ad_password!= null) {
-            $this->_bind = @ldap_bind($this->_conn, $this->_ad_username.$this->_account_suffix, $this->_ad_password);
-            if (!$this->_bind) {
-                if ($this->_use_ssl && !$this->_use_tls) {
-                    // If you have problems troubleshooting, remove the @ character from the ldap_bind command above to get the actual error message
-                    throw new adLDAPException('Bind to Active Directory failed. Either the LDAPs connection failed or the login credentials are incorrect. AD said: ' . $this->get_last_error());
-                } else {
-                    throw new adLDAPException('Bind to Active Directory failed. Check the login credentials and/or server details. AD said: ' . $this->get_last_error());
-                }
-            }
-        }
 
         if ($this->_base_dn == null) {
             $this->_base_dn = $this->find_base_dn();
@@ -449,23 +395,35 @@ class adLDAP
             return (false);
         }
 
-        // Bind as the user
-        $this->_bind = @ldap_bind($this->_conn, $username.$this->_account_suffix, $password);
+        // Bind as a service account
+        $this->_bind = @ldap_bind($this->_conn, $this->_service_user, $this->_service_pass);
         if (!$this->_bind) {
             return (false);
         }
 
-        // Cnce we've checked their details, kick back into admin mode if we have it
-        if ($this->_ad_username!= null && !$prevent_rebind) {
-            $this->_bind = @ldap_bind($this->_conn, $this->_ad_username. $this->_account_suffix, $this->_ad_password);
-            if (!$this->_bind) {
-                // This should never happen in theory
-                throw new adLDAPException('Rebind to Active Directory failed. AD said: ' . $this->get_last_error());
-            }
+        $filter = "sAMAccountName=" . $username;
+	if ($this->_filter) {
+		$filter = "(&(".$filter.")(".$this->_filter."))";
+	}
+        $fields = array("dn");
+        $sr = @ldap_search($this->_conn, $this->_base_dn, $filter, $fields);
+
+        if (ldap_count_entries($this->_conn, $sr) > 0) {
+            $entry = ldap_first_entry($this->_conn, $sr);
+            $dnObj = ldap_get_attributes($this->_conn, $entry);
+            $DN = $dnObj['dn'];
+        } else {
+            return (false);
+        }
+
+        $this->_bind = @ldap_bind($this->_conn, $DN, $password);
+        if (!$this->_bind) {
+            return (false);
         }
 
         return (true);
     }
+
 
     //*****************************************************************************************************************
     // GROUP FUNCTIONS
