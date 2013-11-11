@@ -381,6 +381,7 @@ if (isset($_POST['type'])) {
                   `session_end` varchar(30) NULL,
                   `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                   `psk` varchar(400) NULL,
+                  `ga` varchar(50) NULL,
                   PRIMARY KEY (`id`),
                   UNIQUE KEY `login` (`login`)
                ) CHARSET=utf8;"
