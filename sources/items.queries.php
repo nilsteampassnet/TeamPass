@@ -892,7 +892,7 @@ if (isset($_POST['type'])) {
             echo prepareExchangedData($arrData, "encode");
             break;
 
-        /*
+        /*".."
           * CASE
           * Copy an Item
         */
@@ -1150,47 +1150,6 @@ if (isset($_POST['type'])) {
                     $arrData['user_can_modify'] = 0;
                     $user_is_allowed_to_modify = false;
                 }
-                // GET Audit trail
-                $historique = "";
-                $historyOfPws = "";
-                $rows = $db->fetchAllArray(
-                    "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
-                    FROM ".$pre."log_items as l
-                    LEFT JOIN ".$pre."users as u ON (l.id_user=u.id)
-                    WHERE id_item=".$_POST['id']."
-                    AND action <> 'at_shown'
-                    ORDER BY date ASC"
-                );
-                foreach ($rows as $reccord) {
-                    $reason = explode(':', $reccord['raison']);
-                    if ($reccord['action'] == "at_modification" && $reason[0] == "at_pw ") {
-                        // don't do if item is PF
-                        if ($dataItem['perso'] != 1) {
-                            $reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
-                        }
-                        // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                        if (!isUTF8($reason[1])) {
-                            $reason[1] = "";
-                        }
-                    }
-                    if (!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation" || $reccord['action'] == "at_manual") {
-                        if (empty($historique)) {
-                            $historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
-                        } else {
-                            $historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
-                        }
-                        if (trim($reason[0]) == "at_pw") {
-                            if (empty($historyOfPws)) {
-                                $historyOfPws = $txt['previous_pw']."<br>- ".$reason[1];
-                            } else {
-                                $historyOfPws .= "<br>- ".$reason[1];
-                            }
-                        }
-                    }
-                }
-                if (empty($historyOfPws)) {
-                    $historyOfPws = $txt['no_previous_pw'];
-                }
 
                 // Get restriction list for roles
                 $listRestrictionRoles = array();
@@ -1247,7 +1206,6 @@ if (isset($_POST['type'])) {
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $allowedTags));
                 $arrData['login'] = str_replace('"', '&quot;', $dataItem['login']);
-                $arrData['historique'] = str_replace('"', '&quot;', $historique);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = str_replace('"', '&quot;', $tags);
@@ -1259,82 +1217,14 @@ if (isset($_POST['type'])) {
                     $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
                 }
 
-                $arrData['history_of_pwds'] = str_replace('"', '&quot;', $historyOfPws);
-                // Add this item to the latests list
-                if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
-                    if (count($_SESSION['latest_items']) >= $_SESSION['settings']['max_latest_items']) {
-                        array_pop($_SESSION['latest_items']); //delete last items
-                    }
-                    array_unshift($_SESSION['latest_items'], $dataItem['id']);
-                    // update DB
-                    $db->queryUpdate(
-                        "users",
-                        array(
-                            'latest_items' => implode(';', $_SESSION['latest_items'])
-                           ),
-                        "id=".$_SESSION['user_id']
-                    );
-                }
-                // generate 2d key
-                $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-                $pwgen->register();
-                $pwgen = new Encryption\PwGen\pwgen();
-                $pwgen->setLength(20);
-                $pwgen->setSecure(true);
-                $pwgen->setSymbols(false);
-                $pwgen->setCapitalize(true);
-                $pwgen->setNumerals(true);
-                $_SESSION['key_tmp'] = $pwgen->generate();
-                // Prepare files listing
-                $files = $filesEdit = "";
-                // launch query
-                $rows = $db->fetchAllArray(
-                    "SELECT *
-                        FROM ".$pre."files
-                        WHERE id_item=".$_POST['id']
-                );
-                foreach ($rows as $reccord) {
-                    // get icon image depending on file format
-                    $iconImage = fileFormatImage($reccord['extension']);
-                    // If file is an image, then prepare lightbox. If not image, then prepare donwload
-                    if (in_array($reccord['extension'], $k['image_file_ext'])) {
-                        $files .= '<img src=\'includes/images/'.$iconImage.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'\' title=\''.$reccord['name'].'\'>'.$reccord['name'].'</a><br />';
-                    } else {
-                        $files .= '<img src=\'includes/images/'.$iconImage.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\'>'.$reccord['name'].'</a><br />';
-                    }
-                    // Prepare list of files for edit dialogbox
-                    $filesEdit .= '<span id=\'span_edit_file_'.$reccord['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$reccord['id'].'")\' />&nbsp;'.$reccord['name']."</span><br />";
-                }
-                // display lists
-                $arrData['files_edit'] = str_replace('"', '&quot;', $filesEdit);
-                $arrData['files_id'] = $files;
-                // Refresh last seen items
-                $text = $txt['last_items_title'].": ";
-                $_SESSION['latest_items_tab'] = "";
-                foreach ($_SESSION['latest_items'] as $item) {
-                    if (!empty($item)) {
-                        $data = $db->queryFirst("SELECT id,label,id_tree FROM ".$pre."items WHERE id = ".$item);
-                        $_SESSION['latest_items_tab'][$item] = array(
-                            'id' => $item,
-                            'label' => addslashes($data['label']),
-                            'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
-                        );
-                        $text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
-                    }
-                }
-                $arrData['div_last_items'] = str_replace('"', '&quot;', $text);
-                // disable add bookmark if alread bookmarked
-                if (in_array($_POST['id'], $_SESSION['favourites'])) {
-                    $arrData['favourite'] = 1;
-                } else {
-                    $arrData['favourite'] = 0;
-                }
-
                 // get fields
-                $fieldsTmp = "";
-                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+                $fieldsTmp = $arrCatList = "";
+                if (
+                	isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1
+                	&& isset($_POST['page']) && $_POST['page'] == "items"
+                ) {
                     // get list of associated Categories
-                    $arrCatList = array();
+                	$arrCatList = array();
                     $rows_tmp = $db->fetchAllArray(
                         "SELECT id_category
                         FROM ".$pre."categories_folders
@@ -1374,18 +1264,6 @@ if (isset($_POST['type'])) {
                     $arrData['restricted'] = $_POST['restricted'];
                 } else {
                     $arrData['restricted'] = "";
-                }
-                // Add the fact that item has been copied in logs
-                if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
-                    $db->queryInsert(
-                        'log_items',
-                        array(
-                            'id_item' => $_POST['id'],
-                            'date' => time(),
-                            'id_user' => $_SESSION['user_id'],
-                            'action' => 'at_shown'
-                           )
-                    );
                 }
                 // Decrement the number before being deleted
                 $sql = "SELECT * FROM ".$pre."automatic_del WHERE item_id=".$_POST['id'];
@@ -1486,6 +1364,157 @@ if (isset($_POST['type'])) {
             // Encrypt data to return
             echo prepareExchangedData($arrData, "encode");
             break;
+
+        	/*
+        	   * CASE
+        	   * Display History of the selected Item
+        	*/
+        case "showDetailsStep2":
+        	// get Item info
+        	$dataItem = $db->queryFirst(
+        	"SELECT *
+                FROM ".$pre."items
+                WHERE id=".$_POST['id']
+        	);
+
+        	// get Item Key for decryption
+        	$dataItemKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="items" AND `id`='.$_POST['id']);
+
+        	// GET Audit trail
+        	$history = "";
+        	$historyOfPws = "";
+        	$rows = $db->fetchAllArray(
+        	"SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
+                FROM ".$pre."log_items as l
+                LEFT JOIN ".$pre."users as u ON (l.id_user=u.id)
+                WHERE id_item=".$_POST['id']."
+                AND action <> 'at_shown'
+                ORDER BY date ASC"
+        	);
+        	foreach ($rows as $reccord) {
+        		$reason = explode(':', $reccord['raison']);
+        		if ($reccord['action'] == "at_modification" && $reason[0] == "at_pw ") {
+        			// don't do if item is PF
+        			if ($dataItem['perso'] != 1) {
+        				$reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
+        			}
+        			// if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+        			if (!isUTF8($reason[1])) {
+        				$reason[1] = "";
+        			}
+        		}
+        		if (!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation" || $reccord['action'] == "at_manual") {
+        			if (empty($history)) {
+        				$history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+        			} else {
+        				$history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+        			}
+        			if (trim($reason[0]) == "at_pw") {
+        				if (empty($historyOfPws)) {
+        					$historyOfPws = $txt['previous_pw']."<br>- ".$reason[1];
+        				} else {
+        					$historyOfPws .= "<br>- ".$reason[1];
+        				}
+        			}
+        		}
+        	}
+
+        	// generate 2d key
+        	$pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+        	$pwgen->register();
+        	$pwgen = new Encryption\PwGen\pwgen();
+        	$pwgen->setLength(20);
+        	$pwgen->setSecure(true);
+        	$pwgen->setSymbols(false);
+        	$pwgen->setCapitalize(true);
+        	$pwgen->setNumerals(true);
+        	$_SESSION['key_tmp'] = $pwgen->generate();
+        	// Prepare files listing
+        	$files = $filesEdit = "";
+        	// launch query
+        	$rows = $db->fetchAllArray(
+        	"SELECT *
+                        FROM ".$pre."files
+                        WHERE id_item=".$_POST['id']
+        	);
+        	foreach ($rows as $reccord) {
+        		// get icon image depending on file format
+        		$iconImage = fileFormatImage($reccord['extension']);
+        		// If file is an image, then prepare lightbox. If not image, then prepare donwload
+        		if (in_array($reccord['extension'], $k['image_file_ext'])) {
+        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['url_to_upload_folder'].'/'.$reccord['file'].'\' title=\''.$reccord['name'].'\'>'.$reccord['name'].'</a><br />';
+        		} else {
+        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($reccord['name']).'&type=sub&file='.$reccord['file'].'&size='.$reccord['size'].'&type='.urlencode($reccord['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\'>'.$reccord['name'].'</a><br />';
+        		}
+        		// Prepare list of files for edit dialogbox
+        		$filesEdit .= '<span id=\'span_edit_file_'.$reccord['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$reccord['id'].'")\' />&nbsp;'.$reccord['name']."</span><br />";
+        	}
+        	// display lists
+        	$filesEdit = str_replace('"', '&quot;', $filesEdit);
+        	$files_id = $files;
+        	// Refresh last seen items
+        	$text = $txt['last_items_title'].": ";
+        	$_SESSION['latest_items_tab'] = "";
+        	foreach ($_SESSION['latest_items'] as $item) {
+        		if (!empty($item)) {
+        			$data = $db->queryFirst("SELECT id,label,id_tree FROM ".$pre."items WHERE id = ".$item);
+        			$_SESSION['latest_items_tab'][$item] = array(
+        			    'id' => $item,
+        			    'label' => addslashes($data['label']),
+        			    'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
+        			);
+        			$text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
+        		}
+        	}
+        	$div_last_items = str_replace('"', '&quot;', $text);
+        	// disable add bookmark if alread bookmarked
+        	if (in_array($_POST['id'], $_SESSION['favourites'])) {
+        		$favourite = 1;
+        	} else {
+        		$favourite = 0;
+        	}
+
+        	// Add the fact that item has been viewed in logs
+        	if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+        		$db->queryInsert(
+        		'log_items',
+        		array(
+        		    'id_item' => $_POST['id'],
+        		    'date' => time(),
+        		    'id_user' => $_SESSION['user_id'],
+        		    'action' => 'at_shown'
+        		   )
+        		);
+        	}
+
+        	// Add this item to the latests list
+        	if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
+        		if (count($_SESSION['latest_items']) >= $_SESSION['settings']['max_latest_items']) {
+        			array_pop($_SESSION['latest_items']); //delete last items
+        		}
+        		array_unshift($_SESSION['latest_items'], $dataItem['id']);
+        		// update DB
+        		$db->queryUpdate(
+        		"users",
+        		array(
+        		    'latest_items' => implode(';', $_SESSION['latest_items'])
+        		   ),
+        		"id=".$_SESSION['user_id']
+        		);
+        	}
+
+        	echo prepareExchangedData(
+        	array(
+        		"history" => str_replace('"', '&quot;', $history),
+        		"history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
+	        	"favourite" => $favourite,
+	        	"div_last_items" => $div_last_items,
+	        	"files_edit" => $filesEdit,
+	        	"files_id" => $files_id
+        	),
+        	"encode"
+        	);
+        	break;
 
             /*
         * CASE
@@ -1994,9 +2023,10 @@ if (isset($_POST['type'])) {
                 INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                 WHERE i.inactif = 0" .
                 $whereArg."
-                AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
+                AND (l.action = 'at_creation')
                 ORDER BY i.label ASC, l.date DESC"
             );
+        	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
             if (($_POST['nb_items_to_display_once'] + $start) < $countItems[0] && $_POST['nb_items_to_display_once'] != "max") {
                 $listToBeContinued = "yes";
@@ -2537,56 +2567,6 @@ if (isset($_POST['type'])) {
             } else {
                 echo '{ "modified" : "0" }';
             }
-            break;
-
-        /*
-        * CASE
-        * Display History of the selected Item
-        */
-        case "displayHistory":
-            // get Item info
-            $dataItem = $db->queryFirst(
-                "SELECT *
-                FROM ".$pre."items
-                WHERE id=".$_POST['id']
-            );
-
-            // get Item Key for decryption
-            $dataItemKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="items" AND `id`='.$_POST['id']);
-
-            // GET Audit trail
-            $historique = "";
-            $historyOfPws = "";
-            $rows = $db->fetchAllArray(
-                "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login
-                FROM ".$pre."log_items as l
-                LEFT JOIN ".$pre."users as u ON (l.id_user=u.id)
-                WHERE id_item=".$_POST['id']."
-                AND action <> 'at_shown'
-                ORDER BY date ASC"
-            );
-            foreach ($rows as $reccord) {
-                $reason = explode(':', $reccord['raison']);
-                if ($reccord['action'] == "at_modification" && $reason[0] == "at_pw ") {
-                    // don't do if item is PF
-                    if ($dataItem['perso'] != 1) {
-                        $reason[1] = substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
-                    }
-                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                    if (!isUTF8($reason[1])) {
-                        $reason[1] = "";
-                    }
-                }
-                if (!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation" || $reccord['action'] == "at_manual") {
-                    if (empty($historique)) {
-                        $historique = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
-                    } else {
-                        $historique .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
-                    }
-                }
-            }
-
-            echo '{ "history" : "'.str_replace('"', '&quot;', $historique).'" , "error" : "" }';
             break;
     }
 }

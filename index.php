@@ -496,7 +496,8 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                         '.$txt['index_get_identified'].'
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
-                    <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
+                    <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>
+                    <div id="index_error" style="color:red;display:none;text-align:center;margin:5px;"></div>';
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
@@ -507,7 +508,8 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                         <label for="pw" class="form_label">'.$txt['index_password'].'</label>
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
-    // Personal salt key
+
+	// Personal salt key
     if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
         echo '
 
@@ -521,17 +523,17 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     </div>';
     }
 
-    // 2-Factors authentication is asked
-    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-        //Display QR
-        echo '
-                    <div id="connect_2factors_code" style="margin-bottom:3px;">
-                        <div style="text-align:center;" id="2factors_qr_code">'.$txt['2factors_image_text'].'<br /><img class=\'google_qrcode\' src=\''.$qrCode.'\' /></div>
-                        <label for="2factors_code" class="">'.$txt['2factors_confirm_text'].'</label>
-                        <input type="text" size="10" id="2factors_code" name="2factors_code" class="input_text text ui-widget-content ui-corner-all" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
+	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+		echo '
+                    <div id="ga_code_div">
+                    	'.$txt['ga_identification_code'].'
+                        <input type="text" size="4" id="ga_code" name="ga_code" value="" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
+                        <span style="text-align:center;"><img id="ga_qr" src="" /></span>
+                        <div style="text-align:center;margin:0 0 10px 0;font-size:10pt;">
+	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$txt['ga_not_yet_synchronized'].'</span>
+	                    </div>
                     </div>';
-    }
-
+	}
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="duree_session" class="">'.$txt['index_session_duration'].'&nbsp;('.$txt['minutes'].') </label>
@@ -541,8 +543,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
                         <span onclick="OpenDialogBox(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$txt['forgot_my_pw'].'</span>
                     </div>
-
-                    <div style="text-align:center;margin-top:15px;">
+					<div style="text-align:center;margin-top:15px;">
                         <input type="button" id="but_identify_user" onclick="identifyUser(\''.$nextUrl.'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$txt['index_identify_button'].'" />
                     </div>
                 </div>
