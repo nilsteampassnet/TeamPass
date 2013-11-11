@@ -879,6 +879,11 @@ if (isset($_POST['type'])) {
                 "psk",
                 "VARCHAR(400) DEFAULT NULL"
             );
+        	$res2 = addColumnIfNotExist(
+        	    $_SESSION['tbl_prefix']."users",
+        	    "ga",
+        	    "VARCHAR(50) DEFAULT NULL"
+        	);
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
