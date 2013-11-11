@@ -183,33 +183,67 @@ switch ($_POST['type']) {
             echo '[ { "error" : "nothing_to_do" } ]';
         }
         break;
+    /*
+    * This will generate the QR Google Authenticator
+    */
+    case "ga_generate_qr":
+    	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    	// decrypt and retreive data in JSON format
+    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+    	// Prepare variables
+    	$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
+    	$username = htmlspecialchars_decode($dataReceived['login']);
+
+    	// Check if user exists
+    	$sql = "SELECT id, ga, pw FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
+    	$row = $db->query($sql);
+    	if ($row == 0) {
+    		// not a registered user !
+    		echo '[{"error" : "no_user"}]';
+    	} else {
+    		// check if good credentials
+    		$data = $db->fetchArray($row);
+    		if (crypt($passwordClear, $data['pw']) == $data['pw']) {
+    			// check if user has already a SECRET
+    			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
+    			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
+    			$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+    			if (empty($data['ga'])) {
+    				// no SECRET yet
+    				$_SESSION['ga_secret'] = $g->generateSecret();
+
+    				$db->queryUpdate(
+	    				"users",
+	    				array(
+	    				    'ga' => $_SESSION['ga_secret']
+	    				   ),
+	    				"id = ".$data['id']
+    				);
+    			} else {
+    				// secret exists
+    				$_SESSION['ga_secret'] = $data['ga'];
+    			}
+    			// generate QR url
+    			$gaUrl = $g->getURL($username, 'teampass.net', $_SESSION['ga_secret']);
+
+    			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
+    		} else {
+    			// not good credentials
+    			echo '[{"error" : "bad_couple"}]';
+    		}
+    	}
+    	break;
     /**
      * Identify the USer
      */
     case "identify_user":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         // decrypt and retreive data in JSON format
         $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["key"], 256), true);
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
         $username = htmlspecialchars_decode($dataReceived['login']);
-
-        //Check 2-Factors pw
-        if (isset($_SESSION['settings']['2factors_authentication'])
-                && $_SESSION['settings']['2factors_authentication'] == 1
-        ) {
-            include $_SESSION['settings']['cpassman_dir'].
-                '/includes/libraries/Authentication/Twofactors/twofactors.php';
-            $google2FA=new Google2FA();
-
-            if ($google2FA->verify_key($_SESSION['initKey'], $dataReceived['onetimepw']) != true) {
-                echo '[{"value" : "false_onetimepw", "user_admin":"", "initial_url" : ""}]';
-                $_SESSION['initial_url'] = "";
-                break;
-            }
-            $_SESSION['user_onetimepw'] = "";
-        }
+    	$logError = "";
 
         // GET SALT KEY LENGTH
         if (strlen(SALT) > 32) {
@@ -384,6 +418,25 @@ switch ($_POST['type']) {
             $proceedIdentification = true;
         }
 
+    	// check GA code
+    	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 && $username != "admin") {
+	    	if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
+	    		include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
+	    		include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
+	    		$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+
+	    		if ($g->checkCode($data['ga'], $dataReceived['GACode'])) {
+	    			$proceedIdentification = true;
+	    		} else {
+	    			$proceedIdentification = false;
+	    			$logError = "ga_code_wrong";
+	    		}
+	    	} else {
+	    		$proceedIdentification = false;
+	    		$logError = "ga_code_wrong";
+	    	}
+    	}
+
         if ($proceedIdentification === true) {
             // User exists in the DB
             //$data = $db->fetchArray($row);
@@ -398,7 +451,7 @@ switch ($_POST['type']) {
                 $db->queryUpdate(
                     "users",
                     array(
-                            'pw' => $data['pw']
+                        'pw' => $data['pw']
                     ),
                     "id=".$data['id']
                 );
@@ -458,6 +511,7 @@ switch ($_POST['type']) {
                 $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
                 $_SESSION['user_email'] = $data['email'];
+            	$_SESSION['user']['ga'] = $data['ga'];
 
             	/* If this option is set user password MD5 is used as personal SALTKey */
 				if (
@@ -670,7 +724,8 @@ switch ($_POST['type']) {
         }
         echo '[{"value" : "'.$return.'", "user_admin":"',
             isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
-            '", "initial_url" : "'.@$_SESSION['initial_url'].'"}]';
+            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+			"error" : "'.$logError.'"}]';
         $_SESSION['initial_url'] = "";
         break;
     /**

@@ -980,7 +980,7 @@ echo '
                         <span class="setting_flag" id="flag_get_tp_info"><img src="includes/images/status', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
-                
+
 echo '
                 <tr><td colspan="3"><hr></td></tr>
                 </table>

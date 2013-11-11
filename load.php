@@ -140,8 +140,8 @@ $htmlHeaders .= '
         }
 
         var data = "";
-        if ($("#2factors_code").val() != undefined) {
-            data = \', "onetimepw":"\'+sanitizeString($("#2factors_code").val())+\'"\';
+        if ($("#ga_code").val() != undefined) {
+            data = \', "GACode":"\'+sanitizeString($("#ga_code").val())+\'"\';
         }
         if ($("#psk").val() != undefined) {
             data = \', "psk":"\'+sanitizeString($("#psk").val())+\'"\'+
@@ -188,6 +188,10 @@ $htmlHeaders .= '
                 } else if (data[0].value == "false_onetimepw") {
                     $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
                     $("#erreur_connexion").show();
+                } else if (data[0].error == "bad_credentials") {
+                	$("#index_error").html("'.$txt['index_bas_pw'].'").show();
+                } else if (data[0].error == "ga_code_wrong") {
+                	$("#index_error").html("'.$txt['ga_bad_code'].'").show();
                 } else {
                     $("#erreur_connexion").show();
                 }
@@ -195,6 +199,32 @@ $htmlHeaders .= '
             },
             "json"
        );
+    }
+
+    function getGASynchronization()
+    {
+    	if ($("#login").val() != "" && $("#pw").val() != "") {
+    		data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'"}\';
+
+	        //send query
+	        $.post(
+	            "sources/main.queries.php",
+	            {
+	                type : "ga_generate_qr",
+	                data : prepareExchangedData(data, "encode")
+	            },
+	            function(data) {
+	            	if (data[0].error == "0") {
+						$("#ga_qr").attr("src", data[0].ga_url);
+	            	} else {
+						$("#index_error").html("'.$txt['index_bas_pw'].'");
+	            	}
+	            },
+	            "json"
+	        );
+    	} else {
+    		$("#index_error").html("'.$txt['ga_enter_credentials'].'");
+    	}
     }
 
     /*
@@ -288,10 +318,6 @@ $htmlHeaders .= '
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
         $("#user_session").val(sessionStorage.password);
 
-        /*TODO: si on chope n\'importe quel click, il faut vérifier si les mdp
-        sont les memes
-        if (sessionStorage.password)
-*/
         //Display Tabs
         $("#item_edit_tabs, #item_tabs").tabs();
 

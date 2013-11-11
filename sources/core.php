@@ -339,6 +339,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 } elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication'])
     && $_SESSION['settings']['2factors_authentication'] == 1
 ) {
+    /*
     //2 Factors authentication is asked
     include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
     $google2FA=new Google2FA();
@@ -352,6 +353,18 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 
     //Store Onetime pw
     $_SESSION['initKey'] = $initalizationKey;
+	*/
+	$g = new SplClassLoader('Authentication\GoogleAuthenticator', './includes/libraries');
+	$g->register();
+	$g = new \Authentication\GoogleAuthenticator\GoogleAuthenticator();
+	$_SESSION['ga_secret'] = $g->generateSecret();
+/*
+	$secret = 'XVQ2UIGO75XRUKJO';
+	$time = floor(time() / 30);
+	$code = "343232";
+	$_SESSION['ga_secret'] = $g->getCode($secret);
+	$_SESSION['ga_secret_qr'] = $g->getURL('nils', 'teampass.net', $secret);
+	*/
 }
 
 /*
@@ -390,26 +403,26 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
     $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0");
     foreach ($rows as $reccord) {
         $arrFields = array();
-               
+
         // get each field
         $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$reccord['id']);
         if (count($rows) > 0) {
             foreach ($rows as $field) {
                 array_push(
-                    $arrFields, 
+                    $arrFields,
                     array(
-                        $field['id'], 
+                        $field['id'],
                         addslashes($field['title'])
                     )
                 );
             }
         }
-        
+
         // store the categories
         array_push(
-            $_SESSION['item_fields'], 
+            $_SESSION['item_fields'],
             array(
-                $reccord['id'], 
+                $reccord['id'],
                 addslashes($reccord['title']),
                 $arrFields
             )

@@ -6,6 +6,11 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['ga_not_yet_synchronized'] = "Get identified with Google Authenticator";
+$txt['ga_identification_code'] = "Identification code";
+$txt['ga_enter_credentials'] = "You need to enter your login credentials to continu";
+$txt['ga_bad_code'] = "The Google Authenticator code is wrong";
+
 $txt['settings_get_tp_info'] = "Automatically load information about Teampass";
 $txt['settings_get_tp_info_tip'] = "This option permits the administration page to load information such as version and libraries usage from Teampass server.";
 

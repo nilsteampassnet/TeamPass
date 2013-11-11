@@ -964,6 +964,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     salt_key_set        : $('#personal_sk_set').val(),
                     expired_item        : expired_item,
                     restricted          : restricted,
+					page				: "items",
                     key                 : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
@@ -1031,7 +1032,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_login").val(data.login);
                         $("#id_email").html(data.email);
                         $("#hid_email").val(data.email);
-                        $("#item_history_log").html(htmlspecialchars_decode(data.historique));
                         $("#id_restricted_to").html(data.id_restricted_to+data.id_restricted_to_roles);
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
@@ -1040,12 +1040,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_anyone_can_modify").val(data.anyone_can_modify);
                         $("#id_categorie").val(data.folder);
                         $("#id_item").val(data.id);
-                        $("#id_files").html(data.files_id);
-                        $("#hid_files").val(data.files_id);
-                        $("#item_edit_list_files").html(data.files_edit).html();
-                        $("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
                         $("#id_kbs").html(data.links_to_kbs);
-                        $("#edit_past_pwds").attr('title', data.history_of_pwds);
                         $(".tip").tooltip();
 
                         // show Field values
@@ -1093,13 +1088,15 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else if (data.user_can_modify == 0) {
                             $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
                         } else if (data.restricted == "1" || data.user_can_modify == "1") {
-                            $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeAttr("disabled");
+                            //$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeAttr("disabled");
+							var param = "#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item";
                             $("#new_history_entry_form").show();
                         } else {
-                            $("#menu_button_add_item, #menu_button_copy_item").removeAttr("disabled");
+                            //$("#menu_button_add_item, #menu_button_copy_item").removeAttr("disabled");
+							var param = "#menu_button_del_item, #menu_button_copy_item";
                             $("#new_history_entry_form").show();
                         }
-                        $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").removeAttr("disabled");
+                        //$("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").removeAttr("disabled");
 
                         // disable share button for personal folder
                         if ($("#recherche_group_pf").val() == 1) {
@@ -1164,15 +1161,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             PreviewImage($(this).attr("href"),$(this).attr("title"));
                         });
 
-                        //Set favourites icon
-                        if (data.favourite == "1") {
-                            $("#menu_button_add_fav").attr("disabled","disabled");
-                            $("#menu_button_del_fav").removeAttr("disabled");
-                        } else {
-                            $("#menu_button_add_fav").removeAttr("disabled");
-                            $("#menu_button_del_fav").attr("disabled","disabled");
-                        }
-
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
                             $("#item_editable").val(1);
@@ -1187,11 +1175,16 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     echo 0;
 }?>);
                         }
+
+						// continue loading data
+						showDetailsStep2(id, param);
+
                     } else if (data.show_details == "1" && data.show_detail_option == "2") {
                         $("#item_details_nok").hide();
                         $("#item_details_ok").hide();
                         $("#item_details_expired_full").show();
                         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
+						$("#div_loading").hide();
                     } else {
                         //Dont show details
                         $("#item_details_nok").show();
@@ -1200,8 +1193,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#item_details_expired").hide();
                         $("#item_details_expired_full").hide();
                         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
+						$("#div_loading").hide();
                     }
-                    $("#div_loading").hide();
                     $("#request_ongoing").val("");
                 }
            );
@@ -1210,6 +1203,47 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     //Store Item id shown
     $("#request_lastItem").val(id);
 }
+
+
+/*
+* Loading Item details step 2
+*/
+function showDetailsStep2(id, param)
+{
+	$("#div_loading").show();
+	$.post(
+		"sources/items.queries.php",
+		{
+		type     : "showDetailsStep2",
+		id         : id
+		},
+		function(data) {
+			data = prepareExchangedData(data, "decode");
+
+			$("#item_history_log").html(htmlspecialchars_decode(data.history));
+			$("#edit_past_pwds").attr('title', data.history_of_pwds);
+
+            $("#id_files").html(data.files_id);
+            $("#hid_files").val(data.files_id);
+            $("#item_edit_list_files").html(data.files_edit).html();
+
+			$("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
+
+            //Set favourites icon
+            if (data.favourite == "1") {
+                $("#menu_button_add_fav").attr("disabled","disabled");
+                $("#menu_button_del_fav").removeAttr("disabled");
+            } else {
+                $("#menu_button_add_fav").removeAttr("disabled");
+                $("#menu_button_del_fav").attr("disabled","disabled");
+            }
+
+			$(param).removeAttr("disabled");
+			$("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").removeAttr("disabled");
+			$("#div_loading").hide();
+	     }
+	 );
+};
 
 /*
    * FUNCTION
@@ -1577,36 +1611,27 @@ PreviewImage = function(uri,title) {
  **/
 function get_clipboard_item(field,id)
 {
-        $.post("sources/items.queries.php",
-            {
-                type     : "get_clipboard_item",
-                field    : field,
-                id         : id
-            },
-            function(data) {
-                data = prepareExchangedData(data, "decode");
-                clip = new ZeroClipboard.Client();
-                clip.setText(data);
-                if (field == "pw") {
-                    clip.addEventListener('complete', function(client, text) {
-                        $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
-                        clip.destroy();
-                    });
-                    clip.glue('iconpw_'+id);
-                } else {
-                    clip.addEventListener('complete', function(client, text) {
-                        $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
-                        clip.destroy();
-                    });
-                    clip.glue('iconlogin_'+id);
-                }
+	clip = new ZeroClipboard.Client();
+    if (field == "pw") {
+    	clip.setText($("#item_pw_in_list_"+id).val());
+        clip.addEventListener('complete', function(client, text) {
+            $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
+            clip.destroy();
+        });
+        clip.glue('iconpw_'+id);
+    } else {
+    	clip.setText($("#item_login_in_list_"+id).val());
+        clip.addEventListener('complete', function(client, text) {
+            $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
+            clip.destroy();
+        });
+        clip.glue('iconlogin_'+id);
+    }
 
-                var div = $('#items_list');
-                var box = ZeroClipboard.getDOMObjectPosition(clip.domElement);
-                clip.div.style.top = '' + (box.top - $(div).scrollTop()) + 'px';
-            }
-          );
-   };
+    var div = $('#items_list');
+    var box = ZeroClipboard.getDOMObjectPosition(clip.domElement);
+    clip.div.style.top = '' + (box.top - $(div).scrollTop()) + 'px';
+};
 
 function notify_click(status)
 {

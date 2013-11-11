@@ -103,12 +103,13 @@ $("#div_item_data").dialog({
                     type    : "show_details_item",
                     id         : $('#id_selected_item').val(),
                     salt_key_required : $('#personalItem').val(),
-                    salt_key_set : $('#personalItem').val(),
+                    salt_key_set : $('#personal_sk_set').val(),
+                	page 	: "find",
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
                     //decrypt data
-                    data = $.parseJSON(aes_decrypt(data));
+                    data = prepareExchangedData(data, "decode");
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired

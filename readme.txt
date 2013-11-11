@@ -71,7 +71,12 @@ LANGUAGES:
  #385 - Email not sent ... check your configuration (to be checked)
  #379 - CSV importing not working (to be checked)
  #134 - Login After Session Expires
+ #429 - Changed user.psk field to allow NULLs
+ #428 : error: iconv(): Detected an illegal character in input string
+ #426/#430 : New option to disable information loading in Admin page
+ #142 - Google Authenticator implemented
  * Dialogbox not closed when changing folder name
+ * Display Item details through Find page error
 
 2.1.18
  #315 - jstree style.css badly referenced

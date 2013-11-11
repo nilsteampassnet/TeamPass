@@ -70,6 +70,9 @@ foreach ($folders as $folder) {
         }
     }
 }
+// Is personal SK available
+echo '
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
     <input type="hidden" id="personalItem" />
