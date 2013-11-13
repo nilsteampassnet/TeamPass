@@ -12,6 +12,7 @@ if (!file_exists("../includes/settings.php")) {
     exit;
 }
 require_once '../includes/settings.php';
+require_once '../sources/main.functions.php';
 
 $_SESSION['CPM'] = 1;
 $_SESSION['settings']['loaded'] = "";
@@ -1775,11 +1776,50 @@ require_once \"".$skFile."\";
                 $pw = decrypt($data['pw']);
                 if (empty($pw)) {
                     $pw = decryptOld($data['pw']);
+
+                    // generate Key and encode PW
+                    $randomKey = generateKey();
+                    $pw = $randomKey.$pw;
                     $pw = encrypt($pw);
+
+                    // store Password
                     mysql_query(
                         "UPDATE ".$_SESSION['tbl_prefix']."items
                         SET pw = '".$pw."' WHERE id=".$data['id']
                     );
+
+                    // Item Key
+                    mysql_query(
+                        "INSERT INTO `".$_SESSION['tbl_prefix']."keys`
+                        (`table`, `id`, `rand_key`) VALUES
+                        ('items', '".$data['id']."', '".$randomKey."'"
+                    );
+                } else {
+                    // if PW exists but no key ... then add it
+                    $resData = mysql_query(
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keyx
+                        WHERE table = 'items' AND id = ".$data['id']
+                    ) or die(mysql_error());
+                    $dataTemp = mysql_fetch_row($resData);
+                    if ($dataTemp[0] == 0) {
+                        // generate Key and encode PW
+                        $randomKey = generateKey();
+                        $pw = $randomKey.$pw;
+                        $pw = encrypt($pw);
+
+                        // store Password
+                        mysql_query(
+                            "UPDATE ".$_SESSION['tbl_prefix']."items
+                            SET pw = '".$pw."' WHERE id=".$data['id']
+                        );
+
+                        // Item Key
+                        mysql_query(
+                            "INSERT INTO `".$_SESSION['tbl_prefix']."keys`
+                            (`table`, `id`, `rand_key`) VALUES
+                            ('items', '".$data['id']."', '".$randomKey."'"
+                        );
+                    }
                 }
             }
 

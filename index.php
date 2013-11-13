@@ -9,10 +9,10 @@ session_start();
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -496,8 +496,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                         '.$txt['index_get_identified'].'
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
-                    <div id="erreur_connexion" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>
-                    <div id="index_error" style="color:red;display:none;text-align:center;margin:5px;"></div>';
+                    <div id="connection_error" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
@@ -512,7 +511,6 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
 	// Personal salt key
     if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
         echo '
-
                     <div id="connect_psk" style="margin-bottom:3px;">
                         <label for="personal_psk" class="form_label">'.$txt['home_personal_saltkey'].'</label>
                         <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
@@ -523,13 +521,17 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     </div>';
     }
 
+    // Google Authenticator code
 	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
 		echo '
                     <div id="ga_code_div">
                     	'.$txt['ga_identification_code'].'
-                        <input type="text" size="4" id="ga_code" name="ga_code" value="" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
-                        <span style="text-align:center;"><img id="ga_qr" src="" /></span>
-                        <div style="text-align:center;margin:0 0 10px 0;font-size:10pt;">
+                        <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
+                        <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
+                            '.$txt['ga_scan_url'].'<br />
+                            <span style="margin:10px;"><img id="ga_qr" src="" /></span>
+                        </div>
+                        <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
 	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$txt['ga_not_yet_synchronized'].'</span>
 	                    </div>
                     </div>';

@@ -424,7 +424,23 @@ if (isset($_POST['type'])) {
                             FROM `".$pre."keys`
                             WHERE `table` LIKE 'items' AND `id`=".$dataReceived['id']
                         );
-                        $pw = $sentPw = $originalKey['rand_key'].$pw;
+                        // if no randkey then generate it
+                        if (empty($originalKey['rand_key'])) {
+                            $randomKey = generateKey();
+                            $pw = $sentPw = $randomKey.$pw;
+                            // store key prefix
+                            $db->queryInsert(
+                                'keys',
+                                array(
+                                    'table'     => 'items',
+                                    'id'        => $data['id'],
+                                    'rand_key'  => $randomKey
+                                )
+                            );
+                        } else {
+                            $pw = $sentPw = $originalKey['rand_key'].$pw;
+                        }                        
+                        
                     }
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {

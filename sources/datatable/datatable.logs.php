@@ -2,7 +2,7 @@
 /**
  * @file          datatable.users_logged.php
  * @author        Nils Laumaill�
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaill�
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net

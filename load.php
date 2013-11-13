@@ -3,7 +3,7 @@
  *
  * @file          load.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -111,7 +111,7 @@ $htmlHeaders .= '
     //Identify user
     function identifyUser(redirect, psk)
     {
-        $("#erreur_connexion").hide();
+        $("#connection_error").hide();
         if (redirect == undefined) redirect = ""; //Check if redirection
         // Check form data
         if (psk == 1 && $("#psk").val() == "") {
@@ -159,41 +159,36 @@ $htmlHeaders .= '
             },
             function(data) {
                 if (data[0].value == randomstring) {
-                    $("#erreur_connexion").hide();
+                    $("#connection_error").hide();
                     //redirection for admin is specific
                     if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
                     else window.location.href="index.php";
                 } else if (data[0].value == "user_is_locked") {
-                    $("#erreur_connexion").html("'.$txt['account_is_locked'].'");
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html("'.$txt['account_is_locked'].'").show();
                 } else if (data[0].value == "bad_psk") {
                     $("#ajax_loader_connexion").hide();
-                    $("#erreur_connexion").html("'.$txt['bad_psk'].'");
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html("'.$txt['bad_psk'].'").show();
                 } else if (data[0].value == "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
-                    $("#erreur_connexion").html("'.$txt['bad_psk_confirmation'].'");
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html("'.$txt['bad_psk_confirmation'].'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#erreur_connexion").html("'.$txt['psk_required'].'");
-                    $("#erreur_connexion, #connect_psk_confirm").show();
+                    $("#connection_error").html("'.$txt['psk_required'].'");
+                    $("#connection_error, #connect_psk_confirm").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#erreur_connexion").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'");
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text);
                     $("#div_mysql_error").show().dialog("open");
                 } else if (data[0].value == "false_onetimepw") {
-                    $("#erreur_connexion").html("'.$txt['bad_onetime_password'].'");
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html("'.$txt['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {
-                	$("#index_error").html("'.$txt['index_bas_pw'].'").show();
+                	$("#connection_error").html("'.$txt['index_bas_pw'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
-                	$("#index_error").html("'.$txt['ga_bad_code'].'").show();
+                	$("#connection_error").html("'.$txt['ga_bad_code'].'").show();
                 } else {
-                    $("#erreur_connexion").show();
+                    $("#connection_error").html("'.$txt['index_bas_pw'].'").show();
                 }
                 $("#ajax_loader_connexion").hide();
             },
@@ -204,8 +199,11 @@ $htmlHeaders .= '
     function getGASynchronization()
     {
     	if ($("#login").val() != "" && $("#pw").val() != "") {
-    		data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'"}\';
-
+            $("#ajax_loader_connexion").show();
+            $("#connection_error").hide();
+            $("#div_ga_url").hide();
+    		data = \'{"login":"\'+sanitizeString($("#login").val())+\'" ,\'+
+                   \'"pw":"\'+sanitizeString($("#pw").val())+\'"}\';
 	        //send query
 	        $.post(
 	            "sources/main.queries.php",
@@ -216,14 +214,17 @@ $htmlHeaders .= '
 	            function(data) {
 	            	if (data[0].error == "0") {
 						$("#ga_qr").attr("src", data[0].ga_url);
+                	    $("#div_ga_url").show();
 	            	} else {
-						$("#index_error").html("'.$txt['index_bas_pw'].'");
+						$("#connection_error").html("'.$txt['index_bas_pw'].'").show();
+                	    $("#div_ga_url").hide();
 	            	}
+                    $("#ajax_loader_connexion").hide();
 	            },
 	            "json"
 	        );
     	} else {
-    		$("#index_error").html("'.$txt['ga_enter_credentials'].'");
+    		$("#connection_error").html("'.$txt['ga_enter_credentials'].'").show();
     	}
     }
 
@@ -1498,6 +1499,8 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
                         } else {
                             $("#email_testing_results").html("'.addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok'])).'").show().attr("class","ui-corner-all ui-state-focus");
                         }
+                    } else if (data[0].result == "pw_prefix_correct") {
+                        $("result_admin_action_pw_prefix_correct").html(data[0].html);
                     }
                 }
             },
