@@ -3,7 +3,7 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -606,5 +606,65 @@ switch ($_POST['type']) {
         file_put_contents(SECUREPATH."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
 
         echo '[{"result":"generated_keys_file", "error":""}]';
+        break;
+
+    /*
+    * Correct passwords prefix
+    */
+    case "admin_action_pw_prefix_correct":
+        include 'main.functions.php';
+        $numOfItemsChanged = 0;
+        // go for all Items and get their PW
+        $rows = $db->fetchAllArray("SELECT id, pw FROM ".$pre."items WHERE perso = '0'");
+        foreach ($rows as $reccord) {
+            // check if key exists for this item
+            $row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE id='".$reccord['id']."' AND table = 'items'");
+            if ($row[0] == 0) {
+                // decrypt pw
+                $pw = decrypt($reccord['pw']);
+                if (!empty($pw) && strlen($pw) > 13 && isutf8($pw)) {
+                    // get old prefix
+                    $randomKey = substr($pw, 0, 13);
+                    //if (strlen($randomKey) == 13) {
+echo $pw."  ;;  ".$randomKey." | ";
+                    /*// store key prefix
+                        $db->queryInsert(
+                            'keys',
+                            array(
+                                'table'     => 'items',
+                                'id'        => $reccord['id'],
+                                'rand_key'  => $randomKey
+                            )
+                        );
+                    }
+                    
+                    // re-encrypt with key prefix
+                    $randomKey = generateKey();
+                    $pw = $randomKey.$pw;
+                    $pw = encrypt($pw);
+
+                    // store pw
+                    $db->queryUpdate(
+                        'items',
+                        array(
+                            'pw' => $pw
+                        ),
+                        "id='".$reccord['id']."'"
+                    );
+                    // store key prefix
+                    $db->queryInsert(
+                        'keys',
+                        array(
+                            'table'     => 'items',
+                            'id'        => $reccord['id'],
+                            'rand_key'  => $randomKey
+                        )
+                    );
+                    */
+                    $numOfItemsChanged++;
+                }
+            }
+        }
+        echo '[{"result":"pw_prefix_correct", "error":"", "html":"'.$txt['alert_message_done'].' '.$numOfItemsChanged.' '.$txt['items_changed'].'"}]';
         break;
 }

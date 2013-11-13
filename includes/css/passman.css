@@ -261,3 +261,12 @@ cursor: pointer;
 .meterWarn .simplePassMeterIcon { background-position: 0 -51px; }
 
 .simplePassMeterText { margin-left: 2px; }
+
+#div_ga_url {
+    text-align:center;
+    margin:0 0 10px 0; 
+    font-size:9pt; 
+    display:none; 
+    padding:5px;
+}
+}

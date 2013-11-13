@@ -6,9 +6,14 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['admin_action_pw_prefix_correct'] = "Correct passwords prefix";
+$txt['admin_action_pw_prefix_correct_tip'] = "Before lauching this script, PLEASE be sure to make a dump of the database. This script will perform an update of passwords prefix. It SHALL only be used if you noticed that passwords are displayed with strange prefix.";
+$txt['items_changed'] = "have been changed.";
+
 $txt['ga_not_yet_synchronized'] = "Get identified with Google Authenticator";
-$txt['ga_identification_code'] = "Identification code";
-$txt['ga_enter_credentials'] = "You need to enter your login credentials to continu";
+$txt['ga_scan_url'] = "Please scan this flashcode with your mobile Google Authenticator application. Copy from it the identication code.";
+$txt['ga_identification_code'] = "Identication code";
+$txt['ga_enter_credentials'] = "You need to enter your login credentials";
 $txt['ga_bad_code'] = "The Google Authenticator code is wrong";
 
 $txt['settings_get_tp_info'] = "Automatically load information about Teampass";

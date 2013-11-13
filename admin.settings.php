@@ -1038,7 +1038,15 @@ echo '
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
                     </span>
-                </div>';
+                </div>';/*
+// Correct passwords prefix
+echo '
+                <div style="margin-bottom:3px">
+                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">'.$txt['admin_action_pw_prefix_correct'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_pw_prefix_correct_tip'].'" /></span>
+                    <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
+                </div>';*/
 
 echo '
             </div>';

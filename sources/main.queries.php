@@ -3,10 +3,14 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.18
+ * @version       2.1.19
  * @copyright     (c) 2009-2013 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link
+ * @link          http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
@@ -183,7 +187,7 @@ switch ($_POST['type']) {
             echo '[ { "error" : "nothing_to_do" } ]';
         }
         break;
-    /*
+    /**
     * This will generate the QR Google Authenticator
     */
     case "ga_generate_qr":
@@ -224,7 +228,7 @@ switch ($_POST['type']) {
     				$_SESSION['ga_secret'] = $data['ga'];
     			}
     			// generate QR url
-    			$gaUrl = $g->getURL($username, 'teampass.net', $_SESSION['ga_secret']);
+    			$gaUrl = $g->getURL($username, 'teampass', $_SESSION['ga_secret']);
 
     			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
     		} else {
@@ -324,8 +328,7 @@ switch ($_POST['type']) {
         	// openLDAP expects an attribute=value pair
     	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
  		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
- 		    }
-        	else {
+ 		    } else {
         		$auth_username = $username;
         	}
 
@@ -520,7 +523,7 @@ switch ($_POST['type']) {
 				)
 				{
 				    $_SESSION['my_sk'] = md5($passwordClear);
-				     setcookie(
+				    setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
                         encrypt($_SESSION['my_sk'], ""),
                         time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
