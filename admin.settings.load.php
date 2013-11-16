@@ -191,9 +191,92 @@ function loadFieldsList() {
    );
 }
 
+function changeSettingStatus(id, val) {
+    if (val == 1) {
+        $("#flag_"+id).html("<img src='includes/images/status.png' />");
+    } else {
+        $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
+    }
+}
+
+//###########
+//## FUNCTION : Launch the action the admin wants
+//###########
+function LaunchAdminActions(action,option)
+{
+    $("#div_loading").show();
+    $("#email_testing_results").hide();
+    $("#result_admin_action_db_backup").html("");
+    if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
+    else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
+    else if (action == "admin_action_change_salt_key") {
+        option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+    } else if (action == "admin_email_send_backlog") {
+        $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+    }
+    //Lauchn ajax query
+    $.post(
+        "sources/admin.queries.php",
+        {
+           type        : action,
+           option    : option
+        },
+        function(data) {
+            $("#div_loading").hide();
+            if (data != null) {
+                if (data[0].result == "db_backup") {
+                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $txt['pdf_download'];?></a>");
+                } else if (data[0].result == "pf_done") {
+                    $("#result_admin_action_check_pf").show();
+                } else if (data[0].result == "db_restore") {
+                    $("#restore_bck_encryption_key_dialog").dialog("close");
+                    $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />");
+                    $("#result_admin_action_db_restore_get_file").hide();
+                    //deconnect user
+                    $("#menu_action").val("deconnexion");
+                    document.main_form.submit();
+                } else if (data[0].result == "cache_reload") {
+                    $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />");
+                } else if (data[0].result == "db_optimize") {
+                    $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />");
+                } else if (data[0].result == "purge_old_files") {
+                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $txt['admin_action_purge_old_files_result'];?>");
+                } else if (data[0].result == "db_clean_items") {
+                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $txt['admin_action_db_clean_items_result'];?>");
+                } else if (data[0].result == "changed_salt_key") {
+                    //deconnect user
+                    $("#menu_action").val("deconnexion");
+                    sessionStorage.clear();
+                    document.main_form.submit();
+                } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
+                    if (data[0].error != "") {
+                        $("#email_testing_results").html("<?php echo addslashes($txt['admin_email_result_nok']);?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
+                    } else {
+                        $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok']));?>").show().attr("class","ui-corner-all ui-state-focus");
+                    }
+                } else if (data[0].result == "pw_prefix_correct") {
+                    $("result_admin_action_pw_prefix_correct").html(data[0].ret);
+                }
+            }
+        },
+        "json"
+   );
+}
+
 // Init
 $(function() {
-	$("input[type=button]").button();
+	$("input[type=button], #save_button, .button").button();
+	// spinner
+    $("#upload_imageresize_quality").spinner({
+        min: 0,
+        max: 100,
+        value: 90
+    });
+    //BUILD BUTTONSET
+    $(".div_radio").buttonset();
+
+    // Build Tabs
+    $("#tabs").tabs();
 
     $('#tbl_categories tr').click(function (event) {
         $("#selected_row").val($(this).attr("id"));
@@ -335,6 +418,119 @@ $(function() {
                 $(this).dialog("close");
             }
         }
+    });
+
+    $("#restore_bck_encryption_key_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width:100,
+        height:140,
+        title: "'.$txt['admin_action_db_restore_key'].'",
+        buttons: {
+            "'.$txt['ok'].'": function() {
+                LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
+            },
+            "'.$txt['cancel_button'].'": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
+
+    // SQL IMPORT FOR RESTORING
+    var uploader_restoreDB = new plupload.Uploader({
+		runtimes : "gears,html5,flash,silverlight,browserplus",
+		browse_button : "pickfiles_restoreDB",
+		container : "upload_container_restoreDB",
+		max_file_size : "10mb",
+        chunk_size : "1mb",
+		unique_names : true,
+        dragdrop : true,
+        multiple_queues : false,
+        multi_selection : false,
+        max_file_count : 1,
+		url : "sources/upload/upload.files.php",
+		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+		filters : [
+			{title : "SQL files", extensions : "sql"}
+		],
+		init: {
+		    FilesAdded: function(up, files) {
+                up.start();
+            },
+            BeforeUpload: function (up, file) {
+                $("#import_status_ajax_loader").show();
+                up.settings.multipart_params = {
+                    "PHPSESSID":"'.$_SESSION['user_id'].'",
+                    "File":file.name,
+                    "type_upload":"restore_db"
+                };
+            },
+            UploadComplete: function(up, files) {
+                $.each(files, function(i, file) {
+                    $("#restore_bck_fileObj").val(file.name);
+                    $("#restore_bck_encryption_key_dialog").dialog("open");
+                });
+            }
+		}
+	});
+    // Uploader options
+	uploader_restoreDB.bind("UploadProgress", function(up, file) {
+		$("#" + file.id + " b").html(file.percent + "%");
+	});
+	uploader_restoreDB.bind("Error", function(up, err) {
+		$("#filelist_restoreDB").html("<div class='ui-state-error ui-corner-all'>Error: " + err.code +
+			", Message: " + err.message +
+			(err.file ? ", File: " + err.file.name : "") +
+			"</div>"
+		);
+		up.refresh(); // Reposition Flash/Silverlight
+	});
+	uploader_restoreDB.bind("+", function(up, file) {
+		$("#" + file.id + " b").html("100%");
+	});
+	// Load CSV click
+	$("#uploadfiles_restoreDB").click(function(e) {
+		uploader_restoreDB.start();
+		e.preventDefault();
+	});
+	uploader_restoreDB.init();
+    // -end
+
+    //Enable/disable option
+    $("input[name='restricted_to']").bind("click", function() {
+        if ($(this).val()== 1) {
+            $("#tr_option_restricted_to_roles").show();
+        } else {
+            $("#tr_option_restricted_to_roles").hide();
+            $("input[name=restricted_to_roles]").val(["0"]).button("refresh");
+        }
+    });
+    $("input[name='anyone_can_modify']").bind("click", function() {
+        if ($(this).val()== 1) {
+            $("#tr_option_anyone_can_modify_bydefault").show();
+        } else {
+            $("#tr_option_anyone_can_modify_bydefault").hide();
+            $("input[name=anyone_can_modify_bydefault]").val(["0"]).button("refresh");
+        }
+    });
+
+    //check NEW SALT KEY
+    $("#new_salt_key").keypress(function (e) {
+        var key = e.charCode || e.keyCode || 0;
+        if ($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32) {
+            $("#change_salt_key_image").attr("src", "includes/images/cross.png");
+            $("#change_salt_key_but").hide();
+        } else {
+            $("#change_salt_key_image").attr("src", "includes/images/tick.png");
+            $("#change_salt_key_but").show();
+        }
+        // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
+        return (
+            key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96 && (key < 165)
+            && $("#new_salt_key").val().length <= 32
+       );
     });
 });
 </script>

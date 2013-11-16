@@ -683,6 +683,7 @@ if (isset($_POST['type'])) {
                     0
                 ),
                 array('admin', 'pwd_maximum_length','40',0),
+                array('admin', 'ga_website_name','TeamPass for ChangeMe',0),
                 array('admin', 'email_smtp_server', @$_SESSION['smtp_server'], 0),
                 array('admin', 'email_smtp_auth', @$_SESSION['smtp_auth'], 0),
                 array('admin', 'email_auth_username', @$_SESSION['smtp_auth_username'], 0),

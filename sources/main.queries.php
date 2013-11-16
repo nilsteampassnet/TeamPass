@@ -228,7 +228,7 @@ switch ($_POST['type']) {
     				$_SESSION['ga_secret'] = $data['ga'];
     			}
     			// generate QR url
-    			$gaUrl = $g->getURL($username, 'teampass', $_SESSION['ga_secret']);
+    			$gaUrl = $g->getURL($username, $_SESSION['settings']['ga_website_name'], $_SESSION['ga_secret']);
 
     			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
     		} else {

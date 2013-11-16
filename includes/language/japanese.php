@@ -63,6 +63,8 @@ $txt['admin_action_purge_old_files_result'] = "files have been deleted.";
 
 $txt['admin_action_purge_old_files_tip'] = "7日以上前の一時ファイルを削除します。";
 
+$txt['admin_action_pw_prefix_correct'] = "Correct passwords prefix";
+$txt['admin_action_pw_prefix_correct_tip'] = "Before lauching this script, PLEASE be sure to make a dump of the database. This script will perform an update of passwords prefix. It SHALL only be used if you noticed that passwords are displayed with strange prefix.";
 $txt['admin_action_reload_cache_table'] = "キャッシュテーブルを再読み込みする";
 
 $txt['admin_action_reload_cache_table_tip'] = "This permits to reload the full content of table Cache. Can be usefull to be done sometimes.";
@@ -188,6 +190,7 @@ $txt['at_del_file'] = "File deleted";
 $txt['at_description'] = "Description.";
 
 $txt['at_email'] = "email";
+$txt['at_field'] = "Field";
 $txt['at_file'] = "File";
 
 $txt['at_import'] = "Importation";
@@ -248,6 +251,9 @@ $txt['cancel_button'] = "キャンセル";
 
 $txt['can_create_root_folder'] = "Can create a folder at root level";
 
+$txt['categories'] = "Categories";
+$txt['category_in_folders'] = "Edit Folders for this Category";
+$txt['category_in_folders_title'] = "Associated folders";
 $txt['changelog'] = "Latest news";
 
 $txt['change_authorized_groups'] = "Change authorized folders";
@@ -307,10 +313,12 @@ $txt['complex_level6'] = "最強";
 
 $txt['confirm'] = "パスワードを再度入力";
 
+$txt['confirm_creation'] = "Confirm creation?";
 $txt['confirm_delete_group'] = "You have decided to delete this Folder and all included Items ... are you sure?";
 
 $txt['confirm_deletion'] = "本当に削除してもよろしいですか?";
 
+$txt['confirm_deletion'] = "Confirm deletion?";
 $txt['confirm_del_account'] = "You have decided to delete this Account. Are you sure?";
 
 $txt['confirm_del_from_fav'] = "Please confirm deletion from Favourites";
@@ -320,6 +328,8 @@ $txt['confirm_del_role'] = "次のロールを削除します、よろしいで�
 $txt['confirm_edit_role'] = "次のロールの名前を入力してください。:";
 
 $txt['confirm_lock_account'] = "You have decided to LOCK this Account. Are you sure?";
+$txt['confirm_moveto'] = "Confirm moving field?";
+$txt['confirm_rename'] = "Confirm renaming?";
 $txt['connection'] = "Connection";
 
 $txt['connections'] = "接続";
@@ -497,6 +507,7 @@ $txt['expir_six_months'] = "6ヶ月";
 
 $txt['expir_today'] = "今日";
 
+$txt['field_add_in_category'] = "Add a new field in this category";
 $txt['files_&_images'] = "ファイル&amp; 画像";
 
 $txt['find'] = "検索";
@@ -525,10 +536,16 @@ $txt['forgot_pw_email_subject'] = "TeamPass - Your password";
 
 $txt['forgot_pw_email_subject_confirm'] = "[TeamPass] Your password step 2";
 
+$txt['for_selected_items'] = "For selected Item";
 $txt['functions'] = "ロール";
 
 $txt['function_alarm_no_group'] = "This role is not associated to any Folder!";
 
+$txt['ga_bad_code'] = "The Google Authenticator code is wrong";
+$txt['ga_enter_credentials'] = "You need to enter your login credentials";
+$txt['ga_identification_code'] = "Identication code";
+$txt['ga_not_yet_synchronized'] = "Get identified with Google Authenticator";
+$txt['ga_scan_url'] = "Please scan this flashcode with your mobile Google Authenticator application. Copy from it the identication code.";
 $txt['generate_pdf'] = "PDFファイルを生成";
 
 $txt['generation_options'] = "Generation options";
@@ -573,6 +590,7 @@ $txt['home_personal_saltkey_info'] = "You should enter your personal saltkey if 
 
 $txt['home_personal_saltkey_label'] = "Enter your personal salt key";
 
+$txt['html'] = "html";
 $txt['importing_details'] = "List of details";
 
 $txt['importing_folders'] = "Importing folders";
@@ -666,6 +684,7 @@ $txt['is_read_only'] = "Is Read Only";
 $txt['items'] = "Items";
 $txt['items_browser_title'] = "フォルダ名";
 
+$txt['items_changed'] = "have been changed.";
 $txt['item_copy_to_folder'] = "\"Please select a folder in which the item has to be copied.";
 $txt['item_edition_start_hour'] = "Time Editing";
 $txt['item_menu_add_elem'] = "アイテムを追加";
@@ -748,6 +767,8 @@ $txt['minutes'] = "分";
 
 $txt['modify_button'] = "Modify";
 
+$txt['more'] = "More";
+$txt['move'] = "Move to";
 $txt['my_favourites'] = "お気に入り";
 
 $txt['name'] = "Name";
@@ -761,6 +782,8 @@ $txt['nb_items'] = "アイテムの数";
 $txt['nb_items_by_page'] = "Number of items by page";
 $txt['nb_items_by_query'] = "Number of items to get at each query iterration";
 $txt['nb_items_by_query_tip'] = "<span style='font-size:11px;max-width:300px;'>More items means more time to display the list.<br />Set to 'auto' to let the tool to adapt this number depending on the size screen of the user.<br />Set to 'max' to force to display the complet list in one time.<br />Set a number corresding to the number of items to get at each query iterration.</span>";
+$txt['new_category_label'] = "Create a new Category - Enter label";
+$txt['new_field_title'] = "Enter the title of the new Field";
 $txt['new_label'] = "新しいラベル";
 
 $txt['new_role_title'] = "新しいロールタイトル";
@@ -785,6 +808,7 @@ $txt['not_allowed_to_see_pw_is_expired'] = "This item has expired!";
 
 $txt['not_defined'] = "Not defined";
 
+$txt['no_category_defined'] = "No category yet defined";
 $txt['no_last_items'] = "No items seen";
 
 $txt['no_previous_pw'] = "No previous password";
@@ -794,6 +818,9 @@ $txt['numbers'] = "Numbers";
 
 $txt['number_of_used_pw'] = "古いパスワードを再利用する際にユーザーが入力しなければならないパスワードの回数";
 
+$txt['offline_menu_title'] = "Export Items for Off-Line mode";
+$txt['offline_mode_key_level'] = "Off-line encryption key minimum level";
+$txt['offline_mode_warning'] = "Off-line mode permits you to export into an HTML file your Items, so that you can access them when not connected to Teampass server. The passwords are encrypted by a Key you are given.";
 $txt['ok'] = "OK";
 
 $txt['open_url_link'] = "Open in new page";
@@ -863,6 +890,8 @@ $txt['readme_open'] = "Open full readme file";
 $txt['read_only_account'] = "Read Only";
 $txt['refresh_matrix'] = "表をリフレッシュする";
 
+$txt['reload_table'] = "Reload table";
+$txt['rename'] = "Rename";
 $txt['renewal_menu'] = "Renewal follow-up";
 
 $txt['renewal_needed_pdf_title'] = "List of Items that need to be renewed";
@@ -890,6 +919,7 @@ $txt['root'] = "Root";
 
 $txt['save_button'] = "保存";
 
+$txt['save_categories_position'] = "Save Categories order";
 $txt['secure'] = "Secure";
 
 $txt['see_item_title'] = "Item Details";
@@ -899,6 +929,7 @@ $txt['select'] = "select";
 $txt['select'] = "Select";
 $txt['select_folders'] = "フォルダを選択";
 
+$txt['select_folders_for_category'] = "Select the Folders to associate to this Category of Fields";
 $txt['select_language'] = "言語を選択";
 
 $txt['send'] = "Send";
@@ -915,9 +946,13 @@ $txt['settings_enable_sts'] = "Enforce HTTPS Strict Transport Security -- Warnin
 $txt['settings_enable_sts_tip'] = "This will enforce HTTPS STS. STS helps stop SSL Man-in-the-Middle attacks. You MUST have a valid SSL certificate in order to use this option. If you have a self-signed certificate and enable this option it will break teampass!! You must have 'SSLOptions +ExportCertData' in the Apache SSL configuration.";
 $txt['settings_encryptClientServer'] = "Client-Server exchanges are encrypted";
 $txt['settings_encryptClientServer_tip'] = "AES-256 encryption is by-default enabled. This should be the case if no SSL certificat is used to securize data exchanges between client and server. If you are using an SSL protocol or if you are using Teampass in an Intranet, then you could deactivate this feature in order to speed up the data display in Teampass. /!\ Remember that the safer and more securized solution is to use an SSL connection between Client and Server.";
+$txt['settings_get_tp_info'] = "Automatically load information about Teampass";
+$txt['settings_get_tp_info_tip'] = "This option permits the administration page to load information such as version and libraries usage from Teampass server.";
 $txt['settings_importing'] = "Enable importing data from CVS/KeyPass files";
 $txt['settings_insert_manual_entry_item_history'] = "Enable permitting manual insertions in Items History log";
 $txt['settings_insert_manual_entry_item_history_tip'] = "";
+$txt['settings_item_extra_fields'] = "Authorize Items to be completed with more Fields (by Categories)";
+$txt['settings_item_extra_fields_tip'] = "This feature permits to enhance the Item definition with extra fields the administrator can define and organize by Categories. All data is encrypted. Notice that this feature consumes more SQL queries (around 5 more per Field during an Item update) and may require more time for actions to be performed. This is server dependant.";
 $txt['settings_kb'] = "Enable Knowledge Base (beta)";
 
 $txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>When activated, this will add a page where you can build your knowledge base.</span>";
@@ -948,6 +983,8 @@ $txt['settings_maintenance_mode_tip'] = "このモードは管理者以外の全
 
 $txt['settings_manager_edit'] = "Managers can edit and delete Items they are allowed to see";
 
+$txt['settings_offline_mode'] = "Activate Off-line mode";
+$txt['settings_offline_mode_tip'] = "Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User.";
 $txt['settings_printing'] = "Enable printing items to PDF file";
 
 $txt['settings_printing_tip'] = "When enabled, a button will be added to user's home page that will permit him/her to write a listing of items to a PDF file he/she can view. Note that the listed passwords will be uncrypted.";

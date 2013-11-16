@@ -618,26 +618,22 @@ switch ($_POST['type']) {
         $rows = $db->fetchAllArray("SELECT id, pw FROM ".$pre."items WHERE perso = '0'");
         foreach ($rows as $reccord) {
             // check if key exists for this item
-            $row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE id='".$reccord['id']."' AND table = 'items'");
+            $row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE `id`='".$reccord['id']."' AND `table` = 'items'");
             if ($row[0] == 0) {
+                $storePrefix = false;
                 // decrypt pw
                 $pw = decrypt($reccord['pw']);
-                if (!empty($pw) && strlen($pw) > 13 && isutf8($pw)) {
+                if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
+                    // Pw seems to have a prefix
                     // get old prefix
-                    $randomKey = substr($pw, 0, 13);
-                    //if (strlen($randomKey) == 13) {
-echo $pw."  ;;  ".$randomKey." | ";
-                    /*// store key prefix
-                        $db->queryInsert(
-                            'keys',
-                            array(
-                                'table'     => 'items',
-                                'id'        => $reccord['id'],
-                                'rand_key'  => $randomKey
-                            )
-                        );
-                    }
-                    
+                    $randomKey = substr($pw, 0, 15);
+                    // check if prefix contains only lowercase and numerics
+                    //TODO
+                    // should we store?
+                    $storePrefix = true;
+                } elseif (!empty($pw) && isutf8($pw)) {
+                    // Pw doesn't seem to have a prefix
+
                     // re-encrypt with key prefix
                     $randomKey = generateKey();
                     $pw = $randomKey.$pw;
@@ -651,6 +647,10 @@ echo $pw."  ;;  ".$randomKey." | ";
                         ),
                         "id='".$reccord['id']."'"
                     );
+                    // should we store?
+                    $storePrefix = true;
+                }
+                if ($storePrefix == true) {
                     // store key prefix
                     $db->queryInsert(
                         'keys',
@@ -660,11 +660,11 @@ echo $pw."  ;;  ".$randomKey." | ";
                             'rand_key'  => $randomKey
                         )
                     );
-                    */
-                    $numOfItemsChanged++;
                 }
+
+                $numOfItemsChanged++;
             }
         }
-        echo '[{"result":"pw_prefix_correct", "error":"", "html":"'.$txt['alert_message_done'].' '.$numOfItemsChanged.' '.$txt['items_changed'].'"}]';
+        echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$txt['alert_message_done'].' '.$numOfItemsChanged.' '.$txt['items_changed'].'"}]';
         break;
 }
