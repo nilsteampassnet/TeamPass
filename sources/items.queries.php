@@ -439,8 +439,7 @@ if (isset($_POST['type'])) {
                             );
                         } else {
                             $pw = $sentPw = $originalKey['rand_key'].$pw;
-                        }                        
-                        
+                        }
                     }
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
@@ -1987,7 +1986,7 @@ if (isset($_POST['type'])) {
                                 if (!empty($reccord['login'])) {
                                     $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'login\','.$reccord['id'].')" title="'.$txt['item_menu_copy_login'].'" />';
                                 }
-                                if (!empty($reccord['pw'])) {
+                                if (!empty($pw)) {
                                     $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'pw\','.$reccord['id'].')" title="'.$txt['item_menu_copy_pw'].'" />';
                                 }
                             }

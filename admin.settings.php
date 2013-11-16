@@ -146,6 +146,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['pwd_maximum_length']) && $_SESSION['settings']['pwd_maximum_length'] != $_POST['pwd_maximum_length']) {
         updateSettings('pwd_maximum_length', $_POST['pwd_maximum_length']);
     }
+    // Update ga_website_name
+    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != $_POST['ga_website_name']) {
+        updateSettings('ga_website_name', $_POST['ga_website_name']);
+    }
     // Update number_of_used_pw setting
     if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {
         updateSettings('number_of_used_pw', $_POST['number_of_used_pw']);
@@ -721,6 +725,18 @@ echo '
                 </div>
               <td>
             </tr>';
+// Google Authenticator website name
+echo '
+            <tr style="margin-bottom:3px">
+                <td>
+                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label for="ga_website_name">'.$txt['admin_ga_website_name'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_ga_website_name_tip'].'" />
+                </td>
+                <td>
+                    <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
+                <td>
+            </tr>';
 /*
 // psk_authentication
 echo '
@@ -1038,7 +1054,7 @@ echo '
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
                     </span>
-                </div>';/*
+                </div>';
 // Correct passwords prefix
 echo '
                 <div style="margin-bottom:3px">
@@ -1046,7 +1062,7 @@ echo '
                     <a href="#" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">'.$txt['admin_action_pw_prefix_correct'].'</a>
                     <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_pw_prefix_correct_tip'].'" /></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
-                </div>';*/
+                </div>';
 
 echo '
             </div>';
@@ -1937,3 +1953,4 @@ echo '
 <div id="restore_bck_encryption_key_dialog" style="display:none;">
     <input id="restore_bck_encryption_key" name="restore_bck_encryption_key" type="text" value="" />
 </div>';
+include "admin.settings.load.php";
