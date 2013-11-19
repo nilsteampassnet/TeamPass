@@ -1,0 +1,17 @@
+{
+	"sProcessing":   "Feldolgozás...",
+	"sLengthMenu":   "_MENU_ találat oldalanként",
+	"sZeroRecords":  "Nincs a keresésnek megfelelo találat",
+	"sInfo":         "Találatok: _START_ - _END_ Összesen: _TOTAL_",
+	"sInfoEmpty":    "Nulla találat",
+	"sInfoFiltered": "(_MAX_ összes rekord közül szurve)",
+	"sInfoPostFix":  "",
+	"sSearch":       "Keresés:",
+	"sUrl":          "",
+	"oPaginate": {
+		"sFirst":    "Elso",
+		"sPrevious": "Elozo",
+		"sNext":     "Következo",
+		"sLast":     "Utolsó"
+	}
+}

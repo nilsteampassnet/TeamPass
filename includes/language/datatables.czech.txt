@@ -1,0 +1,17 @@
+{
+	"sProcessing":   "Probíhá zpracování...",
+	"sLengthMenu":   "Zobrazit _MENU_ položek",
+	"sZeroRecords":  "Nebyly nalezeny žádné odpovídající položky",
+	"sInfo":         "Zobrazuji od _START_ do _END_ z celkem _TOTAL_ položek",
+	"sInfoEmpty":    "Zobrazuji od 0 do 0 z celkem 0 položek",
+	"sInfoFiltered": "(filtrováno z celkem _MAX_ položek)",
+	"sInfoPostFix":  "",
+	"sSearch":       "Hledání:",
+	"sUrl":          "",
+	"oPaginate": {
+		"sFirst":    "První",
+		"sPrevious": "Předchozí",
+		"sNext":     "Další",
+		"sLast":     "Poslední"
+	}
+}

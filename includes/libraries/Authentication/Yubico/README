@@ -1,0 +1,93 @@
+#summary Installation and Use of the Yubico PHP package
+#labels Featured,Phase-Deploy
+
+= !Auth_Yubico PHP class =
+
+The Yubico authentication PHP class provides an easy way to integrate
+the Yubikey into your existing PHP-based user authentication
+infrastructure.  Installation is simple using PEAR.
+
+== Status and Roadmap ==
+
+The module is stable and is used in production.
+
+The development community is co-ordinated via Google Code:
+
+  http://code.google.com/p/php-yubico/
+
+The license for php-yubico is the revised BSD license.
+
+== Installation ==
+
+Make sure your PHP installation supports curl, and that you have
+installed PEAR.  On Debian/Ubuntu systems:
+
+{{{
+apt-get install libapache2-mod-php5 php5-curl php-pear
+}}}
+
+Install the component by invoking:
+
+{{{
+  wget http://php-yubico.googlecode.com/files/Auth_Yubico-2.4.tgz
+  pear install Auth_Yubico-2.4.tgz
+}}}
+
+== Example usage ==
+
+The class is easy to use, in an HTML *.php file you invoke it as
+follows:
+
+{{{
+<?php
+ require_once 'Auth/Yubico.php';
+ $otp = "ccbbddeertkrctjkkcglfndnlihhnvekchkcctif";
+
+ # Generate a new id+key from https://api.yubico.com/get-api-key/
+ $yubi = new Auth_Yubico('42', 'FOOBAR=');
+ $auth = $yubi->verify($otp);
+ if (PEAR::isError($auth)) {
+    print "<p>Authentication failed: " . $auth->getMessage();
+    print "<p>Debug output from server: " . $yubi->getLastResponse();
+ } else {
+    print "<p>You are authenticated!";
+ }
+?>
+}}}
+
+== Demo page ==
+
+Provided in the package is also a script 'demo.php' that demonstrate
+how you may use the package.  The source code is available from:
+
+http://code.google.com/p/php-yubico/source/browse/trunk/demo.php
+
+To try the page, you may access it here:
+
+http://demo.yubico.com/php-yubico/demo.php 
+
+There is also a complete example site to demo one-factor and
+two-factor mode.  It requires a database to store the username and
+passwords.  Database schema is in example/db.sql and configuration for
+the database needs to go into example/config.php.
+
+http://code.google.com/p/php-yubico/source/browse/trunk/example/
+
+To try the page, you may access it here:
+
+http://demo.yubico.com/php-yubico/
+
+Included is also a web page illustrating how to work with the modhex
+encoding.  The code is available here:
+
+http://code.google.com/p/php-yubico/source/browse/trunk/example/Modhex.php
+http://code.google.com/p/php-yubico/source/browse/trunk/example/Modhex_Calculator.php
+
+It may be accessed here:
+
+http://demo.yubico.com/php-yubico/Modhex_Calculator.php
+
+== Feedback ==
+
+If you want to discuss anything related to the Yubico PHP class,
+please contact Simon Josefsson <simon@yubico.com>.
