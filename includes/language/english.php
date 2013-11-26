@@ -5,7 +5,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
-
+$txt['admin_ga_website_name'] = "Name displayed Google Authenticator for Teampass";
+$txt['admin_ga_website_name_tip'] = "This name is used for the identification code account in Google Authenticator.";
 $txt['admin_action_pw_prefix_correct'] = "Correct passwords prefix";
 $txt['admin_action_pw_prefix_correct_tip'] = "Before lauching this script, PLEASE be sure to make a dump of the database. This script will perform an update of passwords prefix. It SHALL only be used if you noticed that passwords are displayed with strange prefix.";
 $txt['items_changed'] = "have been changed.";

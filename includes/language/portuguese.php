@@ -67,6 +67,8 @@ $txt['admin_email_test_subject'] = "[TeamPass] Test email";
 $txt['admin_error_no_complexity'] = "(<a href='index.php?page=manage_groups'>Definir?</a>)";
 $txt['admin_error_no_visibility'] = "Ninguem pode ver este item. (<a href='index.php?page=manage_roles'>Personalize as regras</a>)	";
 $txt['admin_functions'] = "Gerenciador de regras";
+$txt['admin_ga_website_name'] = "Name displayed Google Authenticator for Teampass";
+$txt['admin_ga_website_name_tip'] = "This name is used for the identification code account in Google Authenticator.";
 $txt['admin_groups'] = "Gerenciador de pastas";
 $txt['admin_help'] = "Ajuda";
 $txt['admin_info'] = "Alguma informação sobre a ferramenta";
