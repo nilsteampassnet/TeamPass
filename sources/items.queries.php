@@ -63,10 +63,6 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-//Load LWZ
-$lwz = new SplClassLoader('Compressor\Lwz', '../includes/libraries');
-$lwz->register();
-
 // Do asked action
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -1602,7 +1598,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
@@ -1717,14 +1713,7 @@ if (isset($_POST['type'])) {
                 $_POST['id'],
                 array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items']))
             )) {
-                echo Encryption\Crypt\aesctr::encrypt(
-                    json_encode(
-                        array("error" => "not_authorized"),
-                        JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
-                    ),
-                    $_SESSION['key'],
-                    256
-                );
+            	echo prepareExchangedData(array("error" => "not_authorized"), "encode");
                 break;
             } else {
                 $data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
@@ -1958,7 +1947,7 @@ if (isset($_POST['type'])) {
                         }
                         $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.';">'.substr(stripslashes($reccord['label']), 0, 65);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                            $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString(explode("<br />",$reccord['description'])[0]), 0, 30))).']</font>';
+                            $html .= '&nbsp;<font size="2px">{'.strip_tags(stripslashes(substr(cleanString(explode("<br />", $reccord['description'])[0]), 0, 30))).'}</font>';
                         }
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
