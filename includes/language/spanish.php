@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Introduzca el password de un solo uso";
 $txt['2factors_image_text'] = "Por favor, escanee el código QR";
 $txt['2factors_tile'] = "Autenticación en dos pasos";
@@ -265,13 +265,11 @@ $txt['email'] = "Email";
 $txt['email_altbody_1'] = "Elemento";
 $txt['email_altbody_2'] = "ha sido creado.";
 $txt['email_announce'] = "Anunciar este elemento por email";
-$txt['email_body1'] = "Hola,
-
-Elemento '";
+$txt['email_body1'] = "Hola, Elemento '";
 $txt['email_body2'] = "ha sido creado.<br /><br />Puede verlo haciendo click en <a href='";
 $txt['email_body3'] = "'>este enlace</a><br /><br />Saludos.";
 $txt['email_bodyalt_item_updated'] = "La clave para #item_label# ha sido actualizada.";
-$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=\".@$_SESSION['settings']['cpassman_url'].\"/index.php?page=items&group=#item_category#&id=#item_id#\\">aquí</a><br /><br />Saludos.";
+$txt['email_body_item_updated'] = "Hola:<br><br>La clave para '#item_label#' ha sido actualizada.<br /><br />Puede comprobarla <a href=\"".@$_SESSION['settings']['cpassman_url']."/index.php?page=items&group=#item_category#&id=#item_id#\">aquí</a><br /><br />Saludos.";
 $txt['email_body_on_user_login'] = "Hola,<br /><br />El usuario #tp_user# se ha conectado a TeamPass el día #tp_date# a las #tp_time#.<br />Saludos.";
 $txt['email_change'] = "Cambiar el email de la cuenta";
 $txt['email_changed'] = "Email cambiado";

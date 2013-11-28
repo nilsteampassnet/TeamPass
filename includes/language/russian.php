@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";
@@ -608,7 +608,7 @@ $txt['settings_insert_manual_entry_item_history_tip'] = "";
 $txt['settings_item_extra_fields'] = "Authorize Items to be completed with more Fields (by Categories)";
 $txt['settings_item_extra_fields_tip'] = "This feature permits to enhance the Item definition with extra fields the administrator can define and organize by Categories. All data is encrypted. Notice that this feature consumes more SQL queries (around 5 more per Field during an Item update) and may require more time for actions to be performed. This is server dependant.";
 $txt['settings_kb'] = "Включить Базу Знаний (beta)";
-$txt['settings_kb_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
+$txt['settings_kb_tip'] = "<span style='font-size:11px;max-width:300px;'>Когда опция активна, появится страница, на которой можно создать свою базу знаний.</span>";
 $txt['settings_ldap_domain'] = "Суффикс LDAP учетной записи вашего домена";
 $txt['settings_ldap_domain_controler'] = "Массив LDAP контроллеров домена";
 $txt['settings_ldap_domain_controler_tip'] = "<span style='font-size:11px;max-width:300px;'>Укажите несколько контроллеров, если вы хотите, чтобы сбалансировать LDAP запросы между несколькими серверами.<br />Необходимо разграничить домены запятой ( , )!<br />Например: домен_1,домен_2,домен_3</span>";
