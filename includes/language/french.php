@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Saisir le mot de passe à usage unique";
 $txt['2factors_image_text'] = "Merci de scanner le QR code";
 $txt['2factors_tile'] = "Authentification en 2 étape";
@@ -231,7 +231,7 @@ $txt['connection'] = "Connexion";
 $txt['connections'] = "connexions";
 $txt['copy'] = "Copier";
 $txt['copy_to_clipboard_small_icons'] = "Activer les icônes de copie dans le presse papier";
-$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>Cela peut permettre de limiter l'utilisation de la mémoire de l'ordinateur.<br />En effet, le presse papier n'est pas utilisé pour charger les informations des éléments. Dans ce cas, aucune copie rapide n'est possible.</span> ";
+$txt['copy_to_clipboard_small_icons_tip'] = "<span style='font-size:11px;max-width:300px;'>Cela peut permettre de limiter l'utilisation de la mémoire de l'ordinateur.<br />En effet, le presse papier n'est pas utilisé pour charger les informations des éléments. Dans ce cas, aucune copie rapide n'est possible.</span>";
 $txt['creation_date'] = "Creation date";
 $txt['csv'] = "CSV";
 $txt['csv_import_button_text'] = "Fichier CSV";

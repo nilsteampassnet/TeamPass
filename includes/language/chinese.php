@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Enter the one-time password";
 $txt['2factors_image_text'] = "Please, scan the QR code";
 $txt['2factors_tile'] = "2-Factors Autentication";

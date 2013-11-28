@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Inserisci la password monouso";
 $txt['2factors_image_text'] = "Utilizza il QR code per ottenere la password";
 $txt['2factors_tile'] = "Verifica in due passaggi";
@@ -88,7 +88,7 @@ $txt['admin_one_shot_backup'] = "One shot backup and restore";
 $txt['admin_path_to_files_folder'] = "Percorso della cartella Files";
 $txt['admin_path_to_files_folder_tip'] = "<span style='font-size:11px;max-width:300px;'>La cartella Files viene utilizzata per contenere tutti i file generati da TeamPass e alcuni file caricati.<br />NOTA BENE: Per ragioni di sicurezza questa cartellla non deve essere contenuta nella cartella WWW del tuo sito. Dovrebbe essere posizionata in un'area protetta da apposite regole impostate sul server.<br />NOTA BENE 2: Potrebbe essere una buona idea dedicare un CRON job alla ripulitura periodica di tale cartella.</span>";
 $txt['admin_path_to_upload_folder'] = "Percorso cartella di upload";
-$txt['admin_path_to_upload_folder_tip'] = "<span style=\"font-size:11px;max-width:300px;\">La cartella Upload viene usata per archiviare tutti i file associati agli elementi e caricati sul sistema.<br>NOTA BENE: Per ragioni di sicurezza questa cartellla non deve essere contenuta nella cartella WWW del tuo sito. Dovrebbe essere posizionata in un'area protetta da apposite regole impostate sul server.
+$txt['admin_path_to_upload_folder_tip'] = "<span style='font-size:11px;max-width:300px;'>La cartella Upload viene usata per archiviare tutti i file associati agli elementi e caricati sul sistema.<br>NOTA BENE: Per ragioni di sicurezza questa cartellla non deve essere contenuta nella cartella WWW del tuo sito. Dovrebbe essere posizionata in un'area protetta da apposite regole impostate sul server.
 <br>NOTA BENE 2: Questa cartella non dovrebbe MAI venire ripulita per non perdere i file associati agli elementi.</span>";
 $txt['admin_proxy_ip'] = "IP Proxy in uso";
 $txt['admin_proxy_ip_tip'] = "<span style='font-size:11px;max-width:300px;'>Se la tua connessione a internet utilizza un proxy, indica qui il suo IP.<br />Lascia il campo vuoto se non usi proxy.</span>";

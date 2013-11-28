@@ -6,7 +6,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 	$TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-
+$txt['admin_email_test_configuration_tip'] = "This test should send an email to the address indicated. If you don't receive it, please check your credentials.";
 $txt['2factors_confirm_text'] = "Bitte geben Sie das Einmalpasswort ein";
 $txt['2factors_image_text'] = "Bitte lesen Sie den QR-Code ein";
 $txt['2factors_tile'] = "2-Faktor-Authentifizierung";
@@ -20,7 +20,7 @@ $txt['add_role_tip'] = "Neue Rolle hinzufügen";
 $txt['admin'] = "Administration";
 $txt['administrators_only'] = "Nur für Administratoren";
 $txt['admin_2factors_authentication_setting'] = "2-Faktor-Authentifizierung von Google erlauben";
-$txt['admin_2factors_authentication_setting_tip'] = "<span style=\"font-size:11px;max-width:300px;\">Die 2-Faktor-Authentifizierung von Google erlaubt es eine zusätzliche Sicherheitsschicht für die Benutzerauthentifizierung einzuführen. Möchte sich ein Benutzer im TeamPass anmelden, wird ein QR-Code generiert. Dieser QR-Code muss anschließend vom Benutzer eingelesen werden, um ein Einmalpaswort zu erhalten.<br>VORSICHT: hierfür wird  eine Internetverbindung und ein Lesegerät (z.B. ein Smartphone) benötigt.</span>";
+$txt['admin_2factors_authentication_setting_tip'] = "<span style='font-size:11px;max-width:300px;'>Die 2-Faktor-Authentifizierung von Google erlaubt es eine zusätzliche Sicherheitsschicht für die Benutzerauthentifizierung einzuführen. Möchte sich ein Benutzer im TeamPass anmelden, wird ein QR-Code generiert. Dieser QR-Code muss anschließend vom Benutzer eingelesen werden, um ein Einmalpaswort zu erhalten.<br>VORSICHT: hierfür wird  eine Internetverbindung und ein Lesegerät (z.B. ein Smartphone) benötigt.</span>";
 $txt['admin_action'] = "Bitte bestätigen Sie Ihre Aktion";
 $txt['admin_actions_title'] = "Spezielle Aktionen";
 $txt['admin_action_change_salt_key'] = "Änderung des SALT-Schlüssels";
@@ -592,7 +592,7 @@ $txt['send'] = "Senden";
 $txt['server_time'] = "Serverzeit";
 $txt['settings_anyone_can_modify'] = "Bearbeitung jedes Elements durch alle Benutzer als Option aktivieren";
 $txt['settings_anyone_can_modify_bydefault'] = "Die Option '<b><i>Jeder darf bearbeiten</b></i>' standardmäßig aktivieren";
-$txt['settings_anyone_can_modify_tip'] = "<span style=\"font-size: 11px; max-width: 300px;\">Durch Aktivierung dieser Option wird dem Elementenformular ein Auswahlfeld hinzugefügt, das dem Ersteller erlaubt, jedem anderen Benutzer die Bearbeitung des Elements zu erlauben.</span>";
+$txt['settings_anyone_can_modify_tip'] = "<span style='font-size: 11px; max-width: 300px;'>Durch Aktivierung dieser Option wird dem Elementenformular ein Auswahlfeld hinzugefügt, das dem Ersteller erlaubt, jedem anderen Benutzer die Bearbeitung des Elements zu erlauben.</span>";
 $txt['settings_default_language'] = "Standardsprache definieren";
 $txt['settings_delay_for_item_edition'] = "Verstrichene Zeit (in Minuten), nach der die Bearbeitung als mislungen betrachtet wird";
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>Wird ein Element bearbeitet, ist dieses mittels eines Tokens gesperrt, so dass es nicht anderweitig parallel verändert werden kann.<br />Diese Einstellung erlaubt die Löschung des Tokens und das Entsperren des Elements nach einer gewißen Zeit. Ist der Wert auf 0 gesetzt, wird der Token nie gelöscht.</span>";
