@@ -1947,7 +1947,12 @@ if (isset($_POST['type'])) {
                         }
                         $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$reccord['id'].'" class="file" onclick="'.$action.';">'.substr(stripslashes($reccord['label']), 0, 65);
                         if (!empty($reccord['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                            $html .= '&nbsp;<font size="2px">{'.strip_tags(stripslashes(substr(cleanString(explode("<br />", $reccord['description'])[0]), 0, 30))).'}</font>';
+                        	$tempo = explode("<br />", $reccord['description']);
+                        	if (count($tempo) == 1) {
+                        		$html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($reccord['description']), 0, 30))).']</font>';
+                        	} else {
+                        		$html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
+                        	}
                         }
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
