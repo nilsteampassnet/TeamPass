@@ -56,6 +56,7 @@ LANGUAGES:
 
 --------------------------------  CHANGELOG  -----------------------------------
 2.1.19
+ #447 - fix for PHP Fatal error: Cannot redeclare getBits()
  #442 - problem edit folder
  #399 - Export encrypted passwords (off-line mode)
  #408 - Personal Salt Key changing doesn't work
