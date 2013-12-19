@@ -401,20 +401,23 @@ class adLDAP
             return (false);
         }
 
-        $filter = "sAMAccountName=" . $username;
+        $filter = "(sAMAccountName=" . $username . ")";
 	if ($this->_filter) {
-		$filter = "(&(".$filter.")(".$this->_filter."))";
+		$filter = "(&".$filter."(".$this->_filter."))";
 	}
         $fields = array("dn");
         $sr = @ldap_search($this->_conn, $this->_base_dn, $filter, $fields);
 
         if (ldap_count_entries($this->_conn, $sr) > 0) {
-            $entry = ldap_first_entry($this->_conn, $sr);
-            $dnObj = ldap_get_attributes($this->_conn, $entry);
-            $DN = $dnObj['dn'];
+            $entries = ldap_get_entries($this->_conn,$sr);
+	    $DN = $entries[0]["dn"];
         } else {
             return (false);
         }
+
+	if (!$DN || !isset($DN)){
+	    return (false);
+	}
 
         $this->_bind = @ldap_bind($this->_conn, $DN, $password);
         if (!$this->_bind) {
