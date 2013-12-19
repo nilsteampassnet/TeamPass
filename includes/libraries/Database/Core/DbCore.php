@@ -77,6 +77,7 @@ class DbCore
 
         mysql_query("SET NAMES UTF8");
         mysql_query("SET CHARACTER SET 'utf8'");
+        mysql_query("SET sql_mode=''");
 
         // unset the data so it can't be dumped
         $this->server='';
