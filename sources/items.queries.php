@@ -2125,10 +2125,17 @@ if (isset($_POST['type'])) {
                     );
                     // Edition not possible
                 } else {
-                    $returnValues = array(
-                        "error" => "no_edition_possible",
-                        "error_msg" => $txt['error_no_edition_possible_locked']
-                    );
+		    $returnValues = array(
+		        "error" => "no_edition_possible",
+		        "error_msg" => $txt['error_no_edition_possible_locked']
+		    );
+		    if (isset($_SESSION['settings']['delay_item_edition']) &&
+		        $_SESSION['settings']['delay_item_edition'] > 0 &&
+		        round(abs(time()-$dataTmp[0]) / 60, 2) <= $_SESSION['settings']['delay_item_edition']
+		    ) {
+			$timeLeft = (60 * $_SESSION['settings']['delay_item_edition'] - round(abs(time() - $dataTmp[0]) / 60, 2));
+			$returnValues["error_msg"] .= " Please wait another ".$timeLeft." seconds.";
+		    }
                     echo prepareExchangedData($returnValues, "encode");
                     break;
                 }

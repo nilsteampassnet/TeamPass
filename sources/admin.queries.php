@@ -264,6 +264,7 @@ switch ($_POST['type']) {
             //save file
             $filename = 'db-backup-'.time().'.sql';
             $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename, 'w+');
+	    error_log("DEBUG: Writing sql to file:".$_SESSION['settings']['path_to_files_folder']."/".$filename);
 
             //Encrypt the file
             if (!empty($_POST['option'])) {

@@ -242,9 +242,9 @@ if (isset($_POST['save_button'])) {
 	if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
         updateSettings('ldap_type', $_POST['ldap_type']);
     }
-    // Update LDAP ldap_suffix
-    if (@$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
-        updateSettings('ldap_suffix', $_POST['ldap_suffix']);
+    // Update LDAP ldap_filter
+    if (@$_SESSION['settings']['ldap_filter'] != $_POST['ldap_filter']) {
+        updateSettings('ldap_filter', $_POST['ldap_filter']);
     }
     // Update LDAP ldap_domain_dn
     if (@$_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
@@ -253,6 +253,14 @@ if (isset($_POST['save_button'])) {
     // Update LDAP ldap_domain_controler
     if (@$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
+    }
+    // Update LDAP ldap_domain_reader
+    if (@$_SESSION['settings']['ldap_domain_reader'] != $_POST['ldap_domain_reader']) {
+        updateSettings('ldap_domain_reader', $_POST['ldap_domain_reader']);
+    }
+    // Update LDAP ldap_domain_reader's password
+    if (@$_SESSION['settings']['ldap_domain_password'] != $_POST['ldap_domain_password']) {
+        updateSettings('ldap_domain_password', $_POST['ldap_domain_password']);
     }
 	// Update LDAP ldap_user_attribute
 	if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
@@ -1494,8 +1502,8 @@ echo '
 if ($ldap_type != 'posix') {
 echo '
                     <tr>
-                        <td><label for="ldap_suffix">'.$txt['settings_ldap_domain'].'</label></td>
-                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
+                        <td><label for="ldap_filter">'.$txt['settings_ldap_filter'].'</label></td>
+                        <td><input type="text" size="50" id="ldap_filter" name="ldap_filter" class="text ui-widget-content" title="memberOf=CN=YourGroup,OU=Users,dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_filter']) ? $_SESSION['settings']['ldap_filter'] : '', '" /></td>
                     </tr>';
 }
 
@@ -1510,8 +1518,8 @@ echo '
 if ($ldap_type == 'posix') {
 		echo '
                 <tr>
-                    <td><label for="ldap_suffix">'.$txt['settings_ldap_domain_posix'].'</label></td>
-                    <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
+                    <td><label for="ldap_filter">'.$txt['settings_ldap_domain_posix'].'</label></td>
+                    <td><input type="text" size="50" id="ldap_filter" name="ldap_filter" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_filter']) ? $_SESSION['settings']['ldap_filter'] : '', '" /></td>
                 </tr>';
 }
 
@@ -1532,6 +1540,21 @@ echo '
                         <td><label for="ldap_domain_controler">'.$txt['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_domain_controler_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
                     </tr>';
+
+// LDAP reader username
+echo '
+                    <tr>
+                        <td><label for="ldap_domain_reader">'.$txt['settings_ldap_domain_reader'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="Account which can bind without an RDN and perform lookups" /></label></td>
+                        <td><input type="text" size="50" id="ldap_domain_reader" name="ldap_domain_reader" class="text ui-widget-content" title="LDAP/AD Reader" value="', isset($_SESSION['settings']['ldap_domain_reader']) ? $_SESSION['settings']['ldap_domain_reader'] : '', '" /></td>
+                    </tr>';
+
+// LDAP reader password
+echo '
+                    <tr>
+                        <td><label for="ldap_domain_password">'.$txt['settings_ldap_domain_password'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="Password to the account which can bind without an RDN and perform lookups" /></label></td>
+                        <td><input type="password" size="50" id="ldap_domain_password" name="ldap_domain_password" class="text ui-widget-content" title="reader_password" value="', isset($_SESSION['settings']['ldap_domain_password']) ? $_SESSION['settings']['ldap_domain_password'] : '', '" /></td>
+                    </tr>';
+
 // AD SSL
 echo '
                     <tr>
