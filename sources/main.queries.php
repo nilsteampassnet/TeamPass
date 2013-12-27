@@ -361,7 +361,7 @@ switch ($_POST['type']) {
                     'email' => "",
                     'admin' => '0',
                     'gestionnaire' => '0',
-                    'personal_folder' => '0',
+                    'personal_folder' => $_SESSION['settings']['enable_pf_feature'] == "1" ? '1' : '0',
                     'fonction_id' => '0',
                     'groupes_interdits' => '0',
                     'groupes_visibles' => '0',
