@@ -26,6 +26,73 @@ function getBits($n)
     return substr($str, 0, $n);
 }
 
+
+function Connect_ldap($username,$passwordClear, $debugLdap, $dbgLdap){
+    
+    if ($debugLdap == 1) {
+                fputs(
+                    $dbgLdap,
+                    "Get all ldap params in function : \n" .
+                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
+                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+                    'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
+                );
+            }
+
+            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+            $adldap->register();
+
+        	// Posix style LDAP handles user searches a bit differently
+	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
+	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+	        }
+			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+			}
+
+            $adldap = new LDAP\adLDAP\adLDAP(
+                array(
+                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                    'account_suffix' => $ldap_suffix,
+                    'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
+                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                    'use_tls' => $_SESSION['settings']['ldap_tls']
+                )
+            );
+
+            if ($debugLdap == 1) {
+                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+            }
+
+        	// openLDAP expects an attribute=value pair
+    	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
+ 		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+ 		    } else {
+        		$auth_username = $username;
+        	}
+
+            // authenticate the user
+            if ($adldap->authenticate($auth_username, $passwordClear)) {
+                $ldapConnection = true;
+            } else {
+                $ldapConnection = false;
+            }
+            if ($debugLdap == 1) {
+                fputs(
+                    $dbgLdap,
+                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
+                    "ldap status : ".$ldapConnection."\n\n\n"
+                ); //Debug
+                
+                
+            }
+    return $ldapConnection;
+    
+}
+
+
 //generate pbkdf2 compliant hash
 function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
 {
