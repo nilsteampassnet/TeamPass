@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 1; //Can be used in order to debug LDAP authentication
+$debugLdap = 0; //Can be used in order to debug LDAP authentication
 
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
