@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
+$debugLdap = 1; //Can be used in order to debug LDAP authentication
 
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -193,48 +193,78 @@ switch ($_POST['type']) {
     case "ga_generate_qr":
     	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     	// decrypt and retreive data in JSON format
-    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+    	
+        if ($debugLdap == 1) {
+            // create temp file
+            $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w");
+        }
+        $proceedIdentification = false;
+        $ldapConnection = false;
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
     	// Prepare variables
     	$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
     	$username = htmlspecialchars_decode($dataReceived['login']);
-
-    	// Check if user exists
-    	$sql = "SELECT id, ga, pw FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
-    	$row = $db->query($sql);
-    	if ($row == 0) {
-    		// not a registered user !
-    		echo '[{"error" : "no_user"}]';
-    	} else {
+        
+        
+        
+        if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                && $username != "admin"
+        ) {
+            
+           $ldapConnection=Connect_ldap($username,$passwordClear, $debugLdap, $dbgLdap);
+           
+        }
+               
+        
+        if ($_SESSION['settings']['ldap_mode'] != 1
+         ){
+            // Check if user exists
+    	    $sql = "SELECT id, ga, pw FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
+    	    $row = $db->query($sql);
+            if ($row != 0) {
+    	
+                $proceedIdentification = true;
+            }
+            
+         }
+         elseif (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                 && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+         ){
+             $proceedIdentification = true;
+         }
+         else{
+             echo '[{"error" : "no_user"}]';
+             
+         }
+               
+    	 
+    	
+        if ($proceedIdentification == true){
     		// check if good credentials
-    		$data = $db->fetchArray($row);
-    		if (crypt($passwordClear, $data['pw']) == $data['pw']) {
+    		//$data = $db->fetchArray($row);
+    		//if (crypt($passwordClear, $data['pw']) == $data['pw']) {
     			// check if user has already a SECRET
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
     			$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+                       
     			if (empty($data['ga'])) {
     				// no SECRET yet
-    				$_SESSION['ga_secret'] = $g->generateSecret();
-
-    				$db->queryUpdate(
-	    				"users",
-	    				array(
-	    				    'ga' => $_SESSION['ga_secret']
-	    				   ),
-	    				"id = ".$data['id']
-    				);
+    				$_SESSION['ga_secret'] = $g->generateSecret();                                                      
+    				
     			} else {
     				// secret exists
     				$_SESSION['ga_secret'] = $data['ga'];
     			}
+                        
     			// generate QR url
     			$gaUrl = $g->getURL($username, $_SESSION['settings']['ga_website_name'], $_SESSION['ga_secret']);
 
     			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
-    		} else {
+    		//} else {
     			// not good credentials
-    			echo '[{"error" : "bad_couple"}]';
-    		}
+    		//	echo '[{"error" : "bad_couple"}]';
+    		//}
     	}
     	break;
     /**
@@ -248,6 +278,8 @@ switch ($_POST['type']) {
         $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
         $username = htmlspecialchars_decode($dataReceived['login']);
     	$logError = "";
+        $GA_Auth = FALSE;
+        $newUserId=0;
 
         // GET SALT KEY LENGTH
         if (strlen(SALT) > 32) {
@@ -256,7 +288,7 @@ switch ($_POST['type']) {
 
         $_SESSION['user_language'] = $k['langage'];
         $ldapConnection = false;
-
+        $proceedIdentification = false;
         /* LDAP connection */
         if ($debugLdap == 1) {
             // create temp file
@@ -266,85 +298,8 @@ switch ($_POST['type']) {
         if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                 && $username != "admin"
         ) {
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "Get all ldap params : \n" .
-                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
-                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
-                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
-                    'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
-                );
-            }
-
-            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-
-        	// Posix style LDAP handles user searches a bit differently
-	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
-	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
-	        }
-			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
-			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
-			}
-
-            $adldap = new LDAP\adLDAP\adLDAP(
-                array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-                )
-            );
-
-            /*try {
-                $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-                $adldap = new LDAP\adLDAP\adLDAP( array(
-                        'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                        'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                        'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                        'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                        'use_tls' => $_SESSION['settings']['ldap_tls']
-                ) );
-            }
-            catch(Exception $e)
-            {
-                echo $e->getMessage();
-            }*/
-            /*$adldap = new adLDAP( array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                    'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-            ) );*/
-            if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
-            }
-
-        	// openLDAP expects an attribute=value pair
-    	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
- 		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
- 		    } else {
-        		$auth_username = $username;
-        	}
-
-            // authenticate the user
-            if ($adldap->authenticate($auth_username, $passwordClear)) {
-                $ldapConnection = true;
-            } else {
-                $ldapConnection = false;
-            }
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
-                    "ldap status : ".$ldapConnection."\n\n\n"
-                ); //Debug
-            }
+            
+           $ldapConnection=Connect_ldap($username,$passwordClear, $debugLdap, $dbgLdap);
         }
         // Check if user exists
         $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
@@ -380,9 +335,20 @@ switch ($_POST['type']) {
             }
         }
 
-        $proceedIdentification = false;
+        
         if (mysql_num_rows($row) > 0) {
             $proceedIdentification = true;
+             
+            if (empty($data['ga'])){
+               $db->queryUpdate(
+	    			"users",
+	    			array(
+                                'ga' => $_SESSION['ga_secret']
+	    				   ),
+	    			"id = ".$data['id']
+    				); 
+               
+            }
         } elseif (mysql_num_rows($row) == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers'])
                 && ($_SESSION['settings']['ldap_elusers'] == 0)
         ) {
@@ -395,13 +361,27 @@ switch ($_POST['type']) {
                     'email' => "",
                     'admin' => '0',
                     'gestionnaire' => '0',
-                    'personal_folder' => $_SESSION['settings']['enable_pf_feature'] == "1" ? '1' : '0',
+                    'personal_folder' => '0',
                     'fonction_id' => '0',
                     'groupes_interdits' => '0',
                     'groupes_visibles' => '0',
                     'last_pw_change' => time(),
                    )
             );
+            
+            if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 && $username != "admin") {
+                
+                $db->queryUpdate(
+	    			"users",
+	    			array(
+                                'ga' => $_SESSION['ga_secret']
+	    				   ),
+	    			"id = ".$newUserId
+    				);
+                
+                
+            }
+           
             // Create personnal folder
             if ($_SESSION['settings']['enable_pf_feature'] == "1") {
                 $db->queryInsert(
@@ -427,9 +407,13 @@ switch ($_POST['type']) {
 	    		include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
 	    		include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
 	    		$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+                        $sql = "SELECT ga FROM ".$pre."users WHERE login = '".$username."'";
+                        $row = $db->query($sql);
+                        $ga_secret_db = $db->fetchArray($row);
 
-	    		if ($g->checkCode($data['ga'], $dataReceived['GACode'])) {
+	    		if ($g->checkCode($ga_secret_db['ga'], $dataReceived['GACode'])) {
 	    			$proceedIdentification = true;
+                                $GA_Auth = true;
 	    		} else {
 	    			$proceedIdentification = false;
 	    			$logError = "ga_code_wrong";
@@ -445,6 +429,7 @@ switch ($_POST['type']) {
             //$data = $db->fetchArray($row);
 
             //v2.1.17 -> change encryption for users password
+            
             if (
                     $passwordOldEncryption == $data['pw'] &&
                     !empty($data['pw'])
@@ -463,8 +448,10 @@ switch ($_POST['type']) {
             // Can connect if
             // 1- no LDAP mode + user enabled + pw ok
             // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
-            // 3-  LDAP mode + user enabled + pw ok + usre is admin
+            // 3- LDAP mode + user enabled + ldap connection ok + GA OK +user is not admin 
+            // 4- LDAP mode + user enabled + pw ok + usre is admin
             // This in order to allow admin by default to connect even if LDAP is activated
+            
             if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
                     && crypt($passwordClear, $data['pw']) == $data['pw'] && $data['disabled'] == 0
@@ -475,10 +462,15 @@ switch ($_POST['type']) {
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                    && $ldapConnection == true && $data['disabled'] == 0 && $GA_Auth == true && isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 && $username != "admin"
+                )
+                ||
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                     && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
                     && $data['disabled'] == 0
                 )
             ) {
+                
                 $_SESSION['autoriser'] = true;
 
                 //Load PWGEN
@@ -502,7 +494,12 @@ switch ($_POST['type']) {
                 $_SESSION['login'] = stripslashes($username);
                 $_SESSION['name'] = stripslashes($data['name']);
                 $_SESSION['lastname'] = stripslashes($data['lastname']);
-                $_SESSION['user_id'] = $data['id'];
+                if ($newUserId != 0) {
+                    $_SESSION['user_id'] = $newUserId;
+                }
+                else{
+                    $_SESSION['user_id'] = $data['id'];
+                }
                 $_SESSION['user_admin'] = $data['admin'];
                 $_SESSION['user_manager'] = $data['gestionnaire'];
                 $_SESSION['user_read_only'] = $data['read_only'];
@@ -514,12 +511,13 @@ switch ($_POST['type']) {
                 $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
                 $_SESSION['user_language'] = $data['user_language'];
                 $_SESSION['user_email'] = $data['email'];
-            	$_SESSION['user']['ga'] = $data['ga'];
-
-            	/* If this option is set user password MD5 is used as personal SALTKey */
+                $_SESSION['user']['ga'] = $data['ga'];
+                
+                /* If this option is set user password MD5 is used as personal SALTKey */
 				if (
 					isset($_SESSION['settings']['use_md5_password_as_salt']) &&
 					$_SESSION['settings']['use_md5_password_as_salt'] == 1
+                                      
 				)
 				{
 				    $_SESSION['my_sk'] = md5($passwordClear);
@@ -529,6 +527,7 @@ switch ($_POST['type']) {
                         time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                         '/'
 				    );
+                                    
 				}
 
                 @syslog(
@@ -546,18 +545,21 @@ switch ($_POST['type']) {
                 } else {
                     $_SESSION['user_privilege'] = $txt['user'];
                 }
+                
 
                 if (empty($data['last_connexion'])) {
                     $_SESSION['derniere_connexion'] = time();
                 } else {
                     $_SESSION['derniere_connexion'] = $data['last_connexion'];
                 }
+                
 
                 if (!empty($data['latest_items'])) {
                     $_SESSION['latest_items'] = explode(';', $data['latest_items']);
                 } else {
                     $_SESSION['latest_items'] = array();
                 }
+                
                 if (!empty($data['favourites'])) {
                     $_SESSION['favourites'] = explode(';', $data['favourites']);
                 } else {
@@ -619,8 +621,10 @@ switch ($_POST['type']) {
                         'session_end' => $_SESSION['fin_session'],
                         'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
                        ),
-                    "id=".$data['id']
+                    "id=".$_SESSION['user_id']
                 );
+                
+                
                 // Get user's rights
                 identifyUserRights(
                     $data['groupes_visibles'],
