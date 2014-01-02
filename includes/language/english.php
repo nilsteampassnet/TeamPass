@@ -5,6 +5,14 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 } else {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
+
+$txt['settings_attachments_encryption'] = "Enable encryption of Items attachments";
+$txt['settings_attachments_encryption_tip'] = "THIS OPTION COULD BREAK EXISTING ATTACHMENTS, please read carefully the next. If enabled, Items attachments are stored encrypted on the server. The ecryption uses the SALT defined for Teampass. This requieres more server ressources. WARNING: once you change strategy, it is mandatory to run the script to adapt existing attachments. See tab 'Specific Actions'.";
+$txt['admin_action_attachments_cryption'] = "Encrypt or Decrypt the Items attachments";
+$txt['admin_action_attachments_cryption_tip'] = "WARNING: this action has ONLY to be performed after changing the associated option in Teampass settings. Please make a copy of the folder 'upload' before doing any action, just in case ...";
+$txt['encrypt'] = "Encrypt";
+$txt['decrypt'] = "Decrypt";
+
 $txt['admin_ga_website_name'] = "Name displayed Google Authenticator for Teampass";
 $txt['admin_ga_website_name_tip'] = "This name is used for the identification code account in Google Authenticator.";
 $txt['admin_action_pw_prefix_correct'] = "Correct passwords prefix";

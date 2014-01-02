@@ -2,8 +2,8 @@
 /**
  * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -25,5 +25,27 @@ header("Expires: 0");
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
 } else {
-	readfile($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']));
+    // Open the file
+    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']), 'rb');
+
+    // should we decrypt the attachment?
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+        include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+
+        // Prepare encryption options
+        $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+        $key = substr(
+            md5("\x2D\xFC\xD8".SALT, true) .
+            md5("\x2D\xFC\xD9".SALT, true),
+            0,
+            24
+        );
+        $opts = array('iv'=>$iv, 'key'=>$key);
+
+        // Add the Mcrypt stream filter
+        stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+    }
+
+    // Read the file contents
+    fpassthru($fp);
 }

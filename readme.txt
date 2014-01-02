@@ -8,7 +8,7 @@
 * 								LICENCE AGREEMENT							   *
 * Before installing and using TeamPass, you must accept its licence defined	as *
 * GNU AFFERO GPL.															   *
-* Copyright (c) 2009-2013, Nils Laumaillé (Nils@TeamPass.net)				   *
+* Copyright (c) 2009-2014, Nils Laumaillé (Nils@TeamPass.net)				   *
 * 																			   *
 * This program is free software: you can redistribute it and/or modify		   *
 * it under the terms of the GNU Affero General Public License as			   *
@@ -55,6 +55,10 @@ LANGUAGES:
 * ITALIAN		by Federico
 
 --------------------------------  CHANGELOG  -----------------------------------
+2.1.20
+ #441 - Attachments encryption
+ #459 - Turn off strict mode
+
 2.1.19
  #413 - fix for PHP Parse error: syntax error, unexpected '['
  #447 - fix for PHP Fatal error: Cannot redeclare getBits()

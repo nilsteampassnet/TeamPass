@@ -531,6 +531,7 @@ if (isset($_POST['type'])) {
                 array('admin','enable_user_can_create_folders','0', 0),
                 array('admin','insert_manual_entry_item_history','0', 0),
                 array('admin','enable_kb','0', 0),
+                array('admin','enable_attachment_encryption','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),

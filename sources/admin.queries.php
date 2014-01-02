@@ -3,8 +3,8 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
  *
@@ -667,4 +667,151 @@ switch ($_POST['type']) {
         }
         echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$txt['alert_message_done'].' '.$numOfItemsChanged.' '.$txt['items_changed'].'"}]';
         break;
+
+    /*
+    * Attachments encryption
+    */
+    case "admin_action_attachments_cryption":
+        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        
+        // init
+        $error = "";
+        $ret = "";
+        $cpt = 0;
+        $checkCoherancy = false;
+        $filesList = "";
+        $continu = true;
+
+        // get through files
+        if (isset($_POST['option']) && !empty($_POST['option'])) {
+            if ($handle = opendir($_SESSION['settings']['path_to_upload_folder'].'/')) {
+                while (false !== ($entry = readdir($handle))) {
+                    $entry = basename($entry);
+                    if ($entry != "." && $entry != ".." && $entry != ".htaccess") {
+                        if (strpos($entry, ".") == false) {
+                            // check if user query is coherant
+                            if ($checkCoherancy == false) {
+                                $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$entry, "rb");
+                                $line = fgets($fp);
+
+                                // check if isUTF8. If yes, then check if process = encryption, and vice-versa
+                                if (isUTF8($line) && $_POST['option'] == "decrypt") {
+                                    $error = "file_not_encrypted";
+                                    $continu = false;
+                                    break;
+                                } elseif (!isUTF8($line) && $_POST['option'] == "encrypt") {
+                                    $error = "file_not_clear";
+                                    $continu = false;
+                                    break;
+                                }
+                                fclose($fp);
+                                $checkCoherancy = true;
+
+                                // check if to stop
+                                if (!empty($error)) {
+                                    break;
+                                }
+                            }
+
+                            // build list
+                            if (empty($filesList)) {
+                                $filesList = $entry;
+                            } else {
+                                $filesList .= ";".$entry;
+                            }
+                        }
+                    }
+                }
+                closedir($handle);
+            }
+        } else {
+            $error = "No option";
+        }
+
+        echo '[{"result":"attachments_cryption", "error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$filesList.'", "cpt":"0"}]';
+        break;
+
+        /*
+         * Attachments encryption - Treatment in several loops
+         */
+        case "admin_action_attachments_cryption_continu":
+            include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            
+            $cpt = 0;
+            $newFilesList = "";
+            $continu = true;
+            $error = "";
+
+            // Prepare encryption options
+            $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+            $key = substr(
+                md5("\x2D\xFC\xD8".SALT, true).
+                md5("\x2D\xFC\xD9".SALT, true),
+                0,
+                24
+            );
+            $opts = array('iv'=>$iv, 'key'=>$key);
+
+            // treat 10 files
+            $filesList = explode(';', $_POST['list']);
+            foreach ($filesList as $file) {
+                if ($cpt < 5) {                    
+                    // skip file is Coherancey not respected
+                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
+                    $line = fgets($fp);
+                    $skipFile = false;
+                    // check if isUTF8. If yes, then check if process = encryption, and vice-versa
+                    if (isUTF8($line) && $_POST['option'] == "decrypt") {
+                        $skipFile = true;
+                    } elseif (!isUTF8($line) && $_POST['option'] == "encrypt") {
+                        $skipFile = true;
+                    }
+                    fclose($fp);
+                    
+                    if ($skipFile == true) {
+                        // make a copy of file
+                        if (!copy(
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy"
+                        )) {
+                            $error = "Copy not possible";
+                            exit;
+                        }
+                        
+                        // Open the file
+                        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy", "rb");
+                        $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
+                        
+                        if ($_POST['option'] == "decrypt") {
+                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+                        } else if ($_POST['option'] == "encrypt") {
+                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+                        }
+                        
+                        // read file and create new one
+                        $check = false;
+                        while (($line = fgets($fp)) !== false) {
+                            fputs($out, $line);
+                        }
+                        fclose($fp);
+                        fclose($out);
+                        
+                        $cpt ++;
+                    }
+                } else {
+                    // build list
+                    if (empty($newFilesList)) {
+                        $newFilesList = $file;
+                    } else {
+                        $newFilesList .= ";".$file;
+                    }
+                }
+            }
+            
+            if (empty($newFilesList)) $continu = false;
+            
+            echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt']+$cpt).'"}]';
+            break;
 }

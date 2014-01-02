@@ -3,15 +3,15 @@
  *
  * @file          include.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languagesList;
 
-$k['version'] = "2.1.19";
+$k['version'] = "2.1.20";
 $k['tool_name'] = "TeamPass";
 $k['jquery-version'] = "1.9.1";
 $k['jquery-ui-version'] = "1.10.3";

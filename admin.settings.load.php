@@ -2,8 +2,8 @@
 /**
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -213,6 +213,9 @@ function LaunchAdminActions(action,option)
         option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
     } else if (action == "admin_email_send_backlog") {
         $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+    } else if (action == "admin_action_attachments_cryption") {
+        option = $("input[name=attachments_cryption]:checked").val();
+        if (option == "") return;
     }
     //Lauchn ajax query
     $.post(
@@ -256,6 +259,14 @@ function LaunchAdminActions(action,option)
                     }
                 } else if (data[0].result == "pw_prefix_correct") {
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret);
+                } else if (data[0].result == "attachments_cryption") {
+                    if (data[0].continu == true) {
+                    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+                    } else if (data[0].error == "file_not_encrypted") {
+                    	$("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
+                    } else if (data[0].error == "file_not_clear") {
+                    	$("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
+                    }                        
                 }
             }
         },
@@ -533,4 +544,25 @@ $(function() {
        );
     });
 });
+
+function manageEncryptionOfAttachments(list, cpt) {
+    
+	$.post(
+		"sources/admin.queries.php",
+		{
+			type    : "admin_action_attachments_cryption_continu",
+			option  : $("input[name=attachments_cryption]:checked").val(),
+			cpt     : cpt,
+			list    : list
+		},
+		function(data) {
+		    if (data[0].continu == true ) {
+		    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+		    } else {
+		        $("#result_admin_action_attachments_cryption").html("<img src='includes/images/tick.png' alt='' /> "+data[0].cpt+" files changed");
+		    }
+		},
+        "json"
+	);
+}
 </script>

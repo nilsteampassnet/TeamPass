@@ -3,8 +3,8 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -281,6 +281,10 @@ if (isset($_POST['save_button'])) {
     // Update anyone_can_modify_bydefault
     if (@$_SESSION['settings']['anyone_can_modify_bydefault'] != $_POST['anyone_can_modify_bydefault']) {
         updateSettings('anyone_can_modify_bydefault', $_POST['anyone_can_modify_bydefault']);
+    }
+    // Update enable_attachment_encryption
+    if (@$_SESSION['settings']['enable_attachment_encryption'] != $_POST['enable_attachment_encryption']) {
+        updateSettings('enable_attachment_encryption', $_POST['enable_attachment_encryption']);
     }
     // Update enable_kb
     if (@$_SESSION['settings']['enable_kb'] != $_POST['enable_kb']) {
@@ -946,6 +950,23 @@ echo '
             </td</tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
+// Attachments encryption strategy
+echo '
+                    <tr><td>
+                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <label>
+                            '.$txt['settings_attachments_encryption'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_attachments_encryption_tip'].'" /></span>
+                        </label>
+                        </td><td>
+                        <div class="div_radio">
+                            <input type="radio" id="enable_attachment_encryption_radio1" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_attachment_encryption_radio1">'.$txt['yes'].'</label>
+                            <input type="radio" id="enable_attachment_encryption_radio2" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_attachment_encryption']) ? ' checked="checked"':''), ' /><label for="enable_attachment_encryption_radio2">'.$txt['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_attachment_encryption"><img src="includes/images/status', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '' : '-busy', '.png" /></span>
+                        </div>
+                    </td></tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable KB
 echo '
                     <tr><td>
@@ -1063,7 +1084,21 @@ echo '
                     <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_pw_prefix_correct_tip'].'" /></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
-
+// Encrypt / decrypt attachments
+echo '
+                <div style="margin-bottom:3px">
+                    <span style="float:left;">
+                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    '.$txt['admin_action_attachments_cryption'].'
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_attachments_cryption_tip'].'" /></span>
+                    </span>
+                    <div class="div_radio" style="float:left;">
+                        <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$txt['encrypt'].'</label>
+                        <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$txt['decrypt'].'</label>
+                    </div>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">'.$txt['admin_action_db_backup_start_tip'].'</a>
+                    <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
+                </div>';
 echo '
             </div>';
 // --------------------------------------------------------------------------------
@@ -1897,7 +1932,7 @@ echo '
                             <input type="radio" id="upload_imageresize_options_radio2" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 0);" value="0"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['upload_imageresize_options']) ? ' checked="checked"':''), ' /><label for="upload_imageresize_options_radio2">'.$txt['no'].'</label>
                                 <span class="setting_flag" id="flag_upload_imageresize_options"><img src="includes/images/status', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
-                    <td>
+                    </td>
                 </tr>
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
