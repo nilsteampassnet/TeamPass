@@ -1527,7 +1527,7 @@ require_once \"".$skFile."\";
                         $fh,
                         utf8_encode(
 "<?php
-@define('SALT', '".$_POST['session_salt']."'); //Never Change it once it has been used !!!!!
+@define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
 ?>"
                         )
                     );
@@ -1598,7 +1598,7 @@ require_once \"".$skFile."\";
                     // generate Key and encode PW
                     $randomKey = generateKey();
                     $pw = $randomKey.$pw;
-                    $pw = encrypt($pw);
+                    $pw = encrypt($pw, $_SESSION['session_start']);
 
                     // store Password
                     mysql_query(
@@ -1615,7 +1615,7 @@ require_once \"".$skFile."\";
                 } else {
                     // if PW exists but no key ... then add it
                     $resData = mysql_query(
-                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keyx
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
                         WHERE table = 'items' AND id = ".$data['id']
                     ) or die(mysql_error());
                     $dataTemp = mysql_fetch_row($resData);
@@ -1623,7 +1623,7 @@ require_once \"".$skFile."\";
                         // generate Key and encode PW
                         $randomKey = generateKey();
                         $pw = $randomKey.$pw;
-                        $pw = encrypt($pw);
+                        $pw = encrypt($pw, $_SESSION['session_start']);
 
                         // store Password
                         mysql_query(

@@ -196,6 +196,7 @@ if (isset($_POST['db_host'])) {
     $_SESSION['db_login'] = $_POST['db_login'];
     $_SESSION['db_pw'] = $_POST['db_pw'];
     $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
+	$_SESSION['session_start'] = $_POST['session_start'];
     if (isset($_POST['send_stats'])) {
         $_SESSION['send_stats'] = $_POST['send_stats'];
     } else {
