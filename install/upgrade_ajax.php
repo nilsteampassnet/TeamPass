@@ -1616,7 +1616,7 @@ require_once \"".$skFile."\";
                     // if PW exists but no key ... then add it
                     $resData = mysql_query(
                         "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
-                        WHERE table = 'items' AND id = ".$data['id']
+                        WHERE `table` = 'items' AND id = ".$data['id']
                     ) or die(mysql_error());
                     $dataTemp = mysql_fetch_row($resData);
                     if ($dataTemp[0] == 0) {
