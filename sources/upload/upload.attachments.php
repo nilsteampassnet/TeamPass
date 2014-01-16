@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('../sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -173,7 +174,7 @@ if (strpos($contentType, "multipart") !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
-        
+
         if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
             // Add the Mcrypt stream filter
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);

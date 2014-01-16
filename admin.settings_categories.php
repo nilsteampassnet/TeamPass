@@ -12,6 +12,8 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+
+require_once('sources/sessions.php');
 session_start();
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -66,7 +68,7 @@ echo '
 
 if (isset($arrCategories) && count($arrCategories) > 0) {
     // build table
-    foreach ($arrCategories as $category) {        
+    foreach ($arrCategories as $category) {
         // get associated Folders
         $foldersList = $foldersNumList = "";
         $rows = $db->fetchAllArray(

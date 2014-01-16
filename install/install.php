@@ -1,8 +1,26 @@
 <?php
+require_once('../sources/sessions.php');
 session_start();
 // Session teampass tag
 $_SESSION['CPM'] = 1;
 
+if ( file_exists('../includes/settings.php')){
+   echo '
+	<head>
+	<title>TeamPass Installation</title>
+	<link rel="stylesheet" href="install.css" type="text/css" />
+	</head>
+<div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>
+        <div id="top">
+            <div id="logo"><img src="../includes/images/canevas/logo.png" /></div>
+        </div>
+        <div id="content">
+            <div id="center" class="ui-corner-bottom">
+                <form name="install" method="post" action="">
+	<h2>Teampass installation complete<h2>';
+
+ exit;
+}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">

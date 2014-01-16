@@ -54,7 +54,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 </script>';
 } elseif (!empty($_SESSION['derniere_connexion'])) {
     //Last items created block
-    if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && !empty($_SESSION['groupes_visibles_list'])) {
+    if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && $_SESSION['user_admin'] != 1 && !empty($_SESSION['groupes_visibles_list'])) {
                     echo '
                     <div style="position:relative;float:right;margin-top:-25px;padding:4px;width:250px;" class="ui-state-highlight ui-corner-all">
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>

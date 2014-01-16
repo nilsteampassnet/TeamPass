@@ -544,7 +544,7 @@ echo '
                     <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
                     <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
                     <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="pw_secure" /><label for="pw_secure">'.$txt['secure'].'</label>
+                    <input type="checkbox" id="pw_secure" checked /><label for="pw_secure">'.$txt['secure'].'</label>
                     &nbsp;<label for="pw_size">'.$txt['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
@@ -745,7 +745,7 @@ echo '
                     <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
                     <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
                     <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="edit_pw_secure" /><label for="edit_pw_secure">'.$txt['secure'].'</label>
+                    <input type="checkbox" id="edit_pw_secure" checked /><label for="edit_pw_secure">'.$txt['secure'].'</label>
                     &nbsp;<label for="edit_pw_size">'.$txt['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>

@@ -1,4 +1,5 @@
 <?php
+require_once('../sources/sessions.php');
 session_start();
 
 require_once '../includes/language/english.php';
@@ -31,27 +32,29 @@ function getSettingValue($val)
 ################
 function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
 {
+    global $dbTmp;
     $exists = false;
-    $columns = mysql_query("show columns from $db");
-    while ($c = mysql_fetch_assoc($columns)) {
+    $columns = mysqli_query($dbTmp, "show columns from $db");
+    while ($c = mysqli_fetch_assoc($dbTmp, $columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             break;
         }
     }
     if (!$exists) {
-        return mysql_query("ALTER TABLE `$db` ADD `$column`  $columnAttr");
+        return mysqli_query($dbTmp, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
     }
 }
 
 function tableExists($tablename, $database = false)
 {
+    global $dbTmp;
     if (!$database) {
-        $res = mysql_query("SELECT DATABASE()");
+        $res = mysqli_query($dbTmp, "SELECT DATABASE()");
         $database = mysql_result($res, 0);
     }
 
-    $res = mysql_query(
+    $res = mysqli_query($dbTmp,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
         WHERE table_schema = '$database'
@@ -229,21 +232,20 @@ if (isset($_POST['type'])) {
 
             // connexion
             if (
-                @mysql_connect(
+                @mysqli_connect(
                     $_POST['db_host'],
                     $_POST['db_login'],
                     $dbPassword
                 )
             ) {
-                $dbTmp = mysql_connect(
+                $dbTmp = mysqli_connect(
                     $_POST['db_host'],
                     $_POST['db_login'],
                     $dbPassword
                 );
                 if (
-                    @mysql_select_db(
-                        $_POST['db_bdd'],
-                        $dbTmp
+                    @mysqli_select_db($dbTmp,
+                        $_POST['db_bdd']
                     )
                 ) {
                     echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
@@ -251,15 +253,15 @@ if (isset($_POST['type'])) {
                     echo 'document.getElementById("but_next").disabled = "";';
 
                     //What CPM version
-                    if (@mysql_query(
+                    if (@mysqli_query($dbTmp,
                         "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                         WHERE type='admin' AND intitule = 'cpassman_version'"
                     )) {
-                        $tmpResult = mysql_query(
+                        $tmpResult = mysqli_query($dbTmp,
                             "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                             WHERE type='admin' AND intitule = 'cpassman_version'"
                         );
-                        $cpmVersion = mysql_fetch_row($tmpResult);
+                        $cpmVersion = mysqli_fetch_row($tmpResult);
                         echo 'document.getElementById("actual_cpm_version").value = "'.
                             $cpmVersion[0].'";';
                     } else {
@@ -267,12 +269,12 @@ if (isset($_POST['type'])) {
                     }
 
                     //Get some infos from DB
-                    if (@mysql_fetch_row(
-                            mysql_query("SELECT valeur FROM ".$_POST['tbl_prefix']."misc
+                    if (@mysqli_fetch_row(
+                            mysqli_query($dbTmp, "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                         WHERE type='admin' AND intitule = 'utf8_enabled'")
                         )
                     ) {
-                        $cpmIsUTF8 = mysql_fetch_row(mysql_query(
+                        $cpmIsUTF8 = mysqli_fetch_row(mysqli_query($dbTmp,
                             "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                             WHERE type='admin' AND intitule = 'utf8_enabled'")
                         );
@@ -284,19 +286,19 @@ if (isset($_POST['type'])) {
                     }
 
                 	// put TP in maintenance mode or not
-                	@mysql_query(
+                	@mysqli_query($dbTmp,
                 	"UPDATE `".$_SESSION['tbl_prefix']."misc`
                         SET `valeur` = 'maintenance_mode'
                         WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 	);
                 } else {
                     echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                    $res = "Impossible to get connected to database. Error is ".mysql_error();
+                    $res = "Impossible to get connected to database. Error is ".mysqli_error($dbTmp);
                     echo 'document.getElementById("but_next").disabled = "disabled";';
                 }
             } else {
                 echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                $res = "Impossible to get connected to server. Error is ".mysql_error();
+                $res = "Impossible to get connected to server. Error is ".mysqli_error($dbTmp);
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
 
@@ -306,20 +308,20 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
-            @mysql_connect(
+            @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            @mysql_select_db($_SESSION['db_bdd']);
-            $dbTmp = mysql_connect(
+            $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            mysql_select_db(
-                $_SESSION['db_bdd'],
-                $dbTmp
+            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
+            mysqli_select_db(
+                $dbTmp,
+                $_SESSION['db_bdd']
             );
             $status = "";
 
@@ -327,30 +329,30 @@ if (isset($_POST['type'])) {
             if (
                 isset($_POST['prefix_before_convert']) && $_POST['prefix_before_convert'] == "true"
             ) {
-                $tables =mysql_query('SHOW TABLES');
-                while ($table = mysql_fetch_row($tables)) {
+                $tables =mysqli_query($dbTmp,'SHOW TABLES');
+                while ($table = mysqli_fetch_row($tables)) {
                     if (tableExists("old_".$table[0]) != 1 && substr($table[0], 0, 4) != "old_") {
-                        mysql_query("CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
-                        mysql_query("INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
+                        mysqli_query($dbTmp,"CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
+                        mysqli_query($dbTmp,"INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
                     }
                 }
             }
 
             //convert database
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER DATABASE `".$_SESSION['db_bdd']."`
                 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
             );
 
             //convert tables
-            $res = mysql_query("SHOW TABLES FROM `".$_SESSION['db_bdd']."`");
-            while ($table = mysql_fetch_row($res)) {
+            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['db_bdd']."`");
+            while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != "old_") {
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "ALTER TABLE ".$_SESSION['db_bdd'].".`{$table[0]}`
                         CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "ALTER TABLE".$_SESSION['db_bdd'].".`{$table[0]}`
                         DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
@@ -362,7 +364,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("but_launch").disabled = "disabled";';
 
-            mysql_close($dbTmp);
+            mysqli_close($dbTmp);
             break;
 
             #==========================
@@ -381,20 +383,20 @@ if (isset($_POST['type'])) {
             // dataBase
             $res = "";
 
-            @mysql_connect(
+            @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            @mysql_select_db($_SESSION['db_bdd']);
-            $dbTmp = mysql_connect(
+            $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            mysql_select_db(
-                $_SESSION['db_bdd'],
-                $dbTmp
+            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
+            mysqli_select_db(
+                $dbTmp,
+                $_SESSION['db_bdd']
             );
 
             ## Populate table MISC
@@ -531,7 +533,6 @@ if (isset($_POST['type'])) {
                 array('admin','enable_user_can_create_folders','0', 0),
                 array('admin','insert_manual_entry_item_history','0', 0),
                 array('admin','enable_kb','0', 0),
-                array('admin','enable_attachment_encryption','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
@@ -540,11 +541,11 @@ if (isset($_POST['type'])) {
             $res1 = "na";
             foreach ($val as $elem) {
                 //Check if exists before inserting
-                $queryRes = mysql_query(
+                $queryRes = mysqli_query($dbTmp,
                     "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc
                     WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
                 );
-                if (mysql_error()) {
+                if (mysqli_error($dbTmp)) {
                     echo 'document.getElementById("res_step4").innerHTML = "MySQL Error! '.
                         addslashes($queryError).'";';
                     echo 'document.getElementById("tbl_1").innerHTML = "'.
@@ -552,9 +553,9 @@ if (isset($_POST['type'])) {
                     echo 'document.getElementById("loader").style.display = "none";';
                     break;
                 } else {
-                    $resTmp = mysql_fetch_row($queryRes);
+                    $resTmp = mysqli_fetch_row($queryRes);
                     if ($resTmp[0] == 0) {
-                        $queryRes = mysql_query(
+                        $queryRes = mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
                             (`type`, `intitule`, `valeur`) VALUES
                             ('".$elem[0]."', '".$elem[1]."', '".
@@ -566,7 +567,7 @@ if (isset($_POST['type'])) {
                     } else {
                         // Force update for some settings
                         if ($elem[3] == 1) {
-                            $queryRes = mysql_query(
+                            $queryRes = mysqli_query($dbTmp,
                                 "UPDATE `".$_SESSION['tbl_prefix']."misc`
                                 SET `valeur` = '".$elem[2]."'
                                 WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'"
@@ -607,24 +608,24 @@ if (isset($_POST['type'])) {
                 "notification",
                 "VARCHAR(250) DEFAULT NULL"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
             );
 
             # Alter tables
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY id_user INT(8)"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY role_id INT(12)"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."restriction_to_roles MODIFY item_id INT(12)"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw TEXT"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(400)"
             );
 
@@ -707,7 +708,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
-            mysql_query("UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
+            mysqli_query($dbTmp,"UPDATE ".$_SESSION['tbl_prefix']."users SET timestamp = ''");
 
             ## Alter nested_tree table
             $res2 = addColumnIfNotExist(
@@ -726,7 +727,7 @@ if (isset($_POST['type'])) {
             //include('upgrade_db_1.08.php');
 
             ## TABLE TAGS
-            $res8 = mysql_query(
+            $res8 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."tags` (
                 `id` int(12) NOT null AUTO_INCREMENT,
                 `tag` varchar(30) NOT NULL,
@@ -744,12 +745,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_3").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE LOG_SYSTEM
-            $res8 = mysql_query(
+            $res8 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."log_system` (
                 `id` int(12) NOT null AUTO_INCREMENT,
                 `type` varchar(20) NOT NULL,
@@ -760,7 +761,7 @@ if (isset($_POST['type'])) {
                 );"
             );
             if ($res8) {
-                mysql_query(
+                mysqli_query($dbTmp,
                     "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system
                     ADD `field_1` VARCHAR(250) NOT NULL"
                 );
@@ -772,12 +773,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_4").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE 10 - FILES
-            $res9 = mysql_query(
+            $res9 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."files` (
                 `id` int(11) NOT null AUTO_INCREMENT,
                 `id_item` int(11) NOT NULL,
@@ -798,21 +799,21 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_6").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE `".$_SESSION['tbl_prefix']."files`
                 CHANGE id id INT(11) AUTO_INCREMENT PRIMARY KEY;"
             );
-            mysql_query(
+            mysqli_query($dbTmp,
                 "ALTER TABLE `".$_SESSION['tbl_prefix']."files`
                 CHANGE name name VARCHAR(100) NOT NULL;"
             );
 
             ## TABLE CACHE
-            mysql_query("DROP TABLE IF EXISTS `".$_SESSION['tbl_prefix']."cache`");
-            $res8 = mysql_query(
+            mysqli_query($dbTmp,"DROP TABLE IF EXISTS `".$_SESSION['tbl_prefix']."cache`");
+            $res8 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."cache` (
                 `id` int(12) NOT NULL,
                 `label` varchar(50) NOT NULL,
@@ -833,15 +834,15 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".$_SESSION['tbl_prefix']."log_items as l ON (l.id_item = i.id)
                         AND l.action = 'at_creation'
                         WHERE i.inactif=0";
-                $rows = mysql_query($sql);
-                while ($reccord = mysql_fetch_array($rows)) {
+                $rows = mysqli_query($dbTmp,$sql);
+                while ($reccord = mysqli_fetch_array($rows)) {
                     //Get all TAGS
                     $tags = "";
-                    $itemsRes = mysql_query(
+                    $itemsRes = mysqli_query($dbTmp,
                         "SELECT tag FROM ".$_SESSION['tbl_prefix']."tags
                         WHERE item_id=".$reccord['id']
-                    ) or die(mysql_error());
-                    $itemTags = mysql_fetch_array($itemsRes);
+                    ) or die(mysqli_error($dbTmp));
+                    $itemTags = mysqli_fetch_array($itemsRes);
                     if (!empty($itemTags)) {
                         foreach ($itemTags as $itemTag) {
                             if (!empty($itemTag['tag'])) {
@@ -857,7 +858,7 @@ if (isset($_POST['type'])) {
                     }
 
                     //store data
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "INSERT INTO ".$_SESSION['tbl_prefix']."cache
                         VALUES (
                         '".$reccord['id']."',
@@ -881,7 +882,7 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_7").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
@@ -889,7 +890,7 @@ if (isset($_POST['type'])) {
                *  Change table FUNCTIONS
                *  By 2 tables ROLES
             */
-            $res9 = mysql_query(
+            $res9 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_title` (
                 `id` int(12) NOT NULL,
                 `title` varchar(50) NOT NULL,
@@ -914,7 +915,7 @@ if (isset($_POST['type'])) {
                 "INT(11) NOT null DEFAULT '0'"
             );
 
-            $res10 = mysql_query(
+            $res10 = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."roles_values` (
                 `role_id` int(12) NOT NULL,
                 `folder_id` int(12) NOT NULL
@@ -927,12 +928,12 @@ if (isset($_POST['type'])) {
             }
             if ($res9 && $res10 && $tableFunctionExists == true) {
                 //Get data from tables FUNCTIONS and populate new ROLES tables
-                $rows = mysql_query(
+                $rows = mysqli_query($dbTmp,
                     "SELECT * FROM ".$_SESSION['tbl_prefix']."functions"
                 );
-                while ($reccord = mysql_fetch_array($rows)) {
+                while ($reccord = mysqli_fetch_array($rows)) {
                     //Add new role title
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "INSERT INTO ".$_SESSION['tbl_prefix']."roles_title
                         VALUES (
                             '".$reccord['id']."',
@@ -943,7 +944,7 @@ if (isset($_POST['type'])) {
                     //Add each folder in roles_values
                     foreach (explode(';', $reccord['groupes_visibles']) as $folderId) {
                         if (!empty($folderId)) {
-                            mysql_query(
+                            mysqli_query($dbTmp,
                                 "INSERT INTO ".$_SESSION['tbl_prefix']."roles_values
                                 VALUES (
                                 '".$reccord['id']."',
@@ -955,11 +956,11 @@ if (isset($_POST['type'])) {
                 }
 
                 //Now alter table roles_title in order to create a primary index
-                mysql_query(
+                mysqli_query($dbTmp,
                     "ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title`
                     ADD PRIMARY KEY(`id`)"
                 );
-                mysql_query(
+                mysqli_query($dbTmp,
                     "ALTER TABLE `".$_SESSION['tbl_prefix']."roles_title`
                     CHANGE `id` `id` INT(12) NOT null AUTO_INCREMENT "
                 );
@@ -970,7 +971,7 @@ if (isset($_POST['type'])) {
                 );
 
                 //Drop old table
-                mysql_query("DROP TABLE ".$_SESSION['tbl_prefix']."functions");
+                mysqli_query($dbTmp,"DROP TABLE ".$_SESSION['tbl_prefix']."functions");
 
                 echo 'document.getElementById("tbl_9").innerHTML = '.
                     '"<img src=\"images/tick.png\">";';
@@ -983,12 +984,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_9").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE KB
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."kb` (
                 `id` int(12) NOT null AUTO_INCREMENT,
                 `category_id` int(12) NOT NULL,
@@ -1008,12 +1009,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_10").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE KB_CATEGORIES
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."kb_categories` (
                 `id` int(12) NOT null AUTO_INCREMENT,
                 `category` varchar(50) NOT NULL,
@@ -1029,12 +1030,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_11").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE KB_ITEMS
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."kb_items` (
                 `kb_id` tinyint(12) NOT NULL,
                 `item_id` tinyint(12) NOT NULL
@@ -1049,12 +1050,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_12").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE restriction_to_roles
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."restriction_to_roles` (
                 `role_id` tinyint(12) NOT NULL,
                 `item_id` tinyint(12) NOT NULL
@@ -1069,20 +1070,20 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_13").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE keys
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."keys` (
                 `table` varchar(25) NOT NULL,
                 `id` int(20) NOT NULL,
                 `rand_key` varchar(25) NOT NULL
                 ) CHARSET=utf8;"
             );
-            $resTmp = mysql_fetch_row(
-                mysql_query(
+            $resTmp = mysqli_fetch_row(
+                mysqli_query($dbTmp,
                     "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys"
                 )
             );
@@ -1091,16 +1092,16 @@ if (isset($_POST['type'])) {
                     '"<img src=\"images/tick.png\">";';
 
                 //increase size of PW field in ITEMS table
-                mysql_query(
+                mysqli_query($dbTmp,
                     "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
                 );
 
                 //Populate table KEYS
                 //create all keys for all items
-                $rows = mysql_query(
+                $rows = mysqli_query($dbTmp,
                     "SELECT * FROM ".$_SESSION['tbl_prefix']."items WHERE perso = 0"
                 );
-                while ($reccord = mysql_fetch_array($rows)) {
+                while ($reccord = mysqli_fetch_array($rows)) {
                     if (!empty($reccord['pw'])) {
                         //get pw
                         $pw = trim(
@@ -1120,7 +1121,7 @@ if (isset($_POST['type'])) {
                         $randomKey = substr(md5(rand().rand()), 0, 15);
 
                         //Store generated key
-                        mysql_query(
+                        mysqli_query($dbTmp,
                             "INSERT INTO ".$_SESSION['tbl_prefix']."keys
                             VALUES('items', '".$reccord['id']."', '".$randomKey."')"
                         );
@@ -1142,11 +1143,11 @@ if (isset($_POST['type'])) {
                         );
 
                         //update pw in ITEMS table
-                        mysql_query(
+                        mysqli_query($dbTmp,
                             "UPDATE ".$_SESSION['tbl_prefix']."items
                             SET pw = '".$encryptedPw."'
                             WHERE id='".$reccord['id']."'"
-                        ) or die(mysql_error());
+                        ) or die(mysqli_error($dbTmp));
                     }
                 }
                 echo 'document.getElementById("tbl_15").innerHTML = '.
@@ -1160,7 +1161,7 @@ if (isset($_POST['type'])) {
             }
 
             ## TABLE Languages
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."languages` (
                 `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY ,
                 `name` VARCHAR(50) NOT null ,
@@ -1169,11 +1170,11 @@ if (isset($_POST['type'])) {
                 `flag` VARCHAR(30) NOT NULL
                 ) CHARSET=utf8;"
             );
-            $resTmp = mysql_fetch_row(
-                mysql_query("SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."languages")
+            $resTmp = mysqli_fetch_row(
+                mysqli_query($dbTmp,"SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."languages")
             );
-            mysql_query("TRUNCATE TABLE ".$_SESSION['tbl_prefix']."languages");
-            mysql_query(
+            mysqli_query($dbTmp,"TRUNCATE TABLE ".$_SESSION['tbl_prefix']."languages");
+            mysqli_query($dbTmp,
                 "INSERT IGNORE INTO `".$_SESSION['tbl_prefix']."languages`
                 (`id`, `name`, `label`, `code`, `flag`) VALUES
                 ('', 'french', 'French' , 'fr', 'fr.png'),
@@ -1201,12 +1202,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_13").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE EMAILS
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."emails` (
                 `timestamp` INT(30) NOT null ,
                 `subject` VARCHAR(255) NOT null ,
@@ -1224,12 +1225,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_17").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE AUTOMATIC DELETION
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."automatic_del` (
                 `item_id` int(11) NOT NULL,
                 `del_enabled` tinyint(1) NOT NULL,
@@ -1246,12 +1247,12 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("tbl_18").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE items_edition
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."items_edition` (
                 `item_id` int(11) NOT NULL,
                 `user_id` int(11) NOT NULL,
@@ -1263,16 +1264,16 @@ if (isset($_POST['type'])) {
                     '"<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = '.
-                    '"An error appears on table items_edition! '.mysql_error().'";';
+                    '"An error appears on table items_edition! '.mysqli_error($dbTmp).'";';
                 echo 'document.getElementById("tbl_19").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE categories
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories` (
                 `id` int(12) NOT NULL AUTO_INCREMENT,
                 `parent_id` int(12) NOT NULL,
@@ -1289,16 +1290,16 @@ if (isset($_POST['type'])) {
                     '"<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = '.
-                    '"An error appears on table categories! '.mysql_error().'";';
+                    '"An error appears on table categories! '.mysqli_error($dbTmp).'";';
                 echo 'document.getElementById("tbl_20").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
             ## TABLE categories_items
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_items` (
                 `id` int(12) NOT NULL AUTO_INCREMENT,
                 `field_id` int(11) NOT NULL,
@@ -1312,16 +1313,16 @@ if (isset($_POST['type'])) {
                     '"<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = '.
-                    '"An error appears on table categories_items! '.mysql_error().'";';
+                    '"An error appears on table categories_items! '.mysqli_error($dbTmp).'";';
                 echo 'document.getElementById("tbl_21").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
-                mysql_close($dbTmp);
+                mysqli_close($dbTmp);
                 break;
             }
 
         	## TABLE categories_folders
-        	$res = mysql_query(
+        	$res = mysqli_query($dbTmp,
         	"CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_folders` (
                 `id_category` int(12) NOT NULL,
                 `id_folder` int(12) NOT NULL
@@ -1332,22 +1333,22 @@ if (isset($_POST['type'])) {
         		    '"<img src=\"images/tick.png\">";';
         	} else {
         		echo 'document.getElementById("res_step4").innerHTML = '.
-        		    '"An error appears on table categories_folders! '.mysql_error().'";';
+        		    '"An error appears on table categories_folders! '.mysqli_error($dbTmp).'";';
         		echo 'document.getElementById("tbl_22").innerHTML = '.
         		    '"<img src=\"images/exclamation-red.png\">";';
         		echo 'document.getElementById("loader").style.display = "none";';
-        		mysql_close($dbTmp);
+        		mysqli_close($dbTmp);
         		break;
         	}
 
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
                 '<blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
-            $cleanRes = mysql_query(
+            $cleanRes = mysqli_query($dbTmp,
                 "SELECT id,description FROM `".$_SESSION['tbl_prefix']."items`"
             );
-            while ($cleanData = mysql_fetch_array($cleanRes)) {
-                mysql_query(
+            while ($cleanData = mysqli_fetch_array($cleanRes)) {
+                mysqli_query($dbTmp,
                     "UPDATE `".$_SESSION['tbl_prefix']."items`
                     SET description = '".strip_tags($cleanData['description'], $allowedTags).
                     "' WHERE id = ".$cleanData['id']
@@ -1355,8 +1356,8 @@ if (isset($_POST['type'])) {
             }
 
             //Encrypt passwords in log_items
-            $resTmp = mysql_fetch_row(
-                mysql_query(
+            $resTmp = mysqli_fetch_row(
+                mysqli_query($dbTmp,
                     "SELECT COUNT(*) FROM ".$pre."misc
                     WHERE type = 'update' AND intitule = 'encrypt_pw_in_log_items'
                     AND valeur = 1"
@@ -1365,11 +1366,11 @@ if (isset($_POST['type'])) {
             if ($resTmp[0] == 0) {
                 // AES Counter Mode implementation
                 require_once '../includes/libraries/Encryption/Crypt/aesctr.php';
-                $tmpRes = mysql_query(
+                $tmpRes = mysqli_query($dbTmp,
                     "SELECT * FROM ".$pre."log_items
                     WHERE action = 'at_modification' AND raison LIKE 'at_pw %'"
                 );
-                while ($tmpData = mysql_fetch_array($tmpRes)) {
+                while ($tmpData = mysqli_fetch_array($tmpRes)) {
                     $reason = explode(':', $tmpData['raison']);
                     $text = Encryption\Crypt\aesctr::encrypt(
                         trim($reason[1]),
@@ -1377,7 +1378,7 @@ if (isset($_POST['type'])) {
                         256
                     );
                 }
-                mysql_query(
+                mysqli_query($dbTmp,
                     "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
                     VALUES ('update', 'encrypt_pw_in_log_items',1)"
                 );
@@ -1385,22 +1386,22 @@ if (isset($_POST['type'])) {
 
             // Since 2.1.17, encrypt process is changed.
             // Previous PW need to be re-encrypted
-            if (@mysql_query(
+            if (@mysqli_query($dbTmp,
                 "SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc
                 WHERE type='admin' AND intitule = 'encryption_protocol'"
             )) {
-                $tmpResult = mysql_query(
+                $tmpResult = mysqli_query($dbTmp,
                     "SELECT valeur FROM ".$_SESSION['tbl_prefix']."misc
                     WHERE type='admin' AND intitule = 'encryption_protocol'"
                 );
-                $tmp = mysql_fetch_row($tmpResult);
+                $tmp = mysqli_fetch_row($tmpResult);
                 if ($tmp[0] != "ctr") {
                     //count elem
-                    $res = mysql_query(
+                    $res = mysqli_query($dbTmp,
                         "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."items
                         WHERE perso = '0'"
                     );
-                    $data = mysql_fetch_row($res);
+                    $data = mysqli_fetch_row($res);
                     if ($data[0] > 0) {
                         echo '$("#change_pw_encryption, #change_pw_encryption_progress").show();';
                         echo '$("#change_pw_encryption_progress").html('.
@@ -1418,7 +1419,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_launch").disabled = "disabled";';
             echo 'document.getElementById("res_step4").innerHTML = "dataBase has been populated";';
             echo 'document.getElementById("loader").style.display = "none";';
-            mysql_close($dbTmp);
+            mysqli_close($dbTmp);
             break;
 
             //=============================
@@ -1570,27 +1571,27 @@ require_once \"".$skFile."\";
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
 
-            @mysql_connect(
+            @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            @mysql_select_db($_SESSION['db_bdd']);
-            $dbTmp = mysql_connect(
+            $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw']
             );
-            mysql_select_db(
-                $_SESSION['db_bdd'],
-                $dbTmp
+            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
+            mysqli_select_db(
+                $dbTmp,
+                $_SESSION['db_bdd']
             );
 
-            $res = mysql_query(
+            $res = mysqli_query($dbTmp,
                 "SELECT * FROM ".$_SESSION['tbl_prefix']."items
                 WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
-            ) or die(mysql_error());
-            while ($data = mysql_fetch_array($res)) {
+            ) or die(mysqli_error($dbTmp));
+            while ($data = mysqli_fetch_array($res)) {
                 // check if pw already well encrypted
                 $pw = decrypt($data['pw']);
                 if (empty($pw)) {
@@ -1602,24 +1603,24 @@ require_once \"".$skFile."\";
                     $pw = encrypt($pw);
 
                     // store Password
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "UPDATE ".$_SESSION['tbl_prefix']."items
                         SET pw = '".$pw."' WHERE id=".$data['id']
                     );
 
                     // Item Key
-                    mysql_query(
+                    mysqli_query($dbTmp,
                         "INSERT INTO `".$_SESSION['tbl_prefix']."keys`
                         (`table`, `id`, `rand_key`) VALUES
                         ('items', '".$data['id']."', '".$randomKey."'"
                     );
                 } else {
                     // if PW exists but no key ... then add it
-                    $resData = mysql_query(
-                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keyx
-                        WHERE table = 'items' AND id = ".$data['id']
-                    ) or die(mysql_error());
-                    $dataTemp = mysql_fetch_row($resData);
+                    $resData = mysqli_query($dbTmp,
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
+                        WHERE `table` = 'items' AND id = ".$data['id']
+                    ) or die(mysqli_error($dbTmp));
+                    $dataTemp = mysqli_fetch_row($resData);
                     if ($dataTemp[0] == 0) {
                         // generate Key and encode PW
                         $randomKey = generateKey();
@@ -1627,13 +1628,13 @@ require_once \"".$skFile."\";
                         $pw = encrypt($pw);
 
                         // store Password
-                        mysql_query(
+                        mysqli_query($dbTmp,
                             "UPDATE ".$_SESSION['tbl_prefix']."items
                             SET pw = '".$pw."' WHERE id=".$data['id']
                         );
 
                         // Item Key
-                        mysql_query(
+                        mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['tbl_prefix']."keys`
                             (`table`, `id`, `rand_key`) VALUES
                             ('items', '".$data['id']."', '".$randomKey."'"

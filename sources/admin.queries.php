@@ -13,6 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -22,7 +23,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['u
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-header("Cache-Control: no-cache, must-revalidate");
+header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -673,7 +674,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_attachments_cryption":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-        
+
         // init
         $error = "";
         $ret = "";
@@ -737,7 +738,7 @@ switch ($_POST['type']) {
         case "admin_action_attachments_cryption_continu":
             include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
             require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-            
+
             $cpt = 0;
             $newFilesList = "";
             $continu = true;
@@ -756,7 +757,7 @@ switch ($_POST['type']) {
             // treat 10 files
             $filesList = explode(';', $_POST['list']);
             foreach ($filesList as $file) {
-                if ($cpt < 5) {                    
+                if ($cpt < 5) {
                     // skip file is Coherancey not respected
                     $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
                     $line = fgets($fp);
@@ -768,7 +769,7 @@ switch ($_POST['type']) {
                         $skipFile = true;
                     }
                     fclose($fp);
-                    
+
                     if ($skipFile == true) {
                         // make a copy of file
                         if (!copy(
@@ -778,18 +779,18 @@ switch ($_POST['type']) {
                             $error = "Copy not possible";
                             exit;
                         }
-                        
+
                         // Open the file
                         unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
                         $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy", "rb");
                         $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
-                        
+
                         if ($_POST['option'] == "decrypt") {
                             stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
                         } else if ($_POST['option'] == "encrypt") {
                             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
                         }
-                        
+
                         // read file and create new one
                         $check = false;
                         while (($line = fgets($fp)) !== false) {
@@ -797,7 +798,7 @@ switch ($_POST['type']) {
                         }
                         fclose($fp);
                         fclose($out);
-                        
+
                         $cpt ++;
                     }
                 } else {
@@ -809,9 +810,9 @@ switch ($_POST['type']) {
                     }
                 }
             }
-            
+
             if (empty($newFilesList)) $continu = false;
-            
+
             echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt']+$cpt).'"}]';
             break;
 }

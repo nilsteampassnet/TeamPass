@@ -1,4 +1,5 @@
 <?php
+require_once('../sources/sessions.php');
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;

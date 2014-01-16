@@ -1,4 +1,5 @@
 <?php
+require_once('sources/sessions.php');
 session_start();
 @openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
 

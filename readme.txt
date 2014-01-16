@@ -58,6 +58,11 @@ LANGUAGES:
 2.1.20
  #441 - Attachments encryption
  #459 - Turn off strict mode
+ #477-#452 - Fix for upgrade
+ #459 - Turn off strict mode
+ #472 - Error on line 582 index.php
+ #474 - Set default to checked for secure passwords
+ Fork from slimm609 - Encrpyted Sessions and CSRFGuard enabled
 
 2.1.19
  #413 - fix for PHP Parse error: syntax error, unexpected '['
