@@ -594,7 +594,7 @@ $txt['settings_anyone_can_modify'] = "Bearbeitung jedes Elements durch alle Benu
 $txt['settings_anyone_can_modify_bydefault'] = "Die Option '<b><i>Jeder darf bearbeiten</b></i>' standardmäßig aktivieren";
 $txt['settings_anyone_can_modify_tip'] = "<span style='font-size: 11px; max-width: 300px;'>Durch Aktivierung dieser Option wird dem Elementenformular ein Auswahlfeld hinzugefügt, das dem Ersteller erlaubt, jedem anderen Benutzer die Bearbeitung des Elements zu erlauben.</span>";
 $txt['settings_default_language'] = "Standardsprache definieren";
-$txt['settings_delay_for_item_edition'] = "Verstrichene Zeit (in Minuten), nach der die Bearbeitung als mislungen betrachtet wird";
+$txt['settings_delay_for_item_edition'] = "Verstrichene Zeit (in Minuten), nach der die Bearbeitung als misslungen betrachtet wird";
 $txt['settings_delay_for_item_edition_tip'] = "<span style='font-size:11px;max-width:300px;'>Wird ein Element bearbeitet, ist dieses mittels eines Tokens gesperrt, so dass es nicht anderweitig parallel verändert werden kann.<br />Diese Einstellung erlaubt die Löschung des Tokens und das Entsperren des Elements nach einer gewißen Zeit. Ist der Wert auf 0 gesetzt, wird der Token nie gelöscht.</span>";
 $txt['settings_enable_sts'] = "HTTPS Strict Transport Security erzwingen - Vorsicht: bitte lesen Sie ToolTip.";
 $txt['settings_enable_sts_tip'] = "Dies erzwingt HTTPS STS. STS hilft \"Man-in-the-Middle\"-Angriffe auf SSL abwehren. Um diese Option zu nutzen, MÜSSEN Sie ein gültiges CA-signiertes SSL-Zertifikat besitzen. Falls Sie lediglich ein selbst-signiertes Zertifikat besitzen und diese Option aktivieren, können Sie die Sicherheit von TeamPass gefährden! Die Apache-Konfiguration muss \"SSL-Options + ExportCertData\" beinhalten.";
