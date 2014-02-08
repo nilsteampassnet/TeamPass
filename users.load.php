@@ -387,6 +387,20 @@ $(function() {
            );
         }
     });
+
+	$("#manager_dialog").dialog({
+		bgiframe: true,
+		modal: true,
+		autoOpen: false,
+		width: 400,
+		height: 200,
+		title: "<?php echo $txt['admin_action'];?>",
+		buttons: {
+			"<?php echo $txt['cancel_button'];?>": function() {
+				$(this).dialog("close");
+			}
+		}
+	});
 });
 
 function pwGenerate(elem)
@@ -610,6 +624,31 @@ function user_action_log_items(id)
 {
     $("#selected_user").val(id);
     $("#user_logs_dialog").dialog("open");
+}
+
+function user_action_ga_code(id)
+{
+	$.post(
+	"sources/main.queries.php",
+	{
+		type    : "ga_generate_qr",
+		id      : id,
+		send_email : "1"
+	},
+	function(data) {
+		if (data[0].error == "0") {
+			$("#manager_dialog_error").html("<div><?php echo $txt['share_sent_ok'];?></div><div>"+data[0].ga_url+"</div>");
+		} else {
+			if (data[0].error == "no_email") {
+				$("#manager_dialog_error").html("<?php echo $txt['error_no_email'];?>");
+			} else if (data[0].error == "no_user") {
+				$("#manager_dialog_error").html("<?php echo $txt['error_no_user'];?>");
+			}
+		}
+		$("#manager_dialog").dialog('open');
+	},
+	"json"
+	);
 }
 
 /**

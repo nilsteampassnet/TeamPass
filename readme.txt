@@ -62,6 +62,7 @@ LANGUAGES:
  #459 - Turn off strict mode
  #472 - Error on line 582 index.php
  #474 - Set default to checked for secure passwords
+ #497 - Moved GA QR code creation to administration
  Fork from slimm609 - Encrpyted Sessions and CSRFGuard enabled
 
 2.1.19

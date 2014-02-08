@@ -328,6 +328,8 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 						</div>
                         <div id="offline_download_link" style="text-align:center; width:100%; margin-top:15px;">&nbsp;</div>
                         <div style="text-align:center;margin-top:8px; display:none;" id="div_offline_mode_wait"><img src="includes/images/ajax-loader.gif" /></div>
+						<input type="hidden" id="offmode_number" />
+						<input type="hidden" id="offmode_list" />
                     </div>
                 </div>';
 	}
@@ -335,4 +337,4 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 echo '
             </div>';
 
-//require_once 'home.load.php';
+require_once 'home.load.php';

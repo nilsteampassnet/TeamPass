@@ -2,9 +2,9 @@
 /**
  *
  * @file          home.load.php
- * @author        Nils Laumaillé
+ * @author        Nils LaumaillÃ©
  * @version       2.1.19
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils LaumaillÃ©
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -21,6 +21,19 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 $(function() {
 
+	//build nice buttonset
+    $("#radio_import_type, #connect_ldap_mode").buttonset();
+    $("#personal_sk, #change_personal_sk, #reset_personal_sk, #pickfiles_csv, #pickfiles_kp").button();
+
+    if ($("#personal_saltkey_set").val() != 1) {
+        $("#change_personal_sk").button("disable");
+    }
+
+    //Clear text when clicking on buttonset
+    $(".import_radio").click(function() {
+        $("#import_status").html("");
+    });
+	
     // DIALOG BOX FOR OFF-LINE MODE
     $("#div_offline_mode").dialog({
         bgiframe: true,
@@ -53,6 +66,8 @@ $(function() {
                     return;
                 }
 
+                pdf_password = sanitizeString($("#offline_password").val());
+
                 //Send query
                 $.post(
                     "sources/export.queries.php",
@@ -62,6 +77,9 @@ $(function() {
                         pdf_password : sanitizeString($("#offline_password").val())
                     },
                     function(data) {
+                        if (data[0].loop != null && data[0].loop == "true") {
+                    		exportHTMLLoop(ids, data[0].file,  ids.split(';').length, 1, pdf_password);
+                    	}
                         $("#offline_download_link").html(data[0].text);
                         $("#div_offline_mode_wait").hide();
                     },
@@ -344,6 +362,7 @@ $(function() {
                         pdf_password : $("#pdf_password").val()
                     },
                     function(data) {
+                    	
                         $("#download_link").html(data[0].text);
                         $("#div_print_out_wait").hide();
                     },
@@ -482,7 +501,77 @@ $(function() {
         e.preventDefault();
     });
     uploader_kp.init();
+
+  //only numerics
+    $(".numeric_only").numeric();
+
+   //Simulate a CRON activity
+    $.post(
+        "sources/main.queries.php",
+        {
+            type    : "send_wainting_emails"
+        },
+        function(data) {
+            //
+        }
+   );
 });
+
+
+/*
+* Loading Item details step 2
+*/
+function exportHTMLLoop(idsList, file, number, cpt, pdf_password)
+{
+	// prpare list of ids to treat during this run
+	if (idsList != "") {
+		$("#offline_download_link").html('<img src="includes/images/ajax-loader.gif" /> ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+
+		tab = idsList.split(';');
+		idTree = tab[0];
+		tab = tab.slice(1, tab.length);
+		idsList = tab.join(';');
+		cpt = parseInt(cpt) + 1;
+		
+		$.post(
+			"sources/export.queries.php",
+			{
+				type 	: "export_to_html_format_loop",
+				idsList	: idsList,
+				idTree 	: idTree,
+				file    : file,
+				cpt     : cpt,
+				number  : number,
+				pdf_password : pdf_password
+			},
+			function(data) {
+				// relaunch for next run
+				exportHTMLLoop (
+					data[0].idsList,
+					data[0].file,
+					number,
+					cpt,
+					pdf_password
+				);
+			},
+			"json"
+		);
+	} else {
+		$.post(
+			"sources/export.queries.php",
+			{
+				type 	: "export_to_html_format_finalize",
+				file    : file
+			},
+			function(data) {
+				$("#offline_download_link").html(data[0].text);
+				$("#div_print_out_wait").hide();
+				$("#div_loading").hide();
+			},
+			"json"
+		);
+	}
+};
 
 function ChangeMyPass()
 {

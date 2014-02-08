@@ -301,7 +301,7 @@ if (!empty($_POST['type'])) {
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
-                exit();
+                echo '[ { "error" : "yes" } ]';
             }
             // Get old email
             $data = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id = '".$_POST['id']."'");
@@ -324,6 +324,7 @@ if (!empty($_POST['type'])) {
                     'field_1' => $_POST['id']
                    )
             );
+        	echo '[{"error" : "no"}]';
             break;
         /**
          * UPDATE CAN CREATE ROOT FOLDER RIGHT

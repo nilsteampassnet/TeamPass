@@ -336,35 +336,6 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             false
         );
     }
-} elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication'])
-    && $_SESSION['settings']['2factors_authentication'] == 1
-) {
-    /*
-    //2 Factors authentication is asked
-    include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
-    $google2FA=new Google2FA();
-
-    //Generate code and QR
-    $initalizationKey = $google2FA->generate_secret_key();
-    $timeStamp = $google2FA->get_timestamp();
-    $secretkey = $google2FA->base32_decode($initalizationKey);	// Decode it into binary
-    $otp = $google2FA->oath_hotp($secretkey, $timeStamp);	// Get current token
-    $qrCode = $google2FA->get_qr_code_url("", $otp);
-
-    //Store Onetime pw
-    $_SESSION['initKey'] = $initalizationKey;
-	*/
-	$g = new SplClassLoader('Authentication\GoogleAuthenticator', './includes/libraries');
-	$g->register();
-	$g = new \Authentication\GoogleAuthenticator\GoogleAuthenticator();
-	$_SESSION['ga_secret'] = $g->generateSecret();
-/*
-	$secret = 'XVQ2UIGO75XRUKJO';
-	$time = floor(time() / 30);
-	$code = "343232";
-	$_SESSION['ga_secret'] = $g->getCode($secret);
-	$_SESSION['ga_secret_qr'] = $g->getURL('nils', 'teampass.net', $secret);
-	*/
 }
 
 /*

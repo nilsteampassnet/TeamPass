@@ -193,48 +193,50 @@ switch ($_POST['type']) {
     */
     case "ga_generate_qr":
     	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-    	// decrypt and retreive data in JSON format
-    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
-    	// Prepare variables
-    	$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    	$username = htmlspecialchars_decode($dataReceived['login']);
 
     	// Check if user exists
-    	$sql = "SELECT id, ga, pw FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
-    	$row = $db->query($sql);
-    	if ($row == 0) {
+    	$row = $db->query(
+    		"SELECT login, email
+    		FROM ".$pre."users
+    		WHERE id = '".$_POST['id']."'"
+    	);
+    	$data = $db->fetchArray($row);
+    	if (count($data) == 0) {
     		// not a registered user !
     		echo '[{"error" : "no_user"}]';
     	} else {
-    		// check if good credentials
-    		$data = $db->fetchArray($row);
-    		if (crypt($passwordClear, $data['pw']) == $data['pw']) {
-    			// check if user has already a SECRET
+    		if (empty($data['email'])) {
+    			echo '[{"error" : "no_email"}]';
+    		} else {
+    			// generate new GA user code
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
     			$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
-    			if (empty($data['ga'])) {
-    				// no SECRET yet
-    				$_SESSION['ga_secret'] = $g->generateSecret();
+    			$gaSecretKey = $g->generateSecret();
 
-    				$db->queryUpdate(
-	    				"users",
-	    				array(
-	    				    'ga' => $_SESSION['ga_secret']
-	    				   ),
-	    				"id = ".$data['id']
-    				);
-    			} else {
-    				// secret exists
-    				$_SESSION['ga_secret'] = $data['ga'];
-    			}
+    			// save the code
+    			$db->queryUpdate(
+	    			"users",
+	    			array(
+	    			    'ga' => $gaSecretKey
+	    			   ),
+	    			"id = ".$_POST['id']
+    			);
+
     			// generate QR url
-    			$gaUrl = $g->getURL($username, $_SESSION['settings']['ga_website_name'], $_SESSION['ga_secret']);
+    			$gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
 
+    			// send mail?
+    			if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
+    				sendEmail (
+    					$txt['email_ga_subject'],
+    					str_replace("#link#", $gaUrl, $txt['email_ga_text']),
+    					$data['email']
+					);
+    			}
+
+    			// send back
     			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
-    		} else {
-    			// not good credentials
-    			echo '[{"error" : "bad_couple"}]';
     		}
     	}
     	break;

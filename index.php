@@ -525,16 +525,16 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     // Google Authenticator code
 	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
 		echo '
-                    <div id="ga_code_div">
+                    <div id="ga_code_div" style="margin-bottom:10px;">
                     	'.$txt['ga_identification_code'].'
                         <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
                         <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
                             '.$txt['ga_scan_url'].'<br />
                             <span style="margin:10px;"><img id="ga_qr" src="" /></span>
                         </div>
-                        <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
+                        <!--<div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
 	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$txt['ga_not_yet_synchronized'].'</span>
-	                    </div>
+	                    </div>-->
                     </div>';
 	}
     echo '

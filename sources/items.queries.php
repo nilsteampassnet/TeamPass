@@ -1516,15 +1516,15 @@ if (isset($_POST['type'])) {
         	}
 
         	echo prepareExchangedData(
-        	array(
-        		"history" => str_replace('"', '&quot;', $history),
-        		"history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
-	        	"favourite" => $favourite,
-	        	"div_last_items" => $div_last_items,
-	        	"files_edit" => $filesEdit,
-	        	"files_id" => $files_id
-        	),
-        	"encode"
+	        	array(
+	        		"history" => str_replace('"', '&quot;', $history),
+	        		"history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
+		        	"favourite" => $favourite,
+		        	"div_last_items" => $div_last_items,
+		        	"files_edit" => $filesEdit,
+		        	"files_id" => $files_id
+	        	),
+	        	"encode"
         	);
         	break;
 

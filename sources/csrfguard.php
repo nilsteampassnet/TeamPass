@@ -39,9 +39,9 @@ function csrfguard_generate_token($unique_form_name)
 				$c=chr(ord('a')+$r);
 			}
 			else
-			{ 
+			{
 				$c=chr(ord('0')+$r-26);
-			} 
+			}
 			$token.=$c;
 		}
 	}
@@ -61,9 +61,9 @@ function csrfguard_validate_token($unique_form_name,$token_value)
 		$result=true;
 	}
 	else
-	{ 
+	{
 		$result=false;
-	} 
+	}
 	unset_session($unique_form_name);
 	return $result;
 }
@@ -98,20 +98,20 @@ function csrfguard_start()
 	{
 		if ( !isset($_POST['CSRFName']) or !isset($_POST['CSRFToken']) )
 		{
-			trigger_error("No CSRFName found, probable invalid request.",E_USER_ERROR);		
-		} 
+			trigger_error("No CSRFName found, probable invalid request.",E_USER_ERROR);
+		}
 		$name =$_POST['CSRFName'];
 		$token=$_POST['CSRFToken'];
 		if (!csrfguard_validate_token($name, $token))
-		{ 
+		{
 			trigger_error("Invalid CSRF token.",E_USER_ERROR);
 		}
 	}
 	ob_start();
-	/* adding double quotes for "csrfguard_inject" to prevent: 
+	/* adding double quotes for "csrfguard_inject" to prevent:
           Notice: Use of undefined constant csrfguard_inject - assumed 'csrfguard_inject' */
-	register_shutdown_function("csrfguard_inject");	
+	register_shutdown_function("csrfguard_inject");
 }
-csrfguard_start();
+//csrfguard_start();
 ?>
 
