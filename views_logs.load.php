@@ -200,6 +200,15 @@ $(function() {
     * PURGE
     */
     $("#butPurge").button().click(function(e) {
+        // prepare dialogbox
+        $("#div_dialog_message").dialog("option", "title", "<?php echo $txt['admin_main'];?>");
+        $("#div_dialog_message").dialog("option", "buttons", {
+        	"<?php echo $txt['ok'];?>": function() {
+                $(this).dialog("close");
+            }
+        });
+
+        // send query
     	$.post(
 	        "sources/views.queries.php",
 	        {

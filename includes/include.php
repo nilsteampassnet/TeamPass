@@ -13,6 +13,7 @@ global $settings, $languagesList;
 
 $k['version'] = "2.1.20";
 $k['tool_name'] = "TeamPass";
+$k['copyright'] = "&nbsp;&copy;&nbsp;copyright 2009-2014";
 $k['jquery-version'] = "1.9.1";
 $k['jquery-ui-version'] = "1.10.3";
 $k['jquery-ui-theme'] = "overcast";

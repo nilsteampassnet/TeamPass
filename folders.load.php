@@ -94,7 +94,7 @@ $(function() {
                     "sources/folders.queries.php",
                     {
                     type    : "update_folder",
-                    data      : aes_encrypt(data)
+                    data      : prepareExchangedData(data, "encode"),
                     },
                     function(data) {
                         //Check errors

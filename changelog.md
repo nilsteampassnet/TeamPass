@@ -1,61 +1,8 @@
-|==============================================================================|
-|				TeamPass - A Collaborative Passwords Manager				   |
-|						2009-2013 (c) Nils Laumaillé						   |
-|==============================================================================|
-
-********************************************************************************
-* 																		 	   *
-* 								LICENCE AGREEMENT							   *
-* Before installing and using TeamPass, you must accept its licence defined	as *
-* GNU AFFERO GPL.															   *
-* Copyright (c) 2009-2014, Nils Laumaillé (Nils@TeamPass.net)				   *
-* 																			   *
-* This program is free software: you can redistribute it and/or modify		   *
-* it under the terms of the GNU Affero General Public License as			   *
-* published by the Free Software Foundation, either version 3 of the		   *
-* License, or any later version.											   *
-* 																			   *
-* This program is distributed in the hope that it will be useful,			   *
-* but WITHOUT ANY WARRANTY; without even the implied warranty of			   *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the				   *
-* GNU Affero General Public License for more details.						   *
-* 																			   *
-* You should have received a copy of the GNU Affero General Public License	   *
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.		   *
-* 																			   *
-********************************************************************************
-
-----------------------------  INFORMATIONS  ------------------------------------
-Website: http://www.teampass.net/
-
-BUGS & SUGGESTIONS:
-  For bugs discovery or any suggestions, please report in Github
-        https://github.com/nilsteampassnet/TeamPass/issues
-
-INSTALLATION:
-* http://www.teampass.net/tag/installation/
-* Once uploaded, launch install/install.php and follow instructions.
-
-NEEDS:
-* Apache, MySQL, PHP 5.3.0 (or higher) and mcrypt extension
-
-UPDATE:
-* Once uploaded, launch install/upgrade.php and follow instructions.
-
-LANGUAGES:
-* ENGLISH 		by Nils and Petr
-* FRENCH 		by Nils
-* CZECH 		by Petr and Philipp
-* GERMAN 		by Philipp
-* RUSSIAN 		by Anton
-* TURKISH 		by Ahmet
-* NORWEGIAN 	by Kai
-* JAPANESE		by Shinji
-* PORTUGUESE 	by Luiz LeFort
-* ITALIAN		by Federico
-
---------------------------------  CHANGELOG  -----------------------------------
 2.1.20
+ #493 - Unable to purge logs
+ #503 - manual insertions in Items History log not working
+ #494 - Logs > Adminsitration JSON error
+ #491 - Applying email address to user
  #441 - Attachments encryption
  #459 - Turn off strict mode
  #477-#452 - Fix for upgrade
@@ -63,7 +10,8 @@ LANGUAGES:
  #472 - Error on line 582 index.php
  #474 - Set default to checked for secure passwords
  #497 - Moved GA QR code creation to administration
- Fork from slimm609 - Encrpyted Sessions and CSRFGuard enabled
+ Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
+ Issues with folder creation in "personal folder"
 
 2.1.19
  #413 - fix for PHP Parse error: syntax error, unexpected '['

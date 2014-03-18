@@ -274,7 +274,7 @@ $(function() {
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : aes_encrypt(data)
+                            data    : prepareExchangedData(data, "encode")
                         },
                         function(data) {
                             if (data[0].error == "none") {
@@ -313,12 +313,13 @@ $(function() {
                 $.post(
                     "sources/users.queries.php",
                     {
-                        type    : "modif_mail_user",
-                        id        :$("#change_user_email_id").val(),
-                        newemail:$("#change_user_email_newemail").val(),
-                        key    : "<?php echo $_SESSION['key'];?>"
+                        type      : "modif_mail_user",
+                        id        : $("#change_user_email_id").val(),
+                        newemail  : $("#change_user_email_newemail").val(),
+                        key       : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
+                        $("#useremail_"+$("#change_user_email_id").val()).attr("title", $("#change_user_email_newemail").val());
                         $("#change_user_email").dialog("close");
                     },
                     "json"
@@ -637,7 +638,7 @@ function user_action_ga_code(id)
 	},
 	function(data) {
 		if (data[0].error == "0") {
-			$("#manager_dialog_error").html("<div><?php echo $txt['share_sent_ok'];?></div><div>"+data[0].ga_url+"</div>");
+			$("#manager_dialog_error").html("<div><?php echo $txt['share_sent_ok'];?></div>");
 		} else {
 			if (data[0].error == "no_email") {
 				$("#manager_dialog_error").html("<?php echo $txt['error_no_email'];?>");

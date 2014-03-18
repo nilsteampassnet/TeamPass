@@ -574,7 +574,7 @@ echo '
 echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;&copy;&nbsp;copyright 2009-2013</a>
+            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '
