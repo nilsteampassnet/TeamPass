@@ -272,7 +272,7 @@ foreach ($rows as $reccord) {
         if ($showUserFolders != true) {
             echo '<img src="includes/images/mail--pencil_disabled.png" />';
         } else {
-            echo '<img src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
+            echo '<img id="useremail_'.$reccord['id'].'" src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
         }
     	echo '
                     </td>';

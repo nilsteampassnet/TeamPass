@@ -548,7 +548,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'" ';
 
         //Finish the line
         $sOutput_item .= '], ';

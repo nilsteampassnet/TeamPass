@@ -102,10 +102,9 @@ echo '
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_admin_page">
                 <table id="t_admin" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
-                        <th style="width-max:38px;">'.$txt['date'].'</th>
-                        <th style="width:40%;">'.$txt['user'].'</th>
-                        <th style="width:20%;">'.$txt['role'].'</th>
-                        <th style="width:20%;">'.$txt['login_time'].'</th>
+                        <th style="width:30%;">'.$txt['date'].'</th>
+                        <th style="width:30%;">'.$txt['user'].'</th>
+                        <th style="width:40%;">'.$txt['action'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>
@@ -135,5 +134,6 @@ echo '
             <label for="purgeTo">'.$txt['to'].'</label>
             <input type="text" id="purgeTo" name="purgeTo" />
             <input type="button" id="butPurge" value="'.$txt['purge_now'].'" />
+            <span id="purge_result"></span>
         </div>' : '', '
     </div>';

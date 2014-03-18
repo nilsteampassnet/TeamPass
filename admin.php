@@ -40,7 +40,7 @@ echo '
         </div>';
 
     // Display the readme file
-    $Fnm = "readme.txt";
+    $Fnm = "changelog.md";
 if (file_exists($Fnm)) {
     $tab = file($Fnm);
     echo '
@@ -50,15 +50,12 @@ if (file_exists($Fnm)) {
     $show = false;
     $cnt = 0;
     while (list($cle,$val) = each($tab)) {
-        if ($show == true && $cnt < 30) {
+        if ($cnt < 30) {
             echo $val."<br />";
             $cnt ++;
         } elseif ($cnt == 30) {
-            echo '...<br /><br /><b><a href="readme.txt" target="_blank">'.$txt['readme_open'].'</a></b>';
+            echo '...<br /><br /><b><a href="changelog.md" target="_blank">'.$txt['readme_open'].'</a></b>';
             break;
-        }
-        if (substr_count($val, "CHANGELOG") == 1 && $show == false) {
-            $show = true;
         }
     }
     echo '

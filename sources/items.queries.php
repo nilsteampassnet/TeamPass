@@ -1423,9 +1423,9 @@ if (isset($_POST['type'])) {
         			}
         			if (trim($reason[0]) == "at_pw") {
         				if (empty($historyOfPws)) {
-        					$historyOfPws = $txt['previous_pw']."<br>- ".$reason[1];
+        					$historyOfPws = $txt['previous_pw']." | ".$reason[1];
         				} else {
-        					$historyOfPws .= "<br>- ".$reason[1];
+        					$historyOfPws .= $reason[1];
         				}
         			}
         		}
@@ -1507,11 +1507,11 @@ if (isset($_POST['type'])) {
         		array_unshift($_SESSION['latest_items'], $dataItem['id']);
         		// update DB
         		$db->queryUpdate(
-        		"users",
-        		array(
-        		    'latest_items' => implode(';', $_SESSION['latest_items'])
-        		   ),
-        		"id=".$_SESSION['user_id']
+            		"users",
+            		array(
+            		    'latest_items' => implode(';', $_SESSION['latest_items'])
+            		   ),
+            		"id=".$_SESSION['user_id']
         		);
         	}
 
@@ -1686,13 +1686,20 @@ if (isset($_POST['type'])) {
                 if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
                     $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
                 }
-                $arboHtml_tmp .= '>'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';
+            	if (strlen($elem->title) > 20) {
+            		$arboHtml_tmp .= '>'. substr(htmlspecialchars(stripslashes($elem->title), ENT_QUOTES), 0, 17)."...". '</a>';
+            	} else {
+            		$arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
+            	}
                 if (empty($arboHtml)) {
                     $arboHtml = $arboHtml_tmp;
                 } else {
                     $arboHtml .= ' » '.$arboHtml_tmp;
                 }
             }
+            // adapt the length of arbo versus the width #511
+            // TODO
+
             // Check if ID folder send is valid
             if (
                     !in_array($_POST['id'], $_SESSION['groupes_visibles'])
@@ -2492,11 +2499,12 @@ if (isset($_POST['type'])) {
         */
         case "history_entry_add":
             if ($_POST['key'] != $_SESSION['key']) {
-                echo '[{"error" : "something_wrong"}]';
+                $data = array("error" => "key_is_wrong");
+                echo prepareExchangedData($data, "encode");
                 break;
             } else {
                 // decrypt and retreive data in JSON format
-                $dataReceived = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
+                $dataReceived = prepareExchangedData($_POST['data'], "decode");
                 // Get all informations for this item
                 $sql = "SELECT *
                         FROM ".$pre."items as i
@@ -2542,7 +2550,11 @@ if (isset($_POST['type'])) {
                     //$reason = explode(':', $data['raison']);
                     $historic = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $data['date'])." - ".$_SESSION['login']." - ".$txt[$data['action']]." - ".$data['raison'];
                     // send back
-                    echo '[{"error":"" , "new_line" : "<br>'.addslashes($historic).'"}]';
+                    $data = array(
+                        "error" => "",
+                        "new_line" => "<br>".addslashes($historic)
+                    );
+                    echo prepareExchangedData($data, "encode");
                 } else {
                     $data = array("error" => "something_wrong");
                     echo prepareExchangedData($data, "encode");

@@ -700,7 +700,7 @@ switch ($_POST['type']) {
                 );
                 // Delete
                 $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE type='user_connection' ".
+                    "DELETE FROM ".$pre."log_system WHERE type='user_connection' ".
                     "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
                 );
             } elseif ($_POST['logType'] == "errors_logs") {
@@ -711,7 +711,7 @@ switch ($_POST['type']) {
                 );
                 // Delete
                 $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE type='error' ".
+                    "DELETE FROM ".$pre."log_system WHERE type='error' ".
                     "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
                 );
             } elseif ($_POST['logType'] == "copy_logs") {

@@ -155,7 +155,7 @@ $htmlHeaders .= '
             "sources/main.queries.php",
             {
                 type : "identify_user",
-                data : aes_encrypt(data)
+                data : prepareExchangedData(data, "encode")
             },
             function(data) {
                 if (data[0].value == randomstring) {

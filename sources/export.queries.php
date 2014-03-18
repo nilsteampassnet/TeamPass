@@ -488,6 +488,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		//CASE export in HTML format - Iteration loop
 	case "export_to_html_format_finalize":
+        include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		// open file
 		$outstream = fopen($_POST['file'], "a");
 
@@ -497,7 +498,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     </table></div>
     <input type="button" value="Hide all" onclick="hideAll()" />
     <div id="footer" style="text-align:center;">
-		<a href="http://www.teampass.net/about/" target="_blank" style="">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;&copy;&nbsp;copyright 2009-2013</a>
+		<a href="http://www.teampass.net/about/" target="_blank" style="">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
     </div>
     </body>
 </html>

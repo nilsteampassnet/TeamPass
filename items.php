@@ -84,7 +84,8 @@ echo '
 <input type="hidden" id="request_ongoing" />
 <input type="hidden" id="request_lastItem" />
 <input type="hidden" id="item_editable" />
-<input type="hidden" id="timestamp_item_displayed" />';
+<input type="hidden" id="timestamp_item_displayed" />
+<input type="hidden" id="pf_selected" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
@@ -199,12 +200,18 @@ foreach ($folders as $folder) {
             if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) {
                 $folder->title = $_SESSION['login'];
             }
+        	// resize title if necessary
+        	if (strlen($folder->title) > 20) {
+        		$fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 17)."...";
+        	} else {
+        		$fldTitle = str_replace("&", "&amp;", $folder->title);
+        	}
             // Prepare folder
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
                 // display tree counters
                 if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
                     $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
@@ -213,34 +220,34 @@ foreach ($folders as $folder) {
                 // case for restriction_to_roles
             } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
             } elseif (in_array($folder->id, $listRestrictedFoldersForItemsKeys)) {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.str_replace("&", "&amp;", $folder->title).' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
             } else {
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</a>';
+                            <a id="fld_'.$folder->id.'">'.$fldTitle.'</a>';
             }
             // build select for all visible folders
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
                     //$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
                     if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
-                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&", $folder->title).'</option>';
+                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                     } else {
-                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&", $folder->title).'</option>';
+                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
                     }
                 } else {
-                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                 }
             } else {
-                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
             }
             // build select for non personal visible folders
             if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
             } else {
-                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
+                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
             }
             // Construire l'arborescence
             if ($cptTotal == 0) {
@@ -493,7 +500,7 @@ echo '
 // Line for LABEL
 echo '
             <label for="" class="label_cpm">'.$txt['label'].' : </label>
-            <input type="text" name="label" id="label" onchange="javascript:$(\'#display_title\').html(this.value)" class="input_text text ui-widget-content ui-corner-all" />';
+            <input type="text" name="label" id="label" onchange="javascript:$(\'#display_title\').html(this.value)" class="item_field input_text text ui-widget-content ui-corner-all" />';
 // Line for DESCRIPTION
 echo '
             <label for="" class="label_cpm">'.$txt['description'].' : </label>
@@ -510,15 +517,15 @@ $selectVisibleFoldersOptions .
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$txt['login'].' : </label>
-            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
+            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all item_field" />';
 // Line for EMAIL
 echo '
             <label for="" class="label_cpm">'.$txt['email'].' : </label>
-            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
+            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all item_field" />';
 // Line for URL
 echo '
             <label for="" class="label_cpm">'.$txt['url'].' : </label>
-            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all" />
+            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all item_field" />
         </div>';
 // Tabs Items N?2
 echo '
@@ -534,10 +541,11 @@ echo '
             <label class="label_cpm">'.$txt['used_pw'].' :
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
-            <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;" />
-            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" /><input type="hidden" id="mypassword_complex" />
+            <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all item_field" style="display:none;" />
+            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="hidden" id="mypassword_complex" />
             <label for="" class="label_cpm">'.$txt['index_change_pw_confirmation'].' :</label>
-            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
+            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all item_field" />
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
