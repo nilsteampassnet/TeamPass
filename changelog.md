@@ -1,4 +1,5 @@
-2.1.20
+﻿2.1.20
+ #509 - Password complexity
  #493 - Unable to purge logs
  #503 - manual insertions in Items History log not working
  #494 - Logs > Adminsitration JSON error

@@ -539,6 +539,7 @@ echo'
 // Line for PW
 echo '
             <label class="label_cpm">'.$txt['used_pw'].' :
+				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
             <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all item_field" style="display:none;" />
@@ -739,6 +740,7 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$txt['used_pw'].' :
+					<span id="visible_editpw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
                 <input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:405px;" />
