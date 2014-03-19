@@ -45,7 +45,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
                                                 .replace(/\r/g, '');
         }
         return input;
-    }
+    }/* */
 
     function AddNewNode()
     {
@@ -92,62 +92,38 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     //Showh the password in new form
     function ShowPasswords_Form()
     {
-        if ($('#pw1').is(":visible")) {
-            $('#pw1').hide();
-            $('#pw1_txt').show();
-        } else {
-            $('#pw1').show();
-            $('#pw1_txt').hide();
-        }
+		if ($('#visible_pw').is(":visible")) {
+			$('#visible_pw').hide();
+		} else {
+			$('#visible_pw').show();
+		}
     }
     $("#tabs-02").on(
         "change",
         "#pw1",
         function() {
-            $('#pw1_txt').val($('#pw1').val());
+            $('#visible_pw').val($('#pw1').val());
         }
     );
-
-    $("#tabs-02").on(
-        "keydown",
-        "#pw1_txt",
-        function() {
-        	$('#pw1').val($('#pw1_txt').val());
-        }
-    );
-    /*$('#pw1').change(function() {
-        $('#pw1_txt').val($('#pw1').val());
-    });
-    $('#pw1_txt').change(function() {
-        $('#pw1').val($('#pw1_txt').val());
-    });*/
 
     function ShowPasswords_EditForm()
     {
-        if ($('#edit_pw1').is(":visible")) {
-            $('#edit_pw1').hide();
-            $('#edit_pw1_txt').show();
-        } else {
-            $('#edit_pw1').show();
-            $('#edit_pw1_txt').hide();
-        }
+		if ($('#visible_editpw').is(":visible")) {
+			$('#visible_editpw').hide();
+		} else {
+			$('#visible_editpw').show();
+		}
     }
-    $('#edit_pw1').change(function() {
-        $('#edit_pw1_txt').val($('#edit_pw1').val());
-		$('#pw1').change({
-        "score.simplePassMeter" : function(jQEvent, score) {
-            $("#mypassword_complex").val(score);
-        }
-    });
-    });
-    $('#edit_pw1_txt').change(function() {
-        $('#edit_pw1').val($('#edit_pw1_txt').val());
-		$('#pw1').change({
-	        "score.simplePassMeter" : function(jQEvent, score) {
-	            $("#mypassword_complex").val(score);
-	        }
-	    });
-    });
+
+	$("#edit_pw1").keyup(function() {
+	    $("#visible_editpw").text( this.value );
+	});
+
+	$("#pw1").keyup(function() {
+	    $("#visible_pw").text( this.value );
+	});
+
+
 
     /**
      * Open a dialogbox
@@ -358,7 +334,6 @@ function pwGenerate(elem)
 {
     if (elem != "") elem = elem+"_";
     $("#pw1").show();
-    $("#pw1_txt").hide();
 
     //show ajax image
     $("#"+elem+"pw_wait").show();
@@ -377,7 +352,8 @@ function pwGenerate(elem)
         },
         function(data) {
         	data = prepareExchangedData(data, "decode");
-            $("#"+elem+"pw1, #"+elem+"pw1_txt").val(data.key).focus();
+            $("#"+elem+"pw1").val(data.key).focus();
+			$("#visible_pw").text(data.key);
             $("#"+elem+"pw_wait").hide();
         }
    );
@@ -611,7 +587,7 @@ function AjouterItem()
                         AfficherDetailsItem(data.new_id);
 
                         //empty form
-                        $("#label, #item_login, #email, #url, #pw1, #pw1_txt, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
+                        $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
                         CKEDITOR.instances["desc"].setData("");
                         //$("#restricted_to_list").multiselect('uncheckall');TODO
                         $("#item_tabs").tabs({selected: 0});
@@ -1441,7 +1417,8 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_display_title').html($('#hid_label').val());
     $('#edit_label').val($('#hid_label').val());
     $('#edit_desc').html($('#hid_desc').val());
-    $('#edit_pw1, #edit_pw1_txt, #edit_pw2').val($('#hid_pw').val());
+    $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
+	$("#visible_editpw").text($('#hid_pw').val());
     $('#edit_item_login').val($('#hid_login').val());
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
