@@ -73,6 +73,12 @@ if ( file_exists('../includes/settings.php')){
                     && $("#encrypt_key").val().length <= 32
                );
             });
+
+        	// no paste
+        	$('#encrypt_key').bind("paste",function(e) {
+        		alert('Paste option is disabled !!');
+        		e.preventDefault();
+        	});
         });
 
         function aes_encrypt(text)
