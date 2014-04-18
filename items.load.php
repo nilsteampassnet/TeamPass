@@ -339,9 +339,9 @@ function pwGenerate(elem)
     $("#"+elem+"pw_wait").show();
 
     $.post(
-        "sources/items.queries.php",
+        "sources/main.queries.php",
         {
-            type    : "pw_generate",
+            type    : "generate_a_password",
             size      : $("#"+elem+'pw_size').val(),
             num      : $("#"+elem+'pw_numerics').prop("checked"),
             maj      : $("#"+elem+'pw_maj').prop("checked"),
@@ -351,9 +351,14 @@ function pwGenerate(elem)
             force      : "false"
         },
         function(data) {
-        	data = prepareExchangedData(data, "decode");
-            $("#"+elem+"pw1").val(data.key).focus();
-			$("#visible_pw").text(data.key);
+			data = prepareExchangedData(data, "decode");
+           	if (data.error == "true") {
+           		$("#div_dialog_message_text").html(data.error_msg);
+           		$("#div_dialog_message").dialog("open");
+           	} else {
+           		$("#"+elem+"pw1").val(data.key).focus();
+				$("#visible_pw").text(data.key);
+           	}
             $("#"+elem+"pw_wait").hide();
         }
    );
@@ -929,7 +934,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#item_details_ok").hide();
         $("#item_details_expired").hide();
         $("#item_details_expired_full").hide();
-        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
+        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, menu_button_copy_url, #menu_button_copy_link").attr("disabled","disabled");
         $("#request_ongoing").val("");
         return false;
     }
@@ -1156,6 +1161,15 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                     $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             clip.glue('menu_button_copy_login');
+                        }
+                        // #XXX
+                        if (data.url != "") {
+                            var clip = new ZeroClipboard.Client();
+                            clip.setText(data.url);
+                            clip.addEventListener('complete', function(client, text) {
+                                    $("#message_box").html("<?php echo addslashes($txt['url_copied_clipboard']);?>").show().fadeOut(1000);
+                            });
+                            clip.glue('menu_button_copy_url');
                         }
                         //prepare link to clipboard
                         var clip = new ZeroClipboard.Client();

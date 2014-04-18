@@ -14,8 +14,20 @@
 
 require_once('sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -371,7 +383,7 @@ switch ($_POST['type']) {
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_shown'".$sqlFilter
+            WHERE l.action = 'at_shown'".mysql_real_escape_string($sqlFilter)
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -426,7 +438,7 @@ switch ($_POST['type']) {
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'".$sqlFilter
+            WHERE l.action = 'at_copy'".mysql_real_escape_string($sqlFilter)
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -482,7 +494,7 @@ switch ($_POST['type']) {
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE i.label LIKE '%".$_POST['filter']."%'"
+            WHERE i.label LIKE '%".mysql_real_escape_string($_POST['filter'])."%'"
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -543,7 +555,7 @@ switch ($_POST['type']) {
             "SELECT COUNT(*)
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'admin_action'".$sqlFilter
+            WHERE l.type = 'admin_action'".mysql_real_escape_string($sqlFilter)
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -685,7 +697,7 @@ switch ($_POST['type']) {
             if ($_POST['logType'] == "items_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_shown' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
+                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".intval(strtotime($_POST['purgeTo']))."'"
                 );
                 // Delete
                 $db->query(
@@ -695,8 +707,8 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "connections_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='user_connection' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".
-                    strtotime($_POST['purgeTo'])."'"
+                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
+                    intval(strtotime($_POST['purgeTo']))."'"
                 );
                 // Delete
                 $db->query(
@@ -706,8 +718,8 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "errors_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".
-                    strtotime($_POST['purgeTo'])."'"
+                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
+                    intval(strtotime($_POST['purgeTo']))."'"
                 );
                 // Delete
                 $db->query(
@@ -717,8 +729,8 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "copy_logs") {
                 $nbElements = $db->fetchRow(
                     "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_copy' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".
-                    strtotime($_POST['purgeTo'])."'"
+                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
+                    intval(strtotime($_POST['purgeTo']))."'"
                 );
                 // Delete
                 $db->query(

@@ -472,7 +472,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			fputs($outstream, '
 		<tr class="'.$lineType.'">
 		    <td>'.addslashes($elem['label']).'</td>
-			<td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\')">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
+			<td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
 		    <td>'.$desc.'</td>
 		    <td align="center">'.$login.'</td>
 		    <td align="center">'.$rest.'</td>

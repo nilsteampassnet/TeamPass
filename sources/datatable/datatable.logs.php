@@ -41,7 +41,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+        $sLimit = "LIMIT ". mysql_real_escape_string($_GET['iDisplayStart']) .", "
+                . mysql_real_escape_string($_GET['iDisplayLength']) ;
     }
 
     //Ordering
@@ -50,7 +51,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOrder = "ORDER BY  ";
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
+                $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
                     ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
             }
         }

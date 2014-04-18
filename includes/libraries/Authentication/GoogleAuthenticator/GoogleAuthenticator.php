@@ -38,24 +38,14 @@ class GoogleAuthenticator
      * @param $code
      * @return bool
      */
-    public function checkCode($secret, $code, $discrepancy = 3)
+    public function checkCode($secret, $code)
     {
-        /*
-       $time = floor(time() / 30);
+        $time = floor(time() / 30);
         for ($i = -1; $i <= 1; $i++) {
             if ($this->getCode($secret, $time + $i) == $code) {
                 return true;
             }
         }
-   		*/
-    	$currentTimeSlice = floor(time() / 30);
-
-    	for ($i = -$discrepancy; $i <= $discrepancy; $i++) {
-    		$calculatedCode = $this->getCode($secret, $currentTimeSlice + $i);
-    		if ($calculatedCode == $code ) {
-    			return true;
-    		}
-    	}
 
         return false;
     }

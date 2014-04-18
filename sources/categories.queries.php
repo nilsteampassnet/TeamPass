@@ -12,9 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -183,7 +196,16 @@ if (isset($_POST['type'])) {
                     );
                     
                     // prepare a list
-                    $row = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id=".$folder);
+                    //$row = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id=".$folder);
+                    $row = $db->queryGetRow(
+                        "nested_tree",
+                        array(
+                            "title"
+                        ),
+                        array(
+                            "id" => intval($folder)
+                        )
+                    );
                     if (empty($list)) {
                         $list = $row[0];
                     } else {

@@ -22,6 +22,7 @@ session_start();
 
 $_SESSION['CPM'] = 1;
 session_id();
+
 // Test if settings.file exists, if not then install
 if (!file_exists('includes/settings.php')) {
     echo '
@@ -54,11 +55,21 @@ require_once 'sources/main.functions.php';
 /* DEFINE WHAT LANGUAGE TO USE */
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
-    $dataLanguage =
+    /*$dataLanguage =
         $db->fetchRow(
             "SELECT valeur FROM ".$pre."misc
             WHERE type = 'admin' AND intitule = 'default_language'"
-        );
+        );*/
+    $dataLanguage = $db->queryGetRow(
+        "misc",
+        array(
+            "valeur"
+        ),
+        array(
+            "type" => "admin",
+            "intitule" => "default_language"
+        )
+    );
     if (empty($dataLanguage[0])) {
         $_SESSION['user_language'] = "english";
         $_SESSION['user_language_flag'] = "us.png";
@@ -278,7 +289,9 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_G
             <br />
             <button title="'.$txt['pw_copy_clipboard'].'" id="menu_button_copy_pw" class="copy_clipboard"><img src="includes/images/ui-text-field-password.png" id="div_copy_pw" alt="" /></button>
             <br />
-            <button title="'.$txt['login_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
+            <button title="'.$txt['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
+            <br />
+            <button title="'.$txt['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>
             <br />
             <button title="'.$txt['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
             <br />
@@ -443,6 +456,15 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
     include 'error.php';
+} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
+    // case where one-shot viewer
+    if (isset($_GET['session']) && !empty($_GET['session'])) {
+        include 'otv.php?session='.$_GET['session'];
+    } else {
+        $_SESSION['error']['code'] = ERR_VALID_SESSION;
+        $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
+        include 'error.php';
+    }    
 } elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
     // Case where user has asked new PW
     echo '

@@ -6,13 +6,6 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
-$txt['user_ga_code'] = "Send GoogleAuthenticator to user by email";
-$txt['send_ga_code'] = "Google Authenticator for user";
-$txt['error_no_email'] = "This user has no email set!";
-$txt['error_no_user'] = "No user found!";
-$txt['email_ga_subject'] = "Your Google Authenticator flash code for Teampass";
-$txt['email_ga_text'] = "Hello,<br><br>Please click this <a href='#link#'>LINK</a> and flash it with GoogleAuthenticator application to get your OTP credentials for Teampass.<br /><br />Cheers";
-
 $txt['settings_attachments_encryption'] = "Enable encryption of Items attachments";
 $txt['settings_attachments_encryption_tip'] = "THIS OPTION COULD BREAK EXISTING ATTACHMENTS, please read carefully the next. If enabled, Items attachments are stored encrypted on the server. The ecryption uses the SALT defined for Teampass. This requieres more server ressources. WARNING: once you change strategy, it is mandatory to run the script to adapt existing attachments. See tab 'Specific Actions'.";
 $txt['admin_action_attachments_cryption'] = "Encrypt or Decrypt the Items attachments";
@@ -99,7 +92,7 @@ $txt['channel_encryption_failed'] = "Authentication failed!";
 $txt['purge_log'] = "Purge logs from";
 $txt['to'] = "to";
 $txt['purge_now'] = "Purge Now!";
-$txt['purge_done'] = "Purge done! Number of elements deleted: ";
+$txt['purge_done'] = "The purge has been performed!<br />Number of elements deleted: ";
 
 $txt['settings_upload_maxfilesize_tip'] = "Maximum file size you allow. It should be coherant with your server settings.";
 $txt['settings_upload_docext_tip'] = "Document types. Indicate the file extensions allowed separated with a coma (,)";

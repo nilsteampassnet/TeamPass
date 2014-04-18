@@ -1,9 +1,9 @@
 <?php
 /**
- * @file          datatable.users_logged.php
- * @author        Nils Laumaill�
+ * @file          datatable.logs.php
+ * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2014 Nils Laumaill�
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,8 +14,20 @@
 
 require_once('sources/sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -42,7 +54,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+        $sLimit = "LIMIT ". mysql_real_escape_string($_GET['iDisplayStart']) .", ". mysql_real_escape_string($_GET['iDisplayLength']) ."" ;
     }
 
     //Ordering
@@ -51,8 +63,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOrder = "ORDER BY  ";
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
+                        '".mysql_real_escape_string($_GET['sSortDir_'.$i]) ."', ";
             }
         }
 

@@ -63,6 +63,9 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     } elseif (@$_SESSION['error']['code'] == ERR_NO_MCRYPT) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
+    } elseif (@$_SESSION['error']['code'] == ERR_VALID_SESSION) {
+        echo '
+        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$txt['error_not_authorized'].'<br /><br /><a href="index.php" />'.$txt['home'] .'</a></div>';
     }
 }
 

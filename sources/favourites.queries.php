@@ -34,7 +34,16 @@ if (!empty($_POST['type'])) {
         #CASE adding a new function
         case "del_fav":
             //Get actual favourites
-            $data = $db->fetchRow("SELECT favourites FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'");
+            //$data = $db->fetchRow("SELECT favourites FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'");
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    "favourites"
+                ),
+                array(
+                    "id" => intval($_SESSION['user_id'])
+                )
+            );
             $tmp = explode(";", $data[0]);
             $favs = "";
             $tab_favs = array();
