@@ -6,6 +6,9 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['url_copied_clipboard'] = "URL copied in clipboard";
+$txt['url_copy'] = "Copy URL in clipboard";
+
 $txt['settings_attachments_encryption'] = "Enable encryption of Items attachments";
 $txt['settings_attachments_encryption_tip'] = "THIS OPTION COULD BREAK EXISTING ATTACHMENTS, please read carefully the next. If enabled, Items attachments are stored encrypted on the server. The ecryption uses the SALT defined for Teampass. This requieres more server ressources. WARNING: once you change strategy, it is mandatory to run the script to adapt existing attachments. See tab 'Specific Actions'.";
 $txt['admin_action_attachments_cryption'] = "Encrypt or Decrypt the Items attachments";
