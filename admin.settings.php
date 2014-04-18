@@ -13,8 +13,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 /*
@@ -37,7 +49,14 @@ function updateSettings ($setting, $val, $type = '')
     $db->connect();
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
-    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."'");
+    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."'");
+    $data = $db->queryCount(
+        "misc",
+        array(
+            "type" => $type,
+            "intitule" => $setting
+        )
+    );
     if ($data[0] == 0) {
         $db->queryInsert(
             "misc",
@@ -69,7 +88,14 @@ function updateSettings ($setting, $val, $type = '')
         // in case of stats enabled, update the actual time
         if ($setting == 'send_stats') {
             // Check if previous time exists, if not them insert this value in DB
-            $data_time = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."_time'");
+            //$data_time = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."_time'");
+            $data_time = $db->queryCount(
+                "misc",
+                array(
+                    "type" => $type,
+                    "intitule" => $setting."_time"
+                )
+            );
             if ($data_time[0] == 0) {
                 $db->queryInsert(
                     "misc",
@@ -1843,7 +1869,11 @@ echo '
                         </td>
                     </tr>';
 // Send emails backlog
-$nb_emails = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
+//$nb_emails = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
+$nb_emails = $db->queryCount(
+    "emails",
+    "status = 'not_sent' OR status = ''"
+);
 echo '
                     <tr style="margin-bottom:3px">
                         <td>

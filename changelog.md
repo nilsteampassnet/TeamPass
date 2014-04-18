@@ -12,6 +12,7 @@
  #472 - Error on line 582 index.php
  #474 - Set default to checked for secure passwords
  #497 - Moved GA QR code creation to administration
+ #xxx - Off-line mode, link make the page scroll up
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
 

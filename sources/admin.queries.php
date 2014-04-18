@@ -15,8 +15,20 @@
 
 require_once('sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -118,7 +130,14 @@ switch ($_POST['type']) {
             );
 
             //if folder doesn't exist then create it
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$record['id']."' AND parent_id = 0");
+            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$record['id']."' AND parent_id = 0");
+            $data = $db->queryCount(
+                "nested_tree",
+                array(
+                    "title" => $record['id'],
+                    "parent_id" => 0
+                )
+            );
             if ($data[0] == 0) {
                 //If not exist then add it
                 $db->queryInsert(
@@ -194,7 +213,14 @@ switch ($_POST['type']) {
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            $row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            //$row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            $row = $db->queryCount(
+                "log_items",
+                array(
+                    "id_item" => $item['id'],
+                    "action" => "at_creation"
+                )
+            );
             if ($row[0] == 0) {
                 $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
                 $db->query("DELETE FROM ".$pre."categories_items WHERE item_id = ".$item['id']);
@@ -370,7 +396,14 @@ switch ($_POST['type']) {
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            $row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            //$row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            $row = $db->queryCount(
+                "log_items",
+                array(
+                    "id_item" => $item['id'],
+                    "action" => "at_creation"
+                )
+            );
             if ($row[0] == 0) {
                 //Create new at_creation entry
                 $rowTmp = $db->queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
@@ -619,7 +652,14 @@ switch ($_POST['type']) {
         $rows = $db->fetchAllArray("SELECT id, pw FROM ".$pre."items WHERE perso = '0'");
         foreach ($rows as $reccord) {
             // check if key exists for this item
-            $row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE `id`='".$reccord['id']."' AND `table` = 'items'");
+            //$row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE `id`='".$reccord['id']."' AND `table` = 'items'");
+            $row = $db->queryCount(
+                "keys",
+                array(
+                    "id" => $reccord['id'],
+                    "table" => "items"
+                )
+            );
             if ($row[0] == 0) {
                 $storePrefix = false;
                 // decrypt pw

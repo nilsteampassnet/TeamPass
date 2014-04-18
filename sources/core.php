@@ -145,7 +145,16 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    $dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
+    //$dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
+    $dataSession = $db->queryGetRow(
+        "users",
+        array(
+            "key_tempo"
+        ),
+        array(
+            "id" => intval($_SESSION['user_id'])
+        )
+    );
 } else {
     $dataSession[0] = "";
 }
@@ -191,7 +200,17 @@ if (
     isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
     || empty($_SESSION['settings']['update_needed']))
 ) {
-    $row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
+    //$row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
+    $row = $db->queryGetRow(
+        "misc",
+        array(
+            "valeur"
+        ),
+        array(
+            "type" => "admin",
+            "intitule" => "cpassman_version"
+        )
+    );
     if ($row[0] != $k['version']) {
         $_SESSION['settings']['update_needed'] = true;
     } else {
@@ -285,9 +304,19 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $sql="SELECT * FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'";
-    $row = $db->query($sql);
-    $data = $db->fetchArray($row);
+    $data = $db->queryGetArray(
+        "users",
+        array(
+            "admin",
+            "gestionnaire",
+            "groupes_visibles",
+            "groupes_interdits",
+            "fonction_id"
+        ),
+        array(
+            "id" => intval($_SESSION['user_id'])
+        )
+    );
 
     //Check if user has been deleted or unlogged
     if (empty($data)) {
@@ -417,5 +446,5 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(time() - 600)."'");
+$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
 $_SESSION['nb_users_online'] = $queryCount[0];

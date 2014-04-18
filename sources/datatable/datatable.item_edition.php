@@ -48,7 +48,7 @@ if (isset($_GET['iSortCol_0'])) {
     $sOrder = "ORDER BY  ";
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
         if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-            $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
+            $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
             ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
         }
     }
@@ -68,7 +68,6 @@ if (isset($_GET['iSortCol_0'])) {
 if ($_GET['sSearch'] != "") {
     $sWhere = " WHERE (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }

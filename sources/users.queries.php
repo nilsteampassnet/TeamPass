@@ -6,13 +6,29 @@
  * @version       2.1.20
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link          http://www.teampass.net
+ * @link		http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
 require_once('sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
@@ -44,7 +60,16 @@ if (!empty($_POST['type'])) {
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             // Check if id folder is already stored
-            $data = $db->fetchRow("SELECT ".$_POST['type']." FROM ".$pre."users WHERE id = ".$val[0]);
+            // $data = $db->fetchRow("SELECT ".$_POST['type']." FROM ".$pre."users WHERE id = ".$val[0]);
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    $_POST['type']
+                ),
+                array(
+                    "id" => intval($val[0])
+                )
+            );
             $new_groupes = $data[0];
             if (!empty($data[0])) {
                 $groupes = explode(';', $data[0]);
@@ -74,7 +99,16 @@ if (!empty($_POST['type'])) {
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             // v?rifier si l'id est d?j? pr?sent
-            $data = $db->fetchRow("SELECT fonction_id FROM ".$pre."users WHERE id = $val[0]");
+            // $data = $db->fetchRow("SELECT fonction_id FROM ".$pre."users WHERE id = $val[0]");
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    "fonction_id"
+                ),
+                array(
+                    "id" => intval($val[0])
+                )
+            );
             $new_fonctions = $data[0];
             if (!empty($data[0])) {
                 $fonctions = explode(';', $data[0]);
@@ -239,7 +273,17 @@ if (!empty($_POST['type'])) {
                        )
                 );
                 // delete personal folder and subfolders
-                $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_POST['id']."' AND personal_folder = 1");    // Get personal folder ID
+                // $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_POST['id']."' AND personal_folder = 1");    // Get personal folder ID
+                $data = $db->queryGetRow(
+                    "nested_tree",
+                    array(
+                        "id"
+                    ),
+                    array(
+                        "title" => intval($_POST['id']),
+                        "personal_folder" => "1"
+                    )
+                );
                 // Get through each subfolder
                 if (!empty($data[0])) {
                     $folders = $tree->getDescendants($data[0], true);
@@ -304,7 +348,16 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "yes" } ]';
             }
             // Get old email
-            $data = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id = '".$_POST['id']."'");
+            // $data = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id = '".$_POST['id']."'");
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    "email"
+                ),
+                array(
+                    "id" => intval($_POST['id'])
+                )
+            );
 
             $db->queryUpdate(
                 "users",
@@ -423,7 +476,16 @@ if (!empty($_POST['type'])) {
         case "open_div_functions";
             $text = "";
             // Refresh list of existing functions
-            $data_user = $db->fetchRow("SELECT fonction_id FROM ".$pre."users WHERE id = ".$_POST['id']);
+            // $data_user = $db->fetchRow("SELECT fonction_id FROM ".$pre."users WHERE id = ".$_POST['id']);
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    "fonction_id"
+                ),
+                array(
+                    "id" => intval($_POST['id'])
+                )
+            );
             $users_functions = explode(';', $data_user[0]);
             // array of roles for actual user
             $my_functions = explode(';', $_SESSION['fonction_id']);
@@ -484,7 +546,16 @@ if (!empty($_POST['type'])) {
         case "open_div_autgroups";
             $text = "";
             // Refresh list of existing functions
-            $data_user = $db->fetchRow("SELECT groupes_visibles FROM ".$pre."users WHERE id = ".$_POST['id']);
+            // $data_user = $db->fetchRow("SELECT groupes_visibles FROM ".$pre."users WHERE id = ".$_POST['id']);
+            $data_user = $db->queryGetRow(
+                "users",
+                array(
+                    "groupes_visibles"
+                ),
+                array(
+                    "id" => intval($_POST['id'])
+                )
+            );
             $user = explode(';', $data_user[0]);
 
             $tree_desc = $tree->getDescendants();
@@ -574,7 +645,16 @@ if (!empty($_POST['type'])) {
 
             $text = "";
             // Refresh list of existing functions
-            $data_user = $db->fetchRow("SELECT groupes_interdits FROM ".$pre."users WHERE id = ".$_POST['id']);
+            // $data_user = $db->fetchRow("SELECT groupes_interdits FROM ".$pre."users WHERE id = ".$_POST['id']);
+            $data_user = $db->queryGetRow(
+                "users",
+                array(
+                    "groupes_interdits"
+                ),
+                array(
+                    "id" => intval($_POST['id'])
+                )
+            );
             $user = explode(';', $data_user[0]);
 
             $tree_desc = $tree->getDescendants();
@@ -662,14 +742,27 @@ if (!empty($_POST['type'])) {
         case "check_domain":
             $return = array();
             // Check if folder exists
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$_POST['domain']."' AND parent_id = 0");
+            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$_POST['domain']."' AND parent_id = 0");
+            $data = $db->queryCount(
+                "nested_tree",
+                array(
+                    "title" => $_POST['domain'],
+                    "parent_id" => "0"
+                )
+            );
             if ($data[0] != 0) {
                 $return["folder"] = "exists";
             } else {
                 $return["folder"] = "not_exists";
             }
             // Check if role exists
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".$_POST['domain']."'");
+            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".$_POST['domain']."'");
+            $data = $db->queryCount(
+                "roles_title",
+                array(
+                    "title" => $_POST['domain']
+                )
+            );
             if ($data[0] != 0) {
                 $return["role"] = "exists";
             } else {
@@ -697,7 +790,7 @@ if (!empty($_POST['type'])) {
                     FROM ".$pre."log_items as l
                     INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
                     INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-                    WHERE l.id_user = ".$_POST['id'].$sql_filter
+                    WHERE l.id_user = ".intval($_POST['id'].$sql_filter)
                 );
                 // define query limits
                 if (isset($_POST['page']) && $_POST['page'] > 1) {
@@ -711,16 +804,23 @@ if (!empty($_POST['type'])) {
                     FROM ".$pre."log_items as l
                     INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
                     INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-                    WHERE l.id_user = ".$_POST['id'].$sql_filter."
+                    WHERE l.id_user = ".intval($_POST['id'].$sql_filter)."
                     ORDER BY date DESC
-                    LIMIT $start,".$_POST['nb_items_by_page']
+                    LIMIT ".intval($start).",".intval($_POST['nb_items_by_page'])
                 );
             } else {
                 // get number of pages
-                $data = $db->fetchRow(
-                    "SELECT COUNT(*)
-                    FROM ".$pre."log_system
-                    WHERE type = 'user_mngt' AND field_1=".$_POST['id']
+                //$data = $db->fetchRow(
+                //    "SELECT COUNT(*)
+                //    FROM ".$pre."log_system
+                //    WHERE type = 'user_mngt' AND field_1=".$_POST['id']
+                //);
+                $data = $db->queryCount(
+                    "log_system",
+                    array(
+                        "type" => "user_mngt",
+                        "field_1" => $_POST['id']
+                    )
                 );
                 // define query limits
                 if (isset($_POST['page']) && $_POST['page'] > 1) {
@@ -779,9 +879,9 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "no_user_id" } ]';
             } else {
                 // Get folder id for Admin
-                $admin_folder = $db->queryFirst("SELECT id FROM ".$pre."nested_tree WHERE title='".$_SESSION['user_id']."' AND personal_folder = 1");
+                $admin_folder = $db->queryFirst("SELECT id FROM ".$pre."nested_tree WHERE title='".intval($_SESSION['user_id'])."' AND personal_folder = 1");
                 // Get folder id for User
-                $user_folder = $db->queryFirst("SELECT id FROM ".$pre."nested_tree WHERE title='".$user_id."' AND personal_folder = 1");
+                $user_folder = $db->queryFirst("SELECT id FROM ".$pre."nested_tree WHERE title='".intval($user_id)."' AND personal_folder = 1");
                 // Get through each subfolder
                 foreach ($tree->getDescendants($admin_folder['id'], true) as $folder) {
                     // Create folder if necessary
@@ -800,7 +900,7 @@ if (!empty($_POST['type'])) {
                         "SELECT i.pw, i.label, l.id_user
                         FROM ".$pre."items as i
                         LEFT JOIN ".$pre."log_items as l ON (l.id_item=i.id)
-                        WHERE l.action = 'at_creation' AND i.perso=1 AND i.id_tree=".$folder->id
+                        WHERE l.action = 'at_creation' AND i.perso=1 AND i.id_tree=".intval($folder->id)
                     );
                     foreach ($rows as $reccord) {
                         echo $reccord['label']." - ";
@@ -841,7 +941,7 @@ if (!empty($_POST['type'])) {
                         'key_tempo' => "",
                         'session_end' => ""
                        ),
-                    "id = ".$_POST['user_id']
+                    "id = ".intval($_POST['user_id'])
                 );
             break;
 
@@ -864,7 +964,7 @@ if (!empty($_POST['type'])) {
                         'key_tempo' => "",
                         'session_end' => ""
                        ),
-                    "id = ".$reccord['id']
+                    "id = ".intval($reccord['id'])
                 );
             }
             break;

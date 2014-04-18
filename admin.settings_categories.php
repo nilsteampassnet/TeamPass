@@ -189,7 +189,14 @@ echo '
         <select id="cat_folders_selection" multiple size="12">';
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE personal_folder=0 AND id = ".$folder->id);
+            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE personal_folder=0 AND id = ".$folder->id);
+            $data = $db->queryCount(
+                "nested_tree",
+                array(
+                    "personal_folder" => 0,
+                    "id" => $folder->id
+                )
+            );
             if ($data[0] > 0) {
                 echo '
                 <option value="'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</option>';

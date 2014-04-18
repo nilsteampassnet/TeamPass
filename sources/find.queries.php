@@ -38,33 +38,45 @@ $sOrder = $sLimit = "";
 $sWhere = "id_tree IN(".implode(', ', $_SESSION['groupes_visibles']).")";    //limit search to the visible folders
 
 //Get current user "personal folder" ID
-$row = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = ".$_SESSION['user_id']);
+// $row = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".intval($_SESSION['user_id'])."'");
+$row = $db->queryGetRow(
+    "nested_tree",
+    array(
+        "id"
+    ),
+    array(
+        "title" => intval($_SESSION['user_id'])
+    )
+);
 
 //get list of personal folders
 $arrayPf = array();
 $listPf = "";
-$rows = $db->fetchAllArray(
-    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = ".$row[0].
-    " AND NOT title = ".$_SESSION['user_id']
-);
-foreach ($rows as $reccord) {
-    if (!in_array($reccord['id'], $arrayPf)) {
-        //build an array of personal folders ids
-        array_push($arrayPf, $reccord['id']);
-        //build also a string with those ids
-        if (empty($listPf)) {
-            $listPf = $reccord['id'];
-        } else {
-            $listPf .= ', '.$reccord['id'];
-        }
-    }
+if (empty($row[0])) {
+	$rows = $db->fetchAllArray(
+	    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = '".intval($row[0]).
+	    "' AND NOT title = '".intval($_SESSION['user_id'])."'"
+	);
+	foreach ($rows as $reccord) {
+		if (!in_array($reccord['id'], $arrayPf)) {
+			//build an array of personal folders ids
+			array_push($arrayPf, $reccord['id']);
+			//build also a string with those ids
+			if (empty($listPf)) {
+				$listPf = $reccord['id'];
+			} else {
+				$listPf .= ', '.$reccord['id'];
+			}
+		}
+	}
 }
+
 
 /* BUILD QUERY */
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength']);
+    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength'])."";
 }
 
 //Ordering
@@ -75,8 +87,8 @@ if (isset($_GET['iSortCol_0'])) {
             $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
         ) {
-            $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-            ".$_GET['sSortDir_'.$i] .", ";
+            $sOrder .= "".$aColumns[ intval($_GET['iSortCol_'.$i]) ]." "
+            .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
         }
     }
 
@@ -85,7 +97,7 @@ if (isset($_GET['iSortCol_0'])) {
             $sOrder = "";
     }
 }
-
+//echo $sOrder;
 /*
  * Filtering
  * NOTE this does not match the built-in DataTables filtering which does it
@@ -164,7 +176,7 @@ foreach ($rows as $reccord) {
     //get restriction from ROles
     $restrictedToRole = false;
     $rTmp = mysql_query(
-        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = ".$reccord['id']
+        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = '".$reccord['id']."'"
     ) or die(mysql_error());
     while ($aTmp = mysql_fetch_row($rTmp)) {
         if ($aTmp[0] != "") {

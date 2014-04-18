@@ -234,11 +234,13 @@ $htmlHeaders .= '
     function GenerateNewPassword(key, login)
     {
         $("#ajax_loader_send_mail").show();
+        // prepare data
+        data = \'{"login":"\'+sanitizeString(login)+\'" ,\'+
+            \'"key":"\'+sanitizeString(key)+\'"}\';
         //send query
         $.post("sources/main.queries.php", {
                 type :    "generate_new_password",
-                login:    login,
-                key :    key
+    		    data : prepareExchangedData(data, "encode")
             },
             function(data) {
                 if (data == "done") {
@@ -284,11 +286,12 @@ $htmlHeaders .= '
     function ChangeLanguage(lang)
     {
         $("#language").val(lang);
+        data = \'{"lang":"\'+sanitizeString(lang)+\'"}\';    		        
         $.post(
             "sources/main.queries.php",
             {
-                type    : "change_user_language",
-                lang    : lang
+                type : "change_user_language",
+                data : prepareExchangedData(data, "encode")
             },
             function(data) {
             	if (data == "done") {

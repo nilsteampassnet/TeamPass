@@ -1,9 +1,9 @@
 <?php
 /**
  * @file          views_database.php
- * @author        Nils Laumaillé
+ * @author        Nils LaumaillÃ©
  * @version       2.1.19
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils LaumaillÃ©
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,14 +14,25 @@
 
 require_once('sources/sessions.php');
 session_start();
-
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
 include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 

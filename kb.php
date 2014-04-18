@@ -12,11 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1
+if (
+        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+        !isset($_SESSION['key']) || empty($_SESSION['key'])
         || !isset($_SESSION['settings']['enable_kb'])
-        || $_SESSION['settings']['enable_kb'] != 1
-) {
+        || $_SESSION['settings']['enable_kb'] != 1)
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 //load language

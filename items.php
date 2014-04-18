@@ -13,12 +13,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
 }
 
-if (!isset($_SESSION['login'])) {
-    break;
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    //include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -167,7 +175,14 @@ foreach ($folders as $folder) {
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
+                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
+                $data = $db->queryCount(
+                    "items",
+                    array(
+                        "inactif" => 0,
+                        "id_tree" => intval($node)
+                    )
+                );
                 $nbChildrenItems += $data[0];
             }
             if (
@@ -189,7 +204,14 @@ foreach ($folders as $folder) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
-            $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
+            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
+            $data = $db->queryCount(
+                "items",
+                array(
+                    "inactif" => 0,
+                    "id_tree" => intval($folder->id)
+                )
+            );
             $itemsNb = $data[0];
 
             // get 1st folder
@@ -1010,6 +1032,6 @@ echo '
 echo '
 <div id="div_item_updated" style="display:none;">
     <div style="">'.$txt['item_updated_text'].'</div>
-</div>';
+</div><br />';
 
 require_once 'items.load.php';

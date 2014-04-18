@@ -173,7 +173,16 @@ switch ($_POST['type']) {
         } else {
             $personalFolder = 0;
         }
-        $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
+        // $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
+        $data_fld = $db->queryGetRow(
+            "nested_tree",
+            array(
+                "title"
+            ),
+            array(
+                "id" => intval($_POST['folder'])
+            )
+        );
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
@@ -613,7 +622,15 @@ switch ($_POST['type']) {
                     }
 
                     //create folder - if not exists at the same level
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
+                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
+                    $data = $db->queryCount(
+                        "nested_tree",
+                        array(
+                            "nlevel" => intval($folderLevel+$startPathLevel),
+                            "title" => $fold,
+                            "parent_id" => intval(parent_id)
+                        )
+                    );
                     if ($data[0] == 0) {
                         //do query
                         $id = $db->queryInsert(
@@ -654,7 +671,18 @@ switch ($_POST['type']) {
                         $nbFoldersImported++;
                     } else {
                         //get forlder actual ID
-                        $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
+                        // $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
+                        $row = $db->queryGetRow(
+                            "nested_tree",
+                            array(
+                                "id"
+                            ),
+                            array(
+                                "nlevel" => intval($folderLevel+$startPathLevel),
+                                "title" => $fold,
+                                "parent_id" => intval($parent_id)
+                            )
+                        );
                         $id = $data[0];
                     }
 
@@ -705,8 +733,14 @@ switch ($_POST['type']) {
 
                 if (!empty($item[2])) {
                     //check if not exists
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
-
+                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
+                    $data = $db->queryCount(
+                        "items",
+                        array(
+                            "id_tree" => intval($foldersArray[$item[1]]['id']),
+                            "label" => $item[2]
+                        )
+                    );
                     if ($data[0] == 0) {
                         //Encryption key
                         $randomKey = generateKey();
@@ -767,7 +801,16 @@ switch ($_POST['type']) {
                         } else {
                             $folderId = $foldersArray[$item[1]]['id'];
                         }
-                        $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
+                        // $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
+                        $data = $db->queryGetRow(
+                            "nested_tree",
+                            array(
+                                "title"
+                            ),
+                            array(
+                                "id" => intval($folderId)
+                            )
+                        );
 
                         //Add entry to cache table
                         $db->queryInsert(

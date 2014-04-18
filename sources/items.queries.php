@@ -18,6 +18,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    //include 'error.php';
+    exit();
+}
+
 /**
  * Define Timezone
  */
@@ -102,7 +110,14 @@ if (isset($_POST['type'])) {
                 // ;check if element doesn't already exist
                 $itemExists = 0;
                 $newID = "";
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE label = '".addslashes($label)."' AND inactif=0");
+                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE label = '".addslashes($label)."' AND inactif=0");
+                $data = $db->queryCount(
+                    "items",
+                    array(
+                        "label" => addslashes($label),
+                        "inactif" => "0"
+                    )
+                );
                 if ($data[0] != 0) {
                     $itemExists = 1;
                 } else {
@@ -491,8 +506,8 @@ if (isset($_POST['type'])) {
                                     "SELECT c.title AS title, i.data AS data
                                     FROM ".$pre."categories_items AS i
                                     INNER JOIN ".$pre."categories AS c ON (i.field_id=c.id)
-                                    WHERE i.field_id = '".$field_data[0]."'
-                                    AND i.item_id=".$dataReceived['id']
+                                    WHERE i.field_id = '".intval($field_data[0])."'
+                                    AND i.item_id=".intval($dataReceived['id'])
                                 );
                                 // store Field text in DB
                                 if (count($dataTmp[0]) == 0) {
@@ -567,7 +582,13 @@ if (isset($_POST['type'])) {
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                         // check if elem exists in Table. If not add it or update it.
-                        $dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$dataReceived['id']."'");
+                        //$dataTmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = '".$dataReceived['id']."'");
+                        $dataTmp = $db->queryCount(
+                            "automatic_del",
+                            array(
+                                "item_id" => $dataReceived['id']
+                            )
+                        );
                         if ($dataTmp[0] == 0) {
                             // No automatic deletion for this item
                             if (!empty($dataReceived['to_be_deleted']) || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
@@ -1024,8 +1045,22 @@ if (isset($_POST['type'])) {
             // return ID
             $arrData['id'] = $_POST['id'];
             // Check if item is deleted
-            $dataDeleted = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_delete'");
-            $dataRestored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
+            //$dataDeleted = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_delete'");
+            //$dataRestored = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$_POST['id']."' AND action = 'at_restored'");
+            $dataDeleted = $db->queryCount(
+                "log_items",
+                array(
+                    "id_item" => $_POST['id'],
+                     "action" => "at_delete"
+                )
+            );
+            $dataRestored = $db->queryCount(
+                "log_items",
+                array(
+                    "id_item" => $_POST['id'],
+                     "action" => "at_restored"
+                )
+            );
             if ($dataDeleted[0] != 0 && $dataDeleted[0] > $dataRestored[0]) {
                 // This item is deleted => exit
                 echo prepareExchangedData(array('show_detail_option' => 2), "encode");
@@ -1384,7 +1419,7 @@ if (isset($_POST['type'])) {
         case "showDetailsStep2":
         	// get Item info
         	$dataItem = $db->queryFirst(
-        	"SELECT *
+        	    "SELECT *
                 FROM ".$pre."items
                 WHERE id=".$_POST['id']
         	);
@@ -1528,34 +1563,6 @@ if (isset($_POST['type'])) {
         	);
         	break;
 
-            /*
-        * CASE
-        * Generate a password
-        */
-        case "pw_generate":
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-            // Set pw size
-            $pwgen->setLength($_POST['size']);
-            // Include at least one number in the password
-            $pwgen->setNumerals(($_POST['num'] == "true")? true : false);
-            // Include at least one capital letter in the password
-            $pwgen->setCapitalize(($_POST['maj'] == "true")? true : false);
-            // Include at least one symbol in the password
-            $pwgen->setSymbols(($_POST['symb'] == "true")? true : false);
-            // Complete random, hard to memorize password
-            if (isset($_POST['secure']) && $_POST['secure'] == "true") {
-                $pwgen->setSecure(true);
-                $pwgen->setSymbols(true);
-                $pwgen->setCapitalize(true);
-                $pwgen->setNumerals(true);
-            } else {
-                $pwgen->setSecure(false);
-            }
-            echo prepareExchangedData(array("key" => $pwgen->generate()), "encode");
-            break;
-
         /*
          * CASE
          * Delete an item
@@ -1610,15 +1617,36 @@ if (isset($_POST['type'])) {
             // Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                // $data = $db->fetchRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'");
+                $data = $db->queryGetRow(
+                    "nested_tree",
+                    array(
+                        "title",
+                        "id"
+                    ),
+                    array(
+                        "title" => addslashes($title)
+                    )
+                );
                 if (!empty($data[0]) && $dataReceived['folder'] != $data[0]) {
                     echo '[ { "error" : "'.addslashes($txt['error_group_exist']).'" } ]';
                     break;
                 }
             }
             // update Folders table
-            $tmp = $db->fetchRow(
+            /*$tmp = $db->fetchRow(
                 "SELECT title, parent_id, personal_folder FROM ".$pre."nested_tree WHERE id = ".$dataReceived['folder']
+            );*/
+            $tmp = $db->queryGetRow(
+                "nested_tree",
+                array(
+                    "title",
+                    "parent_id",
+                    "personal_folder"
+                ),
+                array(
+                    "id" => intval($dataReceived['folder'])
+                )
             );
             if ( $tmp[1] != 0 || $tmp[0] != $_SESSION['user_id'] || $tmp[2] != 1 ) {
                 $db->queryUpdate(
@@ -1724,8 +1752,14 @@ if (isset($_POST['type'])) {
             	echo prepareExchangedData(array("error" => "not_authorized"), "encode");
                 break;
             } else {
-                $data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
-                $whereArg = " AND i.id_tree=".$_POST['id'];
+                //$data_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = 0");
+                $data_count = $db->queryCount(
+                    "items",
+                    array(
+                        "inactif" => "0"
+                    )
+                );
+                $whereArg = " AND i.id_tree=".intval($_POST['id']);
             }
 
             if ($data_count[0] > 0 && empty($showError)) {
@@ -2106,7 +2140,17 @@ if (isset($_POST['type'])) {
         case "recup_complex":
             if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
                 // Lock Item (if already locked), go back and warn
-                $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
+                // $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];
+                $dataTmp = $db->queryGetRow(
+                    "items_edition",
+                    array(
+                        "timestamp",
+                        "user_id"
+                    ),
+                    array(
+                        "item_id" => intval($_POST['item_id'])
+                    )
+                );
 
                 // If token is taken for this Item and delay is passed then delete it.
                 if (isset($_SESSION['settings']['delay_item_edition']) &&
@@ -2115,7 +2159,17 @@ if (isset($_POST['type'])) {
                 ) {
                     $db->query("DELETE FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
                     //reload the previous data
-                    $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                    // $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");
+                    $dataTmp = $db->queryGetRow(
+                        "items_edition",
+                        array(
+                            "timestamp",
+                            "user_id"
+                        ),
+                        array(
+                            "item_id" => intval($_POST['item_id'])
+                        )
+                    );
                 }
 
                 // If edition by same user (and token not freed before for any reason, then update timestamp)
@@ -2143,7 +2197,17 @@ if (isset($_POST['type'])) {
             }
 
             // Get required Complexity for this Folder
-            $data = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type='complex' AND intitule = '".$_POST['groupe']."'");
+            // $data = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type='complex' AND intitule = '".$_POST['groupe']."'");
+            $data = $db->queryGetRow(
+                "misc",
+                array(
+                    "valeur"
+                ),
+                array(
+                    "intitule" => $_POST['groupe'],
+                    "type" => "complex"
+                )
+            );
 
             if (isset($data[0]) && (!empty($data[0]) || $data[0] == 0)) {
                 $complexity = $pwComplexity[$data[0]][1];
@@ -2211,7 +2275,18 @@ if (isset($_POST['type'])) {
         */
         case "delete_attached_file":
             // Get some info before deleting
-            $data = $db->fetchRow("SELECT name,id_item,file FROM ".$pre."files WHERE id = '".$_POST['file_id']."'");
+            // $data = $db->fetchRow("SELECT name,id_item,file FROM ".$pre."files WHERE id = '".$_POST['file_id']."'");
+            $data = $db->queryGetRow(
+                "files",
+                array(
+                    "name",
+                    "id_item",
+                    "file"
+                ),
+                array(
+                    "id" => intval($_POST['file_id'])
+                )
+            );
             if (!empty($data[1])) {
                 // Delete from FILES table
                 $db->query("DELETE FROM ".$pre."files WHERE id = '".$_POST['file_id']."'");
@@ -2582,7 +2657,18 @@ if (isset($_POST['type'])) {
         * Check if Item has been changed since loaded
         */
         case "is_item_changed":
-            $data = $db->fetchRow("SELECT date FROM ".$pre."log_items WHERE action = 'at_modification' AND id_item = '".$_POST['item_id']."' ORDER BY date DESC");
+            // $data = $db->fetchRow("SELECT date FROM ".$pre."log_items WHERE action = 'at_modification' AND id_item = '".$_POST['item_id']."' ORDER BY date DESC");
+            $data = $db->queryGetRow(
+                "log_items",
+                array(
+                    "date"
+                ),
+                array(
+                    "action" => "at_modification",
+                    "id_item" => intval($_POST['item_id'])
+                ),
+                " ORDER BY date DESC"
+            );
             // Check if it's in a personal folder. If yes, then force complexity overhead.
             if ($data[0] > $_POST['timestamp']) {
                 echo '{ "modified" : "1" }';
@@ -2623,7 +2709,18 @@ if (isset($_GET['type'])) {
 function recupDroitCreationSansComplexite($groupe)
 {
     global $db, $pre;
-    $data = $db->fetchRow("SELECT bloquer_creation,bloquer_modification,personal_folder FROM ".$pre."nested_tree WHERE id = '".$groupe."'");
+    // $data = $db->fetchRow("SELECT bloquer_creation,bloquer_modification,personal_folder FROM ".$pre."nested_tree WHERE id = '".$groupe."'");
+    $data = $db->queryGetRow(
+        "nested_tree",
+        array(
+            "bloquer_creation",
+            "bloquer_modification",
+            "personal_folder"
+        ),
+        array(
+            "id" => intval($groupe)
+        )
+    );
     // Check if it's in a personal folder. If yes, then force complexity overhead.
     if ($data[2] == 1) {
         return array("bloquer_modification_complexite" => 1, "bloquer_creation_complexite" => 1);

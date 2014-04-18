@@ -256,12 +256,17 @@ $(function() {
                             secure     : true,
                             symbols    : false,
                             capitalize : true,
-                            numerals   : true,
+                            numerals   : true
                         },
                         function(data) {
-                            var pw = htmlspecialchars_decode(aes_decrypt(data));
-                        	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(pw);
-                    		$("#change_user_pw_newpw").focus();
+                        	data = prepareExchangedData(data, "decode");
+                        	if (data.error == "true") {
+                        		$("#div_dialog_message_text").html(data.error_msg);
+                        		$("#div_dialog_message").dialog("open");
+                        	} else {
+                        		$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(pw);
+                        		$("#change_user_pw_newpw").focus();
+                        	}
                     		$("#change_user_pw_wait").hide();
                         }
                    );
@@ -407,9 +412,9 @@ $(function() {
 function pwGenerate(elem)
 {
     $.post(
-        "sources/items.queries.php",
+        "sources/main.queries.php",
         {
-            type    : "pw_generate",
+            type    : "generate_a_password",
             size    : Math.floor((8-5)*Math.random()) + 6,
             num        : true,
             maj        : true,
@@ -419,8 +424,13 @@ function pwGenerate(elem)
             force    : false
         },
         function(data) {
-            data = $.parseJSON(data);
-            $("#"+elem).val(data.key).focus();
+        	data = prepareExchangedData(data, "decode");
+        	if (data.error == "true") {
+        		$("#div_dialog_message_text").html(data.error_msg);
+        		$("#div_dialog_message").dialog("open");
+        	} else {
+        		$("#"+elem).val(data.key).focus();
+        	}
         }
    );
 }
