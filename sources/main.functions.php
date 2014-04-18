@@ -584,7 +584,7 @@ function updateCacheTable($action, $id = "")
                 WHERE id=".$id;
         $row = $db->query($sql);
         $data = $db->fetchArray($row);*/
-        $ret = $db->queryGetArray(
+        $data = $db->queryGetArray(
             "items",
             array(
                 "label",
