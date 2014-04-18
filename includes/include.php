@@ -21,6 +21,7 @@ $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
 $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');
 $k['admin_full_right'] = true;
 $k['admin_no_info'] = false;
+$k['copyright'] = " (c) 2009 - 2014";
 
 @define('ERR_NOT_ALLOWED', "1000");
 @define('ERR_NOT_EXIST', "1001");
