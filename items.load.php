@@ -1162,7 +1162,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             });
                             clip.glue('menu_button_copy_login');
                         }
-                        // #XXX
+                        // #525
                         if (data.url != "") {
                             var clip = new ZeroClipboard.Client();
                             clip.setText(data.url);
@@ -1178,12 +1178,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 $("#message_box").html("<?php echo addslashes($txt['url_copied']);?>").show().fadeOut(1000);
                         });
                         clip.glue('menu_button_copy_link');
-
-                        // function calling image lightbox when clicking on link
-                        $("a.image_dialog").click(function(event) {
-                            event.preventDefault();
-                            PreviewImage($(this).attr("href"),$(this).attr("title"));
-                        });
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -1252,6 +1246,12 @@ function showDetailsStep2(id, param)
             $("#item_edit_list_files").html(data.files_edit).html();
 
 			$("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
+
+            // function calling image lightbox when clicking on link
+            $("a.image_dialog").click(function(event) {
+                event.preventDefault();
+                PreviewImage($(this).attr("href"),$(this).attr("title"));
+            });
 
             //Set favourites icon
             if (data.favourite == "1") {

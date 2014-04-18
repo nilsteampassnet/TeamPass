@@ -16,6 +16,13 @@ $txt['admin_action_attachments_cryption_tip'] = "WARNING: this action has ONLY t
 $txt['encrypt'] = "Encrypt";
 $txt['decrypt'] = "Decrypt";
 
+$txt['user_ga_code'] = "Send GoogleAuthenticator to user by email";
+$txt['send_ga_code'] = "Google Authenticator for user";
+$txt['error_no_email'] = "This user has no email set!";
+$txt['error_no_user'] = "No user found!";
+$txt['email_ga_subject'] = "Your Google Authenticator flash code for Teampass";
+$txt['email_ga_text'] = "Hello,<br><br>Please click this <a href='#link#'>LINK</a> and flash it with GoogleAuthenticator application to get your OTP credentials for Teampass.<br /><br />Cheers";
+
 $txt['admin_ga_website_name'] = "Name displayed Google Authenticator for Teampass";
 $txt['admin_ga_website_name_tip'] = "This name is used for the identification code account in Google Authenticator.";
 $txt['admin_action_pw_prefix_correct'] = "Correct passwords prefix";

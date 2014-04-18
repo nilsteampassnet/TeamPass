@@ -52,10 +52,10 @@ $row = $db->queryGetRow(
 //get list of personal folders
 $arrayPf = array();
 $listPf = "";
-if (empty($row[0])) {
+if (!empty($row[0])) {
 	$rows = $db->fetchAllArray(
-	    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = '".intval($row[0]).
-	    "' AND NOT title = '".intval($_SESSION['user_id'])."'"
+	    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = '".filter_var($row[0], FILTER_SANITIZE_NUMBER_INT).
+	    "' AND NOT title = '".filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)."'"
 	);
 	foreach ($rows as $reccord) {
 		if (!in_array($reccord['id'], $arrayPf)) {
@@ -76,7 +76,7 @@ if (empty($row[0])) {
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength'])."";
+    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
@@ -84,10 +84,10 @@ if (isset($_GET['iSortCol_0'])) {
     $sOrder = "ORDER BY  ";
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
         if (
-            $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" &&
+            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
         ) {
-            $sOrder .= "".$aColumns[ intval($_GET['iSortCol_'.$i]) ]." "
+            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
             .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
         }
     }
@@ -107,7 +107,7 @@ if (isset($_GET['iSortCol_0'])) {
 if ($_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)."%' OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }
