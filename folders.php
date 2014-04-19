@@ -14,9 +14,9 @@
  */
 
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -144,9 +144,9 @@ foreach ($tst as $t) {
                 "n.renewal_period" => "renewal_period"
             ),
             array(
-                "m.type" => "complex",
-                "m.intitule" => intval(n.id),
-                "m.intitule" => intval($t->id)
+	            "m.intitule" => "n.id",
+            	"m._intitule" => $t->id,
+            	"m.type" => "complex"
             )
         );
 
@@ -174,11 +174,11 @@ foreach ($tst as $t) {
 
         //$data3 = $db->fetchRow("SELECT bloquer_creation,bloquer_modification FROM ".$pre."nested_tree WHERE id = ".$t->id);
         $data3 = $db->queryGetRow(
+        	"nested_tree",
             array(
                 "bloquer_creation",
                 "bloquer_modification"
             ),
-            "nested_tree",
             array(
                 "id" => intval($t->id)
             )
