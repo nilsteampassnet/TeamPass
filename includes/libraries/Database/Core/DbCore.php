@@ -180,7 +180,7 @@ class DbCore
         // data
         $d = "";
         if (is_array($data)) {
-            foreach ($data as $key => $val) {
+        	foreach ($data as $key => $val) {
                 if (is_int($key)) {
                     $d .= "`".$this->escape($val)."`, ";
                 } else {
@@ -226,9 +226,20 @@ class DbCore
                 $w .= "`$key` = NOW(), ";
             } else {
                 if (strpos($key,'.') === false) {
-                    $w .= "`$key` = '".$this->escape($val)."' AND ";
+                	if (strpos($val,'.') === false) {
+                    	$w .= "`$key` = '".$this->escape($val)."' AND ";
+                	} else {
+                		$w .= "`$key` = ".$this->escape($val)." AND ";
+                	}
                 } else {
-                    $w .= "$key = '".$this->escape($val)."' AND ";
+                	if (strpos($key,'_') !== false) {
+                		$key = str_replace( "_", "", $key);
+                	}
+					if (strpos($val,'.') === false) {
+                		$w .= "$key = '".$this->escape($val)."' AND ";
+                	} else {
+                	$w .= "$key = ".$this->escape($val)." AND ";
+                	}
                 }
             }
         }
@@ -244,7 +255,7 @@ class DbCore
     public function queryGetRow($table, $data, $where, $extra = "", $inner = "")
     {
         $q =  $this->prepareData($table, $data, $where, $extra, $inner);
-
+		//echo $q."|";
         $query_id = $this->query($q);
 
         if (isset($this->query_id)) {
