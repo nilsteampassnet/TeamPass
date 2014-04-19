@@ -44,6 +44,9 @@ function catInFolders(id) {
 * Add a new category
 */
 function categoryAdd() {
+	if ($("#new_category_label").val() == "") {
+		return false;
+	}
     $("#div_loading").show();
 	//send query
     $.post(
@@ -60,15 +63,16 @@ function categoryAdd() {
                 '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
                 $("#new_category_label").val()+'</label><a href="#" title="<?php echo $txt['field_add_in_category'];?>" onclick="fieldAdd('+
-                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td>'+
-                '<a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td><td>'+
+                '<a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+data[0].id+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
                 '<?php echo $txt['category_in_folders_title'];?>:'+
-                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
-                '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td><td></td>');
+                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
+                '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
         	$("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
         	// clean
             $("#new_category_label, #new_item_title").val("");
+        	//loadFieldsList();
             $("#div_loading,#no_category").hide();
         },
         "json"
@@ -266,7 +270,7 @@ function LaunchAdminActions(action,option)
                     	$("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
                     } else if (data[0].error == "file_not_clear") {
                     	$("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
-                    }                        
+                    }
                 }
             }
         },
@@ -333,8 +337,9 @@ $(function() {
                             $("#item_"+$("#post_id").val()).html($("#new_item_title").val());
                         } else if ($("#post_type").val() == "moveItem") {
                             // reload table
-                            loadFieldsList();
+                            //loadFieldsList();
                         }
+                        loadFieldsList();
                         $("#new_category_label, #new_item_title").val("");
                         $("#div_loading").hide();
                         $this.dialog("close");
@@ -546,7 +551,7 @@ $(function() {
 });
 
 function manageEncryptionOfAttachments(list, cpt) {
-    
+
 	$.post(
 		"sources/admin.queries.php",
 		{
