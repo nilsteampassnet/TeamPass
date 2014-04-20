@@ -298,7 +298,7 @@ if (isset($_POST['type'])) {
                 }
             } else {
                 echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                $res = "Impossible to get connected to server. Error is ".mysqli_error($dbTmp);
+                $res = "Impossible to get connected to server. Please verify the credentials.";
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
 
