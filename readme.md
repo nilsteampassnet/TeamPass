@@ -12,7 +12,7 @@ This program is free software: you can redistribute it and/or modify it under th
 
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
 
-[Read Licence] (license.md) 
+[Read Licence] (license.md)
 
 ## Website
 
@@ -24,8 +24,8 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 
 ## Requirements
 
-* Apache, 
-* MySQL, 
+* Apache,
+* MySQL,
 * PHP 5.3.0 (or higher),
 * mcrypt PHP extension,
 * openssl PHP extension,
@@ -54,3 +54,5 @@ Teampass is translated in next languages:
 * JAPANESE		by Shinji
 * PORTUGUESE 	by Luiz LeFort
 * ITALIAN		by Federico
+
+Languages strings are managed at [POEditor.com] (https://poeditor.com/projects/view?id=16418).

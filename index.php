@@ -39,7 +39,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // Include files
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+@require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -464,7 +464,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         $_SESSION['error']['code'] = ERR_VALID_SESSION;
         $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
         include 'error.php';
-    }    
+    }
 } elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
     // Case where user has asked new PW
     echo '
