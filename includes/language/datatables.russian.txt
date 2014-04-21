@@ -1,4 +1,4 @@
-﻿{
+{
 	"sProcessing":   "Подождите...",
 	"sLengthMenu":   "Показать _MENU_ записей",
 	"sZeroRecords":  "Записи отсутствуют.",
