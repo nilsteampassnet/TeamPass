@@ -602,7 +602,7 @@ echo '
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '
         </div>
         <div style="float:right;text-align:right;">
-            '. $txt['server_time']." : ".date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            '. $txt['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
         </div>
     </div>';
 // PAGE LOADING
