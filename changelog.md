@@ -16,6 +16,8 @@
  #533 #521 #528 - Installation issue
  #525 - Seetings.php should not be commited
  #527 - Potential security bug
+ #485 - CVS Import on V 2.1.19 quotes problems
+ #544 - DataTables warning: JSON data from server could not be parsed
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
 

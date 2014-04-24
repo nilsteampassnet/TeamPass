@@ -3,18 +3,18 @@
  * ------------------------------------------------
  * Encrypt PHP session data using files
  * ------------------------------------------------
- * The encryption is built using mcrypt extension 
+ * The encryption is built using mcrypt extension
  * and the randomness is managed by openssl
  * The default encryption algorithm is AES (Rijndael-256)
  * and we use CTR+HMAC (Encrypt-then-mac) with SHA-256
- * 
+ *
  * @author    Enrico Zimuel (enrico@zimuel.it)
  * @modified  Brian Davis (slimm609@gmail.com)
  * @copyright GNU General Public License
  */
 class CryptSession {
      # Encryption algorithm
-    protected $_algo= MCRYPT_RIJNDAEL_256;    
+    protected $_algo= MCRYPT_RIJNDAEL_256;
      # Key for encryption/decryption
     protected $_key;
      # Key for HMAC authentication
@@ -32,15 +32,15 @@ class CryptSession {
     protected function _randomKey($length=32) {
         if(function_exists('openssl_random_pseudo_bytes')) {
             $rnd = openssl_random_pseudo_bytes($length, $strong);
-            if ($strong === true) { 
+            if ($strong === true) {
                 return $rnd;
-            }    
+            }
         }
         if (defined(MCRYPT_DEV_URANDOM)) {
             return mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
         } else {
             throw new Exception("I cannot generate a secure pseudo-random key. Please install OpenSSL or Mcrypt extension");
-        }	
+        }
     }
     /**
      * Constructor
@@ -58,14 +58,14 @@ class CryptSession {
     }
     /**
      * Open the session
-     * 
+     *
      * @param  string $save_path
      * @param  string $session_name
      * @return bool
      */
-    public function open($save_path, $session_name) 
+    public function open($save_path, $session_name)
     {
-        $this->_path    = $save_path.'/';	
+        $this->_path    = $save_path.'/';
 	$this->_name    = $session_name;
 	$this->_keyName = "KEY_$session_name";
 	$this->_ivSize  = mcrypt_get_iv_size($this->_algo, 'ctr');
@@ -88,21 +88,21 @@ class CryptSession {
             list ($this->_key, $this->_auth) = explode (':',$_COOKIE[$this->_keyName]);
             $this->_key  = base64_decode($this->_key);
             $this->_auth = base64_decode($this->_auth);
-	} 
+	}
 	return true;
     }
      # Close the session
-    public function close() 
+    public function close()
     {
         return true;
     }
      # Read and decrypt the session
-    public function read($id) 
+    public function read($id)
     {
         $sess_file = $this->_path.$this->_name."_$id";
         if (!file_exists($sess_file)) {
             return false;
-        }    
+        }
   	$data      = file_get_contents($sess_file);
         list($hmac, $iv, $encrypted)= explode(':',$data);
         $iv        = base64_decode($iv);
@@ -118,10 +118,10 @@ class CryptSession {
             'ctr',
             $iv
         );
-        return rtrim($decrypt, "\0"); 
+        return rtrim($decrypt, "\0");
     }
      # Encrypt and write the session
-    public function write($id, $data) 
+    public function write($id, $data)
     {
         $sess_file = $this->_path . $this->_name . "_$id";
 	$iv        = mcrypt_create_iv($this->_ivSize, MCRYPT_DEV_URANDOM);
@@ -134,17 +134,17 @@ class CryptSession {
         );
         $hmac  = hash_hmac('sha256', $iv . $this->_algo . $encrypted, $this->_auth);
         $bytes = file_put_contents($sess_file, $hmac . ':' . base64_encode($iv) . ':' . base64_encode($encrypted));
-        return ($bytes !== false);  
+        return ($bytes !== false);
     }
      # Destoroy the session
-    public function destroy($id) 
+    public function destroy($id)
     {
         $sess_file = $this->_path . $this->_name . "_$id";
-        setcookie ($this->_keyName, '', time() - 3600);
-	return(@unlink($sess_file));
+        @setcookie ($this->_keyName, '', time() - 3600);
+		return(@unlink($sess_file));
     }
      # Garbage Collector
-    public function gc($max) 
+    public function gc($max)
     {
     	foreach (glob($this->_path . $this->_name . '_*') as $filename) {
             if (filemtime($filename) + $max < time()) {

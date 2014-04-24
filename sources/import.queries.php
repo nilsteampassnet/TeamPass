@@ -113,7 +113,9 @@ switch ($_POST['type']) {
                         $login = addslashes($line[1]);
                         $pw = $line[2];
                         $url = addslashes($line[3]);
-                        $comment = htmlentities(addslashes($line[4]), ENT_QUOTES);
+                    	$to_find = array ( "\"" , "'" );
+                    	$to_ins = array ( "&quot" , "&#39;");
+                    	$comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$line[4])), ENT_QUOTES, 'UTF-8');
 
                         $continue_on_next_line = false;
                     }

@@ -1552,7 +1552,7 @@ echo '
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$txt['admin_ldap_configuration'].'</div>
                 <table>';
 // Domain
-if ($ldap_type != 'posix') {
+if (isset($ldap_type) && $ldap_type != 'posix') {
 echo '
                     <tr>
                         <td><label for="ldap_suffix">'.$txt['settings_ldap_domain'].'</label></td>
@@ -1568,7 +1568,7 @@ echo '
                     </tr>';
 
 // Subtree for posix / openldap
-if ($ldap_type == 'posix') {
+if (isset($ldap_type) && $ldap_type == 'posix') {
 		echo '
                 <tr>
                     <td><label for="ldap_suffix">'.$txt['settings_ldap_domain_posix'].'</label></td>
@@ -1577,7 +1577,7 @@ if ($ldap_type == 'posix') {
 }
 
 // LDAP username attribute
-if ($ldap_type == 'posix') {
+if (isset($ldap_type) && $ldap_type == 'posix') {
 		echo '
                 <tr>
                     <td><label for="ldap_user_attribute">'.$txt['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.

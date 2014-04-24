@@ -203,7 +203,7 @@ foreach ($rows as $reccord) {
     } else {
         $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags($reccord['description']));
         if (strlen($txt) > 50) {
-            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)), 0, 50).'", ';
+            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[^>]>\//|[\t]/', '', $txt)), 0, 50).'", ';
         } else {
             $sOutputItem .= '"'.stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)).'", ';
         }
