@@ -52,8 +52,6 @@ $pwComplexity = array(0 => array(0, $txt['complex_level0']),
     90 => array(90, $txt['complex_level6'])
    );
 
-$allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
-
 //Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -2675,6 +2673,66 @@ if (isset($_POST['type'])) {
             } else {
                 echo '{ "modified" : "0" }';
             }
+            break;
+
+        /*
+        * CASE
+        * Check if Item has been changed since loaded
+        */
+        case "generate_OTV_url":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // delete all existing old otv codes
+            $rows = $db->fetchAllArray("SELECT id FROM ".$pre."otv WHERE timestamp < ".(time() - $k['otv_expiration_period']));
+            foreach ($rows as $reccord) {
+                $db->queryDelete(
+                    'otv',
+                    array(
+                        'id' => $reccord['id']
+                       )
+                );
+            }
+
+            // generate session
+            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+            $pwgen->register();
+            $pwgen = new Encryption\PwGen\pwgen();
+            $pwgen->setLength(20);
+            $pwgen->setSecure(true);
+            $otv_code = $pwgen->generate();
+
+            $newID = $db->queryInsert(
+                "otv",
+                array(
+                	'id' => null,
+                    'item_id' => intval($_POST['id']),
+                    'timestamp' => time(),
+                    'originator' => intval($_SESSION['user_id']),
+                    'code' => $otv_code
+                   )
+            );
+
+            $otv_session = array(
+                "code"      => $otv_code,
+                "item_id"   => $_POST['id'],
+                "stamp" => time(),
+                "otv_id"    => $newID
+            );
+
+            $url = $_SESSION['settings']['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
+        	$exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + $k['otv_expiration_period']);
+
+        	echo '[{ "error" : "" , "url" : "'.addslashes(
+            	str_replace(
+            		array("#URL#", "#DAY#"),
+            		array($url, $exp_date),
+            		$txt['one_time_view_item_url_box']
+            	)
+            ).'" }]';
             break;
     }
 }

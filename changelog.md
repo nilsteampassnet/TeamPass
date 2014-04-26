@@ -20,6 +20,7 @@
  #544 - DataTables warning: JSON data from server could not be parsed
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
+ New: one time view page for anonymous user
 
 2.1.19
  #413 - fix for PHP Parse error: syntax error, unexpected '['
