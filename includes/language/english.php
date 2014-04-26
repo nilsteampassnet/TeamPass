@@ -6,6 +6,8 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['one_time_item_view'] = "One time view link";
+$txt['one_time_view_item_url_box'] = "Share the One-Time URL with a person of Trust <br><br>#URL#<br><br>Remember that this link will only be visible one time until the #DAY#";
 $txt['url_copied_clipboard'] = "URL copied in clipboard";
 $txt['url_copy'] = "Copy URL in clipboard";
 

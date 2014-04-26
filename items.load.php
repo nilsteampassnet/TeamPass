@@ -162,7 +162,7 @@ function ListerItems(groupe_id, restricted, start)
         if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
 
         //Disable menu buttons
-        $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share').attr('disabled', 'disabled');
+        $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share,#menu_button_otv').attr('disabled', 'disabled');
 
         // clear existing clips
         //ZeroClipboard.destroy();
@@ -197,7 +197,7 @@ function ListerItems(groupe_id, restricted, start)
                 } else if (data.error == "not_authorized") {
                     //warn user
                     $("#hid_cat").val("");
-                    $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share").attr('disabled', 'disabled');
+                    $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").attr('disabled', 'disabled');
                     $("#item_details_nok").show();
                     $("#item_details_ok, #item_details_no_personal_saltkey").hide();
                     $("#items_list_loader").hide();
@@ -1115,9 +1115,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         // disable share button for personal folder
                         if ($("#recherche_group_pf").val() == 1) {
-            		        $("#menu_button_share").attr('disabled', 'disabled');
+            		        $("#menu_button_share, #menu_button_otv").attr('disabled', 'disabled');
             		    } else {
-            		    	$("#menu_button_share").prop("disabled", false);
+            		    	$("#menu_button_share, #menu_button_otv").prop("disabled", false);
             		    }
 
                         //Manage to deleted information
@@ -2599,5 +2599,31 @@ function aes_encrypt(text)
 function aes_decrypt(text)
 {
     return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+}
+
+/*
+* Launch the redirection to OTV page
+*/
+function prepareOneTimeView()
+{
+    //Send query
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "generate_OTV_url",
+            id      : $("#id_item").val(),
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            //check if format error
+            if (data[0].error == "") {
+                $("#div_dialog_message").dialog('open');
+                $("#div_dialog_message_text").html(data[0].url);
+            } else {
+                $("#item_history_log_error").html(data[0].error).show();
+            }
+        },
+        "json"
+   );
 }
 </script>

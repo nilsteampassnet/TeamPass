@@ -32,6 +32,7 @@ $db->connect();
 
 //Columns name
 $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
+$aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
 $sOrder = $sLimit = "";
@@ -80,9 +81,10 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 }
 
 //Ordering
-if (isset($_GET['iSortCol_0'])) {
+if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+
         if (
             $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
@@ -96,8 +98,11 @@ if (isset($_GET['iSortCol_0'])) {
     if ($sOrder == "ORDER BY") {
             $sOrder = "";
     }
+} else if (!in_array($_GET['iSortCol_0'], $aSortTypes)) {
+	// possible attack - stop
+	echo '[{}]';
 }
-//echo $sOrder;
+
 /*
  * Filtering
  * NOTE this does not match the built-in DataTables filtering which does it
