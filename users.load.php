@@ -19,6 +19,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
+
+
+	$.extend($.expr[":"], {
+		"containsIN": function(elem, i, match, array) {
+			return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
+		}
+	});
+
 $(function() {
     $(".button").button();
     //inline editing
@@ -407,6 +415,40 @@ $(function() {
 			}
 		}
 	});
+
+	var watermark = 'Search a user';
+
+	//init, set watermark text and class
+	$('#search').val(watermark).addClass('watermark');
+
+	//if blur and no value inside, set watermark text and class again.
+	$('#search').blur(function(){
+		if ($(this).val().length == 0){
+			$(this).val(watermark).addClass('watermark');
+		}
+	});
+
+	//if focus and text is watermrk, set it to empty and remove the watermark class
+	$('#search').focus(function(){
+		if ($(this).val() == watermark){
+			$(this).val('').removeClass('watermark');
+		}
+	});
+
+
+	$('input[name="search"]').keyup(function(){
+		var searchterm = $(this).val();
+		if(searchterm.length > 1) {
+			var match = $('tr.data-row:containsIN("' + searchterm + '")');
+			var nomatch = $('tr.data-row:not(:containsIN("' + searchterm + '"))');
+			match.addClass('selected');
+			nomatch.css("display", "none");
+		} else {
+			$('tr.data-row').css("display", "");
+			$('tr.data-row').removeClass('selected');
+		}
+	});
+
 });
 
 function pwGenerate(elem)

@@ -14,9 +14,9 @@
  */
 
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -54,6 +54,7 @@ echo '
     '.$txt['admin_users'].'&nbsp;&nbsp;&nbsp;
     <img src="includes/images/user--plus.png" title="'.$txt['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$txt['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
+<input type="text" name="search" id="search" />
 </div>';
 
 echo '
@@ -179,7 +180,7 @@ foreach ($rows as $reccord) {
     }
     // Display Grid
     if ($showUserFolders == true) {
-        echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).'"', '>
+        echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).' data-row"', '>
                     <td align="center">'.$reccord['id'].'</td>
                     <td align="center">', $reccord['disabled'] == 1 ?'
                         <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />' :
