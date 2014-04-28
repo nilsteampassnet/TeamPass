@@ -807,7 +807,7 @@ echo '
                     <td>
                         <select id="time_format" name="time_format" class="text ui-widget-content">
                             <option value="H:i:s"', !isset($_SESSION['settings']['time_format']) || $_SESSION['settings']['time_format'] == "H:i:s" ? ' selected="selected"':"", '>H:i:s</option>
-                            <option value="h:m:s a"', $_SESSION['settings']['time_format'] == "h:m:s a" ? ' selected="selected"':"", '>h:m:s a</option>
+                            <option value="h:i:s a"', $_SESSION['settings']['time_format'] == "h:i:s a" ? ' selected="selected"':"", '>h:i:s a</option>
                             <option value="g:i:s a"', $_SESSION['settings']['time_format'] == "g:i:s a" ? ' selected="selected"':"", '>g:i:s a</option>
                             <option value="G:i:s"', $_SESSION['settings']['time_format'] == "G:i:s" ? ' selected="selected"':"", '>G:i:s</option>
                         </select>
