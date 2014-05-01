@@ -16,9 +16,9 @@
 require_once('sessions.php');
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -855,4 +855,110 @@ switch ($_POST['type']) {
 
             echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt']+$cpt).'"}]';
             break;
+
+        /*
+         * API save key
+         */
+        case "admin_action_api_save_key":
+            $error = "";
+            // add new key
+            if (isset($_POST['action']) && $_POST['action'] == "add") {
+                $db->queryInsert(
+                    'api',
+                    array(
+                    	'id'		=> null,
+                        'type'      => 'key',
+                        'label'     => $_POST['label'],
+                        'value'       => $_POST['key'],
+                        'timestamp' => time()
+                    )
+                );
+            }
+            else
+            // update existing key
+            if (isset($_POST['action']) && $_POST['action'] == "update") {
+                $db->queryUpdate(
+                    'api',
+                    array(
+                        'label'     => $_POST['label'],
+                        'timestamp' => time()
+                    ),
+                    "id='".intval($_POST['id'])."'"
+                );
+            }
+            else
+            // delete existing key
+            if (isset($_POST['action']) && $_POST['action'] == "delete") {
+				$db->query("DELETE FROM ".$pre."api WHERE id='".intval($_POST['id'])."'");
+            }
+            echo '[{"error":"'.$error.'"}]';
+            break;
+
+	/*
+	   * API save key
+	*/
+	case "admin_action_api_save_ip":
+		$error = "";
+		// add new key
+		if (isset($_POST['action']) && $_POST['action'] == "add") {
+			$db->queryInsert(
+			'api',
+			array(
+				'id'		=> null,
+			    'type'      => 'ip',
+			    'label'     => $_POST['label'],
+			    'value'       => $_POST['key'],
+			    'timestamp' => time()
+			)
+			);
+		}
+		else
+			// update existing key
+			if (isset($_POST['action']) && $_POST['action'] == "update") {
+				$db->queryUpdate(
+				'api',
+				array(
+				    'label'     => $_POST['label'],
+				    'timestamp' => time()
+				),
+				"id='".intval($_POST['id'])."'"
+				);
+			}
+		else
+			// delete existing key
+			if (isset($_POST['action']) && $_POST['action'] == "delete") {
+				$db->query("DELETE FROM ".$pre."api WHERE id='".intval($_POST['id'])."'");
+			}
+		echo '[{"error":"'.$error.'"}]';
+		break;
+
+	case "save_api_status":
+		$data = $db->queryCount(
+			"misc",
+			array(
+			    "type" => "admin",
+			    "intitule" => "api"
+			)
+		);
+		if ($data[0] == 0) {
+			$db->queryInsert(
+				"misc",
+				array(
+					'type' => "admin",
+					"intitule" => "api",
+				    'valeur' => intval($_POST['status'])
+				   )
+			);
+		} else {
+			$db->queryUpdate(
+				"misc",
+				array(
+				    'valeur' => intval($_POST['status'])
+				   ),
+				"type='admin' AND intitule = 'api'"
+			);
+		}
+		$_SESSION['settings']['api'] = intval($_POST['status']);
+		break;
+
 }

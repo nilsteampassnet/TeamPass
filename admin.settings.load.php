@@ -291,7 +291,25 @@ $(function() {
     $(".div_radio").buttonset();
 
     // Build Tabs
-    $("#tabs").tabs();
+	$("#tabs").tabs({
+		ajaxOptions: {
+			error: function(xhr, status, index, anchor) {
+				$(anchor.hash).html();
+			},
+			beforeSend: function() {
+				$("#div_loading").show();
+			},
+			complete: function() {
+				$("#div_loading").hide();
+			}
+		}
+	});
+	$('#tabs').click(function(e){
+		var current_index = $("#tabs").tabs("option","active");
+		if (current_index != 9) {
+			$("#save_button").show();
+		}
+	});
 
     $('#tbl_categories tr').click(function (event) {
         $("#selected_row").val($(this).attr("id"));

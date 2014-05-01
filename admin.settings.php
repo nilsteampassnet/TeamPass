@@ -509,6 +509,7 @@ echo '
                 <li><a href="#tabs-5">'.$txt['admin_backups'].'</a></li>
                 <li><a href="#tabs-6">'.$txt['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$txt['categories'].'</a></li>
+                <li><a href="admin.settings_api.php">'.$txt['admin_api'].'</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1

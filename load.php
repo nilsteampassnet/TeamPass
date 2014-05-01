@@ -286,7 +286,7 @@ $htmlHeaders .= '
     function ChangeLanguage(lang)
     {
         $("#language").val(lang);
-        data = \'{"lang":"\'+sanitizeString(lang)+\'"}\';    		        
+        data = \'{"lang":"\'+sanitizeString(lang)+\'"}\';
         $.post(
             "sources/main.queries.php",
             {

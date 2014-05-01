@@ -795,18 +795,19 @@ switch ($_POST['type']) {
                 "email" => mysql_real_escape_string(stripslashes($_POST['email']))
             )
         );
-        $textMail = $txt['forgot_pw_email_body_1']." <a href=\"".
-            $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-            "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
-            "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$txt['thku'];
-        $textMailAlt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
-            $txt['index_password']." : ".md5($data['pw']);
 
         if ($data[0] != 0) {
             $data = $db->fetchArray(
                 "SELECT login,pw FROM ".$pre."users WHERE email = '".
                 mysql_real_escape_string(stripslashes($_POST['email']))."'"
             );
+
+        	$textMail = $txt['forgot_pw_email_body_1']." <a href=\"".
+        	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+        	    "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+        	    "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$txt['thku'];
+        	$textMailAlt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
+        	    $txt['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
             //$data = $db->fetchRow(

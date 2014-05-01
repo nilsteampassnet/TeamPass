@@ -343,9 +343,9 @@ function pwGenerate(elem)
         {
             type    : "generate_a_password",
             size      : $("#"+elem+'pw_size').val(),
-            num      : $("#"+elem+'pw_numerics').prop("checked"),
-            maj      : $("#"+elem+'pw_maj').prop("checked"),
-            symb      : $("#"+elem+'pw_symbols').prop("checked"),
+            numerals      : $("#"+elem+'pw_numerics').prop("checked"),
+            capitalize      : $("#"+elem+'pw_maj').prop("checked"),
+            symbols      : $("#"+elem+'pw_symbols').prop("checked"),
             secure  : $("#"+elem+'pw_secure').prop("checked"),
             elem      : elem,
             force      : "false"
