@@ -6,6 +6,24 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
     $TeamPass_url = $_SESSION['settings']['cpassman_url'];
 }
 
+$txt['error_too_long'] = "Error - Too long string!";
+$txt['admin_api'] = "API";
+$txt['settings_api'] = "Enable to Teampass Items through API";
+$txt['settings_api_tip'] = "API access permits to do access the Items from a third party application in JSON format.";
+$txt['settings_api_keys_list'] = "List of Keys";
+$txt['settings_api_keys_list_tip'] = "This is the keys that are allowed to access to Teampass. Without a valid Key, the access is not possible. You should share those Keys carrefuly!";
+$txt['settings_api_generate_key'] = "Generate a key";
+$txt['settings_api_delete_key'] = "Delete the Key";
+$txt['settings_api_add_key'] = "Add new key";
+$txt['settings_api_key'] = "Key";
+$txt['settings_api_ip_whitelist'] = "White-list of authorized IP";
+$txt['settings_api_ip_whitelist_tip'] = "If no IP is listed then any IP is authorized.";
+$txt['settings_api_add_ip'] = "Add new IP";
+$txt['settings_api_db_intro'] = "Give a label for this new Key (not mandatory but recommended)";
+$txt['settings_api_ip'] = "IP";
+$txt['settings_api_db_intro_ip'] = "Give a label for this new IP";
+$txt['settings_api_world_open'] = "No IP defined. The feature is totally open from any location (maybe unsecure).";
+
 $txt['one_time_item_view'] = "One time view link";
 $txt['one_time_view_item_url_box'] = "Share the One-Time URL with a person of Trust <br><br>#URL#<br><br>Remember that this link will only be visible one time until the #DAY#";
 $txt['url_copied_clipboard'] = "URL copied in clipboard";

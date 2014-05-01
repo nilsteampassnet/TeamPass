@@ -286,7 +286,8 @@ if (isset($_POST['type'])) {
                 ('admin','upload_imageresize_height','600'),
                 ('admin','upload_imageresize_quality','90'),
                 ('admin','use_md5_password_as_salt','0'),
-                ('admin','ga_website_name','TeamPass for ChangeMe')
+                ('admin','ga_website_name','TeamPass for ChangeMe'),
+                ('admin','api','0')
                 ;"
             );
 
