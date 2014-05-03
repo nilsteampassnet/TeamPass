@@ -230,7 +230,7 @@ function newIPDB()
 
 function ip_update(id, value, ip)
 {
-    $("#api_db_type").val("admin_action_api_save_key");
+    $("#api_db_type").val("admin_action_api_save_ip");
     $("#api_db_id").val(id);
     $("#api_db_action").val("update");
     $("#div_key").show();
@@ -261,6 +261,7 @@ $(function() {
 					$("#api_db_message").html("'.$txt['error_too_long'].'");
 					exit;
 				}
+
                 $("#div_loading").show();
                 var $this = $(this);
             	// send query

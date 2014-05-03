@@ -96,13 +96,13 @@ echo '
 <input type="hidden" id="pf_selected" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="'.$_GET['id'].'" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($_GET['group'], $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
+    echo '<input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$_GET['group'].'" />';
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($_GET['group'], $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
@@ -230,7 +230,7 @@ foreach ($folders as $folder) {
         	}
             // Prepare folder
             $folderTxt = '
-                    <li class="jstreeopen" id="li_'.$folder->id.'">';
+                    <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 $folderTxt .= '
                             <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
@@ -358,7 +358,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['label'].' :</td>
                     <td>
-                        <input type="hidden" id="hid_label" value="', isset($dataItem) ? $dataItem['label'] : '', '" />
+                        <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div id="id_label" style="display:inline;"></div>
                     </td>
                 </tr>';
@@ -367,7 +367,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['description'].' :</td>
                     <td>
-                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? $dataItem['description'] : '', '" />
+                        <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
                     </td>
                 </tr>';
 // Line for PW
@@ -455,7 +455,7 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
                     <tr class="tr_fields itemCatName_'.$itemCatName.'">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin: 0 .3em 0 15px; font-size:9px;">&nbsp;</span><i>'.$field[1].'</i> :</td>
                         <td>
-                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.$field[0].'" class="fields" />
+                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'" class="fields" />
                         </td>
                     </tr>';
         }

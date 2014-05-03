@@ -373,8 +373,8 @@ if (!empty($_POST['type'])) {
                     'type' => 'user_mngt',
                     'date' => time(),
                     'label' => 'at_user_email_changed:'.$data[0],
-                    'qui' => $_SESSION['user_id'],
-                    'field_1' => $_POST['id']
+                    'qui' => intval($_SESSION['user_id']),
+                    'field_1' => intval($_POST['id'])
                    )
             );
         	echo '[{"error" : "no"}]';

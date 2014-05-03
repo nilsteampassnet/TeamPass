@@ -919,6 +919,7 @@ switch ($_POST['type']) {
 				'api',
 				array(
 				    'label'     => $_POST['label'],
+					'value'     => $_POST['key'],
 				    'timestamp' => time()
 				),
 				"id='".intval($_POST['id'])."'"
