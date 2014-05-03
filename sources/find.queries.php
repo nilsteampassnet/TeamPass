@@ -84,7 +84,6 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-
         if (
             $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])

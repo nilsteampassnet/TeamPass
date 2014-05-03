@@ -2617,6 +2617,7 @@ function prepareOneTimeView()
         function(data) {
             //check if format error
             if (data[0].error == "") {
+				$("#div_dialog_message").dialog({minHeight:500,minWidth:750});
                 $("#div_dialog_message").dialog('open');
                 $("#div_dialog_message_text").html(data[0].url);
             } else {

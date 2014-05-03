@@ -70,6 +70,13 @@ if (
 
             // get data
             $pw = decrypt($dataItem['pw']);
+
+        	// get key for original pw
+        	$originalKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table` LIKE "items" AND `id` ='.intval($_GET['item_id']));
+        	// unsalt previous pw
+        	$pw = substr(decrypt($dataItem['pw']), strlen($originalKey['rand_key']));
+
+
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];

@@ -33,6 +33,7 @@ $db->connect();
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
+	$aSortTypes = array('ASC', 'DESC');
 
     //init SQL variables
     $sWhere = $sOrder = $sLimit = "";
@@ -41,20 +42,22 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysql_real_escape_string($_GET['iDisplayStart']) .", "
-                . mysql_real_escape_string($_GET['iDisplayLength']) ;
+        $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
     }
 
     //Ordering
 
-    if (isset($_GET['iSortCol_0'])) {
+    if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
-                    ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
-            }
-        }
+    	for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+    		if (
+    			$_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+    			preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+    		) {
+    			$sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+    			.mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+    		}
+    	}
 
         $sOrder = substr_replace($sOrder, "", -2);
         if ($sOrder == "ORDER BY") {
