@@ -20,6 +20,7 @@
  #544 - DataTables warning: JSON data from server could not be parsed
  #547 - User search
  #520 - API access
+ #549 #550 - Server Time in footer
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
  New: one time view page for anonymous user
