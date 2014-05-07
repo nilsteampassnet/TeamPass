@@ -43,6 +43,12 @@ if (isset($_POST['type'])) {
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('mbstring')) {
+                $okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mbstring\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mbstring\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (!extension_loaded('openssl')) {
                 $okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
