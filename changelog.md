@@ -21,9 +21,13 @@
  #547 - User search
  #520 - API access
  #549 #550 - Server Time in footer
+ #539 -
+ #401 - Folder role inheretance on new folder
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
  New: one time view page for anonymous user
+ New feature: Simplify Items Tree
+ New feature: Sub-folder inherits of parent folder
 
 2.1.19
  #413 - fix for PHP Parse error: syntax error, unexpected '['

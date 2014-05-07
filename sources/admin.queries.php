@@ -92,11 +92,11 @@ switch ($_POST['type']) {
                             $tab = explode('|', $val);
                             foreach ($tab as $elem) {
                                 $tmp = explode('#', $elem);
-                                $text .= '<li><u>'.$txt[$tmp[0]]."</u> : ".$tmp[1].'</li>';
+                                $text .= '<li><u>'.$LANG[$tmp[0]]."</u> : ".$tmp[1].'</li>';
                                 if ($tmp[0] == "version") {
-                                    $text .= '<li><u>'.$txt['your_version']."</u> : ".$k['version'];
+                                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$k['version'];
                                     if (floatval($k['version']) < floatval($tmp[1])) {
-                                        $text .= '&nbsp;&nbsp;<b>'.$txt['please_update'].'</b><br />';
+                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b><br />';
                                     }
                                     $text .= '</li>';
                                 }
@@ -571,7 +571,7 @@ switch ($_POST['type']) {
     */
     case "admin_email_test_configuration":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-        echo '[{"result":"email_test_conf", '.sendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['user_email']).'}]';
+        echo '[{"result":"email_test_conf", '.sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['user_email']).'}]';
         break;
 
     /*
@@ -617,7 +617,7 @@ switch ($_POST['type']) {
             )
         );
 
-        echo '[{"result":"admin_email_send_backlog", '.@sendEmail($txt['admin_email_test_subject'], $txt['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
+        echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
         break;
 
     /*
@@ -706,7 +706,7 @@ switch ($_POST['type']) {
                 $numOfItemsChanged++;
             }
         }
-        echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$txt['alert_message_done'].' '.$numOfItemsChanged.' '.$txt['items_changed'].'"}]';
+        echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$LANG['alert_message_done'].' '.$numOfItemsChanged.' '.$LANG['items_changed'].'"}]';
         break;
 
     /*

@@ -652,7 +652,7 @@ function updateCacheTable($action, $id = "")
             array(
                 "i.label" => "label",
                 "i.description" => "description",
-                "i.id_tree" => id_tree,
+                "i.id_tree" => "id_tree",
                 "i.perso" => "perso",
                 "i.restricted_to" => "restricted_to",
                 "i.login" => "login",
@@ -818,7 +818,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     if (!$mail->send()) {
         return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
     } else {
-        return '"error":"" , "message":"'.$txt['forgot_my_pw_email_sent'].'"';
+        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
     }
 }
 

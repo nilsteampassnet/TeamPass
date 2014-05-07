@@ -1,6 +1,7 @@
 <?php
 require_once('../sources/sessions.php');
 session_start();
+error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
 
 $_SESSION['CPM'] = 1;
@@ -238,6 +239,14 @@ if (isset($_POST['type'])) {
                 ('admin','encryptClientServer','1'),
                 ('admin','cpassman_version','".$k['version']."'),
                 ('admin','ldap_mode','0'),
+                ('admin','ldap_type','0'),
+                ('admin','ldap_suffix','0'),
+                ('admin','ldap_domain_dn','0'),
+                ('admin','ldap_domain_controler','0'),
+                ('admin','ldap_user_attribute','0'),
+                ('admin','ldap_ssl','0'),
+                ('admin','ldap_tls','0'),
+                ('admin','ldap_elusers','0'),
                 ('admin','richtext','0'),
                 ('admin','allow_print','0'),
                 ('admin','show_description','1'),
@@ -287,7 +296,9 @@ if (isset($_POST['type'])) {
                 ('admin','upload_imageresize_quality','90'),
                 ('admin','use_md5_password_as_salt','0'),
                 ('admin','ga_website_name','TeamPass for ChangeMe'),
-                ('admin','api','0')
+                ('admin','api','0'),
+                ('admin','subfolder_rights_as_parent','0'),
+                ('admin','show_only_accessible_folders','0')
                 ;"
             );
 
@@ -808,6 +819,48 @@ if (isset($_POST['type'])) {
         		mysqli_close($dbTmp);
         		break;
         	}
+
+            ## TABLE api
+            $res = mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."api` (
+                `id` int(20) NOT NULL AUTO_INCREMENT,
+                `type` varchar(15) NOT NULL,
+                `label` varchar(255) NOT NULL,
+                `value` varchar(255) NOT NULL,
+                `timestamp` varchar(50) NOT NULL,
+                PRIMARY KEY (`id`)
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_27").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table API! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_27").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
+
+            ## TABLE otv
+            $res = mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."otv` (
+                `id` int(10) NOT NULL AUTO_INCREMENT,
+                `timestamp` text NOT NULL,
+                `code` varchar(100) NOT NULL,
+                `item_id` int(12) NOT NULL,
+                `originator` tinyint(12) NOT NULL,
+                PRIMARY KEY (`id`)
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_28").innerHTML = "<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = "An error appears on table OTV! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_28").innerHTML = "<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
 
             echo 'gauge.modify($("pbar"),{values:[0.80,1]});';
             echo 'document.getElementById("but_next").disabled = "";';

@@ -83,7 +83,7 @@ if (isset($_POST['newtitle'])) {
         echo ($_POST['renewal_period']);
     } else {
         //Show ERROR
-        echo ($txt['error_renawal_period_not_integer']);
+        echo ($LANG['error_renawal_period_not_integer']);
     }
 
     // CASE where the parent is changed
@@ -256,7 +256,7 @@ if (isset($_POST['newtitle'])) {
             if ($createNewFolder == true) {
                 //check if parent folder is personal
                 // $data = $db->fetchRow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parentId."'");
-                $row = $db->queryGetRow(
+                $data = $db->queryGetRow(
                     "nested_tree",
                     array(
                         "personal_folder"
@@ -297,7 +297,11 @@ if (isset($_POST['newtitle'])) {
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                if ($isPersonal != 1){
+                if (
+                    $isPersonal != 1
+                    && isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                ){
                     //Get user's rights
                     @identifyUserRights(
                         $_SESSION['groupes_visibles'].';'.$newId,

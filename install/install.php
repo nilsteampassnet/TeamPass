@@ -415,6 +415,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <tr><td>Add table "categories"</td><td><span id="tbl_24"></span></td></tr>
                         <tr><td>Add table "categories_items"</td><td><span id="tbl_25"></span></td></tr>
                         <tr><td>Add table "categories_folders"</td><td><span id="tbl_26"></span></td></tr>
+                        <tr><td>Add table "api"</td><td><span id="tbl_27"></span></td></tr>
+                        <tr><td>Add table "otv"</td><td><span id="tbl_28"></span></td></tr>
                     </table>
                     </fieldset>
 

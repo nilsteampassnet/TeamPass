@@ -130,11 +130,11 @@ foreach ($rows as $reccord) {
 
     //col3
     if ($reccord['admin'] == "1") {
-        $user_role = $txt['god'];
+        $user_role = $LANG['god'];
     } elseif ($reccord['gestionnaire'] == 1) {
-        $user_role = $txt['gestionnaire'];
+        $user_role = $LANG['gestionnaire'];
     } else {
-        $user_role = $txt['user'];
+        $user_role = $LANG['user'];
     }
     $sOutput_item .= '"'.$user_role.'", ';
 

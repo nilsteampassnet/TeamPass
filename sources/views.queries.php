@@ -65,15 +65,15 @@ switch ($_POST['type']) {
         $pdf->aliasNbPages();
         $pdf->addPage();
         $pdf->SetFont('DejaVu', '', 16);
-        $pdf->Cell(0, 10, $txt['pdf_del_title'], 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['pdf_del_title'], 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 12);
-        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 10);
         $pdf->SetFillColor(15, 86, 145);
-        $pdf->cell(80, 6, $txt['label'], 1, 0, "C", 1);
-        $pdf->cell(75, 6, $txt['group'], 1, 0, "C", 1);
-        $pdf->cell(21, 6, $txt['date'], 1, 0, "C", 1);
-        $pdf->cell(15, 6, $txt['author'], 1, 1, "C", 1);
+        $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", 1);
+        $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", 1);
+        $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", 1);
+        $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", 1);
         $pdf->SetFont('DejaVu', '', 10);
 
         $rows = $db->fetchAllArray(
@@ -107,7 +107,7 @@ switch ($_POST['type']) {
         //send the file
         $pdf->Output($_SESSION['settings']['path_to_files_folder'].'/'.$nomFichier);
 
-        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         break;
 
     /**
@@ -116,7 +116,7 @@ switch ($_POST['type']) {
     case "lister_suppression":
         //FOLDERS deleted
         $arrFolders = array();
-        $texte = "<table cellpadding=3><tr><td><u><b>".$txt['group']."</b></u></td></tr>";
+        $texte = "<table cellpadding=3><tr><td><u><b>".$LANG['group']."</b></u></td></tr>";
         $rows = $db->fetchAllArray(
             "SELECT valeur, intitule
             FROM ".$pre."misc
@@ -130,7 +130,7 @@ switch ($_POST['type']) {
         }
 
         //ITEMS deleted
-        $texte .= "<tr><td><u><b>".$txt['email_altbody_1']."</b></u></td></tr>";
+        $texte .= "<tr><td><u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
         $rows = $db->fetchAllArray(
             "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date
             FROM ".$pre."log_items as l
@@ -154,7 +154,7 @@ switch ($_POST['type']) {
             $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$reccord['id'].'\' id=\'item_deleted_'.$reccord['id'].'\' />&nbsp;<b>'.$reccord['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $reccord['date']).'</td><td width=\"70px\" align=\"center\">'.$reccord['login'].'</td>'.$thisFolder.'</tr>';
         }
 
-        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;<img src=\"includes/images/arrow-repeat.png\" title=\"'.$txt['restore'].'\" style=\"cursor:pointer;\" onclick=\"restoreDeletedItems()\">&nbsp;<img src=\"includes/images/bin_empty.png\" title=\"'.$txt['delete'].'\" style=\"cursor:pointer;\" onclick=\"reallyDeleteItems()\"></div>"}]';
+        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;<img src=\"includes/images/arrow-repeat.png\" title=\"'.$LANG['restore'].'\" style=\"cursor:pointer;\" onclick=\"restoreDeletedItems()\">&nbsp;<img src=\"includes/images/bin_empty.png\" title=\"'.$LANG['delete'].'\" style=\"cursor:pointer;\" onclick=\"reallyDeleteItems()\"></div>"}]';
         break;
 
     /**
@@ -266,7 +266,7 @@ switch ($_POST['type']) {
     case "connections_logs":
         $logs = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         //get number of pages
         $data = $db->fetchRow(
@@ -306,7 +306,7 @@ switch ($_POST['type']) {
         foreach ($rows as $reccord) {
             $logs .= '<tr><td>'.date(
                 $_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']
-            ).'</td><td align=\"center\">'.$txt[$reccord['label']].'</td><td align=\"center\">'.
+            ).'</td><td align=\"center\">'.$LANG[$reccord['label']].'</td><td align=\"center\">'.
             $reccord['login'].'</td></tr>';
         }
 
@@ -319,7 +319,7 @@ switch ($_POST['type']) {
     case "errors_logs":
         $logs = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         //get number of pages
         $data = $db->fetchRow(
@@ -368,7 +368,7 @@ switch ($_POST['type']) {
     case "access_logs":
         $logs = $sqlFilter = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
             $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
@@ -423,7 +423,7 @@ switch ($_POST['type']) {
     case "copy_logs":
         $logs = $sqlFilter = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
             $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
@@ -479,7 +479,7 @@ switch ($_POST['type']) {
     case "items_logs":
         $logs = $sqlFilter = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
             $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
@@ -525,7 +525,7 @@ switch ($_POST['type']) {
 
         foreach ($rows as $reccord) {
             if ($reccord['perso'] == 1) {
-                $label[0] = "** ".$txt['at_personnel']." **";
+                $label[0] = "** ".$LANG['at_personnel']." **";
             } else {
                 $label = explode('@', addslashes(cleanString($reccord['label'])));
             }
@@ -541,7 +541,7 @@ switch ($_POST['type']) {
     case "admin_logs":
         $logs = $sqlFilter = "";
         $nbPages = 1;
-        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+        $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
             $sqlFilter = " AND l.label LIKE '%".$_POST['filter']."%'";
@@ -604,7 +604,7 @@ switch ($_POST['type']) {
             $date = (mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')+1));
         }
         $idItem = "";
-        $texte = "<table cellpadding=3><thead><tr><th>".$txt['label']."</th><th>".$txt['creation_date']."</th><th>".$txt['expiration_date']."</th><th>".$txt['group']."</th><th>".$txt['auteur']."</th></tr></thead>";
+        $texte = "<table cellpadding=3><thead><tr><th>".$LANG['label']."</th><th>".$LANG['creation_date']."</th><th>".$LANG['expiration_date']."</th><th>".$LANG['group']."</th><th>".$LANG['auteur']."</th></tr></thead>";
         $textPdf = "";
         $rows = $db->fetchAllArray(
             "SELECT u.login as login,
@@ -658,16 +658,16 @@ switch ($_POST['type']) {
         $pdf->aliasNbPages();
         $pdf->addPage();
         $pdf->SetFont('DejaVu', '', 16);
-        $pdf->Cell(0, 10, $txt['renewal_needed_pdf_title'], 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['renewal_needed_pdf_title'], 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 12);
-        $pdf->Cell(0, 10, $txt['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('DejaVu', '', 10);
         $pdf->SetFillColor(192, 192, 192);
-        $pdf->cell(70, 6, $txt['label'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $txt['creation_date'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $txt['expiration_date'], 1, 0, "C", 1);
-        $pdf->cell(45, 6, $txt['group'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $txt['author'], 1, 1, "C", 1);
+        $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", 1);
+        $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", 1);
+        $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", 1);
+        $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", 1);
+        $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", 1);
         $pdf->SetFont('DejaVu', '', 9);
 
         foreach (explode('@|@', addslashes($_POST['text'])) as $line) {

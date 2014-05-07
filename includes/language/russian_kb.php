@@ -7,9 +7,9 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 
-$txt['category'] = "Категория";
-$txt['kb'] = "База Знаний";
-$txt['kb_anyone_can_modify'] = "Всем разрешено вносить изменения";
-$txt['kb_form'] = "Manage entries in KB";
-$txt['new_kb'] = "Add a new KB";
+$LANG['category'] = "Категория";
+$LANG['kb'] = "База Знаний";
+$LANG['kb_anyone_can_modify'] = "Всем разрешено вносить изменения";
+$LANG['kb_form'] = "Manage entries in KB";
+$LANG['new_kb'] = "Add a new KB";
 ?>

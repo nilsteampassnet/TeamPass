@@ -1,6 +1,7 @@
 <?php
 require_once('../sources/sessions.php');
 session_start();
+error_reporting(E_ERROR | E_PARSE);
 
 require_once '../includes/language/english.php';
 require_once '../includes/include.php';
@@ -35,7 +36,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     global $dbTmp;
     $exists = false;
     $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc($dbTmp, $columns)) {
+    while ($c = mysqli_fetch_assoc( $columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             break;
@@ -421,6 +422,14 @@ if (isset($_POST['type'])) {
                 //array('admin', 'maintenance_mode','1',1),
                 array('admin', 'cpassman_version',$k['version'],1),
                 array('admin', 'ldap_mode','0',0),
+                array('admin','ldap_type','0',0),
+                array('admin','ldap_suffix','0',0),
+                array('admin','ldap_domain_dn','0',0),
+                array('admin','ldap_domain_controler','0',0),
+                array('admin','ldap_user_attribute','0',0),
+                array('admin','ldap_ssl','0',0),
+                array('admin','ldap_tls','0',0),
+                array('admin','ldap_elusers','0',0),
                 array('admin', 'richtext',0,0),
                 array('admin', 'allow_print',0,0),
                 array('admin', 'show_description',1,0),
@@ -537,7 +546,9 @@ if (isset($_POST['type'])) {
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
 	            array('admin','use_md5_password_as_salt','0', 0),
-	            array('admin','api','0', 0)
+	            array('admin','api','0', 0),
+                array('admin', 'subfolder_rights_as_parent', '0', 0),
+                array('admin', 'show_only_accessible_folders', '0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -1341,6 +1352,54 @@ if (isset($_POST['type'])) {
         		mysqli_close($dbTmp);
         		break;
         	}
+
+            ## TABLE api
+            $res = mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."api` (
+                `id` int(20) NOT NULL AUTO_INCREMENT,
+                `type` varchar(15) NOT NULL,
+                `label` varchar(255) NOT NULL,
+                `value` varchar(255) NOT NULL,
+                `timestamp` varchar(50) NOT NULL,
+                PRIMARY KEY (`id`)
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_23").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table API! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_23").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
+
+            ## TABLE otv
+            $res = mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."otv` (
+                `id` int(10) NOT NULL AUTO_INCREMENT,
+                `timestamp` text NOT NULL,
+                `code` varchar(100) NOT NULL,
+                `item_id` int(12) NOT NULL,
+                `originator` tinyint(12) NOT NULL,
+                PRIMARY KEY (`id`)
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_24").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table OTV! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_24").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
 
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.

@@ -1,5 +1,5 @@
 <?php
-$txt['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 This page is used in order to create and manage FOLDERS.<br />
 A folder is needed to organize your items. It is similare to windows file directories.<br />
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>Lowest level of folder is called ROOT.<br />
@@ -46,7 +46,7 @@ A folder is needed to organize your items. It is similare to windows file direct
         </p>
     </div>
 </div>";
-$txt['help_on_roles'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_roles'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 This page is used in order to create and manage ROLES.<br />
 A role is associated to a set of allowed and forbidden folders.<br />
 Once several roles are defined, you can associate USERS to them.
@@ -86,7 +86,7 @@ Once several roles are defined, you can associate USERS to them.
         This will popup a dialogbox in which you will be asked to confirm the deletion.
     </div>
 </div>";
-$txt['help_on_users'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_users'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 This page is used in order to create and manage USERS.<br />
 A user account is needed for each physical person that will have to use TeamPass.<br />
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>1st step is to set what ROLES the user has.<br />

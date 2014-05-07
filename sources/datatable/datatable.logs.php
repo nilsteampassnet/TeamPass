@@ -664,9 +664,9 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col4
         if ($reccord['perso'] == 1) {
-            $sOutput_item .= '"'. htmlspecialchars(stripslashes($txt['yes']), ENT_QUOTES). '"';
+            $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['yes']), ENT_QUOTES). '"';
         } else {
-            $sOutput_item .= '"'. htmlspecialchars(stripslashes($txt['no']), ENT_QUOTES). '"';
+            $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['no']), ENT_QUOTES). '"';
         }
 
         //Finish the line

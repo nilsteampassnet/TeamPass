@@ -156,10 +156,10 @@ switch ($_POST['type']) {
             );
             if (!empty($row[0])) {
                 sendEmail(
-                    $txt['forgot_pw_email_subject'],
-                    $txt['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
+                    $LANG['forgot_pw_email_subject'],
+                    $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
                     $row[0],
-                    $txt['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
+                    $LANG['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
                 );
             }
 
@@ -238,8 +238,8 @@ switch ($_POST['type']) {
     			// send mail?
     			if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
     				sendEmail (
-    					$txt['email_ga_subject'],
-    					str_replace("#link#", $gaUrl, $txt['email_ga_text']),
+    					$LANG['email_ga_subject'],
+    					str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
     					$data['email']
 					);
     			}
@@ -550,13 +550,13 @@ switch ($_POST['type']) {
                 );
                 // user type
                 if ($_SESSION['user_admin'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['god'];
+                    $_SESSION['user_privilege'] = $LANG['god'];
                 } elseif ($_SESSION['user_manager'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['gestionnaire'];
+                    $_SESSION['user_privilege'] = $LANG['gestionnaire'];
                 } elseif ($_SESSION['user_read_only'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['read_only_account'];
+                    $_SESSION['user_privilege'] = $LANG['read_only_account'];
                 } else {
-                    $_SESSION['user_privilege'] = $txt['user'];
+                    $_SESSION['user_privilege'] = $LANG['user'];
                 }
 
                 if (empty($data['last_connexion'])) {
@@ -677,7 +677,7 @@ switch ($_POST['type']) {
                         'emails',
                         array(
                             'timestamp' => time(),
-                            'subject' => $txt['email_subject_on_user_login'],
+                            'subject' => $LANG['email_subject_on_user_login'],
                             'body' => str_replace(
                                 array(
                                     '#tp_user#',
@@ -689,7 +689,7 @@ switch ($_POST['type']) {
                                     date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']),
                                     date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])
                                 ),
-                                $txt['email_body_on_user_login']
+                                $LANG['email_body_on_user_login']
                             ),
                             'receivers' => $receivers,
                             'status' => "not sent"
@@ -802,12 +802,12 @@ switch ($_POST['type']) {
                 mysql_real_escape_string(stripslashes($_POST['email']))."'"
             );
 
-        	$textMail = $txt['forgot_pw_email_body_1']." <a href=\"".
+        	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
         	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
         	    "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
-        	    "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$txt['thku'];
-        	$textMailAlt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
-        	    $txt['index_password']." : ".md5($data['pw']);
+        	    "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$LANG['thku'];
+        	$textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
+        	    $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
             //$data = $db->fetchRow(
@@ -844,10 +844,10 @@ switch ($_POST['type']) {
                 );
             }
 
-            echo '[{'.sendEmail($txt['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
+            echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
         } else {
             // no one has this email ... alert
-            echo '[{"error":"error_email" , "message":"'.$txt['forgot_my_pw_error_email_not_exist'].'"}]';
+            echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
         }
         break;
     // Send to user his new pw if key is conform
@@ -912,10 +912,10 @@ switch ($_POST['type']) {
             // send to user
             $ret = json_decode(
                 @sendEmail(
-                    $txt['forgot_pw_email_subject_confirm'],
-                    $txt['forgot_pw_email_body']." ".$newPwNotCrypted,
+                    $LANG['forgot_pw_email_subject_confirm'],
+                    $LANG['forgot_pw_email_body']." ".$newPwNotCrypted,
                     $dataUser['email'],
-                    strip_tags($txt['forgot_pw_email_body'])." ".$newPwNotCrypted
+                    strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
                 )
             );
             // send email
@@ -938,7 +938,7 @@ switch ($_POST['type']) {
         $arrOutput = array();
 
         /* Build list of all folders */
-        $foldersList = "\'0\':\'".$txt['root']."\'";
+        $foldersList = "\'0\':\'".$LANG['root']."\'";
         foreach ($folders as $f) {
             // Be sure that user can only see folders he/she is allowed to
             if (!in_array($f->id, $_SESSION['forbiden_pfs'])) {

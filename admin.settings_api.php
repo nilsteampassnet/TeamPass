@@ -2,9 +2,9 @@
 /**
  *
  * @file          admin.settings_api.php
- * @author        Nils Laumaillé
+ * @author        Nils Laumaillï¿½
  * @version       2.1.20
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillï¿½
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -49,25 +49,25 @@ echo '
 <div id="tabs-9">
 	<div style="margin-bottom:3px;">
         <label for="api" style="width:350px;">' .
-            $txt['settings_api'].'
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_api_tip'].'" />
+            $LANG['settings_api'].'
+            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_tip'].'" />
         </label>
         <span class="div_radio">
-            <input type="radio" id="api_radio1" name="ldap_mode" onclick="saveApiStatus(1)" value="1"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$txt['yes'].'</label>
-            <input type="radio" id="api_radio2" name="ldap_mode" onclick="saveApiStatus(0)" value="0"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['api']) ? ' checked="checked"':''), ' /><label for="api_radio2">'.$txt['no'].'</label>
+            <input type="radio" id="api_radio1" name="ldap_mode" onclick="saveApiStatus(1)" value="1"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$LANG['yes'].'</label>
+            <input type="radio" id="api_radio2" name="ldap_mode" onclick="saveApiStatus(0)" value="0"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['api']) ? ' checked="checked"':''), ' /><label for="api_radio2">'.$LANG['no'].'</label>
         </span>
     </div>
     <hr>
     <div style="margin-bottom:3px;">
-        <label for="api" style="width:350px;"><b>' .$txt['settings_api_keys_list'].'</b>
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_api_keys_list_tip'].'" />
-            &nbsp;<input type="button" id="but_add_new_key" value="'.$txt['settings_api_add_key'].'" onclick="newKeyDB()" class="ui-state-default ui-corner-all" />
+        <label for="api" style="width:350px;"><b>' .$LANG['settings_api_keys_list'].'</b>
+            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_keys_list_tip'].'" />
+            &nbsp;<input type="button" id="but_add_new_key" value="'.$LANG['settings_api_add_key'].'" onclick="newKeyDB()" class="ui-state-default ui-corner-all" />
         </label>
         <div id="api_keys_list">
             <table id="tbl_keys">
                 <thead>
-                <th>'.$txt['label'].'</th>
-                <th>'.$txt['settings_api_key'].'</th>
+                <th>'.$LANG['label'].'</th>
+                <th>'.$LANG['settings_api_key'].'</th>
                 </thead>';
                 $rows = $db->fetchAllArray("SELECT id, label, value FROM ".$pre."api WHERE type = 'key' ORDER BY timestamp ASC");
                 foreach ($rows as $record) {
@@ -84,9 +84,9 @@ echo '
     </div>
     <hr>
     <div style="margin-bottom:3px;">
-        <label for="api" style="width:350px;"><b>'.$txt['settings_api_ip_whitelist'].'</b>
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_api_ip_whitelist_tip'].'" />
-            &nbsp;<input type="button" id="but_add_new_ip" value="'.$txt['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
+        <label for="api" style="width:350px;"><b>'.$LANG['settings_api_ip_whitelist'].'</b>
+            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_ip_whitelist_tip'].'" />
+            &nbsp;<input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
         </label>
         <div id="api_ips_list">';
 		$data = $db->queryCount(
@@ -99,8 +99,8 @@ echo '
 			echo '
             <table id="tbl_ips">
                 <thead>
-                <th>'.$txt['label'].'</th>
-                <th>'.$txt['settings_api_ip'].'</th>
+                <th>'.$LANG['label'].'</th>
+                <th>'.$LANG['settings_api_ip'].'</th>
                 </thead>';
 					$rows = $db->fetchAllArray("SELECT id, label, value FROM ".$pre."api WHERE type = 'ip' ORDER BY timestamp ASC");
 					foreach ($rows as $record) {
@@ -114,7 +114,7 @@ echo '
 echo '
             </table>';
 		}else {
-			echo $txt['settings_api_world_open'];
+			echo $LANG['settings_api_world_open'];
 		}
 		echo '
         </div>
@@ -147,9 +147,9 @@ function newKeyDB()
 {
     $("#api_db_type").val("admin_action_api_save_key");
     $("#api_db_action").val("add");
-    $("#api_db_intro").html("'.$txt['settings_api_db_intro'].'");
-    $("#api_db_label_span").html("'.$txt['label'].'");
-    $("#api_db_key_span").html("'.$txt['settings_api_key'].'");
+    $("#api_db_intro").html("'.$LANG['settings_api_db_intro'].'");
+    $("#api_db_label_span").html("'.$LANG['label'].'");
+    $("#api_db_key_span").html("'.$LANG['settings_api_key'].'");
     $("#api_db_label_input, #api_db_key_input").val("");
     $("#api_db_key_input").prop("disabled", true);
     $("#div_key").show();
@@ -162,9 +162,9 @@ function key_update(id, value, key)
     $("#api_db_type").val("admin_action_api_save_key");
     $("#api_db_id").val(id);
     $("#api_db_action").val("update");
-    $("#api_db_intro").html("'.$txt['settings_api_db_intro'].'");
-    $("#api_db_label_span").html("'.$txt['label'].'");
-    $("#api_db_key_span").html("'.$txt['settings_api_key'].'");
+    $("#api_db_intro").html("'.$LANG['settings_api_db_intro'].'");
+    $("#api_db_label_span").html("'.$LANG['label'].'");
+    $("#api_db_key_span").html("'.$LANG['settings_api_key'].'");
     $("#api_db_label_input").val(value);
     $("#div_key").show();
     $("#api_db_key_input").prop("disabled", true).val(key);
@@ -219,9 +219,9 @@ function newIPDB()
 {
     $("#api_db_type").val("admin_action_api_save_ip");
     $("#api_db_action").val("add");
-    $("#api_db_intro").html("'.$txt['settings_api_db_intro'].'");
-    $("#api_db_label_span").html("'.$txt['label'].'");
-    $("#api_db_key_span").html("'.$txt['settings_api_ip'].'");
+    $("#api_db_intro").html("'.$LANG['settings_api_db_intro'].'");
+    $("#api_db_label_span").html("'.$LANG['label'].'");
+    $("#api_db_key_span").html("'.$LANG['settings_api_ip'].'");
     $("#api_db_label_input, #api_db_key_input").val("");
     $("#api_db_key_input").prop("disabled", false);
     $("#div_key").show();
@@ -234,9 +234,9 @@ function ip_update(id, value, ip)
     $("#api_db_id").val(id);
     $("#api_db_action").val("update");
     $("#div_key").show();
-    $("#api_db_intro").html("'.$txt['settings_api_db_intro'].'");
-    $("#api_db_label_span").html("'.$txt['label'].'");
-    $("#api_db_key_span").html("'.$txt['settings_api_ip'].'");
+    $("#api_db_intro").html("'.$LANG['settings_api_db_intro'].'");
+    $("#api_db_label_span").html("'.$LANG['label'].'");
+    $("#api_db_key_span").html("'.$LANG['settings_api_ip'].'");
     $("#api_db_label_input").val(value);
     $("#api_db_key_input").prop("disabled", false);
     $("#api_db_key_input").val(ip);
@@ -253,12 +253,12 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 250,
-        title: "'.$txt['confirm'].'",
+        title: "'.$LANG['confirm'].'",
         buttons: {
-            "'.$txt['confirm'].'": function() {
+            "'.$LANG['confirm'].'": function() {
 				$("#api_db_message").html("");
 				if ($("#api_db_label_input").val().length > 255 || $("#api_db_key_input").val().length > 255) {
-					$("#api_db_message").html("'.$txt['error_too_long'].'");
+					$("#api_db_message").html("'.$LANG['error_too_long'].'");
 					exit;
 				}
 
@@ -290,7 +290,7 @@ $(function() {
                     "json"
                );
             },
-            "'.$txt['cancel_button'].'": function() {
+            "'.$LANG['cancel_button'].'": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
