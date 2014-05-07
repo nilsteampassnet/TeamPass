@@ -78,7 +78,7 @@ if (!empty($_POST['type'])) {
                     echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';
                 }
             } else {
-                echo '[ { "error" : "yes" , "message" : "'.$txt['error_role_exist'].'" } ]';
+                echo '[ { "error" : "yes" , "message" : "'.$LANG['error_role_exist'].'" } ]';
             }
             break;
 
@@ -116,7 +116,7 @@ if (!empty($_POST['type'])) {
                 );
                 echo '[ { "error" : "no" } ]';
             } else {
-                echo '[ { "error" : "yes" , "message" : "'.$txt['error_role_exist'].'" } ]';
+                echo '[ { "error" : "yes" , "message" : "'.$LANG['error_role_exist'].'" } ]';
             }
             break;
 
@@ -171,17 +171,17 @@ if (!empty($_POST['type'])) {
         case "refresh_roles_matrix":
             //pw complexity levels
             $pwComplexity = array(
-                0=>array(0,$txt['complex_level0']),
-                25=>array(25,$txt['complex_level1']),
-                50=>array(50,$txt['complex_level2']),
-                60=>array(60,$txt['complex_level3']),
-                70=>array(70,$txt['complex_level4']),
-                80=>array(80,$txt['complex_level5']),
-                90=>array(90,$txt['complex_level6'])
+                0=>array(0,$LANG['complex_level0']),
+                25=>array(25,$LANG['complex_level1']),
+                50=>array(50,$LANG['complex_level2']),
+                60=>array(60,$LANG['complex_level3']),
+                70=>array(70,$LANG['complex_level4']),
+                80=>array(80,$LANG['complex_level5']),
+                90=>array(90,$LANG['complex_level6'])
             );
 
             $tree = $tree->getDescendants();
-            $texte = '<table><thead><tr><th>'.$txt['group'].'s</th>';
+            $texte = '<table><thead><tr><th>'.$LANG['group'].'s</th>';
             $gpes_ok = array();
             $gpes_nok = array();
             $tab_fonctions = array();
@@ -215,9 +215,9 @@ if (!empty($_POST['type'])) {
             foreach ($rows as $reccord) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
                     if ($reccord['allow_pw_change'] == 1) {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$txt['role_cannot_modify_all_seen_items'].'\'>';
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'>';
                     } else {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$txt['role_can_modify_all_seen_items'].'\'>';
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
                     }
 
                     $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].
@@ -278,7 +278,7 @@ if (!empty($_POST['type'])) {
 
             //Check if is UTF8. IF not send Error
             /*if (!isUTF8($texte)) {
-                $return_values = array("error" => $txt['error_string_not_utf8']);
+                $return_values = array("error" => $LANG['error_string_not_utf8']);
             }*/
 
             $return_values = json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);

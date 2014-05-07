@@ -7,7 +7,7 @@ if (!isset($_SESSION['settings']['cpassman_url'])) {
 }
 
 
-$txt['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_folders'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 Cette page est utilisée pour créer et gérer les RÉPERTOIRES.<br />
 Un répertoire est nécessaire pour organiser et structurer vos éléments. Il est similaire à un répertoire de fichiers de votre système d'exploitation.<br />
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>Le niveau le plus bas est appelé la RACINE.<br />
@@ -54,7 +54,7 @@ Un répertoire est nécessaire pour organiser et structurer vos éléments. Il e
         </p>
     </div>
 </div>";
-$txt['help_on_roles'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_roles'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 Cette page est utilisée pour créer et modifier les RÔLES.<br />
 Un rôle est associé à un ensemble de répertoires autorisés et interdits.<br />
 Une fois plusieurs rôles paramétrés, vous pouvez les utiliser pour les associer à un compte utilisateur.
@@ -94,7 +94,7 @@ Une fois plusieurs rôles paramétrés, vous pouvez les utiliser pour les associ
         Cela ouvrira une boîte de dialogue dans laquelle vous devrez confirmer la suppression.
     </div>
 </div>";
-$txt['help_on_users'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
+$LANG['help_on_users'] = "<div class='ui-state-highlight ui-corner-all' style='padding:5px;font-weight:bold;'>
 Cette page est utilisée pour créer et gérer les UTILISATEURS.<br />
 Un compte utilisateur est nécessaire pour chaque personne physique devant utiliser TeamPass.<br />
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>La 1ère étape consiste à associer l'utilisateur à un ou plusieurs rôles.<br />

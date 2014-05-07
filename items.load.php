@@ -293,7 +293,7 @@ function ListerItems(groupe_id, restricted, start)
                                 $(this).addClass("ui-state-highlight");
                             },
                             helper: function(event) {
-                                return $("<div class='ui-widget-header'>"+"<?php echo $txt['drag_drop_helper'];?>"+"</div>");
+                                return $("<div class='ui-widget-header'>"+"<?php echo $LANG['drag_drop_helper'];?>"+"</div>");
                             }
                         });
                         $(".folder").droppable({
@@ -445,7 +445,7 @@ function CheckIfItemChanged()
 
 function AjouterItem()
 {
-    $("#div_formulaire_saisi_info").show().html("<?php echo addslashes($txt['please_wait']);?>");
+    $("#div_formulaire_saisi_info").show().html("<?php echo addslashes($LANG['please_wait']);?>");
     LoadingPage();
     $("#error_detected").val('');   //Refresh error foolowup
     var erreur = "";
@@ -457,12 +457,12 @@ function AjouterItem()
         url = "http://"+url;
     }
 
-    if ($("#label").val() == "") erreur = "<?php echo $txt['error_label'];?>";
-    else if ($("#pw1").val() == "") erreur = "<?php echo $txt['error_pw'];?>";
-    else if ($("#categorie").val() == "na") erreur = "<?php echo $txt['error_group'];?>";
-    else if ($("#pw1").val() != $("#pw2").val()) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ($("#enable_delete_after_consultation").is(':checked') && (($("#times_before_deletion").val() < 1 && $("#deletion_after_date").val() == "") || ($("#times_before_deletion").val() == "" && $("#deletion_after_date").val() == ""))) erreur = "<?php echo $txt['error_times_before_deletion'];?>";
-    else if ($("#item_tags").val() != "" && reg.test($("#item_tags").val())) erreur = "<?php echo $txt['error_tags'];?>";
+    if ($("#label").val() == "") erreur = "<?php echo $LANG['error_label'];?>";
+    else if ($("#pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
+    else if ($("#categorie").val() == "na") erreur = "<?php echo $LANG['error_group'];?>";
+    else if ($("#pw1").val() != $("#pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
+    else if ($("#enable_delete_after_consultation").is(':checked') && (($("#times_before_deletion").val() < 1 && $("#deletion_after_date").val() == "") || ($("#times_before_deletion").val() == "" && $("#deletion_after_date").val() == ""))) erreur = "<?php echo $LANG['error_times_before_deletion'];?>";
+    else if ($("#item_tags").val() != "" && reg.test($("#item_tags").val())) erreur = "<?php echo $LANG['error_tags'];?>";
     else{
         //Check pw complexity level
         if (
@@ -567,7 +567,7 @@ function AjouterItem()
                     //Check errors
                     if (data.error == "item_exists") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo addslashes($txt['error_item_exists']);?>');
+                        $("#new_show_error").html('<?php echo addslashes($LANG['error_item_exists']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.error == "something_wrong") {
@@ -577,7 +577,7 @@ function AjouterItem()
                         LoadingPage();
                     } else if (data.error == "pw_too_long") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('<?php echo addslashes($txt['error_pw_too_long']);?>');
+                        $("#new_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.new_id != "") {
@@ -607,7 +607,7 @@ function AjouterItem()
                 }
            );
         } else {
-            $('#new_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
+            $('#new_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
             $("#div_formulaire_saisi_info").hide().html("");
         }
     }
@@ -619,7 +619,7 @@ function AjouterItem()
 
 function EditerItem()
 {
-    $("#div_formulaire_edition_item_info").show().html("<?php echo addslashes($txt['please_wait']);?>");
+    $("#div_formulaire_edition_item_info").show().html("<?php echo addslashes($LANG['please_wait']);?>");
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
@@ -629,10 +629,10 @@ function EditerItem()
         url = "http://"+url;
     }
 
-    if ($('#edit_label').val() == "") erreur = "<?php echo $txt['error_label'];?>";
-    else if ($("#edit_pw1").val() == "") erreur = "<?php echo $txt['error_pw'];?>";
-    else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo $txt['error_confirm'];?>";
-    else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo $txt['error_tags'];?>";
+    if ($('#edit_label').val() == "") erreur = "<?php echo $LANG['error_label'];?>";
+    else if ($("#edit_pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
+    else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
+    else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo $LANG['error_tags'];?>";
     else{
         //Check pw complexity level
         if ((
@@ -752,12 +752,12 @@ function EditerItem()
                         $("#edit_show_error").show();
                     } else if (data.error == "pw_too_long") {
                         $("#div_loading").hide();
-                        $("#edit_show_error").html('<?php echo addslashes($txt['error_pw_too_long']);?>');
+                        $("#edit_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']);?>');
                         $("#edit_show_error").show();
                         LoadingPage();
                     } else if (data.error != "") {
                         $("#div_loading").hide();
-                        $("#edit_show_error").html('<?php echo addslashes($txt['error_not_allowed_to']);?>');
+                        $("#edit_show_error").html('<?php echo addslashes($LANG['error_not_allowed_to']);?>');
                         $("#edit_show_error").show();
                         LoadingPage();
                     } else {
@@ -837,7 +837,7 @@ function EditerItem()
 
 
         } else {
-            $('#edit_show_error').html("<?php echo addslashes($txt['error_complex_not_enought']);?>").show();
+            $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
             $("#div_formulaire_edition_item_info").hide().html("");
         }
     }
@@ -851,11 +851,11 @@ function EditerItem()
 function AddNewFolder()
 {
     if ($("#new_rep_titre").val() == "") {
-        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']);?>").show();
     } else if ($("#new_rep_groupe").val() == "0") {
-        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_noparent']);?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']);?>").show();
     } else if ($("#new_rep_complexite").val() == "") {
-        $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>").show();
     } else{
     	$("#new_rep_show_error").hide();
         if ($("#new_rep_role").val() == undefined) {
@@ -879,9 +879,9 @@ function AddNewFolder()
             function(data) {
                 //Check errors
                 if (data[0].error == "error_group_exist") {
-                    $("#new_rep_show_error").html("<?php echo addslashes($txt['error_group_exist']);?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']);?>").show();
                 } else if (data[0].error == "error_html_codes") {
-                    $("#addgroup_show_error").html("<?php echo addslashes($txt['error_html_codes']);?>").show();
+                    $("#addgroup_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
                 } else {
                     window.location.href = "index.php?page=items";
                 }
@@ -895,8 +895,8 @@ function AddNewFolder()
 function SupprimerFolder()
 {
     if ($("#delete_rep_groupe").val() == "0") {
-        alert("<?php echo $txt['error_group'];?>");
-    } else if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
+        alert("<?php echo $LANG['error_group'];?>");
+    } else if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
         $.post(
             "sources/folders.queries.php",
             {
@@ -949,7 +949,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
     // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) && salt_key_required == 1) {
-        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
+        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']);?><\/div>");
         $("#div_loading").hide();//LoadingPage();
         $("#div_dialog_message").dialog("open");
     } else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
@@ -1122,7 +1122,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
-                            $('#item_extra_info').html("<i><img src=\'&nbsp;<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'><?php echo addslashes($txt['automatic_deletion_activated']);?></i>");
+                            $('#item_extra_info').html("<i><img src=\'&nbsp;<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/information-white.png\'><?php echo addslashes($LANG['automatic_deletion_activated']);?></i>");
                         } else {
                             $('#item_extra_info').html("");
                         }
@@ -1130,16 +1130,16 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.notification_status == 0 && data.id_user == <?php echo $_SESSION['user_id'];?>) {
                             $('#menu_button_notify')
                                 .prop("disabled", false)
-                                .attr('title','<?php echo $txt['enable_notify'];?>')
+                                .attr('title','<?php echo $LANG['enable_notify'];?>')
                                 .attr('onclick','notify_click(\'true\')');
                             $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
                         } else if (data.notification_status == 1 && data.id_user == <?php echo $_SESSION['user_id'];?>) {
                             $('#menu_button_notify')
                                 .prop("disabled", false)
-                                .attr('title','<?php echo $txt['disable_notify'];?>')
+                                .attr('title','<?php echo $LANG['disable_notify'];?>')
                                 .attr('onclick','notify_click(\'false\')');
                             $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                            $('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'>&nbsp;<?php echo addslashes($txt['notify_activated']);?></i>");
+                            $('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'>&nbsp;<?php echo addslashes($LANG['notify_activated']);?></i>");
                         } else {
                             $('#menu_button_notify').attr('disabled', 'disabled');
                             $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png');
@@ -1150,7 +1150,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var clip = new ZeroClipboard.Client();
                             clip.setText(unsanitizeString(data.pw));
                             clip.addEventListener('complete', function(client, text) {
-                                    $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                                    $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             clip.glue('menu_button_copy_pw');
                         }
@@ -1158,7 +1158,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var clip = new ZeroClipboard.Client();
                             clip.setText(data.login);
                             clip.addEventListener('complete', function(client, text) {
-                                    $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
+                                    $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             clip.glue('menu_button_copy_login');
                         }
@@ -1167,7 +1167,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var clip = new ZeroClipboard.Client();
                             clip.setText(data.url);
                             clip.addEventListener('complete', function(client, text) {
-                                    $("#message_box").html("<?php echo addslashes($txt['url_copied_clipboard']);?>").show().fadeOut(1000);
+                                    $("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             clip.glue('menu_button_copy_url');
                         }
@@ -1175,7 +1175,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         var clip = new ZeroClipboard.Client();
                         clip.setText("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id);
                         clip.addEventListener('complete', function(client, text) {
-                                $("#message_box").html("<?php echo addslashes($txt['url_copied']);?>").show().fadeOut(1000);
+                                $("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
                         });
                         clip.glue('menu_button_copy_link');
 
@@ -1206,7 +1206,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         //Dont show details
                         $("#item_details_nok").show();
-                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $txt['author'];?>: </b>'+data.author+'<br><b><?php echo $txt['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($txt['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($txt['request_access_ot_item']);?></a></u></div>');
+                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $LANG['author'];?>: </b>'+data.author+'<br><b><?php echo $LANG['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($LANG['request_access_ot_item']);?></a></u></div>');
                         $("#item_details_ok").hide();
                         $("#item_details_expired").hide();
                         $("#item_details_expired_full").hide();
@@ -1348,12 +1348,12 @@ function open_add_item_div()
 
     //Check if personal SK is needed and set
     if ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 0) {
-        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['alert_message_personal_sk_missing']);?><\/div>");
+        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']);?><\/div>");
         LoadingPage();
         $("#div_dialog_message").dialog("open");
     } else if ($("#hid_cat").val() == "") {
         LoadingPage();
-        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($txt['error_no_selected_folder']);?><\/div>").dialog("open");
+        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-alert' style='float: left; margin-right: .3em;'><\/span><?php echo addslashes($LANG['error_no_selected_folder']);?><\/div>").dialog("open");
     } else if ($('#recherche_group_pf').val() == 0 || ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)) {
         //Select the actual forlder in the dialogbox
         $('#categorie').val($('#hid_cat').val());
@@ -1469,7 +1469,7 @@ function open_edit_item_div(restricted_to_roles)
             if (restricted_to_roles == 1) {
                 //add optgroup
                 var optgroup = $('<optgroup>');
-                optgroup.attr('label', "<?php echo $txt['users'];?>");
+                optgroup.attr('label', "<?php echo $LANG['users'];?>");
                 $("#edit_restricted_to_list option:last").wrapAll(optgroup);
             }
             var liste = $('#input_liste_utilisateurs').val().split(';');
@@ -1490,7 +1490,7 @@ function open_edit_item_div(restricted_to_roles)
             var j = i;
             //add optgroup
             var optgroup = $('<optgroup>');
-            optgroup.attr('label', "<?php echo $txt['roles'];?>");
+            optgroup.attr('label', "<?php echo $LANG['roles'];?>");
 
             var liste = $('#input_list_roles').val().split(';');
             for (var i=0; i<liste.length; i++) {
@@ -1512,9 +1512,9 @@ function open_edit_item_div(restricted_to_roles)
             selectedList: 7,
             minWidth: 430,
             height: 145,
-            checkAllText: "<?php echo $txt['check_all_text'];?>",
-            uncheckAllText: "<?php echo $txt['uncheck_all_text'];?>",
-            noneSelectedText: "<?php echo $txt['none_selected_text'];?>"
+            checkAllText: "<?php echo $LANG['check_all_text'];?>",
+            uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
+            noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
         $("#edit_restricted_to_list").multiselect('refresh');
     }
@@ -1554,9 +1554,9 @@ $("#div_copy_item_to_folder").dialog({
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $txt['item_menu_copy_elem'];?>",
+        title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         buttons: {
-            "<?php echo $txt['ok'];?>": function() {
+            "<?php echo $LANG['ok'];?>": function() {
                 //Send query
                 $.post(
                     "sources/items.queries.php",
@@ -1581,7 +1581,7 @@ $("#div_copy_item_to_folder").dialog({
                     "json"
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#copy_item_to_folder_show_error").html("").hide();
                 $(this).dialog('close');
             }
@@ -1661,14 +1661,14 @@ function get_clipboard_item(field,id)
     if (field == "pw") {
     	clip.setText($("#item_pw_in_list_"+id).val());
         clip.addEventListener('complete', function(client, text) {
-            $("#message_box").html("<?php echo addslashes($txt['pw_copied_clipboard']);?>").show().fadeOut(1000);
+            $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
             clip.destroy();
         });
         clip.glue('iconpw_'+id);
     } else {
     	clip.setText($("#item_login_in_list_"+id).val());
         clip.addEventListener('complete', function(client, text) {
-            $("#message_box").html("<?php echo addslashes($txt['login_copied_clipboard']);?>").show().fadeOut(1000);
+            $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
             clip.destroy();
         });
         clip.glue('iconlogin_'+id);
@@ -1699,13 +1699,13 @@ function notify_click(status)
                     $("#new_show_error").hide();
                     if (data[0].new_status == "true") {
                         $('#menu_button_notify')
-                            .attr('title','<?php echo $txt['disable_notify'];?>')
+                            .attr('title','<?php echo $LANG['disable_notify'];?>')
                             .attr('onclick','notify_click(\'false\')');
                         $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                        $('#item_extra_info').html("<?php echo addslashes($txt['notify_activated']);?>");
+                        $('#item_extra_info').html("<?php echo addslashes($LANG['notify_activated']);?>");
                     } else if (data[0].new_status == "false") {
                         $('#menu_button_notify')
-                            .attr('title','<?php echo $txt['enable_notify'];?>')
+                            .attr('title','<?php echo $LANG['enable_notify'];?>')
                             .attr('onclick','notify_click(\'true\')');
                         $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
                         $('#item_extra_info').html("");
@@ -1762,7 +1762,7 @@ $(function() {
 
     //warning if screen height too short
     if (parseInt(window_height-440) <= 50) {
-        $("#div_dialog_message_text").html("<?php echo addslashes($txt['warning_screen_height']);?>");
+        $("#div_dialog_message_text").html("<?php echo addslashes($LANG['warning_screen_height']);?>");
         $("#div_dialog_message").dialog('open');
     }
 
@@ -1783,9 +1783,9 @@ $(function() {
         selectedList: 7,
         minWidth: 430,
         height: 145,
-        checkAllText: "<?php echo $txt['check_all_text'];?>",
-        uncheckAllText: "<?php echo $txt['uncheck_all_text'];?>",
-        noneSelectedText: "<?php echo $txt['none_selected_text'];?>"
+        checkAllText: "<?php echo $LANG['check_all_text'];?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
+        noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
     });
 
     //Build tree - "cookies",
@@ -1821,12 +1821,12 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $txt['item_menu_add_rep'];?>",
+        title: "<?php echo $LANG['item_menu_add_rep'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 AddNewFolder();
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#new_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
@@ -1840,19 +1840,19 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 250,
-        title: "<?php echo $txt['item_menu_edi_rep'];?>",
+        title: "<?php echo $LANG['item_menu_edi_rep'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 //Do some checks
                 $("#edit_rep_show_error").hide();
                 if ($("#edit_folder_title").val() == "") {
-                    $("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_label']);?>");
+                    $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']);?>");
                     $("#edit_rep_show_error").show();
                 } else if ($("#edit_folder_folder").val() == "0") {
-                    $("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group']);?>");
+                    $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>");
                     $("#edit_rep_show_error").show();
                 } else if ($("#edit_folder_complexity").val() == "") {
-                    $("#edit_rep_show_error").html("<?php echo addslashes($txt['error_group_complex']);?>");
+                    $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>");
                     $("#edit_rep_show_error").show();
                 } else {
                     //prepare data
@@ -1885,7 +1885,7 @@ $(function() {
                    );
                 }
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#edit_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
@@ -1899,13 +1899,13 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 200,
-        title: "<?php echo $txt['item_menu_del_rep'];?>",
+        title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 SupprimerFolder();
                 $(this).dialog('close');
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog('close');
             }
         }
@@ -1918,13 +1918,13 @@ $(function() {
         autoOpen: false,
         width: 505,
         height: 665,
-        title: "<?php echo $txt['item_menu_add_elem'];?>",
+        title: "<?php echo $LANG['item_menu_add_elem'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_loading").show();
                 AjouterItem();
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 //Clear upload queue
                 $('#item_file_queue').html('');
                 //Select 1st tab
@@ -1962,13 +1962,13 @@ $(function() {
         autoOpen: false,
         width: 505,
         height: 650,
-        title: "<?php echo $txt['item_menu_edi_elem'];?>",
+        title: "<?php echo $LANG['item_menu_edi_elem'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 EditerItem();
 				$("#div_formulaire_edition_item_info").hide().html("");
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 //Clear upload queue
                 $('#item_edit_file_queue').html('');
                 //Select 1st tab
@@ -2018,9 +2018,9 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 150,
-        title: "<?php echo $txt['item_menu_del_elem'];?>",
+        title: "<?php echo $LANG['item_menu_del_elem'];?>",
         buttons: {
-            "<?php echo $txt['del_button'];?>": function() {
+            "<?php echo $LANG['del_button'];?>": function() {
                 $.post(
                     "sources/items.queries.php",
                     {
@@ -2034,7 +2034,7 @@ $(function() {
                );
                 $(this).dialog('close');
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog('close');
             }
         }
@@ -2047,9 +2047,9 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 200,
-        title: "<?php echo $txt['admin_main'];?>",
+        title: "<?php echo $LANG['admin_main'];?>",
         buttons: {
-            "<?php echo $txt['close'];?>": function() {
+            "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
         }
@@ -2062,9 +2062,9 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 400,
-        title: "<?php echo $txt['history'];?>",
+        title: "<?php echo $LANG['history'];?>",
         buttons: {
-            "<?php echo $txt['close'];?>": function() {
+            "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
         }
@@ -2077,9 +2077,9 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 200,
-        title: "<?php echo $txt['share'];?>",
+        title: "<?php echo $LANG['share'];?>",
         buttons: {
-            "<?php echo $txt['send'];?>": function() {
+            "<?php echo $LANG['send'];?>": function() {
                 $("#div_item_share_error").hide();
                 if (IsValidEmail($("#item_share_email").val())) {    //check if email format is ok
                     $("#div_item_share_status").show();
@@ -2095,7 +2095,7 @@ $(function() {
                         function(data) {
                             $("#div_item_share_status").html("").hide();
                             if (data[0].error == "") {
-                                $("#div_item_share_error").html("<?php echo addslashes($txt['share_sent_ok']);?>").show();
+                                $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']);?>").show();
                             } else {
                                 $("#div_item_share_error").html(data[0].message).show();
                             }
@@ -2103,10 +2103,10 @@ $(function() {
                         "json"
                    );
                 } else {
-                    $("#div_item_share_error").html("<?php echo addslashes($txt['bad_email_format']);?>").show();
+                    $("#div_item_share_error").html("<?php echo addslashes($LANG['bad_email_format']);?>").show();
                 }
             },
-            "<?php echo $txt['close'];?>": function() {
+            "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
         }
@@ -2119,9 +2119,9 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 100,
-        title: "<?php echo $txt['share'];?>",
+        title: "<?php echo $LANG['share'];?>",
         buttons: {
-            "<?php echo $txt['ok'];?>": function() {
+            "<?php echo $LANG['ok'];?>": function() {
 
             }
         }
@@ -2149,7 +2149,7 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
 			{title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
 			{title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
 			{title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext'];?>"},
-			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"},
+			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"}
 		],<?php
 if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         ?>
@@ -2235,7 +2235,7 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
 			{title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
 			{title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
 			{title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext'];?>"},
-			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"},
+			{title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"}
 		],<?php
 if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         ?>
@@ -2320,35 +2320,35 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     $("#pw1").simplePassMeter({
         "requirements": {},
         "container": "#pw_strength",
-        "defaultText" : "<?php echo $txt['index_pw_level_txt'];?>",
+        "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
         "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo $txt['complex_level0'];?>"
+                "text": "<?php echo $LANG['complex_level0'];?>"
             },
             {"minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level1'];?>"
+                "text": "<?php echo $LANG['complex_level1'];?>"
             },
             {"minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level2'];?>"
+                "text": "<?php echo $LANG['complex_level2'];?>"
             },
             {"minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level3'];?>"
+                "text": "<?php echo $LANG['complex_level3'];?>"
             },
             {"minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level4'];?>"
+                "text": "<?php echo $LANG['complex_level4'];?>"
             },
             {"minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level5'];?>"
+                "text": "<?php echo $LANG['complex_level5'];?>"
             },
             {"minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level6'];?>"
+                "text": "<?php echo $LANG['complex_level6'];?>"
             }
         ]
     });
@@ -2370,35 +2370,35 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     $("#edit_pw1").simplePassMeter({
         "requirements": {},
           "container": "#edit_pw_strength",
-          "defaultText" : "<?php echo $txt['index_pw_level_txt'];?>",
+          "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
         "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo $txt['complex_level0'];?>"
+                "text": "<?php echo $LANG['complex_level0'];?>"
             },
             {"minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level1'];?>"
+                "text": "<?php echo $LANG['complex_level1'];?>"
             },
             {"minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level2'];?>"
+                "text": "<?php echo $LANG['complex_level2'];?>"
             },
             {"minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level3'];?>"
+                "text": "<?php echo $LANG['complex_level3'];?>"
             },
             {"minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level4'];?>"
+                "text": "<?php echo $LANG['complex_level4'];?>"
             },
             {"minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level5'];?>"
+                "text": "<?php echo $LANG['complex_level5'];?>"
             },
             {"minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level6'];?>"
+                "text": "<?php echo $LANG['complex_level6'];?>"
             }
         ]
     });

@@ -172,6 +172,14 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['pwd_maximum_length']) && $_SESSION['settings']['pwd_maximum_length'] != $_POST['pwd_maximum_length']) {
         updateSettings('pwd_maximum_length', $_POST['pwd_maximum_length']);
     }
+    // Update subfolder_rights_as_parent
+    if (isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] != $_POST['subfolder_rights_as_parent']) {
+        updateSettings('subfolder_rights_as_parent', $_POST['subfolder_rights_as_parent']);
+    }
+    // Update show_only_accessible_folders
+    if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] != $_POST['show_only_accessible_folders']) {
+        updateSettings('show_only_accessible_folders', $_POST['show_only_accessible_folders']);
+    }
     // Update ga_website_name
     if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != $_POST['ga_website_name']) {
         updateSettings('ga_website_name', $_POST['ga_website_name']);
@@ -269,23 +277,23 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_type', $_POST['ldap_type']);
     }
     // Update LDAP ldap_suffix
-    if (@$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
+    if (isset($_POST['ldap_suffix']) && $_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
         updateSettings('ldap_suffix', $_POST['ldap_suffix']);
     }
     // Update LDAP ldap_domain_dn
-    if (@$_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
+    if (isset($_POST['ldap_domain_dn']) && $_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
         updateSettings('ldap_domain_dn', $_POST['ldap_domain_dn']);
     }
     // Update LDAP ldap_domain_controler
-    if (@$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
+    if (isset($_POST['ldap_domain_controler']) && $_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
 	// Update LDAP ldap_user_attribute
-	if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
+	if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
 	    updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
 	}
     // Update LDAP ssl
-    if (@$_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl']) {
+    if (isset($_POST['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl']) {
         updateSettings('ldap_ssl', $_POST['ldap_ssl']);
     }
     // Update LDAP tls
@@ -501,15 +509,15 @@ echo '
 // Tabs menu
 echo '
             <ul>
-                <li><a href="#tabs-1">'.$txt['admin_settings_title'].'</a></li>
-                <li><a href="#tabs-3">'.$txt['admin_misc_title'].'</a></li>
-                <li><a href="#tabs-7">'.$txt['admin_upload_title'].'</a></li>
-                <li><a href="#tabs-2">'.$txt['admin_actions_title'].'</a></li>
-                <li><a href="#tabs-4">'.$txt['admin_ldap_menu'].'</a></li>
-                <li><a href="#tabs-5">'.$txt['admin_backups'].'</a></li>
-                <li><a href="#tabs-6">'.$txt['admin_emails'].'</a></li>
-                <li><a href="admin.settings_categories.php">'.$txt['categories'].'</a></li>
-                <li><a href="admin.settings_api.php">'.$txt['admin_api'].'</a></li>
+                <li><a href="#tabs-1">'.$LANG['admin_settings_title'].'</a></li>
+                <li><a href="#tabs-3">'.$LANG['admin_misc_title'].'</a></li>
+                <li><a href="#tabs-7">'.$LANG['admin_upload_title'].'</a></li>
+                <li><a href="#tabs-2">'.$LANG['admin_actions_title'].'</a></li>
+                <li><a href="#tabs-4">'.$LANG['admin_ldap_menu'].'</a></li>
+                <li><a href="#tabs-5">'.$LANG['admin_backups'].'</a></li>
+                <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
+                <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
+                <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1
@@ -521,7 +529,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="cpassman_dir">'.$txt['admin_misc_cpassman_dir'].'</label>
+                        <label for="cpassman_dir">'.$LANG['admin_misc_cpassman_dir'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="cpassman_dir" name="cpassman_dir" value="', isset($_SESSION['settings']['cpassman_dir']) ? $_SESSION['settings']['cpassman_dir'] : '', '" class="text ui-widget-content" />
@@ -532,7 +540,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="cpassman_url">'.$txt['admin_misc_cpassman_url'].'</label>
+                        <label for="cpassman_url">'.$LANG['admin_misc_cpassman_url'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="cpassman_url" name="cpassman_url" value="', isset($_SESSION['settings']['cpassman_url']) ? $_SESSION['settings']['cpassman_url'] : '', '" class="text ui-widget-content" />
@@ -543,8 +551,8 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="path_to_upload_folder">'.$txt['admin_path_to_upload_folder'].'</label>
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_path_to_upload_folder_tip'].'" />
+                        <label for="path_to_upload_folder">'.$LANG['admin_path_to_upload_folder'].'</label>
+                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_path_to_upload_folder_tip'].'" />
                     </td>
                     <td>
                         <input type="text" size="80" id="path_to_upload_folder" name="path_to_upload_folder" value="', isset($_SESSION['settings']['path_to_upload_folder']) ? $_SESSION['settings']['path_to_upload_folder'] : $_SESSION['settings']['cpassman_dir'].'/upload', '" class="text ui-widget-content" />
@@ -555,7 +563,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="url_to_upload_folder">'.$txt['admin_url_to_upload_folder'].'</label>
+                        <label for="url_to_upload_folder">'.$LANG['admin_url_to_upload_folder'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="url_to_upload_folder" name="url_to_upload_folder" value="', isset($_SESSION['settings']['url_to_upload_folder']) ? $_SESSION['settings']['url_to_upload_folder'] : $_SESSION['settings']['cpassman_url'].'/upload', '" class="text ui-widget-content" />
@@ -566,8 +574,8 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="path_to_files_folder">'.$txt['admin_path_to_files_folder'].'</label>
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_path_to_files_folder_tip'].'" />
+                        <label for="path_to_files_folder">'.$LANG['admin_path_to_files_folder'].'</label>
+                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_path_to_files_folder_tip'].'" />
                     </td>
                     <td>
                         <input type="text" size="80" id="path_to_files_folder" name="path_to_files_folder" value="', isset($_SESSION['settings']['path_to_files_folder']) ? $_SESSION['settings']['path_to_files_folder'] : $_SESSION['settings']['cpassman_dir'].'/files', '" class="text ui-widget-content" />
@@ -578,7 +586,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="url_to_files_folder">'.$txt['admin_url_to_files_folder'].'</label>
+                        <label for="url_to_files_folder">'.$LANG['admin_url_to_files_folder'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="url_to_files_folder" name="url_to_files_folder" value="', isset($_SESSION['settings']['url_to_files_folder']) ? $_SESSION['settings']['url_to_files_folder'] : $_SESSION['settings']['cpassman_url'].'/files', '" class="text ui-widget-content" />
@@ -589,7 +597,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="favicon">'.$txt['admin_misc_favicon'].'</label>
+                        <label for="favicon">'.$LANG['admin_misc_favicon'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="favicon" name="favicon" value="', isset($_SESSION['settings']['favicon']) ? $_SESSION['settings']['favicon'] : '', '" class="text ui-widget-content" />
@@ -600,7 +608,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="cpassman_dir">'.$txt['admin_misc_custom_logo'].'</label>
+                        <label for="cpassman_dir">'.$LANG['admin_misc_custom_logo'].'</label>
                     </td>
                     <td>
                         <input type="text" size="80" id="custom_logo" name="custom_logo" value="', isset($_SESSION['settings']['custom_logo']) ? $_SESSION['settings']['custom_logo'] : '', '" class="text ui-widget-content" />
@@ -611,7 +619,7 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="cpassman_dir">'.$txt['admin_misc_custom_login_text'].'</label>
+                    <label for="cpassman_dir">'.$LANG['admin_misc_custom_login_text'].'</label>
                 </td>
                 <td>
                     <input type="text" size="80" id="custom_login_text" name="custom_login_text" value="', isset($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : '', '" class="text ui-widget-content" />
@@ -631,14 +639,14 @@ echo '
             <td>
                   <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                   <label>' .
-$txt['settings_maintenance_mode'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_maintenance_mode_tip'].'" />
+$LANG['settings_maintenance_mode'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_maintenance_mode_tip'].'" />
                   </label>
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="maintenance_mode_radio1" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="maintenance_mode_radio1">'.$LANG['yes'].'</label>
+                    <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
@@ -650,14 +658,14 @@ echo '
                 <td>
                       <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                       <label>' .
-                          $txt['settings_enable_sts'] . '
-                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_enable_sts_tip'] . '" />
+                          $LANG['settings_enable_sts'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $LANG['settings_enable_sts_tip'] . '" />
                       </label>
                 </td>
                 <td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_sts_radio1" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $txt['yes'] . '</label>
-                        <input type="radio" id="enable_sts_radio2" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $txt['no'] . '</label>
+                        <input type="radio" id="enable_sts_radio1" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_sts_radio1">' . $LANG['yes'] . '</label>
+                        <input type="radio" id="enable_sts_radio2" name="enable_sts" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['enable_sts'] ) && $_SESSION['settings']['enable_sts'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['enable_sts'] ) ? ' checked="checked"':'' ), ' /><label for="enable_sts_radio2">' . $LANG['no'] . '</label>
                         <span class="setting_flag" id="flag_enable_sts"><img src="includes/images/status', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 <td>
@@ -668,14 +676,14 @@ echo '
                 <td>
                       <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                       <label>' .
-                          $txt['settings_encryptClientServer'] . '
-                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_encryptClientServer_tip'] . '" />
+                          $LANG['settings_encryptClientServer'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $LANG['settings_encryptClientServer_tip'] . '" />
                       </label>
                 </td>
                 <td>
                     <div class="div_radio">
-                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $txt['yes'] . '</label>
-                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $txt['no'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $LANG['yes'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $LANG['no'] . '</label>
                         <span class="setting_flag" id="flag_encryptClientServer"><img src="includes/images/status', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 <td>
@@ -687,14 +695,14 @@ echo '
                 <td>
                       <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                       <label>' .
-                          $txt['settings_encryptClientServer'] . '
-                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $txt['settings_encryptClientServer_tip'] . '" />
+                          $LANG['settings_encryptClientServer'] . '
+                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $LANG['settings_encryptClientServer_tip'] . '" />
                       </label>
                 </td>
                 <td>
                     <div class="div_radio">
-                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $txt['yes'] . '</label>
-                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $txt['no'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio1" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] == 1 ? ' checked="checked"' : '', ' /><label for="encryptClientServer_radio1">' . $LANG['yes'] . '</label>
+                        <input type="radio" id="encryptClientServer_radio2" name="encryptClientServer" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset( $_SESSION['settings']['encryptClientServer'] ) && $_SESSION['settings']['encryptClientServer'] != 1 ? ' checked="checked"' : ( !isset( $_SESSION['settings']['encryptClientServer'] ) ? ' checked="checked"':'' ), ' /><label for="encryptClientServer_radio2">' . $LANG['no'] . '</label>
                         <span class="setting_flag" id="flag_encryptClientServer"><img src="includes/images/status', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 <td>
@@ -706,8 +714,8 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="proxy_ip">'.$txt['admin_proxy_ip'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_proxy_ip_tip'].'" />
+                    <label for="proxy_ip">'.$LANG['admin_proxy_ip'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_proxy_ip_tip'].'" />
                 </td>
                 <td>
                     <input type="text" size="15" id="proxy_ip" name="proxy_ip" value="', isset($_SESSION['settings']['proxy_ip']) ? $_SESSION['settings']['proxy_ip'] : "", '" class="text ui-widget-content" />
@@ -716,8 +724,8 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="proxy_port">'.$txt['admin_proxy_port'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_proxy_port_tip'].'" />
+                    <label for="proxy_port">'.$LANG['admin_proxy_port'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_proxy_port_tip'].'" />
                 </td>
                 <td>
                     <input type="text" size="10" id="proxy_port" name="proxy_port" value="', isset($_SESSION['settings']['proxy_port']) ? $_SESSION['settings']['proxy_port'] : "", '" class="text ui-widget-content" />
@@ -731,8 +739,8 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="pwd_maximum_length">'.$txt['admin_pwd_maximum_length'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_pwd_maximum_length_tip'].'" />
+                    <label for="pwd_maximum_length">'.$LANG['admin_pwd_maximum_length'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_pwd_maximum_length_tip'].'" />
                 </td>
                 <td>
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
@@ -744,14 +752,14 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                   <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                  <label>'.$txt['admin_2factors_authentication_setting'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_2factors_authentication_setting_tip'].'" />
+                  <label>'.$LANG['admin_2factors_authentication_setting'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_2factors_authentication_setting_tip'].'" />
                   </label>
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$LANG['yes'].'</label>
+                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_2factors_authentication"><img src="includes/images/status', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
@@ -761,8 +769,8 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="ga_website_name">'.$txt['admin_ga_website_name'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_ga_website_name_tip'].'" />
+                    <label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_ga_website_name_tip'].'" />
                 </td>
                 <td>
                     <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
@@ -774,14 +782,14 @@ echo '
             <tr style="margin-bottom:3px">
                 <td>
                   <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                  <label>'.$txt['admin_psk_authentication'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_psk_authentication_tip'].'" />
+                  <label>'.$LANG['admin_psk_authentication'].'
+                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_psk_authentication_tip'].'" />
                   </label>
             </td>
             <td>
                 <div class="div_radio">
-                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$txt['yes'].'</label>
-                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$txt['no'].'</label>
+                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$LANG['yes'].'</label>
+                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_psk_authentication"><img src="includes/images/status', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
               <td>
@@ -795,11 +803,11 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="timezone">'.$txt['timezone_selection'].'</label>
+                        <label for="timezone">'.$LANG['timezone_selection'].'</label>
                     </td>
                     <td>
                         <select id="timezone" name="timezone" class="text ui-widget-content">
-                            <option value="">-- '.$txt['select'].' --</option>';
+                            <option value="">-- '.$LANG['select'].' --</option>';
 foreach ($zones as $zone) {
     echo '
     <option value="'.$zone.'"', isset($_SESSION['settings']['timezone']) && $_SESSION['settings']['timezone'] == $zone ? ' selected="selected"' : '', '>'.$zone.'</option>';
@@ -813,7 +821,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="date_format">'.$txt['date_format'].'</label>
+                        <label for="date_format">'.$LANG['date_format'].'</label>
                     </td>
                     <td>
                         <select id="date_format" name="date_format" class="text ui-widget-content">
@@ -833,7 +841,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="time_format">'.$txt['time_format'].'</label>
+                        <label for="time_format">'.$LANG['time_format'].'</label>
                     </td>
                     <td>
                         <select id="time_format" name="time_format" class="text ui-widget-content">
@@ -852,11 +860,11 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="default_language">'.$txt['settings_default_language'].'</label>
+                        <label for="default_language">'.$LANG['settings_default_language'].'</label>
                     </td>
                     <td>
                         <select id="default_language" name="default_language" class="text ui-widget-content">
-                            <option value="">-- '.$txt['select'].' --</option>';
+                            <option value="">-- '.$LANG['select'].' --</option>';
 foreach ($languagesList as $lang) {
     echo '
     <option value="'.$lang.'"', isset($_SESSION['settings']['default_language']) && $_SESSION['settings']['default_language'] == $lang ? ' selected="selected"' : '', '>'.$lang.'</option>';
@@ -872,7 +880,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="number_of_used_pw">'.$txt['number_of_used_pw'].'</label>
+                        <label for="number_of_used_pw">'.$LANG['number_of_used_pw'].'</label>
                     </td>
                     <td>
                         <input type="text" size="10" id="number_of_used_pw" name="number_of_used_pw" value="', isset($_SESSION['settings']['number_of_used_pw']) ? $_SESSION['settings']['number_of_used_pw'] : '5', '" class="text ui-widget-content" />
@@ -883,7 +891,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="pw_life_duration">'.$txt['pw_life_duration'].'</label>
+                        <label for="pw_life_duration">'.$LANG['pw_life_duration'].'</label>
                     </td>
                     <td>
                         <input type="text" size="10" id="pw_life_duration" name="pw_life_duration" value="', isset($_SESSION['settings']['pw_life_duration']) ? $_SESSION['settings']['pw_life_duration'] : '5', '" class="text ui-widget-content" />
@@ -894,7 +902,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="nb_bad_authentication">'.$txt['nb_false_login_attempts'].'</label>
+                        <label for="nb_bad_authentication">'.$LANG['nb_false_login_attempts'].'</label>
                     </td>
                     <td>
                         <input type="text" size="10" id="nb_bad_authentication" name="nb_bad_authentication" value="', isset($_SESSION['settings']['nb_bad_authentication']) ? $_SESSION['settings']['nb_bad_authentication'] : '0', '" class="text ui-widget-content" />
@@ -906,11 +914,11 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_log_connections'].'</label>
+                    <label>'.$LANG['settings_log_connections'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="log_connections_radio1" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? ' checked="checked"' : '', ' /><label for="log_connections_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="log_connections_radio2" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_connections']) ? ' checked="checked"':''), ' /><label for="log_connections_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="log_connections_radio1" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? ' checked="checked"' : '', ' /><label for="log_connections_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="log_connections_radio2" name="log_connections" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_connections']) ? ' checked="checked"':''), ' /><label for="log_connections_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_log_connections"><img src="includes/images/status', isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -918,11 +926,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_log_accessed'].'</label>
+                    <label>'.$LANG['settings_log_accessed'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="log_accessed_radio1" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? ' checked="checked"' : '', ' /><label for="log_accessed_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="log_accessed_radio2" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_accessed']) ? ' checked="checked"':''), ' /><label for="log_accessed_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="log_accessed_radio1" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? ' checked="checked"' : '', ' /><label for="log_accessed_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="log_accessed_radio2" name="log_accessed" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['log_accessed']) ? ' checked="checked"':''), ' /><label for="log_accessed_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_log_accessed"><img src="includes/images/status', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -932,12 +940,12 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label>'.$txt['enable_personal_folder_feature'].'</label>
-                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['enable_personal_folder_feature_tip'].'" /></span>
+                <label>'.$LANG['enable_personal_folder_feature'].'</label>
+                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['enable_personal_folder_feature_tip'].'" /></span>
             </td><td>
             <div class="div_radio">
-                <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$txt['yes'].'</label>
-                <input type="radio" id="enable_pf_feature_radio2" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_pf_feature']) ? ' checked="checked"':''), ' /><label for="enable_pf_feature_radio2">'.$txt['no'].'</label>
+                <input type="radio" id="enable_pf_feature_radio1" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_pf_feature_radio1">'.$LANG['yes'].'</label>
+                <input type="radio" id="enable_pf_feature_radio2" name="enable_pf_feature" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_pf_feature']) ? ' checked="checked"':''), ' /><label for="enable_pf_feature_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_pf_feature"><img src="includes/images/status', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '' : '-busy', '.png" /></span>
             </div>
             </td</tr>';
@@ -945,11 +953,11 @@ echo '
 echo '
         <tr><td>
             <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-            <label>'.$txt['use_md5_password_as_salt'].'</label>
+            <label>'.$LANG['use_md5_password_as_salt'].'</label>
         </td><td>
         <div class="div_radio">
-            <input type="radio" id="use_md5_password_as_salt_radio1" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? ' checked="checked"' : '', ' /><label for="use_md5_password_as_salt_radio1">'.$txt['yes'].'</label>
-            <input type="radio" id="use_md5_password_as_salt_radio2" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['use_md5_password_as_salt']) ? ' checked="checked"':''), ' /><label for="use_md5_password_as_salt_radio2">'.$txt['no'].'</label>
+            <input type="radio" id="use_md5_password_as_salt_radio1" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? ' checked="checked"' : '', ' /><label for="use_md5_password_as_salt_radio1">'.$LANG['yes'].'</label>
+            <input type="radio" id="use_md5_password_as_salt_radio2" name="use_md5_password_as_salt" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['use_md5_password_as_salt']) ? ' checked="checked"':''), ' /><label for="use_md5_password_as_salt_radio2">'.$LANG['no'].'</label>
                     <span class="setting_flag" id="flag_use_md5_password_as_salt"><img src="includes/images/status', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '' : '-busy', '.png" /></span>
         </div>
         </td</tr>';
@@ -957,11 +965,11 @@ echo '
 echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label>'.$txt['enable_personal_saltkey_cookie'].'</label>
+                <label>'.$LANG['enable_personal_saltkey_cookie'].'</label>
             </td><td>
             <div class="div_radio">
-                <input type="radio" id="enable_personal_saltkey_cookie_radio1" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_personal_saltkey_cookie_radio1">'.$txt['yes'].'</label>
-                <input type="radio" id="enable_personal_saltkey_cookie_radio2" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_personal_saltkey_cookie']) ? ' checked="checked"':''), ' /><label for="enable_personal_saltkey_cookie_radio2">'.$txt['no'].'</label>
+                <input type="radio" id="enable_personal_saltkey_cookie_radio1" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_personal_saltkey_cookie_radio1">'.$LANG['yes'].'</label>
+                <input type="radio" id="enable_personal_saltkey_cookie_radio2" name="enable_personal_saltkey_cookie" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_personal_saltkey_cookie']) ? ' checked="checked"':''), ' /><label for="enable_personal_saltkey_cookie_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_personal_saltkey_cookie"><img src="includes/images/status', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? '' : '-busy', '.png" /></span>
             </div>
             </td</tr>';
@@ -969,7 +977,7 @@ echo '
 echo '
             <tr><td>
                 <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label>'.$txt['personal_saltkey_cookie_duration'].'</label>
+                <label>'.$LANG['personal_saltkey_cookie_duration'].'</label>
             </td><td>
             <div class="div_radio">
                 <input type="text" size="10" id="personal_saltkey_cookie_duration" name="personal_saltkey_cookie_duration" value="', isset($_SESSION['settings']['personal_saltkey_cookie_duration']) ? $_SESSION['settings']['personal_saltkey_cookie_duration'] : '31', '" class="text ui-widget-content" />
@@ -982,13 +990,13 @@ echo '
                     <tr><td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <label>
-                            '.$txt['settings_attachments_encryption'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_attachments_encryption_tip'].'" /></span>
+                            '.$LANG['settings_attachments_encryption'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_attachments_encryption_tip'].'" /></span>
                         </label>
                         </td><td>
                         <div class="div_radio">
-                            <input type="radio" id="enable_attachment_encryption_radio1" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_attachment_encryption_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="enable_attachment_encryption_radio2" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_attachment_encryption']) ? ' checked="checked"':''), ' /><label for="enable_attachment_encryption_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="enable_attachment_encryption_radio1" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_attachment_encryption_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="enable_attachment_encryption_radio2" name="enable_attachment_encryption" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_attachment_encryption']) ? ' checked="checked"':''), ' /><label for="enable_attachment_encryption_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_attachment_encryption"><img src="includes/images/status', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
@@ -999,13 +1007,13 @@ echo '
                     <tr><td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <label>
-                            '.$txt['settings_kb'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_kb_tip'].'" /></span>
+                            '.$LANG['settings_kb'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_kb_tip'].'" /></span>
                         </label>
                         </td><td>
                         <div class="div_radio">
-                            <input type="radio" id="enable_kb_radio1" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_kb_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="enable_kb_radio2" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_kb']) ? ' checked="checked"':''), ' /><label for="enable_kb_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="enable_kb_radio1" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_kb_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="enable_kb_radio2" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_kb']) ? ' checked="checked"':''), ' /><label for="enable_kb_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_kb"><img src="includes/images/status', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
@@ -1017,14 +1025,14 @@ echo '
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <label>' .
-$txt['settings_send_stats'].'
-                            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_send_stats_tip'].'" />
+$LANG['settings_send_stats'].'
+                            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_send_stats_tip'].'" />
                         </label>
                     </td>
                     <td>
                         <div class="div_radio">
-                            <input type="radio" id="send_stats_radio1" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? ' checked="checked"' : '', ' /><label for="send_stats_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="send_stats_radio2" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['send_stats']) ? ' checked="checked"':''), ' /><label for="send_stats_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="send_stats_radio1" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? ' checked="checked"' : '', ' /><label for="send_stats_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="send_stats_radio2" name="send_stats" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['send_stats']) ? ' checked="checked"':''), ' /><label for="send_stats_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_send_stats"><img src="includes/images/status', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     <td>
@@ -1034,13 +1042,13 @@ echo '
                     <tr><td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <label>
-                            '.$txt['settings_get_tp_info'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_get_tp_info_tip'].'" /></span>
+                            '.$LANG['settings_get_tp_info'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_get_tp_info_tip'].'" /></span>
                         </label>
                         </td><td>
                         <div class="div_radio">
-                            <input type="radio" id="get_tp_info_radio1" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? ' checked="checked"' : '', ' /><label for="get_tp_info_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="get_tp_info_radio2" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['get_tp_info']) ? ' checked="checked"':''), ' /><label for="get_tp_info_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="get_tp_info_radio1" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? ' checked="checked"' : '', ' /><label for="get_tp_info_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="get_tp_info_radio2" name="get_tp_info" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['get_tp_info']) ? ' checked="checked"':''), ' /><label for="get_tp_info_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_get_tp_info"><img src="includes/images/status', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
@@ -1058,46 +1066,46 @@ echo '
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_check_pf\')" style="cursor:pointer;">'.$txt['admin_action_check_pf'].'</a>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_check_pf\')" style="cursor:pointer;">'.$LANG['admin_action_check_pf'].'</a>
                     <span id="result_admin_action_check_pf" style="margin-left:10px;display:none;"><img src="includes/images/tick.png" alt="" /></span>
                 </div>';
 // Clean DB with orphan items
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_clean_items\')" style="cursor:pointer;">'.$txt['admin_action_db_clean_items'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_db_clean_items_tip'].'" /></span>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_clean_items\')" style="cursor:pointer;">'.$LANG['admin_action_db_clean_items'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_clean_items_tip'].'" /></span>
                     <span id="result_admin_action_db_clean_items" style="margin-left:10px;"></span>
                 </div>';
 // Optimize the DB
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_optimize\')" style="cursor:pointer;">'.$txt['admin_action_db_optimize'].'</a>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_optimize\')" style="cursor:pointer;">'.$LANG['admin_action_db_optimize'].'</a>
                     <span id="result_admin_action_db_optimize" style="margin-left:10px;"></span>
                 </div>';
 // Purge old files
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_purge_old_files\')" style="cursor:pointer;">'.$txt['admin_action_purge_old_files'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_purge_old_files_tip'].'" /></span>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_purge_old_files\')" style="cursor:pointer;">'.$LANG['admin_action_purge_old_files'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_purge_old_files_tip'].'" /></span>
                     <span id="result_admin_action_purge_old_files" style="margin-left:10px;"></span>
                 </div>';
 // Reload Cache Table
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_reload_cache_table\')" style="cursor:pointer;">'.$txt['admin_action_reload_cache_table'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_reload_cache_table_tip'].'" /></span>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_reload_cache_table\')" style="cursor:pointer;">'.$LANG['admin_action_reload_cache_table'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_reload_cache_table_tip'].'" /></span>
                     <span id="result_admin_action_reload_cache_table" style="margin-left:10px;"></span>
                 </div>';
 // Change main SALT key
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="$(\'#div_change_salt_key\').show()" style="cursor:pointer;">'.$txt['admin_action_change_salt_key'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_change_salt_key_tip'].'" /></span>
+                    <a href="#" onclick="$(\'#div_change_salt_key\').show()" style="cursor:pointer;">'.$LANG['admin_action_change_salt_key'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_change_salt_key_tip'].'" /></span>
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
@@ -1107,8 +1115,8 @@ echo '
 echo '
                 <div style="margin-bottom:3px">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">'.$txt['admin_action_pw_prefix_correct'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_pw_prefix_correct_tip'].'" /></span>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">'.$LANG['admin_action_pw_prefix_correct'].'</a>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_pw_prefix_correct_tip'].'" /></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
 // Encrypt / decrypt attachments
@@ -1116,14 +1124,14 @@ echo '
                 <div style="margin-bottom:3px">
                     <span style="float:left;">
                     <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    '.$txt['admin_action_attachments_cryption'].'
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_attachments_cryption_tip'].'" /></span>
+                    '.$LANG['admin_action_attachments_cryption'].'
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_attachments_cryption_tip'].'" /></span>
                     </span>
                     <div class="div_radio" style="float:left;">
-                        <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$txt['encrypt'].'</label>
-                        <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$txt['decrypt'].'</label>
+                        <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
+                        <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
                     </div>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">'.$txt['admin_action_db_backup_start_tip'].'</a>
+                    <a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">'.$LANG['admin_action_db_backup_start_tip'].'</a>
                     <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
                 </div>';
 echo '
@@ -1138,8 +1146,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_delay_for_item_edition'].
-                        '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_delay_for_item_edition_tip'].'" /></span>
+                    <label>'.$LANG['settings_delay_for_item_edition'].
+                        '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_delay_for_item_edition_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" /></div>
@@ -1150,11 +1158,11 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_manager_edit'].'</label>
+                    <label>'.$LANG['settings_manager_edit'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="manager_edit_radio1" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? ' checked="checked"' : '', ' /><label for="manager_edit_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="manager_edit_radio2" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['manager_edit']) ? ' checked="checked"':''), ' /><label for="manager_edit_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="manager_edit_radio1" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? ' checked="checked"' : '', ' /><label for="manager_edit_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="manager_edit_radio2" name="manager_edit" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['manager_edit']) ? ' checked="checked"':''), ' /><label for="manager_edit_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_manager_edit"><img src="includes/images/status', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1164,7 +1172,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="max_last_items">'.$txt['max_last_items'].'</label>
+                    <label for="max_last_items">'.$LANG['max_last_items'].'</label>
                     </td><td>
                     <input type="text" size="4" id="max_last_items" name="max_last_items" value="', isset($_SESSION['settings']['max_latest_items']) ? $_SESSION['settings']['max_latest_items'] : '', '" class="text ui-widget-content" />
                 <tr><td>';
@@ -1172,11 +1180,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['show_last_items'].'</label>
+                    <label>'.$LANG['show_last_items'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="show_last_items_radio1" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? ' checked="checked"' : '', ' /><label for="show_last_items_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="show_last_items_radio2" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_last_items']) ? ' checked="checked"':''), ' /><label for="show_last_items_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="show_last_items_radio1" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? ' checked="checked"' : '', ' /><label for="show_last_items_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="show_last_items_radio2" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_last_items']) ? ' checked="checked"':''), ' /><label for="show_last_items_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_show_last_items"><img src="includes/images/status', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1186,11 +1194,11 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['duplicate_folder'].'</label>
+                    <label>'.$LANG['duplicate_folder'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="duplicate_folder_radio1" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_folder_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="duplicate_folder_radio2" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_folder']) ? ' checked="checked"':''), ' /><label for="duplicate_folder_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="duplicate_folder_radio1" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_folder_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="duplicate_folder_radio2" name="duplicate_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_folder']) ? ' checked="checked"':''), ' /><label for="duplicate_folder_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_duplicate_folder"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1198,26 +1206,56 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['duplicate_item'].'</label>
+                    <label>'.$LANG['duplicate_item'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="duplicate_item_radio1" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_item_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="duplicate_item_radio2" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_item']) ? ' checked="checked"':''), ' /><label for="duplicate_item_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="duplicate_item_radio1" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_item_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="duplicate_item_radio2" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_item']) ? ' checked="checked"':''), ' /><label for="duplicate_item_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_duplicate_item"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
+// Enable show_only_accessible_folders
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$LANG['show_only_accessible_folders'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['show_only_accessible_folders_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="show_only_accessible_folders_radio1" name="show_only_accessible_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="show_only_accessible_folders_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="show_only_accessible_folders_radio2" name="show_only_accessible_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_only_accessible_folders']) ? ' checked="checked"':''), ' /><label for="show_only_accessible_folders_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_show_only_accessible_folders"><img src="includes/images/status', isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
+// Enable subfolder_rights_as_parent
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$LANG['subfolder_rights_as_parent'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['subfolder_rights_as_parent_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="subfolder_rights_as_parent_radio1" name="subfolder_rights_as_parent" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? ' checked="checked"' : '', ' /><label for="subfolder_rights_as_parent_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="subfolder_rights_as_parent_radio2" name="subfolder_rights_as_parent" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['subfolder_rights_as_parent']) ? ' checked="checked"':''), ' /><label for="subfolder_rights_as_parent_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_subfolder_rights_as_parent"><img src="includes/images/status', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td></tr>';
 // Enable extra fields for each Item
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_item_extra_fields'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_item_extra_fields_tip'].'" /></span>
+                        '.$LANG['settings_item_extra_fields'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_item_extra_fields_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="item_extra_fields_radio1" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? ' checked="checked"' : '', ' /><label for="item_extra_fields_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="item_extra_fields_radio2" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['item_extra_fields']) ? ' checked="checked"':''), ' /><label for="item_extra_fields_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="item_extra_fields_radio1" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? ' checked="checked"' : '', ' /><label for="item_extra_fields_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="item_extra_fields_radio2" name="item_extra_fields" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['item_extra_fields']) ? ' checked="checked"':''), ' /><label for="item_extra_fields_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_item_extra_fields"><img src="includes/images/status', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1227,11 +1265,11 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['enable_favourites'].'</label>
+                    <label>'.$LANG['enable_favourites'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_favourites_radio1" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_favourites_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_favourites_radio2" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_favourites']) ? ' checked="checked"':''), ' /><label for="enable_favourites_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_favourites_radio1" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_favourites_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_favourites_radio2" name="enable_favourites" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_favourites']) ? ' checked="checked"':''), ' /><label for="enable_favourites_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_favourites"><img src="includes/images/status', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1239,11 +1277,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['enable_user_can_create_folders'].'</label>
+                    <label>'.$LANG['enable_user_can_create_folders'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_user_can_create_folders_radio1" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_user_can_create_folders_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_user_can_create_folders_radio2" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_user_can_create_folders']) ? ' checked="checked"':''), ' /><label for="enable_user_can_create_folders_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_user_can_create_folders_radio1" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_user_can_create_folders_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_user_can_create_folders_radio2" name="enable_user_can_create_folders" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_user_can_create_folders']) ? ' checked="checked"':''), ' /><label for="enable_user_can_create_folders_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_user_can_create_folders"><img src="includes/images/status', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1251,11 +1289,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['setting_can_create_root_folder'].'</label>
+                    <label>'.$LANG['setting_can_create_root_folder'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="can_create_root_folder_radio1" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="can_create_root_folder_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="can_create_root_folder_radio2" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['can_create_root_folder']) ? ' checked="checked"':''), ' /><label for="can_create_root_folder_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="can_create_root_folder_radio1" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="can_create_root_folder_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="can_create_root_folder_radio2" name="can_create_root_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['can_create_root_folder']) ? ' checked="checked"':''), ' /><label for="can_create_root_folder_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_can_create_root_folder"><img src="includes/images/status', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1266,13 +1304,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['admin_setting_activate_expiration'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_setting_activate_expiration_tip'].'" /></span>
+                        '.$LANG['admin_setting_activate_expiration'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_setting_activate_expiration_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="activate_expiration_radio1" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? ' checked="checked"' : '', ' /><label for="activate_expiration_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="activate_expiration_radio2" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['activate_expiration']) ? ' checked="checked"':''), ' /><label for="activate_expiration_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="activate_expiration_radio1" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? ' checked="checked"' : '', ' /><label for="activate_expiration_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="activate_expiration_radio2" name="activate_expiration" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['activate_expiration']) ? ' checked="checked"':''), ' /><label for="activate_expiration_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_activate_expiration"><img src="includes/images/status', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1281,13 +1319,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['admin_setting_enable_delete_after_consultation'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_setting_enable_delete_after_consultation_tip'].'" /></span>
+                        '.$LANG['admin_setting_enable_delete_after_consultation'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_setting_enable_delete_after_consultation_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_delete_after_consultation_radio1" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_delete_after_consultation_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_delete_after_consultation_radio2" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_delete_after_consultation']) ? ' checked="checked"':''), ' /><label for="enable_delete_after_consultation_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_delete_after_consultation_radio1" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_delete_after_consultation_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_delete_after_consultation_radio2" name="enable_delete_after_consultation" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_delete_after_consultation']) ? ' checked="checked"':''), ' /><label for="enable_delete_after_consultation_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_delete_after_consultation"><img src="includes/images/status', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1298,13 +1336,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_printing'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_printing_tip'].'" /></span>
+                        '.$LANG['settings_printing'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_printing_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="allow_print_radio1" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_print_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="allow_print_radio2" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_print']) ? ' checked="checked"':''), ' /><label for="allow_print_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="allow_print_radio1" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_print_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="allow_print_radio2" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_print']) ? ' checked="checked"':''), ' /><label for="allow_print_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_allow_print"><img src="includes/images/status', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1313,12 +1351,12 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_importing'].'
+                        '.$LANG['settings_importing'].'
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="allow_import_radio1" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_import_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="allow_import_radio2" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_import']) ? ' checked="checked"':''), ' /><label for="allow_import_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="allow_import_radio1" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 ? ' checked="checked"' : '', ' /><label for="allow_import_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="allow_import_radio2" name="allow_import" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_import']) ? ' checked="checked"':''), ' /><label for="allow_import_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_allow_import"><img src="includes/images/status', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1329,13 +1367,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_anyone_can_modify'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_anyone_can_modify_tip'].'" /></span>
+                        '.$LANG['settings_anyone_can_modify'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_anyone_can_modify_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="anyone_can_modify_radio1" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="anyone_can_modify_radio2" name="anyone_can_modify" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_anyone_can_modify"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1343,11 +1381,11 @@ echo '
 echo '
                 <tr id="tr_option_anyone_can_modify_bydefault" style="display:', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? 'inline':'none', ';"><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_anyone_can_modify_bydefault'].'</label>
+                    <label>'.$LANG['settings_anyone_can_modify_bydefault'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="anyone_can_modify_bydefault_radio1" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_bydefault_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="anyone_can_modify_bydefault_radio2" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify_bydefault']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_bydefault_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="anyone_can_modify_bydefault_radio1" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? ' checked="checked"' : '', ' /><label for="anyone_can_modify_bydefault_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="anyone_can_modify_bydefault_radio2" name="anyone_can_modify_bydefault" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['anyone_can_modify_bydefault']) ? ' checked="checked"':''), ' /><label for="anyone_can_modify_bydefault_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_anyone_can_modify_bydefault"><img src="includes/images/status', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1355,11 +1393,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_restricted_to'].'</label>
+                    <label>'.$LANG['settings_restricted_to'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="restricted_to_radio1" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="restricted_to_radio2" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to']) ? ' checked="checked"':''), ' /><label for="restricted_to_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="restricted_to_radio1" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="restricted_to_radio2" name="restricted_to" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to']) ? ' checked="checked"':''), ' /><label for="restricted_to_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_restricted_to"><img src="includes/images/status', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1367,11 +1405,11 @@ echo '
 echo '
                 <tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline':'none', ';"><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['restricted_to_roles'].'</label>
+                    <label>'.$LANG['restricted_to_roles'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="restricted_to_roles_radio1" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_roles_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="restricted_to_roles_radio2" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to_roles']) ? ' checked="checked"':''), ' /><label for="restricted_to_roles_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="restricted_to_roles_radio1" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? ' checked="checked"' : '', ' /><label for="restricted_to_roles_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="restricted_to_roles_radio2" name="restricted_to_roles" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['restricted_to_roles']) ? ' checked="checked"':''), ' /><label for="restricted_to_roles_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_restricted_to_roles"><img src="includes/images/status', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1382,13 +1420,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['copy_to_clipboard_small_icons'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['copy_to_clipboard_small_icons_tip'].'" /></span>
+                        '.$LANG['copy_to_clipboard_small_icons'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['copy_to_clipboard_small_icons_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="copy_to_clipboard_small_icons_radio1" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? ' checked="checked"' : '', ' /><label for="copy_to_clipboard_small_icons_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="copy_to_clipboard_small_icons_radio2" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['copy_to_clipboard_small_icons']) ? ' checked="checked"':''), ' /><label for="copy_to_clipboard_small_icons_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="copy_to_clipboard_small_icons_radio1" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? ' checked="checked"' : '', ' /><label for="copy_to_clipboard_small_icons_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="copy_to_clipboard_small_icons_radio2" name="copy_to_clipboard_small_icons" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['copy_to_clipboard_small_icons']) ? ' checked="checked"':''), ' /><label for="copy_to_clipboard_small_icons_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_copy_to_clipboard_small_icons"><img src="includes/images/status', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1397,12 +1435,12 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_show_description'].'
+                        '.$LANG['settings_show_description'].'
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="show_description_radio1" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? ' checked="checked"' : '', ' /><label for="show_description_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="show_description_radio2" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_description']) ? ' checked="checked"':''), ' /><label for="show_description_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="show_description_radio1" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? ' checked="checked"' : '', ' /><label for="show_description_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="show_description_radio2" name="show_description" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_description']) ? ' checked="checked"':''), ' /><label for="show_description_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_show_description"><img src="includes/images/status', isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1411,13 +1449,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_tree_counters'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_tree_counters_tip'].'" /></span>
+                        '.$LANG['settings_tree_counters'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_tree_counters_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="tree_counters_radio1" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? ' checked="checked"' : '', ' /><label for="tree_counters_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="tree_counters_radio2" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['tree_counters']) ? ' checked="checked"':''), ' /><label for="tree_counters_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="tree_counters_radio1" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? ' checked="checked"' : '', ' /><label for="tree_counters_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="tree_counters_radio2" name="tree_counters" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['tree_counters']) ? ' checked="checked"':''), ' /><label for="tree_counters_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_tree_counters"><img src="includes/images/status', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td></tr>';
@@ -1425,8 +1463,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['nb_items_by_query'].'</label>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['nb_items_by_query_tip'].'" /></span>
+                    <label>'.$LANG['nb_items_by_query'].'</label>
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['nb_items_by_query_tip'].'" /></span>
                     </td><td>
                     <input type="text" size="4" id="nb_items_by_query" name="nb_items_by_query" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : '', '" class="text ui-widget-content" />
                 <tr><td>';
@@ -1436,11 +1474,11 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['enable_send_email_on_user_login'].'</label>
+                    <label>'.$LANG['enable_send_email_on_user_login'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_send_email_on_user_login_radio1" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_send_email_on_user_login_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_send_email_on_user_login_radio1" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_send_email_on_user_login_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_send_email_on_user_login_radio2" name="enable_send_email_on_user_login" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_send_email_on_user_login']) ? ' checked="checked"':''), ' /><label for="enable_send_email_on_user_login_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_send_email_on_user_login"><img src="includes/images/status', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1448,11 +1486,11 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['enable_email_notification_on_item_shown'].'</label>
+                    <label>'.$LANG['enable_email_notification_on_item_shown'].'</label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_email_notification_on_item_shown"><img src="includes/images/status', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1463,13 +1501,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_insert_manual_entry_item_history'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_insert_manual_entry_item_history_tip'].'" /></span>
+                        '.$LANG['settings_insert_manual_entry_item_history'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_insert_manual_entry_item_history_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="insert_manual_entry_item_history_radio1" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? ' checked="checked"' : '', ' /><label for="insert_manual_entry_item_history_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="insert_manual_entry_item_history_radio2" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['insert_manual_entry_item_history']) ? ' checked="checked"':''), ' /><label for="insert_manual_entry_item_history_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="insert_manual_entry_item_history_radio1" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? ' checked="checked"' : '', ' /><label for="insert_manual_entry_item_history_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="insert_manual_entry_item_history_radio2" name="insert_manual_entry_item_history" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['insert_manual_entry_item_history']) ? ' checked="checked"':''), ' /><label for="insert_manual_entry_item_history_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_insert_manual_entry_item_history"><img src="includes/images/status', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1479,13 +1517,13 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>
-                        '.$txt['settings_offline_mode'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_offline_mode_tip'].'" /></span>
+                        '.$LANG['settings_offline_mode'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_offline_mode_tip'].'" /></span>
                     </label>
                     </td><td>
                     <div class="div_radio">
-                        <input type="radio" id="settings_offline_mode_radio1" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="settings_offline_mode_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="settings_offline_mode_radio2" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['settings_offline_mode']) ? ' checked="checked"':''), ' /><label for="settings_offline_mode_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="settings_offline_mode_radio1" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? ' checked="checked"' : '', ' /><label for="settings_offline_mode_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="settings_offline_mode_radio2" name="settings_offline_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['settings_offline_mode']) ? ' checked="checked"':''), ' /><label for="settings_offline_mode_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_settings_offline_mode"><img src="includes/images/status', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
@@ -1494,7 +1532,7 @@ echo '
                 <tr style="margin-bottom:3px">
                     <td>
                         <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        <label for="offline_key_level">'.$txt['offline_mode_key_level'].'</label>
+                        <label for="offline_key_level">'.$LANG['offline_mode_key_level'].'</label>
                     </td>
                     <td>
                         <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content">';
@@ -1519,7 +1557,7 @@ if (!extension_loaded('ldap')) {
     echo '
     <div style="margin-bottom:3px;">
         <div class="ui-widget-content ui-corner-all" style="padding:10px;">
-            <img src="includes/images/error.png" alt="">&nbsp;&nbsp;'.$txt['ldap_extension_not_loaded'].'
+            <img src="includes/images/error.png" alt="">&nbsp;&nbsp;'.$LANG['ldap_extension_not_loaded'].'
         </div>
     </div>';
 } else {
@@ -1527,12 +1565,12 @@ if (!extension_loaded('ldap')) {
     echo '
     <div style="margin-bottom:3px;">
         <label for="ldap_mode">' .
-    $txt['settings_ldap_mode'].'
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_mode_tip'].'" />
+    $LANG['settings_ldap_mode'].'
+            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_mode_tip'].'" />
                     </label>
                     <span class="div_radio">
-                        <input type="radio" id="ldap_mode_radio1" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? ' checked="checked"' : '', ' onclick="javascript:$(\'#div_ldap_configuration\').show();" /><label for="ldap_mode_radio1">'.$txt['yes'].'</label>
-                        <input type="radio" id="ldap_mode_radio2" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_mode']) ? ' checked="checked"':''), ' onclick="javascript:$(\'#div_ldap_configuration\').hide();" /><label for="ldap_mode_radio2">'.$txt['no'].'</label>
+                        <input type="radio" id="ldap_mode_radio1" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? ' checked="checked"' : '', ' onclick="javascript:$(\'#div_ldap_configuration\').show();" /><label for="ldap_mode_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="ldap_mode_radio2" name="ldap_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_mode']) ? ' checked="checked"':''), ' onclick="javascript:$(\'#div_ldap_configuration\').hide();" /><label for="ldap_mode_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_ldap_mode"><img src="includes/images/status', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </span>
                 </div>';
@@ -1540,7 +1578,7 @@ if (!extension_loaded('ldap')) {
 	$ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
 	echo '
 <div style="margin-bottom:3px;">
-    <label for="ldap_type">'.$txt['settings_ldap_type'].'</label>
+    <label for="ldap_type">'.$LANG['settings_ldap_type'].'</label>
     <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
         <option value="windows">Windows / Active Directory</option>
         <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
@@ -1550,13 +1588,13 @@ if (!extension_loaded('ldap')) {
 // LDAP inputs
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
-                <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$txt['admin_ldap_configuration'].'</div>
+                <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
                 <table>';
 // Domain
 if (isset($ldap_type) && $ldap_type != 'posix') {
 echo '
                     <tr>
-                        <td><label for="ldap_suffix">'.$txt['settings_ldap_domain'].'</label></td>
+                        <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
                     </tr>';
 }
@@ -1564,7 +1602,7 @@ echo '
 // Domain DN
 echo '
                     <tr>
-                        <td><label for="ldap_domain_dn">'.$txt['settings_ldap_domain_dn'].'</label></td>
+                        <td><label for="ldap_domain_dn">'.$LANG['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" /></td>
                     </tr>';
 
@@ -1572,7 +1610,7 @@ echo '
 if (isset($ldap_type) && $ldap_type == 'posix') {
 		echo '
                 <tr>
-                    <td><label for="ldap_suffix">'.$txt['settings_ldap_domain_posix'].'</label></td>
+                    <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain_posix'].'</label></td>
                     <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
                 </tr>';
 }
@@ -1581,8 +1619,8 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 if (isset($ldap_type) && $ldap_type == 'posix') {
 		echo '
                 <tr>
-                    <td><label for="ldap_user_attribute">'.$txt['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
-                        $txt['settings_ldap_user_attribute_tip'].'" /></label></td>
+                    <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
+                        $LANG['settings_ldap_user_attribute_tip'].'" /></label></td>
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
                 </tr>';
@@ -1591,17 +1629,17 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 // Domain controler
 echo '
                     <tr>
-                        <td><label for="ldap_domain_controler">'.$txt['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_domain_controler_tip'].'" /></label></td>
+                        <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_domain_controler_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
                     </tr>';
 // AD SSL
 echo '
                     <tr>
-                        <td><label>'.$txt['settings_ldap_ssl'].'</label></td>
+                        <td><label>'.$LANG['settings_ldap_ssl'].'</label></td>
                         <td>
                             <div class="div_radio" id="rad1">
-                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_tls\', 0);$(\'input[name=ldap_tls]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_ssl_radio2" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_ssl']) ? ' checked="checked"':''), ' /><label for="ldap_ssl_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_ssl_radio1" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_tls\', 0);$(\'input[name=ldap_tls]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_ssl_radio1">'.$LANG['yes'].'</label>
+                                <input type="radio" id="ldap_ssl_radio2" name="ldap_ssl" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_ssl']) ? ' checked="checked"':''), ' /><label for="ldap_ssl_radio2">'.$LANG['no'].'</label>
                                 <span class="setting_flag" id="flag_ldap_ssl"><img src="includes/images/status', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
@@ -1609,11 +1647,11 @@ echo '
 // AD TLS
 echo '
                     <tr>
-                        <td><label>'.$txt['settings_ldap_tls'].'</label></td>
+                        <td><label>'.$LANG['settings_ldap_tls'].'</label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_ssl\', 0);$(\'input[name=ldap_ssl]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_tls_radio1" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 1);changeSettingStatus(\'ldap_ssl\', 0);$(\'input[name=ldap_ssl]\').val([\'0\']).button(\'refresh\');" value="1"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_tls_radio1">'.$LANG['yes'].'</label>
+                                <input type="radio" id="ldap_tls_radio2" name="ldap_tls" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_tls']) ? ' checked="checked"':''), ' /><label for="ldap_tls_radio2">'.$LANG['no'].'</label>
                                 <span class="setting_flag" id="flag_ldap_tls"><img src="includes/images/status', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
@@ -1621,11 +1659,11 @@ echo '
 // Enable only localy declared users with tips help
 echo '
                     <tr>
-                        <td><label>'.$txt['settings_ldap_elusers'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_elusers_tip'].'" /></label></td>
+                        <td><label>'.$LANG['settings_ldap_elusers'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_elusers_tip'].'" /></label></td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="ldap_elusers_radio1" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_elusers_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="ldap_elusers_radio2" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_elusers']) ? ' checked="checked"':''), ' /><label for="ldap_elusers_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="ldap_elusers_radio1" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="1"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? ' checked="checked"' : '', ' /><label for="ldap_elusers_radio1">'.$LANG['yes'].'</label>
+                                <input type="radio" id="ldap_elusers_radio2" name="ldap_elusers" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['ldap_elusers']) ? ' checked="checked"':''), ' /><label for="ldap_elusers_radio2">'.$LANG['no'].'</label>
                                 <span class="setting_flag" id="flag_ldap_elusers"><img src="includes/images/status', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
@@ -1644,7 +1682,7 @@ echo '
             <div id="tabs-5">
                 <div class="" style="padding: 0 .7em;">
                     <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <b>'.$txt['admin_one_shot_backup'].'</b>
+                    <b>'.$LANG['admin_one_shot_backup'].'</b>
                 </div>
                 <div style="margin:0 0 5px 20px;">
                     <table>';
@@ -1653,15 +1691,15 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_action_db_backup'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_tip'].'" /></span>
+                        '.$LANG['admin_action_db_backup'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_tip'].'" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_backup" style="margin-left:10px;"></span>
                         <span id="result_admin_action_db_backup_get_key" style="margin-left:10px;">
-                            &nbsp;'.$txt['encrypt_key'].'<input type="password" size="20" id="result_admin_action_db_backup_key" />
-                            <img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_key_tip'].'" />
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;" />
+                            &nbsp;'.$LANG['encrypt_key'].'<input type="password" size="20" id="result_admin_action_db_backup_key" />
+                            <img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_key_tip'].'" />
+                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;" />
                         </span>
                         </td>
                     </tr>';
@@ -1670,14 +1708,14 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_action_db_restore'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['admin_action_db_restore_tip'].'" /></span>
+                        '.$LANG['admin_action_db_restore'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_restore_tip'].'" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <div id="upload_container_restoreDB">
                             <div id="filelist_restoreDB"></div><br />
-                            <a id="pickfiles_restoreDB" class="button" href="#">'.$txt['select'].'</a>
+                            <a id="pickfiles_restoreDB" class="button" href="#">'.$LANG['select'].'</a>
                         </div>
                         </td>
                     </tr>';
@@ -1689,8 +1727,8 @@ echo '
 echo '
                 <div class="" style="0padding: 0 .7em;">
                     <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <b>'.$txt['admin_script_backups'].'</b>&nbsp;
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_script_backups_tip'].'</h2>" /></span>
+                    <b>'.$LANG['admin_script_backups'].'</b>&nbsp;
+                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backups_tip'].'</h2>" /></span>
                 </div>
                 <div style="margin:0 0 5px 20px;">
                     <table>';
@@ -1699,8 +1737,8 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_script_backup_path'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_script_backup_path_tip'].'</h2>" /></span>
+                        '.$LANG['admin_script_backup_path'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_path_tip'].'</h2>" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1712,8 +1750,8 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_script_backup_filename'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_script_backup_filename_tip'].'</h2>" /></span>
+                        '.$LANG['admin_script_backup_filename'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_filename_tip'].'</h2>" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1725,8 +1763,8 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_script_backup_encryption'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_script_backup_encryption_tip'].'</h2>" /></span>
+                        '.$LANG['admin_script_backup_encryption'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_encryption_tip'].'</h2>" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1738,13 +1776,13 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                        '.$txt['admin_script_backup_decrypt'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_script_backup_decrypt_tip'].'</h2>" /></span>
+                        '.$LANG['admin_script_backup_decrypt'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_decrypt_tip'].'</h2>" /></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_decrypt_file" name="bck_script_decrypt_file" type="text" size="50px" value="" />
-                        <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_backup_decrypt\')" style="cursor:pointer;" />
+                        <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_backup_decrypt\')" style="cursor:pointer;" />
                         </td>
                     </tr>';
 
@@ -1759,7 +1797,7 @@ echo '
             <div id="tabs-6">
                 <div class="" style="padding: 0 .7em;">
                     <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <b>'.$txt['admin_emails_configuration'].'</b>
+                    <b>'.$LANG['admin_emails_configuration'].'</b>
                 </div>
                 <div style="margin:0 0 5px 20px;">
                     <table>';
@@ -1768,7 +1806,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_smtp_server'].'
+                            '.$LANG['admin_email_smtp_server'].'
                         </td>
                         <td>
                             <input id="email_smtp_server" name="email_smtp_server" type="text" size="40px" value="', !isset($_SESSION['settings']['email_smtp_server']) ? $smtp_server : $_SESSION['settings']['email_smtp_server'], '" />
@@ -1779,12 +1817,12 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_auth'].'
+                            '.$LANG['admin_email_auth'].'
                         </td>
                         <td>
                             <div class="div_radio">
-                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$txt['yes'].'</label>
-                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$txt['no'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$LANG['yes'].'</label>
+                                <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$LANG['no'].'</label>
                                 <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == 1 ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
@@ -1794,7 +1832,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_auth_username'].'
+                            '.$LANG['admin_email_auth_username'].'
                         </td>
                         <td>
                             <input id="email_auth_username" name="email_auth_username" type="text" size="40px" value="', !isset($_SESSION['settings']['email_auth_username']) ? $smtp_auth_username : $_SESSION['settings']['email_auth_username'], '" />
@@ -1805,7 +1843,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_auth_pwd'].'
+                            '.$LANG['admin_email_auth_pwd'].'
                         </td>
                         <td>
                             <input id="email_auth_pwd" name="email_auth_pwd" type="password" size="40px" value="', !isset($_SESSION['settings']['email_auth_pwd']) ? $smtp_auth_password : $_SESSION['settings']['email_auth_pwd'], '" />
@@ -1816,7 +1854,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_port'].'
+                            '.$LANG['admin_email_port'].'
                         </td>
                         <td>
                             <input id="email_port" name="email_port" type="text" size="40px" value="', !isset($_SESSION['settings']['email_port']) ? '25' : $_SESSION['settings']['email_port'], '" />
@@ -1827,7 +1865,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_from'].'
+                            '.$LANG['admin_email_from'].'
                         </td>
                         <td>
                             <input id="email_from" name="email_from" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from']) ? $email_from : $_SESSION['settings']['email_from'], '" />
@@ -1838,7 +1876,7 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                             <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_from_name'].'
+                            '.$LANG['admin_email_from_name'].'
                         </td>
                         <td>
                             <input id="email_from_name" name="email_from_name" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from_name']) ? $email_from_name : $_SESSION['settings']['email_from_name'], '" />
@@ -1852,7 +1890,7 @@ echo '
 echo '
                 <div class="" style="0padding: 0 .7em;">
                     <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <b>'.$txt['admin_emails_configuration_testing'].'</b>
+                    <b>'.$LANG['admin_emails_configuration_testing'].'</b>
                 </div>
                 <div id="email_testing_results" class="ui-state-error ui-corner-all" style="padding:5px;display:none;margin:2px;"></div>
                 <div style="margin:0 0 5px 20px;">
@@ -1862,11 +1900,11 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$txt['admin_email_test_configuration'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_email_test_configuration_tip'].'</h2>" /></span>
+                            '.$LANG['admin_email_test_configuration'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_test_configuration_tip'].'</h2>" /></span>
                         </td>
                         <td>
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_test_configuration\')" style="cursor:pointer;" />
+                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_test_configuration\')" style="cursor:pointer;" />
                         </td>
                     </tr>';
 // Send emails backlog
@@ -1879,11 +1917,11 @@ echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.str_replace("#nb_emails#", $nb_emails[0], $txt['admin_email_send_backlog']).'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$txt['admin_email_send_backlog_tip'].'</h2>" /></span>
+                            '.str_replace("#nb_emails#", $nb_emails[0], $LANG['admin_email_send_backlog']).'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_send_backlog_tip'].'</h2>" /></span>
                         </td>
                         <td>
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$txt['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_send_backlog\')" style="cursor:pointer;" />
+                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_send_backlog\')" style="cursor:pointer;" />
                         </td>
                     </tr>';
 
@@ -1900,8 +1938,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_maxfilesize'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_maxfilesize_tip'].'" /></span>
+                    <label>'.$LANG['settings_upload_maxfilesize'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_maxfilesize_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
@@ -1910,8 +1948,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_docext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_docext_tip'].'" /></span>
+                    <label>'.$LANG['settings_upload_docext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_docext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
@@ -1920,8 +1958,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_imagesext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_imagesext_tip'].'" /></span>
+                    <label>'.$LANG['settings_upload_imagesext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_imagesext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
@@ -1930,8 +1968,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_pkgext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_pkgext_tip'].'" /></span>
+                    <label>'.$LANG['settings_upload_pkgext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_pkgext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
@@ -1940,8 +1978,8 @@ echo '
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_otherext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_otherext_tip'].'" /></span>
+                    <label>'.$LANG['settings_upload_otherext'].
+                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_otherext_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>
@@ -1953,21 +1991,21 @@ echo '
                     <td>
                         <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <label>' .
-                        $txt['settings_upload_imageresize_options'].'
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_upload_imageresize_options_tip'].'" />
+                        $LANG['settings_upload_imageresize_options'].'
+                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_imageresize_options_tip'].'" />
                         </label>
                     </td>
                     <td>
                         <div class="div_radio">
-                            <input type="radio" id="upload_imageresize_options_radio1" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 1);" value="1"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? ' checked="checked"' : '', ' /><label for="upload_imageresize_options_radio1">'.$txt['yes'].'</label>
-                            <input type="radio" id="upload_imageresize_options_radio2" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 0);" value="0"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['upload_imageresize_options']) ? ' checked="checked"':''), ' /><label for="upload_imageresize_options_radio2">'.$txt['no'].'</label>
+                            <input type="radio" id="upload_imageresize_options_radio1" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 1);" value="1"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? ' checked="checked"' : '', ' /><label for="upload_imageresize_options_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="upload_imageresize_options_radio2" name="upload_imageresize_options" onclick="changeSettingStatus($(this).attr(\'name\'), 0);" value="0"', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['upload_imageresize_options']) ? ' checked="checked"':''), ' /><label for="upload_imageresize_options_radio2">'.$LANG['no'].'</label>
                                 <span class="setting_flag" id="flag_upload_imageresize_options"><img src="includes/images/status', isset($_SESSION['settings']['upload_imageresize_options']) && $_SESSION['settings']['upload_imageresize_options'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td>
                 </tr>
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_imageresize_options_w'].
+                    <label>'.$LANG['settings_upload_imageresize_options_w'].
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_width" name="upload_imageresize_width" value="',
@@ -1977,7 +2015,7 @@ echo '
                 </tr>
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_imageresize_options_h'].
+                    <label>'.$LANG['settings_upload_imageresize_options_h'].
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_height" name="upload_imageresize_height" value="',
@@ -1987,7 +2025,7 @@ echo '
                 </tr>
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$txt['settings_upload_imageresize_options_q'].
+                    <label>'.$LANG['settings_upload_imageresize_options_q'].
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_quality" name="upload_imageresize_quality" value="',
@@ -2004,7 +2042,7 @@ echo '
 // Save button
 echo '
             <div style="margin:auto;">
-                <input type="submit" id="save_button" name="save_button" value="'.$txt['save_button'].'" />
+                <input type="submit" id="save_button" name="save_button" value="'.$LANG['save_button'].'" />
             </div>';
 
 echo '

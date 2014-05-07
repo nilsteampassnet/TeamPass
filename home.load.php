@@ -41,9 +41,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 450,
-        title: "<?php echo $txt['offline_menu_title'];?>",
+        title: "<?php echo $LANG['offline_menu_title'];?>",
         buttons: {
-            "<?php echo $txt['pw_generate'];?>": function() {
+            "<?php echo $LANG['pw_generate'];?>": function() {
                 //Get list of selected folders
                 var ids = "";
                 $("#offline_mode_selected_folders :selected").each(function(i, selected) {
@@ -55,13 +55,13 @@ $(function() {
                 $("#offline_download_link").html("");
 
                 if ($("#offline_password").val() == "") {
-                    $("#offline_mode_error").show().html("<?php echo $txt['pdf_password_warning'];?>").attr("class","ui-state-error");
+                    $("#offline_mode_error").show().html("<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
                     $("#offline_download_link, #div_offline_mode_wait").hide();
                     return;
                 }
 
                 if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
-                    $("#offline_mode_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $txt['error_complex_not_enought'];?>");
+                    $("#offline_mode_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
                     $("#offline_download_link, #div_offline_mode_wait").hide();
                     return;
                 }
@@ -86,7 +86,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -97,35 +97,35 @@ $(function() {
         $("#new_pw").simplePassMeter({
             "requirements": {},
               "container": "#pw_strength",
-              "defaultText" : "<?php echo $txt['index_pw_level_txt'];?>",
+              "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
             "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo $txt['complex_level0'];?>"
+                "text": "<?php echo $LANG['complex_level0'];?>"
             },
             {"minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level1'];?>"
+                "text": "<?php echo $LANG['complex_level1'];?>"
             },
             {"minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level2'];?>"
+                "text": "<?php echo $LANG['complex_level2'];?>"
             },
             {"minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level3'];?>"
+                "text": "<?php echo $LANG['complex_level3'];?>"
             },
             {"minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level4'];?>"
+                "text": "<?php echo $LANG['complex_level4'];?>"
             },
             {"minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level5'];?>"
+                "text": "<?php echo $LANG['complex_level5'];?>"
             },
             {"minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level6'];?>"
+                "text": "<?php echo $LANG['complex_level6'];?>"
             }
             ]
         });
@@ -141,35 +141,35 @@ $(function() {
         $("#offline_password").simplePassMeter({
             "requirements": {},
               "container": "#offline_pw_strength",
-              "defaultText" : "<?php echo $txt['index_pw_level_txt'];?>",
+              "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
             "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo $txt['complex_level0'];?>"
+                "text": "<?php echo $LANG['complex_level0'];?>"
             },
             {"minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level1'];?>"
+                "text": "<?php echo $LANG['complex_level1'];?>"
             },
             {"minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo $txt['complex_level2'];?>"
+                "text": "<?php echo $LANG['complex_level2'];?>"
             },
             {"minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level3'];?>"
+                "text": "<?php echo $LANG['complex_level3'];?>"
             },
             {"minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo $txt['complex_level4'];?>"
+                "text": "<?php echo $LANG['complex_level4'];?>"
             },
             {"minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level5'];?>"
+                "text": "<?php echo $LANG['complex_level5'];?>"
             },
             {"minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo $txt['complex_level6'];?>"
+                "text": "<?php echo $LANG['complex_level6'];?>"
             }
             ]
         });
@@ -187,13 +187,13 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 250,
-        title: "<?php echo $txt['index_change_pw'];?>",
+        title: "<?php echo $LANG['index_change_pw'];?>",
         open: function( event, ui ) {
-            $("#change_pwd_complexPw").html("<?php echo $txt['complex_asked'];?> : <?php echo $pwComplexity[$_SESSION['user_pw_complexity']][1];?>");
+            $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked'];?> : <?php echo $pwComplexity[$_SESSION['user_pw_complexity']][1];?>");
             $("#change_pwd_error").hide();
         },
         buttons: {
-            "<?php echo $txt['index_change_pw_button'];?>": function() {
+            "<?php echo $LANG['index_change_pw_button'];?>": function() {
                 if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
                     if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
                         var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
@@ -208,7 +208,7 @@ $(function() {
                             function(data) {
                                 if (data[0].error == "already_used") {
                                     $("#new_pw, #new_pw2").val("");
-                                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $txt['pw_used'];?></span>");
+                                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['pw_used'];?></span>");
                                 } else {
                                     document.main_form.submit();
                                 }
@@ -216,13 +216,13 @@ $(function() {
                             "json"
                        );
                     } else {
-                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $txt['error_complex_not_enought'];?>");
+                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
                     }
                 } else {
-                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $txt['index_pw_error_identical'];?>");
+                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical'];?>");
                 }
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
                 $("#new_pw, #new_pw2").val("");
                 $(this).dialog("close");
@@ -237,9 +237,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 230,
-        title: "<?php echo $txt['menu_title_new_personal_saltkey'];?>",
+        title: "<?php echo $LANG['menu_title_new_personal_saltkey'];?>",
         buttons: {
-            "<?php echo $txt['ok'];?>": function() {
+            "<?php echo $LANG['ok'];?>": function() {
                 $("#div_change_personal_saltkey_wait").show();
                 //Send query
                 $.post(
@@ -254,7 +254,7 @@ $(function() {
                     }
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -267,9 +267,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $txt['menu_title_new_personal_saltkey'];?>",
+        title: "<?php echo $LANG['menu_title_new_personal_saltkey'];?>",
         buttons: {
-            "<?php echo $txt['ok'];?>": function() {
+            "<?php echo $LANG['ok'];?>": function() {
                 $("#div_loading").show();
 
                 //Send query
@@ -285,7 +285,7 @@ $(function() {
                     }
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -298,13 +298,13 @@ $(function() {
         autoOpen: false,
         width: 600,
         height: 500,
-        title: "<?php echo $txt['import_csv_menu_title'];?>",
+        title: "<?php echo $LANG['import_csv_menu_title'];?>",
         buttons: {
-            "<?php echo $txt['import_button'];?>": function() {
+            "<?php echo $LANG['import_button'];?>": function() {
                 if ($('#radio1').attr('checked')) ImportItemsFromCSV();
                 else $(this).dialog("close");
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#import_status").html("");
                 $(this).dialog("close");
             }
@@ -321,9 +321,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 450,
-        title: "<?php echo $txt['print_out_menu_title'];?>",
+        title: "<?php echo $LANG['print_out_menu_title'];?>",
         buttons: {
-            "<?php echo $txt['print'];?>": function() {
+            "<?php echo $LANG['print'];?>": function() {
                 //Get list of selected folders
                 var ids = "";
                 $("#selected_folders :selected").each(function(i, selected) {
@@ -336,7 +336,7 @@ $(function() {
 
                 // Get PDF encryption password and make sure it is set
                 if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
-                    $("#print_out_error").show().html("<?php echo $txt['pdf_password_warning'];?>").attr("class","ui-state-error");
+                    $("#print_out_error").show().html("<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
                     $("#div_print_out_wait").hide();
                     return;
                 }
@@ -348,7 +348,7 @@ $(function() {
                 else if ($("input[name=\"export_format\"]:checked").val() == "html") export_format = "export_to_html_format";
 
                 if (export_format == "export_to_html_format" && $("#pdf_password").val() == "") {
-                    $("#print_out_error").show().html("<?php echo $txt['pdf_password_warning'];?>").attr("class","ui-state-error");
+                    $("#print_out_error").show().html("<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
                     $("#div_print_out_wait").hide();
                     return;
                 }
@@ -369,7 +369,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -592,10 +592,10 @@ function ChangeMyPass()
                 "json"
             );
         } else {
-            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $txt['error_complex_not_enought'];?>");
+            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
         }
     } else {
-        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $txt['index_pw_error_identical'];?>");
+        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical'];?>");
     }
 }
 
@@ -638,7 +638,7 @@ function ImportCSV(file)
         },
         function(data) {
             if (data[0].error == "bad_structure") {
-                $("#import_from_file_info").html("<?php echo $txt['import_error_no_read_possible'];?>").show();
+                $("#import_from_file_info").html("<?php echo $LANG['import_error_no_read_possible'];?>").show();
             } else {
                 $("#import_status").html(data[0].output);
                 $("#item_all_selection").click(function() {
@@ -759,7 +759,7 @@ function StorePersonalSK()
         },
         function(data) {
             if ($("#input_personal_saltkey").val() != "") {
-                $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-info' style='float: left; margin-right: .3em;'></span><?php echo $txt['alert_message_done'];?></div>");
+                $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='ui-icon ui-icon-info' style='float: left; margin-right: .3em;'></span><?php echo $LANG['alert_message_done'];?></div>");
                 $("#change_personal_sk").button("enable");
                 $("#div_dialog_message").dialog("open");
             }

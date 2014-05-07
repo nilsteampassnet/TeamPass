@@ -43,13 +43,14 @@ header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 include 'main.functions.php';
 // pw complexity levels
-$pwComplexity = array(0 => array(0, $txt['complex_level0']),
-    25 => array(25, $txt['complex_level1']),
-    50 => array(50, $txt['complex_level2']),
-    60 => array(60, $txt['complex_level3']),
-    70 => array(70, $txt['complex_level4']),
-    80 => array(80, $txt['complex_level5']),
-    90 => array(90, $txt['complex_level6'])
+$pwComplexity = array(
+    0 => array(0, $LANG['complex_level0']),
+    25 => array(25, $LANG['complex_level1']),
+    50 => array(50, $LANG['complex_level2']),
+    60 => array(60, $LANG['complex_level3']),
+    70 => array(70, $LANG['complex_level4']),
+    80 => array(80, $LANG['complex_level5']),
+    90 => array(90, $LANG['complex_level6'])
    );
 
 //Class loader
@@ -94,7 +95,10 @@ if (isset($_POST['type'])) {
             $tags = htmlspecialchars_decode($dataReceived['tags']);
 
             // is author authorized to create in this folder
-            if (in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))) {
+            if (
+                !in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))
+                && !in_array($dataReceived['categorie'], $_SESSION['groupes_visibles'])
+            ) {
                 echo prepareExchangedData(array("error" => "something_wrong"), "encode");
                 break;
             }
@@ -276,10 +280,10 @@ if (isset($_POST['type'])) {
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                             // send it
                             @sendEmail(
-                                $txt['email_subject'],
-                                $txt['email_body_1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$txt['email_body_2'].$txt['email_body_3'],
+                                $LANG['email_subject'],
+                                $LANG['email_body_1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
                                 $emailAddress,
-                                $txt['email_altbody_1']." ".mysql_real_escape_string(stripslashes(($_POST['label'])))." ".$txt['email_altbody_2']
+                                $LANG['email_altbody_1']." ".mysql_real_escape_string(stripslashes(($_POST['label'])))." ".$LANG['email_altbody_2']
                             );
                         }
                     }
@@ -305,10 +309,10 @@ if (isset($_POST['type'])) {
                         $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" />';
 
                         if (!empty($dataReceived['login'])) {
-                            $itemLogin = '<img src="includes/images/mini_user_enable.png" id="icon_login_'.$newID.'" class="copy_clipboard" title="'.$txt['item_menu_copy_login'].'" />';
+                            $itemLogin = '<img src="includes/images/mini_user_enable.png" id="icon_login_'.$newID.'" class="copy_clipboard" title="'.$LANG['item_menu_copy_login'].'" />';
                         }
                         if (!empty($dataReceived['pw'])) {
-                            $itemPw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" title="'.$txt['item_menu_copy_pw'].'" />';
+                            $itemPw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" title="'.$LANG['item_menu_copy_pw'].'" />';
                         }
                         $html .= $itemLogin.'&nbsp;'.$itemPw;
                         // $html .= '<input type="hidden" id="item_pw_in_list_'.$newID.'" value="'.$dataReceived['pw'].'"><input type="hidden" id="item_login_in_list_'.$newID.'" value="'.$dataReceived['login'].'">';
@@ -323,9 +327,9 @@ if (isset($_POST['type'])) {
                     // mini icon for collab
                     if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                         if ($dataReceived['anyone_can_modify'] == 1) {
-                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$txt['item_menu_collab_enable'].'" />';
+                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$LANG['item_menu_collab_enable'].'" />';
                         } else {
-                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$txt['item_menu_collab_disable'].'" />';
+                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" />';
                         }
                         $html .= '</span>'.$itemCollab.'</span>';
                     }
@@ -843,12 +847,12 @@ if (isset($_POST['type'])) {
                     foreach ($rows as $reccord) {
                         $reason = explode(':', $reccord['raison']);
                         if (empty($history)) {
-                            $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']] .
-                            " - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : $txt[trim($reason[0])]):'');
+                            $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$LANG[$reccord['action']] .
+                            " - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : $LANG[trim($reason[0])]):'');
                         } else {
                             $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - " .
-                            $reccord['login']." - ".$txt[$reccord['action']]." - " .
-                            (!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] != "at_manual" ? $txt[trim($reason[0])] : trim($reason[0]))):'');
+                            $reccord['login']." - ".$LANG[$reccord['action']]." - " .
+                            (!empty($reccord['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] != "at_manual" ? $LANG[trim($reason[0])] : trim($reason[0]))):'');
                         }
                     }
                     // decrypt PW
@@ -892,10 +896,10 @@ if (isset($_POST['type'])) {
                     if (!empty($dataReceived['diffusion'])) {
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                             @sendEmail(
-                                $txt['email_subject_item_updated'],
-                                str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $txt['email_body_item_updated']),
+                                $LANG['email_subject_item_updated'],
+                                str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $LANG['email_body_item_updated']),
                                 $emailAddress,
-                                str_replace("#item_label#", $label, $txt['email_bodyalt_item_updated'])
+                                str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
                             );
                         }
                     }
@@ -930,7 +934,7 @@ if (isset($_POST['type'])) {
         case "copy_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($txt['error_not_allowed_to']).'"}]';
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
@@ -1246,7 +1250,7 @@ if (isset($_POST['type'])) {
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = $dataItem['url'];
                 if (!empty($dataItem['url'])) {
-                    $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='".$txt['open_url_link']."'></a>";
+                    $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='".$LANG['open_url_link']."'></a>";
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
@@ -1375,8 +1379,8 @@ if (isset($_POST['type'])) {
                             'emails',
                             array(
                                 'timestamp' => time(),
-                                'subject' => $txt['email_on_open_notification_subject'],
-                                'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $txt['email_on_open_notification_mail']),
+                                'subject' => $LANG['email_on_open_notification_subject'],
+                                'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_on_open_notification_mail']),
                                 'receivers' => $listNotificationEmails,
                                 'status' => ''
                                )
@@ -1450,13 +1454,13 @@ if (isset($_POST['type'])) {
         		}
         		if (!empty($reason[1]) || $reccord['action'] == "at_copy" || $reccord['action'] == "at_creation" || $reccord['action'] == "at_manual") {
         			if (empty($history)) {
-        				$history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+        				$history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$LANG[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
         			} else {
-        				$history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$txt[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $txt[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $txt[trim($reason[0])])):'');
+        				$history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date'])." - ".$reccord['login']." - ".$LANG[$reccord['action']]." - ".(!empty($reccord['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($reccord['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
         			}
         			if (trim($reason[0]) == "at_pw") {
         				if (empty($historyOfPws)) {
-        					$historyOfPws = $txt['previous_pw']." | ".$reason[1];
+        					$historyOfPws = $LANG['previous_pw']." | ".$reason[1];
         				} else {
         					$historyOfPws .= $reason[1];
         				}
@@ -1498,7 +1502,7 @@ if (isset($_POST['type'])) {
         	$filesEdit = str_replace('"', '&quot;', $filesEdit);
         	$files_id = $files;
         	// Refresh last seen items
-        	$text = $txt['last_items_title'].": ";
+        	$text = $LANG['last_items_title'].": ";
         	$_SESSION['latest_items_tab'] = "";
         	foreach ($_SESSION['latest_items'] as $item) {
         		if (!empty($item)) {
@@ -1609,7 +1613,7 @@ if (isset($_POST['type'])) {
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
-                echo '[ { "error" : "'.addslashes($txt['error_html_codes']).'" } ]';
+                echo '[ { "error" : "'.addslashes($LANG['error_html_codes']).'" } ]';
                 break;
             }
             // Check if duplicate folders name are allowed
@@ -1627,7 +1631,7 @@ if (isset($_POST['type'])) {
                     )
                 );
                 if (!empty($data[0]) && $dataReceived['folder'] != $data[0]) {
-                    echo '[ { "error" : "'.addslashes($txt['error_group_exist']).'" } ]';
+                    echo '[ { "error" : "'.addslashes($LANG['error_group_exist']).'" } ]';
                     break;
                 }
             }
@@ -2008,7 +2012,7 @@ if (isset($_POST['type'])) {
                         // test charset => may cause a json error if is not utf8
                         if (!isUTF8($pw)) {
                             $pw = "";
-                            $html .= '&nbsp;<img src="includes/images/exclamation_small_red.png" title="'.$txt['pw_encryption_error'].'" />';
+                            $html .= '&nbsp;<img src="includes/images/exclamation_small_red.png" title="'.$LANG['pw_encryption_error'].'" />';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
@@ -2018,10 +2022,10 @@ if (isset($_POST['type'])) {
                             $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$reccord['id'].'" class="copy_clipboard tip" />';
                             if ($displayItem == true) {
                                 if (!empty($reccord['login'])) {
-                                    $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'login\','.$reccord['id'].')" title="'.$txt['item_menu_copy_login'].'" />';
+                                    $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'login\','.$reccord['id'].')" title="'.$LANG['item_menu_copy_login'].'" />';
                                 }
                                 if (!empty($pw)) {
-                                    $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'pw\','.$reccord['id'].')" title="'.$txt['item_menu_copy_pw'].'" />';
+                                    $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$reccord['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'pw\','.$reccord['id'].')" title="'.$LANG['item_menu_copy_pw'].'" />';
                                 }
                             }
                             $html .= $itemLogin.'&nbsp;'.$itemPw .
@@ -2037,9 +2041,9 @@ if (isset($_POST['type'])) {
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($reccord['anyone_can_modify'] == 1) {
-                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$txt['item_menu_collab_enable'].'" class="tip" />';
+                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$LANG['item_menu_collab_enable'].'" class="tip" />';
                             } else {
-                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$txt['item_menu_collab_disable'].'" class="tip" />';
+                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" class="tip" />';
                             }
                             $html .= '</span>'.$itemCollab.'</span>';
                         } else {
@@ -2187,7 +2191,7 @@ if (isset($_POST['type'])) {
                 } else {
                     $returnValues = array(
                         "error" => "no_edition_possible",
-                        "error_msg" => $txt['error_no_edition_possible_locked']
+                        "error_msg" => $LANG['error_no_edition_possible_locked']
                     );
                     echo prepareExchangedData($returnValues, "encode");
                     break;
@@ -2210,7 +2214,7 @@ if (isset($_POST['type'])) {
             if (isset($data[0]) && (!empty($data[0]) || $data[0] == 0)) {
                 $complexity = $pwComplexity[$data[0]][1];
             } else {
-                $complexity = $txt['not_defined'];
+                $complexity = $LANG['not_defined'];
             }
             // Prepare Item actual visibility (what Users/Roles can see it)
             $visibilite = "";
@@ -2318,7 +2322,7 @@ if (isset($_POST['type'])) {
                 }
             }
             // Multselect
-            $returnValues['multi_select'] = '$("#edit_restricted_to_list").multiselect({selectedList: 7, minWidth: 430, height: 145, checkAllText: "'.$txt['check_all_text'].'", uncheckAllText: "'.$txt['uncheck_all_text'].'",noneSelectedText: "'.$txt['none_selected_text'].'"});';
+            $returnValues['multi_select'] = '$("#edit_restricted_to_list").multiselect({selectedList: 7, minWidth: 430, height: 145, checkAllText: "'.$LANG['check_all_text'].'", uncheckAllText: "'.$LANG['uncheck_all_text'].'",noneSelectedText: "'.$LANG['none_selected_text'].'"});';
             // Display popup
             if ($_POST['id'] == "edit_desc") {
                 $returnValues['dialog'] = '$("#div_formulaire_edition_item").dialog("open");';
@@ -2506,18 +2510,18 @@ if (isset($_POST['type'])) {
                     $dataAuthor = $db->queryFirst("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
                     $dataItem = $db->queryFirst("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
                     $ret = @sendEmail(
-                        $txt['email_request_access_subject'],
-                        str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $txt['email_request_access_mail']),
+                        $LANG['email_request_access_subject'],
+                        str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_request_access_mail']),
                         $dataAuthor['email']
                     );
                 } elseif ($_POST['cat'] == "share_this_item") {
                     $dataItem = $db->queryFirst("SELECT label,id_tree FROM ".$pre."items WHERE id= ".$_POST['id']);
                     $ret = @sendEmail(
-                        $txt['email_share_item_subject'],
+                        $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
                             array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($dataItem['label'])),
-                            $txt['email_share_item_mail']
+                            $LANG['email_share_item_mail']
                         ),
                         $_POST['receipt']
                     );
@@ -2621,7 +2625,7 @@ if (isset($_POST['type'])) {
                     // Prepare new line
                     $data = $db->queryFirst("SELECT * FROM ".$pre."log_items WHERE id_item = '".$dataReceived['item_id']."' ORDER BY date DESC");
                     //$reason = explode(':', $data['raison']);
-                    $historic = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $data['date'])." - ".$_SESSION['login']." - ".$txt[$data['action']]." - ".$data['raison'];
+                    $historic = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $data['date'])." - ".$_SESSION['login']." - ".$LANG[$data['action']]." - ".$data['raison'];
                     // send back
                     $data = array(
                         "error" => "",
@@ -2730,7 +2734,7 @@ if (isset($_POST['type'])) {
             	str_replace(
             		array("#URL#", "#DAY#"),
             		array($url, $exp_date),
-            		$txt['one_time_view_item_url_box']
+            		$LANG['one_time_view_item_url_box']
             	)
             ).'" }]';
             break;

@@ -126,28 +126,28 @@ if (isset($_SESSION['login'])) {
                 <img src="includes/images/user-black.png" /> <b>'.$_SESSION['login'].'</b>
                 ['.$_SESSION['user_privilege'].']
                 <img src="includes/images/alarm-clock.png" style="margin-left:30px;" />&nbsp;
-                '.$txt['index_expiration_in'].'&nbsp;
+                '.$LANG['index_expiration_in'].'&nbsp;
                 <div style="display:inline;" id="countdown"></div>
             </div>
             <div style="margin-left:65px; margin-top:3px;width:100%;" id="main_menu">
-                <button title="'.$txt['home'].'" onclick="MenuAction(\'\');">
+                <button title="'.$LANG['home'].'" onclick="MenuAction(\'\');">
                     <img src="includes/images/home.png" alt="" />
                 </button>';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
-                <button style="margin-left:10px;" title="'.$txt['pw'].'" onclick="MenuAction(\'items\');"',
+                <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
                 || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
                 '>
                     <img src="includes/images/menu_key.png" alt="" />
                 </button>
-                <button title="'.$txt['find'].'" onclick="MenuAction(\'find\');"',
+                <button title="'.$LANG['find'].'" onclick="MenuAction(\'find\');"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
                 || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
                 '>
                     <img src="includes/images/binocular.png" alt="" />
                 </button>
-                <button title="'.$txt['last_items_icon_title'].'" onclick="OpenDiv(\'div_last_items\')">
+                <button title="'.$LANG['last_items_icon_title'].'" onclick="OpenDiv(\'div_last_items\')">
                     <img src="includes/images/tag_blue.png" alt="" />
                 </button>';
     }
@@ -158,51 +158,51 @@ if (isset($_SESSION['login'])) {
         && $_SESSION['user_admin'] == 0
     ) {
         echo '
-                <button title="'.$txt['my_favourites'].'" onclick="MenuAction(\'favourites\');">
+                <button title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favourites\');">
                     <img src="includes/images/favourite.png" alt="" />
                 </button>';
     }
     // KB menu
     if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
         echo '
-                    <button style="margin-left:10px;" title="'.$txt['kb_menu'].'" onclick="MenuAction(\'kb\');">
+                    <button style="margin-left:10px;" title="'.$LANG['kb_menu'].'" onclick="MenuAction(\'kb\');">
                         <img src="includes/images/direction.png" alt="" />
                     </button>';
     }
     // Admin menu
     if ($_SESSION['user_admin'] == 1) {
         echo '
-                <button style="margin-left:10px;" title="'.$txt['admin_main'].'" onclick="MenuAction(\'manage_main\');">
+                <button style="margin-left:10px;" title="'.$LANG['admin_main'].'" onclick="MenuAction(\'manage_main\');">
                     <img src="includes/images/menu_informations.png" alt="" />
                 </button>
-                <button title="'.$txt['admin_settings'].'" onclick="MenuAction(\'manage_settings\');">
+                <button title="'.$LANG['admin_settings'].'" onclick="MenuAction(\'manage_settings\');">
                     <img src="includes/images/menu_settings.png" alt="" />
                 </button>';
     }
 
     if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
         echo '
-                <button title="'.$txt['admin_groups'].'" onclick="MenuAction(\'manage_folders\');">
+                <button title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'manage_folders\');">
                     <img src="includes/images/menu_groups.png" alt="" />
                 </button>
-                <button title="'.$txt['admin_functions'].'" onclick="MenuAction(\'manage_roles\');">
+                <button title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'manage_roles\');">
                     <img src="includes/images/menu_functions.png" alt="" />
                 </button>
-                <button title="'.$txt['admin_users'].'" onclick="MenuAction(\'manage_users\');">
+                <button title="'.$LANG['admin_users'].'" onclick="MenuAction(\'manage_users\');">
                     <img src="includes/images/menu_user.png" alt="" />
                 </button>
-                <button title="'.$txt['admin_views'].'" onclick="MenuAction(\'manage_views\');">
+                <button title="'.$LANG['admin_views'].'" onclick="MenuAction(\'manage_views\');">
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
     }
     // 1 hour
     echo '
-                <button style="margin-left:10px;" title="'.$txt['index_add_one_hour'].'" onclick="IncreaseSessionTime();">
+                <button style="margin-left:10px;" title="'.$LANG['index_add_one_hour'].'" onclick="IncreaseSessionTime();">
                     <img src="includes/images/clock__plus.png" alt="" />
                 </button>';
     // Disconnect menu
     echo '
-                <button title="'.$txt['disconnect'].'" onclick="MenuAction(\'deconnexion\');">
+                <button title="'.$LANG['disconnect'].'" onclick="MenuAction(\'deconnexion\');">
                     <img src="includes/images/door-open.png" alt="" />
                 </button>
             </div>
@@ -228,7 +228,7 @@ echo '
 /* LAST SEEN */
 echo '
     <div style="display:none;" id="div_last_items" class="ui-state-active ui-corner-all">
-        '.$txt['last_items_title'].":&nbsp;";
+        '.$LANG['last_items_title'].":&nbsp;";
 if (isset($_SESSION['latest_items_tab'])) {
     foreach ($_SESSION['latest_items_tab'] as $item) {
         if (!empty($item)) {
@@ -242,7 +242,7 @@ if (isset($_SESSION['latest_items_tab'])) {
         }
     }
 } else {
-    echo $txt['no_last_items'];
+    echo $LANG['no_last_items'];
 }
 echo '
     </div>';
@@ -262,7 +262,7 @@ echo '
 if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items" && $_SESSION['user_admin'] == false) {
     echo '
         <div style="" class="ui-corner-right" id="div_right_menu">
-            <button title="'.$txt['item_menu_refresh'].'" id="menu_button_refresh_page" style="margin-bottom:5px;" onclick="javascript:document.new_item.submit()">
+            <button title="'.$LANG['item_menu_refresh'].'" id="menu_button_refresh_page" style="margin-bottom:5px;" onclick="javascript:document.new_item.submit()">
                 <img src="includes/images/refresh.png" alt="" />
             </button>
             <br />',
@@ -271,41 +271,41 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_G
         (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1) ||
         (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
       ) ? '
-            <button title="'.$txt['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
+            <button title="'.$LANG['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
                 <img src="includes/images/folder__plus.png" alt="" />
             </button>
             <br />
-            <button title="'.$txt['item_menu_edi_rep'].'" id="menu_button_edit_group" onclick="open_edit_group_div()">
+            <button title="'.$LANG['item_menu_edi_rep'].'" id="menu_button_edit_group" onclick="open_edit_group_div()">
                 <img src="includes/images/folder__pencil.png" alt="" />
             </button>
             <br />
-            <button title="'.$txt['item_menu_del_rep'].'" id="menu_button_del_group" style="margin-bottom:5px;" onclick="open_del_group_div()">
+            <button title="'.$LANG['item_menu_del_rep'].'" id="menu_button_del_group" style="margin-bottom:5px;" onclick="open_del_group_div()">
                 <img src="includes/images/folder__minus.png" alt="" />
             </button>
             <br />' : '', '
-            <button title="'.$txt['item_menu_add_elem'].'" id="menu_button_add_item" onclick="open_add_item_div()"><img src="includes/images/key__plus.png" alt="" /></button>
+            <button title="'.$LANG['item_menu_add_elem'].'" id="menu_button_add_item" onclick="open_add_item_div()"><img src="includes/images/key__plus.png" alt="" /></button>
             <br />
-            <button title="'.$txt['item_menu_edi_elem'].'" id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><img src="includes/images/key__pencil.png" alt="" /></button>
+            <button title="'.$LANG['item_menu_edi_elem'].'" id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><img src="includes/images/key__pencil.png" alt="" /></button>
             <br />
-            <button title="'.$txt['item_menu_del_elem'].'" id="menu_button_del_item" onclick="open_del_item_div()"><img src="includes/images/key__minus.png" alt="" /></button>
+            <button title="'.$LANG['item_menu_del_elem'].'" id="menu_button_del_item" onclick="open_del_item_div()"><img src="includes/images/key__minus.png" alt="" /></button>
             <br />
-            <button title="'.$txt['item_menu_copy_elem'].'" id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()" style="margin-bottom:5px;"><img src="includes/images/key_copy.png" alt="" /></button>
+            <button title="'.$LANG['item_menu_copy_elem'].'" id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()" style="margin-bottom:5px;"><img src="includes/images/key_copy.png" alt="" /></button>
             <br />
-            <button title="'.$txt['pw_copy_clipboard'].'" id="menu_button_copy_pw" class="copy_clipboard"><img src="includes/images/ui-text-field-password.png" id="div_copy_pw" alt="" /></button>
+            <button title="'.$LANG['pw_copy_clipboard'].'" id="menu_button_copy_pw" class="copy_clipboard"><img src="includes/images/ui-text-field-password.png" id="div_copy_pw" alt="" /></button>
             <br />
-            <button title="'.$txt['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
+            <button title="'.$LANG['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
             <br />
-            <button title="'.$txt['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>
+            <button title="'.$LANG['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>
             <br />
-            <button title="'.$txt['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
+            <button title="'.$LANG['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
             <br />
-            <button title="'.$txt['link_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
+            <button title="'.$LANG['link_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
             <br />
-            <button title="'.$txt['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
+            <button title="'.$LANG['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
             <br />
-            <button title="'.$txt['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share.png" id="div_share" alt="" /></button>
+            <button title="'.$LANG['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share.png" id="div_share" alt="" /></button>
 			<br />
-            <button title="'.$txt['one_time_item_view'].'" id="menu_button_otv" class="" onclick="prepareOneTimeView()"><img src="includes/images/globe-share.png" id="div_otv" alt="" /></button>';
+            <button title="'.$LANG['one_time_item_view'].'" id="menu_button_otv" class="" onclick="prepareOneTimeView()"><img src="includes/images/globe-share.png" id="div_otv" alt="" /></button>';
     if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
         echo '
             <br />
@@ -339,22 +339,22 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true) {
 $errorAdmin = "";
 // error nb folders
 if (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) {
-    $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_folders'].'<br />';
+    $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_folders'].'<br />';
 }
 // error nb roles
 if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
     if (empty($errorAdmin)) {
-        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_roles'];
+        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
     } else {
-        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_no_roles'];
+        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
     }
 }
 // error Salt key
 if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
     if (empty($errorAdmin)) {
-        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'];
+        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_salt'];
     } else {
-        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_salt'];
+        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_salt'];
     }
 }
 
@@ -362,17 +362,17 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
     // error cpassman dir
     if (isset($_SESSION['settings']['cpassman_dir']) && empty($_SESSION['settings']['cpassman_dir']) || !isset($_SESSION['settings']['cpassman_dir'])) {
         if (empty($errorAdmin)) {
-            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_dir'];
+            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
         } else {
-            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_dir'];
+            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
         }
     }
     // error cpassman url
     if (isset($_SESSION['validite_pw']) && (isset($_SESSION['settings']['cpassman_url']) && empty($_SESSION['settings']['cpassman_url']) || !isset($_SESSION['settings']['cpassman_url']))) {
         if (empty($errorAdmin)) {
-            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_url'];
+            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
         } else {
-            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$txt['error_cpassman_url'];
+            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
         }
     }
 }
@@ -391,7 +391,7 @@ if (
     ) {
     echo '
         <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
-            <b>'.$txt['index_maintenance_mode_admin'].'</b>
+            <b>'.$LANG['index_maintenance_mode_admin'].'</b>
         </div>';
 }
 // Display UPDATE NEEDED information
@@ -404,7 +404,7 @@ if (
     echo '
         <div style="text-align:center;margin-bottom:5px;padding:10px;"
             class="ui-state-highlight ui-corner-all" id="div_maintenance">
-            <b>'.$txt['update_needed_mode_admin'].'</b>
+            <b>'.$LANG['update_needed_mode_admin'].'</b>
             <span style="float:right;cursor:pointer;">
                 <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" />
             </span>
@@ -481,14 +481,14 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     echo '
         <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
             <div style="text-align:center;font-weight:bold;margin-bottom:20px;">
-                '.$txt['pw_recovery_asked'].'
+                '.$LANG['pw_recovery_asked'].'
             </div>
             <div id="generate_new_pw_error" style="color:red;display:none;text-align:center;margin:5px;"></div>
             <div style="margin-bottom:3px;">
-                '.$txt['pw_recovery_info'].'
+                '.$LANG['pw_recovery_info'].'
             </div>
             <div style="margin:15px; text-align:center;">
-                <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.$_GET['key'].'\',\''.$_GET['login'].'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$txt['pw_recovery_button'].'" />
+                <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.$_GET['key'].'\',\''.$_GET['login'].'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
                 <br /><br />
                 <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
             </div>
@@ -510,14 +510,14 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         echo '
             <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
                 class="ui-state-error ui-corner-all">
-                <b>'.$txt['index_maintenance_mode'].'</b>
+                <b>'.$LANG['index_maintenance_mode'].'</b>
             </div>';
     } else {
         // SESSION FINISHED => RECONNECTION ASKED
         echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
                     class="ui-state-error ui-corner-all">
-                    <b>'.$txt['index_session_expired'].'</b>
+                    <b>'.$LANG['index_session_expired'].'</b>
                 </div>';
     }
 
@@ -527,18 +527,18 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                 <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
-                        '.$txt['index_get_identified'].'
+                        '.$LANG['index_get_identified'].'
                         &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
                     </div>
-                    <div id="connection_error" style="color:red;display:none;text-align:center;margin:5px;">'.$txt['index_bas_pw'].'</div>';
+                    <div id="connection_error" style="color:red;display:none;text-align:center;margin:5px;">'.$LANG['index_bas_pw'].'</div>';
     echo '
                     <div style="margin-bottom:3px;">
-                        <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $txt['index_login'], '</label>
+                        <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
                         <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
                         <img id="login_check_wait" src="includes/images/ajax-loader.gif" alt="" style="display:none;" />
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">
-                        <label for="pw" class="form_label">'.$txt['index_password'].'</label>
+                        <label for="pw" class="form_label">'.$LANG['index_password'].'</label>
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
 
@@ -546,11 +546,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
         echo '
                     <div id="connect_psk" style="margin-bottom:3px;">
-                        <label for="personal_psk" class="form_label">'.$txt['home_personal_saltkey'].'</label>
+                        <label for="personal_psk" class="form_label">'.$LANG['home_personal_saltkey'].'</label>
                         <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>
                     <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
-                        <label for="psk_confirm" class="form_label">'.$txt['home_personal_saltkey_confirm'].'</label>
+                        <label for="psk_confirm" class="form_label">'.$LANG['home_personal_saltkey_confirm'].'</label>
                         <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
     }
@@ -559,28 +559,28 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
 	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
 		echo '
                     <div id="ga_code_div" style="margin-bottom:10px;">
-                    	'.$txt['ga_identification_code'].'
+                    	'.$LANG['ga_identification_code'].'
                         <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
                         <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
-                            '.$txt['ga_scan_url'].'<br />
+                            '.$LANG['ga_scan_url'].'<br />
                             <span style="margin:10px;"><img id="ga_qr" src="" /></span>
                         </div>
                         <!--<div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
-	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$txt['ga_not_yet_synchronized'].'</span>
+	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
 	                    </div>-->
                     </div>';
 	}
     echo '
                     <div style="margin-bottom:3px;">
-                        <label for="duree_session" class="">'.$txt['index_session_duration'].'&nbsp;('.$txt['minutes'].') </label>
+                        <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
                         <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                     </div>
 
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
-                        <span onclick="OpenDialogBox(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$txt['forgot_my_pw'].'</span>
+                        <span onclick="OpenDialogBox(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                     </div>
 					<div style="text-align:center;margin-top:15px;">
-                        <input type="button" id="but_identify_user" onclick="identifyUser(\''.$nextUrl.'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$txt['index_identify_button'].'" />
+                        <input type="button" id="but_identify_user" onclick="identifyUser(\''.$nextUrl.'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                     </div>
                 </div>
             </form>
@@ -591,11 +591,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     echo '
             <div id="div_forgot_pw" style="display:none;">
                 <div style="margin:5px auto 5px auto;" id="div_forgot_pw_alert"></div>
-                <div style="margin:5px auto 5px auto;">'.$txt['forgot_my_pw_text'].'</div>
-                <label for="forgot_pw_email">'.$txt['email'].'</label>
+                <div style="margin:5px auto 5px auto;">'.$LANG['forgot_my_pw_text'].'</div>
+                <label for="forgot_pw_email">'.$LANG['email'].'</label>
                 <input type="text" size="40" name="forgot_pw_email" id="forgot_pw_email" />
                 <br />
-                <label for="forgot_pw_login">'.$txt['login'].'</label>
+                <label for="forgot_pw_login">'.$LANG['login'].'</label>
                 <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
                 <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
             </div>';
@@ -610,10 +610,10 @@ echo '
             <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
-            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$txt['users_online'] : "", '
+            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$LANG['users_online'] : "", '
         </div>
         <div style="float:right;text-align:right;">
-            '. $txt['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            '. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
         </div>
     </div>';
 // PAGE LOADING
@@ -632,7 +632,7 @@ echo '
 echo '
     <div id="div_fin_session" style="display:none;">
         <div style="padding:10px;text-align:center;">
-            <img src="includes/images/alarm-clock.png" alt="" />&nbsp;<b>'.$txt['index_session_ending'].'</b>
+            <img src="includes/images/alarm-clock.png" alt="" />&nbsp;<b>'.$LANG['index_session_ending'].'</b>
         </div>
     </div>';
 // WARNING FOR QUERY ERROR

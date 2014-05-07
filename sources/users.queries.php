@@ -145,7 +145,7 @@ if (!empty($_POST['type'])) {
             }
             // Empty user
             if (mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])) == "") {
-                echo '[ { "error" : "'.addslashes($txt['error_empty_data']).'" } ]';
+                echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
             // Check if user already exists
@@ -235,8 +235,8 @@ if (!empty($_POST['type'])) {
                 }
                 // Send email to new user
                 @sendEmail(
-                    $txt['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $txt['email_new_user_mail']),
+                    $LANG['email_subject_new_user'],
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $LANG['email_new_user_mail']),
                     $_POST['email']
                 );
                 // update LOG
@@ -252,7 +252,7 @@ if (!empty($_POST['type'])) {
                 );
                 echo '[ { "error" : "no" } ]';
             } else {
-                echo '[ { "error" : "'.addslashes($txt['error_user_exists']).'" } ]';
+                echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
             }
             break;
         /**
@@ -778,7 +778,7 @@ if (!empty($_POST['type'])) {
         case "user_log_items":
             $nb_pages = 1;
             $logs = $sql_filter = "";
-            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$txt['pages'].'&nbsp;:&nbsp;</td>';
+            $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
             if ($_POST['scope'] == "user_activity") {
                 if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] != "all") {
@@ -851,9 +851,9 @@ if (!empty($_POST['type'])) {
                         $user = $db->fetchRow("SELECT login from ".$pre."users WHERE id=".$reccord['qui']);
                         $user_1 = $db->fetchRow("SELECT login from ".$pre."users WHERE id=".$_POST['id']);
                         $tmp = explode(":", $reccord['label']);
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1[0]), $txt[$tmp[0]]).'</td><td align=\"center\">'.$user[0].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1[0]), $LANG[$tmp[0]]).'</td><td align=\"center\">'.$user[0].'</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td><td align=\"center\">'.$txt[$reccord['action']].'</td></tr>';
+                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td><td align=\"center\">'.$LANG[$reccord['action']].'</td></tr>';
                     }
                 }
             }

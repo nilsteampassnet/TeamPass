@@ -133,9 +133,9 @@ switch ($_POST['type']) {
             $pdf->aliasNbPages();
             $pdf->addPage();
             $pdf->SetFont('DejaVu', '', 16);
-            $pdf->Cell(0, 10, $txt['print_out_pdf_title'], 0, 1, 'C', false);
+            $pdf->Cell(0, 10, $LANG['print_out_pdf_title'], 0, 1, 'C', false);
             $pdf->SetFont('DejaVu', '', 12);
-            $pdf->Cell(0, 10, $txt['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$txt['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
+            $pdf->Cell(0, 10, $LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
 
             foreach ($full_listing as $key => $val) {
                 $printed_ids[] = $key;
@@ -144,10 +144,10 @@ switch ($_POST['type']) {
                 error_log('key: '.$key.' - paths: '.$paths[$key]);
                 $pdf->cell(0, 6, $paths[$key], 1, 1, "L", 1);
                 $pdf->SetFillColor(222, 222, 222);
-                $pdf->cell(45, 6, $txt['label'], 1, 0, "C", 1);
-                $pdf->cell(40, 6, $txt['login'], 1, 0, "C", 1);
-                $pdf->cell(45, 6, $txt['pw'], 1, 0, "C", 1);
-                $pdf->cell(60, 6, $txt['description'], 1, 1, "C", 1);
+                $pdf->cell(45, 6, $LANG['label'], 1, 0, "C", 1);
+                $pdf->cell(40, 6, $LANG['login'], 1, 0, "C", 1);
+                $pdf->cell(45, 6, $LANG['pw'], 1, 0, "C", 1);
+                $pdf->cell(60, 6, $LANG['description'], 1, 1, "C", 1);
                 foreach ($val as $item) {
                     //row height calculus
                     $nb = 0;
@@ -190,7 +190,7 @@ switch ($_POST['type']) {
             //log
             logEvents('pdf_export', implode(';', $printed_ids), $_SESSION['user_id']);
 
-            echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+            echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         }
         break;
 
@@ -271,7 +271,7 @@ switch ($_POST['type']) {
         array_walk($full_listing, "outPutCsv", $outstream);
         fclose($outstream);
 
-        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         break;
 
     //CASE export in HTML format
@@ -355,11 +355,11 @@ Enter the decryption key : <input type="password" id="saltkey" />
 <div>
 <table id="itemsTable">
     <thead><tr>
-        <th style="width:15%;">'.$txt['label'].'</th>
-        <th style="width:10%;">'.$txt['pw'].'</th>
-        <th style="width:30%;">'.$txt['description'].'</th>
-        <th style="width:5%;">'.$txt['user_login'].'</th>
-        <th style="width:20%;">'.$txt['url'].'</th>
+        <th style="width:15%;">'.$LANG['label'].'</th>
+        <th style="width:10%;">'.$LANG['pw'].'</th>
+        <th style="width:30%;">'.$LANG['description'].'</th>
+        <th style="width:5%;">'.$LANG['user_login'].'</th>
+        <th style="width:20%;">'.$LANG['url'].'</th>
     </tr></thead>'
       	);
 
@@ -539,7 +539,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$txt['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
 		break;
 }
 

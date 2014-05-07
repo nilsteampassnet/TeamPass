@@ -93,15 +93,15 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                 <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
                 <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
                 <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
-                <a href="#" title="'.$txt['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" class="cpm_button tip" style="margin-left:20px;">
+                <a href="#" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" class="cpm_button tip" style="margin-left:20px;">
                     <img src="includes/images/zone--plus.png"  />
                 </a>
             </td>
             <td>
-                <a href="#" title="'.$txt['category_in_folders'].'" onclick="catInFolders('.$category[0].')" class="cpm_button tip" style="margin-left:5px;">
+                <a href="#" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" class="cpm_button tip" style="margin-left:5px;">
                     <img src="includes/images/folder_edit.png"  />
                 </a>
-                '.$txt['category_in_folders_title'].':
+                '.$LANG['category_in_folders_title'].':
                 <span style="font-family:italic; margin-left:10px;" id="catFolders_'.$category[0].'">'.$foldersList.'</span>
                 <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
             </td>
@@ -131,7 +131,7 @@ echo '
 if (!isset($arrCategories) || count($arrCategories) == 0) {
     echo '
     <div class=ui-state-highlight ui-corner-all" style="padding:2px;" id="no_category">
-        '.$txt['no_category_defined'].'
+        '.$LANG['no_category_defined'].'
     </div>';
 }
 
@@ -139,23 +139,23 @@ if (!isset($arrCategories) || count($arrCategories) == 0) {
 echo '
     <div class="ui-state-highlight ui-corner-all" style="padding: 5px; margin-top:25px;">
         <div>
-            '.$txt['new_category_label'].':
+            '.$LANG['new_category_label'].':
             <input type="text" id="new_category_label" class="ui-content" style="margin-left:5px; width: 200px;" />
             <input type="button" value="Add Category" onclick="categoryAdd()" style="margin-left:5px;" />
         </div>
         <div style="margin-top:5px;">
-            '.$txt['for_selected_items'].':<br />
+            '.$LANG['for_selected_items'].':<br />
             <input type="text" id="new_item_title" class="ui-content" style="margin-left:30px; width: 200px;" />
-            <input type="button" value="'.$txt['rename'].'" onclick="renameItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['rename'].'" onclick="renameItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
-            <input type="button" value="'.$txt['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
-            <input type="button" value="'.$txt['move'].'" onclick="moveItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" />
             <select id="moveItemTo" style="margin-left:10px;">'.$categoriesSelect.'</select>
         </div>
         <div style="margin-top:5px;">
-            <input type="button" value="'.$txt['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" />
-            <input type="button" value="'.$txt['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" />
         </div>
     </div>';
 
@@ -177,12 +177,12 @@ echo '
 
 echo '
     <div id="add_new_field" style="display:none;">
-        '.$txt['new_field_title'].'<input type="text" id="new_field_title" style="width: 200px; margin-left:20px;" />
+        '.$LANG['new_field_title'].'<input type="text" id="new_field_title" style="width: 200px; margin-left:20px;" />
     </div>';
 
 echo '
     <div id="category_in_folder" style="display:none;">
-        '.$txt['select_folders_for_category'].'
+        '.$LANG['select_folders_for_category'].'
         &nbsp;&quot;<span style="font-weight:bold;" id="catInFolder_title"></span>&quot;&nbsp;:
         <br />
         <div style="text-align:center; margin-top:10px;">
@@ -204,7 +204,7 @@ echo '
         }
 echo '
         </div>
-        <div id="catInFolder_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$txt['please_wait'].'...</div>
+        <div id="catInFolder_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
     </div>';
 
 require_once 'admin.settings.load.php';

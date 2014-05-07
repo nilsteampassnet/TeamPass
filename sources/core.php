@@ -67,15 +67,19 @@ foreach ($rows as $reccord) {
 }
 
 //pw complexity levels
-$pwComplexity = array(
-    0=>array(0,$txt['complex_level0']),
-    25=>array(25,$txt['complex_level1']),
-    50=>array(50,$txt['complex_level2']),
-    60=>array(60,$txt['complex_level3']),
-    70=>array(70,$txt['complex_level4']),
-    80=>array(80,$txt['complex_level5']),
-    90=>array(90,$txt['complex_level6'])
-);
+if (isset($_SESSION['user_language'])) {
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    $pwComplexity = array(
+        0=>array(0,$LANG['complex_level0']),
+        25=>array(25,$LANG['complex_level1']),
+        50=>array(50,$LANG['complex_level2']),
+        60=>array(60,$LANG['complex_level3']),
+        70=>array(70,$LANG['complex_level4']),
+        80=>array(80,$LANG['complex_level5']),
+        90=>array(90,$LANG['complex_level6'])
+    );
+}
+
 /**
  * Define Timezone
  */

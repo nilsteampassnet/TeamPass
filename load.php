@@ -165,30 +165,30 @@ $htmlHeaders .= '
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
                     else window.location.href="index.php";
                 } else if (data[0].value == "user_is_locked") {
-                    $("#connection_error").html("'.$txt['account_is_locked'].'").show();
+                    $("#connection_error").html("'.$LANG['account_is_locked'].'").show();
                 } else if (data[0].value == "bad_psk") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$txt['bad_psk'].'").show();
+                    $("#connection_error").html("'.$LANG['bad_psk'].'").show();
                 } else if (data[0].value == "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$txt['bad_psk_confirmation'].'").show();
+                    $("#connection_error").html("'.$LANG['bad_psk_confirmation'].'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$txt['psk_required'].'");
+                    $("#connection_error").html("'.$LANG['psk_required'].'");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html(data + "'.$txt['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
+                    $("#connection_error").html(data + "'.$LANG['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text);
                     $("#div_mysql_error").show().dialog("open");
                 } else if (data[0].value == "false_onetimepw") {
-                    $("#connection_error").html("'.$txt['bad_onetime_password'].'").show();
+                    $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {
-                	$("#connection_error").html("'.$txt['index_bas_pw'].'").show();
+                	$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
-                	$("#connection_error").html("'.$txt['ga_bad_code'].'").show();
+                	$("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
                 } else {
-                    $("#connection_error").html("'.$txt['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                 }
                 $("#ajax_loader_connexion").hide();
             },
@@ -216,7 +216,7 @@ $htmlHeaders .= '
 						$("#ga_qr").attr("src", data[0].ga_url);
                 	    $("#div_ga_url").show();
 	            	} else {
-						$("#connection_error").html("'.$txt['index_bas_pw'].'").show();
+						$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                 	    $("#div_ga_url").hide();
 	            	}
                     $("#ajax_loader_connexion").hide();
@@ -224,7 +224,7 @@ $htmlHeaders .= '
 	            "json"
 	        );
     	} else {
-    		$("#connection_error").html("'.$txt['ga_enter_credentials'].'").show();
+    		$("#connection_error").html("'.$LANG['ga_enter_credentials'].'").show();
     	}
     }
 
@@ -347,9 +347,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 400,
             height: 150,
-            title: "'.$txt['index_alarm'].'",
+            title: "'.$LANG['index_alarm'].'",
             buttons: {
-                "'.$txt['index_add_one_hour'].'": function() {
+                "'.$LANG['index_add_one_hour'].'": function() {
                     IncreaseSessionTime();
                     $("#div_fin_session").hide();
                     $("#countdown").css("color","white");
@@ -365,9 +365,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 700,
             height: 150,
-            title: "'.$txt['error_mysql'].'",
+            title: "'.$LANG['error_mysql'].'",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "'.$LANG['ok'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -380,9 +380,9 @@ $htmlHeaders .= '
             autoOpen: false,
             width: 300,
             height: 150,
-            title: "'.$txt['div_dialog_message_title'].'",
+            title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "'.$LANG['ok'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -490,9 +490,9 @@ if (!isset($_GET['page'])) {
             autoOpen: false,
             width: 300,
             height: 250,
-            title: "'.$txt['forgot_my_pw'].'",
+            title: "'.$LANG['forgot_my_pw'].'",
             buttons: {
-                "'.$txt['send'].'": function() {
+                "'.$LANG['send'].'": function() {
                     $("#div_forgot_pw_alert").html("");
                     $("#div_forgot_pw_status").show();
                     $.post(
@@ -516,7 +516,7 @@ if (!isset($_GET['page'])) {
                         "json"
                     );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $("#div_forgot_pw_alert").html("");
                     $("#forgot_pw_email").val("");
                     $(this).dialog("close");
@@ -549,15 +549,15 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 300,
             height: 250,
-            title: "'.$txt['index_change_pw'].'",
+            title: "'.$LANG['index_change_pw'].'",
             open: function( event, ui ) {
                 $("#change_pwd_complexPw").html("'.
-                    $txt['complex_asked'].' : '.$pwComplexity[$_SESSION['user_pw_complexity']][1]
+                    $LANG['complex_asked'].' : '.$pwComplexity[$_SESSION['user_pw_complexity']][1]
                 .'");
                 $("#change_pwd_error").hide();
             },
             buttons: {
-                "'.$txt['index_change_pw_button'].'": function() {
+                "'.$LANG['index_change_pw_button'].'": function() {
                     if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
                         if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
                             var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
@@ -572,7 +572,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                                 function(data) {
                                     if (data[0].error == "already_used") {
                                         $("#new_pw, #new_pw2").val("");
-                                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$txt['pw_used'].'</span>");
+                                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['pw_used'].'</span>");
                                     } else {
                                         document.main_form.submit();
                                     }
@@ -580,13 +580,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                                 "json"
                            );
                         } else {
-                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['error_complex_not_enought'].'");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
                         }
                     } else {
-                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['index_pw_error_identical'].'");
+                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
                     }
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
                     $("#new_pw, #new_pw2").val("");
                     $(this).dialog("close");
@@ -601,9 +601,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 400,
             height: 230,
-            title: "'.$txt['menu_title_new_personal_saltkey'].'",
+            title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
                     //Send query
                     $.post(
@@ -618,7 +618,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                         }
                    );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -631,9 +631,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 400,
             height: 200,
-            title: "'.$txt['menu_title_new_personal_saltkey'].'",
+            title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             buttons: {
-                "'.$txt['ok'].'": function() {
+                "'.$LANG['ok'].'": function() {
                     $("#div_loading").show();
 
                     //Send query
@@ -649,7 +649,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                         }
                    );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -662,13 +662,13 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 600,
             height: 500,
-            title: "'.$txt['import_csv_menu_title'].'",
+            title: "'.$LANG['import_csv_menu_title'].'",
             buttons: {
-                "'.$txt['import_button'].'": function() {
+                "'.$LANG['import_button'].'": function() {
                     if ($(\'#radio1\').attr(\'checked\')) ImportItemsFromCSV();
                     else $(this).dialog("close");
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $("#import_status").html("");
                     $(this).dialog("close");
                 }
@@ -685,9 +685,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 400,
             height: 450,
-            title: "'.$txt['print_out_menu_title'].'",
+            title: "'.$LANG['print_out_menu_title'].'",
             buttons: {
-                "'.$txt['print'].'": function() {
+                "'.$LANG['print'].'": function() {
                     //Get list of selected folders
                     var ids = "";
                     $("#selected_folders :selected").each(function(i, selected) {
@@ -700,7 +700,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
 
                     // Get PDF encryption password and make sure it is set
                     if (($("#pdf_password").val() == "") && ($("input[name=\"export_format\"]:checked").val() == "pdf")) {
-                        $("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+                        $("#print_out_error").show().html("'.$LANG['pdf_password_warning'].'").attr("class","ui-state-error");
                         $("#div_print_out_wait").hide();
                         return;
                     }
@@ -712,7 +712,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                     else if ($("input[name=\"export_format\"]:checked").val() == "html") export_format = "export_to_html_format";
 
                     if (export_format == "export_to_html_format" && $("#pdf_password").val() == "") {
-                    	$("#print_out_error").show().html("'.$txt['pdf_password_warning'].'").attr("class","ui-state-error");
+                    	$("#print_out_error").show().html("'.$LANG['pdf_password_warning'].'").attr("class","ui-state-error");
                         $("#div_print_out_wait").hide();
                         return;
                     }
@@ -732,7 +732,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                         "json"
                    );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -743,35 +743,35 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             $("#new_pw").simplePassMeter({
                 "requirements": {},
                   "container": "#pw_strength",
-                  "defaultText" : "'.$txt['index_pw_level_txt'].'",
+                  "defaultText" : "'.$LANG['index_pw_level_txt'].'",
                 "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "'.$txt['complex_level0'].'"
+                    "text": "'.$LANG['complex_level0'].'"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "'.$txt['complex_level1'].'"
+                    "text": "'.$LANG['complex_level1'].'"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "'.$txt['complex_level2'].'"
+                    "text": "'.$LANG['complex_level2'].'"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "'.$txt['complex_level3'].'"
+                    "text": "'.$LANG['complex_level3'].'"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "'.$txt['complex_level4'].'"
+                    "text": "'.$LANG['complex_level4'].'"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "'.$txt['complex_level5'].'"
+                    "text": "'.$LANG['complex_level5'].'"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "'.$txt['complex_level6'].'"
+                    "text": "'.$LANG['complex_level6'].'"
                 }
                 ]
             });
@@ -787,35 +787,35 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             $("#offline_password").simplePassMeter({
                 "requirements": {},
                   "container": "#offline_pw_strength",
-                  "defaultText" : "'.$txt['index_pw_level_txt'].'",
+                  "defaultText" : "'.$LANG['index_pw_level_txt'].'",
                 "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "'.$txt['complex_level0'].'"
+                    "text": "'.$LANG['complex_level0'].'"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "'.$txt['complex_level1'].'"
+                    "text": "'.$LANG['complex_level1'].'"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "'.$txt['complex_level2'].'"
+                    "text": "'.$LANG['complex_level2'].'"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "'.$txt['complex_level3'].'"
+                    "text": "'.$LANG['complex_level3'].'"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "'.$txt['complex_level4'].'"
+                    "text": "'.$LANG['complex_level4'].'"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "'.$txt['complex_level5'].'"
+                    "text": "'.$LANG['complex_level5'].'"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "'.$txt['complex_level6'].'"
+                    "text": "'.$LANG['complex_level6'].'"
                 }
                 ]
             });
@@ -993,10 +993,10 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
 		            "json"
 				);
 			} else {
-				$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['error_complex_not_enought'].'");
+				$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
 			}
 		} else {
-			$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$txt['index_pw_error_identical'].'");
+			$("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
 		}
     }
 
@@ -1039,7 +1039,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             },
             function(data) {
                 if (data[0].error == "bad_structure") {
-                    $("#import_from_file_info").html("'.$txt['import_error_no_read_possible'].'").show();
+                    $("#import_from_file_info").html("'.$LANG['import_error_no_read_possible'].'").show();
                 } else {
                     $("#import_status").html(data[0].output);
                     $("#item_all_selection").click(function() {
@@ -1160,7 +1160,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             },
             function(data) {
                 if ($("#input_personal_saltkey").val() != "") {
-                    $("#div_dialog_message_text").html("<div style=\'font-size:16px;\'><span class=\'ui-icon ui-icon-info\' style=\'float: left; margin-right: .3em;\'></span>'.$txt['alert_message_done'].'</div>");
+                    $("#div_dialog_message_text").html("<div style=\'font-size:16px;\'><span class=\'ui-icon ui-icon-info\' style=\'float: left; margin-right: .3em;\'></span>'.$LANG['alert_message_done'].'</div>");
                     $("#change_personal_sk").button("enable");
                     $("#div_dialog_message").dialog("open");
                 }
@@ -1205,7 +1205,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                 } else if (data[0].error == "conf_block") {
                     $("#CPM_infos").html("No display available. Feature disabled in configuration.");
                 } else {
-                    $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$txt['admin_info'].'</span>"+data[0].output+"</ul>");
+                    $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");
                 }
             },
             "json"
@@ -1226,9 +1226,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
             autoOpen: false,
             width: 300,
             height: 100,
-            title: "'.$txt['item_menu_del_from_fav'].'",
+            title: "'.$LANG['item_menu_del_from_fav'].'",
             buttons: {
-                "'.$txt['index_change_pw_confirmation'].'": function() {
+                "'.$LANG['index_change_pw_confirmation'].'": function() {
                     //Lauchn ajax query
                     $.post(
                         "sources/favourites.queries.php",
@@ -1241,7 +1241,7 @@ if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
                         }
                    );
                 },
-                "'.$txt['cancel_button'].'": function() {
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }

@@ -39,6 +39,10 @@ function checkUser($userId, $userKey, $pageVisited)
         return false;
     }
 
+    if (!is_array($pageVisited)) {
+        $pageVisited = array($pageVisited);
+    }
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -72,13 +76,23 @@ function checkUser($userId, $userKey, $pageVisited)
     }
 
     // check if user is allowed to see this page
-    if (empty($data['admin']) && empty($data['gestionnaire']) && !in_array($pageVisited, $pagesRights['user'])) {
+    if (empty($data['admin']) && empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['user'])) {
         return false;
-    } else if (empty($data['admin']) && !empty($data['gestionnaire']) && !in_array($pageVisited, $pagesRights['manager'])) {
+    } else if (empty($data['admin']) && !empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['manager'])) {
         return false;
-    } else if (!empty($data['admin']) && !in_array($pageVisited, $pagesRights['admin'])) {
+    } else if (!empty($data['admin']) && !IsInArray($pageVisited, $pagesRights['admin'])) {
         return false;
     }
 
     return true;
+}
+
+function IsInArray($pages, $table)
+{
+    foreach($pages as $page) {
+        if (in_array($page, $table)) {
+            return true;
+        }
+    }
+    return false;
 }

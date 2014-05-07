@@ -502,7 +502,6 @@ class DbCore
             //echo '$("#mysql_error_warning").html("'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error)).'");';
             //echo '$("#div_mysql_error").dialog("open");';
             return str_replace(array(CHR(10), CHR(13)), array('\n', '\n'), $msg).'<br />'.str_replace(array(CHR(10), CHR(13)), array('\n', '\n'), addslashes($this->error));
-            exit;
         } else {
             //DB connection error
             echo '

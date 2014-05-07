@@ -24,9 +24,9 @@ $("#add_new_role").dialog({
         autoOpen: false,
         width: 400,
         height: 240,
-        title: "<?php echo $txt["give_function_title"];?>",
+        title: "<?php echo $LANG["give_function_title"];?>",
         buttons: {
-            "<?php echo $txt["save_button"];?>": function() {
+            "<?php echo $LANG["save_button"];?>": function() {
             	$("#new_role_error").hide().html("");
             	if ($("#new_role_complexity").val() != "") {
                     $.post(
@@ -48,10 +48,10 @@ $("#add_new_role").dialog({
                         "json"
                    );
             	} else {
-            		$("#new_role_error").show().html("<?php echo addslashes($txt['error_role_complex_not_set']);?>");
+            		$("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']);?>");
             	}
             },
-            "<?php echo $txt["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -63,9 +63,9 @@ $("#add_new_role").dialog({
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $txt["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
-            "<?php echo $txt["ok"];?>": function() {
+            "<?php echo $LANG["ok"];?>": function() {
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -81,7 +81,7 @@ $("#add_new_role").dialog({
                     "json"
                );
             },
-            "<?php echo $txt["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -93,9 +93,9 @@ $("#add_new_role").dialog({
         autoOpen: false,
         width: 400,
         height: 260,
-        title: "<?php echo $txt["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
-            "<?php echo $txt["ok"];?>": function() {
+            "<?php echo $LANG["ok"];?>": function() {
             	$("#edit_role_error").hide().html("");
                 $.post(
                     "sources/roles.queries.php",
@@ -119,7 +119,7 @@ $("#add_new_role").dialog({
                     "json"
                );
             },
-            "<?php echo $txt["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"];?>": function() {
                 $("#edit_role_error").html("").hide();
                 $(this).dialog("close");
             }
@@ -132,9 +132,9 @@ $("#add_new_role").dialog({
         autoOpen: false,
         width: 850,
         height: 500,
-        title: "<?php echo $txt["admin_help"];?>",
+        title: "<?php echo $LANG["admin_help"];?>",
         buttons: {
-            "<?php echo $txt["close"];?>": function() {
+            "<?php echo $LANG["close"];?>": function() {
                 $(this).dialog("close");
             }
         },
