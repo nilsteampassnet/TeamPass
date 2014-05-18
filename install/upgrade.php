@@ -73,12 +73,12 @@ if (
         <script type="text/javascript" src="install.js"></script>
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
-        <script type="text/javascript" src="gauge/gauge.js"></script>
         <script type="text/javascript" src="js/aes.min.js"></script>
 
         <script type="text/javascript">
         //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
         $(function() {
+            /*
             if (document.getElementById("progressbar")) {
                 gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
                 if (document.getElementById("step").value == "1") gauge.modify($('pbar'),{values:[0.20,1]});
@@ -87,6 +87,7 @@ if (
                 else if (document.getElementById("step").value == "4") gauge.modify($('pbar'),{values:[0.70,1]});
                 else if (document.getElementById("step").value == "5") gauge.modify($('pbar'),{values:[0.85,1]});
             }
+            */
         });
 
         function aes_encrypt(text)
@@ -173,7 +174,6 @@ if (
                     	$("#change_pw_encryption_progress").html("Done");
                     	$("#but_encrypt_continu").hide();
                     	/* Unlock this step */
-                        gauge.modify($("pbar"),{values:[0.75,1]});
                         document.getElementById("but_next").disabled = "";
                         document.getElementById("but_launch").disabled = "disabled";
                         document.getElementById("res_step4").innerHTML = "dataBase has been populated";

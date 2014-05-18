@@ -211,12 +211,12 @@ if (isset($_POST['type'])) {
             if ($okWritable == true && $okExtensions == true && $okEncryptKey == true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
-                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
+                //echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
             } else {
                 echo 'document.getElementById("but_next").disabled = "disabled";';
                 echo 'document.getElementById("res_step1").innerHTML = "Correct the shown '.
                     'errors and click on button Launch to refresh";';
-                echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
+                //echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
             }
 
             echo 'document.getElementById("res_step1").innerHTML = "'.$txt.'";';
@@ -249,7 +249,7 @@ if (isset($_POST['type'])) {
                         $_POST['db_bdd']
                     )
                 ) {
-                    echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
+                    //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                     $res = "Connection is successfull";
                     echo 'document.getElementById("but_next").disabled = "";';
 
@@ -293,12 +293,12 @@ if (isset($_POST['type'])) {
                         WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 	);
                 } else {
-                    echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
+                    //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                     $res = "Impossible to get connected to database. Error is ".mysqli_error($dbTmp);
                     echo 'document.getElementById("but_next").disabled = "disabled";';
                 }
             } else {
-                echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
+                //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                 $res = "Impossible to get connected to server. Please verify the credentials.";
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
@@ -1474,7 +1474,7 @@ if (isset($_POST['type'])) {
             }
 
             /* Unlock this step */
-            echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
+            //echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("but_launch").disabled = "disabled";';
             echo 'document.getElementById("res_step4").innerHTML = "dataBase has been populated";';
@@ -1608,7 +1608,7 @@ require_once \"".$skFile."\";
                     $result1 != false
                     && (!isset($result2) || (isset($result2) && $result2 != false))
                 ) {
-                    echo 'gauge.modify($("pbar"),{values:[1,1]});';
+                    //echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step5").innerHTML = '.
                         '"Operations are successfully completed.";';

@@ -14,6 +14,7 @@
  */
 
 $teampass_config_file = "../includes/settings.php";
+$_SESSION['CPM'] = 1;
 
 function teampass_api_enabled() {
 	$bdd = teampass_connect();
@@ -75,10 +76,58 @@ function rest_head () {
 	header('HTTP/1.1 402 Payment Required');
 }
 
+function generateKey1()
+{
+    return substr(md5(rand().rand()), 0, 15);
+}
+
+function addToCacheTable($id)
+{
+    $bdd = teampass_connect();
+    // get data
+    $data = $bdd->query(
+        "SELECT i.label AS label, i.description AS description, i.id_tree AS id_tree, i.perso AS perso, i.restricted_to AS restricted_to, i.login AS login, i.id AS id
+        FROM ".$GLOBALS['pre']."items AS i
+        AND ".$GLOBALS['pre']."log_items AS l ON (l.id_item = i.id)
+        WHERE i.id = '".intval($id)."'
+        AND l.action = 'at_creation'"
+    );
+    $data = $data->fetch();
+
+    // Get all TAGS
+    $tags = "";
+    $data_tags = $bdd->query("SELECT tag FROM ".$GLOBALS['pre']."tags WHERE item_id=".$id);
+    $itemTags = $bdd->mysql_fetch_array($data_tags);
+    foreach ($itemTags as $itemTag) {
+        if (!empty($itemTag['tag'])) {
+            $tags .= $itemTag['tag']." ";
+        }
+    }
+    // form id_tree to full foldername
+    /*$folder = "";
+    $arbo = $tree->getPath($data['id_tree'], true);
+    foreach ($arbo as $elem) {
+        if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+            $elem->title = $_SESSION['login'];
+        }
+        if (empty($folder)) {
+            $folder = stripslashes($elem->title);
+        } else {
+            $folder .= " » ".stripslashes($elem->title);
+        }
+    }*/
+    // finaly update
+    $bdd->query(
+        "INSERT INTO ".$GLOBALS['pre']."cache (id, label, description, tags, id_tree, perso, restricted_to, login, folder, restricted_to, author)
+                            VALUES ('".$data['id']."', '".$data['label']."', '".$data['description']."', '".$tags."', '".$data['id_tree']."', '".$data['perso']."', '".$data['restricted_to']."', '".$data['login']."', '', '0', '9999999')"
+    );
+}
+
 function rest_delete () {
 	if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
+        $category_query = "";
 
 		if ($GLOBALS['request'][0] == "write") {
 			if($GLOBALS['request'][1] == "category") {
@@ -137,7 +186,6 @@ function rest_delete () {
 					rest_error('MALFORMED');
 				}
 
-
 				if(count($array_category) > 1 && count($array_category) < 5) {
 					for ($i = count($array_category); $i > 0; $i--) {
 						$slot = $i - 1;
@@ -181,6 +229,7 @@ function rest_get () {
 	if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
+        $category_query = "";
 
 		if ($GLOBALS['request'][0] == "read") {
 			if($GLOBALS['request'][1] == "category") {
@@ -214,7 +263,6 @@ function rest_get () {
 					rest_error('MALFORMED');
 				}
 
-
 				if(count($array_category) > 1 && count($array_category) < 5) {
 					for ($i = count($array_category); $i > 0; $i--) {
 						$slot = $i - 1;
@@ -245,10 +293,93 @@ function rest_get () {
 			} else {
 				rest_error ('EMPTY');
 			}
+        } elseif ($GLOBALS['request'][0] == "add") {
+            if($GLOBALS['request'][1] == "item") {
+                include "../sources/main.functions.php";
+
+                // get item definition
+                $array_item = explode(';', $GLOBALS['request'][2]);
+                $item_label = $array_item[0];
+                $item_pwd = $array_item[1];
+                $item_desc = $array_item[2];
+                $item_folder_id = $array_item[3];
+                $item_login = $array_item[4];
+                $item_email = $array_item[5];
+                $item_url = $array_item[6];
+                $item_tags = $array_item[7];
+                $item_anyonecanmodify = $array_item[8];
+
+                // do some checks
+                if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
+                    // Check length
+                    if (strlen($item_pwd) > 50) {
+                        rest_error ('BADDEFINITION');
+                    }
+
+                    // Check Folder ID
+                    $data = $bdd->query("SELECT COUNT(*) FROM ".$GLOBALS['pre']."nested_tree WHERE id = '".$item_folder_id."'");
+                    $data = $data->fetch();
+                    if ($data[0] == 0) {
+                        rest_error ('BADDEFINITION');
+                    }
+
+                    // check if element doesn't already exist
+                    $data = $bdd->query("SELECT COUNT(*) FROM ".$GLOBALS['pre']."items WHERE label = '".addslashes($item_label)."' AND inactif = '0'");
+                    $data = $data->fetch();
+                    if ($data[0] != 0) {
+                        $itemExists = 1;
+                    } else {
+                        $itemExists = 0;
+                    }
+                    if ($itemExists == 0) {
+                        // prepare password and generate random key
+                        $randomKey = substr(md5(rand().rand()), 0, 15);
+                        $item_pwd = $randomKey.$item_pwd;
+                        $item_pwd = encrypt($item_pwd);
+                        if (empty($item_pwd)) {
+                            rest_error ('BADDEFINITION');
+                        }
+
+                        // ADD item
+                        $newID = $bdd->query(
+                            "INSERT INTO ".$GLOBALS['pre']."items (label, description, pw, email, url, id_tree, login, inactif, restricted_to, perso, anyone_can_modify)
+                            VALUES ('".$item_label."', '".$item_desc."', '".$item_pwd."', '".$item_email."', '".$item_url."', '".intval($item_folder_id)."', '".$item_login."', '0', '', '0', '".intval($item_anyonecanmodify)."')"
+                        );
+
+                        // Store generated key
+                        $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."keys (table, id, rand_key) VALUES ('items', ".$newID.", '".$randomKey."')");
+
+                        // log
+                        $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."log_items (id_item, date, id_user, action) VALUES ($newID, time(), '9999999', 'at_creation')");
+
+                        // Add tags
+                        $tags = explode(' ', $item_tags);
+                        foreach ($tags as $tag) {
+                            if (!empty($tag)) {
+                                $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."tags (item_id, tag) VALUES ($newID, 'strtolower($tag)')");
+                            }
+                        }
+
+                        // Update CACHE table
+                        addToCacheTable($newID);
+
+                        echo '{"err":"none"}';
+                    }
+                } else {
+                    rest_error ('BADDEFINITION');
+                }
+            }
 		} else {
 			rest_error ('METHOD');
 		}
 	}
+}
+
+function rest_put() {
+    if(apikey_checker($GLOBALS['apikey'])) {
+        $bdd = teampass_connect();
+        $rand_key = teampass_get_randkey();
+    }
 }
 
 function rest_error ($type,$detail = 'N/A') {
@@ -275,6 +406,10 @@ function rest_error ($type,$detail = 'N/A') {
 		$message = Array('err' => 'Method not authorized');
 		header('HTTP/1.1 405 Method Not Allowed');
 		break;
+        case 'BADDEFINITION':
+            $message = Array('err' => 'Item definition not complete');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
 		default:
 		$message = Array('err' => 'Something happen ... but what ?');
 		header('HTTP/1.1 500 Internal Server Error');

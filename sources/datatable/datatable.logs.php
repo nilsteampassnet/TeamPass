@@ -1,9 +1,9 @@
 <?php
 /**
  * @file          datatable.users_logged.php
- * @author        Nils Laumaill�
+ * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2014 Nils Laumaill�
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
