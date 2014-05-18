@@ -298,6 +298,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "mbstring" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />

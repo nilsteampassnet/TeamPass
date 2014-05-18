@@ -109,7 +109,7 @@ if (isset($_POST['type'])) {
                     echo prepareExchangedData(array("error" => "pw_too_long"), "encode");
                     break;
                 }
-                // ;check if element doesn't already exist
+                // check if element doesn't already exist
                 $itemExists = 0;
                 $newID = "";
                 //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE label = '".addslashes($label)."' AND inactif=0");

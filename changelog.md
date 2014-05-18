@@ -3,7 +3,7 @@
  #509 - Password complexity
  #493 - Unable to purge logs
  #503 - manual insertions in Items History log not working
- #494 - Logs > Adminsitration JSON error
+ #494 - Logs > Administration JSON error
  #491 - Applying email address to user
  #441 - Attachments encryption
  #459 - Turn off strict mode
@@ -14,7 +14,7 @@
  #497 - Moved GA QR code creation to administration
  #487 - Off-line mode, link make the page scroll up
  #533 #521 #528 - Installation issue
- #525 - Seetings.php should not be commited
+ #525 - Settings.php should not be commited
  #527 - Potential security bug
  #485 - CVS Import on V 2.1.19 quotes problems
  #544 - DataTables warning: JSON data from server could not be parsed
@@ -23,6 +23,7 @@
  #549 #550 - Server Time in footer
  #539 -
  #401 - Folder role inheretance on new folder
+ #552 - added MBstring check
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
  New: one time view page for anonymous user
