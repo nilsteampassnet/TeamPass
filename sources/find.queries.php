@@ -81,25 +81,30 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 }
 
 //Ordering
-if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
-    $sOrder = "ORDER BY  ";
-    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-        if (
-            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-        ) {
-            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-            .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+$sOrder = "";
+if (isset($_GET['iSortCol_0'])) {
+    if (!in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
+        // possible attack - stop
+        echo '[{}]';
+        exit;
+    }
+    else {
+        $sOrder = "ORDER BY  ";
+        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+            if (
+                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+            ) {
+                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+                .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+            }
+        }
+
+        $sOrder = substr_replace($sOrder, "", -2);
+        if ($sOrder == "ORDER BY") {
+            $sOrder = "";
         }
     }
-
-    $sOrder = substr_replace($sOrder, "", -2);
-    if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-    }
-} else if (!in_array($_GET['iSortCol_0'], $aSortTypes)) {
-	// possible attack - stop
-	echo '[{}]';
 }
 
 /*

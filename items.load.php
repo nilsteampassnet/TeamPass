@@ -157,7 +157,7 @@ function ListerItems(groupe_id, restricted, start)
             $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
         }
         $("#items_list").css("display", "");
-        $("#selected_items").val("");
+        //$("#selected_items").val("");
         $("#hid_cat").val(groupe_id);
         if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
 
@@ -934,7 +934,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#item_details_ok").hide();
         $("#item_details_expired").hide();
         $("#item_details_expired_full").hide();
-        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, menu_button_copy_url, #menu_button_copy_link").attr("disabled","disabled");
+        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link").attr("disabled","disabled");
         $("#request_ongoing").val("");
         return false;
     }
@@ -1389,6 +1389,7 @@ function open_add_item_div()
 //###########
 function open_edit_item_div(restricted_to_roles)
 {
+
 	$("#div_loading").show();
 
     // If no Item selected, no edition possible
