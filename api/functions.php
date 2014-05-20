@@ -76,11 +76,6 @@ function rest_head () {
 	header('HTTP/1.1 402 Payment Required');
 }
 
-function generateKey1()
-{
-    return substr(md5(rand().rand()), 0, 15);
-}
-
 function addToCacheTable($id)
 {
     $bdd = teampass_connect();
@@ -299,6 +294,9 @@ function rest_get () {
 
                 // get item definition
                 $array_item = explode(';', $GLOBALS['request'][2]);
+                if (count($array_item) != 9) {
+                    rest_error ('BADDEFINITION');
+                }
                 $item_label = $array_item[0];
                 $item_pwd = $array_item[1];
                 $item_desc = $array_item[2];
@@ -341,29 +339,53 @@ function rest_get () {
                         }
 
                         // ADD item
-                        $newID = $bdd->query(
-                            "INSERT INTO ".$GLOBALS['pre']."items (label, description, pw, email, url, id_tree, login, inactif, restricted_to, perso, anyone_can_modify)
+                        try {
+                            $result = $bdd->query(
+                            "INSERT INTO ".$GLOBALS['pre']."items (`label`, `description`, `pw`, `email`, `url`, `id_tree`, `login`, `inactif`, `restricted_to`, `perso`, `anyone_can_modify`)
                             VALUES ('".$item_label."', '".$item_desc."', '".$item_pwd."', '".$item_email."', '".$item_url."', '".intval($item_folder_id)."', '".$item_login."', '0', '', '0', '".intval($item_anyonecanmodify)."')"
                         );
+                            $newID = $bdd->lastInsertId();
 
                         // Store generated key
-                        $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."keys (table, id, rand_key) VALUES ('items', ".$newID.", '".$randomKey."')");
+                            $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."keys (`table`, `id`, `rand_key`) VALUES ('items', ".$newID.", '".$randomKey."')");
 
                         // log
-                        $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."log_items (id_item, date, id_user, action) VALUES ($newID, time(), '9999999', 'at_creation')");
+                            $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."log_items (`id_item`, `date`, `id_user`, `action`) VALUES (".$newID.", '".time()."', 9999999, 'at_creation')");
 
                         // Add tags
-                        $tags = explode(' ', $item_tags);
-                        foreach ($tags as $tag) {
-                            if (!empty($tag)) {
-                                $resp = $bdd->query("INSERT INTO ".$GLOBALS['pre']."tags (item_id, tag) VALUES ($newID, 'strtolower($tag)')");
+                            $tags = explode(' ', $item_tags);
+                            foreach ($tags as $tag) {
+                                if (!empty($tag)) {
+                                    $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."tags (`item_id`, `tag`) VALUES ($newID, '".strtolower($tag)."')");
+                                }
                             }
-                        }
 
                         // Update CACHE table
-                        addToCacheTable($newID);
+                        // form id_tree to full foldername
+                        /*$folder = "";
+                        $arbo = $tree->getPath($data['id_tree'], true);
+                        foreach ($arbo as $elem) {
+                            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+                                $elem->title = $_SESSION['login'];
+                            }
+                            if (empty($folder)) {
+                                $folder = stripslashes($elem->title);
+                            } else {
+                                $folder .= " » ".stripslashes($elem->title);
+                            }
+                        }*/
+                        // finaly update
+                            $result = $bdd->exec(
+                            "INSERT INTO ".$GLOBALS['pre']."cache (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`)
+                            VALUES ('".$newID."', '".$item_label."', '".$item_desc."', '".$item_tags."', '".$item_folder_id."', '0', '', '".$item_login."', '', '9999999')"
+                        );
 
-                        echo '{"err":"none"}';
+                            echo '{"status":"item added"}';
+                        } catch(PDOException $ex) {
+                            echo '<br />' . $ex->getMessage();
+                        }
+                    } else {
+                        rest_error ('BADDEFINITION');
                     }
                 } else {
                     rest_error ('BADDEFINITION');

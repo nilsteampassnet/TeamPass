@@ -13,6 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 $LANG = array (
+    'imported_via_api' => "API",
     'user_ga_code' => 'Отправить приложение GoogleAuthenticator на ящик пользователю',
     'send_ga_code' => 'Код GoogleAuthenticator для пользователя',
     'error_no_email' => 'У пользователя не задан почтовый ящик!',

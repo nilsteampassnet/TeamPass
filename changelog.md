@@ -24,6 +24,7 @@
  #539 -
  #401 - Folder role inheretance on new folder
  #552 - added MBstring check
+ #554 - Search-Page "Jump to item"-Button not working correctly
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
  New: one time view page for anonymous user
