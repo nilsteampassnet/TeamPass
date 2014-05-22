@@ -386,6 +386,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "categories_folders"</td><td><span id="tbl_22"></span></td></tr>
                          <tr><td>Add table "api"</td><td><span id="tbl_23"></span></td></tr>
                          <tr><td>Add table "otv"</td><td><span id="tbl_24"></span></td></tr>
+                         <tr><td>Add table "suggestion"</td><td><span id="tbl_25"></span></td></tr>
                      </table>
                      <div style="display:none;" id="change_pw_encryption">
                          <br />

@@ -15,13 +15,13 @@
 
 $pagesRights = array(
     "user" => array(
-        "home", "items", "find", "kb", "favourites"
+        "home", "items", "find", "kb", "favourites", "suggestion"
     ),
     "manager" => array(
-        "home", "items", "find", "kb", "favourites", "manage_roles", "manage_folders", "manage_views", "manage_users"
+        "home", "items", "find", "kb", "favourites", "manage_roles", "manage_folders", "manage_views", "manage_users", "suggestion"
     ),
     "admin" => array(
-        "home", "items", "find", "kb", "favourites", "manage_roles", "manage_folders", "manage_views", "manage_users", "manage_settings", "manage_main"
+        "home", "items", "find", "kb", "suggestion", "favourites", "manage_roles", "manage_folders", "manage_views", "manage_users", "manage_settings", "manage_main"
     )
 );
 

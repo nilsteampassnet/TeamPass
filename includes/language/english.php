@@ -14,7 +14,19 @@
  */
 global $LANG;
 $LANG = array (
-    'imported_via_api' => "API",
+    'suggestion' => 'Items suggestion',
+    'suggestion_add' => 'Add an item suggestion',
+    'comment' => 'Comment',
+    'suggestion_error_duplicate' => 'A similar suggestion already exists!',
+    'suggestion_delete_confirm' => 'Please confirm Suggestion deletion',
+    'suggestion_validate_confirm' => 'Please confirm Suggestion validation',
+    'suggestion_validate' => 'You have decided to add this Suggestion to the Items list ... please confirm.',
+    'suggestion_error_cannot_add' => 'ERROR - The suggestion could not be added as an Item!',
+    'suggestion_is_duplicate' => 'CAUTION: this suggestion has a similar Item (with equal Label and Folder). If you click on ADD button, this Item will be updated with data from this Suggestion.',
+    'suggestion_menu' => 'Suggestions',
+    'settings_suggestion' => 'Enable item suggestion for Read-Only users',
+    'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
+    'imported_via_api' => 'API',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

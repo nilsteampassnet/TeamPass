@@ -385,7 +385,7 @@ function RecupComplexite(val, edit)
     $.post(
         "sources/items.queries.php",
         {
-            type    : "recup_complex",
+            type    : "get_complixity_level",
             groupe  : val,
             item_id : $("#selected_items").val()
         },
