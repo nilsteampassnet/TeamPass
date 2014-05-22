@@ -281,11 +281,11 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_suffix', $_POST['ldap_suffix']);
     }
     // Update LDAP ldap_domain_dn
-    if (isset($_POST['ldap_domain_dn']) && $_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
+    if (isset($_POST['ldap_domain_dn']) && @$_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
         updateSettings('ldap_domain_dn', $_POST['ldap_domain_dn']);
     }
     // Update LDAP ldap_domain_controler
-    if (isset($_POST['ldap_domain_controler']) && $_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
+    if (isset($_POST['ldap_domain_controler']) && @$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
 	// Update LDAP ldap_user_attribute
@@ -323,6 +323,10 @@ if (isset($_POST['save_button'])) {
     // Update enable_kb
     if (@$_SESSION['settings']['enable_kb'] != $_POST['enable_kb']) {
         updateSettings('enable_kb', $_POST['enable_kb']);
+    }
+    // Update enable_suggestion
+    if (@$_SESSION['settings']['enable_suggestion'] != $_POST['enable_suggestion']) {
+        updateSettings('enable_suggestion', $_POST['enable_suggestion']);
     }
     // Update nb_bad_identification
     if (@$_SESSION['settings']['nb_bad_authentication'] != $_POST['nb_bad_authentication']) {
@@ -1015,6 +1019,23 @@ echo '
                             <input type="radio" id="enable_kb_radio1" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_kb_radio1">'.$LANG['yes'].'</label>
                             <input type="radio" id="enable_kb_radio2" name="enable_kb" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_kb']) ? ' checked="checked"':''), ' /><label for="enable_kb_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_kb"><img src="includes/images/status', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? '' : '-busy', '.png" /></span>
+                        </div>
+                    </td></tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
+// Enable SUGGESTION
+echo '
+                    <tr><td>
+                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <label>
+                            '.$LANG['settings_suggestion'].'
+                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_suggestion_tip'].'" /></span>
+                        </label>
+                        </td><td>
+                        <div class="div_radio">
+                            <input type="radio" id="enable_suggestion_radio1" name="enable_suggestion" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_suggestion_radio1">'.$LANG['yes'].'</label>
+                            <input type="radio" id="enable_suggestion_radio2" name="enable_suggestion" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="0"', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_suggestion']) ? ' checked="checked"':''), ' /><label for="enable_suggestion_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_suggestion"><img src="includes/images/status', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '' : '-busy', '.png" /></span>
                         </div>
                     </td></tr>';
 

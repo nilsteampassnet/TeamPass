@@ -169,6 +169,16 @@ if (isset($_SESSION['login'])) {
                         <img src="includes/images/direction.png" alt="" />
                     </button>';
     }
+    // SUGGESTION menu
+    if (
+        isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+        && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
+    ) {
+        echo '
+                    <button style="margin-right:10px;" title="'.$LANG['suggestion_menu'].'" onclick="MenuAction(\'suggestion\');">
+                        <img src="includes/images/envelope.png" alt="" />
+                    </button>';
+    }
     // Admin menu
     if ($_SESSION['user_admin'] == 1) {
         echo '
@@ -434,6 +444,14 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         // Show page KB
         if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
             include 'kb.php';
+        } else {
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+            include 'error.php';
+        }
+    } elseif ($_GET['page'] == "suggestion") {
+        // Show page KB
+        if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1) {
+            include 'suggestion.php';
         } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include 'error.php';

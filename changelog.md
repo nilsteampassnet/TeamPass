@@ -27,7 +27,8 @@
  #554 - Search-Page "Jump to item"-Button not working correctly
  Fork from slimm609 - Encrypted Sessions and CSRFGuard enabled
  Issues with folder creation in "personal folder"
- New: one time view page for anonymous user
+ #536 - one time view page for anonymous user
+ #517 - New feature: Suggest items system
  New feature: Simplify Items Tree
  New feature: Sub-folder inherits of parent folder
 

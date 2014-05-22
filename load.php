@@ -74,6 +74,12 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
+} else if (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
+    $htmlHeaders .= '
+        <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
+
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
+        <script type="text/javascript" src="includes/js/datatable/jquery.dataTables.min.js"></script>';
 } else if (!isset($_GET['page'])) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
@@ -526,7 +532,7 @@ if (!isset($_GET['page'])) {
     });';
 }
 
-if (!isset($_GET['page']) && isset($_SESSION['key']) && $zim == 1) {
+if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $htmlHeaders .= '
     $(function() {
         //build nice buttonset

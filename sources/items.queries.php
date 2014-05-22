@@ -2144,7 +2144,7 @@ if (isset($_POST['type'])) {
         * CASE
         * Get complexity level of a group
         */
-        case "recup_complex":
+        case "get_complixity_level":
             if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
                 // Lock Item (if already locked), go back and warn
                 // $dataTmp = $db->fetchRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = '".$_POST['item_id']."'");//echo ">".$dataTmp[0];

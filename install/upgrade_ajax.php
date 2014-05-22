@@ -548,7 +548,8 @@ if (isset($_POST['type'])) {
 	            array('admin','use_md5_password_as_salt','0', 0),
 	            array('admin','api','0', 0),
                 array('admin', 'subfolder_rights_as_parent', '0', 0),
-                array('admin', 'show_only_accessible_folders', '0', 0)
+                array('admin', 'show_only_accessible_folders', '0', 0),
+                array('admin', 'enable_suggestion', '0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -1395,6 +1396,33 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("res_step4").innerHTML = '.
                     '"An error appears on table OTV! '.mysqli_error($dbTmp).'";';
                 echo 'document.getElementById("tbl_24").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
+
+            ## TABLE suggestion
+            $res = mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."suggestion` (
+                `id` tinyint(12) NOT NULL AUTO_INCREMENT,
+                `label` varchar(255) NOT NULL,
+                `password` text NOT NULL,
+                `description` text NOT NULL,
+                `author_id` int(12) NOT NULL,
+                `folder_id` int(12) NOT NULL,
+                `comment` text NOT NULL,
+                `key` varchar(50) NOT NULL,
+                PRIMARY KEY (`id`)
+               ) CHARSET=utf8;"
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_25").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table SUGGESTION! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_25").innerHTML = '.
                     '"<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysqli_close($dbTmp);
