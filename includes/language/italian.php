@@ -751,6 +751,12 @@ $LANG = array (
     'settings_suggestion' => 'Enable item suggestion for Read-Only users',
     'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
     'imported_via_api' => 'API',
+    'settings_ldap_bind_dn' => 'Ldap Bind Dn',
+    'settings_ldap_bind_passwd' => 'Ldap Bind Passwd',
+    'settings_ldap_search_base' => 'Ldap Search Base',
+    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
+    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
+    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
     '' => ''
 );
 ?>
