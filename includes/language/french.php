@@ -751,6 +751,12 @@ $LANG = array (
     'settings_suggestion' => 'Autoriser le système de Suggestion pour les utilisateurs en lecture seule',
     'settings_suggestion_tip' => 'Le système de Suggestions permet aux utilisateurs en lecture seule de pouvoir proposer de nouveaux Objets ou d\'en demander la modification. Les Suggestions sont validées par les Administrateurs et les Gestionnaires.',
     'imported_via_api' => 'API',
+    'settings_ldap_bind_dn' => 'Ldap Bind Dn',
+    'settings_ldap_bind_passwd' => 'Ldap Bind Mot de Passe',
+    'settings_ldap_search_base' => 'Ldap Base de Recherche',
+    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
+    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
+    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
     '' => ''
 );
 ?>

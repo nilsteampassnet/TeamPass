@@ -178,7 +178,7 @@ $LANG = array (
     'admin_email_result_ok' => 'Email sent to #email# ... check your inbox.',
     'admin_email_result_nok' => 'Email not sent ... check your configuration. See associated error: ',
     'email_subject_item_updated' => 'Password has been updated',
-    'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\\"".@$_SESSION[\'settings\'][\'cpassman_url\']."/index.php?page=items&group=#item_category#&id=#item_id#\\">HERE</a><br /><br />Cheers',
+    'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'".@$_SESSION[\'settings\'][\'cpassman_url\']."/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
     'email_bodyalt_item_updated' => 'Password for #item_label# has been updated.',
     'admin_email_send_backlog' => 'Send emails backlog (actually #nb_emails# emails)',
     'admin_email_send_backlog_tip' => 'This script permits to force the emails in the database to be sent.<br />This could take some time depending of the number of emails to send.',
@@ -221,7 +221,7 @@ $LANG = array (
     'email_share_item_mail' => 'Hello,<br><br><u>#tp_user#</u> has shared with you the item <b>#tp_item#</b><br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
     'see_item_title' => 'Item Details',
     'email_on_open_notification_subject' => '[TeamPass] Notification on Item open',
-    'email_on_open_notification_mail' => 'Hello,<br><br>#tp_user# has opened and watched the Item \\"#tp_item#\'\\".<br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
+    'email_on_open_notification_mail' => 'Hello,<br><br>#tp_user# has opened and watched the Item \'#tp_item#\'.<br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
     'pdf' => 'PDF',
     'csv' => 'CSV',
     'user_admin_migrate_pw' => 'Migrate personal Items to a user account',
@@ -750,6 +750,12 @@ $LANG = array (
     'settings_suggestion' => 'Enable item suggestion for Read-Only users',
     'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
     'imported_via_api' => 'API',
+    'settings_ldap_bind_dn' => 'Ldap Bind Dn',
+    'settings_ldap_bind_passwd' => 'Ldap Bind Passwd',
+    'settings_ldap_search_base' => 'Ldap Search Base',
+    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
+    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
+    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
     '' => ''
 );
 ?>

@@ -242,38 +242,32 @@ function rest_get () {
 					$json[$id]['login'] = utf8_encode($data['login']);
 					$json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
 				}
-			} elseif($GLOBALS['request'][1] == "item") {
-				$array_category = explode(';',$GLOBALS['request'][2]);
-				$item = $GLOBALS['request'][3];
+			} elseif($GLOBALS['request'][1] == "items") {
+                // only accepts numeric
+				$array_items = explode(',',$GLOBALS['request'][2]);
 
-				foreach($array_category as $category) {
-					if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
-						rest_error('CATEGORY_MALFORMED');
+                $items_list = "";
+
+				foreach($array_items as $item) {
+					if(!is_numeric($item)) {
+						rest_error('ITEM_MALFORMED');
 					}
 				}
 
-				if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item,$result)) {
-					rest_error('ITEM_MALFORMED');
-				} elseif (empty($item) || count($array_category) == 0) {
-					rest_error('MALFORMED');
-				}
-
-				if(count($array_category) > 1 && count($array_category) < 5) {
-					for ($i = count($array_category); $i > 0; $i--) {
-						$slot = $i - 1;
-						if (!$slot) {
-							$category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+				if(count($array_items) > 1 && count($array_items) < 5) {
+					foreach($array_items as $item) {
+						if (empty($items_list)) {
+							$items_list = $item;
 						} else {
-							$category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $items_list .= ",".$item;
 						}
 					}
-					for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
-				} elseif (count($array_category) == 1) {
-					$category_query = "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
+				} elseif (count($array_items) == 1) {
+                    $items_list = $item;
 				} else {
-					rest_error ('NO_CATEGORY');
+					rest_error ('NO_ITEM');
 				}
-				$response = $bdd->query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id_tree = (".$category_query.") and label LIKE '".$item."'");
+				$response = $bdd->query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id IN (".$items_list.")");
 				while ($data = $response->fetch())
 				{
 					$id = $data['id'];
@@ -361,20 +355,6 @@ function rest_get () {
                             }
 
                         // Update CACHE table
-                        // form id_tree to full foldername
-                        /*$folder = "";
-                        $arbo = $tree->getPath($data['id_tree'], true);
-                        foreach ($arbo as $elem) {
-                            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
-                                $elem->title = $_SESSION['login'];
-                            }
-                            if (empty($folder)) {
-                                $folder = stripslashes($elem->title);
-                            } else {
-                                $folder .= " » ".stripslashes($elem->title);
-                            }
-                        }*/
-                        // finaly update
                             $result = $bdd->exec(
                             "INSERT INTO ".$GLOBALS['pre']."cache (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`)
                             VALUES ('".$newID."', '".$item_label."', '".$item_desc."', '".$item_tags."', '".$item_folder_id."', '0', '', '".$item_login."', '', '9999999')"
@@ -413,6 +393,9 @@ function rest_error ($type,$detail = 'N/A') {
   		case 'NO_CATEGORY':
 		$message = Array('err' => 'No category specified');
     		break;
+        case 'NO_ITEM':
+            $message = Array('err' => 'No item specified');
+            break;
   		case 'EMPTY':
 		$message = Array('err' => 'No results');
     		break;
@@ -430,6 +413,10 @@ function rest_error ($type,$detail = 'N/A') {
 		break;
         case 'BADDEFINITION':
             $message = Array('err' => 'Item definition not complete');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'ITEM_MALFORMED':
+            $message = Array('err' => 'Item definition not numeric');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
 		default:
