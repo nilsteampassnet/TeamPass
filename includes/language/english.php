@@ -1,7 +1,7 @@
 <?php 
 /**
  *
- * @file          english (1).php
+ * @file          english.php
  * @author        Nils Laumaillé
  * @version       2.1.20
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
@@ -14,19 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'suggestion' => 'Items suggestion',
-    'suggestion_add' => 'Add an item suggestion',
-    'comment' => 'Comment',
-    'suggestion_error_duplicate' => 'A similar suggestion already exists!',
-    'suggestion_delete_confirm' => 'Please confirm Suggestion deletion',
-    'suggestion_validate_confirm' => 'Please confirm Suggestion validation',
-    'suggestion_validate' => 'You have decided to add this Suggestion to the Items list ... please confirm.',
-    'suggestion_error_cannot_add' => 'ERROR - The suggestion could not be added as an Item!',
-    'suggestion_is_duplicate' => 'CAUTION: this suggestion has a similar Item (with equal Label and Folder). If you click on ADD button, this Item will be updated with data from this Suggestion.',
-    'suggestion_menu' => 'Suggestions',
-    'settings_suggestion' => 'Enable item suggestion for Read-Only users',
-    'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
-    'imported_via_api' => 'API',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -751,6 +738,19 @@ $LANG = array (
     'subfolder_rights_as_parent_tip' => 'When this feature is disabled, each new sub-folder inherits the rights associated to the Creator roles. If enabled, then each new sub-folder inherits the rights of the parent folder.',
     'show_only_accessible_folders_tip' => 'By default, the user see the complete path of the tree even if he doesn\'t have access to all of the folders. You may simplify this removing from the tree the folders he has no access to.',
     'show_only_accessible_folders' => 'Simplify the Items Tree by removing the Folders the user has no access to',
+    'suggestion' => 'Items suggestion',
+    'suggestion_add' => 'Add an item suggestion',
+    'comment' => 'Comment',
+    'suggestion_error_duplicate' => 'A similar suggestion already exists!',
+    'suggestion_delete_confirm' => 'Please confirm Suggestion deletion',
+    'suggestion_validate_confirm' => 'Please confirm Suggestion validation',
+    'suggestion_validate' => 'You have decided to add this Suggestion to the Items list ... please confirm.',
+    'suggestion_error_cannot_add' => 'ERROR - The suggestion could not be added as an Item!',
+    'suggestion_is_duplicate' => 'CAUTION: this suggestion has a similar Item (with equal Label and Folder). If you click on ADD button, this Item will be updated with data from this Suggestion.',
+    'suggestion_menu' => 'Suggestions',
+    'settings_suggestion' => 'Enable item suggestion for Read-Only users',
+    'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
+    'imported_via_api' => 'API',
     '' => ''
 );
 ?>

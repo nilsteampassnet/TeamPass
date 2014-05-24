@@ -21,7 +21,8 @@
  #547 - User search
  #520 - API access
  #549 #550 - Server Time in footer
- #539 -
+ #539 - New feature: Simplify Items Tree
+ #547 - Search in Users page
  #401 - Folder role inheretance on new folder
  #552 - added MBstring check
  #554 - Search-Page "Jump to item"-Button not working correctly
@@ -29,7 +30,6 @@
  Issues with folder creation in "personal folder"
  #536 - one time view page for anonymous user
  #517 - New feature: Suggest items system
- New feature: Simplify Items Tree
  New feature: Sub-folder inherits of parent folder
 
 2.1.19
