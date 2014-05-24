@@ -12,8 +12,8 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+global $LANG;
 $LANG = array (
-    'imported_via_api' => "API",
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -77,7 +77,7 @@ $LANG = array (
     'channel_encryption_no_bcmath' => 'Die Erweiterung BCMATH ist nicht geladen! Die Verschlüsselung kann nicht starten!',
     'admin_action_check_pf' => 'Persönliche Ordner für alle Benutzer aktualisieren (Ordner werden erstellt, wenn sie nicht existieren)',
     'admin_actions_title' => 'Spezielle Aktionen',
-    'enable_personal_folder_feature_tip' => 'Falls aktiviert, müssen Sie manuell ein Skript ausführen, das Persönliche Verzeichnisse für bestehende Benutzer anlegt. Anm.: die Persönlichen Verzeichnissse werden nur für Benutzer angelegt, die noch kein solches haben. Das Skript \'".$LANG[\'admin_action_check_pf\']."\' befindet sich in \'".$LANG[\'admin_actions_title\']."\'',
+    'enable_personal_folder_feature_tip' => 'Falls aktiviert, müssen Sie manuell ein Skript ausführen, das Persönliche Verzeichnisse für bestehende Benutzer anlegt. Anm.: die Persönlichen Verzeichnissse werden nur für Benutzer angelegt, die noch kein solches haben. Das Skript \'".$txt[\'admin_action_check_pf\']."\' befindet sich in \'".$txt[\'admin_actions_title\']."\'',
     'is_administrated_by_role' => 'Benutzer wird verwaltet von',
     'administrators_only' => 'Nur für Administratoren',
     'managers_of' => 'Verwalter von Rolle',
@@ -193,6 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Maximale Länge der Passwörter',
     'admin_pwd_maximum_length_tip' => 'Die Standardlänge der Passwörter beträgt 40 Zeichen. Bitte bedenken Sie, dass das Einstellen einer größeren Länge sich auf die Systemleistung auswirkt. Je länger das Passwort, desto länger braucht der Server zum Ver-/Entschlüsseln und Darstellen der Passwörter.  ',
     'settings_insert_manual_entry_item_history' => 'Manuelles Hinzufügen von Einträgen in das Logbuch der Elemente erlauben',
+    'settings_insert_manual_entry_item_history_tip' => 'For any reason you may need to add manually an entry in the history of the Item. By activating this feature, it is possible.',
     'add_history_entry' => 'Eintrag ins Logbuch hinzufügen',
     'at_manual' => 'Manueller Vorgang',
     'at_manual_add' => 'Manuell hinzugefügt',
@@ -228,7 +229,7 @@ $LANG = array (
     'migrate_pf_user_salt' => 'Enter the SALT key for selected User',
     'migrate_pf_no_sk' => 'You have not entered your SALT Key',
     'migrate_pf_no_sk_user' => 'You must enter the User SALT Key',
-    'migrate_pf_no_user_id' => 'You must select the User\";',
+    'migrate_pf_no_user_id' => 'You must select the User";',
     'email_subject_new_user' => '[TeamPass] Ihr neues Benutzerkonto',
     'email_new_user_mail' => 'Hallo,&lt;br&gt;&lt;br&gt;Der Administrator hat Ihr Benutzerkonto für TeamPass eingerichtet &lt;br&gt;Sie können sich mit folgenden Benutzerdaten anmelden:&lt;br&gt;- Benutzername: #tp_login#&lt;br&gt;- Passwort: #tp_pw#&lt;br&gt;&lt;br&gt;Zur Anmeldung klicken Sie, bitte, auf &lt;a href="#tp_link#"&gt;LINK&lt;/a&gt; .&lt;br&gt;&lt;br&gt;Auf Wiedersehen.',
     'error_empty_data' => 'Keine Daten zum Bearbeiten!',
@@ -733,6 +734,23 @@ $LANG = array (
     'settings_api_ip' => 'IP',
     'settings_api_db_intro_ip' => 'Give a label for this new IP',
     'settings_api_world_open' => 'No IP defined. The feature is totally open from any location (maybe unsecure).',
+    'subfolder_rights_as_parent' => 'New sub-folder inherits rights from parent folder',
+    'subfolder_rights_as_parent_tip' => 'When this feature is disabled, each new sub-folder inherits the rights associated to the Creator roles. If enabled, then each new sub-folder inherits the rights of the parent folder.',
+    'show_only_accessible_folders_tip' => 'By default, the user see the complete path of the tree even if he doesn\'t have access to all of the folders. You may simplify this removing from the tree the folders he has no access to.',
+    'show_only_accessible_folders' => 'Simplify the Items Tree by removing the Folders the user has no access to',
+    'suggestion' => 'Items suggestion',
+    'suggestion_add' => 'Add an item suggestion',
+    'comment' => 'Comment',
+    'suggestion_error_duplicate' => 'A similar suggestion already exists!',
+    'suggestion_delete_confirm' => 'Please confirm Suggestion deletion',
+    'suggestion_validate_confirm' => 'Please confirm Suggestion validation',
+    'suggestion_validate' => 'You have decided to add this Suggestion to the Items list ... please confirm.',
+    'suggestion_error_cannot_add' => 'ERROR - The suggestion could not be added as an Item!',
+    'suggestion_is_duplicate' => 'CAUTION: this suggestion has a similar Item (with equal Label and Folder). If you click on ADD button, this Item will be updated with data from this Suggestion.',
+    'suggestion_menu' => 'Suggestions',
+    'settings_suggestion' => 'Enable item suggestion for Read-Only users',
+    'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
+    'imported_via_api' => 'API',
     '' => ''
 );
 ?>

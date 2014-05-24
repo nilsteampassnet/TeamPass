@@ -98,7 +98,7 @@ if (
             	"</div>";
 
         	// delete entry
-        	//$db->query("DELETE FROM ".$pre."otv WHERE id = '".intval($_GET['item_id'])."'");
+        	$db->query("DELETE FROM ".$pre."otv WHERE id = '".intval($_GET['otv_id'])."'");
         }
     } else {
         $html = "Not a valid page!";
