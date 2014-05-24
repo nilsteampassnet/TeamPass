@@ -3,7 +3,7 @@
  * @file          import.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -112,7 +113,9 @@ switch ($_POST['type']) {
                         $login = addslashes($line[1]);
                         $pw = $line[2];
                         $url = addslashes($line[3]);
-                        $comment = htmlentities(addslashes($line[4]), ENT_QUOTES);
+                    	$to_find = array ( "\"" , "'" );
+                    	$to_ins = array ( "&quot" , "&#39;");
+                    	$comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$line[4])), ENT_QUOTES, 'UTF-8');
 
                         $continue_on_next_line = false;
                     }
@@ -133,11 +136,11 @@ switch ($_POST['type']) {
             $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
-            $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$txt['all'].'</td></tr>';
+            $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$LANG['all'].'</td></tr>';
             //echo 'function selectAll() {$("input[type=\'checkbox\']:not([disabled=\'disabled\'])").attr(\'checked\', true);}';
 
             // Prepare a list of all folders that the user can choose
-            $display .= '</table><div style=\"margin-top:10px;\"><label><b>'.$txt['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\">';
+            $display .= '</table><div style=\"margin-top:10px;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\">';
             foreach ($tst as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident="";
@@ -172,7 +175,16 @@ switch ($_POST['type']) {
         } else {
             $personalFolder = 0;
         }
-        $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
+        // $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
+        $data_fld = $db->queryGetRow(
+            "nested_tree",
+            array(
+                "title"
+            ),
+            array(
+                "id" => intval($_POST['folder'])
+            )
+        );
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
@@ -538,7 +550,7 @@ switch ($_POST['type']) {
             unlink($cacheFileF);
             unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
 
-            echo '[{"error":"not_kp_file" , "message":"'.$txt['import_error_no_read_possible_kp'].'"}]';
+            echo '[{"error":"not_kp_file" , "message":"'.$LANG['import_error_no_read_possible_kp'].'"}]';
             break;
         }
 
@@ -561,12 +573,12 @@ switch ($_POST['type']) {
         ##################
         if ($numItems>0 || $numGroups>0) {
             $itemsArray = array();
-            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$txt['nb_folders'].': '.
-                $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$txt['nb_items'].': '.
+            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$LANG['nb_folders'].': '.
+                $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
             $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
-                $txt['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
-                $txt['importing_folders'].':</b><br />';
+                $LANG['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
+                $LANG['importing_folders'].':</b><br />';
 
             //if destination is not ROOT then get the complexity level
             if ($_POST['destination'] > 0) {
@@ -612,7 +624,15 @@ switch ($_POST['type']) {
                     }
 
                     //create folder - if not exists at the same level
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
+                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
+                    $data = $db->queryCount(
+                        "nested_tree",
+                        array(
+                            "nlevel" => intval($folderLevel+$startPathLevel),
+                            "title" => $fold,
+                            "parent_id" => intval(parent_id)
+                        )
+                    );
                     if ($data[0] == 0) {
                         //do query
                         $id = $db->queryInsert(
@@ -653,7 +673,18 @@ switch ($_POST['type']) {
                         $nbFoldersImported++;
                     } else {
                         //get forlder actual ID
-                        $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
+                        // $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
+                        $row = $db->queryGetRow(
+                            "nested_tree",
+                            array(
+                                "id"
+                            ),
+                            array(
+                                "nlevel" => intval($folderLevel+$startPathLevel),
+                                "title" => $fold,
+                                "parent_id" => intval($parent_id)
+                            )
+                        );
                         $id = $data[0];
                     }
 
@@ -672,7 +703,7 @@ switch ($_POST['type']) {
 
             //if no new folders them inform
             if ($nbFoldersImported == 0) {
-                $text .= $txt['none'].'<br />';
+                $text .= $LANG['none'].'<br />';
             } else {
                 //Refresh the rights of actual user
                 identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$newId, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
@@ -681,7 +712,7 @@ switch ($_POST['type']) {
                 $tree->rebuild();
             }
             //show
-            $text .= '<br /><b>'.$txt['importing_items'].':</b><br />';
+            $text .= '<br /><b>'.$LANG['importing_items'].':</b><br />';
 
             // Now import ITEMS
             $nbItemsImported = 0;
@@ -704,8 +735,14 @@ switch ($_POST['type']) {
 
                 if (!empty($item[2])) {
                     //check if not exists
-                    $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
-
+                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
+                    $data = $db->queryCount(
+                        "items",
+                        array(
+                            "id_tree" => intval($foldersArray[$item[1]]['id']),
+                            "label" => $item[2]
+                        )
+                    );
                     if ($data[0] == 0) {
                         //Encryption key
                         $randomKey = generateKey();
@@ -766,7 +803,16 @@ switch ($_POST['type']) {
                         } else {
                             $folderId = $foldersArray[$item[1]]['id'];
                         }
-                        $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
+                        // $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
+                        $data = $db->queryGetRow(
+                            "nested_tree",
+                            array(
+                                "title"
+                            ),
+                            array(
+                                "id" => intval($folderId)
+                            )
+                        );
 
                         //Add entry to cache table
                         $db->queryInsert(
@@ -794,11 +840,11 @@ switch ($_POST['type']) {
 
             //if no new items them inform
             if ($nbItemsImported == 0) {
-                $text .= $txt['none'].'<br />';
+                $text .= $LANG['none'].'<br />';
             }
 
             //SHow finished
-            $text .= '</div><br /><br /><b>'.$txt['import_kp_finished'].'</b>';
+            $text .= '</div><br /><br /><b>'.$LANG['import_kp_finished'].'</b>';
 
             //Delete cache file
             fclose($cacheFileF);

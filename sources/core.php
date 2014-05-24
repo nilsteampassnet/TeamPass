@@ -3,7 +3,7 @@
  * @file		  core.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
  *
@@ -67,15 +67,19 @@ foreach ($rows as $reccord) {
 }
 
 //pw complexity levels
-$pwComplexity = array(
-    0=>array(0,$txt['complex_level0']),
-    25=>array(25,$txt['complex_level1']),
-    50=>array(50,$txt['complex_level2']),
-    60=>array(60,$txt['complex_level3']),
-    70=>array(70,$txt['complex_level4']),
-    80=>array(80,$txt['complex_level5']),
-    90=>array(90,$txt['complex_level6'])
-);
+if (isset($_SESSION['user_language'])) {
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    $pwComplexity = array(
+        0=>array(0,$LANG['complex_level0']),
+        25=>array(25,$LANG['complex_level1']),
+        50=>array(50,$LANG['complex_level2']),
+        60=>array(60,$LANG['complex_level3']),
+        70=>array(70,$LANG['complex_level4']),
+        80=>array(80,$LANG['complex_level5']),
+        90=>array(90,$LANG['complex_level6'])
+    );
+}
+
 /**
  * Define Timezone
  */
@@ -145,7 +149,16 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    $dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
+    //$dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
+    $dataSession = $db->queryGetRow(
+        "users",
+        array(
+            "key_tempo"
+        ),
+        array(
+            "id" => intval($_SESSION['user_id'])
+        )
+    );
 } else {
     $dataSession[0] = "";
 }
@@ -191,7 +204,17 @@ if (
     isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
     || empty($_SESSION['settings']['update_needed']))
 ) {
-    $row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
+    //$row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
+    $row = $db->queryGetRow(
+        "misc",
+        array(
+            "valeur"
+        ),
+        array(
+            "type" => "admin",
+            "intitule" => "cpassman_version"
+        )
+    );
     if ($row[0] != $k['version']) {
         $_SESSION['settings']['update_needed'] = true;
     } else {
@@ -285,9 +308,19 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $sql="SELECT * FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'";
-    $row = $db->query($sql);
-    $data = $db->fetchArray($row);
+    $data = $db->queryGetArray(
+        "users",
+        array(
+            "admin",
+            "gestionnaire",
+            "groupes_visibles",
+            "groupes_interdits",
+            "fonction_id"
+        ),
+        array(
+            "id" => intval($_SESSION['user_id'])
+        )
+    );
 
     //Check if user has been deleted or unlogged
     if (empty($data)) {
@@ -336,35 +369,6 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             false
         );
     }
-} elseif (empty($_SESSION['user_id']) && isset($_SESSION['settings']['2factors_authentication'])
-    && $_SESSION['settings']['2factors_authentication'] == 1
-) {
-    /*
-    //2 Factors authentication is asked
-    include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/Twofactors/twofactors.php';
-    $google2FA=new Google2FA();
-
-    //Generate code and QR
-    $initalizationKey = $google2FA->generate_secret_key();
-    $timeStamp = $google2FA->get_timestamp();
-    $secretkey = $google2FA->base32_decode($initalizationKey);	// Decode it into binary
-    $otp = $google2FA->oath_hotp($secretkey, $timeStamp);	// Get current token
-    $qrCode = $google2FA->get_qr_code_url("", $otp);
-
-    //Store Onetime pw
-    $_SESSION['initKey'] = $initalizationKey;
-	*/
-	$g = new SplClassLoader('Authentication\GoogleAuthenticator', './includes/libraries');
-	$g->register();
-	$g = new \Authentication\GoogleAuthenticator\GoogleAuthenticator();
-	$_SESSION['ga_secret'] = $g->generateSecret();
-/*
-	$secret = 'XVQ2UIGO75XRUKJO';
-	$time = floor(time() / 30);
-	$code = "343232";
-	$_SESSION['ga_secret'] = $g->getCode($secret);
-	$_SESSION['ga_secret_qr'] = $g->getURL('nils', 'teampass.net', $secret);
-	*/
 }
 
 /*
@@ -446,5 +450,5 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".(time() - 600)."'");
+$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
 $_SESSION['nb_users_online'] = $queryCount[0];

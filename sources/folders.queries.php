@@ -3,7 +3,7 @@
  * @file          folders.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,9 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -70,7 +83,7 @@ if (isset($_POST['newtitle'])) {
         echo ($_POST['renewal_period']);
     } else {
         //Show ERROR
-        echo ($txt['error_renawal_period_not_integer']);
+        echo ($LANG['error_renawal_period_not_integer']);
     }
 
     // CASE where the parent is changed
@@ -85,7 +98,16 @@ if (isset($_POST['newtitle'])) {
         "id=".$id[1]
     );
     //Get the title to display it
-    $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = ".$_POST['newparent_id']);
+    // $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = ".$_POST['newparent_id']);
+    $row = $db->queryGetRow(
+        "nested_tree",
+        array(
+            "title"
+        ),
+        array(
+            "id" => $_POST['newparent_id']
+        )
+    );
     //show value
     echo ($data[0]);
     //rebuild the tree grid
@@ -97,7 +119,14 @@ if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
 
     //Check if group exists
-    $tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$id[1]."'");
+    //$tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type = 'complex' AND intitule = '".$id[1]."'");
+    $tmp = $db->queryCount(
+        "misc",
+        array(
+            "intitule" => $id[1],
+            "type" => "complex"
+        )
+    );
     if ($tmp[0] == 0) {
         //Insert into DB
         $db->queryInsert(
@@ -193,10 +222,7 @@ if (isset($_POST['newtitle'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = json_decode(
-                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256),
-                true
-            );
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -212,8 +238,14 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                //$data = $db->fetchRow(
+                //    "SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                //);
+                $data = $db->queryCount(
+                    "nested_tree",
+                    array(
+                        "title" => addslashes($title)
+                    )
                 );
                 if ($data[0] != 0) {
                     $error = 'error_group_exist';
@@ -223,7 +255,16 @@ if (isset($_POST['newtitle'])) {
 
             if ($createNewFolder == true) {
                 //check if parent folder is personal
-                $data = $db->fetchRow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parentId."'");
+                // $data = $db->fetchRow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = '".$parentId."'");
+                $data = $db->queryGetRow(
+                    "nested_tree",
+                    array(
+                        "personal_folder"
+                    ),
+                    array(
+                        "id" => intval($parentId)
+                    )
+                );
                 if ($data[0] == 1) {
                     $isPersonal = 1;
                 } else {
@@ -256,7 +297,11 @@ if (isset($_POST['newtitle'])) {
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
                 $tree->rebuild();
 
-                if ($isPersonal != 1){
+                if (
+                    $isPersonal != 1
+                    && isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                ){
                     //Get user's rights
                     @identifyUserRights(
                         $_SESSION['groupes_visibles'].';'.$newId,
@@ -304,10 +349,7 @@ if (isset($_POST['newtitle'])) {
             $error = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = json_decode(
-                Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256),
-                true
-            );
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -324,8 +366,18 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = $db->fetchRow(
+                /*$data = $db->fetchRow(
                     "SELECT id, title FROM ".$pre."nested_tree WHERE title = '".addslashes($title)."'"
+                );*/
+                $data = $db->queryGetRow(
+                    "nested_tree",
+                    array(
+                        "id",
+                        "title"
+                    ),
+                    array(
+                        "title" => addslashes($title)
+                    )
                 );
                 if (!empty($data[0]) && $dataReceived['id'] != $data[0] && $title != $data[1] ) {
                     echo '[ { "error" : "error_group_exist" } ]';
@@ -372,7 +424,17 @@ if (isset($_POST['newtitle'])) {
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             //Check if ID already exists
-            $data = $db->fetchRow("SELECT authorized FROM ".$pre."rights WHERE tree_id = '".$val[0]."' AND fonction_id= '".$val[1]."'");
+            // $data = $db->fetchRow("SELECT authorized FROM ".$pre."rights WHERE tree_id = '".$val[0]."' AND fonction_id= '".$val[1]."'");
+            $data = $db->queryGetRow(
+                "rights",
+                array(
+                    "authorized"
+                ),
+                array(
+                    "tree_id" => intval($val[0]),
+                    "fonction_id" => intval($val[1])
+                )
+            );
             if (empty($data[0])) {
                 //Insert into DB
                 $db->queryInsert(

@@ -4,7 +4,7 @@
  * @file          users.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,8 +13,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -39,9 +51,10 @@ foreach ($rows as $reccord) {
 // Display list of USERS
 echo '
 <div class="title ui-widget-content ui-corner-all">
-    '.$txt['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <img src="includes/images/user--plus.png" title="'.$txt['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$txt['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
+    '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
+    <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
+    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
+<input type="text" name="search" id="search" />
 </div>';
 
 echo '
@@ -52,22 +65,27 @@ echo '
                 <tr>
                     <th width="20px">ID</th>
                     <th></th>
-                    <th>'.$txt['user_login'].'</th>
-                    <th>'.$txt['name'].'</th>
-                    <th>'.$txt['lastname'].'</th>
-                    <th>'.$txt['managed_by'].'</th>
-                    <th>'.$txt['functions'].'</th>
-                    <th>'.$txt['authorized_groups'].'</th>
-                    <th>'.$txt['forbidden_groups'].'</th>
-                    <th title="'.$txt['god'].'"><img src="includes/images/user-black.png" /></th>
-                    <th title="'.$txt['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-                    <th title="'.$txt['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-                    <th title="'.$txt['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-                    ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ? '<th title="'.$txt['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : '', '
-                    <th title="'.$txt['user_action'].'"><img src="includes/images/user-locked.png" /></th>
-                    <th title="'.$txt['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-                    <th title="'.$txt['email_change'].'"><img src="includes/images/mail.png" /></th>
-                    <th title="'.$txt['logs'].'"><img src="includes/images/log.png" /></th>
+                    <th>'.$LANG['user_login'].'</th>
+                    <th>'.$LANG['name'].'</th>
+                    <th>'.$LANG['lastname'].'</th>
+                    <th>'.$LANG['managed_by'].'</th>
+                    <th>'.$LANG['functions'].'</th>
+                    <th>'.$LANG['authorized_groups'].'</th>
+                    <th>'.$LANG['forbidden_groups'].'</th>
+                    <th title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
+                    <th title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
+                    <th title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
+                    <th title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
+                    ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ?
+                    	'<th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : ''
+                    ,'
+                    <th title="'.$LANG['user_action'].'"><img src="includes/images/user-locked.png" /></th>
+                    <th title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
+                    <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
+                    <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
+					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
+                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/phone.png" /></th>':''
+                	,'
                 </tr>
             </thead>
             <tbody>';
@@ -88,7 +106,7 @@ foreach ($rows as $reccord) {
             }
         }
         if (empty($listAlloFcts)) {
-            $listAlloFcts = '<img src="includes/images/error.png" title="'.$txt['user_alarm_no_function'].'" />';
+            $listAlloFcts = '<img src="includes/images/error.png" title="'.$LANG['user_alarm_no_function'].'" />';
         }
     }
     // Get list of allowed groups
@@ -162,10 +180,10 @@ foreach ($rows as $reccord) {
     }
     // Display Grid
     if ($showUserFolders == true) {
-        echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).'"', '>
+        echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).' data-row"', '>
                     <td align="center">'.$reccord['id'].'</td>
                     <td align="center">', $reccord['disabled'] == 1 ?'
-                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['unlock_user'].'" />' :
+                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['unlock_user'].'" />' :
                     '', '
                     </td>
                     <td align="center">
@@ -183,7 +201,7 @@ foreach ($rows as $reccord) {
                                 ', isset($reccord['isAdministratedByRole']) && $reccord['isAdministratedByRole'] > 0 ?
                                 $rolesList[$reccord['isAdministratedByRole']]['title']
                                 :
-                                '<span title="'.$txt['administrators_only'].'">'.$txt['admin_small'].'</span>', '
+                                '<span title="'.$LANG['administrators_only'].'">'.$LANG['admin_small'].'</span>', '
                             </div>
                             <div style="text-align:center;">
                                 <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')" />
@@ -197,7 +215,7 @@ foreach ($rows as $reccord) {
                                 '.$listAlloFcts.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$txt['change_function'].'" />
+                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'" />
                             </div>', '
                         </div>
                     </td>
@@ -207,7 +225,7 @@ foreach ($rows as $reccord) {
         .$listAlloGrps.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$txt['change_authorized_groups'].'" />
+                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$LANG['change_authorized_groups'].'" />
                             </div>
                         </div>
                     </td>
@@ -217,7 +235,7 @@ foreach ($rows as $reccord) {
         .$listForbGrps.'
                             </div>
                             <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$txt['change_forbidden_groups'].'" />
+                                <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$LANG['change_forbidden_groups'].'" />
                             </div>
                         </div>
                     </td>
@@ -248,11 +266,11 @@ foreach ($rows as $reccord) {
         if ($reccord['disabled'] == 1) {
             $actionOnUser = "action_on_user('".$reccord['id']."','delete')";
             $userIcon = "user--minus";
-            $userTxt = $txt['user_del'];
+            $userTxt = $LANG['user_del'];
         } else {
             $actionOnUser = "action_on_user('".$reccord['id']."','lock')";
             $userIcon = "user-locked";
-            $userTxt = $txt['user_lock'];
+            $userTxt = $LANG['user_lock'];
         }
 
         echo '
@@ -267,13 +285,24 @@ foreach ($rows as $reccord) {
         if ($showUserFolders != true) {
             echo '<img src="includes/images/mail--pencil_disabled.png" />';
         } else {
-            echo '<img src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
+            echo '<img id="useremail_'.$reccord['id'].'" src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
         }
+    	echo '
+                    </td>';
+    	// Log reports
         echo '
-                    </td>
                     <td align="center">
-                        &nbsp;<img ', ($showUserFolders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$txt['see_logs'].'"', ' />
-                    </td>
+                        &nbsp;<img ', ($showUserFolders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['see_logs'].'"', ' />
+                    </td>';
+    	// GA code
+    	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+    		echo '
+					<td>
+						&nbsp;<img src="includes/images/', empty($reccord['ga']) ? 'phone_add' : 'phone_sound' ,'.png" onclick="user_action_ga_code(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['user_ga_code'].'" />
+					</td>';
+    	}
+    	// end
+    	echo '
                 </tr>';
         $x++;
     }
@@ -288,7 +317,7 @@ echo '
 // DIV FOR CHANGING FUNCTIONS
 echo '
 <div id="change_user_functions" style="display:none;">' .
-$txt['change_user_functions_info'].'
+$LANG['change_user_functions_info'].'
 <form name="tmp_functions" action="">
 <div id="change_user_functions_list" style="margin-left:15px;"></div>
 </form>
@@ -296,7 +325,7 @@ $txt['change_user_functions_info'].'
 // DIV FOR CHANGING AUTHORIZED GROUPS
 echo '
 <div id="change_user_autgroups" style="display:none;">' .
-$txt['change_user_autgroups_info'].'
+$LANG['change_user_autgroups_info'].'
 <form name="tmp_autgroups" action="">
 <div id="change_user_autgroups_list" style="margin-left:15px;"></div>
 </form>
@@ -304,7 +333,7 @@ $txt['change_user_autgroups_info'].'
 // DIV FOR CHANGING FUNCTIONS
 echo '
 <div id="change_user_forgroups" style="display:none;">' .
-$txt['change_user_forgroups_info'].'
+$LANG['change_user_forgroups_info'].'
 <form name="tmp_forgroups" action="">
 <div id="change_user_forgroups_list" style="margin-left:15px;"></div>
 </form>
@@ -314,11 +343,11 @@ echo '
 <div id="change_user_adminby" style="display:none;">
     <div id="change_user_adminby_list" style="margin:20px 0 0 15px;">
         <select id="user_admin_by" class="input_text text ui-widget-content ui-corner-all">
-            <option value="0">'.$txt['administrators_only'].'</option>';
+            <option value="0">'.$LANG['administrators_only'].'</option>';
     foreach ($rolesList as $fonction) {
         if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
             echo '
-            <option value="'.$fonction['id'].'">'.$txt['managers_of'].' "'.$fonction['title'].'"</option>';
+            <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
         }
     }
     echo '
@@ -330,51 +359,51 @@ echo '
 echo '
 <div id="add_new_user" style="display:none;">
     <div id="add_new_user_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <label for="new_name" class="label_cpm">'.$txt['name'].'</label>
+    <label for="new_name" class="label_cpm">'.$LANG['name'].'</label>
     <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" />
     <br />
-    <label for="new_lastname" class="label_cpm">'.$txt['lastname'].'</label>
+    <label for="new_lastname" class="label_cpm">'.$LANG['lastname'].'</label>
     <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" />
     <br />
-    <label for="new_login" class="label_cpm">'.$txt['login'].'</label>
+    <label for="new_login" class="label_cpm">'.$LANG['login'].'</label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" />
     <br />
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-'<label for="new_pwd" class="label_cpm">'.$txt['pw'].'&nbsp;<img src="includes/images/refresh.png" onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;" /></label>
+'<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<img src="includes/images/refresh.png" onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;" /></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" />', '
-    <label for="new_email" class="label_cpm">'.$txt['email'].'</label>
+    <label for="new_email" class="label_cpm">'.$LANG['email'].'</label>
     <input type="text" id="new_email" class="input_text text ui-widget-content ui-corner-all" onchange="check_domain(this.value)" />
-    <label for="new_is_admin_by" class="label_cpm">'.$txt['is_administrated_by_role'].'</label>
+    <label for="new_is_admin_by" class="label_cpm">'.$LANG['is_administrated_by_role'].'</label>
     <select id="new_is_admin_by" class="input_text text ui-widget-content ui-corner-all">';
         // If administrator then all roles are shown
         // else only the Roles the users is associated to.
 if ($_SESSION['is_admin']) {
     echo '
-        <option value="0">'.$txt['administrators_only'].'</option>';
+        <option value="0">'.$LANG['administrators_only'].'</option>';
 }
 foreach ($rolesList as $fonction) {
     if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
         echo '
-        <option value="'.$fonction['id'].'">'.$txt['managers_of'].' "'.$fonction['title'].'"</option>';
+        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
     }
 }
 echo '
     </select>
     <br />
     <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
-       <label for="new_admin">'.$txt['is_admin'].'</label>
+       <label for="new_admin">'.$LANG['is_admin'].'</label>
     <br />
     <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
-       <label for="new_manager">'.$txt['is_manager'].'</label>
+       <label for="new_manager">'.$LANG['is_manager'].'</label>
     <br />
     <input type="checkbox" id="new_read_only" />
-       <label for="new_read_only">'.$txt['is_read_only'].'</label>
+       <label for="new_read_only">'.$LANG['is_read_only'].'</label>
     <br />
     <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked':'', ' />
-       <label for="new_personal_folder">'.$txt['personal_folder'].'</label>
+       <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
     <div id="auto_create_folder_role">
     <input type="checkbox" id="new_folder_role_domain" disabled />
-    <label for="new_folder_role_domain">'.$txt['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
+    <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
     <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
     <input type="hidden" id="new_domain">
     </div>
@@ -393,11 +422,11 @@ echo '
 echo '
 <div id="change_user_pw" style="display:none;">
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="change_user_pw_error"></div>' .
-$txt['give_new_pw'].'
+$LANG['give_new_pw'].'
     <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_pw_show_login"></div>
     <div style="margin-top:20px; width:100%;">
-        <label class="form_label" for="change_user_pw_newpw">'.$txt['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
-        <label class="form_label" for="change_user_pw_newpw_confirm">'.$txt['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
+        <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
+        <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
     </div>
     <div style="width:100%;height:20px;">
         <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -409,7 +438,7 @@ $txt['give_new_pw'].'
 echo '
 <div id="change_user_email" style="display:none;">
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="change_user_email_error"></div>' .
-$txt['give_new_email'].'
+$LANG['give_new_email'].'
     <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_email_show_login"></div>
     <div style="margin-top:10px;text-align:center;">
         <input type="text" size="50" id="change_user_email_newemail" />
@@ -419,12 +448,12 @@ $txt['give_new_email'].'
 // DIV FOR HELP
 echo '
 <div id="help_on_users" style="">
-    <div>'.$txt['help_on_users'].'</div>
+    <div>'.$LANG['help_on_users'].'</div>
 </div>';
 // USER MANAGER
 echo '
 <div id="manager_dialog" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
+    <div style="text-align:center;padding:2px;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
 </div>';
 
 /*// MIGRATE PERSONAL ITEMS FROM ADMIN TO A USER
@@ -432,12 +461,12 @@ echo '
 <div id="migrate_pf_dialog" style="display:none;">
     <div style="text-align:center;padding:2px;display:none;margin-bottom:10px;" class="ui-state-error ui-corner-all" id="migrate_pf_dialog_error"></div>
     <div>
-        <label>'.$txt['migrate_pf_select_to'].'</label>:
+        <label>'.$LANG['migrate_pf_select_to'].'</label>:
         <select id="migrate_pf_to_user">
-            <option value="">-- '.$txt['select'].' --</option>'.$listAvailableUsers.'
+            <option value="">-- '.$LANG['select'].' --</option>'.$listAvailableUsers.'
         </select>
         <br /><br />
-        <label>'.$txt['migrate_pf_user_salt'].'</label>: <input type="text" id="migrate_pf_user_salt" size="30" /><br />
+        <label>'.$LANG['migrate_pf_user_salt'].'</label>: <input type="text" id="migrate_pf_user_salt" size="30" /><br />
     </div>
 </div>';*/
 // USER LOGS
@@ -445,7 +474,7 @@ echo '
 <div id="user_logs_dialog" style="display:none;">
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_logs"></div>
      <div>' .
-$txt['nb_items_by_page'].':
+$LANG['nb_items_by_page'].':
         <select id="nb_items_by_page" onChange="displayLogs(1,$(\'#activity\').val())">
             <option value="10">10</option>
             <option value="25">25</option>
@@ -453,32 +482,32 @@ $txt['nb_items_by_page'].':
             <option value="100">100</option>
         </select>
         &nbsp;&nbsp;' .
-$txt['select'].':
+$LANG['select'].':
         <select id="activity" onChange="show_user_log($(\'#activity\').val())">
-            <option value="user_mngt">'.$txt['user_mngt'].'</option>
-            <option value="user_activity">'.$txt['user_activity'].'</option>
+            <option value="user_mngt">'.$LANG['user_mngt'].'</option>
+            <option value="user_activity">'.$LANG['user_activity'].'</option>
         </select>
         <span id="span_user_activity_option" style="display:none;">&nbsp;&nbsp;' .
-$txt['activity'].':
+$LANG['activity'].':
             <select id="activity_filter" onChange="displayLogs(1,\'user_activity\')">
-                <option value="all">'.$txt['all'].'</option>
-                <option value="at_modification">'.$txt['at_modification'].'</option>
-                <option value="at_creation">'.$txt['at_creation'].'</option>
-                <option value="at_delete">'.$txt['at_delete'].'</option>
-                <option value="at_import">'.$txt['at_import'].'</option>
-                <option value="at_restored">'.$txt['at_restored'].'</option>
-                <option value="at_pw">'.$txt['at_pw'].'</option>
-                <option value="at_shown">'.$txt['at_shown'].'</option>
+                <option value="all">'.$LANG['all'].'</option>
+                <option value="at_modification">'.$LANG['at_modification'].'</option>
+                <option value="at_creation">'.$LANG['at_creation'].'</option>
+                <option value="at_delete">'.$LANG['at_delete'].'</option>
+                <option value="at_import">'.$LANG['at_import'].'</option>
+                <option value="at_restored">'.$LANG['at_restored'].'</option>
+                <option value="at_pw">'.$LANG['at_pw'].'</option>
+                <option value="at_shown">'.$LANG['at_shown'].'</option>
             </select>
         </span>
     </div>
     <table width="100%">
         <thead>
             <tr>
-                <th width="20%">'.$txt['date'].'</th>
-                <th id="th_url" width="40%">'.$txt['label'].'</th>
-                <th width="20%">'.$txt['user'].'</th>
-                <th width="20%">'.$txt['activity'].'</th>
+                <th width="20%">'.$LANG['date'].'</th>
+                <th id="th_url" width="40%">'.$LANG['label'].'</th>
+                <th width="20%">'.$LANG['user'].'</th>
+                <th width="20%">'.$LANG['activity'].'</th>
             </tr>
         </thead>
         <tbody id="tbody_logs">

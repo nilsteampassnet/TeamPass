@@ -3,7 +3,7 @@
  * @file          kb.load.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -79,9 +79,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 300,
             height: 150,
-            title: "<?php echo $txt['item_menu_del_elem'];?>",
+            title: "<?php echo $LANG['item_menu_del_elem'];?>",
             buttons: {
-                "<?php echo $txt['del_button'];?>": function() {
+                "<?php echo $LANG['del_button'];?>": function() {
                     $.post(
                 		"sources/kb.queries.php",
                         {
@@ -96,7 +96,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         }
                    )
                 },
-                "<?php echo $txt['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button'];?>": function() {
                     $(this).dialog("close");
                 }
             }
@@ -109,9 +109,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 900,
             height: 600,
-            title: "<?php echo $txt['kb_form'];?>",
+            title: "<?php echo $LANG['kb_form'];?>",
             buttons: {
-                "<?php echo $txt['save_button'];?>": function() {
+                "<?php echo $LANG['save_button'];?>": function() {
                     if ($("#kb_label").val() == "") {
                         $("#kb_label").addClass("ui-state-error");
                     } else if ($("#kb_category").val() == "") {
@@ -146,7 +146,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                        );
                     }
                 },
-                "<?php echo $txt['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button'];?>": function() {
                     $(this).dialog("close");
                 }
             },

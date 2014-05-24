@@ -3,7 +3,7 @@
  * @file          views.load.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -63,7 +63,7 @@ function ListerElemDel()
 
 function restoreDeletedItems()
 {
-    if (confirm("<?php echo $txt['views_confirm_restoration'];?>")) {
+    if (confirm("<?php echo $LANG['views_confirm_restoration'];?>")) {
         var list_i = "";
         $(".cb_deleted_item:checked").each(function() {
             if (list_i == "") list_i = $(this).val();
@@ -91,7 +91,7 @@ function restoreDeletedItems()
 
 function reallyDeleteItems()
 {
-    if (confirm("<?php echo $txt['views_confirm_items_deletion'];?>")) {
+    if (confirm("<?php echo $LANG['views_confirm_items_deletion'];?>")) {
         var list_items = "";
         $(".cb_deleted_item:checked").each(function() {
             if (list_items == "") list_items = $(this).val();
@@ -240,7 +240,7 @@ $(function() {
 	        },
 	        function(data) {
 	        	if (data[0].status == "ok") {
-	        		$("#div_dialog_message_text").html("<?php echo $txt['purge_done'];?> "+data[0].nb);
+	        		$("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
 	        	    $("#div_dialog_message").dialog("open");
 	        	}
 	        	$("#purgeTo, #purgeFrom").val("");

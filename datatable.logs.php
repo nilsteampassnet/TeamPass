@@ -1,9 +1,9 @@
 <?php
 /**
- * @file          datatable.users_logged.php
- * @author        Nils Laumaill�
+ * @file          datatable.logs.php
+ * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaill�
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -11,9 +11,23 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+
+require_once('sources/sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -40,7 +54,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+        $sLimit = "LIMIT ". mysql_real_escape_string($_GET['iDisplayStart']) .", ". mysql_real_escape_string($_GET['iDisplayLength']) ."" ;
     }
 
     //Ordering
@@ -49,8 +63,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOrder = "ORDER BY  ";
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
+                        '".mysql_real_escape_string($_GET['sSortDir_'.$i]) ."', ";
             }
         }
 
@@ -74,7 +88,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
-    
+
     $sql = "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
@@ -127,10 +141,10 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['l.qui']), ENT_QUOTES).'",';
-        
+
         //col4
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
-        
+
         //Finish the line
         $sOutput .= '],';
     }
@@ -141,7 +155,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     } else {
         $sOutput .= '[] }';
     }
-    /* ERRORS LOG */ 
+    /* ERRORS LOG */
 } elseif (isset($_GET['action']) && $_GET['action'] == "errors") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
@@ -181,7 +195,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
-    
+
     $sql = "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
             FROM ".$pre."log_system AS l
             INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
@@ -232,10 +246,10 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['who']), ENT_QUOTES).'",';
-        
+
         //col4
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
-        
+
         //Finish the line
         $sOutput .= '],';
     }
@@ -286,7 +300,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
-    
+
     $sql = "SELECT l.date AS date, u.login AS login, i.label AS label
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
@@ -339,7 +353,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
-        
+
         //Finish the line
         $sOutput .= '],';
     }
@@ -390,7 +404,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
-    
+
     $sql = "SELECT l.date AS date, u.login AS login, i.label AS label
             FROM ".$pre."log_items AS l
             INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
@@ -443,7 +457,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
-        
+
         //Finish the line
         $sOutput .= '],';
     }
@@ -456,7 +470,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     }
     /* ADMIN LOG */
 } elseif (isset($_GET['action']) && $_GET['action'] == "admin") {
-    
+
 } elseif (isset($_GET['action']) && $_GET['action'] == "items") {
     //Columns name
     $aColumns = array('l.date', 'u.login', 'i.label', 'i.perso');

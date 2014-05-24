@@ -3,7 +3,7 @@
  * @file          kb.queries.table.php
  * @author        Nils Laumaillé
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('../sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -30,6 +31,7 @@ $db->connect();
 
 //Columns name
 $aColumns = array('id', 'category_id', 'label', 'description', 'author_id');
+$aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
 $sWhere = $sOrder = $sLimit = "";
@@ -38,19 +40,22 @@ $sWhere = $sOrder = $sLimit = "";
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
 
-if (isset($_GET['iSortCol_0'])) {
+if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-        if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-            $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                    ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
-        }
-    }
+	for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+		if (
+			$_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+			preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+		) {
+			$sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+			.mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+		}
+	}
 
     $sOrder = substr_replace($sOrder, "", -2);
     if ($sOrder == "ORDER BY") {
@@ -132,7 +137,16 @@ foreach ($rows as $reccord) {
     $sOutput .= '",';
 
     //col2
-    $ret_cat = $db->fetchRow("SELECT category FROM ".$pre."kb_categories WHERE id = ".$reccord['category_id']);
+    //$ret_cat = $db->fetchRow("SELECT category FROM ".$pre."kb_categories WHERE id = ".$reccord['category_id']);
+    $ret_cat = $db->queryGetRow(
+        "kb_categories",
+        array(
+            "category"
+        ),
+        array(
+            "id" => intval($reccord['category_id'])
+        )
+    );
     $sOutput .= '"'.htmlspecialchars(stripslashes($ret_cat[0]), ENT_QUOTES).'",';
 
     //col3
@@ -146,7 +160,16 @@ foreach ($rows as $reccord) {
     }
     */
     //col5
-    $ret_author = $db->fetchRow("SELECT login FROM ".$pre."users WHERE id = ".$reccord['author_id']);
+    //$ret_author = $db->fetchRow("SELECT login FROM ".$pre."users WHERE id = ".$reccord['author_id']);
+    $ret_author = $db->queryGetRow(
+        "users",
+        array(
+            "login"
+        ),
+        array(
+            "id" => intval($reccord['author_id'])
+        )
+    );
     $sOutput .= '"'.html_entity_decode($ret_author[0], ENT_NOQUOTES).'"';
 
     //Finish the line

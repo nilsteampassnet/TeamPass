@@ -1,9 +1,9 @@
 <?php
 /**
  * @file          views_database.php
- * @author        Nils Laumaillé
+ * @author        Nils LaumaillÃ©
  * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @copyright     (c) 2009-2014 Nils LaumaillÃ©
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,15 +12,27 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sources/sessions.php');
 session_start();
-
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
 include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
@@ -33,17 +45,17 @@ require_once 'views_database.load.php';
 echo '
     <div id="tabs-5">
         <div id="radio_database">
-            <input type="radio" id="radio10" name="radio_db" onclick="manage_div_display(\'tab5_1\'); loadTable(\'t_items_edited\');" /><label for="radio10">'.$txt['db_items_edited'].'</label>
-            <input type="radio" id="radio11" name="radio_db" onclick="manage_div_display(\'tab5_2\'); loadTable(\'t_users_logged\');" /><label for="radio11">'.$txt['db_users_logged'].'</label>
+            <input type="radio" id="radio10" name="radio_db" onclick="manage_div_display(\'tab5_1\'); loadTable(\'t_items_edited\');" /><label for="radio10">'.$LANG['db_items_edited'].'</label>
+            <input type="radio" id="radio11" name="radio_db" onclick="manage_div_display(\'tab5_2\'); loadTable(\'t_users_logged\');" /><label for="radio11">'.$LANG['db_users_logged'].'</label>
         </div>
         <div id="tab5_1" style="display:none;margin-top:30px;">
             <div style="margin:10px auto 25px auto;min-height:250px;" id="items_edited_page">
                 <table id="t_items_edited" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
                         <th style="width-max:38px;"></th>
-                        <th style="width:25%;">'.$txt['item_edition_start_hour'].'</th>
-                        <th style="width:30%;">'.$txt['user'].'</th>
-                        <th style="width:35%;">'.$txt['label'].'</th>
+                        <th style="width:25%;">'.$LANG['item_edition_start_hour'].'</th>
+                        <th style="width:30%;">'.$LANG['user'].'</th>
+                        <th style="width:35%;">'.$LANG['label'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>
@@ -53,16 +65,16 @@ echo '
         </div>
         <div id="tab5_2" style="display:none;margin-top:30px;">
             <div style="font-style:italic;">
-                <input type="button" class="button" id="but_disconnect_all_users" value="'.$txt['disconnect_all_users'].'"><br />
-                '.$txt['info_list_of_connected_users_approximation'].'
+                <input type="button" class="button" id="but_disconnect_all_users" value="'.$LANG['disconnect_all_users'].'"><br />
+                '.$LANG['info_list_of_connected_users_approximation'].'
             </div>
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_users_logged_page">
                 <table id="t_users_logged" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
                         <th style="width-max:38px;"></th>
-                        <th style="width:40%;">'.$txt['user'].'</th>
-                        <th style="width:20%;">'.$txt['role'].'</th>
-                        <th style="width:20%;">'.$txt['login_time'].'</th>
+                        <th style="width:40%;">'.$LANG['user'].'</th>
+                        <th style="width:20%;">'.$LANG['role'].'</th>
+                        <th style="width:20%;">'.$LANG['login_time'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

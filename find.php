@@ -4,13 +4,25 @@
  * @file 		  find.php
  * @author 		  Nils Laumaillé
  * @version       2.1.19
- * @copyright 	  (c) 2009-2013 Nils Laumaillé
+ * @copyright 	  (c) 2009-2014 Nils Laumaillé
  * @licensing	  GNU AFFERO GPL 3.0
  * @link
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -76,16 +88,16 @@ echo '
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
     <input type="hidden" id="personalItem" />
-    <div class="title ui-widget-content ui-corner-all">'.$txt['find'].'</div>
+    <div class="title ui-widget-content ui-corner-all">'.$LANG['find'].'</div>
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
     <thead><tr>
         <th style="width-max:38px;"></th>
-        <th style="width:15%;">'.$txt['label'].'</th>
-        <th style="width:20%;">'.$txt['login'].'</th>
-        <th style="width:25%;">'.$txt['description'].'</th>
-        <th style="width:13%;">'.$txt['tags'].'</th>
-        <th style="width:20%;">'.$txt['group'].'</th>
+        <th style="width:15%;">'.$LANG['label'].'</th>
+        <th style="width:20%;">'.$LANG['login'].'</th>
+        <th style="width:25%;">'.$LANG['description'].'</th>
+        <th style="width:13%;">'.$LANG['tags'].'</th>
+        <th style="width:20%;">'.$LANG['group'].'</th>
     </tr></thead>
     <tbody>
         <tr><td></td></tr>
@@ -93,15 +105,15 @@ echo '<input type="hidden" id="id_selected_item" />
 </table>
 </div>
 <div style="width:100%;text-align:center;margin:1px;border:1px;" class="ui-widget ui-state-highlight ui-corner-all">
-    <img src="includes/images/key_copy.png" />&nbsp;'.$txt['item_menu_copy_elem'].'&nbsp;&nbsp;|&nbsp;&nbsp;
-    <img src="includes/images/eye.png" />&nbsp;'.$txt['show'].'&nbsp;&nbsp;|&nbsp;&nbsp;
-    <img src="includes/images/key__arrow.png" />&nbsp;'.$txt['open_url_link'].'
+    <img src="includes/images/key_copy.png" />&nbsp;'.$LANG['item_menu_copy_elem'].'&nbsp;&nbsp;|&nbsp;&nbsp;
+    <img src="includes/images/eye.png" />&nbsp;'.$LANG['show'].'&nbsp;&nbsp;|&nbsp;&nbsp;
+    <img src="includes/images/key__arrow.png" />&nbsp;'.$LANG['open_url_link'].'
 </div>';
 // DIALOG TO WHAT FOLDER COPYING ITEM
 echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$txt['item_copy_to_folder'].'</div>
+    <div style="">'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
             <option value="0">---</option>' .
