@@ -4,8 +4,8 @@ namespace Database\Core;
 /**
  * @file          dataBase.class.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -77,6 +77,7 @@ class DbCore
 
         mysql_query("SET NAMES UTF8");
         mysql_query("SET CHARACTER SET 'utf8'");
+        mysql_query("SET sql_mode = ''");
 
         // unset the data so it can't be dumped
         $this->server='';
@@ -166,7 +167,159 @@ class DbCore
         $this->freeResult($query_id);
 
         return $record;
-    }#-#fetchArray()
+    }#-#fetchRow()
+
+    #-#############################################
+    # desc: builds the sql query
+    # param: tables, inputs, conditions, extras
+    # return: string SQL query
+    public function prepareData($table, $data, $where, $extra = "", $inner = "")
+    {
+        $q = "SELECT ";
+
+        // data
+        $d = "";
+        if (is_array($data)) {
+        	foreach ($data as $key => $val) {
+                if (is_int($key)) {
+                    $d .= "`".$this->escape($val)."`, ";
+                } else {
+                    if (strpos($key,'.') === false) {
+                        $d .= "`$key` AS $val, ";
+                    } else {
+                        $d .= "$key AS $val, ";
+                    }
+                }
+            }
+            $q .= substr_replace($d, "", -2);
+        } else {
+            $d = $data." ";
+        }
+
+        // table
+        if (is_array($table)) {
+            $t = "";
+            $q .= " FROM ";
+            foreach ($table as $key => $val) {
+                $t .= "`".$this->pre.$key."` AS ".$this->escape($val).", ";
+            }
+            $q .= substr_replace($t, "", -2)." ";
+        } else {
+            $q .= " FROM `".$this->pre.$table."` ";
+        }
+
+        // inner join conditions
+        if (!empty($inner)) {
+            $i = "";
+            foreach ($inner as $key => $val) {
+                $i .= "INNER JOIN ".$this->pre.$key." ON ".$val." ";
+            }
+            $q .= $i;
+        }
+
+        // where
+        $w = "";
+        foreach ($where as $key => $val) {
+            if (strtolower($val) == 'null') {
+                $w .= "`$key` = NULL, ";
+            } elseif (strtolower($val)=='now()') {
+                $w .= "`$key` = NOW(), ";
+            } else {
+                if (strpos($key,'.') === false) {
+                	if (strpos($val,'.') === false) {
+                    	$w .= "`$key` = '".$this->escape($val)."' AND ";
+                	} else {
+                		$w .= "`$key` = ".$this->escape($val)." AND ";
+                	}
+                } else {
+                	if (strpos($key,'_') !== false) {
+                		$key = str_replace( "_", "", $key);
+                	}
+					if (strpos($val,'.') === false) {
+                		$w .= "$key = '".$this->escape($val)."' AND ";
+                	} else {
+                	$w .= "$key = ".$this->escape($val)." AND ";
+                	}
+                }
+            }
+        }
+
+        // compile
+        return rtrim($q, ', ').' WHERE '. rtrim($w, ' AND ') . $extra .';';
+    }#-#prepareData()
+
+    #-#############################################
+    # desc: fetches and return result of one line
+    # param: table (no prefix), array of fields to return, array for where conditions
+    # return: (array) fetched record
+    public function queryGetRow($table, $data, $where, $extra = "", $inner = "")
+    {
+        $q =  $this->prepareData($table, $data, $where, $extra, $inner);
+		//echo $q."|";
+        $query_id = $this->query($q);
+
+        if (isset($this->query_id)) {
+            $record = mysql_fetch_row($this->query_id);
+        } else {
+            $this->oops("Invalid query_id: <b>$this->query_id</b>. Records could not be fetched.");
+        }
+
+        $this->freeResult($query_id);
+
+        return $record;
+    }#-#queryGetRow()
+
+    #-#############################################
+    # desc: fetches and return result of one line
+    # param: table (no prefix), array of fields to return, array for where conditions
+    # return: (array) fetched record
+    public function queryGetArray($table, $data, $where, $extra = "", $inner = "")
+    {
+        $q =  $this->prepareData($table, $data, $where, $extra, $inner);
+
+        $query_id = $this->query($q);
+
+        if (isset($this->query_id)) {
+            $record = mysql_fetch_assoc($this->query_id) or die(mysql_error()." | ".$q);
+        } else {
+            $this->oops("Invalid query_id: <b>$this->query_id</b>. Records could not be fetched.");
+        }
+
+        $this->freeResult($query_id);
+
+        return $record;
+    }#-#queryGetRow()
+
+    #-#############################################
+    # desc: fetches and return the number of lines
+    # param: table (no prefix), array of fields to return, array for where conditions
+    # return: (array) fetched record
+    public function queryCount($table, $where)
+    {
+        $q = "SELECT COUNT(*) FROM `".$this->pre.$table."` ";
+
+        if (is_array($where)) {
+            $w = "";
+            foreach ($where as $key => $val) {
+                if (strtolower($val) == 'null') {
+                    $w .= "`$key` = NULL, ";
+                } elseif (strtolower($val)=='now()') {
+                    $w .= "`$key` = NOW(), ";
+                } else {
+                    $w .= "`$key`='".$this->escape($val)."' AND ";
+                }
+            }
+        } else {
+            $w = $where;
+        }
+        $q = rtrim($q, ', ').' WHERE '. rtrim($w, ' AND ') .';';
+
+        $query_id = $this->query($q);
+        $out = mysql_fetch_row($query_id);
+        $this->freeResult($query_id);
+
+        return $out;
+    }
 
 
     #-#############################################
@@ -288,12 +441,12 @@ class DbCore
         }
 
         $q .= "(". rtrim($n, ', ') .") VALUES (". rtrim($v, ', ') .");";
-        
+
         $this->query($q);
-        
+
         if (isset($this->link_id)) {
             return mysql_insert_id($this->link_id);
-        } else {            
+        } else {
             $this->oops("Result ID: <b>$this->query_id</b> could not be executed.");
             return false;
         }
@@ -349,7 +502,6 @@ class DbCore
             //echo '$("#mysql_error_warning").html("'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),$msg).'<br />'.str_replace(array(CHR(10),CHR(13)),array('\n','\n'),addslashes($this->error)).'");';
             //echo '$("#div_mysql_error").dialog("open");';
             return str_replace(array(CHR(10), CHR(13)), array('\n', '\n'), $msg).'<br />'.str_replace(array(CHR(10), CHR(13)), array('\n', '\n'), addslashes($this->error));
-            exit;
         } else {
             //DB connection error
             echo '

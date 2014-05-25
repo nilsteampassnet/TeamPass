@@ -2,8 +2,8 @@
 /**
  * @file          kb.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,12 +12,24 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
 if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])
-        || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1
-) {
+        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+        !isset($_SESSION['key']) || empty($_SESSION['key'])
+        || !isset($_SESSION['settings']['enable_kb'])
+        || $_SESSION['settings']['enable_kb'] != 1)
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "kb")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -56,7 +68,6 @@ if (!empty($_POST['type'])) {
                 break;
             }
             //decrypt and retreive data in JSON format
-            //$data_received = json_decode((Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256)), true);
             $data_received = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
@@ -69,8 +80,16 @@ if (!empty($_POST['type'])) {
 
             //check if allowed to modify
             if (isset($id) && !empty($id)) {
-                $row = $db->query("SELECT anyone_can_modify, author_id FROM ".$pre."kb WHERE id = ".$id);
-                $ret = $db->fetchArray($row);
+                $ret = $db->queryGetArray(
+                    "kb",
+                    array(
+                        "anyone_can_modify",
+                        "author_id"
+                    ),
+                    array(
+                        "id" => intval($id)
+                    )
+                );
                 if ($ret['anyone_can_modify'] == 1 || $ret['author_id'] == $_SESSION['user_id']) {
                     $manage_kb = true;
                 } else {
@@ -81,7 +100,13 @@ if (!empty($_POST['type'])) {
             }
             if ($manage_kb == true) {
                 //Add category if new
-                $data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
+                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
+                $data = $db->queryCount(
+                    "kb_categories",
+                    array(
+                        "category" => $category
+                    )
+                );
                 if ($data[0] == 0) {
                     $cat_id = $db->queryInsert(
                         "kb_categories",
@@ -155,15 +180,29 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            $row = $db->query(
-                "SELECT k.id as id, k.label as label, k.description as description, k.category_id as category_id, k.author_id as author_id, k.anyone_can_modify as anyone_can_modify,
-                u.login as login, c.category as category
-                FROM ".$pre."kb as k
-                INNER JOIN ".$pre."kb_categories as c ON (c.id = k.category_id)
-                INNER JOIN ".$pre."users as u ON (u.id = k.author_id)
-                WHERE k.id = '".$_POST['id']."'"
+            $ret = $db->queryGetArray(
+                array(
+                    "kb" => "k"
+                ),
+                array(
+                    "k.id" => "id",
+                    "k.label" => "label",
+                    "k.description" => "description",
+                    "k.category_id" => "category_id",
+                    "k.author_id" => "author_id",
+                    "k.anyone_can_modify" => "anyone_can_modify",
+                    "u.login" => "login",
+                    "c.category" => "category"
+                ),
+                array(
+                    "k.id" => intval($_POST['id'])
+                ),
+                "",
+                array(
+                    "kb_categories AS c" => "(c.id = k.category_id)",
+                    "users AS u" => "(u.id = k.author_id)"
+                )
             );
-            $ret = $db->fetchArray($row);
 
             //select associated items
             $rows = $db->fetchAllArray(

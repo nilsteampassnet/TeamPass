@@ -2,9 +2,9 @@
 /**
  *
  * @file          main.queries.php
- * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @author        Nils LaumaillÃ©
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils LaumaillÃ©
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -15,6 +15,7 @@
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
+require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -44,7 +45,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256), true);
+    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
         // Prepare variables
         $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
@@ -143,13 +144,22 @@ switch ($_POST['type']) {
                    )
             );
             //Send email to user
-            $row = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id=".$dataReceived['user_id']);
+            // $row = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id=".$dataReceived['user_id']);
+            $row = $db->queryGetRow(
+                "users",
+                array(
+                    "email"
+                ),
+                array(
+                    "id" => intval($dataReceived['user_id'])
+                )
+            );
             if (!empty($row[0])) {
                 sendEmail(
-                    $txt['forgot_pw_email_subject'],
-                    $txt['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
+                    $LANG['forgot_pw_email_subject'],
+                    $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
                     $row[0],
-                    $txt['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
+                    $LANG['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
                 );
             }
 
@@ -192,48 +202,50 @@ switch ($_POST['type']) {
     */
     case "ga_generate_qr":
     	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-    	// decrypt and retreive data in JSON format
-    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
-    	// Prepare variables
-    	$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    	$username = htmlspecialchars_decode($dataReceived['login']);
 
     	// Check if user exists
-    	$sql = "SELECT id, ga, pw FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
-    	$row = $db->query($sql);
-    	if ($row == 0) {
+    	$row = $db->query(
+    		"SELECT login, email
+    		FROM ".$pre."users
+    		WHERE id = '".$_POST['id']."'"
+    	);
+    	$data = $db->fetchArray($row);
+    	if (count($data) == 0) {
     		// not a registered user !
     		echo '[{"error" : "no_user"}]';
     	} else {
-    		// check if good credentials
-    		$data = $db->fetchArray($row);
-    		if (crypt($passwordClear, $data['pw']) == $data['pw']) {
-    			// check if user has already a SECRET
+    		if (empty($data['email'])) {
+    			echo '[{"error" : "no_email"}]';
+    		} else {
+    			// generate new GA user code
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
     			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
     			$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
-    			if (empty($data['ga'])) {
-    				// no SECRET yet
-    				$_SESSION['ga_secret'] = $g->generateSecret();
+    			$gaSecretKey = $g->generateSecret();
 
-    				$db->queryUpdate(
-	    				"users",
-	    				array(
-	    				    'ga' => $_SESSION['ga_secret']
-	    				   ),
-	    				"id = ".$data['id']
-    				);
-    			} else {
-    				// secret exists
-    				$_SESSION['ga_secret'] = $data['ga'];
-    			}
+    			// save the code
+    			$db->queryUpdate(
+	    			"users",
+	    			array(
+	    			    'ga' => $gaSecretKey
+	    			   ),
+	    			"id = ".$_POST['id']
+    			);
+
     			// generate QR url
-    			$gaUrl = $g->getURL($username, $_SESSION['settings']['ga_website_name'], $_SESSION['ga_secret']);
+    			$gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
 
+    			// send mail?
+    			if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
+    				sendEmail (
+    					$LANG['email_ga_subject'],
+    					str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
+    					$data['email']
+					);
+    			}
+
+    			// send back
     			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
-    		} else {
-    			// not good credentials
-    			echo '[{"error" : "bad_couple"}]';
     		}
     	}
     	break;
@@ -242,7 +254,7 @@ switch ($_POST['type']) {
      */
     case "identify_user":
         // decrypt and retreive data in JSON format
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION["key"], 256), true);
+    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
         // Prepare variables
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
@@ -266,85 +278,113 @@ switch ($_POST['type']) {
         if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                 && $username != "admin"
         ) {
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "Get all ldap params : \n" .
-                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
-                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
-                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
-                    'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
-                );
-            }
-
-            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-
-        	// Posix style LDAP handles user searches a bit differently
-	        if ($_SESSION['settings']['ldap_type'] == 'posix') {
-	            $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
-	        }
-			elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
-			    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
-			}
-
-            $adldap = new LDAP\adLDAP\adLDAP(
-                array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-                )
-            );
-
-            /*try {
+            if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
+                $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+                ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+                if ($ldapconn) {
+                    $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd'] );
+                    if ($ldapbind) {
+                        $filter="(&(" . $_SESSION[settings][ldap_user_attribute]. "=$username)(objectClass=posixAccount))";
+                        $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                        if (ldap_count_entries($ldapconn, $result)) {
+                            // try auth
+                            $result = ldap_get_entries($ldapconn, $result);
+                            $user_dn = $result[0]['dn'];
+                            $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear );
+                            if ($ldapbind) {
+                                $ldapConnection = true;
+                            } else {
+                                $ldapConnection = false;
+                            }
+                        }
+                    } else {
+                        $ldapConnection = false;
+                    }
+                } else {
+                    $ldapConnection = false;
+                }
+            } else {
+                if ($debugLdap == 1) {
+                    fputs(
+                        $dbgLdap,
+                        "Get all ldap params : \n" .
+                        'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
+                        'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+                        'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+                        'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+                        'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
+                    );
+                }
                 $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-                $adldap = new LDAP\adLDAP\adLDAP( array(
+                $adldap->register();
+
+                // Posix style LDAP handles user searches a bit differently
+                if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                    $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+                }
+                elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+                    $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
+                }
+                $adldap = new LDAP\adLDAP\adLDAP(
+                    array(
                         'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                        'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                        'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                        'account_suffix' => $ldap_suffix,
+                        'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
                         'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                         'use_tls' => $_SESSION['settings']['ldap_tls']
-                ) );
-            }
-            catch(Exception $e)
-            {
-                echo $e->getMessage();
-            }*/
-            /*$adldap = new adLDAP( array(
-                    'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                    'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                    'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                    'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                    'use_tls' => $_SESSION['settings']['ldap_tls']
-            ) );*/
-            if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
-            }
+                    )
+                );
 
-        	// openLDAP expects an attribute=value pair
-    	    if ($_SESSION['settings']['ldap_type'] == 'posix') {
- 		        $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
- 		    } else {
-        		$auth_username = $username;
-        	}
+                /*try {
+                    $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+                $adldap->register();
+                    $adldap = new LDAP\adLDAP\adLDAP( array(
+                            'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                            'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                            'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                            'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                            'use_tls' => $_SESSION['settings']['ldap_tls']
+                    ) );
+                }
+                catch(Exception $e)
+                {
+                    echo $e->getMessage();
+                }*/
+                /*$adldap = new adLDAP( array(
+                          'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
+                          'account_suffix' => $_SESSION['settings']['ldap_suffix'],
+                          'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
+                          'use_ssl' => $_SESSION['settings']['ldap_ssl'],
+                          'use_tls' => $_SESSION['settings']['ldap_tls']
+                ) );*/
+                if ($debugLdap == 1) {
+                    fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+                }
 
-            // authenticate the user
-            if ($adldap->authenticate($auth_username, $passwordClear)) {
-                $ldapConnection = true;
-            } else {
-                $ldapConnection = false;
+                // openLDAP expects an attribute=value pair
+                if ($_SESSION['settings']['ldap_type'] == 'posix') {
+                    $auth_username = $_SESSION['settings']['ldap_user_attribute'].'='.$username;
+                }
+                else {
+                    $auth_username = $username;
+                }
+
+                // authenticate the user
+                if ($adldap->authenticate($auth_username, $passwordClear)) {
+                    $ldapConnection = true;
+                } else {
+                    $ldapConnection = false;
+                }
+                if ($debugLdap == 1) {
+                    fputs(
+                        $dbgLdap,
+                        "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
+                        "ldap status : ".$ldapConnection."\n\n\n"
+                    ); //Debug
+                }
             }
-            if ($debugLdap == 1) {
-                fputs(
-                    $dbgLdap,
-                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
-                    "ldap status : ".$ldapConnection."\n\n\n"
-                ); //Debug
-            }
+        } else if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2) {
+            // nothing
         }
         // Check if user exists
         $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
@@ -474,6 +514,10 @@ switch ($_POST['type']) {
                     && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
+                    && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                )
+                ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                     && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
                     && $data['disabled'] == 0
@@ -538,13 +582,13 @@ switch ($_POST['type']) {
                 );
                 // user type
                 if ($_SESSION['user_admin'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['god'];
+                    $_SESSION['user_privilege'] = $LANG['god'];
                 } elseif ($_SESSION['user_manager'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['gestionnaire'];
+                    $_SESSION['user_privilege'] = $LANG['gestionnaire'];
                 } elseif ($_SESSION['user_read_only'] == 1) {
-                    $_SESSION['user_privilege'] = $txt['read_only_account'];
+                    $_SESSION['user_privilege'] = $LANG['read_only_account'];
                 } else {
-                    $_SESSION['user_privilege'] = $txt['user'];
+                    $_SESSION['user_privilege'] = $LANG['user'];
                 }
 
                 if (empty($data['last_connexion'])) {
@@ -665,7 +709,7 @@ switch ($_POST['type']) {
                         'emails',
                         array(
                             'timestamp' => time(),
-                            'subject' => $txt['email_subject_on_user_login'],
+                            'subject' => $LANG['email_subject_on_user_login'],
                             'body' => str_replace(
                                 array(
                                     '#tp_user#',
@@ -677,7 +721,7 @@ switch ($_POST['type']) {
                                     date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']),
                                     date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])
                                 ),
-                                $txt['email_body_on_user_login']
+                                $LANG['email_body_on_user_login']
                             ),
                             'receivers' => $receivers,
                             'status' => "not sent"
@@ -777,27 +821,37 @@ switch ($_POST['type']) {
         $key = $pwgen->generate();
 
         // Get account and pw associated to email
-        $data = $db->fetchRow(
-            "SELECT COUNT(*) FROM ".$pre."users WHERE email = '".
-            mysql_real_escape_string(stripslashes(($_POST['email'])))."'"
+        $data = $db->queryCount(
+            "users",
+            array(
+                "email" => mysql_real_escape_string(stripslashes($_POST['email']))
+            )
         );
-        $textMail = $txt['forgot_pw_email_body_1']." <a href=\"".
-            $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-            "&login=".$_POST['login']."\">".$_SESSION['settings']['cpassman_url'].
-            "/index.php?action=password_recovery&key=".$key."&login=".$_POST['login']."</a>.<br><br>".$txt['thku'];
-        $textMailAlt = $txt['forgot_pw_email_altbody_1']." ".$txt['at_login']." : ".$data['login']." - ".
-            $txt['index_password']." : ".md5($data['pw']);
 
         if ($data[0] != 0) {
             $data = $db->fetchArray(
                 "SELECT login,pw FROM ".$pre."users WHERE email = '".
-                mysql_real_escape_string(stripslashes(($_POST['email'])))."'"
+                mysql_real_escape_string(stripslashes($_POST['email']))."'"
             );
 
+        	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
+        	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+        	    "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+        	    "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$LANG['thku'];
+        	$textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
+        	    $LANG['index_password']." : ".md5($data['pw']);
+
             // Check if email has already a key in DB
-            $data = $db->fetchRow(
-                "SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".
-                $_POST['login']."' AND type = 'password_recovery'"
+            //$data = $db->fetchRow(
+            //    "SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".
+            //    mysql_real_escape_string($_POST['login'])."' AND type = 'password_recovery'"
+            //);
+            $data = $db->queryCount(
+                "misc",
+                array(
+                    "intitule" => $_POST['login'],
+                    "type" => "password_recovery"
+                )
             );
             if ($data[0] != 0) {
                 $db->queryUpdate(
@@ -807,7 +861,7 @@ switch ($_POST['type']) {
                     ),
                     array(
                             'type' => 'password_recovery',
-                            'intitule' => $_POST['login']
+                            'intitule' => mysql_real_escape_string($_POST['login'])
                     )
                 );
             } else {
@@ -816,26 +870,41 @@ switch ($_POST['type']) {
                     'misc',
                     array(
                             'type' => 'password_recovery',
-                            'intitule' => $_POST['login'],
+                            'intitule' => mysql_real_escape_string($_POST['login']),
                             'valeur' => $key
                     )
                 );
             }
 
-            echo '[{'.sendEmail($txt['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
+            echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
         } else {
             // no one has this email ... alert
-            echo '[{"error":"error_email" , "message":"'.$txt['forgot_my_pw_error_email_not_exist'].'"}]';
+            echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
         }
         break;
     // Send to user his new pw if key is conform
     case "generate_new_password":
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+        // Prepare variables
+        $login = htmlspecialchars_decode($dataReceived['login']);
+        $key = htmlspecialchars_decode($dataReceived['key']);
         // check if key is okay
-        $data = $db->fetchRow(
+        /*$data = $db->fetchRow(
             "SELECT valeur FROM ".$pre."misc WHERE intitule = '".
-            $_POST['login']."' AND type = 'password_recovery'"
+            mysql_real_escape_string($login)."' AND type = 'password_recovery'"
+        );*/
+        $data = $db->queryGetRow(
+            "misc",
+            array(
+                "valeur"
+            ),
+            array(
+                "type" => "password_recovery",
+                "intitule" => $login
+            )
         );
-        if ($_POST['key'] == $data[0]) {
+        if ($key == $data[0]) {
             //Load PWGEN
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
@@ -857,28 +926,28 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $newPw
                    ),
-                "login = '".$_POST['login']."'"
+                "login = '".mysql_real_escape_string($login)."'"
             );
             // Delete recovery in DB
             $db->queryDelete(
                 "misc",
                 array(
                     'type' => 'password_recovery',
-                    'intitule' => $_POST['login'],
+                    'intitule' => mysql_real_escape_string($login),
                     'valeur' => $key
                    )
             );
             // Get email
-            $dataUser = $db->queryFirst("SELECT email FROM ".$pre."users WHERE login = '".$_POST['login']."'");
+            $dataUser = $db->queryFirst("SELECT email FROM ".$pre."users WHERE login = '".mysql_real_escape_string($login)."'");
 
             $_SESSION['validite_pw'] = false;
             // send to user
             $ret = json_decode(
                 @sendEmail(
-                    $txt['forgot_pw_email_subject_confirm'],
-                    $txt['forgot_pw_email_body']." ".$newPwNotCrypted,
+                    $LANG['forgot_pw_email_subject_confirm'],
+                    $LANG['forgot_pw_email_body']." ".$newPwNotCrypted,
                     $dataUser['email'],
-                    strip_tags($txt['forgot_pw_email_body'])." ".$newPwNotCrypted
+                    strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
                 )
             );
             // send email
@@ -901,7 +970,7 @@ switch ($_POST['type']) {
         $arrOutput = array();
 
         /* Build list of all folders */
-        $foldersList = "\'0\':\'".$txt['root']."\'";
+        $foldersList = "\'0\':\'".$LANG['root']."\'";
         foreach ($folders as $f) {
             // Be sure that user can only see folders he/she is allowed to
             if (!in_array($f->id, $_SESSION['forbiden_pfs'])) {
@@ -1015,18 +1084,22 @@ switch ($_POST['type']) {
      */
     case "change_user_language":
         if (!empty($_SESSION['user_id'])) {
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            // Prepare variables
+            $language = $dataReceived['lang'];
             // update DB
             $db->queryUpdate(
                 "users",
                 array(
-                    'user_language' => $_POST['lang']
+                    'user_language' => $language
                    ),
                 "id = ".$_SESSION['user_id']
             );
-            $_SESSION['user_language'] = $_POST['lang'];
+            $_SESSION['user_language'] = $language;
         	echo "done";
         } else {
-            $_SESSION['user_language'] = $_POST['lang'];
+            $_SESSION['user_language'] = $language;
             echo "done";
         }
         break;
@@ -1122,26 +1195,60 @@ switch ($_POST['type']) {
      * Generate a password generic
      */
     case "generate_a_password":
+    	if ($_POST['size'] > $_SESSION['settings']['pwd_maximum_length']) {
+    		echo prepareExchangedData(
+	    		array(
+		    		"error_msg" => "Password length is too long!",
+		    		"error" => "true"
+	    		),
+	    		"encode"
+    		);
+    		break;
+    	}
+
         //Load PWGEN
         $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
         $pwgen->register();
         $pwgen = new Encryption\PwGen\pwgen();
-        //Generate
-        $pwgen->setLength($_POST['length']);
-        $pwgen->setSecure($_POST['secure']);
-        $pwgen->setSymbols($_POST['symbols']);
-        $pwgen->setCapitalize($_POST['capitalize']);
-        $pwgen->setNumerals($_POST['numerals']);
 
-        echo Encryption\Crypt\aesctr::encrypt($pwgen->generate(), $_SESSION['key'], 256);
+    	$pwgen->setLength($_POST['size']);
+    	if (isset($_POST['secure']) && $_POST['secure'] == "true") {
+    		$pwgen->setSecure(true);
+    		$pwgen->setSymbols(true);
+    		$pwgen->setCapitalize(true);
+    		$pwgen->setNumerals(true);
+    	} else {
+    		$pwgen->setSecure(($_POST['secure'] == "true")? true : false);
+    		$pwgen->setNumerals(($_POST['numerals'] == "true")? true : false);
+    		$pwgen->setCapitalize(($_POST['capitalize'] == "true")? true : false);
+    		$pwgen->setSymbols(($_POST['symbols'] == "true")? true : false);
+    	}
+
+        echo prepareExchangedData(
+        	array(
+	        	"key" => $pwgen->generate(),
+	        	"error" => ""
+        	),
+        	"encode"
+        );
         break;
     /**
      * Check if user exists and send back if psk is set
      */
     case "check_login_exists":
-        $sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($_POST['userId'])."'";
+        /*$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($_POST['userId'])."'";
         $row = $db->query($sql);
-        $data = $db->fetchArray($row);
+        $data = $db->fetchArray($row);*/
+        $data = $db->queryGetArray(
+            "users",
+            array(
+                "login",
+                "psk"
+            ),
+            array(
+                "login" => $_POST['userId']
+            )
+        );
         if (empty($data['login'])) {
             $userOk = false;
         } else {

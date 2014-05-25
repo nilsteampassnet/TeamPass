@@ -2,8 +2,8 @@
 /**
  * @file 		upload.attachments.php
  * @author		Nils Laumaillé
- * @version 	2.1.16
- * @copyright 	(c) 2009-2013 Nils Laumaillé
+ * @version 	2.1.20
+ * @copyright 	(c) 2009-2014 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -12,9 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('../sessions.php');
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+        !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    handleError('Not allowed to ...', 110);
+    exit();
 }
 
 //check for session
@@ -154,11 +167,31 @@ if (isset($_SERVER["CONTENT_TYPE"])) {
     $contentType = $_SERVER["CONTENT_TYPE"];
 }
 
+// should we encrypt the attachment?
+if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+    // prepare encryption of attachment
+    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+    $key = substr(
+        md5("\x2D\xFC\xD8".SALT, true).
+        md5("\x2D\xFC\xD9".SALT, true),
+        0,
+        24
+    );
+    $opts = array('iv'=>$iv, 'key'=>$key);
+}
+
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, "multipart") !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
+
+        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+            // Add the Mcrypt stream filter
+            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+        }
+
         if ($out) {
             // Read binary input stream and append it to temp file
             $in = fopen($_FILES['file']['tmp_name'], "rb");
@@ -186,6 +219,12 @@ if (strpos($contentType, "multipart") !== false) {
 } else {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
+
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+        // Add the Mcrypt stream filter
+        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+    }
+
     if ($out) {
         // Read binary input stream and append it to temp file
         $in = fopen("php://input", "rb");

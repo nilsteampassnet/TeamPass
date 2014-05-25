@@ -3,8 +3,8 @@
 /**
  * @file          views_logs.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -175,9 +175,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $txt["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
-            "<?php echo $txt["ok"];?>": function() {
+            "<?php echo $LANG["ok"];?>": function() {
             	$.post(
                     "sources/users.queries.php",
                     {
@@ -190,7 +190,7 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $txt["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -200,6 +200,15 @@ $(function() {
     * PURGE
     */
     $("#butPurge").button().click(function(e) {
+        // prepare dialogbox
+        $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main'];?>");
+        $("#div_dialog_message").dialog("option", "buttons", {
+        	"<?php echo $LANG['ok'];?>": function() {
+                $(this).dialog("close");
+            }
+        });
+
+        // send query
     	$.post(
 	        "sources/views.queries.php",
 	        {
@@ -210,7 +219,7 @@ $(function() {
 	        },
 	        function(data) {
 	        	if (data[0].status == "ok") {
-	        		$("#div_dialog_message_text").html("<?php echo $txt['purge_done'];?> "+data[0].nb);
+	        		$("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
 	        	    $("#div_dialog_message").dialog("open");
 	        	}
 	        	$("#purgeTo, #purgeFrom").val("");

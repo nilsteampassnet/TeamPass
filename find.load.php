@@ -2,8 +2,8 @@
 /**
  * @file          find.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -41,9 +41,9 @@ $("#div_copy_item_to_folder").dialog({
       autoOpen: false,
       width: 400,
       height: 200,
-      title: "<?php echo $txt['item_menu_copy_elem'];?>",
+      title: "<?php echo $LANG['item_menu_copy_elem'];?>",
       buttons: {
-          "<?php echo $txt['ok'];?>": function() {
+          "<?php echo $LANG['ok'];?>": function() {
               //Send query
                 $.post(
                     "sources/items.queries.php",
@@ -62,7 +62,7 @@ $("#div_copy_item_to_folder").dialog({
                         }
                         //if OK
                         if (data[0].status == "ok") {
-                            $("#div_dialog_message_text").html("<?php echo $txt['alert_message_done'];?>");
+                            $("#div_dialog_message_text").html("<?php echo $LANG['alert_message_done'];?>");
                             $("#div_dialog_message").dialog('open');
                             $("#div_copy_item_to_folder").dialog('close');
                         }
@@ -70,7 +70,7 @@ $("#div_copy_item_to_folder").dialog({
                     "json"
                );
           },
-          "<?php echo $txt['cancel_button'];?>": function() {
+          "<?php echo $LANG['cancel_button'];?>": function() {
               $("#copy_item_to_folder_show_error").html("").hide();
               $(this).dialog('close');
           }
@@ -93,10 +93,10 @@ $("#div_item_data").dialog({
       autoOpen: false,
       width: 450,
       height: 220,
-      title: "<?php echo $txt['see_item_title'];?>",
+      title: "<?php echo $LANG['see_item_title'];?>",
       open:
         function(event, ui) {
-              $("#div_item_data_show_error").html("<?php echo $txt['admin_info_loading'];?>").show();
+              $("#div_item_data_show_error").html("<?php echo $LANG['admin_info_loading'];?>").show();
             $.post(
                 "sources/items.queries.php",
                 {
@@ -113,17 +113,17 @@ $("#div_item_data").dialog({
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired
-                        return_html = "<?php echo $txt['not_allowed_to_see_pw_is_expired'];?>";
+                        return_html = "<?php echo $LANG['not_allowed_to_see_pw_is_expired'];?>";
                     } else if (data.show_details == "0") {
                         //Admin cannot see Item
-                        return_html = "<?php echo $txt['not_allowed_to_see_pw'];?>";
+                        return_html = "<?php echo $LANG['not_allowed_to_see_pw'];?>";
                     } else {
                         return_html = "<table>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['label'];?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['description'];?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['pw'];?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['index_login'];?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $txt['url'];?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['label'];?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['description'];?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['pw'];?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['index_login'];?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['url'];?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
                         "</table>";
                     }
                     $("#div_item_data_show_error").html("").hide();
@@ -138,7 +138,7 @@ $("#div_item_data").dialog({
         }
         ,
       buttons: {
-          "<?php echo $txt['ok'];?>": function() {
+          "<?php echo $LANG['ok'];?>": function() {
               $(this).dialog('close');
           }
       }

@@ -2,8 +2,8 @@
 /**
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -44,6 +44,9 @@ function catInFolders(id) {
 * Add a new category
 */
 function categoryAdd() {
+	if ($("#new_category_label").val() == "") {
+		return false;
+	}
     $("#div_loading").show();
 	//send query
     $.post(
@@ -59,16 +62,17 @@ function categoryAdd() {
                 '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;'+
                 '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
-                $("#new_category_label").val()+'</label><a href="#" title="<?php echo $txt['field_add_in_category'];?>" onclick="fieldAdd('+
-                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td>'+
-                '<a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
-                '<?php echo $txt['category_in_folders_title'];?>:'+
-                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
-                '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td><td></td>');
+                $("#new_category_label").val()+'</label><a href="#" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
+                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td><td>'+
+                '<a href="#" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+data[0].id+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                '<?php echo $LANG['category_in_folders_title'];?>:'+
+                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
+                '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
         	$("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
         	// clean
             $("#new_category_label, #new_item_title").val("");
+        	//loadFieldsList();
             $("#div_loading,#no_category").hide();
         },
         "json"
@@ -82,7 +86,7 @@ function renameItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
 	$("#post_id").val(data[1]);
 	$("#post_type").val("renameItem");
-	$("#category_confirm_text").html("<?php echo $txt['confirm_rename'];?>");
+	$("#category_confirm_text").html("<?php echo $LANG['confirm_rename'];?>");
 	$("#category_confirm").dialog("open");
 }
 
@@ -93,7 +97,7 @@ function deleteItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
 	$("#post_id").val(data[1]);
 	$("#post_type").val("deleteCategory");
-	$("#category_confirm_text").html("<?php echo $txt['confirm_deletion'];?>");
+	$("#category_confirm_text").html("<?php echo $LANG['confirm_deletion'];?>");
 	$("#category_confirm").dialog("open");
 }
 
@@ -104,7 +108,7 @@ function moveItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
 	$("#post_id").val(data[1]);
 	$("#post_type").val("moveItem");
-	$("#category_confirm_text").html("<?php echo $txt['confirm_moveto'];?>");
+	$("#category_confirm_text").html("<?php echo $LANG['confirm_moveto'];?>");
 	$("#category_confirm").dialog("open");
 }
 
@@ -167,10 +171,10 @@ function loadFieldsList() {
                     '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
                     '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
-                    '<a href="#" title="<?php echo $txt['field_add_in_category'];?>" onclick="fieldAdd('+val[1]+')" class="cpm_button tip" style="margin-left:20px;">'+
+                    '<a href="#" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+val[1]+')" class="cpm_button tip" style="margin-left:20px;">'+
                     '<img  src="includes/images/zone--plus.png"  /></a></td>'+
-                    '<td><a href="#" title="<?php echo $txt['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
-                    '<?php echo $txt['category_in_folders_title'];?>:'+
+                    '<td><a href="#" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                    '<?php echo $LANG['category_in_folders_title'];?>:'+
                     '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
                     '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                 } else {
@@ -212,7 +216,10 @@ function LaunchAdminActions(action,option)
     else if (action == "admin_action_change_salt_key") {
         option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
     } else if (action == "admin_email_send_backlog") {
-        $("#email_testing_results").show().html("'.addslashes($txt['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+        $("#email_testing_results").show().html("'.addslashes($LANG['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
+    } else if (action == "admin_action_attachments_cryption") {
+        option = $("input[name=attachments_cryption]:checked").val();
+        if (option == "") return;
     }
     //Lauchn ajax query
     $.post(
@@ -225,7 +232,7 @@ function LaunchAdminActions(action,option)
             $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
-                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $txt['pdf_download'];?></a>");
+                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>");
                 } else if (data[0].result == "pf_done") {
                     $("#result_admin_action_check_pf").show();
                 } else if (data[0].result == "db_restore") {
@@ -240,9 +247,9 @@ function LaunchAdminActions(action,option)
                 } else if (data[0].result == "db_optimize") {
                     $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />");
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $txt['admin_action_purge_old_files_result'];?>");
+                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>");
                 } else if (data[0].result == "db_clean_items") {
-                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $txt['admin_action_db_clean_items_result'];?>");
+                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>");
                 } else if (data[0].result == "changed_salt_key") {
                     //deconnect user
                     $("#menu_action").val("deconnexion");
@@ -250,12 +257,20 @@ function LaunchAdminActions(action,option)
                     document.main_form.submit();
                 } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
                     if (data[0].error != "") {
-                        $("#email_testing_results").html("<?php echo addslashes($txt['admin_email_result_nok']);?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
+                        $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']);?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
                     } else {
-                        $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $txt['admin_email_result_ok']));?>").show().attr("class","ui-corner-all ui-state-focus");
+                        $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok']));?>").show().attr("class","ui-corner-all ui-state-focus");
                     }
                 } else if (data[0].result == "pw_prefix_correct") {
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret);
+                } else if (data[0].result == "attachments_cryption") {
+                    if (data[0].continu == true) {
+                    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+                    } else if (data[0].error == "file_not_encrypted") {
+                    	$("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
+                    } else if (data[0].error == "file_not_clear") {
+                    	$("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
+                    }
                 }
             }
         },
@@ -276,7 +291,25 @@ $(function() {
     $(".div_radio").buttonset();
 
     // Build Tabs
-    $("#tabs").tabs();
+	$("#tabs").tabs({
+		ajaxOptions: {
+			error: function(xhr, status, index, anchor) {
+				$(anchor.hash).html();
+			},
+			beforeSend: function() {
+				$("#div_loading").show();
+			},
+			complete: function() {
+				$("#div_loading").hide();
+			}
+		}
+	});
+	$('#tabs').click(function(e){
+		var current_index = $("#tabs").tabs("option","active");
+		if (current_index != 9) {
+			$("#save_button").show();
+		}
+	});
 
     $('#tbl_categories tr').click(function (event) {
         $("#selected_row").val($(this).attr("id"));
@@ -295,9 +328,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 120,
-        title: "<?php echo $txt['confirm'];?>",
+        title: "<?php echo $LANG['confirm'];?>",
         buttons: {
-            "<?php echo $txt['confirm'];?>": function() {
+            "<?php echo $LANG['confirm'];?>": function() {
                 $("#div_loading").show();
                 var $this = $(this);
                 // prepare data to send
@@ -322,8 +355,9 @@ $(function() {
                             $("#item_"+$("#post_id").val()).html($("#new_item_title").val());
                         } else if ($("#post_type").val() == "moveItem") {
                             // reload table
-                            loadFieldsList();
+                            //loadFieldsList();
                         }
+                        loadFieldsList();
                         $("#new_category_label, #new_item_title").val("");
                         $("#div_loading").hide();
                         $this.dialog("close");
@@ -331,7 +365,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -344,9 +378,9 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 150,
-        title: "<?php echo $txt['category_in_folders'];?>",
+        title: "<?php echo $LANG['category_in_folders'];?>",
         buttons: {
-            "<?php echo $txt['confirm'];?>": function() {
+            "<?php echo $LANG['confirm'];?>": function() {
                 if ($("#new_field_title").val() != "" && $("#post_id").val() != "") {
                     $("#div_loading").show();
                     var $this = $(this);
@@ -368,7 +402,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -381,9 +415,9 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 350,
-        title: "<?php echo $txt['category_in_folders'];?>",
+        title: "<?php echo $LANG['category_in_folders'];?>",
         buttons: {
-            "<?php echo $txt['confirm'];?>": function() {
+            "<?php echo $LANG['confirm'];?>": function() {
                 // get list of selected folders
                 var ids = "";
                 $("#cat_folders_selection :selected").each(function(i, selected) {
@@ -413,7 +447,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -426,12 +460,12 @@ $(function() {
         autoOpen: false,
         width:100,
         height:140,
-        title: "'.$txt['admin_action_db_restore_key'].'",
+        title: "'.$LANG['admin_action_db_restore_key'].'",
         buttons: {
-            "'.$txt['ok'].'": function() {
+            "'.$LANG['ok'].'": function() {
                 LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
             },
-            "'.$txt['cancel_button'].'": function() {
+            "'.$LANG['cancel_button'].'": function() {
                 $(this).dialog("close");
             }
         }
@@ -533,4 +567,25 @@ $(function() {
        );
     });
 });
+
+function manageEncryptionOfAttachments(list, cpt) {
+
+	$.post(
+		"sources/admin.queries.php",
+		{
+			type    : "admin_action_attachments_cryption_continu",
+			option  : $("input[name=attachments_cryption]:checked").val(),
+			cpt     : cpt,
+			list    : list
+		},
+		function(data) {
+		    if (data[0].continu == true ) {
+		    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+		    } else {
+		        $("#result_admin_action_attachments_cryption").html("<img src='includes/images/tick.png' alt='' /> "+data[0].cpt+" files changed");
+		    }
+		},
+        "json"
+	);
+}
 </script>

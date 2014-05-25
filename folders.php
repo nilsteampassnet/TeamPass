@@ -3,8 +3,8 @@
  *
  * @file          folders.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link	      http://www.teampass.net
  *
@@ -13,8 +13,20 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
+{
     die('Hacking attempt...');
+}
+
+/* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include 'error.php';
+    exit();
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -32,7 +44,7 @@ $tst = $tree->getDescendants();
 
 /* Build list of all folders */
 if ($_SESSION['is_admin'] == 1 || $_SESSION['settings']['can_create_root_folder'] == 1) {
-    $folders_list = "\'0\':\'".$txt['root']."\'";
+    $folders_list = "\'0\':\'".$LANG['root']."\'";
 } else {
     $folders_list = "";
 }
@@ -61,8 +73,8 @@ foreach ($tst as $t) {
 /* Display header */
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
-$txt['admin_groups'].'&nbsp;&nbsp;&nbsp;<img src="includes/images/folder--plus.png" id="open_add_group_div" title="'.$txt['item_menu_add_rep'].'" style="cursor:pointer;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$txt['show_help'].'" onclick="OpenDialog(\'help_on_folders\')" /></span>
+$LANG['admin_groups'].'&nbsp;&nbsp;&nbsp;<img src="includes/images/folder--plus.png" id="open_add_group_div" title="'.$LANG['item_menu_add_rep'].'" style="cursor:pointer;" />
+    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_folders\')" /></span>
 </div>';
 // Hidden things
 echo '
@@ -74,14 +86,14 @@ echo '
     <table cellspacing="0" style="margin-top:10px;">
         <thead><tr>
             <th>ID</th>
-            <th>'.$txt['group'].'</th>
-            <th>'.$txt['complexity'].'</th>
-            <th>'.$txt['group_parent'].'</th>
-            <th>'.$txt['level'].'</th>
-            <th title="'.$txt['group_pw_duration_tip'].'">'.$txt['group_pw_duration'].'</th>
-            <th title="'.$txt['del_group'].'"><img src="includes/images/folder--minus.png" /></th>
-            <th title="'.$txt['auth_creation_without_complexity'].'"><img src="includes/images/auction-hammer.png" /></th>
-            <th title="'.$txt['auth_modification_without_complexity'].'"><img src="includes/images/alarm-clock.png" /></th>
+            <th>'.$LANG['group'].'</th>
+            <th>'.$LANG['complexity'].'</th>
+            <th>'.$LANG['group_parent'].'</th>
+            <th>'.$LANG['level'].'</th>
+            <th title="'.$LANG['group_pw_duration_tip'].'">'.$LANG['group_pw_duration'].'</th>
+            <th title="'.$LANG['del_group'].'"><img src="includes/images/folder--minus.png" /></th>
+            <th title="'.$LANG['auth_creation_without_complexity'].'"><img src="includes/images/auction-hammer.png" /></th>
+            <th title="'.$LANG['auth_modification_without_complexity'].'"><img src="includes/images/alarm-clock.png" /></th>
         </tr></thead>
         <tbody>';
 $x = 0;
@@ -89,9 +101,18 @@ $arr_ids = array();
 foreach ($tst as $t) {
     if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
         // r?cup $t->parent_id
-        $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = ".$t->parent_id);
+        //$data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = ".$t->parent_id);
+        $data = $db->queryGetRow(
+            "nested_tree",
+            array(
+                "title"
+            ),
+            array(
+                "id" => intval($t->parent_id)
+            )
+        );
         if ($t->nlevel == 1) {
-            $data[0] = $txt['root'];
+            $data[0] = $LANG['root'];
         }
         // r?cup les droits associ?s ? ce groupe
         $tab_droits = array();
@@ -105,48 +126,74 @@ foreach ($tst as $t) {
             $ident .= "&nbsp;&nbsp;";
         }
         // Get some elements from DB concerning this node
-        $node_data = $db->fetchRow(
+        /*$node_data = $db->fetchRow(
             "SELECT m.valeur as valeur, n.renewal_period as renewal_period
             FROM ".$pre."misc as m,
             ".$pre."nested_tree as n
             WHERE m.type='complex'
             AND m.intitule = n.id
             AND m.intitule = ".$t->id
+        );*/
+        $node_data = $db->queryGetRow(
+            array(
+                "misc" => "m",
+                "nested_tree" => "n"
+            ),
+            array(
+                "m.valeur" => "valeur",
+                "n.renewal_period" => "renewal_period"
+            ),
+            array(
+	            "m.intitule" => "n.id",
+            	"m._intitule" => $t->id,
+            	"m.type" => "complex"
+            )
         );
 
-        echo '<tr class="ligne0" id="row_'.$t->id.'">
-                        <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">'.$t->id.'</td>
-                        <td width="50%" onclick="open_edit_folder_dialog('.$t->id.')">
-                            '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
-                        </td>
-                        <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data[0]][1].'</span>
-                        </td>
-                        <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            <span id="parent_'.$t->id.'">'.$data[0].'</span>
-                        </td>
-                        <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            '.$t->nlevel.'
-                        </td>
-                        <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                            <span id="renewal_'.$t->id.'">'.$node_data[1].'</span>
-                        </td>
-                        <td align="center">
-                            <img src="includes/images/folder--minus.png" onclick="supprimer_groupe(\''.$t->id.'\')" style="cursor:pointer;" />
-                        </td>';
-
-        $data3 = $db->fetchRow("SELECT bloquer_creation,bloquer_modification FROM ".$pre."nested_tree WHERE id = ".$t->id);
         echo '
-                        <td align="center">
-                            <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3[0]) && $data3[0] == 1 ? 'checked' : '', ' />
-                        </td>
-                        <td align="center">
-                            <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3[1]) && $data3[1] == 1 ? 'checked' : '', ' />
-                        </td>
-                        <td>
-                            <input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
-                            <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data[0].'" />
-                        </td>
+                <tr class="ligne0" id="row_'.$t->id.'">
+                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">'.$t->id.'</td>
+                    <td width="50%" onclick="open_edit_folder_dialog('.$t->id.')">
+                        '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
+                    </td>
+                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
+                        <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data[0]][1].'</span>
+                    </td>
+                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
+                        <span id="parent_'.$t->id.'">'.$data[0].'</span>
+                    </td>
+                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
+                        '.$t->nlevel.'
+                    </td>
+                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
+                        <span id="renewal_'.$t->id.'">'.$node_data[1].'</span>
+                    </td>
+                    <td align="center">
+                        <img src="includes/images/folder--minus.png" onclick="supprimer_groupe(\''.$t->id.'\')" style="cursor:pointer;" />
+                    </td>';
+
+        //$data3 = $db->fetchRow("SELECT bloquer_creation,bloquer_modification FROM ".$pre."nested_tree WHERE id = ".$t->id);
+        $data3 = $db->queryGetRow(
+        	"nested_tree",
+            array(
+                "bloquer_creation",
+                "bloquer_modification"
+            ),
+            array(
+                "id" => intval($t->id)
+            )
+        );
+        echo '
+                    <td align="center">
+                        <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3[0]) && $data3[0] == 1 ? 'checked' : '', ' />
+                    </td>
+                    <td align="center">
+                        <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3[1]) && $data3[1] == 1 ? 'checked' : '', ' />
+                    </td>
+                    <td>
+                        <input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
+                        <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data[0].'" />
+                    </td>
                 </tr>';
         array_push($arr_ids, $t->id);
         $x++;
@@ -156,14 +203,14 @@ echo '
         </tbody>
     </table>
     <div style="font-size:11px;font-style:italic;margin-top:5px;">
-        <img src="includes/images/information-white.png" alt="" />&nbsp;'.$txt['info_click_to_edit'].'
+        <img src="includes/images/information-white.png" alt="" />&nbsp;'.$LANG['info_click_to_edit'].'
     </div>
     </div>
 </form>';
 // DIV FOR HELP
 echo '
 <div id="help_on_folders" style="">
-    <div>'.$txt['help_on_folders'].'</div>
+    <div>'.$LANG['help_on_folders'].'</div>
 </div>';
 
 /* Form Add a folder */
@@ -171,14 +218,14 @@ echo '
 <div id="div_add_group" style="display:none;">
     <div id="addgroup_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="ajouter_groupe_titre" class="label_cpm">'.$txt['group_title'].' :</label>
+    <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].' :</label>
     <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="parent_id" class="label_cpm">'.$txt['group_parent'].' :</label>
+    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
     <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">';
-echo '<option value="na">---'.$txt['select'].'---</option>';
+echo '<option value="na">---'.$LANG['select'].'---</option>';
 if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-    echo '<option value="0">'.$txt['root'].'</option>';
+    echo '<option value="0">'.$LANG['root'].'</option>';
 }
 $prev_level = 0;
 foreach ($tst as $t) {
@@ -200,7 +247,7 @@ foreach ($tst as $t) {
 echo '
     </select>
 
-    <label for="new_rep_complexite" class="label_cpm">'.$txt['complex_asked'].' :</label>
+    <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
     <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($pwComplexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
@@ -208,7 +255,7 @@ foreach ($pwComplexity as $complex) {
 echo '
     </select>
 
-    <label for="add_node_renewal_period" class="label_cpm">'.$txt['group_pw_duration'].' :</label>
+    <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 </div>';
 
@@ -217,14 +264,14 @@ echo '
 <div id="div_edit_folder" style="display:none;">
     <div id="edit_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="edit_folder_title" class="label_cpm">'.$txt['group_title'].' :</label>
+    <label for="edit_folder_title" class="label_cpm">'.$LANG['group_title'].' :</label>
     <input type="text" id="edit_folder_title" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="edit_parent_id" class="label_cpm">'.$txt['group_parent'].' :</label>
+    <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
     <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">';
-echo '<option value="na">---'.$txt['select'].'---</option>';
+echo '<option value="na">---'.$LANG['select'].'---</option>';
 if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-    echo '<option value="0">'.$txt['root'].'</option>';
+    echo '<option value="0">'.$LANG['root'].'</option>';
 }
 $prev_level = 0;
 foreach ($tst as $t) {
@@ -246,7 +293,7 @@ foreach ($tst as $t) {
 echo '
     </select>
 
-    <label for="edit_folder_complexite" class="label_cpm">'.$txt['complex_asked'].' :</label>
+    <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
     <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($pwComplexity as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
@@ -254,7 +301,7 @@ foreach ($pwComplexity as $complex) {
 echo '
     </select>
 
-    <label for="edit_folder_renewal_period" class="label_cpm">'.$txt['group_pw_duration'].' :</label>
+    <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 </div>';
 
