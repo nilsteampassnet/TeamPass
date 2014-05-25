@@ -2,8 +2,8 @@
 /**
  * @file          find.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -31,57 +32,78 @@ $db->connect();
 
 //Columns name
 $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
+$aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
 $sOrder = $sLimit = "";
 $sWhere = "id_tree IN(".implode(', ', $_SESSION['groupes_visibles']).")";    //limit search to the visible folders
 
 //Get current user "personal folder" ID
-$row = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = ".$_SESSION['user_id']);
+// $row = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".intval($_SESSION['user_id'])."'");
+$row = $db->queryGetRow(
+    "nested_tree",
+    array(
+        "id"
+    ),
+    array(
+        "title" => intval($_SESSION['user_id'])
+    )
+);
 
 //get list of personal folders
 $arrayPf = array();
 $listPf = "";
-$rows = $db->fetchAllArray(
-    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = ".$row[0].
-    " AND NOT title = ".$_SESSION['user_id']
-);
-foreach ($rows as $reccord) {
-    if (!in_array($reccord['id'], $arrayPf)) {
-        //build an array of personal folders ids
-        array_push($arrayPf, $reccord['id']);
-        //build also a string with those ids
-        if (empty($listPf)) {
-            $listPf = $reccord['id'];
-        } else {
-            $listPf .= ', '.$reccord['id'];
-        }
-    }
+if (!empty($row[0])) {
+	$rows = $db->fetchAllArray(
+	    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = '".filter_var($row[0], FILTER_SANITIZE_NUMBER_INT).
+	    "' AND NOT title = '".filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)."'"
+	);
+	foreach ($rows as $reccord) {
+		if (!in_array($reccord['id'], $arrayPf)) {
+			//build an array of personal folders ids
+			array_push($arrayPf, $reccord['id']);
+			//build also a string with those ids
+			if (empty($listPf)) {
+				$listPf = $reccord['id'];
+			} else {
+				$listPf .= ', '.$reccord['id'];
+			}
+		}
+	}
 }
+
 
 /* BUILD QUERY */
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". intval($_GET['iDisplayStart']) .", ". intval($_GET['iDisplayLength']);
+    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
+$sOrder = "";
 if (isset($_GET['iSortCol_0'])) {
-    $sOrder = "ORDER BY  ";
-    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-        if (
-            $_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true" &&
-            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-        ) {
-            $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-            ".$_GET['sSortDir_'.$i] .", ";
-        }
+    if (!in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
+        // possible attack - stop
+        echo '[{}]';
+        exit;
     }
+    else {
+        $sOrder = "ORDER BY  ";
+        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+            if (
+                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+            ) {
+                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+                .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+            }
+        }
 
-    $sOrder = substr_replace($sOrder, "", -2);
-    if ($sOrder == "ORDER BY") {
+        $sOrder = substr_replace($sOrder, "", -2);
+        if ($sOrder == "ORDER BY") {
             $sOrder = "";
+        }
     }
 }
 
@@ -94,7 +116,7 @@ if (isset($_GET['iSortCol_0'])) {
 if ($_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)."%' OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }
@@ -163,7 +185,7 @@ foreach ($rows as $reccord) {
     //get restriction from ROles
     $restrictedToRole = false;
     $rTmp = mysql_query(
-        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = ".$reccord['id']
+        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = '".$reccord['id']."'"
     ) or die(mysql_error());
     while ($aTmp = mysql_fetch_row($rTmp)) {
         if ($aTmp[0] != "") {
@@ -190,7 +212,7 @@ foreach ($rows as $reccord) {
     } else {
         $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags($reccord['description']));
         if (strlen($txt) > 50) {
-            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)), 0, 50).'", ';
+            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[^>]>\//|[\t]/', '', $txt)), 0, 50).'", ';
         } else {
             $sOutputItem .= '"'.stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)).'", ';
         }

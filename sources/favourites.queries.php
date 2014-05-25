@@ -2,8 +2,8 @@
 /**
  * @file          favourites.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,6 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -33,7 +34,16 @@ if (!empty($_POST['type'])) {
         #CASE adding a new function
         case "del_fav":
             //Get actual favourites
-            $data = $db->fetchRow("SELECT favourites FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'");
+            //$data = $db->fetchRow("SELECT favourites FROM ".$pre."users WHERE id = '".$_SESSION['user_id']."'");
+            $data = $db->queryGetRow(
+                "users",
+                array(
+                    "favourites"
+                ),
+                array(
+                    "id" => intval($_SESSION['user_id'])
+                )
+            );
             $tmp = explode(";", $data[0]);
             $favs = "";
             $tab_favs = array();

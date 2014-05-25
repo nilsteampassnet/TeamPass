@@ -1,8 +1,26 @@
 <?php
+require_once('../sources/sessions.php');
 session_start();
 // Session teampass tag
 $_SESSION['CPM'] = 1;
 
+if ( file_exists('../includes/settings.php')){
+   echo '
+	<head>
+	<title>TeamPass Installation</title>
+	<link rel="stylesheet" href="install.css" type="text/css" />
+	</head>
+<div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>
+        <div id="top">
+            <div id="logo"><img src="../includes/images/canevas/logo.png" /></div>
+        </div>
+        <div id="content">
+            <div id="center" class="ui-corner-bottom">
+                <form name="install" method="post" action="">
+	<h2>Teampass installation complete<h2>';
+
+ exit;
+}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -55,6 +73,12 @@ $_SESSION['CPM'] = 1;
                     && $("#encrypt_key").val().length <= 32
                );
             });
+
+        	// no paste
+        	$('#encrypt_key').bind("paste",function(e) {
+        		alert('Paste option is disabled !!');
+        		e.preventDefault();
+        	});
         });
 
         function aes_encrypt(text)
@@ -274,6 +298,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP extension "mbstring" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />
@@ -391,6 +416,9 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <tr><td>Add table "categories"</td><td><span id="tbl_24"></span></td></tr>
                         <tr><td>Add table "categories_items"</td><td><span id="tbl_25"></span></td></tr>
                         <tr><td>Add table "categories_folders"</td><td><span id="tbl_26"></span></td></tr>
+                        <tr><td>Add table "api"</td><td><span id="tbl_27"></span></td></tr>
+                        <tr><td>Add table "otv"</td><td><span id="tbl_28"></span></td></tr>
+                        <tr><td>Add table "suggestion"</td><td><span id="tbl_28"></span></td></tr>
                     </table>
                     </fieldset>
 

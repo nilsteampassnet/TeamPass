@@ -1,8 +1,8 @@
 /**
  * @file 		install.js
- * @author		Nils Laumaillé
+ * @author		Nils LaumaillÃ©
  * @version 	2.1.8
- * @copyright 	(c) 2009-2011 Nils Laumaillé
+ * @copyright 	(c) 2009-2011 Nils LaumaillÃ©
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -21,7 +21,7 @@ function PauseInExecution(millis)
     while(curDate-date < millis);
 }
 
-//Fonction qui permet d'appeler un fichier qui exécute une requete passée en parametre
+//Fonction qui permet d'appeler un fichier qui exï¿½cute une requete passï¿½e en parametre
 function httpRequest(file,data,type) {
     var xhr_object = null;
     var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;

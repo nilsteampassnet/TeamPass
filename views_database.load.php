@@ -3,8 +3,8 @@
 /**
  * @file          views_database.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -121,9 +121,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $txt["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
-            "<?php echo $txt["ok"];?>": function() {
+            "<?php echo $LANG["ok"];?>": function() {
             	$.post(
                     "sources/users.queries.php",
                     {
@@ -136,14 +136,14 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $txt["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"];?>": function() {
                 $(this).dialog("close");
             }
         }
     });
 
     $("#but_disconnect_all_users").click(function() {
-    	$("#div_dialog_message_text").html("<?php echo $txt["disconnect_all_users_sure"];?>");
+    	$("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"];?>");
     	$("#div_dialog_message").dialog("open");
     });
 });

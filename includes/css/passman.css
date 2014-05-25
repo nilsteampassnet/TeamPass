@@ -264,9 +264,12 @@ cursor: pointer;
 
 #div_ga_url {
     text-align:center;
-    margin:0 0 10px 0; 
-    font-size:9pt; 
-    display:none; 
+    margin:0 0 10px 0;
+    font-size:9pt;
+    display:none;
     padding:5px;
 }
+
+input.watermark {
+	color: #999;
 }

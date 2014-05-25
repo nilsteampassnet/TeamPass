@@ -2,8 +2,8 @@
 /**
  * @file          folders.load.php
  * @author        Nils Laumaillé
- * @version       2.1.19
- * @copyright     (c) 2009-2013 Nils Laumaillé
+ * @version       2.1.20
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -32,12 +32,12 @@ $(function() {
         autoOpen: false,
         width: 250,
         height: 330,
-        title: "<?php echo $txt['add_new_group'];?>",
+        title: "<?php echo $LANG['add_new_group'];?>",
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 add_new_folder();
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -49,9 +49,9 @@ $(function() {
         autoOpen: false,
         width: 850,
         height: 500,
-        title: "<?php echo  $txt["admin_help"];?>",
+        title: "<?php echo  $LANG["admin_help"];?>",
         buttons: {
-            "<?php echo $txt["close"];?>": function() {
+            "<?php echo $LANG["close"];?>": function() {
                 $(this).dialog("close");
             }
         },
@@ -66,7 +66,7 @@ $(function() {
         autoOpen: false,
         width: 250,
         height: 330,
-        title: "<?php echo $txt['at_category'];?>",
+        title: "<?php echo $LANG['at_category'];?>",
         open: function(event, ui) {
             var id = $("#folder_id_to_edit").val();
 
@@ -77,12 +77,12 @@ $(function() {
             $("#edit_parent_id").val($("#parent_id_"+id).val());
         },
         buttons: {
-            "<?php echo $txt['save_button'];?>": function() {
+            "<?php echo $LANG['save_button'];?>": function() {
                 if ($('#edit_folder_complexite').val() == "") {
-                	 $("#edit_folder_show_error").html("<?php echo $txt['error_group_complex'];?>").show();
+                	 $("#edit_folder_show_error").html("<?php echo $LANG['error_group_complex'];?>").show();
                 	 return;
                 }if ($('#edit_folder_title').val() == "") {
-                	 $("#edit_folder_show_error").html("<?php echo $txt['error_group_label'];?>").show();
+                	 $("#edit_folder_show_error").html("<?php echo $LANG['error_group_label'];?>").show();
                 	 return;
                 }
                 //prepare data
@@ -94,15 +94,15 @@ $(function() {
                     "sources/folders.queries.php",
                     {
                     type    : "update_folder",
-                    data      : aes_encrypt(data)
+                    data      : prepareExchangedData(data, "encode"),
                     },
                     function(data) {
                         //Check errors
                         if (data[0].error == "error_group_exist") {
-                            $("#edit_folder_show_error").html("<?php echo $txt['error_group_exist'];?>").show();
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_group_exist'];?>").show();
                             LoadingPage();
                         } else if (data[0].error == "error_html_codes") {
-                            $("#edit_folder_show_error").html("<?php echo $txt['error_html_codes'];?>").show();
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes'];?>").show();
                             LoadingPage();
                         } else {
                             $("#folder_id_to_edit").val("");    //clear id
@@ -112,7 +112,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $txt['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button'];?>": function() {
                 //clear id
                 $("#folder_id_to_edit").val("");
 
@@ -125,7 +125,7 @@ $(function() {
 
 function supprimer_groupe(id)
 {
-    if (confirm("<?php echo $txt['confirm_delete_group'];?>")) {
+    if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
         //send query
         $.post(
             "sources/folders.queries.php",
@@ -165,10 +165,10 @@ function add_new_folder()
 {
     //Check if renewal_period is an integer
     if (isInteger(document.getElementById("add_node_renewal_period").value) == false) {
-        document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_renawal_period_not_integer'];?>";
+        document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_renawal_period_not_integer'];?>";
         $("#addgroup_show_error").show();
     } else if (document.getElementById("new_rep_complexite").value == "") {
-        document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_group_complex'];?>";
+        document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_group_complex'];?>";
         $("#addgroup_show_error").show();
     } else {
         if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
@@ -189,12 +189,12 @@ function add_new_folder()
                     //Check errors
                     if (data[0].error == "error_group_exist") {
                         $("#div_add_group").dialog("open");
-                        $("#addgroup_show_error").html("<?php echo $txt['error_group_exist'];?>");
+                        $("#addgroup_show_error").html("<?php echo $LANG['error_group_exist'];?>");
                         $("#addgroup_show_error").show();
                         LoadingPage();
                     } else if (data[0].error == "error_html_codes") {
                         $("#div_add_group").dialog("open");
-                        $("#addgroup_show_error").html("<?php echo $txt['error_html_codes'];?>");
+                        $("#addgroup_show_error").html("<?php echo $LANG['error_html_codes'];?>");
                         $("#addgroup_show_error").show();
                         LoadingPage();
                     } else {
@@ -204,7 +204,7 @@ function add_new_folder()
                 "json"
            );
         } else {
-            document.getElementById("addgroup_show_error").innerHTML = "<?php echo $txt['error_fields_2'];?>";
+            document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_fields_2'];?>";
             $("#addgroup_show_error").show();
         }
     }
