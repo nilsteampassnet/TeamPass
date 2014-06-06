@@ -119,6 +119,15 @@ function addToCacheTable($id)
 }
 
 function rest_delete () {
+  if(!@$GLOBALS['apikey']){
+   foreach($GLOBALS['_GET'] as $key=>$val){
+    if(strpos($key,'apikey') !== false){
+      $GLOBALS['apikey'] = $val;
+      $GLOBALS['request'] =  array_values(array_filter(explode('/',str_replace('?apikey','',$key))));
+      
+    }
+   }
+  }
 	if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
@@ -221,7 +230,16 @@ function rest_delete () {
 }
 
 function rest_get () {
-	if(apikey_checker($GLOBALS['apikey'])) {
+ if(!@$GLOBALS['apikey']){
+   foreach($GLOBALS['_GET'] as $key=>$val){
+    if(strpos($key,'apikey') !== false){
+      $GLOBALS['apikey'] = $val;
+      $GLOBALS['request'] =  array_values(array_filter(explode('/',str_replace('?apikey','',$key))));
+      
+    }
+   }
+  }
+  if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
         $category_query = "";
@@ -378,6 +396,15 @@ function rest_get () {
 }
 
 function rest_put() {
+  if(!@$GLOBALS['apikey']){
+   foreach($GLOBALS['_GET'] as $key=>$val){
+    if(strpos($key,'apikey') !== false){
+      $GLOBALS['apikey'] = $val;
+      $GLOBALS['request'] =  array_values(array_filter(explode('/',str_replace('?apikey','',$key))));
+      
+    }
+   }
+  }
     if(apikey_checker($GLOBALS['apikey'])) {
         $bdd = teampass_connect();
         $rand_key = teampass_get_randkey();
