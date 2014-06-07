@@ -119,6 +119,11 @@ function addToCacheTable($id)
 }
 
 function rest_delete () {
+ if(!@count($GLOBALS['request'])==0){
+      $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
+      preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+      $GLOBALS['request'] =  explode('/',$matches[2]);
+ }
 	if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
@@ -221,7 +226,13 @@ function rest_delete () {
 }
 
 function rest_get () {
-	if(apikey_checker($GLOBALS['apikey'])) {
+ if(!@count($GLOBALS['request'])==0){
+      $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
+      preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+      $GLOBALS['request'] =  explode('/',$matches[2]);
+ }
+  //print_r($GLOBALS);
+  if(apikey_checker($GLOBALS['apikey'])) {
 		$bdd = teampass_connect();
 		$rand_key = teampass_get_randkey();
         $category_query = "";
@@ -242,7 +253,23 @@ function rest_get () {
 					$json[$id]['login'] = utf8_encode($data['login']);
 					$json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
 				}
-			} elseif($GLOBALS['request'][1] == "items") {
+            
+        /* load folders */
+          $response = $bdd->query("select id,parent_id,title,nleft,nright,nlevel from ".$GLOBALS['pre']."nested_tree where parent_id='". $GLOBALS['request'][2]."' ORDER BY `title` ASC");
+          $rows = array();
+          $i = 0;
+          while ($row = $response->fetch())
+          {
+            $json['folders'][$i]['id'] = $row['id'];
+            $json['folders'][$i]['parent_id'] = $row['parent_id'];
+            $json['folders'][$i]['title'] = $row['title'];
+            $json['folders'][$i]['nleft'] = $row['nleft'];
+            $json['folders'][$i]['nright'] = $row['nright'];
+            $json['folders'][$i]['nlevel'] = $row['nlevel'];
+            $i++;
+          }
+			}
+      elseif($GLOBALS['request'][1] == "items") {
                 // only accepts numeric
 				$array_items = explode(',',$GLOBALS['request'][2]);
 
@@ -378,6 +405,11 @@ function rest_get () {
 }
 
 function rest_put() {
+ if(!@count($GLOBALS['request'])==0){
+      $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
+      preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+      $GLOBALS['request'] =  explode('/',$matches[2]);
+ }
     if(apikey_checker($GLOBALS['apikey'])) {
         $bdd = teampass_connect();
         $rand_key = teampass_get_randkey();
