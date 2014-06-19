@@ -38,10 +38,13 @@ header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name
@@ -84,38 +87,34 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
-            FROM ".$pre."log_system AS l
-            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+    DB::query(
+        "SELECT COUNT(date)
+        FROM ".$pre."log_system AS l
+        INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+        WHERE l.type = 'user_connection'"
+    );
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(date)
-            FROM ".$pre."log_system AS l
-            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
-            WHERE l.type = 'user_connection'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $rows = DB::query(
+        "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
+        FROM ".$pre."log_system AS l
+        INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     /*
        * Output
@@ -126,24 +125,23 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows AS $reccord) {
+    foreach ($rows AS $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.$reccord['l.date'].'", ';
+        $sOutput .= '"'.$record['l.date'].'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['l.label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['l.label']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['l.qui']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['l.qui']), ENT_QUOTES).'",';
 
         //col4
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['u.login']), ENT_QUOTES).'",';
 
         //Finish the line
         $sOutput .= '],';
@@ -235,20 +233,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (count($rows) > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows AS $reccord) {
+    foreach ($rows AS $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.$reccord['date'].'", ';
+        $sOutput .= '"'.$record['date'].'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['who']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'",';
 
         //col4
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'",';
 
         //Finish the line
         $sOutput .= '],';
@@ -342,17 +340,17 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (count($rows) > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows AS $reccord) {
+    foreach ($rows AS $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['l.label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['l.label']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['u.login']), ENT_QUOTES).'",';
 
         //Finish the line
         $sOutput .= '],';
@@ -446,17 +444,17 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (count($rows) > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows AS $reccord) {
+    foreach ($rows AS $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['l.label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['l.label']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['u.login']), ENT_QUOTES).'",';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['u.login']), ENT_QUOTES).'",';
 
         //Finish the line
         $sOutput .= '],';
@@ -554,22 +552,21 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"aaData": [ ';
 
-    $rows = $db->fetchAllArray($sql);
-    foreach ($rows AS $reccord) {
+    foreach ($rows AS $record) {
         $get_item_in_list = true;
         $sOutput_item = "[";
 
         //col1
-        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
 
         //col4
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['perso']), ENT_QUOTES).'"';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['perso']), ENT_QUOTES).'"';
 
 
         //Finish the line

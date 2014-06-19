@@ -24,10 +24,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Columns name
 $aColumns = array('id', 'category_id', 'label', 'description', 'author_id');
@@ -72,46 +75,28 @@ if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
 if ($_GET['sSearch'] != "") {
     $sWhere = " WHERE ";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-// Do NOT show the kb the user iis not allowed to
-if (!empty($list_pf)) {
-    if (empty($sWhere)) {
-        $sWhere = " WHERE ";
-    } else {
-        $sWhere .= "AND ";
-    }
-    $sWhere .= "id_tree NOT IN (".$list_pf.") ";
-}
+DB::query("SELECT * FROM ".$pre."kb");
+$iTotal = DB::count();
 
-$sql = "SELECT SQL_CALC_FOUND_ROWS *
-        FROM ".$pre."kb
-        $sWhere
-        $sOrder
-        $sLimit";
-
-$rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-/* Data set length after filtering */
-$sql_f = "
-        SELECT FOUND_ROWS()
-";
-$rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-$aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-$iFilteredTotal = $aResultFilterTotal[0];
-
-/* Total data set length */
-$sql_c = "
-        SELECT COUNT(id)
-        FROM   ".$pre."kb
-";
-$rResultTotal = mysql_query($sql_c) or die(mysql_error());
-$aResultTotal = mysql_fetch_array($rResultTotal);
-$iTotal = $aResultTotal[0];
-
+$rows = DB::query(
+    "SELECT * FROM ".$pre."kb
+    $sWhere
+    $sOrder
+    $sLimit",
+    array(
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+    )
+);
+$iFilteredTotal = DB::count();
 
 /*
    * Output
@@ -122,60 +107,32 @@ $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": ';
 
-$rows = $db->fetchAllArray($sql);
-if (count($rows) > 0) {
+if ($iFilteredTotal > 0) {
     $sOutput .= '[';
 }
-foreach ($rows as $reccord) {
+foreach ($rows as $record) {
     $sOutput .= "[";
 
     //col1
-    $sOutput .= '"<img src=\"includes/images/direction_arrow.png\" onclick=\"openKB(\''.$reccord['id'].'\')\" style=\"cursor:pointer;\" />';
-    if ($reccord['anyone_can_modify'] == 1 || $reccord['author_id'] == $_SESSION['user_id']) {
-        $sOutput .= '<img src=\"includes/images/direction_minus.png\" onclick=\"deleteKB(\''.$reccord['id'].'\')\" style=\"cursor:pointer;\" />';
+    $sOutput .= '"<img src=\"includes/images/direction_arrow.png\" onclick=\"openKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
+    if ($record['anyone_can_modify'] == 1 || $record['author_id'] == $_SESSION['user_id']) {
+        $sOutput .= '<img src=\"includes/images/direction_minus.png\" onclick=\"deleteKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
     }
     $sOutput .= '",';
 
     //col2
-    //$ret_cat = $db->fetchRow("SELECT category FROM ".$pre."kb_categories WHERE id = ".$reccord['category_id']);
-    $ret_cat = $db->queryGetRow(
-        "kb_categories",
-        array(
-            "category"
-        ),
-        array(
-            "id" => intval($reccord['category_id'])
-        )
-    );
-    $sOutput .= '"'.htmlspecialchars(stripslashes($ret_cat[0]), ENT_QUOTES).'",';
+    $ret_cat = DB::queryfirstrow("SELECT category FROM ".$pre."kb_categories WHERE id = %i", $record['category_id']);
+    $sOutput .= '"'.htmlspecialchars(stripslashes($ret_cat['category']), ENT_QUOTES).'",';
 
     //col3
-    $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'",';
-    /*
+    $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'",';
+
     //col4
-    if (!empty($reccord['restricted_to']) || !in_array($_SESSION['user_id'],explode(';',$reccord['restricted_to'])) != $_SESSION['user_id']) {
-        $sOutput .= '"<img src=\"includes/images/lock.png\" />",';
-    } else {
-        $sOutput .= '"'.substr(trim(html_entity_decode(strip_tags(str_replace(array('\n'), array(''), $reccord['description'])), ENT_NOQUOTES, $k['charset'])), 0, 50).'",';
-    }
-    */
-    //col5
-    //$ret_author = $db->fetchRow("SELECT login FROM ".$pre."users WHERE id = ".$reccord['author_id']);
-    $ret_author = $db->queryGetRow(
-        "users",
-        array(
-            "login"
-        ),
-        array(
-            "id" => intval($reccord['author_id'])
-        )
-    );
-    $sOutput .= '"'.html_entity_decode($ret_author[0], ENT_NOQUOTES).'"';
+    $ret_author = DB::queryfirstrow("SELECT login FROM ".$pre."users WHERE id = %i", $record['author_id']);
+    $sOutput .= '"'.html_entity_decode($ret_author['login'], ENT_NOQUOTES).'"';
 
     //Finish the line
     $sOutput .= '],';
-
-
 }
 
 if (count($rows) > 0) {

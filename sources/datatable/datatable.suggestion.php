@@ -24,10 +24,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Columns name
 $aColumns = array('id', 'folder_id', 'label', 'description', 'author_id', 'comment');
@@ -72,46 +75,30 @@ if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
 if ($_GET['sSearch'] != "") {
     $sWhere = " WHERE ";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-// Do NOT show the kb the user iis not allowed to
-if (!empty($list_pf)) {
-    if (empty($sWhere)) {
-        $sWhere = " WHERE ";
-    } else {
-        $sWhere .= "AND ";
-    }
-    $sWhere .= "id_tree NOT IN (".$list_pf.") ";
-}
+DB::query("SELECT id FROM ".$pre."suggestion");
+$iTotal = DB::count();
 
-$sql = "SELECT SQL_CALC_FOUND_ROWS *
-        FROM ".$pre."suggestion
-        $sWhere
-        $sOrder
-        $sLimit";
-
-$rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-/* Data set length after filtering */
-$sql_f = "
-        SELECT FOUND_ROWS()
-";
-$rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-$aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-$iFilteredTotal = $aResultFilterTotal[0];
-
-/* Total data set length */
-$sql_c = "
-        SELECT COUNT(id)
-        FROM   ".$pre."suggestion
-";
-$rResultTotal = mysql_query($sql_c) or die(mysql_error());
-$aResultTotal = mysql_fetch_array($rResultTotal);
-$iTotal = $aResultTotal[0];
-
+$rows = DB::query(
+    "SELECT *
+    FROM ".$pre."suggestion
+    $sWhere
+    $sOrder
+    $sLimit",
+    array(
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+    )
+);
+$iFilteredTotal = DB::count();
 
 /*
    * Output
@@ -122,8 +109,7 @@ $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": ';
 
-$rows = $db->fetchAllArray($sql);
-if (count($rows) > 0) {
+if ($iFilteredTotal > 0) {
     $sOutput .= '[';
 }
 foreach ($rows as $record) {
@@ -145,28 +131,20 @@ foreach ($rows as $record) {
     $sOutput .= '"'.htmlspecialchars(stripslashes($record['description']), ENT_QUOTES).'",';
 
     // col4
-    $ret_cat = $db->queryGetRow(
-        "nested_tree",
-        array(
-            "title"
-        ),
-        array(
-            "id" => intval($record['folder_id'])
-        )
+    $ret_cat = DB::queryFirstRow(
+        "SELECT title FROM ".$pre."nested_tree
+        WHERE id = %i",
+        intval($record['folder_id'])
     );
-    $sOutput .= '"'.htmlspecialchars(stripslashes($ret_cat[0]), ENT_QUOTES).'",';
+    $sOutput .= '"'.htmlspecialchars(stripslashes($ret_cat['title']), ENT_QUOTES).'",';
 
     // col5
-    $ret_author = $db->queryGetRow(
-        "users",
-        array(
-            "login"
-        ),
-        array(
-            "id" => intval($record['author_id'])
-        )
+    $ret_author = DB::queryFirstRow(
+        "SELECT login FROM ".$pre."users
+        WHERE id = %i",
+        intval($record['author_id'])
     );
-    $sOutput .= '"'.html_entity_decode($ret_author[0], ENT_NOQUOTES).'",';
+    $sOutput .= '"'.html_entity_decode($ret_author['login'], ENT_NOQUOTES).'",';
 
     // col6
     $sOutput .= '"'.htmlspecialchars(stripslashes($record['comment']), ENT_QUOTES).'"';

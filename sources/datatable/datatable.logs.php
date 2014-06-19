@@ -25,10 +25,13 @@ header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name
@@ -75,38 +78,33 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
+    DB::query("SELECT date
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+            WHERE l.type = 'user_connection'");
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
+    $rows = DB::query(
+        "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
+        FROM ".$pre."log_system as l
+        INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
 
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(date)
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'user_connection'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $iFilteredTotal = DB::count();
 
     /*
        * Output
@@ -117,21 +115,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
 
         //Finish the line
         $sOutput .= '],';
@@ -179,38 +176,33 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
+    DB::query("SELECT *
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+            WHERE l.type = 'error'");
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
+    $rows = DB::query(
+        "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'error'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+
+    $iFilteredTotal = DB::count();
 
     // Output
     $sOutput = '{';
@@ -219,21 +211,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
 
         //Finish the line
         $sOutput .= '],';
@@ -281,40 +272,41 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date as date, u.login as login, i.label as label
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+    DB::query(
+        "SELECT l.date as date, u.login as login, i.label as label
+        FROM ".$pre."log_items as l
+        INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users as u ON (l.id_user=u.id)".
+        $sWhere,
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
+    $rows = DB::query(
+        "SELECT l.date as date, u.login as login, i.label as label
+        FROM ".$pre."log_items as l
+        INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
 
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT l.date as date, u.login as login, i.label as label
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            $sWhere
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $iFilteredTotal = DB::count();
 
     // Output
     if ($iTotal == "") {
@@ -326,21 +318,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
 
         //Finish the line
         $sOutput .= '],';
@@ -388,40 +379,34 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date as date, u.login as login, i.label as label
+    DB::query("SELECT *
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+            WHERE l.action = 'at_copy'");
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
+    $rows = DB::query(
+        "SELECT l.date as date, u.login as login, i.label as label
+        FROM ".$pre."log_items as l
+        INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
 
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $iFilteredTotal = DB::count();
 
     // Output
     $sOutput = '{';
@@ -430,21 +415,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
 
         //Finish the line
         $sOutput .= '],';
@@ -497,39 +481,40 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
         $sWhere .= ") ";
     }
 
-    $sql = "SELECT l.date as date, u.login as login, l.label as label
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+    DB::query(
+        "SELECT *
+        FROM ".$pre."log_system as l
+        INNER JOIN ".$pre."users as u ON (l.qui=u.id)".
+        $sWhere,
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);
+    $rows = DB::query(
+        "SELECT l.date as date, u.login as login, l.label as label
+        FROM ".$pre."log_system as l
+        INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
 
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            $sWhere
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $iFilteredTotal = DB::count();
 
     /*
      * Output
@@ -540,19 +525,18 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
 
-    $rows = $db->fetchAllArray($sql);
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $get_item_in_list = true;
         $sOutput_item = "[";
 
         //col1
-        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'" ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'" ';
 
         //Finish the line
         $sOutput_item .= '], ';
@@ -603,41 +587,36 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " WHERE (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
         $sWhere .= ") ";
     }
 
-    $sql = "SELECT l.date as date, u.login as login, i.label as label,
+    DB::query("SELECT *
+            FROM ".$pre."log_items as l
+            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)"
+    );
+    $iTotal = DB::count();
+
+    $rows = DB::query(
+        "SELECT l.date as date, u.login as login, i.label as label,
             i.perso as perso
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
-
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     /*
      * Output
@@ -648,22 +627,21 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
 
-    $rows = $db->fetchAllArray($sql);
-    foreach ($rows as $reccord) {
+    foreach ($rows as $record) {
         $get_item_in_list = true;
         $sOutput_item = "[";
 
         //col1
-        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'", ';
+        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
 
         //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
 
         //col4
-        if ($reccord['perso'] == 1) {
+        if ($record['perso'] == 1) {
             $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['yes']), ENT_QUOTES). '"';
         } else {
             $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['no']), ENT_QUOTES). '"';

@@ -40,10 +40,13 @@ include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', 'includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 echo '
 <div id="tabs-9">
@@ -69,7 +72,12 @@ echo '
                 <th>'.$LANG['label'].'</th>
                 <th>'.$LANG['settings_api_key'].'</th>
                 </thead>';
-                $rows = $db->fetchAllArray("SELECT id, label, value FROM ".$pre."api WHERE type = 'key' ORDER BY timestamp ASC");
+                $rows = DB::query(
+                    "SELECT id, label, value FROM ".$pre."api
+                    WHERE type = %s
+                    ORDER BY timestamp ASC",
+                    'key'
+                );
                 foreach ($rows as $record) {
                     echo '
                     <tr id="'.$record['id'].'">
@@ -89,20 +97,25 @@ echo '
             &nbsp;<input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
         </label>
         <div id="api_ips_list">';
-		$data = $db->queryCount(
-			"api",
-			array(
-			    "type" => "ip"
-			)
-		);
-		if ($data[0] != 0) {
+		$data = DB::query(
+            "SELECT id, label, value FROM ".$pre."api
+            WHERE type = %s",
+            'ip'
+        );
+        $counter = DB::count();
+		if ($counter != 0) {
 			echo '
             <table id="tbl_ips">
                 <thead>
                 <th>'.$LANG['label'].'</th>
                 <th>'.$LANG['settings_api_ip'].'</th>
                 </thead>';
-					$rows = $db->fetchAllArray("SELECT id, label, value FROM ".$pre."api WHERE type = 'ip' ORDER BY timestamp ASC");
+					$rows = DB::query(
+                        "SELECT id, label, value FROM ".$pre."api
+                        WHERE type = %s
+                        ORDER BY timestamp ASC",
+                        'ip'
+                    );
 					foreach ($rows as $record) {
 						echo '
 						<tr id="'.$record['id'].'">
@@ -184,7 +197,7 @@ function generateApiKey()
             secure    : "false"
         },
         function(data) {
-            data = prepareExchangedData(data, "decode");
+            data = prepareExchangedData(data, "decode", "'.$_SESSION["key"].'");
            	if (data.error == "true") {
            		$("#api_db_message").html(data.error_msg);
            	} else {

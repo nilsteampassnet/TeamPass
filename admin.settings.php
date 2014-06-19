@@ -43,23 +43,24 @@ function updateSettings ($setting, $val, $type = '')
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Connect to database
-    $db = new SplClassLoader('Database\Core', '../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
-    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."'");
-    $data = $db->queryCount(
-        "misc",
-        array(
-            "type" => $type,
-            "intitule" => $setting
-        )
+    $data = DB::query(
+        "SELECT * FROM ".$pre."misc
+        WHERE type = %s AND intitule = %s",
+        $type,
+        $setting
     );
-    if ($data[0] == 0) {
-        $db->queryInsert(
-            "misc",
+    $counter = DB::count();
+    if ($counter == 0) {
+        DB::insert(
+            $pre."misc",
             array(
                 'valeur' => $val,
                 'type' => $type,
@@ -68,8 +69,8 @@ function updateSettings ($setting, $val, $type = '')
         );
         // in case of stats enabled, add the actual time
         if ($setting == 'send_stats') {
-            $db->queryInsert(
-                "misc",
+            DB::insert(
+                $pre."misc",
                 array(
                     'valeur' => time(),
                     'type' => $type,
@@ -78,27 +79,28 @@ function updateSettings ($setting, $val, $type = '')
             );
         }
     } else {
-        $db->queryUpdate(
-            "misc",
+        DB::update(
+            $pre."misc",
             array(
                 'valeur' => $val
                ),
-            "type='".$type."' AND intitule = '".$setting."'"
+            "type = %s AND intitule = %s",
+            $type,
+            $setting
         );
         // in case of stats enabled, update the actual time
         if ($setting == 'send_stats') {
             // Check if previous time exists, if not them insert this value in DB
-            //$data_time = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."misc WHERE type='".$type."' AND intitule = '".$setting."_time'");
-            $data_time = $db->queryCount(
-                "misc",
-                array(
-                    "type" => $type,
-                    "intitule" => $setting."_time"
-                )
+            $data_time = DB::query(
+                "SELECT * FROM ".$pre."misc
+                WHERE type = %s AND intitule = %s",
+                $type,
+                $setting.'_time'
             );
-            if ($data_time[0] == 0) {
-                $db->queryInsert(
-                    "misc",
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    $pre."misc",
                     array(
                         'valeur' => 0,
                         'type' => $type,
@@ -106,12 +108,14 @@ function updateSettings ($setting, $val, $type = '')
                        )
                 );
             } else {
-                $db->queryUpdate(
-                    "misc",
+                DB::update(
+                    $pre."misc",
                     array(
                         'valeur' => 0
                        ),
-                    "type='".$type."' AND intitule = '".$setting."_time'"
+                    "type = %s AND intitule = %s",
+                    $type,
+                    $setting
                 );
             }
         }
@@ -1972,16 +1976,13 @@ echo '
                         </td>
                     </tr>';
 // Send emails backlog
-//$nb_emails = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
-$nb_emails = $db->queryCount(
-    "emails",
-    "status = 'not_sent' OR status = ''"
-);
+$data = DB::queryfirstrow("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", 'not_sent', '');
+$nb_emails = DB::count();
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
                         <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.str_replace("#nb_emails#", $nb_emails[0], $LANG['admin_email_send_backlog']).'
+                            '.str_replace("#nb_emails#", $nb_emails, $LANG['admin_email_send_backlog']).'
                             <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_send_backlog_tip'].'</h2>" /></span>
                         </td>
                         <td>

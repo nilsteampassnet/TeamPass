@@ -46,7 +46,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
 // Get list of users
 $usersList = array();
 $usersString = "";
-$rows = $db->fetchAllArray("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
+$rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $record) {
     $usersList[$record['login']] = array(
         "id" => $record['id'],
@@ -58,7 +58,7 @@ foreach ($rows as $record) {
 // Get list of roles
 $arrRoles = array();
 $listRoles = "";
-$rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
+$rows = DB::query("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
 foreach ($rows as $reccord) {
     $arrRoles[$reccord['title']] = array(
         'id' => $reccord['id'],
@@ -176,15 +176,8 @@ foreach ($folders as $folder) {
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
-                $data = $db->queryCount(
-                    "items",
-                    array(
-                        "inactif" => 0,
-                        "id_tree" => intval($node)
-                    )
-                );
-                $nbChildrenItems += $data[0];
+                DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $node);
+                $nbChildrenItems += DB::count();
             }
             if (
                 in_array(
@@ -205,15 +198,8 @@ foreach ($folders as $folder) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
-            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $data = $db->queryCount(
-                "items",
-                array(
-                    "inactif" => 0,
-                    "id_tree" => intval($folder->id)
-                )
-            );
-            $itemsNb = $data[0];
+            DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $folder->id);
+            $itemsNb = DB::count();
 
             // get 1st folder
             if (empty($firstGroup)) {

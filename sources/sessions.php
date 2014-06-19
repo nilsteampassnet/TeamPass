@@ -124,7 +124,7 @@ class CryptSession {
     public function write($id, $data)
     {
         $sess_file = $this->_path . $this->_name . "_$id";
-	$iv        = mcrypt_create_iv($this->_ivSize, MCRYPT_DEV_URANDOM);
+	    $iv = mcrypt_create_iv($this->_ivSize, MCRYPT_DEV_URANDOM);
         $encrypted = mcrypt_encrypt(
             $this->_algo,
             $this->_key,

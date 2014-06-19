@@ -256,6 +256,12 @@ function cleanString($string)
     return str_replace($tabSpecialChar, "", $string);
 }
 
+function db_error_handler($params) {
+    echo "Error: " . $params['error'] . "<br>\n";
+    echo "Query: " . $params['query'] . "<br>\n";
+    die; // don't want to keep going if a query broke
+}
+
 /**
  * identifyUserRights()
  *
@@ -269,10 +275,12 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
-    $db = new SplClassLoader('Database\Core', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -287,7 +295,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $rows = $db->fetchAllArray("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = '0'");
+        $rows = DB::query("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -295,29 +303,24 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['all_non_personal_folders'] = $groupesVisibles;
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
-        $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        //$sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
+        $where->add('personal_folder=%i', 1);
         if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
-            $sql .= " AND title != '".$_SESSION['user_id']."'";
+            //$sql .= " AND title != '".$_SESSION['user_id']."'";
+            $where->add('title=%s', $_SESSION['user_id']);
+            $where->negateLast();
         }
         // Get ID of personal folder
-        // $pf = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_SESSION['user_id']."'");
-        $pf = $db->queryGetRow(
-            "nested_tree",
-            array(
-                "id"
-            ),
-            array(
-                "title" => $_SESSION['user_id']
-            )
-        );
-        if (!empty($pf[0])) {
-            if (!in_array($pf[0], $_SESSION['groupes_visibles'])) {
-                array_push($_SESSION['groupes_visibles'], $pf[0]);
-                array_push($_SESSION['personal_visible_groups'], $pf[0]);
+        $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
+        if (!empty($pf['id'])) {
+            if (!in_array($pf['id'], $_SESSION['groupes_visibles'])) {
+                array_push($_SESSION['groupes_visibles'], $pf['id']);
+                array_push($_SESSION['personal_visible_groups'], $pf['id']);
                 // get all descendants
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title', 'personal_folder');
                 $tree->rebuild();
-                $tst = $tree->getDescendants($pf[0]);
+                $tst = $tree->getDescendants($pf['id']);
                 foreach ($tst as $t) {
                     array_push($_SESSION['groupes_visibles'], $t->id);
                     array_push($_SESSION['personal_visible_groups'], $t->id);
@@ -328,10 +331,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
-        $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
-        $_SESSION['nb_folders'] = $ret[0];
-        $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title");
-        $_SESSION['nb_roles'] = $ret[0];
+        DB::query("SELECT * FROM ".$pre."nested_tree");
+        $_SESSION['nb_folders'] = DB::count();
+        DB::query("SELECT * FROM ".$pre."roles_title");
+        $_SESSION['nb_roles'] = DB::count();
     } else {
         // init
         $_SESSION['groupes_visibles'] = array();
@@ -354,38 +357,31 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($fonctionsAssociees as $roleId) {
             if (!empty($roleId)) {
                 // Get allowed folders for each Role
-                $rows = $db->fetchAllArray(
-                    "SELECT folder_id
-                    FROM ".$pre."roles_values
-                    WHERE role_id=".$roleId
-                );
-                if (count($rows) > 0) {
-                    foreach ($rows as $reccord) {
-                        if (isset($reccord['folder_id']) && !in_array($reccord['folder_id'], $listAllowedFolders)) {
-                            array_push($listAllowedFolders, $reccord['folder_id']);
+                $rows = DB::query("SELECT folder_id FROM ".$pre."roles_values WHERE role_id=%i", $roleId);
+                if (DB::count() > 0) {
+                    foreach ($rows as $record) {
+                        if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
+                            array_push($listAllowedFolders, $record['folder_id']);
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
-                        $tmp = $db->queryFirst(
-                            "SELECT allow_pw_change
-                            FROM ".$pre."roles_title
-                            WHERE id = ".$roleId
-                        );
-                        if ($tmp['allow_pw_change'] == 1 && !in_array($reccord['folder_id'], $listFoldersEditableByRole)) {
-                            array_push($listFoldersEditableByRole, $reccord['folder_id']);
+                        $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
+                        if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
+                            array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
                     }
                     // Check for the users roles if some specific rights exist on items
-                    $rows = $db->fetchAllArray(
+                    $rows = DB::query(
                         "SELECT i.id_tree, r.item_id
                         FROM ".$pre."items as i
                         INNER JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
-                        WHERE r.role_id=".$roleId."
-                        ORDER BY i.id_tree ASC"
+                        WHERE r.role_id=%i
+                        ORDER BY i.id_tree ASC",
+                        $roleId
                     );
                     $x = 0;
-                    foreach ($rows as $reccord) {
-                        if (isset($reccord['id_tree'])) {
-                            $listFoldersLimited[$reccord['id_tree']][$x] = $reccord['item_id'];
+                    foreach ($rows as $record) {
+                        if (isset($record['id_tree'])) {
+                            $listFoldersLimited[$record['id_tree']][$x] = $record['item_id'];
                             $x++;
                         }
                     }
@@ -394,14 +390,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
         // Does this user is allowed to see other items
         $x = 0;
-        $rows = $db->fetchAllArray(
-            "SELECT id,id_tree FROM ".$pre."items
-            WHERE restricted_to LIKE '%".$_SESSION['user_id'].";%' AND inactif='0'"
+        $rows = DB::query(
+            "SELECT id, id_tree FROM ".$pre."items
+            WHERE restricted_to=%ss AND inactif=%s",
+            $_SESSION['user_id'],
+            '0'
         );
-        foreach ($rows as $reccord) {
-            $listRestrictedFoldersForItems[$reccord['id_tree']][$x] = $reccord['id'];
+        foreach ($rows as $record) {
+            $listRestrictedFoldersForItems[$record['id_tree']][$x] = $record['id'];
             $x++;
-            // array_push($listRestrictedFoldersForItems, $reccord['id_tree']);
+            // array_push($listRestrictedFoldersForItems, $record['id_tree']);
         }
         // => Build final lists
         // Clean arrays
@@ -422,17 +420,20 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $listAllowedFolders = array_filter(array_unique($allowedFolders));
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
-        $sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+
+        $where = new WhereClause('and');
+        $where->add('personal_folder=%i', 1);
         if (
             isset($_SESSION['settings']['enable_pf_feature']) &&
             $_SESSION['settings']['enable_pf_feature'] == 1 &&
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $sql .= " AND title != '".$_SESSION['user_id']."'";
+            $where->add('title=%s', $_SESSION['user_id']);
+            $where->negateLast();
         }
 
-        $pfs = $db->fetchAllArray($sql);
+        $pfs = DB::query("SELECT id FROM ".$pre."nested_tree WHERE %l", $where);
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
@@ -443,16 +444,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-        // $pf = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".$_SESSION['user_id']."'");
-        $pf = $db->queryGetRow(
-            "nested_tree",
-            array(
-                "id"
-            ),
-            array(
-                "title" => intval($_SESSION['user_id'])
-            )
-        );
+            $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf[0])) {
                 if (!in_array($pf[0], $listAllowedFolders)) {
                     // get all descendants
@@ -473,10 +465,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
-        $_SESSION['nb_folders'] = $ret[0];
-        $ret = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title");
-        $_SESSION['nb_roles'] = $ret[0];
+        DB::queryfirstrow("SELECT * FROM ".$pre."nested_tree");
+        $_SESSION['nb_folders'] = DB::count();
+        DB::queryfirstrow("SELECT * FROM ".$pre."roles_title");
+        $_SESSION['nb_roles'] = DB::count();
     }
 }
 
@@ -489,13 +481,15 @@ function logEvents($type, $label, $who)
 {
     global $server, $user, $pass, $database, $pre;
     // include librairies & connect to DB
-    $db = new SplClassLoader('Database\Core', '../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
-    $db->queryInsert(
-        "log_system",
+    DB::insert(
+        $pre."log_system",
         array(
             'type' => $type,
             'date' => time(),
@@ -516,10 +510,12 @@ function updateCacheTable($action, $id = "")
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
-    $db = new SplClassLoader('Database\Core', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -529,18 +525,22 @@ function updateCacheTable($action, $id = "")
     // Rebuild full cache table
     if ($action == "reload") {
         // truncate table
-        $db->query("TRUNCATE TABLE ".$pre."cache");
+        DB::query("TRUNCATE TABLE ".$pre."cache");
+
         // reload date
-        $sql = "SELECT *
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-                AND l.action = 'at_creation'
-                AND i.inactif=0";
-        $rows = $db->fetchAllArray($sql);
-        foreach ($rows as $reccord) {
+        $rows = DB::query(
+            "SELECT *
+            FROM ".$pre."items as i
+            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            AND l.action = %s
+            AND i.inactif = %i",
+            'at_creation',
+            0
+        );
+        foreach ($rows as $record) {
             // Get all TAGS
             $tags = "";
-            $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$reccord['id']);
+            $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $record['id']);
             foreach ($itemTags as $itemTag) {
                 if (!empty($itemTag['tag'])) {
                     $tags .= $itemTag['tag']." ";
@@ -548,7 +548,7 @@ function updateCacheTable($action, $id = "")
             }
             // form id_tree to full foldername
             $folder = "";
-            $arbo = $tree->getPath($reccord['id_tree'], true);
+            $arbo = $tree->getPath($record['id_tree'], true);
             foreach ($arbo as $elem) {
                 if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
                     $elem->title = $_SESSION['login'];
@@ -560,47 +560,32 @@ function updateCacheTable($action, $id = "")
                 }
             }
             // store data
-            $db->queryInsert(
-                "cache",
+            DB::insert(
+                $pre."cache",
                 array(
-                    'id' => $reccord['id'],
-                    'label' => $reccord['label'],
-                    'description' => $reccord['description'],
+                    'id' => $record['id'],
+                    'label' => $record['label'],
+                    'description' => $record['description'],
                     'tags' => $tags,
-                    'id_tree' => $reccord['id_tree'],
-                    'perso' => $reccord['perso'],
-                    'restricted_to' => $reccord['restricted_to'],
-                    'login' => $reccord['login'],
+                    'id_tree' => $record['id_tree'],
+                    'perso' => $record['perso'],
+                    'restricted_to' => $record['restricted_to'],
+                    'login' => $record['login'],
                     'folder' => $folder,
-                    'author' => $reccord['id_user'],
+                    'author' => $record['id_user'],
                    )
             );
         }
         // UPDATE an item
     } elseif ($action == "update_value") {
         // get new value from db
-        /*$sql = "SELECT label, description, id_tree, perso, restricted_to, login
-                FROM ".$pre."items
-                WHERE id=".$id;
-        $row = $db->query($sql);
-        $data = $db->fetchArray($row);*/
-        $data = $db->queryGetArray(
-            "items",
-            array(
-                "label",
-                "description",
-                "id_tree",
-                "perso",
-                "restricted_to",
-                "login"
-            ),
-            array(
-                "id" => intval($id)
-            )
-        );
+        $data = DB::queryfirstrow(
+            "SELECT label, description, id_tree, perso, restricted_to, login
+            FROM ".$pre."items
+            WHERE id=%i", $id);
         // Get all TAGS
         $tags = "";
-        $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".intval($id));
+        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -620,8 +605,8 @@ function updateCacheTable($action, $id = "")
             }
         }
         // finaly update
-        $db->queryUpdate(
-            "cache",
+        DB::update(
+            $pre."cache",
             array(
                 'label' => $data['label'],
                 'description' => $data['description'],
@@ -633,43 +618,23 @@ function updateCacheTable($action, $id = "")
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                ),
-            "id='".intval($id)."'"
+            "id = %i",
+            $id
         );
         // ADD an item
     } elseif ($action == "add_value") {
         // get new value from db
-        /*$sql = "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-                WHERE i.id=".$id."
-                AND l.action = 'at_creation'";
-        $row = $db->query($sql);
-        $data = $db->fetchArray($row);*/
-        $data = $db->queryGetArray(
-            array(
-                "items" => "i"
-            ),
-            array(
-                "i.label" => "label",
-                "i.description" => "description",
-                "i.id_tree" => "id_tree",
-                "i.perso" => "perso",
-                "i.restricted_to" => "restricted_to",
-                "i.login" => "login",
-                "i.id" => "id"
-            ),
-            array(
-                "i.id" => intval($id),
-                "l.action" => "at_creation"
-            ),
-            "",
-            array(
-                "log_items as l" => "(l.id_item = i.id)"
-            )
+        $data = DB::queryFirstRow(
+            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login
+            FROM ".$pre."items as i
+            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            WHERE i.id = %i
+            AND l.action = %s",
+            $id, 'at_creation'
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = $db->fetchAllArray("SELECT tag FROM ".$pre."tags WHERE item_id=".$id);
+        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id = %i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -689,8 +654,8 @@ function updateCacheTable($action, $id = "")
             }
         }
         // finaly update
-        $db->queryInsert(
-            "cache",
+        DB::insert(
+            $pre."cache",
             array(
                 'id' => $data['id'],
                 'label' => $data['label'],
@@ -706,7 +671,7 @@ function updateCacheTable($action, $id = "")
         );
         // DELETE an item
     } elseif ($action == "delete_value") {
-        mysql_query("DELETE FROM ".$pre."cache WHERE id = ".$id);
+        DB::delete($pre."cache", "id = %i", $id);
     }
 }
 
@@ -722,32 +687,39 @@ function teampassStats()
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to the server
-    $db = new SplClassLoader('Database\Core', '../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     // Prepare stats to be sent
     // Count no FOLDERS
-    $dataFolders = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree");
+    DB::query("SELECT * FROM ".$pre."nested_tree");
+    $dataFolders = DB::count();
     // Count no USERS
-    $dataUsers = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users");
+    $dataUsers = DB::query("SELECT * FROM ".$pre."users");
+    $dataUsers = DB::count();
     // Count no ITEMS
-    $dataItems = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items");
+    $dataItems = DB::query("SELECT * FROM ".$pre."items");
+    $dataItems = DB::count();
     // Get info about installation
     $dataSystem = array();
-    $rows = $db->fetchAllArray(
+    $rows = DB::query(
         "SELECT valeur,intitule FROM ".$pre."misc
-        WHERE type = 'admin'
-        AND intitule IN ('enable_pf_feature','log_connections','cpassman_version')"
+        WHERE type = %s
+        AND intitule = %ls",
+        'admin', array('enable_pf_feature','log_connections','cpassman_version')
     );
-    foreach ($rows as $reccord) {
-        if ($reccord['intitule'] == 'enable_pf_feature') {
-            $dataSystem['enable_pf_feature'] = $reccord['valeur'];
-        } elseif ($reccord['intitule'] == 'cpassman_version') {
-            $dataSystem['cpassman_version'] = $reccord['valeur'];
-        } elseif ($reccord['intitule'] == 'log_connections') {
-            $dataSystem['log_connections'] = $reccord['valeur'];
+    foreach ($rows as $record) {
+        if ($record['intitule'] == 'enable_pf_feature') {
+            $dataSystem['enable_pf_feature'] = $record['valeur'];
+        } elseif ($record['intitule'] == 'cpassman_version') {
+            $dataSystem['cpassman_version'] = $record['valeur'];
+        } elseif ($record['intitule'] == 'log_connections') {
+            $dataSystem['log_connections'] = $record['valeur'];
         }
     }
     // Get the actual stats.
@@ -770,12 +742,13 @@ function teampassStats()
 
     fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$statsToSend, 'r');
     // update the actual time
-    $db->queryUpdate(
-        "misc",
+    DB::update(
+        $pre."misc",
         array(
             'valeur' => time()
-           ),
-        "type='admin' AND intitule = 'send_stats_time'"
+        ),
+        "type = %s AND intitule = %s",
+        'admin', 'send_stats_time'
     );
 }
 

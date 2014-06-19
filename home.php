@@ -13,7 +13,7 @@
  */
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
+    die('Hacking attempt...4');
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -54,34 +54,34 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 </script>';
 } elseif (!empty($_SESSION['derniere_connexion'])) {
     //Last items created block
-    if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 && $_SESSION['user_admin'] != 1 && !empty($_SESSION['groupes_visibles_list'])) {
+    if (
+        isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1
+        && $_SESSION['user_admin'] != 1 && !empty($_SESSION['groupes_visibles_list'])
+    ) {
                     echo '
                     <div style="position:relative;float:right;margin-top:-25px;padding:4px;width:250px;" class="ui-state-highlight ui-corner-all">
                         <span class="ui-icon ui-icon-comment" style="float: left; margin-right: .3em;">&nbsp;</span>
                         <span style="font-weight:bold;margin-bottom:10px;">'.$LANG['block_last_created'].'</span><br />';
-                        $sql = "SELECT
-                        i.label as label, i.id as id, i.id_tree as id_tree
-                        FROM ".$pre."log_items l
-                        INNER JOIN ".$pre."items i
-                        WHERE l.action = 'at_creation'
-                            AND l.id_item = i.id
-                            AND i.id_tree IN (".$_SESSION['groupes_visibles_list'].")
-                            AND i.perso = 0
-                        ORDER BY l.date DESC
-                        LIMIT 0,10
-                        ";
         $cpt=1;
-        $rows = $db->fetchAllArray($sql);
+        $rows = DB::query("SELECT i.label as label, i.id as id, i.id_tree as id_tree
+            FROM ".$pre."log_items l
+            INNER JOIN ".$pre."items i
+            WHERE l.action = %s_action
+            AND l.id_item = i.id
+            AND i.id_tree IN %li_id_tree
+            AND i.perso = %i_perso
+            ORDER BY l.date DESC
+            LIMIT 0,10",
+            array(
+                'action' => 'at_creation',
+                'id_tree' => $_SESSION['groupes_visibles'],
+                'perso' => 0
+            )
+        );
         foreach ($rows as $record) {
-            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item = '".$record['id']."' AND action = 'at_delete'");
-            $data = $db->queryCount(
-                "log_items",
-                array(
-                    "id_item" => intval($record['id']),
-                    "action" => "at_delete"
-                )
-            );
-            if ($data[0] == 0) {
+            DB::query("SELECT * FROM ".$pre."log_items WHERE id_item = %i AND action = %s", $record['id'], 'at_delete');
+            $counter = DB::count();
+            if ($counter == 0) {
                 echo '<span class="ui-icon ui-icon-tag" style="float: left; margin-right: .3em;">&nbsp;</span>
                 <a href="#" onClick="javascript:$(\'#menu_action\').val(\'action\');window.location.href =\'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\';" style="cursor:pointer;">'.stripslashes($record['label']).'</a><br />';
                 if ($cpt==5) {

@@ -38,11 +38,12 @@ if (empty($_SESSION['favourites'])) {
     $cpt= 0 ;
     foreach ($_SESSION['favourites'] as $fav) {
         if (!empty($fav)) {
-            $data = $db->queryFirst(
+            $data = DB::queryFirstRow(
                 "SELECT i.label, i.description, i.id, i.id_tree, t.title
                 FROM ".$pre."items as i
                 INNER JOIN ".$pre."nested_tree as t ON (t.id = i.id_tree)
-                WHERE i.id = ".$fav
+                WHERE i.id = %i",
+                $fav
             );
             if (!empty($data['label'])) {
                 echo '

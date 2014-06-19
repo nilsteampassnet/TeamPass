@@ -48,26 +48,20 @@ function checkUser($userId, $userKey, $pageVisited)
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Connect to mysql server
-    $db = new SplClassLoader('Database\Core', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     // load user's data
     /*$sql = "SELECT * FROM ".$pre."users WHERE id = '$userId'";
-    $row = $db->query($sql);
-    $data = $db->fetchArray($row);*/
-    $data = $db->queryGetArray(
-        "users",
-        array(
-            "login",
-            "key_tempo",
-            "admin",
-            "gestionnaire"
-        ),
-        array(
-            "id" => intval($userId)
-        )
+    $row = DB::query($sql);
+    $data = DB::fetchArray($row);*/
+    $data = DB::queryfirstrow(
+        "SELECT login, key_tempo, admin, gestionnaire FROM ".$pre."users WHERE id = %i",
+        $userId
     );
 
     // check if user exists and tempo key is coherant
