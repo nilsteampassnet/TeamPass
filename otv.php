@@ -31,50 +31,52 @@ if (
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to DB
-    $db = new SplClassLoader('Database\Core', '../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     // Include main functions used by TeamPass
     require_once 'sources/main.functions.php';
 
     // check session validity
-    $data = $db->queryGetRow(
-        "otv",
-        array(
-            "timestamp",
-            "code",
-            "item_id"
-        ),
-        array(
-            "id" => intval($_GET['otv_id'])
-        )
+    $data = DB::queryfirstrow(
+        "SELECT timestamp, code, item_id FROM ".$pre."otv
+        WHERE id = %i",
+        intval($_GET['otv_id'])
     );
     if (
-        $data[0] == $_GET['stamp']
-        && $data[1] == $_GET['code']
-        && $data[2] == $_GET['item_id']
+        $data['timestamp'] == $_GET['stamp']
+        && $data['code'] == $_GET['code']
+        && $data['item_id'] == $_GET['item_id']
     ) {
         // otv is too old
-        if ($data[0] < (time() - $k['otv_expiration_period']) ) {
+        if ($data['timestamp'] < (time() - $k['otv_expiration_period']) ) {
             $html = "Link is too old!";
         } else {
-            $dataItem = $db->queryFirst(
+            $dataItem = DB::queryfirstrow(
                 "SELECT *
                 FROM ".$pre."items as i
                 INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-                WHERE i.id=".intval($_GET['item_id'])."
-                AND l.action = 'at_creation'"
+                WHERE i.id = %i AND l.action = %s",
+                intval($_GET['item_id']),
+                'at_creation'
             );
 
             // get data
             $pw = decrypt($dataItem['pw']);
 
         	// get key for original pw
-        	$originalKey = $db->queryFirst('SELECT rand_key FROM `'.$pre.'keys` WHERE `table` LIKE "items" AND `id` ='.intval($_GET['item_id']));
+        	$originalKey = DB::queryfirstrow(
+                "SELECT rand_key FROM `".$pre."keys`
+                WHERE `table` = %s AND `id` = %i",
+                'items',
+                intval($_GET['item_id'])
+            );
         	// unsalt previous pw
-        	$pw = substr(decrypt($dataItem['pw']), strlen($originalKey['rand_key']));
+        	$pw = substr($pw, strlen($originalKey['rand_key']));
 
 
             $label = $dataItem['label'];
@@ -98,10 +100,10 @@ if (
             	"</div>";
 
         	// delete entry
-        	$db->query("DELETE FROM ".$pre."otv WHERE id = '".intval($_GET['otv_id'])."'");
+        	DB::delete($pre."otv", "id = %i", intval($_GET['otv_id']));
         }
     } else {
-        $html = "Not a valid page!";
+        $html = "Not a valid page2!";
     }
 } else {
     $html = "Not a valid page!";

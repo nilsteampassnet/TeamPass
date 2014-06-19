@@ -41,10 +41,12 @@ header("Pragma: no-cache");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -118,30 +120,24 @@ switch ($_POST['type']) {
     #CASE for refreshing all Personal Folders
     case "admin_action_check_pf":
         //get through all users
-        $rows = $db->fetchAllArray("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
+        $rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
         foreach ($rows as $record) {
             //update PF field for user
-            $db->queryUpdate(
-                'users',
+            $DB::update(
+                $pre.'users',
                 array(
                     'personal_folder' => '1'
                ),
-                "id='".$record['id']."'"
+                "id=%i'", $record['id']
             );
 
             //if folder doesn't exist then create it
-            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE title = '".$record['id']."' AND parent_id = 0");
-            $data = $db->queryCount(
-                "nested_tree",
-                array(
-                    "title" => $record['id'],
-                    "parent_id" => 0
-                )
-            );
-            if ($data[0] == 0) {
+            $data = DB::queryfirstrow("SELECT * FROM ".$pre."nested_tree WHERE title = %s AND parent_id = %i", $record['id'], 0);
+            $counter = DB::count();
+            if ($counter == 0) {
                 //If not exist then add it
-                $db->queryInsert(
-                    "nested_tree",
+                DB::insert(
+                    $pre."nested_tree",
                     array(
                         'parent_id' => '0',
                         'title' => $record['id'],
@@ -150,25 +146,22 @@ switch ($_POST['type']) {
                 );
             } else {
                 //If exists then update it
-                $db->queryUpdate(
-                    'nested_tree',
+                DB::update(
+                    $pre.'nested_tree',
                     array(
                         'personal_folder' => '1'
                    ),
-                    array(
-                        "title" =>$record['id'],
-                        'parent_id' => '0'
-                   )
+                   "title=%s AND parent_id=%i", $record['id'], 0
                 );
             }
         }
 
-        //Delete PF for deleted users
-        $db->query(
+        //Delete PF for deleted users - TODO
+        /*DB::query(
             "SELECT COUNT(*) FROM ".$pre."nested_tree as t
             LEFT JOIN ".$pre."users as u ON t.title = u.id
             WHERE u.id IS null AND t.parent_id=0 AND t.title REGEXP '^[0-9]'"
-        );
+        );*/
 
         //rebuild fuild tree folder
         $tree->rebuild();
@@ -194,37 +187,38 @@ switch ($_POST['type']) {
                 array_push($foldersIds, $folder->id);
             }
         }
-
-        $items = $db->fetchAllArray("SELECT id,label FROM ".$pre."items WHERE id_tree NOT IN(".implode(',', $foldersIds).")");
+        
+        $items = DB::query("SELECT id,label FROM ".$pre."items WHERE id_tree NOT IN %li", $foldersIds);
         foreach ($items as $item) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
-            $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
+            DB::DELETE($pre."items", "id = %i", $item['id']);
             //log
-            $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
+            DB::DELETE($pre."log_items", "id_item = %i", $item['id']);
 
             $nbItemsDeleted++;
         }
 
         // delete orphan items
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT id
             FROM ".$pre."items
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            //$row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
-            $row = $db->queryCount(
+            //$row = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            DB::query(
                 "log_items",
                 array(
                     "id_item" => $item['id'],
                     "action" => "at_creation"
                 )
             );
-            if ($row[0] == 0) {
-                $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
-                $db->query("DELETE FROM ".$pre."categories_items WHERE item_id = ".$item['id']);
-                $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
+            $row = DB::count();
+            if ($row == 0) {
+                DB::DELETE($pre."items", "id = %i", $item['id']);
+                DB::DELETE($pre."categories_items", "item_id = %i", $item['id']);
+                DB::DELETE($pre."log_items", "id_item = %i", $item['id']);
                 $nbItemsDeleted++;
             }
         }
@@ -249,19 +243,19 @@ switch ($_POST['type']) {
             $tables[] = $row[0];
         }*/
         $tables = array();
-        $result = $db->query('SHOW TABLES');
-        while ($row = $db->fetchArray($result)) {
+        $result = DB::query('SHOW TABLES');
+        foreach ($result as $row) {
             $tables[] = $row["Tables_in_".$database];
         }
 
         //cycle through
         foreach ($tables as $table) {
             if (empty($pre) || substr_count($table, $pre) > 0) {
-                $result = $db->query('SELECT * FROM '.$table);
-                $numFields = $db->queryNumFields('SELECT * FROM '.$table);
+                $result = DB::query('SELECT * FROM '.$table);
+                $numFields = DB::queryNumFields('SELECT * FROM '.$table); // TODO
                 // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
-                $row2 = $db->queryFirst('SHOW CREATE TABLE '.$table);
+                $row2 = DB::queryfirstrow('SHOW CREATE TABLE '.$table);
                 $return.= "\n\n".$row2["Create Table"].";\n\n";
 
                 //prepare all fields and datas
@@ -313,8 +307,8 @@ switch ($_POST['type']) {
             $_SESSION['key_tmp'] = $pwgen->generate();
 
             //update LOG
-            $db->queryInsert(
-                'log_system',
+            DB::insert(
+                $pre.'log_system',
                 array(
                     'type' => 'admin_action',
                     'date' => time(),
@@ -360,7 +354,7 @@ switch ($_POST['type']) {
                 $query.= fgets($handle, 4096);
                 if (substr(rtrim($query), -1) == ';') {
                     //launch query
-                    $db->query($query);
+                    DB::query($query);
                     $query = '';
                 }
             }
@@ -378,37 +372,38 @@ switch ($_POST['type']) {
     #CASE for optimizing the DB
     case "admin_action_db_optimize":
         //Get all tables
-        $alltables = mysql_query("SHOW TABLES");
-        while ($table = mysql_fetch_assoc($alltables)) {
+        $alltables = DB::query("SHOW TABLES");
+        foreach ($alltables as $table) {
             foreach ($table as $i => $tablename) {
                 if (substr_count($tablename, $pre) > 0) {
                     // launch optimization quieries
-                    mysql_query("ANALYZE TABLE `".$tablename."`");
-                    mysql_query("OPTIMIZE TABLE `".$tablename."`");
+                    DB::query("ANALYZE TABLE `".$tablename."`");
+                    DB::query("OPTIMIZE TABLE `".$tablename."`");
                 }
             }
         }
 
         //Clean up LOG_ITEMS table
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT id
             FROM ".$pre."items
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            //$row = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
-            $row = $db->queryCount(
-                "log_items",
+            //$row = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
+            DB::query(
+                $pre."log_items",
                 array(
                     "id_item" => $item['id'],
                     "action" => "at_creation"
                 )
             );
+            $counter = DB::count();
             if ($row[0] == 0) {
                 //Create new at_creation entry
-                $rowTmp = $db->queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
-                $db->queryInsert(
-                    'log_items',
+                $rowTmp = DB::queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
+                DB::insert(
+                    $pre.'log_items',
                     array(
                         'id_item'     => $item['id'],
                         'date'         => $rowTmp['date']-1,
@@ -460,7 +455,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_backup_decrypt":
         //get backups infos
-        $rows = $db->fetchAllArray("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
+        $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = %s", "settings");
         foreach ($rows as $reccord) {
             $settings[$reccord['intitule']] = $reccord['valeur'];
         }
@@ -490,16 +485,17 @@ switch ($_POST['type']) {
         $error = "";
         include 'main.functions.php';
         //put tool in maintenance.
-            $db->queryUpdate(
-                "misc",
+            DB::update(
+                $pre."misc",
                 array(
                     'valeur' => '1',
                ),
-                "intitule = 'maintenance_mode' AND type= 'admin'"
+                "intitule = %s AND type= %s",
+                "maintenance_mode", "admin"
             );
             //log
-            $db->queryInsert(
-                "log_system",
+            DB::insert(
+                $pre."log_system",
                 array(
                     'type' => 'system',
                     'date' => time(),
@@ -511,29 +507,31 @@ switch ($_POST['type']) {
         $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
 
         //change all passwords in DB
-        $rows = $db->fetchAllArray("SELECT id,pw FROM ".$pre."items WHERE perso = '0'");
+        $rows = DB::query("SELECT id,pw FROM ".$pre."items WHERE perso = %s", "0");
         foreach ($rows as $reccord) {
             $pw = decrypt($reccord['pw']);
             //encrypt with new SALT
-            $db->queryUpdate(
-                "items",
+            DB::update(
+                $pre."items",
                 array(
                     'pw' => encrypt($pw, $new_salt_key),
                ),
-                "id = '".$reccord['id']."'"
+                "id = %i",
+                $reccord['id']
             );
         }
         //change all users password in DB
-        $rows = $db->fetchAllArray("SELECT id,pw FROM ".$pre."users");
+        $rows = DB::query("SELECT id,pw FROM ".$pre."users");
         foreach ($rows as $reccord) {
             $pw = decrypt($reccord['pw']);
             //encrypt with new SALT
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'pw' => encrypt($pw, $new_salt_key),
                ),
-                "id = '".$reccord['id']."'"
+                "id = %i",
+                $reccord['id']
             );
         }
 
@@ -580,7 +578,7 @@ switch ($_POST['type']) {
     case "admin_email_send_backlog":
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-        $rows = $db->fetchAllArray("SELECT * FROM ".$pre."emails WHERE status = 'not_sent' OR status = ''");
+        $rows = DB::query("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", "not_sent", "");
         foreach ($rows as $reccord) {
             //send email
             $ret = json_decode(
@@ -593,22 +591,23 @@ switch ($_POST['type']) {
 
             if (!empty($ret['error'])) {
                 //update item_id in files table
-                $db->queryUpdate(
-                    'emails',
+                DB::update(
+                    $pre.'emails',
                     array(
                         'status' => "not sent"
                    ),
-                    "timestamp='".$reccord['timestamp']."'"
+                    "timestamp = %s",
+                    $reccord['timestamp']
                 );
             } else {
                 //delete from DB
-                $db->query("DELETE FROM ".$pre."emails WHERE timestamp = '".$reccord['timestamp']."'");
+                DB::delete($pre."emails", "timestamp = %s", $reccord['timestamp']);
             }
         }
 
         //update LOG
-        $db->queryInsert(
-            'log_system',
+        DB::insert(
+            $pre.'log_system',
             array(
                'type' => 'admin_action',
                'date' => time(),
@@ -649,18 +648,12 @@ switch ($_POST['type']) {
         include 'main.functions.php';
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
-        $rows = $db->fetchAllArray("SELECT id, pw FROM ".$pre."items WHERE perso = '0'");
+        $rows = DB::query("SELECT id, pw FROM ".$pre."items WHERE perso = %s", "0");
         foreach ($rows as $reccord) {
             // check if key exists for this item
-            //$row = @$db->fetchRow("SELECT COUNT(*) FROM ".$pre."keys WHERE `id`='".$reccord['id']."' AND `table` = 'items'");
-            $row = $db->queryCount(
-                "keys",
-                array(
-                    "id" => $reccord['id'],
-                    "table" => "items"
-                )
-            );
-            if ($row[0] == 0) {
+            DB::query("SELECT COUNT(*) FROM ".$pre."keys WHERE `id` = %i AND `table` = %s", $reccord['id'], "items");
+            $counter = DB::count();
+            if ($counter == 0) {
                 $storePrefix = false;
                 // decrypt pw
                 $pw = decrypt($reccord['pw']);
@@ -681,20 +674,21 @@ switch ($_POST['type']) {
                     $pw = encrypt($pw);
 
                     // store pw
-                    $db->queryUpdate(
-                        'items',
+                    DB::update(
+                        $pre.'items',
                         array(
                             'pw' => $pw
                         ),
-                        "id='".$reccord['id']."'"
+                        "id=%s",
+                        $reccord['id']
                     );
                     // should we store?
                     $storePrefix = true;
                 }
                 if ($storePrefix == true) {
                     // store key prefix
-                    $db->queryInsert(
-                        'keys',
+                    DB::insert(
+                        $pre.'keys',
                         array(
                             'table'     => 'items',
                             'id'        => $reccord['id'],
@@ -863,8 +857,8 @@ switch ($_POST['type']) {
             $error = "";
             // add new key
             if (isset($_POST['action']) && $_POST['action'] == "add") {
-                $db->queryInsert(
-                    'api',
+                DB::insert(
+                    $pre.'api',
                     array(
                     	'id'		=> null,
                         'type'      => 'key',
@@ -877,19 +871,20 @@ switch ($_POST['type']) {
             else
             // update existing key
             if (isset($_POST['action']) && $_POST['action'] == "update") {
-                $db->queryUpdate(
-                    'api',
+                DB::update(
+                    $pre.'api',
                     array(
                         'label'     => $_POST['label'],
                         'timestamp' => time()
                     ),
-                    "id='".intval($_POST['id'])."'"
+                    "id=%i",
+                    $_POST['id']
                 );
             }
             else
             // delete existing key
             if (isset($_POST['action']) && $_POST['action'] == "delete") {
-				$db->query("DELETE FROM ".$pre."api WHERE id='".intval($_POST['id'])."'");
+				DB::query("DELETE FROM ".$pre."api WHERE id = %i", $_POST['id']);
             }
             echo '[{"error":"'.$error.'"}]';
             break;
@@ -901,49 +896,45 @@ switch ($_POST['type']) {
 		$error = "";
 		// add new key
 		if (isset($_POST['action']) && $_POST['action'] == "add") {
-			$db->queryInsert(
-			'api',
-			array(
-				'id'		=> null,
-			    'type'      => 'ip',
-			    'label'     => $_POST['label'],
-			    'value'       => $_POST['key'],
-			    'timestamp' => time()
-			)
+			DB::insert(
+                $pre.'api',
+                array(
+                    'id'		=> null,
+                    'type'      => 'ip',
+                    'label'     => $_POST['label'],
+                    'value'       => $_POST['key'],
+                    'timestamp' => time()
+                )
 			);
 		}
 		else
 			// update existing key
 			if (isset($_POST['action']) && $_POST['action'] == "update") {
-				$db->queryUpdate(
-				'api',
-				array(
-				    'label'     => $_POST['label'],
-					'value'     => $_POST['key'],
-				    'timestamp' => time()
-				),
-				"id='".intval($_POST['id'])."'"
+				DB::update(
+                    $pre.'api',
+                    array(
+                        'label'     => $_POST['label'],
+                        'value'     => $_POST['key'],
+                        'timestamp' => time()
+                    ),
+                    "id=%i",
+                    $_POST['id']
 				);
 			}
 		else
 			// delete existing key
 			if (isset($_POST['action']) && $_POST['action'] == "delete") {
-				$db->query("DELETE FROM ".$pre."api WHERE id='".intval($_POST['id'])."'");
+				DB::query("DELETE FROM ".$pre."api WHERE id=%i", $_POST['id']);
 			}
 		echo '[{"error":"'.$error.'"}]';
 		break;
 
 	case "save_api_status":
-		$data = $db->queryCount(
-			"misc",
-			array(
-			    "type" => "admin",
-			    "intitule" => "api"
-			)
-		);
-		if ($data[0] == 0) {
-			$db->queryInsert(
-				"misc",
+		DB::query("SELECT * FROM ".$pre."misc WHERE type = %s AND intitule = %s", "admin", "api");
+        $counter = DB::count();
+		if ($counter == 0) {
+			DB::insert(
+				$pre."misc",
 				array(
 					'type' => "admin",
 					"intitule" => "api",
@@ -951,12 +942,14 @@ switch ($_POST['type']) {
 				   )
 			);
 		} else {
-			$db->queryUpdate(
-				"misc",
+			DB::update(
+				$pre."misc",
 				array(
 				    'valeur' => intval($_POST['status'])
 				   ),
-				"type='admin' AND intitule = 'api'"
+				"type = %s AND intitule = %s",
+                "admin",
+                "api"
 			);
 		}
 		$_SESSION['settings']['api'] = intval($_POST['status']);

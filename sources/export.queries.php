@@ -26,10 +26,12 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');

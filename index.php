@@ -44,10 +44,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', './includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once './includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //load main functions needed
 require_once 'sources/main.functions.php';
@@ -57,21 +60,17 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 /* DEFINE WHAT LANGUAGE TO USE */
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
-    $dataLanguage = $db->queryGetRow(
-        "misc",
+    $dataLanguage = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
         array(
-            "valeur"
-        ),
-        array(
-            "type" => "admin",
-            "intitule" => "default_language"
+            'type' => "admin",
+            'intitule' => "default_language"
         )
     );
-    if (empty($dataLanguage[0])) {
+    if (empty($dataLanguage['valeur'])) {
         $_SESSION['user_language'] = "english";
         $_SESSION['user_language_flag'] = "us.png";
     } else {
-        $_SESSION['user_language'] = $dataLanguage[0];
+        $_SESSION['user_language'] = $dataLanguage['valeur'];
         $_SESSION['user_language_flag'] = "us.png";
     }
 } elseif (
@@ -87,6 +86,7 @@ if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
 }
+
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
 	require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -313,7 +313,7 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_G
             <br />
             <button title="'.$LANG['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
             <br />
-            <button title="'.$LANG['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share.png" id="div_share" alt="" /></button>
+            <button title="'.$LANG['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share_me.png" id="div_share" alt="" /></button>
 			<br />
             <button title="'.$LANG['one_time_item_view'].'" id="menu_button_otv" class="" onclick="prepareOneTimeView()"><img src="includes/images/globe-share.png" id="div_otv" alt="" /></button>';
     if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
@@ -658,8 +658,6 @@ echo '
     <div id="div_mysql_error" style="display:none;">
         <div style="padding:10px;text-align:center;" id="mysql_error_warning"></div>
     </div>';
-// Close DB connection
-$db->close();
 
 closelog();
 

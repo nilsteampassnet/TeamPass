@@ -44,7 +44,7 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $treeDesc = $tree->getDescendants();
 // Build FUNCTIONS list
 $rolesList = array();
-$rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
+$rows = DB::query("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
 foreach ($rows as $reccord) {
     $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
 }
@@ -93,7 +93,7 @@ echo '
 $listAvailableUsers = $listAdmins = "";
 $x = 0;
 // Get through all users
-$rows = $db->fetchAllArray("SELECT * FROM ".$pre."users ORDER BY login ASC");
+$rows = DB::query("SELECT * FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $reccord) {
     // Get list of allowed functions
     $listAlloFcts = "";

@@ -14,7 +14,7 @@
 
 //session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ) {
-    die('Hacking attempt...');
+    die('Hacking attempt...3');
 }
 
 function redirect($url)
@@ -50,20 +50,29 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
     $_SESSION['settings']['duplicate_item'] = 0;  //by default, this is false;
     $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
 
-    $rows = $db->fetchAllArray("SELECT * FROM ".$pre."misc WHERE type = 'admin' OR type = 'settings'");
-    foreach ($rows as $reccord) {
-        if ($reccord['type'] == 'admin') {
-            $_SESSION['settings'][$reccord['intitule']] = $reccord['valeur'];
+    $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type=%s_type OR type=%s_type2",
+        array(
+            'type' => "admin",
+            'type2' => "settings"
+        )
+    );
+    foreach ($rows as $record) {
+        if ($record['type'] == 'admin') {
+            $_SESSION['settings'][$record['intitule']] = $record['valeur'];
         } else {
-            $settings[$reccord['intitule']] = $reccord['valeur'];
+            $settings[$record['intitule']] = $record['valeur'];
         }
     }
     $_SESSION['settings']['loaded'] = 1;
 }
 
-$rows = $db->fetchAllArray("SELECT valeur,intitule FROM ".$pre."misc WHERE type = 'admin'");
-foreach ($rows as $reccord) {
-    $_SESSION['settings'][$reccord['intitule']] = $reccord['valeur'];
+$rows = DB::query("SELECT valeur, intitule FROM ".$pre."misc WHERE type=%s_type",
+    array(
+        'type' => "admin"
+    )
+);
+foreach ($rows as $record) {
+    $_SESSION['settings'][$record['intitule']] = $record['valeur'];
 }
 
 //pw complexity levels
@@ -92,17 +101,17 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 if (empty($languagesDropmenu)) {
     $languagesDropmenu = "";
     $languagesList = array();
-    $rows = $db->fetchAllArray("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
-    foreach ($rows as $reccord) {
+    $rows = DB::query("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
+    foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
-            $reccord['flag'].'"alt="'.$reccord['label'].'" title="'.
-            $reccord['label'].'" onclick="ChangeLanguage(\''.$reccord['name'].'\')" /></a></li>';
-        array_push($languagesList, $reccord['name']);
-        if (isset($_SESSION['user_language']) && $reccord['name'] == $_SESSION['user_language']) {
-            $_SESSION['user_language_flag'] = $reccord['flag'];
-            $_SESSION['user_language_code'] = $reccord['code'];
-            $_SESSION['user_language_label'] = $reccord['label'];
-            $_SESSION['user_language_id'] = $reccord['id'];
+            $record['flag'].'"alt="'.$record['label'].'" title="'.
+            $record['label'].'" onclick="ChangeLanguage(\''.$record['name'].'\')" /></a></li>';
+        array_push($languagesList, $record['name']);
+        if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
+            $_SESSION['user_language_flag'] = $record['flag'];
+            $_SESSION['user_language_code'] = $record['code'];
+            $_SESSION['user_language_label'] = $record['label'];
+            $_SESSION['user_language_id'] = $record['id'];
         }
     }
 }
@@ -115,14 +124,14 @@ if (
 ) {
     // Update table by deleting ID
     if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
-        $db->queryUpdate(
-            "users",
+        DB::update($pre.'users',
             array(
                 'key_tempo' => '',
                 'timestamp' => '',
                 'session_end' => ''
-           ),
-            "id=".$_SESSION['user_id']
+            ),
+            "id=%i",
+            $_SESSION['user_id']
         );
     }
 
@@ -150,35 +159,31 @@ if (
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
     //$dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
-    $dataSession = $db->queryGetRow(
-        "users",
+    $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".$pre."users WHERE id=%i_id",
         array(
-            "key_tempo"
-        ),
-        array(
-            "id" => intval($_SESSION['user_id'])
+            'id' => $_SESSION['user_id']
         )
     );
 } else {
-    $dataSession[0] = "";
+    $dataSession['key_tempo'] = "";
 }
 
 if (
     isset($_SESSION['user_id']) && (empty($_SESSION['fin_session'])
     || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
-    || empty($dataSession[0]))
+    || empty($dataSession['key_tempo']))
 ) {
     // Update table by deleting ID
-    $db->queryUpdate(
-        "users",
+    DB::update($pre.'users',
         array(
             'key_tempo' => '',
             'timestamp' => '',
             'session_end' => ''
-       ),
-        "id=".$_SESSION['user_id']
+        ),
+        "id=%i",
+        $_SESSION['user_id']
     );
-
+echo "ici";
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
@@ -205,17 +210,13 @@ if (
     || empty($_SESSION['settings']['update_needed']))
 ) {
     //$row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
-    $row = $db->queryGetRow(
-        "misc",
-        array(
-            "valeur"
-        ),
+    $row = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
         array(
             "type" => "admin",
             "intitule" => "cpassman_version"
         )
     );
-    if ($row[0] != $k['version']) {
+    if ($row['valeur'] != $k['version']) {
         $_SESSION['settings']['update_needed'] = true;
     } else {
         $_SESSION['settings']['update_needed'] = false;
@@ -243,14 +244,14 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
     if (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] != 1) {
         // Update table by deleting ID
         if (isset($_SESSION['user_id'])) {
-            $db->queryUpdate(
-                "users",
+            DB::update($pre.'users',
                 array(
                     'key_tempo' => '',
                     'timestamp' => '',
                     'session_end' => ''
-               ),
-                "id=".$_SESSION['user_id']
+                ),
+                "id=%i",
+                $_SESSION['user_id']
             );
         }
 
@@ -308,17 +309,9 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $data = $db->queryGetArray(
-        "users",
+    $data = DB::queryfirstrow("SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".$pre."users WHERE id=%i_id",
         array(
-            "admin",
-            "gestionnaire",
-            "groupes_visibles",
-            "groupes_interdits",
-            "fonction_id"
-        ),
-        array(
-            "id" => intval($_SESSION['user_id'])
+            'id' => $_SESSION['user_id']
         )
     );
 
@@ -351,12 +344,12 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         }
 
         if (!isset($_SESSION['fin_session'])) {
-            $db->queryUpdate(
-                "users",
+            DB::update($pre.'users',
                 array(
                     'timestamp'=>time()
-               ),
-                "id=".$_SESSION['user_id']
+                ),
+                "id=%i",
+                $_SESSION['user_id']
             );
         }
 
@@ -404,12 +397,22 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 */
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty( $_SESSION['item_fields'])) {
     $_SESSION['item_fields'] = array();
-    $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0");
-    foreach ($rows as $reccord) {
+    //$rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0");
+    $rows = DB::query("SELECT * FROM ".$pre."categories WHERE level=%s_level",
+        array(
+            'level' => "0"
+        )
+    );
+    foreach ($rows as $record) {
         $arrFields = array();
 
         // get each field
-        $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$reccord['id']);
+        //$rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$record['id']);
+        $rows = DB::query("SELECT * FROM ".$pre."categories WHERE parent_id=%i_parent_id",
+            array(
+                'parent_id' => $record['id']
+            )
+        );
         if (count($rows) > 0) {
             foreach ($rows as $field) {
                 array_push(
@@ -426,8 +429,8 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
         array_push(
             $_SESSION['item_fields'],
             array(
-                $reccord['id'],
-                addslashes($reccord['title']),
+                $record['id'],
+                addslashes($record['title']),
                 $arrFields
             )
         );
@@ -450,5 +453,11 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
-$_SESSION['nb_users_online'] = $queryCount[0];
+//$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
+DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
+    array(
+        "time" => time() - 600
+    )
+);
+$counter = DB::count();
+$_SESSION['nb_users_online'] = $counter;

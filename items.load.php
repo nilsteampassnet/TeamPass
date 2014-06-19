@@ -179,7 +179,7 @@ function ListerItems(groupe_id, restricted, start)
             },
             function(data) {
                 //get data
-                data = prepareExchangedData(data, "decode");
+                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
 
                 // display path of folders
 				$("#items_path_var").html(data.arborescence);
@@ -351,7 +351,7 @@ function pwGenerate(elem)
             force      : "false"
         },
         function(data) {
-			data = prepareExchangedData(data, "decode");
+			data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
            	if (data.error == "true") {
            		$("#div_dialog_message_text").html(data.error_msg);
            		$("#div_dialog_message").dialog("open");
@@ -390,7 +390,7 @@ function RecupComplexite(val, edit)
             item_id : $("#selected_items").val()
         },
         function(data) {
-        	data = prepareExchangedData(data, "decode");
+        	data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
             //data = $.parseJSON(data);
             if (data.error == undefined || data.error == 0) {
                 $("#complexite_groupe").val(data.val);
@@ -546,14 +546,14 @@ function AjouterItem()
                 "sources/items.queries.php",
                 {
                     type    : "new_item",
-                    data     : prepareExchangedData(data, "encode"),
+                    data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
                     //decrypt data
 
                     try {
-                        data = prepareExchangedData(data, "decode");
+                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -727,13 +727,13 @@ function EditerItem()
                 "sources/items.queries.php",
                 {
                     type    : "update_item",
-                    data      : prepareExchangedData(data, "encode"),
+                    data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
                     //decrypt data
                     try {
-                        data = prepareExchangedData(data, "decode");
+                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -873,7 +873,7 @@ function AddNewFolder()
             "sources/folders.queries.php",
             {
                 type    : "add_folder",
-                data      : prepareExchangedData(data, "encode"),
+                data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
@@ -985,7 +985,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 function(data) {
                     //decrypt data
                     try {
-                        data = prepareExchangedData(data, "decode");
+                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
@@ -1236,7 +1236,7 @@ function showDetailsStep2(id, param)
 		id         : id
 		},
 		function(data) {
-			data = prepareExchangedData(data, "decode");
+			data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
 
 			$("#item_history_log").html(htmlspecialchars_decode(data.history));
 			$("#edit_past_pwds").attr('title', data.history_of_pwds);
@@ -1866,7 +1866,7 @@ $(function() {
                         "sources/items.queries.php",
                         {
                             type    : "update_rep",
-                            data      : prepareExchangedData(data, "encode"),
+                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                             key        : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
@@ -2572,12 +2572,12 @@ function manage_history_entry(type, id)
         {
             type      : "history_entry_add",
             folder_id           : $('#hid_cat').val(),
-            data     : prepareExchangedData(data, "encode"),
+            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
             key        : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
             //check if format error
-            data = prepareExchangedData(data, "decode");
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
             if (data.error == "") {
                 $("#item_history_log_error").html("").hide();
                 $("#add_history_entry_label").val("");

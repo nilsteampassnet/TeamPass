@@ -249,52 +249,55 @@ if (!$chunks || $chunk == $chunks - 1) {
     rename("{$filePath}.part", $filePath);
 }
 
-//if (isset($_POST['type_upload']) && $_POST['type_upload'] == "item_attachments") {    //&& $_POST['type_upload'] != "restore_db")
+// Get some variables
+$fileRandomId = md5($fileName.time());
+rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $fileRandomId);
 
-    // Get some variables
-    $fileRandomId = md5($fileName.time());
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $fileRandomId);
+//Connect to mysql server
+require_once '../../includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
-    require_once '../SplClassLoader.php';
-    //Connect to mysql server
-    require_once '../../includes/settings.php';
-    $db = new SplClassLoader('Database\Core', '../../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+//Get data from DB
+$data = DB::queryfirstrow(
+    "SELECT valeur FROM ".$pre."misc
+    WHERE type=%s AND intitule=%s",
+    "admin",
+    "path_to_upload_folder"
+);
 
-    //Get data from DB
-    $sql = "SELECT valeur FROM ".$pre."misc WHERE type='admin' AND intitule='path_to_upload_folder'";
-    $data = $db->queryFirst($sql);
-
-    // Case ITEM ATTACHMENTS - Store to database
-    if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
-        $db->queryInsert(
-            'files',
+// Case ITEM ATTACHMENTS - Store to database
+if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
+    DB::insert(
+        $pre.'files',
+        array(
+            'id_item' => $_POST['itemId'],
+            'name' => $fileName,
+            'size' => $_FILES['file']['size'],
+            'extension' => getFileExtension($fileName),
+            'type' => $_FILES['file']['type'],
+            'file' => $fileRandomId
+        )
+    );
+    // Log upload into databse only if "item edition"
+    if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
+        DB::insert(
+            $pre.'log_items',
             array(
-                'id_item' => $_POST['itemId'],
-                'name' => $fileName,
-                'size' => $_FILES['file']['size'],
-                'extension' => getFileExtension($fileName),
-                'type' => $_FILES['file']['type'],
-                'file' => $fileRandomId
+                    'id_item' => $_POST['itemId'],
+                    'date' => time(),
+                    'id_user' => $_SESSION['user_id'],
+                    'action' => 'at_modification',
+                    'raison' => 'at_add_file : '.addslashes($fileName)
             )
         );
-        // Log upload into databse only if "item edition"
-        if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
-            $db->queryInsert(
-                'log_items',
-                array(
-                        'id_item' => $_POST['itemId'],
-                        'date' => time(),
-                        'id_user' => $_SESSION['user_id'],
-                        'action' => 'at_modification',
-                        'raison' => 'at_add_file : '.addslashes($fileName)
-                )
-            );
-        }
     }
-//}
+}
 
 // Return JSON-RPC response
 die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');

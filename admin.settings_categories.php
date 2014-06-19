@@ -29,10 +29,13 @@ include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', 'includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -47,18 +50,23 @@ $tree->rebuild();
 //Build tree of Categories
 $categoriesSelect = "";
 $arrCategories = array();
-$rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0 ORDER BY ".$pre."categories.order ASC");
-foreach ($rows as $reccord) {
+$rows = DB::query(
+    "SELECT * FROM ".$pre."categories 
+    WHERE level = %i
+    ORDER BY ".$pre."categories.order ASC",
+    '0'
+);
+foreach ($rows as $record) {
     array_push(
         $arrCategories,
         array(
-            $reccord['id'],
-            $reccord['title'],
-            $reccord['order']
+            $record['id'],
+            $record['title'],
+            $record['order']
         )
     );
     // build selection list
-    $categoriesSelect .= '<option value="'.$reccord['id'].'">'.($reccord['title']).'</option>';
+    $categoriesSelect .= '<option value="'.$record['id'].'">'.($record['title']).'</option>';
 }
 
 echo '
@@ -71,19 +79,20 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
     foreach ($arrCategories as $category) {
         // get associated Folders
         $foldersList = $foldersNumList = "";
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT t.title AS title, c.id_folder as id_folder
             FROM ".$pre."categories_folders AS c
             INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
-            WHERE c.id_category = ".$category[0]
+            WHERE c.id_category = %i",
+            $category[0]
         );
-        foreach ($rows as $reccord) {
+        foreach ($rows as $record) {
             if (empty($foldersList)) {
-                $foldersList = $reccord['title'];
-                $foldersNumList = $reccord['id_folder'];
+                $foldersList = $record['title'];
+                $foldersNumList = $record['id_folder'];
             } else {
-                $foldersList .= " | ".$reccord['title'];
-                $foldersNumList .= ";".$reccord['id_folder'];
+                $foldersList .= " | ".$record['title'];
+                $foldersNumList .= ";".$record['id_folder'];
             }
         }
         // display each cat and fields
@@ -106,8 +115,14 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                 <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
             </td>
         </tr>';
-        $rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$category[0]." ORDER BY ".$pre."categories.order ASC");
-        if (count($rows) > 0) {
+        $rows = DB::query(
+            "SELECT * FROM ".$pre."categories
+            WHERE parent_id = %i
+            ORDER BY ".$pre."categories.order ASC",
+            $category[0]
+        );
+        $counter = DB::count();
+        if ($counter > 0) {
             foreach ($rows as $field) {
                 echo '
         <tr id="t_field_'.$field['id'].'">
@@ -189,15 +204,14 @@ echo '
         <select id="cat_folders_selection" multiple size="12">';
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
-            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE personal_folder=0 AND id = ".$folder->id);
-            $data = $db->queryCount(
-                "nested_tree",
-                array(
-                    "personal_folder" => 0,
-                    "id" => $folder->id
-                )
+            $data = DB::query(
+                "SELECT COUNT(*) FROM ".$pre."nested_tree
+                WHERE personal_folder = %i AND id = %i",
+                '0',
+                $folder->id
             );
-            if ($data[0] > 0) {
+            $counter = DB::count();
+            if ($counter > 0) {
                 echo '
                 <option value="'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</option>';
             }
