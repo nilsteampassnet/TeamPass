@@ -65,6 +65,10 @@ class CryptSession {
      */
     public function open($save_path, $session_name)
     {
+        // Default session path to temp dir
+        if($save_path == "") {
+            $save_path = sys_get_temp_dir();
+        }
         $this->_path    = $save_path.'/';
 	$this->_name    = $session_name;
 	$this->_keyName = "KEY_$session_name";
