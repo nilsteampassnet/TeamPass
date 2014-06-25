@@ -148,7 +148,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '],';
     }
 
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, "", -1);
         $sOutput .= '] }';
     } else {
@@ -190,7 +190,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
@@ -227,8 +227,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows AS $record) {
@@ -250,7 +249,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '],';
     }
 
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, "", -1);
         $sOutput .= '] }';
     } else {
@@ -292,40 +291,37 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
+    
+    DB::query(
+        "SELECT *
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        WHERE l.action = %s",
+        "at_shown"
+    );
+    $iTotal = DB::count();
 
-    $sql = "SELECT l.date AS date, u.login AS login, i.label AS label
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
-
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            WHERE l.action = 'at_shown'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $rows = DB::query(
+        "SELECT l.date AS date, u.login AS login, i.label AS label
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     // Output
     $sOutput = '{';
@@ -334,8 +330,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows AS $record) {
@@ -354,7 +349,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '],';
     }
 
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, "", -1);
         $sOutput .= '] }';
     } else {
@@ -396,40 +391,37 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
+    
+    DB::query(
+        "SELECT l.date AS date, u.login AS login, i.label AS label
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        WHERE l.action = %s",
+        "at_copy"
+    );
+    $iTotal = DB::count();
 
-    $sql = "SELECT l.date AS date, u.login AS login, i.label AS label
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
-
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $rows = DB::query(
+        "SELECT l.date AS date, u.login AS login, i.label AS label
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     // Output
     $sOutput = '{';
@@ -438,8 +430,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"aaData": ';
 
-    $rows = $db->fetchAllArray($sql);
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput .= '[';
     }
     foreach ($rows AS $record) {
@@ -458,7 +449,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '],';
     }
 
-    if (count($rows) > 0) {
+    if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, "", -1);
         $sOutput .= '] }';
     } else {
@@ -505,41 +496,36 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if ($_GET['sSearch'] != "") {
         $sWhere .= " WHERE (";
         for ($i=0; $i<count($aColumns); $i++) {
-            $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+            $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
         $sWhere .= ") ";
     }
+    
+    DB::query(
+        "SELECT i.label
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)"
+    );
+    $iTotal = DB::count();
 
-    $sql = "SELECT l.date AS date, u.login AS login, i.label AS label,
-            i.perso AS perso
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
-
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(i.label)
-            FROM ".$pre."log_items AS l
-            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $rows = DB::query(
+        "SELECT l.date AS date, u.login AS login, i.label AS label, i.perso AS perso
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     /*
      * Output

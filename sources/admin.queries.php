@@ -651,7 +651,7 @@ switch ($_POST['type']) {
         $rows = DB::query("SELECT id, pw FROM ".$pre."items WHERE perso = %s", "0");
         foreach ($rows as $reccord) {
             // check if key exists for this item
-            DB::query("SELECT COUNT(*) FROM ".$pre."keys WHERE `id` = %i AND `table` = %s", $reccord['id'], "items");
+            DB::query("SELECT * FROM ".$pre."keys WHERE `id` = %i AND `table` = %s", $reccord['id'], "items");
             $counter = DB::count();
             if ($counter == 0) {
                 $storePrefix = false;

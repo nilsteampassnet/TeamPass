@@ -204,8 +204,8 @@ echo '
         <select id="cat_folders_selection" multiple size="12">';
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
-            $data = DB::query(
-                "SELECT COUNT(*) FROM ".$pre."nested_tree
+            DB::query(
+                "SELECT * FROM ".$pre."nested_tree
                 WHERE personal_folder = %i AND id = %i",
                 '0',
                 $folder->id
