@@ -93,10 +93,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     }
 
     DB::query(
-        "SELECT COUNT(date)
+        "SELECT date
         FROM ".$pre."log_system AS l
         INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
-        WHERE l.type = 'user_connection'"
+        WHERE l.type = %s",
+        "user_connection"
     );
     $iTotal = DB::count();
 
@@ -194,33 +195,30 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    $sql = "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
-            FROM ".$pre."log_system AS l
-            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
-            $sWhere
-            $sOrder
-            $sLimit";
+    DB::query(
+        "SELECT COUNT(*)
+        FROM ".$pre."log_system AS l
+        INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+        WHERE l.type = %s",
+        "error"
+    );
+    $iTotal = DB::count();
 
-    $rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-    /* Data set length after filtering */
-    $sql_f = "
-            SELECT FOUND_ROWS()
-    ";
-    $rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-    $aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-    $iFilteredTotal = $aResultFilterTotal[0];
-
-    /* Total data set length */
-    $sql_c = "
-            SELECT COUNT(*)
-            FROM ".$pre."log_system AS l
-            INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
-            WHERE l.type = 'error'
-    ";
-    $rResultTotal = mysql_query($sql_c) or die(mysql_error());
-    $aResultTotal = mysql_fetch_array($rResultTotal);
-    $iTotal = $aResultTotal[0];
+    $rows = DB::query(
+        "SELECT l.date AS date, l.label AS label, l.qui AS who, u.login AS login
+        FROM ".$pre."log_system AS l
+        INNER JOIN ".$pre."users AS u ON (l.qui=u.id)
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iFilteredTotal = DB::count();
 
     // Output
     $sOutput = '{';
