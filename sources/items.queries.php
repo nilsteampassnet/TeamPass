@@ -600,7 +600,7 @@ if (isset($_POST['type'])) {
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                         // check if elem exists in Table. If not add it or update it.
-                        DB::query("SELECT COUNT(*) FROM ".$pre."automatic_del WHERE item_id = %i", $dataReceived['id']);
+                        DB::query("SELECT * FROM ".$pre."automatic_del WHERE item_id = %i", $dataReceived['id']);
                         $counter = DB::count();
                         if ($counter == 0) {
                             // No automatic deletion for this item
@@ -1737,7 +1737,7 @@ if (isset($_POST['type'])) {
             	echo prepareExchangedData(array("error" => "not_authorized"), "encode");
                 break;
             } else {
-                DB::query("SELECT COUNT(*) FROM ".$pre."items WHERE inactif = %i", 0);
+                DB::query("SELECT * FROM ".$pre."items WHERE inactif = %i", 0);
                 $counter = DB::count();
                 //$whereArg = " AND i.id_tree=".intval($_POST['id']);
                 $where->add('i.id_tree=%i', $_POST['id']);

@@ -479,7 +479,7 @@ if (!empty($_POST['type'])) {
             // array of roles for actual user
             $my_functions = explode(';', $_SESSION['fonction_id']);
 
-            $rows = DB::fetchAllArray("SELECT id,title,creator_id FROM ".$pre."roles_title");
+            $rows = DB::query("SELECT id,title,creator_id FROM ".$pre."roles_title");
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     $text .= '<input type="checkbox" id="cb_change_function-'.$record['id'].'"';
@@ -516,10 +516,13 @@ if (!empty($_POST['type'])) {
             );
             // display information
             $text = "";
-            $val = str_replace(';', ',', $_POST['list']);
+            //$val = str_replace(';', ',', $_POST['list']);
             // Check if POST is empty
             if (!empty($val)) {
-                $rows = DB::fetchAllArray("SELECT title FROM ".$pre."roles_title WHERE id IN (".$val.")");
+                $rows = DB::query(
+                    "SELECT title FROM ".$pre."roles_title WHERE id IN %ls",
+                    implode(";", $_POST['list'])
+                );
                 foreach ($rows as $record) {
                     $text .= '<img src=\"includes/images/arrow-000-small.png\" />'.$record['title']."<br />";
                 }
@@ -608,7 +611,10 @@ if (!empty($_POST['type'])) {
             $val = str_replace(';', ',', $_POST['list']);
             // Check if POST is empty
             if (!empty($_POST['list'])) {
-                $rows = DB::fetchAllArray("SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN (".$val.")");
+                $rows = DB::query(
+                    "SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN %ls",
+                    implode(";", $_POST['list'])
+                );
                 foreach ($rows as $record) {
                     $ident = "";
                     for ($y = 1; $y < $record['nlevel']; $y++) {
@@ -679,7 +685,10 @@ if (!empty($_POST['type'])) {
             $val = str_replace(';', ',', $_POST['list']);
             // Check if POST is empty
             if (!empty($_POST['list'])) {
-                $rows = DB::fetchAllArray("SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN (".$val.")");
+                $rows = DB::query(
+                    "SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN %ls",
+                    implde(";", , $_POST['list'])
+                );
                 foreach ($rows as $record) {
                     $ident = "";
                     for ($y = 1; $y < $record['nlevel']; $y++) {

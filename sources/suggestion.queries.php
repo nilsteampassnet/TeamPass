@@ -100,7 +100,7 @@ if (!empty($_POST['type'])) {
                         'password' => encrypt($randomKey.$pwd),
                         'comment' => $comment,
                         'folder_id' => $folder,
-                        'key' => $randomKey
+                        'suggest_key' => $randomKey
                     )
                 );
 
@@ -153,7 +153,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, key, folder_id, author_id, comment FROM ".$pre."suggestion WHERE id = %i",
+                "SELECT label, description, password, suggest_key, folder_id, author_id, comment FROM ".$pre."suggestion WHERE id = %i",
                 $_POST['id']
             );
 
@@ -161,7 +161,7 @@ if (!empty($_POST['type'])) {
             // if Yes, update the existing one
             // if Not, create new Item
             $existing_item_id = DB::queryfirstrow(
-                "SELECT id FROM ".$pre."items WHERE label $ %s AND id_tree = %i", $suggestion['label'], $suggestion['folder_id']
+                "SELECT id FROM ".$pre."items WHERE label = %s AND id_tree = %i", $suggestion['label'], $suggestion['folder_id']
             );
             $counter = DB::count();
             if ($counter > 0) {
@@ -215,10 +215,10 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     $pre.'items',
                     array(
-                        'label' => $suggestion[0],
-                        'description' => $suggestion[1],
-                        'pw' => $suggestion[2],
-                        'id_tree' => $suggestion[4],
+                        'label' => $suggestion['label'],
+                        'description' => $suggestion['description'],
+                        'pw' => $suggestion['password'],
+                        'id_tree' => $suggestion['folder_id'],
                         'inactif' => '0',
                         'perso' => '0',
                         'anyone_can_modify' => '0'
@@ -233,7 +233,7 @@ if (!empty($_POST['type'])) {
                         array(
                             'table' => 'items',
                             'id' => $newID,
-                            'rand_key' => $suggestion[3]
+                            'rand_key' => $suggestion['suggest_key']
                         )
                     );
 
@@ -243,7 +243,7 @@ if (!empty($_POST['type'])) {
                         array(
                             'id_item' => $newID,
                             'date' => time(),
-                            'id_user' => $suggestion[5],
+                            'id_user' => $suggestion['author_id'],
                             'action' => 'at_creation'
                         )
                     );

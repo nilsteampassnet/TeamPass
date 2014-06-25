@@ -511,7 +511,7 @@ if (isset($_POST['type'])) {
                 `id_tree` int(12) NOT NULL,
                 `perso` tinyint(1) NOT NULL,
                 `restricted_to` varchar(200) NOT NULL,
-                `login` varchar(200) NOT NULL,
+                `login` varchar(200) DEFAULT NULL,
                 `folder` varchar(300) NOT NULL,
                 `author` varchar(50) NOT NULL
                ) CHARSET=utf8;"
