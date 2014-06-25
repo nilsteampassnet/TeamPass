@@ -65,31 +65,36 @@ class CryptSession {
      */
     public function open($save_path, $session_name)
     {
-        $this->_path    = $save_path.'/';
-	$this->_name    = $session_name;
-	$this->_keyName = "KEY_$session_name";
-	$this->_ivSize  = mcrypt_get_iv_size($this->_algo, 'ctr');
+        // Default session path to temp dir
+        if($save_path == "") {
+            $save_path = sys_get_temp_dir();
+        }
 
-	if (empty($_COOKIE[$this->_keyName]) || strpos($_COOKIE[$this->_keyName],':')===false) {
-            $keyLength    = mcrypt_get_key_size($this->_algo, 'ctr');
-            $this->_key   = self::_randomKey($keyLength);
-            $this->_auth  = self::_randomKey(32);
-            $cookie_param = session_get_cookie_params();
-            setcookie(
-                $this->_keyName,
-                base64_encode($this->_key) . ':' . base64_encode($this->_auth),
-                $cookie_param['lifetime'],
-                $cookie_param['path'],
-                $cookie_param['domain'],
-                $cookie_param['secure'],
-                $cookie_param['httponly']
-            );
-	} else {
-            list ($this->_key, $this->_auth) = explode (':',$_COOKIE[$this->_keyName]);
-            $this->_key  = base64_decode($this->_key);
-            $this->_auth = base64_decode($this->_auth);
-	}
-	return true;
+        $this->_path    = $save_path.'/';
+        $this->_name    = $session_name;
+        $this->_keyName = "KEY_$session_name";
+        $this->_ivSize  = mcrypt_get_iv_size($this->_algo, 'ctr');
+
+        if (empty($_COOKIE[$this->_keyName]) || strpos($_COOKIE[$this->_keyName],':')===false) {
+                $keyLength    = mcrypt_get_key_size($this->_algo, 'ctr');
+                $this->_key   = self::_randomKey($keyLength);
+                $this->_auth  = self::_randomKey(32);
+                $cookie_param = session_get_cookie_params();
+                setcookie(
+                    $this->_keyName,
+                    base64_encode($this->_key) . ':' . base64_encode($this->_auth),
+                    $cookie_param['lifetime'],
+                    $cookie_param['path'],
+                    $cookie_param['domain'],
+                    $cookie_param['secure'],
+                    $cookie_param['httponly']
+                );
+        } else {
+                list ($this->_key, $this->_auth) = explode (':',$_COOKIE[$this->_keyName]);
+                $this->_key  = base64_decode($this->_key);
+                $this->_auth = base64_decode($this->_auth);
+        }
+        return true;
     }
      # Close the session
     public function close()
