@@ -108,8 +108,8 @@ foreach ($tst as $t) {
         // r?cup les droits associ?s ? ce groupe
         $tab_droits = array();
         $rows = DB::query("SELECT fonction_id  FROM ".$pre."rights WHERE authorized=%i AND tree_id = %i", 1, $t->id);
-        foreach ($rows as $reccord) {
-            array_push($tab_droits, $reccord['fonction_id']);
+        foreach ($rows as $record) {
+            array_push($tab_droits, $record['fonction_id']);
         }
         // g?rer l'identation en fonction du niveau
         $ident = "";
@@ -122,7 +122,7 @@ foreach ($tst as $t) {
             FROM ".$pre."misc as m,
             ".$pre."nested_tree as n
             WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i",
-            complex,
+            "complex",
             $t->id
         );
 
@@ -133,16 +133,16 @@ foreach ($tst as $t) {
                         '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
                     </td>
                     <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data[0]][1].'</span>
+                        <span id="complexite_'.$t->id.'">'.@$pwComplexity[$node_data['valeur']][1].'</span>
                     </td>
                     <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="parent_'.$t->id.'">'.$data[0].'</span>
+                        <span id="parent_'.$t->id.'">'.$node_data['valeur'].'</span>
                     </td>
                     <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
                         '.$t->nlevel.'
                     </td>
                     <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="renewal_'.$t->id.'">'.$node_data[1].'</span>
+                        <span id="renewal_'.$t->id.'">'.$node_data['renewal_period'].'</span>
                     </td>
                     <td align="center">
                         <img src="includes/images/folder--minus.png" onclick="supprimer_groupe(\''.$t->id.'\')" style="cursor:pointer;" />
@@ -151,14 +151,14 @@ foreach ($tst as $t) {
         $data3 = DB::queryFirstRow("SELECT bloquer_creation,bloquer_modification FROM ".$pre."nested_tree WHERE id = %i", intval($t->id));
         echo '
                     <td align="center">
-                        <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3[0]) && $data3[0] == 1 ? 'checked' : '', ' />
+                        <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1 ? 'checked' : '', ' />
                     </td>
                     <td align="center">
-                        <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3[1]) && $data3[1] == 1 ? 'checked' : '', ' />
+                        <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1 ? 'checked' : '', ' />
                     </td>
                     <td>
                         <input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
-                        <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data[0].'" />
+                        <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data['valeur'].'" />
                     </td>
                 </tr>';
         array_push($arr_ids, $t->id);

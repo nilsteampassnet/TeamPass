@@ -63,9 +63,9 @@ if (!empty($_POST['type'])) {
             $valeur = $_POST['valeur'];
             // Check if id folder is already stored
             $data = DB::queryfirstrow("SELECT ".$_POST['type']." FROM ".$pre."users WHERE id = %i", $val[0]);
-            $new_groupes = $data[0];
-            if (!empty($data[0])) {
-                $groupes = explode(';', $data[0]);
+            $new_groupes = $data[$_POST['type']];
+            if (!empty($data[$_POST['type']])) {
+                $groupes = explode(';', $data[$_POST['type']]);
                 if (in_array($val[1], $groupes)) {
                     $new_groupes = str_replace($val[1], "", $new_groupes);
                 } else {
@@ -272,8 +272,8 @@ if (!empty($_POST['type'])) {
                     "1"
                 );
                 // Get through each subfolder
-                if (!empty($data[0])) {
-                    $folders = $tree->getDescendants($data[0], true);
+                if (!empty($data['id'])) {
+                    $folders = $tree->getDescendants($data['id'], true);
                     foreach ($folders as $folder) {
                         // delete folder
                         DB::delete($pre."nested_tree", "id = %i AND personal_folder = %i", $folder->id, "1");
@@ -361,7 +361,7 @@ if (!empty($_POST['type'])) {
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
-                    'label' => 'at_user_email_changed:'.$data[0],
+                    'label' => 'at_user_email_changed:'.$data['email'],
                     'qui' => intval($_SESSION['user_id']),
                     'field_1' => intval($_POST['id'])
                    )
@@ -687,7 +687,7 @@ if (!empty($_POST['type'])) {
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
                     "SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN %ls",
-                    implde(";", , $_POST['list'])
+                    implode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
                     $ident = "";
@@ -845,7 +845,7 @@ if (!empty($_POST['type'])) {
                         $user = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i", $record['qui']);
                         $user_1 = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i",$_POST['id']);
                         $tmp = explode(":", $record['label']);
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1[0]), $LANG[$tmp[0]]).'</td><td align=\"center\">'.$user[0].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1['login']), $LANG[$tmp['login']]).'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
                         $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
                     }

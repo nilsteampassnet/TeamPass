@@ -43,6 +43,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -249,7 +250,7 @@ if (isset($_POST['newtitle'])) {
                 }
 
                 //create folder
-                $newId=DB::insert(
+                DB::insert(
                     $pre."nested_tree",
                     array(
                         'parent_id' => $parentId,
@@ -260,6 +261,7 @@ if (isset($_POST['newtitle'])) {
                         'bloquer_modification' => '0'
                    )
                 );
+                $newId = DB::insertId();
 
                 //Add complexity
                 DB::insert(
@@ -268,7 +270,7 @@ if (isset($_POST['newtitle'])) {
                         'type' => 'complex',
                         'intitule' => $newId,
                         'valeur' => $complexity
-                   )
+                    )
                 );
 
                 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -302,12 +304,12 @@ if (isset($_POST['newtitle'])) {
 
                 //If it is a subfolder, then give access to it for all roles that allows the parent folder
                 $rows = DB::query("SELECT role_id FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
-                foreach ($rows as $reccord) {
+                foreach ($rows as $record) {
                     //add access to this subfolder
                     DB::insert(
                         $pre.'roles_values',
                         array(
-                            'role_id' => $reccord['role_id'],
+                            'role_id' => $record['role_id'],
                             'folder_id' => $newId
                        )
                     );

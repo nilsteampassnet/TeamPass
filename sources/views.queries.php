@@ -45,6 +45,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');

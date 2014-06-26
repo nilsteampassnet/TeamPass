@@ -43,6 +43,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -209,9 +210,9 @@ if (isset($_POST['type'])) {
                     // prepare a list
                     $row = DB::queryfirstrow("SELECT title FROM ".$pre."nested_tree WHERE id=%i", $folder);
                     if (empty($list)) {
-                        $list = $row[0];
+                        $list = $row['title'];
                     } else {
-                        $list .= " | ".$row[0];
+                        $list .= " | ".$row['title'];
                     }
                 }
                 echo '[{"list" : "'.$list.'"}]';
