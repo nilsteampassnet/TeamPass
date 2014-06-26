@@ -44,6 +44,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -62,7 +63,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     $pre.'roles_title',
                     array(
-                        'title' => mysql_real_escape_string(stripslashes($_POST['name'])),
+                        'title' => stripslashes($_POST['name']),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )

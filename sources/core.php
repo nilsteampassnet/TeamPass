@@ -454,7 +454,7 @@ if (
 
 /* CHECK NUMBER OF USER ONLINE */
 //$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
-DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
+DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
     array(
         "time" => time() - 600
     )

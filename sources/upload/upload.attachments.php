@@ -264,12 +264,12 @@ DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database);
 
 //Get data from DB
-$data = DB::queryfirstrow(
+/*$data = DB::queryfirstrow(
     "SELECT valeur FROM ".$pre."misc
     WHERE type=%s AND intitule=%s",
     "admin",
     "path_to_upload_folder"
-);
+);*/
 
 // Case ITEM ATTACHMENTS - Store to database
 if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {

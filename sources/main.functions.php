@@ -445,10 +445,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $_SESSION['personal_folder'] == 1
         ) {
             $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
-            if (!empty($pf[0])) {
-                if (!in_array($pf[0], $listAllowedFolders)) {
+            if (!empty($pf['id'])) {
+                if (!in_array($pf['id'], $listAllowedFolders)) {
                     // get all descendants
-                    $ids = $tree->getDescendants($pf[0], true);
+                    $ids = $tree->getDescendants($pf['id'], true);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
@@ -885,7 +885,11 @@ function prepareExchangedData($data, $type)
             );
         } else {
             return json_decode(
-                Encryption\Crypt\aesctr::decrypt($data, $_SESSION['key'], 256),
+                Encryption\Crypt\aesctr::decrypt(
+                    $data,
+                    $_SESSION['key'],
+                    256
+                ),
                 true
             );
         }

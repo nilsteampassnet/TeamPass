@@ -59,6 +59,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 // load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -169,7 +170,7 @@ if (!empty($_POST['type'])) {
                 $updStatus = DB::update(
                     $pre.'items',
                     array(
-                        'description' => !empty($suggestion['description']) ? $existing_item_id[1]."<br />----<br />".$suggestion['description'] : $existing_item_id[1],
+                        'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
                         'pw' => $suggestion['password']
                     ),
                     "id=%i",

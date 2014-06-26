@@ -183,7 +183,7 @@ function add_new_folder()
                 "sources/folders.queries.php",
                 {
                     type    : "add_folder",
-                    data    : aes_encrypt(data)
+                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                 },
                 function(data) {
                     //Check errors

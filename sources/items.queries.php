@@ -1619,7 +1619,7 @@ if (isset($_POST['type'])) {
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = DB::queryFirstRow("SELECT id, title FROM ".$pre."nested_tree WHERE title = %s", $title);
-                if (!empty($data[0]) && $dataReceived['folder'] != $data[0]) {
+                if (!empty($data['id']) && $dataReceived['folder'] != $data['id']) {
                     echo '[ { "error" : "'.addslashes($LANG['error_group_exist']).'" } ]';
                     break;
                 }
@@ -2178,7 +2178,9 @@ if (isset($_POST['type'])) {
 
             // Get required Complexity for this Folder
             $data = DB::queryFirstRow(
-                "SELECT valeur FROM ".$pre."misc WHERE type=%s AND intitule = %s", "complex" , $_POST['groupe']
+                "SELECT valeur FROM ".$pre."misc WHERE type=%s AND intitule = %s",
+                "complex",
+                $_POST['groupe']
             );
 
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
@@ -2736,7 +2738,7 @@ function recupDroitCreationSansComplexite($groupe)
 {
     global $db, $pre;
     $data = DB::queryFirstRow(
-        "SELECT bloquer_creation,bloquer_modification,personal_folder FROM ".$pre."nested_tree WHERE id = %i",
+        "SELECT bloquer_creation, bloquer_modification, personal_folder FROM ".$pre."nested_tree WHERE id = %i",
         $groupe
     );
     // Check if it's in a personal folder. If yes, then force complexity overhead.

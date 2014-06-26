@@ -1976,7 +1976,7 @@ echo '
                         </td>
                     </tr>';
 // Send emails backlog
-$data = DB::queryfirstrow("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", 'not_sent', '');
+DB::query("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", 'not_sent', '');
 $nb_emails = DB::count();
 echo '
                     <tr style="margin-bottom:3px">
