@@ -124,12 +124,13 @@ switch ($_POST['type']) {
         $rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
         foreach ($rows as $record) {
             //update PF field for user
-            $DB::update(
+            DB::update(
                 $pre.'users',
                 array(
                     'personal_folder' => '1'
                ),
-                "id=%i'", $record['id']
+                "id = %i",
+                $record['id']
             );
 
             //if folder doesn't exist then create it
@@ -207,16 +208,13 @@ switch ($_POST['type']) {
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            //$row = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
             DB::query(
-                "log_items",
-                array(
-                    "id_item" => $item['id'],
-                    "action" => "at_creation"
-                )
+                "SELECT * FROM ".$pre."log_items WHERE id_item = %i AND action = %s",
+                $item['id'],
+                "at_creation"
             );
-            $row = DB::count();
-            if ($row == 0) {
+            $counter = DB::count();
+            if ($counter == 0) {
                 DB::DELETE($pre."items", "id = %i", $item['id']);
                 DB::DELETE($pre."categories_items", "item_id = %i", $item['id']);
                 DB::DELETE($pre."log_items", "id_item = %i", $item['id']);
@@ -252,16 +250,25 @@ switch ($_POST['type']) {
         //cycle through
         foreach ($tables as $table) {
             if (empty($pre) || substr_count($table, $pre) > 0) {
-                $result = DB::query('SELECT * FROM '.$table);
-                $numFields = DB::queryNumFields('SELECT * FROM '.$table); // TODO
-                // prepare a drop table
+                $result = DB::queryRaw('SELECT * FROM '.$table);
+                $mysqli_result = DB::queryRaw(
+                    "SELECT COUNT(*) AS Columns
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE table_schema = %s
+                    AND table_name = %s",
+                    $database,
+                    $table
+                );
+                $row = $mysqli_result->fetch_row();
+                $numFields = $row[0];
+                    // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
                 $row2 = DB::queryfirstrow('SHOW CREATE TABLE '.$table);
                 $return.= "\n\n".$row2["Create Table"].";\n\n";
 
                 //prepare all fields and datas
                 for ($i = 0; $i < $numFields; $i++) {
-                    while ($row = mysql_fetch_row($result)) {
+                    while ($row = $result->fetch_row()) {
                         $return.= 'INSERT INTO '.$table.' VALUES(';
                         for ($j=0; $j<$numFields; $j++) {
                             $row[$j] = addslashes($row[$j]);
@@ -723,7 +730,7 @@ switch ($_POST['type']) {
             if ($handle = opendir($_SESSION['settings']['path_to_upload_folder'].'/')) {
                 while (false !== ($entry = readdir($handle))) {
                     $entry = basename($entry);
-                    if ($entry != "." && $entry != ".." && $entry != ".htaccess") {
+                    if ($entry != "." && $entry != ".." && $entry != ".htaccess" && $entry != ".gitignore") {
                         if (strpos($entry, ".") == false) {
                             // check if user query is coherant
                             if ($checkCoherancy == false) {
@@ -798,7 +805,7 @@ switch ($_POST['type']) {
                     $line = fgets($fp);
                     $skipFile = false;
                     // check if isUTF8. If yes, then check if process = encryption, and vice-versa
-                    if (isUTF8($line) && $_POST['option'] == "decrypt") {
+                    if (!isUTF8($line) && $_POST['option'] == "decrypt") {
                         $skipFile = true;
                     } elseif (!isUTF8($line) && $_POST['option'] == "encrypt") {
                         $skipFile = true;
