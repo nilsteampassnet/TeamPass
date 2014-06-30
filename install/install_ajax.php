@@ -684,21 +684,21 @@ if (isset($_POST['type'])) {
             );
             mysqli_query($dbTmp,
                 "INSERT INTO `".$_SESSION['tbl_prefix']."languages` (`id`, `name`, `label`, `code`, `flag`) VALUES
-                ('', 'french', 'French' , 'fr', 'fr.png'),
-                ('', 'english', 'English' , 'us', 'us.png'),
-                ('', 'spanish', 'Spanish' , 'es', 'es.png'),
-                ('', 'german', 'German' , 'de', 'de.png'),
-                ('', 'czech', 'Czech' , 'cz', 'cz.png'),
-                ('', 'italian', 'Italian' , 'it', 'it.png'),
-                ('', 'russian', 'Russian' , 'ru', 'ru.png'),
-                ('', 'turkish', 'Turkish' , 'tr', 'tr.png'),
-                ('', 'norwegian', 'Norwegian' , 'no', 'no.png'),
-                ('', 'japanese', 'Japanese' , 'ja', 'ja.png'),
-                ('', 'portuguese', 'Portuguese' , 'pr', 'pr.png'),
-                ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
-                ('', 'swedish', 'Swedish' , 'se', 'se.png'),
-                ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
-                ('', 'catalan', 'Catalan' , 'ct', 'ct.png');"
+                ('french', 'French' , 'fr', 'fr.png'),
+                ('english', 'English' , 'us', 'us.png'),
+                ('spanish', 'Spanish' , 'es', 'es.png'),
+                ('german', 'German' , 'de', 'de.png'),
+                ('czech', 'Czech' , 'cz', 'cz.png'),
+                ('italian', 'Italian' , 'it', 'it.png'),
+                ('russian', 'Russian' , 'ru', 'ru.png'),
+                ('turkish', 'Turkish' , 'tr', 'tr.png'),
+                ('norwegian', 'Norwegian' , 'no', 'no.png'),
+                ('japanese', 'Japanese' , 'ja', 'ja.png'),
+                ('portuguese', 'Portuguese' , 'pr', 'pr.png'),
+                ('chinese', 'Chinese' , 'cn', 'cn.png'),
+                ('swedish', 'Swedish' , 'se', 'se.png'),
+                ('dutch', 'Dutch' , 'nl', 'nl.png'),
+                ('catalan', 'Catalan' , 'ct', 'ct.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_20").innerHTML = "<img src=\"images/tick.png\">";';
