@@ -210,14 +210,14 @@ if (isset($_POST['type'])) {
             ## TABLE 4 - MISC
             require_once '../includes/language/english.php';
             require_once '../includes/include.php';
-            $res4 = mysqli_query($dbTmp,
+            mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."misc` (
                   `type` varchar(50) NOT NULL,
                   `intitule` varchar(100) NOT NULL,
                   `valeur` varchar(100) NOT NULL
                ) CHARSET=utf8;"
             );
-            mysqli_query($dbTmp,
+            $res4 = mysqli_query($dbTmp,
                 "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES
                 ('admin', 'max_latest_items', '10'),
                 ('admin', 'enable_favourites', '1'),
@@ -673,7 +673,7 @@ if (isset($_POST['type'])) {
             }
 
             ## TABLE LANGUAGE
-            $res = mysqli_query($dbTmp,
+            mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."languages` (
                 `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY ,
                 `name` VARCHAR(50) NOT null ,
@@ -682,7 +682,7 @@ if (isset($_POST['type'])) {
                 `flag` VARCHAR(30) NOT NULL
                ) CHARSET=utf8;"
             );
-            mysqli_query($dbTmp,
+            $res = mysqli_query($dbTmp,
                 "INSERT INTO `".$_SESSION['tbl_prefix']."languages` (`id`, `name`, `label`, `code`, `flag`) VALUES
                 ('french', 'French' , 'fr', 'fr.png'),
                 ('english', 'English' , 'us', 'us.png'),
