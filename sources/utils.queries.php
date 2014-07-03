@@ -61,7 +61,7 @@ switch ($_POST['type']) {
                     INNER JOIN ".$pre."keys as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
-                    AND (l.action = %s OR (l.action = %s AND l.raison = %ss))
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
                     ORDER BY i.label ASC, l.date DESC",
                     0,
                     $id,

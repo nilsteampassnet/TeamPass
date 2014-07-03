@@ -646,7 +646,7 @@ switch ($_POST['type']) {
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
             INNER JOIN ".$pre."nested_tree as n ON (n.id=i.id_tree)
             WHERE i.inactif = %s
-            AND (l.action = %s OR (l.action = %s AND l.raison = %ss))
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
             AND n.renewal_period != %s
             ORDER BY i.label ASC, l.date DESC",
             0,

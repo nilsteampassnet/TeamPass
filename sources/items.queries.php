@@ -1768,8 +1768,9 @@ if (isset($_POST['type'])) {
                     } else {
                         $query_limit = "";
                     }
+                    
                     $rows = DB::query(
-                        "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login,
                         i.anyone_can_modify as anyone_can_modify, l.date as date,
                         n.renewal_period as renewal_period,
@@ -1780,7 +1781,8 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                         LEFT JOIN ".$pre."keys as k ON (k.id = i.id)
                         WHERE %l
-                        ORDER BY i.label ASC, l.date DESC".$query_limit,
+                        GROUP BY i.id
+                        ORDER BY i.label ASC, l.date DESC".$query_limit,//
                         $where
                     );
                 } else {
@@ -1791,7 +1793,7 @@ if (isset($_POST['type'])) {
                     }
 
                     $rows = DB::query(
-                        "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login,
                         i.anyone_can_modify as anyone_can_modify,l.date as date,
                         n.renewal_period as renewal_period,
@@ -1800,6 +1802,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
                         INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                         WHERE %l
+                        GROUP BY i.id
                         ORDER BY i.label ASC, l.date DESC".$query_limit,
                         $where
                     );
@@ -2716,7 +2719,7 @@ if (isset($_GET['type'])) {
         case "autocomplete_tags":
             // Get a list off all existing TAGS
             $listOfTags = "";
-            $rows = DB::query("SELECT tag FROM ".$pre."tags WHERE tag = %ss GROUP BY tag", $_GET['term']);
+            $rows = DB::query("SELECT tag FROM ".$pre."tags WHERE tag LIKE %ss GROUP BY tag", $_GET['term']);
             foreach ($rows as $record) {
                 //echo $record['tag']."|".$record['tag']."\n";
                 if (empty($listOfTags)) {

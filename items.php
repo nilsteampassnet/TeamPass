@@ -561,7 +561,6 @@ echo '
 				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
-            <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all item_field" style="display:none;" />
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
             <input type="hidden" id="mypassword_complex" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
@@ -759,11 +758,11 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-					<span id="visible_editpw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+					<span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
-                <input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:405px;" />
-                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" /><input type="hidden" id="edit_mypassword_complex" />
+                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
+                <input type="hidden" id="edit_mypassword_complex" />
                 <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>

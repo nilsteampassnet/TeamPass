@@ -531,7 +531,7 @@ if (!isset($_GET['page'])) {
         });
     });';
 }
-
+/*
 if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $htmlHeaders .= '
     $(function() {
@@ -1173,7 +1173,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             }
        );
     }';
-} else if (isset($_GET['page']) && $_GET['page'] == "find") {
+
+} else */
+if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
     $htmlHeaders .= '
     $(function() {

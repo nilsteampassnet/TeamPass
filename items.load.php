@@ -108,15 +108,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
     function ShowPasswords_EditForm()
     {
-		if ($('#visible_editpw').is(":visible")) {
-			$('#visible_editpw').hide();
+		if ($('#edit_visible_pw').is(":visible")) {
+			$('#edit_visible_pw').hide();
 		} else {
-			$('#visible_editpw').show();
+			$('#edit_visible_pw').show();
 		}
     }
 
 	$("#edit_pw1").keyup(function() {
-	    $("#visible_editpw").text( this.value );
+	    $("#edit_visible_pw").text( this.value );
 	});
 
 	$("#pw1").keyup(function() {
@@ -145,7 +145,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
-    if ($("#hid_cat").val() == groupe_id && $("#open_item_by_get").val() == "" ) return false;
+    //if ($("#hid_cat").val() == groupe_id && $("#open_item_by_get").val() == "" ) return false;
     $("#request_lastItem").val("");
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
@@ -334,7 +334,7 @@ function ListerItems(groupe_id, restricted, start)
 function pwGenerate(elem)
 {
     if (elem != "") elem = elem+"_";
-    $("#pw1").show();
+    $("#"+elem+"pw1").show().focus();
 
     //show ajax image
     $("#"+elem+"pw_wait").show();
@@ -357,7 +357,7 @@ function pwGenerate(elem)
            		$("#div_dialog_message_text").html(data.error_msg);
            		$("#div_dialog_message").dialog("open");
            	} else {
-                $("#visible_pw").text(data.key);
+                $("#"+elem+"visible_pw").text(data.key);
            	    $("#"+elem+"pw1").val(data.key).focus();
            	}
             $("#"+elem+"pw_wait").hide();
@@ -1436,7 +1436,7 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_label').val($('#hid_label').val());
     $('#edit_desc').html($('#hid_desc').val());
     $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
-	$("#visible_editpw").text($('#hid_pw').val());
+	$("#edit_visible_pw").text($('#hid_pw').val());
     $('#edit_item_login').val($('#hid_login').val());
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
@@ -2357,11 +2357,11 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         ]
     });
-    /*$('#pw1').bind({
+    $('#pw1').bind({
         "score.simplePassMeter" : function(jQEvent, score) {
             $("#mypassword_complex").val(score);
         }
-    });*/
+    });
     $("#tabs-02").on(
 	    "score.simplePassMeter",
 	    "#pw1",
@@ -2374,8 +2374,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     //Password meter for item update
     $("#edit_pw1").simplePassMeter({
         "requirements": {},
-          "container": "#edit_pw_strength",
-          "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+        "container": "#edit_pw_strength",
+        "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
         "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
