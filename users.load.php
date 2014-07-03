@@ -267,7 +267,7 @@ $(function() {
                             numerals   : true
                         },
                         function(data) {
-                        	data = prepareExchangedData(data, "decode");
+                        	data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
                         	if (data.error == "true") {
                         		$("#div_dialog_message_text").html(data.error_msg);
                         		$("#div_dialog_message").dialog("open");
@@ -287,7 +287,7 @@ $(function() {
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : prepareExchangedData(data, "encode")
+                            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                         },
                         function(data) {
                             if (data[0].error == "none") {
@@ -466,7 +466,7 @@ function pwGenerate(elem)
             force    : false
         },
         function(data) {
-        	data = prepareExchangedData(data, "decode");
+        	data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
         	if (data.error == "true") {
         		$("#div_dialog_message_text").html(data.error_msg);
         		$("#div_dialog_message").dialog("open");

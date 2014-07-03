@@ -1,24 +1,26 @@
 <?php
 /**
- * PHPMailer language file.
- * Japanese Version
- * By Mitsuhiro Yoshida - http://mitstek.com/
- * This file is written in EUC-JP.
- */
+* PHPMailer language file: refer to English translation for definitive list
+* Japanese Version
+* By Mitsuhiro Yoshida - http://mitstek.com/
+* Modified by Yoshi Sakai - http://bluemooninc.jp/
+*/
 
-$PHPMAILER_LANG = array();
-
-$PHPMAILER_LANG["provide_address"] = 'éééʤééȤé1éĥ᡼é륢éɥ쥹éé' .
-                                     'éééꤹééɬéפéééééޤééé';
-$PHPMAILER_LANG["mailer_not_supported"] = ' é᡼é顼éééééݡééȤéééƤééޤééé';
-$PHPMAILER_LANG["execute"] = 'é¹ԤǤééޤéééǤééé: ';
-$PHPMAILER_LANG["instantiate"] = 'é᡼ééؿééééééééưééޤéééǤééééé';
-$PHPMAILER_LANG["authenticate"] = 'SMTPééé顼: ǧéڤǤééޤéééǤééééé';
-$PHPMAILER_LANG["from_failed"] = 'ééééFroméééɥ쥹é˴ְ㤤ééééééޤé: ';
-$PHPMAILER_LANG["recipients_failed"] = 'SMTPééé顼: éééμééééԥééɥ쥹éé ' .
-                                       'éְ㤤ééééééޤé: ';
-$PHPMAILER_LANG["data_not_accepted"] = 'SMTPééé顼: éǡééééééééééդééééޤéééǤééééé';
-$PHPMAILER_LANG["connect_host"] = 'SMTPééé顼: SMTPéۥééȤééé³éǤééޤéééǤééééé';
-$PHPMAILER_LANG["file_access"] = 'éեééééé˥ééééééééǤééޤééé: ';
-$PHPMAILER_LANG["file_open"] = 'éեéééé륨é顼: éեééééé򳫤ééޤééé: ';
-$PHPMAILER_LANG["encoding"] = 'éééééʥéé󥳡ééǥééé: ';
+$PHPMAILER_LANG['authenticate'] = 'SMTPエラー: 認証できませんでした。';
+$PHPMAILER_LANG['connect_host'] = 'SMTPエラー: SMTPホストに接続できませんでした。';
+$PHPMAILER_LANG['data_not_accepted'] = 'SMTPエラー: データが受け付けられませんでした。';
+//$PHPMAILER_LANG['empty_message']        = 'Message body empty';
+$PHPMAILER_LANG['encoding'] = '不明なエンコーディング: ';
+$PHPMAILER_LANG['execute'] = '実行できませんでした: ';
+$PHPMAILER_LANG['file_access'] = 'ファイルにアクセスできません: ';
+$PHPMAILER_LANG['file_open'] = 'ファイルエラー: ファイルを開けません: ';
+$PHPMAILER_LANG['from_failed'] = 'Fromアドレスを登録する際にエラーが発生しました: ';
+$PHPMAILER_LANG['instantiate'] = 'メール関数が正常に動作しませんでした。';
+//$PHPMAILER_LANG['invalid_address']        = 'Not sending, email address is invalid: ';
+$PHPMAILER_LANG['provide_address'] = '少なくとも1つメールアドレスを 指定する必要があります。';
+$PHPMAILER_LANG['mailer_not_supported'] = ' メーラーがサポートされていません。';
+$PHPMAILER_LANG['recipients_failed'] = 'SMTPエラー: 次の受信者アドレスに 間違いがあります: ';
+//$PHPMAILER_LANG['signing']              = 'Signing Error: ';
+//$PHPMAILER_LANG['smtp_connect_failed']  = 'SMTP Connect() failed.';
+//$PHPMAILER_LANG['smtp_error']           = 'SMTP server error: ';
+//$PHPMAILER_LANG['variable_set']         = 'Cannot set or reset variable: ';

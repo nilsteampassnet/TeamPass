@@ -96,8 +96,8 @@ $(function() {
     if ($("#new_pw").length) {
         $("#new_pw").simplePassMeter({
             "requirements": {},
-              "container": "#pw_strength",
-              "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            "container": "#pw_strength",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
             "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
@@ -137,12 +137,11 @@ $(function() {
     });
 
 
-    if ($("#offline_password").length) {
-        $("#offline_password").simplePassMeter({
-            "requirements": {},
-              "container": "#offline_pw_strength",
-              "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
-            "ratings": [
+    $("#offline_password").simplePassMeter({
+        "requirements": {},
+        "container": "#offline_pw_strength",
+        "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+        "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
                 "text": "<?php echo $LANG['complex_level0'];?>"
@@ -171,9 +170,9 @@ $(function() {
                 "className": "meterExcel",
                 "text": "<?php echo $LANG['complex_level6'];?>"
             }
-            ]
-        });
-    }
+        ]
+    });
+    
     $("#offline_password").bind({
         "score.simplePassMeter" : function(jQEvent, score) {
             $("#offline_pw_strength_value").val(score);
@@ -194,8 +193,9 @@ $(function() {
         },
         buttons: {
             "<?php echo $LANG['index_change_pw_button'];?>": function() {
+                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").hide();
                 if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
-                    if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+                    if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
                         var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
                         $.post(
                             "sources/main.queries.php",
@@ -209,6 +209,9 @@ $(function() {
                                 if (data[0].error == "already_used") {
                                     $("#new_pw, #new_pw2").val("");
                                     $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['pw_used'];?></span>");
+                                } else if (data[0].error == "complexity_level_not_reached") {
+                                    $("#new_pw, #new_pw2").val("");
+                                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought'];?></span>");
                                 } else {
                                     document.main_form.submit();
                                 }
@@ -583,11 +586,16 @@ function ChangeMyPass()
                 {
                     type                : "change_pw",
                     change_pw_origine    : "first_change",
-                    complexity            :    "",
+                    complexity            :    $("#user_pw_complexity").val(),
                     data                 :    aes_encrypt(data)
                 },
                 function(data) {
-                    document.main_form.submit();
+                    if (data[0].error == "complexity_level_not_reached") {
+                        $("#new_pw, #new_pw2").val("");
+                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought'];?></span>");
+                    } else {
+                        document.main_form.submit();
+                    }
                 },
                 "json"
             );

@@ -27,10 +27,12 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -175,16 +177,7 @@ switch ($_POST['type']) {
         } else {
             $personalFolder = 0;
         }
-        // $data_fld = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$_POST['folder']."'");
-        $data_fld = $db->queryGetRow(
-            "nested_tree",
-            array(
-                "title"
-            ),
-            array(
-                "id" => intval($_POST['folder'])
-            )
-        );
+        $data_fld = DB::queryFirstRow("SELECT title FROM ".$pre."nested_tree WHERE id = %i", intval($_POST['folder']));
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
@@ -200,8 +193,8 @@ switch ($_POST['type']) {
             $pw = $randomKey.$item[2];
 
             // Insert new item in table ITEMS
-            $newId = $db->queryInsert(
-                "items",
+            DB::insert(
+                $pre."items",
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
@@ -212,10 +205,11 @@ switch ($_POST['type']) {
                     'anyone_can_modify' => $_POST['import_csv_anyone_can_modify'] == "true" ? 1 : 0
                )
             );
+            $newId = DB::insertId();
 
-            //Store generated key
-            $db->queryInsert(
-                'keys',
+                //Store generated key
+            DB::insert(
+                $pre.'keys',
                 array(
                     'table' => 'items',
                     'id' => $newId,
@@ -226,8 +220,8 @@ switch ($_POST['type']) {
             //if asked, anyone in role can modify
             if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
                 foreach ($_SESSION['arr_roles'] as $role) {
-                    $db->queryInsert(
-                        'restriction_to_roles',
+                    DB::insert(
+                        $pre.'restriction_to_roles',
                         array(
                             'role_id' => $role['id'],
                             'item_id' => $newId
@@ -237,8 +231,8 @@ switch ($_POST['type']) {
             }
 
             // Insert new item in table LOGS_ITEMS
-            $db->queryInsert(
-                'log_items',
+            DB::insert(
+                $pre.'log_items',
                 array(
                     'id_item' => $newId,
                     'date' => time(),
@@ -254,8 +248,8 @@ switch ($_POST['type']) {
             }
 
             //Add entry to cache table
-            $db->queryInsert(
-                'cache',
+            DB::insert(
+                $pre.'cache',
                 array(
                     'id' => $newId,
                     'label' => $item[0],
@@ -263,7 +257,7 @@ switch ($_POST['type']) {
                     'id_tree' => $_POST['folder'],
                     'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => $item[1],
-                    'folder' => $data_fld[0],
+                    'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id']
                )
             );
@@ -307,6 +301,8 @@ switch ($_POST['type']) {
                 $newItem, $tempArray, $history, $levelInProgress, $historyLevel, $nbItems,
                 $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
                 $numItems, $foldersSeparator, $itemsSeparator, $lineEndSeparator, $keepassVersion, $arrFolders;
+
+            $groupsArray = array();
 
             // For each node, get the name and SimpleXML balise
             foreach ($xmlRoot as $nom => $elem) {
@@ -509,7 +505,7 @@ switch ($_POST['type']) {
                             //store folders
                             if (!in_array($tempArray['path'], $groupsArray)) {
                                 fwrite($cacheFileF, $tempArray['path']."\n");
-
+                                array_push($groupsArray, $tempArray['path']);
                                 //increment number
                                 $numGroups ++;
                             }
@@ -582,15 +578,16 @@ switch ($_POST['type']) {
 
             //if destination is not ROOT then get the complexity level
             if ($_POST['destination'] > 0) {
-                $data = $db->fetchRow(
+                $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
                     FROM ".$pre."misc as m
                     INNER JOIN ".$pre."nested_tree as t ON (m.intitule = t.id)
-                    WHERE m.type = 'complex'
-                    AND m.intitule = '".$_POST['destination']."'"
+                    WHERE m.type = %s AND m.intitule = %s",
+                    "complex",
+                    mysql_real_escape_string($_POST['destination'])
                 );
-                $levelPwComplexity = $data[0];
-                $startPathLevel = $data[1];
+                $levelPwComplexity = $data['value'];
+                $startPathLevel = $data['nlevel'];
             } else {
                 $levelPwComplexity = 50;
                 $startPathLevel = 0;
@@ -624,19 +621,18 @@ switch ($_POST['type']) {
                     }
 
                     //create folder - if not exists at the same level
-                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."nested_tree WHERE nlevel = ".($folderLevel+$startPathLevel)." AND title = \"".$fold."\" AND parent_id = ".$parent_id);
-                    $data = $db->queryCount(
-                        "nested_tree",
-                        array(
-                            "nlevel" => intval($folderLevel+$startPathLevel),
-                            "title" => $fold,
-                            "parent_id" => intval(parent_id)
-                        )
+                    DB::query(
+                        "SELECT * FROM ".$pre."nested_tree
+                        WHERE nlevel = %i AND title = %s AND parent_id = %i",
+                        intval($folderLevel+$startPathLevel),
+                        $fold,
+                        $parent_id
                     );
-                    if ($data[0] == 0) {
+                    $counter = DB::count();
+                    if ($counter == 0) {
                         //do query
-                        $id = $db->queryInsert(
-                            "nested_tree",
+                        $id = DB::insert(
+                            $pre."nested_tree",
                             array(
                                 'parent_id' => $parent_id,
                                 'title' => stripslashes($fold),
@@ -644,8 +640,8 @@ switch ($_POST['type']) {
                            )
                         );
                         //Add complexity level => level is set to "medium" by default.
-                        $db->queryInsert(
-                            'misc',
+                        DB::insert(
+                            $pre.'misc',
                             array(
                                 'type' => 'complex',
                                 'intitule' => $id,
@@ -655,8 +651,8 @@ switch ($_POST['type']) {
 
                         //For each role to which the user depends on, add the folder just created.
                         foreach ($_SESSION['arr_roles'] as $role) {
-                            $db->queryInsert(
-                                "roles_values",
+                            DB::insert(
+                                $pre."roles_values",
                                 array(
                                     'role_id' => $role['id'],
                                     'folder_id' => $id
@@ -673,19 +669,14 @@ switch ($_POST['type']) {
                         $nbFoldersImported++;
                     } else {
                         //get forlder actual ID
-                        // $data = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE nlevel = '".($folderLevel+$startPathLevel)."' AND title = '".$fold."' AND parent_id = '".$parent_id."'");
-                        $row = $db->queryGetRow(
-                            "nested_tree",
-                            array(
-                                "id"
-                            ),
-                            array(
-                                "nlevel" => intval($folderLevel+$startPathLevel),
-                                "title" => $fold,
-                                "parent_id" => intval($parent_id)
-                            )
+                        $data = DB::queryFirstRow(
+                            "SELECT id FROM ".$pre."nested_tree
+                            WHERE nlevel = %i AND title = %s AND parent_id = %i",
+                            intval($folderLevel+$startPathLevel),
+                            $fold,
+                            $parent_id
                         );
-                        $id = $data[0];
+                        $id = $data['id'];
                     }
 
                     //store in array
@@ -735,22 +726,21 @@ switch ($_POST['type']) {
 
                 if (!empty($item[2])) {
                     //check if not exists
-                    //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE id_tree = '".$foldersArray[$item[1]]['id']."' AND label = \"".$item[2]."\"");
-                    $data = $db->queryCount(
-                        "items",
-                        array(
-                            "id_tree" => intval($foldersArray[$item[1]]['id']),
-                            "label" => $item[2]
-                        )
+                    DB::query(
+                        "SELECT * FROM ".$pre."items
+                        WHERE id_tree =%i AND label = %s",
+                        intval($foldersArray[$item[1]]['id']),
+                        $item[2]
                     );
-                    if ($data[0] == 0) {
+                    $counter = DB::count();
+                    if ($counter == 0) {
                         //Encryption key
                         $randomKey = generateKey();
                         $pw = $randomKey.$item[3];
 
                         //ADD item
-                        $newId = $db->queryInsert(
-                            'items',
+                        DB::insert(
+                            $pre.'items',
                             array(
                                 'label' => stripslashes($item[2]),
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
@@ -761,10 +751,11 @@ switch ($_POST['type']) {
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
                         );
+                        $newId = DB::insertId();
 
-                        //Store generated key
-                        $db->queryInsert(
-                            'keys',
+                            //Store generated key
+                        DB::insert(
+                            $pre.'keys',
                             array(
                                 'table' => 'items',
                                 'id' => $newId,
@@ -775,8 +766,8 @@ switch ($_POST['type']) {
                         //if asked, anyone in role can modify
                         if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
                             foreach ($_SESSION['arr_roles'] as $role) {
-                                $db->queryInsert(
-                                    'restriction_to_roles',
+                                DB::insert(
+                                    $pre.'restriction_to_roles',
                                     array(
                                         'role_id' => $role['id'],
                                         'item_id' => $newId
@@ -786,8 +777,8 @@ switch ($_POST['type']) {
                         }
 
                         //Add log
-                        $db->queryInsert(
-                            'log_items',
+                        DB::insert(
+                            $pre.'log_items',
                             array(
                                 'id_item' => $newId,
                                 'date' => time(),
@@ -803,20 +794,14 @@ switch ($_POST['type']) {
                         } else {
                             $folderId = $foldersArray[$item[1]]['id'];
                         }
-                        // $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
-                        $data = $db->queryGetRow(
-                            "nested_tree",
-                            array(
-                                "title"
-                            ),
-                            array(
-                                "id" => intval($folderId)
-                            )
+                        $data = DB::queryFirstRow(
+                            "SELECT title FROM ".$pre."nested_tree WHERE id = %i",
+                            intval($folderId)
                         );
 
                         //Add entry to cache table
-                        $db->queryInsert(
-                            'cache',
+                        DB::insert(
+                            $pre.'cache',
                             array(
                                 'id' => $newId,
                                 'label' => stripslashes($item[2]),
@@ -824,7 +809,7 @@ switch ($_POST['type']) {
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
                                 'login' => stripslashes($item[4]),
-                                'folder' => $data[0],
+                                'folder' => $data['title'],
                                 'author' => $_SESSION['user_id']
                            )
                         );

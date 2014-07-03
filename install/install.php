@@ -303,7 +303,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "gmp" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "bcmath" is loaded</span><br />
                     <span style="padding-left:30px;font-size:13pt;">PHP extension "iconv" is loaded</span><br />
-                    <span style="padding-left:30px;font-size:13pt;">PHP version is gretter or equal to 5.3.0</span><br />
+                    <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.3.0</span><br />
                     </div>
                     <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="status_step1"></div>';
 } elseif ((isset($_POST['step']) && $_POST['step'] == 2) || (isset($_GET['step']) && $_GET['step'] == 2)) {

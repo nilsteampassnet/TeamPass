@@ -161,7 +161,7 @@ $htmlHeaders .= '
             "sources/main.queries.php",
             {
                 type : "identify_user",
-                data : prepareExchangedData(data, "encode")
+                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
                 if (data[0].value == randomstring) {
@@ -215,7 +215,7 @@ $htmlHeaders .= '
 	            "sources/main.queries.php",
 	            {
 	                type : "ga_generate_qr",
-	                data : prepareExchangedData(data, "encode")
+	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
 	            },
 	            function(data) {
 	            	if (data[0].error == "0") {
@@ -246,7 +246,7 @@ $htmlHeaders .= '
         //send query
         $.post("sources/main.queries.php", {
                 type :    "generate_new_password",
-    		    data : prepareExchangedData(data, "encode")
+    		    data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
                 if (data == "done") {
@@ -297,7 +297,7 @@ $htmlHeaders .= '
             "sources/main.queries.php",
             {
                 type : "change_user_language",
-                data : prepareExchangedData(data, "encode")
+                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
             	if (data == "done") {
@@ -531,7 +531,7 @@ if (!isset($_GET['page'])) {
         });
     });';
 }
-
+/*
 if (!isset($_GET['page']) && isset($_SESSION['key'])) {
     $htmlHeaders .= '
     $(function() {
@@ -1173,7 +1173,9 @@ if (!isset($_GET['page']) && isset($_SESSION['key'])) {
             }
        );
     }';
-} else if (isset($_GET['page']) && $_GET['page'] == "find") {
+
+} else */
+if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
     $htmlHeaders .= '
     $(function() {

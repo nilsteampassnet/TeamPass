@@ -24,29 +24,33 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 header("Content-type: text/x-json; charset=".$k['charset']);
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
-
-$sql = "SELECT id, category FROM ".$pre."kb_categories";
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
 
 //manage filtering
-if (!empty($_GET['term'])) {
-    $sql .= " WHERE category LIKE '%".$_GET['term']."%'";
-}
-
-$sql .= " ORDER BY category ASC";
-
 $sOutput = '';
+if (!empty($_GET['term'])) {
+    $rows = DB::query(
+        "SELECT id, category FROM ".$pre."kb_categories
+        WHERE category LIKE %ss
+        ORDER BY category ASC",
+        $_GET['term']
+    );
+} else {
+    $rows = DB::query("SELECT id, category FROM ".$pre."kb_categories ORDER BY category ASC");
+}
+$counter = DB::count();
 
-$rows = $db->fetchAllArray($sql);
-if (count($rows)>0) {
-    foreach ($rows as $reccord) {
+if ($counter>0) {
+    foreach ($rows as $record) {
         if (empty($sOutput)) {
-            $sOutput = '"'.$reccord['category'].'"';
+            $sOutput = '"'.$record['category'].'"';
         } else {
-            $sOutput .= ', "'.$reccord['category'].'"';
+            $sOutput .= ', "'.$record['category'].'"';
         }
     }
 

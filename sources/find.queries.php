@@ -20,15 +20,18 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
-global $k, $settings;
+global $k, $settings, $link;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Columns name
 $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
@@ -36,37 +39,34 @@ $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
 $sOrder = $sLimit = "";
-$sWhere = "id_tree IN(".implode(', ', $_SESSION['groupes_visibles']).")";    //limit search to the visible folders
+$sWhere = "id_tree IN %ls_idtree";    //limit search to the visible folders
 
 //Get current user "personal folder" ID
-// $row = $db->fetchRow("SELECT id FROM ".$pre."nested_tree WHERE title = '".intval($_SESSION['user_id'])."'");
-$row = $db->queryGetRow(
-    "nested_tree",
-    array(
-        "id"
-    ),
-    array(
-        "title" => intval($_SESSION['user_id'])
-    )
+$row = DB::query(
+    "SELECT id FROM ".$pre."nested_tree WHERE title = %i",
+    intval($_SESSION['user_id'])
 );
 
 //get list of personal folders
 $arrayPf = array();
 $listPf = "";
-if (!empty($row[0])) {
-	$rows = $db->fetchAllArray(
-	    "SELECT id FROM ".$pre."nested_tree WHERE personal_folder=1 AND NOT parent_id = '".filter_var($row[0], FILTER_SANITIZE_NUMBER_INT).
-	    "' AND NOT title = '".filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)."'"
+if (!empty($row['id'])) {
+	$rows = DB::query(
+	    "SELECT id FROM ".$pre."nested_tree
+	    WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
+        "1",
+        filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
+        filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
 	);
-	foreach ($rows as $reccord) {
-		if (!in_array($reccord['id'], $arrayPf)) {
+	foreach ($rows as $record) {
+		if (!in_array($record['id'], $arrayPf)) {
 			//build an array of personal folders ids
-			array_push($arrayPf, $reccord['id']);
+			array_push($arrayPf, $record['id']);
 			//build also a string with those ids
 			if (empty($listPf)) {
-				$listPf = $reccord['id'];
+				$listPf = $record['id'];
 			} else {
-				$listPf .= ', '.$reccord['id'];
+				$listPf .= ', '.$record['id'];
 			}
 		}
 	}
@@ -116,7 +116,7 @@ if (isset($_GET['iSortCol_0'])) {
 if ($_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }
@@ -126,36 +126,34 @@ if (!empty($listPf)) {
     if (!empty($sWhere)) {
         $sWhere .= " AND ";
     }
-    $sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$listPf.") ";
+    //$sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$listPf.") ";
+    $sWhere = "WHERE ".$sWhere."id_tree NOT IN %ls_pf ";
 } else {
     $sWhere = "WHERE ".$sWhere;
 }
 
-$sql = "SELECT SQL_CALC_FOUND_ROWS *
-        FROM ".$pre."cache
-        $sWhere
-        $sOrder
-        $sLimit";
+DB::query("SELECT id FROM ".$pre."cache");
+$iTotal = DB::count();
 
-$rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = $db->fetchAllArray("
-
-/* Data set length after filtering */
-$sqlF = "
-        SELECT FOUND_ROWS()
-";
-$rResultFilterTotal = mysql_query($sqlF) or die(mysql_error());
-$aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-$iFilteredTotal = $aResultFilterTotal[0];
-
-/* Total data set length */
-$sqlC = "
-        SELECT COUNT(id)
-        FROM   ".$pre."cache
-";
-$rResultTotal = mysql_query($sqlC) or die(mysql_error());
-$aResultTotal = mysql_fetch_array($rResultTotal);
-$iTotal = $aResultTotal[0];
-
+$rows = DB::query(
+    "SELECT *
+    FROM ".$pre."cache
+    $sWhere
+    $sOrder
+    $sLimit",
+    array(
+        'idtree' => $_SESSION['groupes_visibles'],
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        'pf' => $arrayPf
+    )
+);
+$iFilteredTotal = DB::count();
 
 /*
  * Output
@@ -167,29 +165,29 @@ $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": [ ';
 $sOutputConst = "";
 
-$rows = $db->fetchAllArray($sql);
-foreach ($rows as $reccord) {
+
+foreach ($rows as $record) {
     $getItemInList = true;
     $sOutputItem = "[";
 
     //col1
-    $sOutputItem .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'&#039;;\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/eye.png\" onClick=\"javascript:see_item('.$reccord['id'].','.$reccord['perso'].');\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$reccord['id'].');\" style=\"cursor:pointer;\" />", ';
+    $sOutputItem .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/eye.png\" onClick=\"javascript:see_item('.$record['id'].','.$record['perso'].');\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item('.$record['id'].');\" style=\"cursor:pointer;\" />", ';
 
     //col2
-    $sOutputItem .= '"'.htmlspecialchars(stripslashes($reccord['label']), ENT_QUOTES).'", ';
+    $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
 
     //col3
-    $sOutputItem .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES)).'", ';
+    $sOutputItem .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)).'", ';
 
     //col4
     //get restriction from ROles
     $restrictedToRole = false;
-    $rTmp = mysql_query(
-        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = '".$reccord['id']."'"
-    ) or die(mysql_error());
-    while ($aTmp = mysql_fetch_row($rTmp)) {
-        if ($aTmp[0] != "") {
-            if (!in_array($aTmp[0], $_SESSION['user_roles'])) {
+    $rTmp = DB::query(
+        "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id = %i", $record['id']
+    );
+    foreach ($rTmp as $aTmp) {
+        if ($aTmp['role_id'] != "") {
+            if (!in_array($aTmp['role_id'], $_SESSION['user_roles'])) {
                 $restrictedToRole = true;
             }
         }
@@ -197,11 +195,11 @@ foreach ($rows as $reccord) {
 
     //echo in_array($_SESSION['user_roles'], $a);
     if (
-        ($reccord['perso']==1 && $reccord['author'] != $_SESSION['user_id'])
+        ($record['perso']==1 && $record['author'] != $_SESSION['user_id'])
         ||
         (
-            !empty($reccord['restricted_to'])
-            && !in_array($_SESSION['user_id'], explode(';', $reccord['restricted_to']))
+            !empty($record['restricted_to'])
+            && !in_array($_SESSION['user_id'], explode(';', $record['restricted_to']))
         )
         ||
         (
@@ -210,19 +208,19 @@ foreach ($rows as $reccord) {
     ) {
         $getItemInList = false;
     } else {
-        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags($reccord['description']));
+        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags($record['description']));
         if (strlen($txt) > 50) {
-            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[^>]>\//|[\t]/', '', $txt)), 0, 50).'", ';
+            $sOutputItem .= '"'.substr(stripslashes(preg_replace('<[\/]{0,1}[^>]*>|[\t]', '', $txt)), 0, 50).'", ';
         } else {
             $sOutputItem .= '"'.stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)).'", ';
         }
     }
 
     //col5 - TAGS
-    $sOutputItem .= '"'.htmlspecialchars(stripslashes($reccord['tags']), ENT_QUOTES).'", ';
+    $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES).'", ';
 
     //col6 - Prepare the Treegrid
-    $sOutputItem .= '"'.htmlspecialchars(stripslashes($reccord['folder']), ENT_QUOTES).'"';
+    $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'"';
 
     //Finish the line
     $sOutputItem .= '], ';

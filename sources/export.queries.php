@@ -26,10 +26,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -48,7 +51,7 @@ switch ($_POST['type']) {
 
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows = $db->fetchAllArray(
+                $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                     l.date as date,
                     n.renewal_period as renewal_period,
@@ -57,10 +60,15 @@ switch ($_POST['type']) {
                     INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                     INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-                    WHERE i.inactif = 0
-                    AND i.id_tree=".$id."
-                    AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-                    ORDER BY i.label ASC, l.date DESC"
+                    WHERE i.inactif = %i
+                    AND i.id_tree= %i
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                    ORDER BY i.label ASC, l.date DESC",
+                    "0",
+                    intval($id),
+                    "at_creation",
+                    "at_modification",
+                    "at_pw :%"
                 );
 
                 $id_managed = '';
@@ -213,7 +221,7 @@ switch ($_POST['type']) {
 
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows = $db->fetchAllArray(
+                $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                        l.date as date,
                        n.renewal_period as renewal_period,
@@ -222,10 +230,15 @@ switch ($_POST['type']) {
                     INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                     INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-                    WHERE i.inactif = 0
-                    AND i.id_tree=".$id."
-                    AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-                    ORDER BY i.label ASC, l.date DESC"
+                    WHERE i.inactif = %i
+                    AND i.id_tree= %i
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                    ORDER BY i.label ASC, l.date DESC",
+                    "0",
+                    intval($id),
+                    "at_creation",
+                    "at_modification",
+                    "at_pw :%"
                 );
                 foreach ($rows as $reccord) {
                     $restricted_users_array = explode(';', $reccord['restricted_to']);
@@ -287,16 +300,21 @@ switch ($_POST['type']) {
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
             	// count elements to display
-            	$result = $db->fetchAllArray(
-            	"SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso
+            	$result = DB::query(
+                    "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso
                     FROM ".$pre."items as i
                     INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                     INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-                    WHERE i.inactif = 0
-                    AND i.id_tree=".$id."
-                    AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-                    ORDER BY i.label ASC, l.date DESC"
+                    WHERE i.inactif = %i
+                    AND i.id_tree= %i
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                    ORDER BY i.label ASC, l.date DESC",
+                    "0",
+                    $id,
+                    "at_creation",
+                    "at_modification",
+                    "at_pw :%"
             	);
             	foreach ($result as $reccord) {
             		$restricted_users_array = explode(';', $reccord['restricted_to']);
@@ -383,7 +401,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
 	
-		$rows = $db->fetchAllArray(
+		$rows = DB::query(
 			"SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
                l.date as date,
                n.renewal_period as renewal_period,
@@ -392,11 +410,15 @@ Enter the decryption key : <input type="password" id="saltkey" />
             INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
             INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
             INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-            WHERE i.inactif = 0
-            AND i.id_tree=".$_POST['idTree']."
-            AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-            
-            ORDER BY i.label ASC, l.date DESC"
+            WHERE i.inactif = %i
+            AND i.id_tree= %i
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))            
+            ORDER BY i.label ASC, l.date DESC",
+            "0",
+            intval($_POST['idTree']),
+            "at_creation",
+            "at_modification",
+            "at_pw :%"
 		);
 		//AND i.id_tree IN (".implode(',', $list).")
 		foreach ($rows as $reccord) {

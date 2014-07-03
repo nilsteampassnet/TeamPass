@@ -42,10 +42,12 @@ header("Pragma: no-cache");
 include 'main.functions.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -80,16 +82,7 @@ if (!empty($_POST['type'])) {
 
             //check if allowed to modify
             if (isset($id) && !empty($id)) {
-                $ret = $db->queryGetArray(
-                    "kb",
-                    array(
-                        "anyone_can_modify",
-                        "author_id"
-                    ),
-                    array(
-                        "id" => intval($id)
-                    )
-                );
+                $ret = DB::queryfirstrow("SELECT anyone_can_modify, author_id FROM ".$pre."kb WHERE id = %i", $id);
                 if ($ret['anyone_can_modify'] == 1 || $ret['author_id'] == $_SESSION['user_id']) {
                     $manage_kb = true;
                 } else {
@@ -100,30 +93,26 @@ if (!empty($_POST['type'])) {
             }
             if ($manage_kb == true) {
                 //Add category if new
-                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
-                $data = $db->queryCount(
-                    "kb_categories",
-                    array(
-                        "category" => $category
-                    )
-                );
-                if ($data[0] == 0) {
-                    $cat_id = $db->queryInsert(
-                        "kb_categories",
+                DB::query("SELECT * FROM ".$pre."kb_categories WHERE category = %s", $category);
+                $counter = DB::count();
+                if ($counter == 0) {
+                    DB::insert(
+                        $re."kb_categories",
                         array(
-                            'category' => mysql_real_escape_string($category)
+                            'category' => $category
                        )
                     );
+                    $cat_id = DB::insertId();
                 } else {
                     //get the ID of this existing category
-                    $cat_id = $db->fetchRow("SELECT id FROM ".$pre."kb_categories WHERE category = '".mysql_real_escape_string($category)."'");
-                    $cat_id = $cat_id[0];
+                    $cat_id = DB::queryfirstrow("SELECT id FROM ".$pre."kb_categories WHERE category = %s", $category);
+                    $cat_id = $cat_id['id'];
                 }
 
                 if (isset($id) && !empty($id)) {
                     //update KB
-                    $new_id = $db->queryUpdate(
-                        "kb",
+                    DB::update(
+                        $pre."kb",
                         array(
                             'label' => ($label),
                             'description' => ($description),
@@ -131,11 +120,11 @@ if (!empty($_POST['type'])) {
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
                        ),
-                        "id='".$id."'"
+                        "id=%i", $id
                     );
                 } else {
                     //add new KB
-                    $new_id = $db->queryInsert(
+                    DB::queryInsert(
                         "kb",
                         array(
                             'label' => $label,
@@ -145,21 +134,18 @@ if (!empty($_POST['type'])) {
                             'anyone_can_modify' => $anyone_can_modify
                        )
                     );
+                    $id = DB::insertId();
                 }
 
                 //delete all associated items to this KB
-                $db->queryDelete(
-                    "kb_items",
-                    array(
-                        'kb_id' => $new_id
-                   )
-                );
+                DB::delete($pre."kb_items", "kb_id = %i", $id);
+                
                 //add all items associated to this KB
                 foreach (explode(',', $kb_associated_to) as $item_id) {
-                    $db->queryInsert(
-                        "kb_items",
+                    DB::insert(
+                        $pre."kb_items",
                         array(
-                            'kb_id' => $new_id,
+                            'kb_id' => $id,
                             'item_id' => $item_id
                        )
                     );
@@ -180,40 +166,21 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            $ret = $db->queryGetArray(
-                array(
-                    "kb" => "k"
-                ),
-                array(
-                    "k.id" => "id",
-                    "k.label" => "label",
-                    "k.description" => "description",
-                    "k.category_id" => "category_id",
-                    "k.author_id" => "author_id",
-                    "k.anyone_can_modify" => "anyone_can_modify",
-                    "u.login" => "login",
-                    "c.category" => "category"
-                ),
-                array(
-                    "k.id" => intval($_POST['id'])
-                ),
-                "",
-                array(
-                    "kb_categories AS c" => "(c.id = k.category_id)",
-                    "users AS u" => "(u.id = k.author_id)"
-                )
+            $ret = DB::queryfirstrow(
+                "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
+                FROM ".$pre."kb AS k
+                INNER JOIN ".$pre."kb_categories AS c ON (c.id = k.category_id)
+                INNER JOIN ".$pre."users AS u ON (u.id = k.author_id)
+                WHERE k.id = %i",
+                $_POST['id']
             );
 
             //select associated items
-            $rows = $db->fetchAllArray(
-                "SELECT item_id
-                FROM ".$pre."kb_items
-                WHERE kb_id = '".$_POST['id']."'"
-            );
+            $rows = DB::query("SELECT item_id FROM ".$pre."kb_items WHERE kb_id = %i", $_POST['id']);
             $arrOptions = array();
-            foreach ($rows as $reccord) {
-                //echo '$("#kb_associated_to option[value='.$reccord['item_id'].']").attr("selected","selected");';
-                array_push($arrOptions, $reccord['item_id']);
+            foreach ($rows as $record) {
+                //echo '$("#kb_associated_to option[value='.$record['item_id'].']").attr("selected","selected");';
+                array_push($arrOptions, $record['item_id']);
             }
 
             $arrOutput = array(
@@ -235,12 +202,7 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            $db->queryDelete(
-                "kb",
-                array(
-                    'id' => $_POST['id']
-               )
-            );
+            DB::delete($pre."kb", "id=%i", $_POST['id']);
             break;
     }
 }

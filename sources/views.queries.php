@@ -38,11 +38,14 @@ include 'main.functions.php';
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
-//CPnnect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+//Connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -76,13 +79,14 @@ switch ($_POST['type']) {
         $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", 1);
         $pdf->SetFont('DejaVu', '', 10);
 
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT u.login as login, i.label as label, i.id_tree as id_tree
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."users as u ON (u.id=l.id_user)
             INNER JOIN ".$pre."items as i ON (i.id=l.id_item)
-            WHERE l.action = 'Modification'
-            AND l.raison = 'Mot de passe changé'"
+            WHERE l.action = %s AND l.raison = %s",
+            "Modification",
+            "Mot de passe changé"
         );
         foreach ($rows as $reccord) {
             if (date($_SESSION['settings']['date_format'], $reccord['date']) == $_POST['date']) {
@@ -117,10 +121,11 @@ switch ($_POST['type']) {
         //FOLDERS deleted
         $arrFolders = array();
         $texte = "<table cellpadding=3><tr><td><u><b>".$LANG['group']."</b></u></td></tr>";
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT valeur, intitule
             FROM ".$pre."misc
-            WHERE type  = 'folder_deleted'"
+            WHERE type  = %s",
+            "folder_deleted"
         );
         foreach ($rows as $reccord) {
             $tmp = explode(', ', $reccord['valeur']);
@@ -131,14 +136,16 @@ switch ($_POST['type']) {
 
         //ITEMS deleted
         $texte .= "<tr><td><u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE i.inactif = '1'
-            AND l.action = 'at_delete'
-            GROUP BY l.id_item"
+            WHERE i.inactif = %i
+            AND l.action = %s
+            GROUP BY l.id_item",
+            1,
+            "at_delete"
         );
         foreach ($rows as $reccord) {
             if (in_array($reccord['id_tree'], $arrFolders)) {
@@ -164,17 +171,18 @@ switch ($_POST['type']) {
         //restore FOLDERS
         if (count($_POST['list_f'])>0) {
             foreach (explode(';', $_POST['list_f']) as $id) {
-                $data = $db->queryFirst(
+                $data = DB::queryfirstrow(
                     "SELECT valeur
                     FROM ".$pre."misc
                     WHERE type = 'folder_deleted'
-                    AND intitule = '".$id."'"
+                    AND intitule = %s",
+                    $id
                 );
                 if ($data['valeur'] != 0) {
                     $folderData = explode(', ', $data['valeur']);
                     //insert deleted folder
-                    $db->queryInsert(
-                        'nested_tree',
+                    DB::insert(
+                        $pre.'nested_tree',
                         array(
                             'id' => $folderData[0],
                             'parent_id' => $folderData[1],
@@ -189,22 +197,31 @@ switch ($_POST['type']) {
                        )
                     );
                     //delete log
-                    $db->query("DELETE FROM ".$pre."misc WHERE type = 'folder_deleted' AND intitule= '".$id."'");
+                    DB::delete($pre."misc", "type = %s AND intitule = %s", "folder_deleted", $id);
                 }
             }
         }
         //restore ITEMS
         if (count($_POST['list_i'])>0) {
             foreach (explode(';', $_POST['list_i']) as $id) {
-                $db->queryUpdate(
-                    "items",
+                DB::update(
+                    $pre."items",
                     array(
                         'inactif' => '0'
                     ),
-                    'id = '.$id
+                    'id = %i',
+                    $id
                 );
                 //log
-                $db->query("INSERT INTO ".$pre."log_items VALUES ('".$id."', '".time()."', '".$_SESSION['user_id']."', 'at_restored', '')");
+                DB::insert(
+                    $pre."log_items",
+                    array(
+                        "id_item" => $id,
+                        "date" => time(),
+                        "id_user" => $_SESSION['user_id'],
+                        "action" => "at_restored"
+                    )
+                );
             }
         }
         break;
@@ -221,43 +238,43 @@ switch ($_POST['type']) {
                 $id = substr($fId, 1);
 
                 //delete any subfolder
-                $rows = $db->fetchAllArray(
-                    "SELECT valeur
-                    FROM ".$pre."misc
-                    WHERE type='folder_deleted' AND intitule = '".$fId."'"
+                $rows = DB::query(
+                    "SELECT valeur FROM ".$pre."misc WHERE type=%s AND intitule = %s",
+                    folder_deleted,
+                    $fId
                 );
                 foreach ($rows as $reccord) {
                     //get folder id
                     $val = explode(", ", $reccord['valeur']);
                     //delete items & logs
-                    $items = $db->fetchAllArray("SELECT id FROM ".$pre."items WHERE id_tree='".$val[0]."'");
+                    $items = DB::query("SELECT id FROM ".$pre."items WHERE id_tree=%i", $val[0]);
                     foreach ($items as $item) {
                         //Delete item
-                        $db->query("DELETE FROM ".$pre."items WHERE id = ".$item['id']);
-                        $db->query("DELETE FROM ".$pre."log_items WHERE id_item = ".$item['id']);
+                        DB::delete($pre."items", "id = %i", $item['id']);
+                        DB::delete($pre."log_items", "id_item = %i", $item['id']);
 
                         //Update CACHE table
-                        mysql_query("DELETE FROM ".$pre."cache WHERE id = ".$item['id']);
+                        DB::delete($pre."cache", "id = %i", $item['id']);
                     }
                     //Actualize the variable
                     $_SESSION['nb_folders'] --;
                 }
                 //delete folder
-                $db->query("DELETE FROM ".$pre."misc WHERE intitule = '".$fId."' AND type = 'folder_deleted'");
+                DB::delete($pre."misc", "intitule = %s AND type = %s", $fId, "folder_deleted");
             }
         }
 
         foreach (explode(';', $_POST['items']) as $id) {
             //delete from ITEMS
-            $db->query("DELETE FROM ".$pre."items WHERE id=".$id);
+            DB::delete($pre."items", "id=%i", $id);
             //delete from LOG_ITEMS
-            $db->query("DELETE FROM ".$pre."log_items WHERE id_item=".$id);
+            DB::delete($pre."log_items", "id_item=%i", $id);
             //delete from FILES
-            $db->query("DELETE FROM ".$pre."files WHERE id_item=".$id);
+            DB::delete($pre."files", "id_item=%i", $id);
             //delete from TAGS
-            $db->query("DELETE FROM ".$pre."tags WHERE item_id=".$id);
+            DB::delete($pre."tags", "item_id=%i", $id);
             //delete from KEYS
-            $db->query("DELETE FROM `".$pre."keys` WHERE `id` ='".$id."' AND `table`='items'");
+            DB::delete($pre."keys", "`id` =%i AND `table`=%s", $id, "items");
         }
         break;
 
@@ -269,13 +286,11 @@ switch ($_POST['type']) {
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'user_connection'"
+        DB::query(
+            "SELECT * FROM ".$pre."log_system as l INNER JOIN ".$pre."users as u ON (l.qui=u.id) WHERE l.type = %s",
+            "user_connection"
         );
-        if ($data[0] != 0) {
+        if (DB::count() != 0) {
             $nbPages = ceil($data[0]/$nbElements);
             for ($i=1; $i<=$nbPages; $i++) {
                 $pages .= '<td onclick=\'displayLogs(\"connections_logs\", '.
@@ -294,13 +309,14 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'user_connection'
+            WHERE l.type = %s
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            "user_connection"
         );
 
         foreach ($rows as $reccord) {
@@ -322,13 +338,11 @@ switch ($_POST['type']) {
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'error'"
+        DB::query(
+            "SELECT * FROM ".$pre."log_system as l INNER JOIN ".$pre."users as u ON (l.qui=u.id) WHERE l.type = %s",
+            "error"
         );
-        if ($data[0] != 0) {
+        if (DB::count() != 0) {
             $nbPages = ceil($data[0]/$nbElements);
             for ($i=1; $i<=$nbPages; $i++) {
                 $pages .= '<td onclick=\'displayLogs(\"errors_logs\", '.$i.', \"'.$_POST['order'].
@@ -346,13 +360,14 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'error'
+            WHERE l.type = %s
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            "error"
         );
         foreach ($rows as $reccord) {
             $label = explode('@', addslashes(cleanString($reccord['label'])));
@@ -370,20 +385,22 @@ switch ($_POST['type']) {
         $nbPages = 1;
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
+        $where = new WhereClause('and');
+        $where->add('l.action=%s', "at_shown");
+
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
-            $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
+            $where->add('i.label=%ss', $_POST['filter']);
         }
         if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
-            $sqlFilter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+            $where->add('i.id_user=%ss', $_POST['filter_user']);
         }
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+        $data = DB::query(
+            "SELECT * FROM ".$pre."log_items as l INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_shown'".mysql_real_escape_string($sqlFilter)
+            WHERE %l",
+            $where
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -401,14 +418,15 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_shown'".$sqlFilter."
+            WHERE %l
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            $where
         );
         foreach ($rows as $reccord) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
@@ -425,20 +443,23 @@ switch ($_POST['type']) {
         $nbPages = 1;
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
+        $where = new WhereClause('and');
+        $where->add('l.action=%s', "at_copy");
+
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
-            $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
+            $where->add('i.label=%ss', $_POST['filter']);
         }
         if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
-            $sqlFilter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+            $where->add('i.id_user=%ss', $_POST['filter_user']);
         }
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_items as l
+        $data = DB::query(
+            "SELECT * FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'".mysql_real_escape_string($sqlFilter)
+            WHERE %l",
+            $where
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -456,14 +477,15 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'".$sqlFilter."
+            WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            $where
         );
         foreach ($rows as $reccord) {
             $label = explode('@', addslashes(cleanString($reccord['label'])));
@@ -481,22 +503,25 @@ switch ($_POST['type']) {
         $nbPages = 1;
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
+        $where = new WhereClause('and');
+        $where->add('i.label=%s', $_POST['filter']);
+
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
-            $sqlFilter = " AND i.label LIKE '%".$_POST['filter']."%'";
+            $where->add('i.label=%ss', $_POST['filter']);
         }
         if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
-            $sqlFilter = " AND l.id_user LIKE '%".$_POST['filter_user']."%'";
+            $where->add('i.id_user=%ss', $_POST['filter_user']);
         }
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_items as l
+        DB::query(
+            "SELECT * FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE i.label LIKE '%".mysql_real_escape_string($_POST['filter'])."%'"
+            WHERE %l",
+            $where
         );
-        if ($data[0] != 0) {
+        if (DB::count() != 0) {
             $nbPages = ceil($data[0]/$nbElements);
             for ($i=1; $i<=$nbPages; $i++) {
                 $pages .= '<td onclick=\'displayLogs(\"items_logs\", '.$i.', \"\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
@@ -512,15 +537,16 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label,
             i.perso as perso
             FROM ".$pre."log_items as l
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE i.label LIKE '%".$_POST['filter']."%'
+            WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            $where
         );
 
         foreach ($rows as $reccord) {
@@ -543,19 +569,22 @@ switch ($_POST['type']) {
         $nbPages = 1;
         $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
+        $where = new WhereClause('and');
+        $where->add('l.type=%s', "admin_action");
+
         if (isset($_POST['filter']) && !empty($_POST['filter'])) {
-            $sqlFilter = " AND l.label LIKE '%".$_POST['filter']."%'";
+            $where->add('i.label=%ss', $_POST['filter']);
         }
         if (isset($_POST['filter_user']) && !empty($_POST['filter_user'])) {
-            $sqlFilter = " AND l.qui LIKE '%".$_POST['filter_user']."%'";
+            $where->add('i.id_user=%ss', $_POST['filter_user']);
         }
 
         //get number of pages
-        $data = $db->fetchRow(
-            "SELECT COUNT(*)
-            FROM ".$pre."log_system as l
+        DB::query(
+            "SELECT * FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'admin_action'".mysql_real_escape_string($sqlFilter)
+            WHERE %l",
+            $where
         );
         if ($data[0] != 0) {
             $nbPages = ceil($data[0]/$nbElements);
@@ -573,13 +602,14 @@ switch ($_POST['type']) {
         }
 
         //launch query
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT l.date as date, u.login as login, l.label as label
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'admin_action'".$sqlFilter."
+            WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements"
+            LIMIT $start, $nbElements",
+            $where
         );
 
         foreach ($rows as $reccord) {
@@ -606,7 +636,7 @@ switch ($_POST['type']) {
         $idItem = "";
         $texte = "<table cellpadding=3><thead><tr><th>".$LANG['label']."</th><th>".$LANG['creation_date']."</th><th>".$LANG['expiration_date']."</th><th>".$LANG['group']."</th><th>".$LANG['auteur']."</th></tr></thead>";
         $textPdf = "";
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT u.login as login,
             i.id as id, i.label as label, i.id_tree as id_tree,
             l.date as date, l.id_item as id_item, l.action as action, l.raison as raison,
@@ -615,10 +645,15 @@ switch ($_POST['type']) {
             INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
             INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
             INNER JOIN ".$pre."nested_tree as n ON (n.id=i.id_tree)
-            WHERE i.inactif = '0'
-            AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-            AND n.renewal_period != '0'
-            ORDER BY i.label ASC, l.date DESC"
+            WHERE i.inactif = %s
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
+            AND n.renewal_period != %s
+            ORDER BY i.label ASC, l.date DESC",
+            0,
+            "at_creation",
+            "at_modification",
+            "at_pw :",
+            0
         );
         $idManaged = '';
         foreach ($rows as $reccord) {
@@ -695,47 +730,64 @@ switch ($_POST['type']) {
         if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_shown' ".
-                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".intval(strtotime($_POST['purgeTo']))."'"
+                DB::query(
+                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "AND date BETWEEN %i AND %i'",
+                    "at_shown",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
-                // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE action='at_shown' AND date BETWEEN '".
-                    strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
+                $nbElements = DB::count();
+                    // Delete
+                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                    "at_shown",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "connections_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='user_connection' ".
-                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
-                    intval(strtotime($_POST['purgeTo']))."'"
+                DB::query(
+                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "AND date BETWEEN %i AND %i'",
+                    "user_connection",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
+                $nbElements = DB::count();
                 // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_system WHERE type='user_connection' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
+                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                    "user_connection",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "errors_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_system WHERE type='error' ".
-                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
-                    intval(strtotime($_POST['purgeTo']))."'"
+                DB::query(
+                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "AND date BETWEEN %i AND %i'",
+                    "error",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
+                $nbElements = DB::count();
                 // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_system WHERE type='error' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
+                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                    "error",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "copy_logs") {
-                $nbElements = $db->fetchRow(
-                    "SELECT COUNT(*) FROM ".$pre."log_items WHERE action='at_copy' ".
-                    "AND date BETWEEN '".intval(strtotime($_POST['purgeFrom']))."' AND '".
-                    intval(strtotime($_POST['purgeTo']))."'"
+                DB::query(
+                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "AND date BETWEEN %i AND %i'",
+                    "at_copy",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
+                $nbElements = DB::count();
                 // Delete
-                $db->query(
-                    "DELETE FROM ".$pre."log_items WHERE action='at_copy' ".
-                    "AND date BETWEEN '".strtotime($_POST['purgeFrom'])."' AND '".strtotime($_POST['purgeTo'])."'"
+                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                    "at_copy",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
             }
 

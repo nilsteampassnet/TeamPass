@@ -1,4 +1,13 @@
-﻿2.1.20
+﻿2.1.21
+ #597 - Rapid click on save button on "Add a folder"
+ #599 - SQL:AUTO_INCREMENT id --> language
+ #600 - preg_replace(): Unknown modifier '|'
+ #598 - Extra fields in home page
+ #602 - can't change user password by very heavy complexity
+ #603 - password complexity check only in javascript
+ #415 - Items are not show when in folder view. Can easy search and open.
+
+2.1.20
  #492 - Default admin password not working
  #509 - Password complexity
  #493 - Unable to purge logs

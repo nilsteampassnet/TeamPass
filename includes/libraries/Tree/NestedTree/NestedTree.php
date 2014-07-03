@@ -29,13 +29,15 @@ class NestedTree
      * @param string $parentField Name of the parent ID field
      * @param string $sortField   Name of the field to sort data.
      */
+
     public function __construct($table, $idField, $parentField, $sortField)
     {
         $this->table = $table;
 
         $this->fields = array('id'     => $idField,
                               'parent' => $parentField,
-                              'sort'   => $sortField);
+                              'sort'   => $sortField
+        );
     }
 
     /**
@@ -59,6 +61,7 @@ class NestedTree
      */
     public function getNode($id)
     {
+        global $link;
         $query = sprintf(
             'select %s from %s where %s = %d',
             join(',', $this->getFields()),
@@ -67,8 +70,8 @@ class NestedTree
             $id
         );
 
-        $result = mysql_query($query);
-        if ($row = mysql_fetch_object($result)) {
+        $result = mysqli_query($link, $query);
+        if ($row = mysqli_fetch_object($result)) {
             return $row;
         }
 
@@ -90,6 +93,7 @@ class NestedTree
      */
     public function getDescendants($id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
     {
+        global $link;
         $idField = $this->fields['id'];
 
         $node = $this->getNode($id);
@@ -151,10 +155,10 @@ class NestedTree
             }
         }
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
         $arr = array();
-        while ($row = mysql_fetch_object($result)) {
+        while ($row = mysqli_fetch_object($result)) {
             if ($unique_id_list == false) {
                 $arr[$row->$idField] = $row;
             } else {
@@ -191,6 +195,7 @@ class NestedTree
      */
     public function getPath($id = 0, $includeSelf = false)
     {
+        global $link;
         $node = $this->getNode($id);
         if (is_null($node)) {
             return array();
@@ -214,11 +219,11 @@ class NestedTree
             );
         }
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
         $idField = $this->fields['id'];
         $arr = array();
-        while ($row = mysql_fetch_object($result)) {
+        while ($row = mysqli_fetch_object($result)) {
             $arr[$row->$idField] = $row;
         }
 
@@ -235,6 +240,7 @@ class NestedTree
      */
     public function isDescendantOf($descendant_id, $ancestor_id)
     {
+        global $link;
         $node = $this->getNode($ancestor_id);
         if (is_null($node)) {
             return false;
@@ -253,9 +259,9 @@ class NestedTree
             $node->nright
         );
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
-        if ($row = mysql_fetch_object($result)) {
+        if ($row = mysqli_fetch_object($result)) {
             return $row->is_descendant > 0;
         }
 
@@ -272,6 +278,7 @@ class NestedTree
      */
     public function isChildOf($child_id, $parent_id)
     {
+        global $link;
         $query = sprintf(
             'select count(*) as is_child from %s where %s = %d and %s = %d',
             $this->table,
@@ -281,9 +288,9 @@ class NestedTree
             $parent_id
         );
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
-        if ($row = mysql_fetch_object($result)) {
+        if ($row = mysqli_fetch_object($result)) {
             return $row->is_child > 0;
         }
 
@@ -298,10 +305,11 @@ class NestedTree
      */
     public function numDescendants($id)
     {
+        global $link;
         if ($id == 0) {
             $query = sprintf('select count(*) as num_descendants from %s', $this->table);
-            $result = mysql_query($query);
-            if ($row = mysql_fetch_object($result)) {
+            $result = mysqli_query($link, $query);
+            if ($row = mysqli_fetch_object($result)) {
                 return (int) $row->num_descendants;
             }
         } else {
@@ -322,14 +330,15 @@ class NestedTree
      */
     public function numChildren($id)
     {
+        global $link;
         $query = sprintf(
             'select count(*) as num_children from %s where %s = %d',
             $this->table,
             $this->fields['parent'],
             $id
         );
-        $result = mysql_query($query);
-        if ($row = mysql_fetch_object($result)) {
+        $result = mysqli_query($link, $query);
+        if ($row = mysqli_fetch_object($result)) {
             return (int) $row->num_children;
         }
 
@@ -343,6 +352,7 @@ class NestedTree
      */
     public function getTreeWithChildren()
     {
+        global $link;
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
@@ -353,7 +363,7 @@ class NestedTree
             $this->fields['sort']
         );
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
         // create a root node to hold child data about first level items
         $root = new \stdClass;
@@ -363,7 +373,7 @@ class NestedTree
         $arr = array($root);
 
         // populate the array and create an empty children array
-        while ($row = mysql_fetch_object($result)) {
+        while ($row = mysqli_fetch_object($result)) {
             $arr[$row->$idField] = $row;
             $arr[$row->$idField]->children = array();
         }
@@ -383,6 +393,7 @@ class NestedTree
      */
     public function rebuild()
     {
+        global $link;
         $data = $this->getTreeWithChildren();
 
         $n = 0; // need a variable to hold the running n tally
@@ -413,7 +424,7 @@ class NestedTree
                 $this->fields['id'],
                 $id
             );
-            mysql_query($query);
+            mysqli_query($link, $query);
         }
     }
 
@@ -456,6 +467,7 @@ class NestedTree
      */
     public function getImmediateFamily($id)
     {
+        global $link;
         $node = $this->getNode($id);
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
@@ -483,10 +495,10 @@ class NestedTree
             );
         }
 
-        $result = mysql_query($query);
+        $result = mysqli_query($link, $query);
 
         $arr = array();
-        while ($row = mysql_fetch_object($result)) {
+        while ($row = mysqli_fetch_object($result)) {
             $row->num_descendants = ($row->nright - $row->nleft - 1) / 2;
             $arr[$row->$idField] = $row;
         }

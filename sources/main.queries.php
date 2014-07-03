@@ -18,7 +18,7 @@ $debugLdap = 0; //Can be used in order to debug LDAP authentication
 require_once('sessions.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
+    die('Hacking attempt...1');
 }
 
 global $k;
@@ -29,10 +29,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -46,6 +49,19 @@ switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
     	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+        
+        // check if expected securiy level is reached
+        $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = ".$_SESSION['user_id']);
+        $data = DB::query(
+            "SELECT complexity
+            FROM ".$pre."roles_title
+            WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
+            ORDER BY complexity DESC"
+        );
+        if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
+            echo '[ { "error" : "complexity_level_not_reached" } ]';
+            break;
+        }
         // Prepare variables
         $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
@@ -65,8 +81,9 @@ switch ($_POST['type']) {
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
-                // check if new pw is different that old ones
-            } if (in_array($newPw, $lastPw)) {
+            } 
+            // check if new pw is different that old ones
+            if (in_array($newPw, $lastPw)) {
                 echo '[ { "error" : "already_used" } ]';
                 break;
             } else {
@@ -92,18 +109,19 @@ switch ($_POST['type']) {
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
                 $_SESSION['validite_pw'] = true;
                 // update DB
-                $db->queryUpdate(
-                    "users",
+                DB::update(
+                    $pre."users",
                     array(
                         'pw' => $newPw,
                         'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
                         'last_pw' => $oldPw
                        ),
-                    "id = ".$_SESSION['user_id']
+                    "id = %i",
+                    $_SESSION['user_id']
                 );
                 // update LOG
-                $db->queryInsert(
-                    'log_system',
+                DB::insert(
+                    $pre.'log_system',
                     array(
                         'type' => 'user_mngt',
                         'date' => time(),
@@ -124,17 +142,18 @@ switch ($_POST['type']) {
                 break;
             }
             // update DB
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
                    ),
-                "id = ".$dataReceived['user_id']
+                "id = %i",
+                $dataReceived['user_id']
             );
             // update LOG
-            $db->queryInsert(
-                'log_system',
+            DB::insert(
+                $pre.'log_system',
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
@@ -144,17 +163,12 @@ switch ($_POST['type']) {
                    )
             );
             //Send email to user
-            // $row = $db->fetchRow("SELECT email FROM ".$pre."users WHERE id=".$dataReceived['user_id']);
-            $row = $db->queryGetRow(
-                "users",
-                array(
-                    "email"
-                ),
-                array(
-                    "id" => intval($dataReceived['user_id'])
-                )
+            $row = DB::queryFirstRow(
+                "SELECT email FROM ".$pre."users
+                WHERE id = %i",
+                $dataReceived['user_id']
             );
-            if (!empty($row[0])) {
+            if (!empty($row['email'])) {
                 sendEmail(
                     $LANG['forgot_pw_email_subject'],
                     $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
@@ -169,25 +183,26 @@ switch ($_POST['type']) {
             // ADMIN first login
         } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change") {
             // update DB
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
                    ),
-                "id = ".$_SESSION['user_id']
+                "id = %i",
+                $_SESSION['user_id']
             );
             $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
             // update LOG
-            $db->queryInsert(
-                'log_system',
+            DB::insert(
+                $pre.'log_system',
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
                     'label' => 'at_user_initial_pwd_changed',
                     'qui' => $_SESSION['user_id'],
                     'field_1' => $_SESSION['user_id']
-                   )
+                )
             );
 
             echo '[ { "error" : "none" } ]';
@@ -204,13 +219,14 @@ switch ($_POST['type']) {
     	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
     	// Check if user exists
-    	$row = $db->query(
+    	$data = DB::query(
     		"SELECT login, email
     		FROM ".$pre."users
-    		WHERE id = '".$_POST['id']."'"
+    		WHERE id = %i",
+            $_POST['id']
     	);
-    	$data = $db->fetchArray($row);
-    	if (count($data) == 0) {
+    	$counter = DB::count();
+    	if ($counter == 0) {
     		// not a registered user !
     		echo '[{"error" : "no_user"}]';
     	} else {
@@ -224,12 +240,13 @@ switch ($_POST['type']) {
     			$gaSecretKey = $g->generateSecret();
 
     			// save the code
-    			$db->queryUpdate(
-	    			"users",
+    			DB::update(
+	    			$pre."users",
 	    			array(
 	    			    'ga' => $gaSecretKey
 	    			   ),
-	    			"id = ".$_POST['id']
+	    			"id = %i",
+                    $_POST['id']
     			);
 
     			// generate QR url
@@ -387,14 +404,16 @@ switch ($_POST['type']) {
             // nothing
         }
         // Check if user exists
-        $sql = "SELECT * FROM ".$pre."users WHERE login = '".mysql_real_escape_string($username)."'";
-        $row = $db->query($sql);
-        if ($row == 0) {
-            $row = $db->fetchRow("SELECT label FROM ".$pre."log_system WHERE ");
-            echo '[{"value" : "error", "text":"'.$row[0].'"}]';
+        $data = DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE login=%s_login",
+            array(
+                'login' => $username
+            )
+        );
+        $counter = DB::count();
+        if ($counter == 0) {
+            echo '[{"value" : "error", "text":"user_not_exists"}]';
             exit;
         }
-        $data = $db->fetchArray($row);
         // Check PSK
         if (
             isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
@@ -402,11 +421,10 @@ switch ($_POST['type']) {
         ) {
             $psk = htmlspecialchars_decode($dataReceived['psk']);
             $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
-            $rowTmp = $db->queryFirst($sql);
             if (empty($psk)) {
                 echo '[{"value" : "psk_required"}]';
                 exit;
-            } elseif (empty($rowTmp['psk'])) {
+            } elseif (empty($data['psk'])) {
                 if (empty($pskConfirm)) {
                     echo '[{"value" : "bad_psk_confirmation"}]';
                     exit;
@@ -421,14 +439,14 @@ switch ($_POST['type']) {
         }
 
         $proceedIdentification = false;
-        if (mysql_num_rows($row) > 0) {
+        if ($counter > 0) {
             $proceedIdentification = true;
-        } elseif (mysql_num_rows($row) == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers'])
+        } elseif ($counter == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers'])
                 && ($_SESSION['settings']['ldap_elusers'] == 0)
         ) {
             // If LDAP enabled, create user in CPM if doesn't exist
-            $newUserId = $db->queryInsert(
-                "users",
+            DB::insert(
+                $pre.'users',
                 array(
                     'login' => $username,
                     'pw' => $password,
@@ -439,13 +457,14 @@ switch ($_POST['type']) {
                     'fonction_id' => '0',
                     'groupes_interdits' => '0',
                     'groupes_visibles' => '0',
-                    'last_pw_change' => time(),
-                   )
+                    'last_pw_change' => time()
+                )
             );
+            $newUserId = DB::insertId();
             // Create personnal folder
             if ($_SESSION['settings']['enable_pf_feature'] == "1") {
-                $db->queryInsert(
-                    "nested_tree",
+                DB::insert(
+                    $pre."nested_tree",
                     array(
                         'parent_id' => '0',
                         'title' => $newUserId,
@@ -491,12 +510,12 @@ switch ($_POST['type']) {
             ) {
                 //update user's password
                 $data['pw'] = bCrypt($passwordClear, COST);
-                $db->queryUpdate(
-                    "users",
-                    array(
+                DB::update($pre.'users',
+                        array(
                         'pw' => $data['pw']
                     ),
-                    "id=".$data['id']
+                    "id=%i",
+                    $data['id']
                 );
             }
 
@@ -625,7 +644,7 @@ switch ($_POST['type']) {
                 $_SESSION['user_pw_complexity'] = 0;
                 $_SESSION['arr_roles'] = array();
                 foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                    $resRoles = $db->queryFirst("SELECT title, complexity FROM ".$pre."roles_title WHERE id = ".$role);
+                    $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".$pre."roles_title WHERE id=%i", $role);
                     $_SESSION['arr_roles'][$role] = array(
                         'id' => $role,
                         'title' => $resRoles['title']
@@ -637,23 +656,19 @@ switch ($_POST['type']) {
                 }
                 // build complete array of roles
                 $_SESSION['arr_roles_full'] = array();
-                $rows = $db->fetchAllArray(
-                    "SELECT id, title
-                    FROM ".$pre."roles_title A
-                    ORDER BY title ASC"
-                );
-                foreach ($rows as $reccord) {
-                    $_SESSION['arr_roles_full'][$reccord['id']] = array(
-                        'id' => $reccord['id'],
-                        'title' => $reccord['title']
+                $rows = DB::query("SELECT id, title FROM ".$pre."roles_title ORDER BY title ASC");
+                foreach ($rows as $record) {
+                    $_SESSION['arr_roles_full'][$record['id']] = array(
+                        'id' => $record['id'],
+                        'title' => $record['title']
                        );
                 }
                 // Set some settings
                 $_SESSION['user']['find_cookie'] = false;
                 $_SESSION['settings']['update_needed'] = "";
                 // Update table
-                $db->queryUpdate(
-                    "users",
+                DB::update(
+                    $pre.'users',
                     array(
                         'key_tempo' => $_SESSION['key'],
                         'last_connexion' => time(),
@@ -662,8 +677,9 @@ switch ($_POST['type']) {
                         'no_bad_attempts' => 0,
                         'session_end' => $_SESSION['fin_session'],
                         'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
-                       ),
-                    "id=".$data['id']
+                    ),
+                    "id=%i",
+                    $data['id']
                 );
                 // Get user's rights
                 identifyUserRights(
@@ -679,7 +695,7 @@ switch ($_POST['type']) {
                 $_SESSION['latest_items_tab'][] = "";
                 foreach ($_SESSION['latest_items'] as $item) {
                     if (!empty($item)) {
-                        $data = $db->queryFirst("SELECT id,label,id_tree FROM ".$pre."items WHERE id = ".$item);
+                        $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".$pre."items WHERE id=%i", $item);
                         $_SESSION['latest_items_tab'][$item] = array(
                             'id' => $item,
                             'label' => $data['label'],
@@ -696,17 +712,17 @@ switch ($_POST['type']) {
                 ) {
                     // get all Admin users
                     $receivers = "";
-                    $rows = $db->fetchAllArray("SELECT email FROM ".$pre."users WHERE admin = 1");
-                    foreach ($rows as $reccord) {
+                    $rows = DB::query("SELECT email FROM ".$pre."users WHERE admin = %i", 1);
+                    foreach ($rows as $record) {
                         if (empty($receivers)) {
-                            $receivers = $reccord['email'];
+                            $receivers = $record['email'];
                         } else {
-                            $receivers = ",".$reccord['email'];
+                            $receivers = ",".$record['email'];
                         }
                     }
                     // Add email to table
-                    $db->queryInsert(
-                        'emails',
+                    DB::insert(
+                        $pre.'emails',
                         array(
                             'timestamp' => time(),
                             'subject' => $LANG['email_subject_on_user_login'],
@@ -725,7 +741,7 @@ switch ($_POST['type']) {
                             ),
                             'receivers' => $receivers,
                             'status' => "not sent"
-                           )
+                        )
                     );
                 }
             } elseif ($data['disabled'] == 1) {
@@ -747,15 +763,16 @@ switch ($_POST['type']) {
                         logEvents('user_locked', 'connection', $data['id']);
                     }
                 }
-                $db->queryUpdate(
-                    "users",
+                DB::update(
+                    $pre.'users',
                     array(
                         'key_tempo' => $_SESSION['key'],
                         'last_connexion' => time(),
                         'disabled' => $userIsLocked,
                         'no_bad_attempts' => $nbAttempts
-                       ),
-                    "id=".$data['id']
+                    ),
+                    "id=%i",
+                    $data['id']
                 );
                 // What return shoulb we do
                 if ($userIsLocked == 1) {
@@ -784,12 +801,13 @@ switch ($_POST['type']) {
             // Calculate end of session
             $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
             // Update table
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'session_end' => $_SESSION['fin_session']
                 ),
-                "id=".$_SESSION['user_id']
+                "id = %i",
+                $_SESSION['user_id']
             );
             // Return data
             echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
@@ -821,17 +839,15 @@ switch ($_POST['type']) {
         $key = $pwgen->generate();
 
         // Get account and pw associated to email
-        $data = $db->queryCount(
-            "users",
-            array(
-                "email" => mysql_real_escape_string(stripslashes($_POST['email']))
-            )
+        DB::query(
+            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            mysql_real_escape_string(stripslashes($_POST['email']))
         );
-
-        if ($data[0] != 0) {
-            $data = $db->fetchArray(
-                "SELECT login,pw FROM ".$pre."users WHERE email = '".
-                mysql_real_escape_string(stripslashes($_POST['email']))."'"
+        $counter = DB::count();
+        if ($counter != 0) {
+            $data = DB::query(
+                "SELECT login,pw FROM ".$pre."users WHERE email = %s",
+                mysql_real_escape_string(stripslashes($_POST['email']))
             );
 
         	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
@@ -842,36 +858,30 @@ switch ($_POST['type']) {
         	    $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
-            //$data = $db->fetchRow(
-            //    "SELECT COUNT(*) FROM ".$pre."misc WHERE intitule = '".
-            //    mysql_real_escape_string($_POST['login'])."' AND type = 'password_recovery'"
-            //);
-            $data = $db->queryCount(
-                "misc",
-                array(
-                    "intitule" => $_POST['login'],
-                    "type" => "password_recovery"
-                )
+            $data = $db->query(
+                "SELECT * FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+                mysql_real_escape_string($_POST['login']),
+                "password_recovery"
             );
-            if ($data[0] != 0) {
-                $db->queryUpdate(
-                    "misc",
+            $counter = DB::count();
+            if ($counter != 0) {
+                DB::update(
+                    $pre."misc",
                     array(
-                            'valeur' => $key
+                        'valeur' => $key
                     ),
-                    array(
-                            'type' => 'password_recovery',
-                            'intitule' => mysql_real_escape_string($_POST['login'])
-                    )
+                    "type = %s and intitule = %s",
+                    "password_recovery",
+                    mysql_real_escape_string($_POST['login'])
                 );
             } else {
                 // store in DB the password recovery informations
-                $db->queryInsert(
-                    'misc',
+                DB::insert(
+                    $pre.'misc',
                     array(
-                            'type' => 'password_recovery',
-                            'intitule' => mysql_real_escape_string($_POST['login']),
-                            'valeur' => $key
+                        'type' => 'password_recovery',
+                        'intitule' => mysql_real_escape_string($_POST['login']),
+                        'valeur' => $key
                     )
                 );
             }
@@ -890,21 +900,12 @@ switch ($_POST['type']) {
         $login = htmlspecialchars_decode($dataReceived['login']);
         $key = htmlspecialchars_decode($dataReceived['key']);
         // check if key is okay
-        /*$data = $db->fetchRow(
-            "SELECT valeur FROM ".$pre."misc WHERE intitule = '".
-            mysql_real_escape_string($login)."' AND type = 'password_recovery'"
-        );*/
-        $data = $db->queryGetRow(
-            "misc",
-            array(
-                "valeur"
-            ),
-            array(
-                "type" => "password_recovery",
-                "intitule" => $login
-            )
+        $data = DB::queryFirstRow(
+            "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+            mysql_real_escape_string($login),
+            "password_recovery"
         );
-        if ($key == $data[0]) {
+        if ($key == $data['valeur']) {
             //Load PWGEN
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
@@ -918,27 +919,29 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
             $newPwNotCrypted = $pwgen->generate();
-            //$newPw = encrypt(stringUtf8Decode($newPwNotCrypted));
             $newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
             // update DB
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'pw' => $newPw
                    ),
-                "login = '".mysql_real_escape_string($login)."'"
+                "login = %s",
+                mysql_real_escape_string($login)
             );
             // Delete recovery in DB
-            $db->queryDelete(
-                "misc",
-                array(
-                    'type' => 'password_recovery',
-                    'intitule' => mysql_real_escape_string($login),
-                    'valeur' => $key
-                   )
+            DB::delete(
+                $pre."misc",
+                "type = %s AND intitule = %S AND valeur = %s",
+                "password_recovery",
+                mysql_real_escape_string($login),
+                $key
             );
             // Get email
-            $dataUser = $db->queryFirst("SELECT email FROM ".$pre."users WHERE login = '".mysql_real_escape_string($login)."'");
+            $dataUser = DB::queryFirstRow(
+                "SELECT email FROM ".$pre."users WHERE login = %s",
+                mysql_real_escape_string($login)
+            );
 
             $_SESSION['validite_pw'] = false;
             // send to user
@@ -1016,27 +1019,29 @@ switch ($_POST['type']) {
         $oldPersonalSaltkey = $_SESSION['my_sk'];
         $newPersonalSaltkey = str_replace(" ", "+", urldecode($_POST['sk']));
         // Change encryption
-        $rows = $db->fetchAllArray(
+        $rows = DB::query(
             "SELECT i.id as id, i.pw as pw
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
-            WHERE i.perso = 1
-            AND l.id_user=".$_SESSION['user_id']."
-            AND l.action = 'at_creation'"
+            WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
+            "1",
+            $_SESSION['user_id'],
+            "at_creation"
         );
-        foreach ($rows as $reccord) {
-            if (!empty($reccord['pw'])) {
+        foreach ($rows as $record) {
+            if (!empty($record['pw'])) {
                 // get pw
-                $pw = decrypt($reccord['pw'], $oldPersonalSaltkey);
+                $pw = decrypt($record['pw'], $oldPersonalSaltkey);
                 // encrypt
                 $encryptedPw = encrypt($pw, $newPersonalSaltkey);
                 // update pw in ITEMS table
-                $db->queryUpdate(
-                    'items',
+                DB::update(
+                    $pre.'items',
                     array(
                         'pw' => $encryptedPw
                        ),
-                    "id='".$reccord['id']."'"
+                    "id=%i",
+                    $record['id']
                 );
             }
         }
@@ -1055,19 +1060,20 @@ switch ($_POST['type']) {
     case "reset_personal_saltkey":
         if (!empty($_SESSION['user_id']) && !empty($_POST['sk'])) {
             // delete all previous items of this user
-            $rows = $db->fetchAllArray(
+            $rows = DB::query(
                 "SELECT i.id as id
                 FROM ".$pre."items as i
                 INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
-                WHERE i.perso = 1
-                AND l.id_user=".$_SESSION['user_id']."
-                AND l.action = 'at_creation'"
+                WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
+                "1",
+                $_SESSION['user_id'],
+                "at_creation"
             );
-            foreach ($rows as $reccord) {
+            foreach ($rows as $record) {
                 // delete in ITEMS table
-                mysql_query("DELETE FROM ".$pre."items  WHERE id='".$reccord['id']."'") or die(mysql_error());
+                DB::delete($pre."items", "id = %i", $record['id']);
                 // delete in LOGS table
-                mysql_query("DELETE FROM ".$pre."log_items WHERE id_item='".$reccord['id']."'") or die(mysql_error());
+                DB::delete($pre."log_items", "id_item = %i", $record['id']);
             }
             // change salt
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
@@ -1089,12 +1095,13 @@ switch ($_POST['type']) {
             // Prepare variables
             $language = $dataReceived['lang'];
             // update DB
-            $db->queryUpdate(
-                "users",
+            DB::update(
+                $pre."users",
                 array(
                     'user_language' => $language
                    ),
-                "id = ".$_SESSION['user_id']
+                "id = %i",
+                $_SESSION['user_id']
             );
             $_SESSION['user_language'] = $language;
         	echo "done";
@@ -1111,7 +1118,11 @@ switch ($_POST['type']) {
             && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
             && isset($_SESSION['key'])
         ) {
-            $row = $db->queryFirst("SELECT valeur FROM ".$pre."misc WHERE type='cron' AND intitule='sending_emails'");
+            $row = DB::queryFirstRow(
+                "SELECT valeur FROM ".$pre."misc WHERE type = %s AND intitule = %s",
+                "cron",
+                "sending_emails"
+            );
             if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                 //load library
                 $mail = new SplClassLoader(
@@ -1132,14 +1143,14 @@ switch ($_POST['type']) {
                 $mail->WordWrap = 80; // set word wrap
                 $mail->isHtml(true); // send as HTML
                 $status = "";
-                $rows = $db->fetchAllArray("SELECT * FROM ".$pre."emails WHERE status!='sent'");
-                foreach ($rows as $reccord) {
+                $rows = DB::query("SELECT * FROM ".$pre."emails WHERE status != %s", "sent");
+                foreach ($rows as $record) {
                     // send email
                     $ret = json_decode(
                         @sendEmail(
-                            $reccord['subject'],
-                            $reccord['body'],
-                            $reccord['receivers']
+                            $record['subject'],
+                            $record['body'],
+                            $record['receivers']
                         )
                     );
 
@@ -1149,12 +1160,13 @@ switch ($_POST['type']) {
                         $status = "sent";
                     }
                     // update item_id in files table
-                    $db->queryUpdate(
-                        'emails',
+                    DB::update(
+                        $pre.'emails',
                         array(
                             'status' => $status
                            ),
-                        "timestamp='".$reccord['timestamp']."'"
+                        "timestamp = %s",
+                        $record['timestamp']
                     );
                     if ($status == "not sent") {
                         break;
@@ -1162,15 +1174,14 @@ switch ($_POST['type']) {
                 }
             }
             // update cron time
-            $db->queryUpdate(
-                "misc",
+            DB::update(
+                $pre."misc",
                 array(
                     'valeur' => time()
                    ),
-                array(
-                    'intitule' => 'sending_emails',
-                    'type' => 'cron'
-                   )
+                "intitule = %s AND type = %s",
+                "sending_emails",
+                "cron"
             );
         }
         break;
@@ -1180,8 +1191,8 @@ switch ($_POST['type']) {
     case "store_error":
         if (!empty($_SESSION['user_id'])) {
             // update DB
-            $db->queryInsert(
-                "log_system",
+            DB::insert(
+                $pre."log_system",
                 array(
                     'type' => 'error',
                     'date' => time(),
@@ -1236,18 +1247,10 @@ switch ($_POST['type']) {
      * Check if user exists and send back if psk is set
      */
     case "check_login_exists":
-        /*$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($_POST['userId'])."'";
-        $row = $db->query($sql);
-        $data = $db->fetchArray($row);*/
-        $data = $db->queryGetArray(
-            "users",
-            array(
-                "login",
-                "psk"
-            ),
-            array(
-                "login" => $_POST['userId']
-            )
+        $data = DB::query(
+            "SELECT login, psk FROM ".$pre."users
+            WHERE login = %i",
+            mysql_real_escape_string(stripslashes($_POST['userId']))
         );
         if (empty($data['login'])) {
             $userOk = false;

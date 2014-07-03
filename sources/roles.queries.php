@@ -38,10 +38,13 @@ include 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -53,22 +56,19 @@ if (!empty($_POST['type'])) {
         #CASE adding a new role
         case "add_new_role":
             //Check if role already exist : No similar roles
-            //$tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['name']))."'");
-            $tmp = $db->queryCount(
-                "roles_title",
-                array(
-                    "title" => stripslashes($_POST['name'])
-                )
-            );
-            if ($tmp[0] == 0) {
-                $role_id = $db->queryInsert(
-                        'roles_title',
-                        array(
-                                'title' => mysql_real_escape_string(stripslashes($_POST['name'])),
-                                'complexity' => $_POST['complexity'],
-                                'creator_id' => $_SESSION['user_id']
-                        )
+            //$tmp = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['name']))."'");
+            $tmp = DB::query("SELECT * FROM ".$pre."roles_title WHERE title = %s", stripslashes($_POST['name']));
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    $pre.'roles_title',
+                    array(
+                        'title' => stripslashes($_POST['name']),
+                        'complexity' => $_POST['complexity'],
+                        'creator_id' => $_SESSION['user_id']
+                    )
                 );
+                $role_id = DB::insertId();
 
                 if ($role_id != 0) {
                     //Actualize the variable
@@ -85,8 +85,8 @@ if (!empty($_POST['type'])) {
         //-------------------------------------------
         #CASE delete a role
         case "delete_role":
-            $db->query("DELETE FROM ".$pre."roles_title WHERE id = ".$_POST['id']);
-            $db->query("DELETE FROM ".$pre."roles_values WHERE role_id = ".$_POST['id']);
+            DB::delete($pre."roles_title", "id = %i", $_POST['id']);
+            DB::delete($pre."roles_values", "role_id = %i", $_POST['id']);
             //Actualize the variable
             $_SESSION['nb_roles'] --;
 
@@ -97,22 +97,18 @@ if (!empty($_POST['type'])) {
         #CASE editing a role
         case "edit_role":
             //Check if role already exist : No similar roles
-            //$tmp = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE id != '".$_POST['id']."' AND title = '".mysql_real_escape_string(stripslashes($_POST['title']))."'");
-            $tmp = $db->queryCount(
-                "roles_title",
-                array(
-                    "title" => stripslashes($_POST['title']),
-                    "id" => intval($_POST['id'])
-                )
-            );
-            if ($tmp[0] == 0) {
-                $db->queryUpdate(
-                    "roles_title",
+            //$tmp = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE id != '".$_POST['id']."' AND title = '".mysql_real_escape_string(stripslashes($_POST['title']))."'");
+            DB::queryt("SELECT * FROM ".$pre."roles_title WHERE title = %s AND id = %i", $_POST['title'], $_POST['id']);
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::update(
+                    $pre."roles_title",
                     array(
                         'title' => $_POST['title'],
                         'complexity' => $_POST['complexity']
                    ),
-                    'id = '.$_POST['id']
+                    'id = %i',
+                    $_POST['id']
                 );
                 echo '[ { "error" : "no" } ]';
             } else {
@@ -124,12 +120,13 @@ if (!empty($_POST['type'])) {
         *CASE editing a role
         */
         case "allow_pw_change_for_role":
-            $db->queryUpdate(
-                "roles_title",
+            DB::update(
+                $pre."roles_title",
                 array(
                     'allow_pw_change' => $_POST['value']
                ),
-                'id = '.$_POST['id']
+                'id = %i',
+                $_POST['id']
             );
             break;
 
@@ -143,20 +140,14 @@ if (!empty($_POST['type'])) {
                 //case where folder was allowed but not any more
                 foreach ($tree as $node) {
                     //Store in DB
-                    $db->queryDelete(
-                        'roles_values',
-                        array(
-                            'folder_id' => $node->id,
-                            'role_id' => $_POST['role']
-                       )
-                    );
+                    DB::delete($pre."roles_values", "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
                 }
             } elseif ($_POST['allowed'] == 0) {
                 //case where folder was not allowed but allowed now
                 foreach ($tree as $node) {
                     //Store in DB
-                    $db->queryInsert(
-                        'roles_values',
+                    DB::insert(
+                        $pre.'roles_values',
                         array(
                             'folder_id' => $node->id,
                             'role_id' => $_POST['role']
@@ -187,9 +178,13 @@ if (!empty($_POST['type'])) {
             $tab_fonctions = array();
             $arrRoles = array();
             $display_nb = 8;
+            $sql_limit = "";
+            $next = 1;
+            $previous = 1;
 
             //count nb of roles
-            $roles_count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title");
+            DB::query("SELECT * FROM ".$pre."roles_title");
+            $roles_count =  DB::count();
             if ($roles_count > $display_nb) {
                 if (!isset($_POST['start']) || $_POST['start'] == 0) {
                     $start = 0;
@@ -206,12 +201,7 @@ if (!empty($_POST['type'])) {
             $my_functions = explode(';', $_SESSION['fonction_id']);
 
             //Display table header
-            $rows = $db->fetchAllArray(
-                "SELECT *
-                FROM ".$pre."roles_title
-                ORDER BY title ASC".
-                $sql_limit
-            );
+            $rows = DB::query("SELECT * FROM ".$pre."roles_title ORDER BY title ASC".$sql_limit);
             foreach ($rows as $reccord) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
                     if ($reccord['allow_pw_change'] == 1) {
@@ -246,15 +236,8 @@ if (!empty($_POST['type'])) {
                     foreach ($arrRoles as $role) {
                         //check if this role has access or not
                         // if not then color is red; if yes then color is green
-                        //$count = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."roles_values WHERE folder_id = ".$node->id." AND role_id = ".$role);
-                        $count = $db->queryCount(
-                            "roles_values",
-                            array(
-                                "folder_id" => intval($node->id),
-                                "role_id" => intval($role)
-                            )
-                        );
-                        if ($count[0] > 0) {
+                        $count = DB::query("SELECT * FROM ".$pre."roles_values WHERE folder_id = %i AND role_id = %i", $node->id, $role);
+                        if (DB::count() > 0) {
                             $couleur = '#008000';
                             $allowed = 1;
                         } else {
@@ -291,12 +274,13 @@ if (!empty($_POST['type'])) {
 } elseif (!empty($_POST['edit_fonction'])) {
     $id = explode('_', $_POST['id']);
     //Update DB
-    $db->queryUpdate(
-        'roles_title',
+    DB::update(
+        $pre.'roles_title',
         array(
             'title' => mysql_real_escape_string(stripslashes(utf8_decode($_POST['edit_fonction'])))
        ),
-        "id = ".$id[1]
+        "id = %i",
+        $id[1]
     );
     //Show value
     echo $_POST['edit_fonction'];

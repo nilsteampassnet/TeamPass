@@ -46,7 +46,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
 // Get list of users
 $usersList = array();
 $usersString = "";
-$rows = $db->fetchAllArray("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
+$rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $record) {
     $usersList[$record['login']] = array(
         "id" => $record['id'],
@@ -58,7 +58,7 @@ foreach ($rows as $record) {
 // Get list of roles
 $arrRoles = array();
 $listRoles = "";
-$rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
+$rows = DB::query("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
 foreach ($rows as $reccord) {
     $arrRoles[$reccord['title']] = array(
         'id' => $reccord['id'],
@@ -74,39 +74,44 @@ foreach ($rows as $reccord) {
 $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
-<input type="hidden" id="complexite_groupe" />
-<input type="hidden" name="selected_items" id="selected_items" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
+<input type="hidden" id="complexite_groupe" value="" />
+<input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlspecialchars(htmlentities($listRoles, ENT_QUOTES, 'UTF-8')).'" />
-<input type="hidden" id="bloquer_creation_complexite" />
-<input type="hidden" id="bloquer_modification_complexite" />
-<input type="hidden" id="error_detected" />
-<input type="hidden" name="random_id" id="random_id" />
+<input type="hidden" id="bloquer_creation_complexite" value="" />
+<input type="hidden" id="bloquer_modification_complexite" value="" />
+<input type="hidden" id="error_detected" value="" />
+<input type="hidden" name="random_id" id="random_id" value="" />
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />
 <input type="hidden" id="display_categories" value="0" />
 <input type="hidden" id="nb_items_to_display_once" value="', isset($_SESSION['settings']['nb_items_by_query']) ? htmlspecialchars($_SESSION['settings']['nb_items_by_query']) : 'auto', '" />
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
-<input type="hidden" id="request_ongoing" />
-<input type="hidden" id="request_lastItem" />
-<input type="hidden" id="item_editable" />
-<input type="hidden" id="timestamp_item_displayed" />
-<input type="hidden" id="pf_selected" />';
+<input type="hidden" id="request_ongoing" value="" />
+<input type="hidden" id="request_lastItem" value="" />
+<input type="hidden" id="item_editable" value="" />
+<input type="hidden" id="timestamp_item_displayed" value="" />
+<input type="hidden" id="pf_selected" value="" />
+<input type="hidden" id="user_ongoing_action" value="" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '
+    <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
+    <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />
+    <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
     echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
     echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="" />';
+    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 }
 // Is personal SK available
 echo '
@@ -176,15 +181,8 @@ foreach ($folders as $folder) {
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$node);
-                $data = $db->queryCount(
-                    "items",
-                    array(
-                        "inactif" => 0,
-                        "id_tree" => intval($node)
-                    )
-                );
-                $nbChildrenItems += $data[0];
+                DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $node);
+                $nbChildrenItems += DB::count();
             }
             if (
                 in_array(
@@ -205,15 +203,8 @@ foreach ($folders as $folder) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
-            //$data = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."items WHERE inactif=0 AND id_tree = ".$folder->id);
-            $data = $db->queryCount(
-                "items",
-                array(
-                    "inactif" => 0,
-                    "id_tree" => intval($folder->id)
-                )
-            );
-            $itemsNb = $data[0];
+            DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $folder->id);
+            $itemsNb = DB::count();
 
             // get 1st folder
             if (empty($firstGroup)) {
@@ -566,11 +557,10 @@ echo'
             </div>';
 // Line for PW
 echo '
-            <label class="label_cpm">'.$LANG['used_pw'].' :
+            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
 				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
-            <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all item_field" style="display:none;" />
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
             <input type="hidden" id="mypassword_complex" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
@@ -768,11 +758,11 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-					<span id="visible_editpw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+					<span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
-                <input type="text" id="edit_pw1_txt" class="input_text text ui-widget-content ui-corner-all" style="display:none;width:405px;" />
-                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" /><input type="hidden" id="edit_mypassword_complex" />
+                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
+                <input type="hidden" id="edit_mypassword_complex" />
                 <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>

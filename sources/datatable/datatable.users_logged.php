@@ -26,10 +26,13 @@ header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Columns name
 $aColumns = array('login', 'name', 'lastname', 'timestamp', 'last_connexion');
@@ -75,38 +78,33 @@ $sWhere = " WHERE ((timestamp != '' AND session_end >= '".time()."')";
 if ($_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
+        $sWhere .= $aColumns[$i]." LIKE %ss_".$aColumns[$i]." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3);
     $sWhere .= ") ";
 }
 $sWhere .= ") ";
 
-$sql = "SELECT *
-        FROM ".$pre."users
-        $sWhere
-        $sOrder
-        $sLimit";
-
-$rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);
-
-/* Data set length after filtering */
-$sql_f = "
-        SELECT FOUND_ROWS()
-";
-$rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-$aResultFilterTotal = mysql_fetch_array($rResultFilterTotal);
-$iFilteredTotal = $aResultFilterTotal[0];
-
-/* Total data set length */
-$sql_c = "
-        SELECT COUNT(timestamp)
+DB::query("SELECT COUNT(timestamp)
         FROM   ".$pre."users
-        WHERE timestamp != '' AND session_end >= '".time()."'
-";
-$rResultTotal = mysql_query($sql_c) or die(mysql_error());
-$aResultTotal = mysql_fetch_array($rResultTotal);
-$iTotal = $aResultTotal[0];
+        WHERE timestamp != '' AND session_end >= '".time()."'");
+$iTotal = DB::count();
+
+$rows = DB::query(
+    "SELECT * FROM ".$pre."users
+    $sWhere
+    $sOrder
+    $sLimit",
+    array(
+        $aColumns[0] => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        $aColumns[1] => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        $aColumns[2] => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        $aColumns[3] => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        $aColumns[4] => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+    )
+);
+
+$iFilteredTotal = DB::count();
 
 /*
  * Output
@@ -117,7 +115,6 @@ $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
 $sOutput .= '"aaData": [ ';
 
-$rows = $db->fetchAllArray($sql);
 foreach ($rows as $reccord) {
     $get_item_in_list = true;
     $sOutput_item = "[";

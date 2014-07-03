@@ -216,19 +216,30 @@ function store_error(message_error, dialog_div, text_div){
 	$("#"+dialog_div).dialog("open");
 }
 
-function prepareExchangedData(data, type)
+function aes_encrypt(text, key)
+{
+    return Aes.Ctr.encrypt(text, key, 256);
+}
+
+
+function aes_decrypt(text, key)
+{
+    return Aes.Ctr.decrypt(text, key, 256);
+}
+
+function prepareExchangedData(data, type, key)
 {
     if (type == "decode") {
         if ($("#encryptClientServer").val() == 0) {
             return $.parseJSON(data);
         } else {
-            return $.parseJSON(aes_decrypt(data));
+            return $.parseJSON(aes_decrypt(data, key));
         }
     } else if (type == "encode") {
         if ($("#encryptClientServer").val() == 0) {
             return data;
         } else {
-            return aes_encrypt(data);
+            return aes_encrypt(data, key);
         }
     }
 }
