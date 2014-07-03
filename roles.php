@@ -33,7 +33,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 
 //Get full list of groups
 $arr_groups = array();
-$rows = $db->fetchAllArray("SELECT id,title FROM ".$pre."nested_tree");
+$rows = DB::query("SELECT id,title FROM ".$pre."nested_tree");
 foreach ($rows as $reccord) {
     $arr_groups[$reccord['id']] = $reccord['title'];
 }

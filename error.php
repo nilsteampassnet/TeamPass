@@ -25,22 +25,25 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to DB
-    $db = new SplClassLoader('Database\Core', '../includes/libraries');
-    $db->register();
-    $db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-    $db->connect();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$error_handler = 'db_error_handler';
 
     // Include main functions used by TeamPass
     require_once 'sources/main.functions.php';
 
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
-        $db->queryUpdate(
+        DB::update(
             "users",
             array(
                 'key_tempo' => ''
-           ),
-            "id=".$_SESSION['user_id']
+            ),
+            "id=%i",
+            $_SESSION['user_id']
         );
     }
 

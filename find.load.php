@@ -109,7 +109,7 @@ $("#div_item_data").dialog({
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired

@@ -222,7 +222,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         $.post("sources/suggestion.queries.php",
                             {
                                 type     : "add_new",
-                                data     : prepareExchangedData(data, "encode"),
+                                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                                 key      : "<?php echo $_SESSION['key'];?>"
                             },
                             function(data) {

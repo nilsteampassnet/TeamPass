@@ -25,10 +25,13 @@ header("Content-type: text/html; charset=utf-8");
 include 'main.functions.php';
 
 //Connect to DB
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 // Construction de la requ?te en fonction du type de valeur
 switch ($_POST['type']) {
@@ -47,7 +50,7 @@ switch ($_POST['type']) {
 
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows = $db->fetchAllArray(
+                $rows =DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                     l.date as date,
                     n.renewal_period as renewal_period,
@@ -56,10 +59,15 @@ switch ($_POST['type']) {
                     INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
                     INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                     INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-                    WHERE i.inactif = 0
-                    AND i.id_tree=".$id."
-                    AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
-                    ORDER BY i.label ASC, l.date DESC"
+                    WHERE i.inactif = %i
+                    AND i.id_tree= %i
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
+                    ORDER BY i.label ASC, l.date DESC",
+                    0,
+                    $id,
+                    "at_creation",
+                    "at_modification",
+                    "at_pw :"
                 );
 
                 $id_managed = '';

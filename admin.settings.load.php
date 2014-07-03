@@ -159,7 +159,7 @@ function loadFieldsList() {
         "sources/categories.queries.php",
         {
             type    : "loadFieldsList",
-            title   : prepareExchangedData(sanitizeString($("#new_category_label").val()), "encode")
+            title   : prepareExchangedData(sanitizeString($("#new_category_label").val()), "encode", "<?php echo $_SESSION['key'];?>")
         },
         function(data) {
             var newList = '<table id="tbl_categories" style="">';

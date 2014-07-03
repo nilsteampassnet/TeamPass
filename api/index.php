@@ -18,8 +18,7 @@ require_once('functions.php');
 
 header('Content-Type: application/json');
 
-$teampass_api_enabled = teampass_api_enabled();
-if (!@in_array("1", $teampass_api_enabled)) {
+if (teampass_api_enabled() != "1") {
 	echo '{"err":"API access not allowed."}';
 	exit;
 }
