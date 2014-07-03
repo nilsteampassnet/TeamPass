@@ -16,39 +16,44 @@
 $teampass_config_file = "../includes/settings.php";
 $_SESSION['CPM'] = 1;
 
+global $link;
+
 function teampass_api_enabled() {
-    $bdd = teampass_connect();
-    $response = $bdd->query("select valeur from ".$GLOBALS['pre']."misc WHERE type = 'admin' AND intitule = 'api'");
-    return $response->fetch(PDO::FETCH_ASSOC);
+    teampass_connect();
+    //DB::debugMode(true);
+    $response = DB::queryFirstRow(
+        "SELECT `valeur` FROM ".$GLOBALS['pre']."misc WHERE type = %s AND intitule = %s",
+        "admin",
+        "api"
+    );
+    return $response['valeur'];
 }
 
 function teampass_whitelist() {
-    $bdd = teampass_connect();
+    teampass_connect();
     $apiip_pool = teampass_get_ips();
     if (count($apiip_pool) > 0 && array_search($_SERVER['REMOTE_ADDR'], $apiip_pool) === false) {
         rest_error('IPWHITELIST');
     }
 }
 
-function teampass_connect() {
+function teampass_connect()
+{
     require_once($GLOBALS['teampass_config_file']);
-    try
-    {
-        $bdd = new PDO("mysql:host=".$GLOBALS['server'].";dbname=".$GLOBALS['database'], $GLOBALS['user'], $GLOBALS['pass']);
-        return ($bdd);
-    }
-    catch (Exception $e)
-    {
-        rest_error('MYSQLERR', 'Error : ' . $e->getMessage());
-    }
-
+    require_once('../includes/libraries/Database/Meekrodb/db.class.php');
+    DB::$host = $GLOBALS['server'];
+    DB::$user = $GLOBALS['user'];
+    DB::$password = $GLOBALS['pass'];
+    DB::$dbName = $GLOBALS['database'];
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($GLOBALS['server'], $GLOBALS['user'], $GLOBALS['pass'], $GLOBALS['database']);
 }
 
 function teampass_get_ips() {
     $array_of_results = array();
-    $bdd = teampass_connect();
-    $response = $bdd->query("select value from ".$GLOBALS['pre']."api WHERE type = 'ip'");
-    while ($data = $response->fetch())
+    teampass_connect();
+    $response = DB::query("select value from ".$GLOBALS['pre']."api WHERE type = %s", "ip");
+    foreach ($response as $data)
     {
         array_push($array_of_results, $data['value']);
     }
@@ -57,19 +62,20 @@ function teampass_get_ips() {
 }
 
 function teampass_get_keys() {
-    $bdd = teampass_connect();
-    $response = $bdd->query("select value from ".$GLOBALS['pre']."api WHERE type = 'key'");
+    teampass_connect();
+    $response = DB::queryOneColumn("value", "select * from ".$GLOBALS['pre']."api WHERE type = %s", "key");
 
-    return $response->fetch(PDO::FETCH_ASSOC);
+    return $response;
 }
 
 function teampass_get_randkey() {
-    $bdd = teampass_connect();
-    $response = $bdd->query("select rand_key from ".$GLOBALS['pre']."keys limit 0,1");
+    teampass_connect();
+    $response = DB::queryOneColumn("rand_key", "select * from ".$GLOBALS['pre']."keys limit 0,1");
 
-    $array = $response->fetch(PDO::FETCH_OBJ);
+    //$array = $response->fetch(PDO::FETCH_OBJ);
 
-    return $array->rand_key;
+    //return $array->rand_key;
+    return $response;
 }
 
 function rest_head () {
@@ -78,7 +84,7 @@ function rest_head () {
 
 function addToCacheTable($id)
 {
-    $bdd = teampass_connect();
+    teampass_connect();
     // get data
     $data = $bdd->query(
         "SELECT i.label AS label, i.description AS description, i.id_tree AS id_tree, i.perso AS perso, i.restricted_to AS restricted_to, i.login AS login, i.id AS id
@@ -125,7 +131,7 @@ function rest_delete () {
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
-        $bdd = teampass_connect();
+        teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
 
@@ -156,11 +162,11 @@ function rest_delete () {
                 }
 
                 // Delete items which in category
-                $response = $bdd->query("delete from ".$GLOBALS['pre']."items where id_tree = (".$category_query.")");
+                $response = DB::delete($GLOBALS['pre']."items", "id_tree = (".$category_query.")");
                 // Delete sub-categories which in category
-                $response = $bdd->query("delete from ".$GLOBALS['pre']."nested_tree where parent_id = (".$category_query.")");
+                $response = DB::delete($GLOBALS['pre']."nested_tree", "parent_id = (".$category_query.")");
                 // Delete category
-                $response = $bdd->query("delete from ".$GLOBALS['pre']."nested_tree where id = (".$category_query.")");
+                $response = DB::delete($GLOBALS['pre']."nested_tree", "id = (".$category_query.")");
 
                 $json['type'] = 'category';
                 $json['category'] = $GLOBALS['request'][2];
@@ -203,7 +209,7 @@ function rest_delete () {
                 }
 
                 // Delete item
-                $response = $bdd->query("delete from ".$GLOBALS['pre']."items where id_tree = (".$category_query.") and label LIKE '".$item."'");
+                $response = DB::delete($GLOBALS['pre']."items", "id_tree = (".$category_query.") and label LIKE '".$item."'");
                 $json['type'] = 'item';
                 $json['item'] = $item;
                 $json['category'] = $GLOBALS['request'][2];
@@ -233,7 +239,7 @@ function rest_get () {
     }
     //print_r($GLOBALS);
     if(apikey_checker($GLOBALS['apikey'])) {
-        $bdd = teampass_connect();
+        teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
 
@@ -241,32 +247,40 @@ function rest_get () {
             if($GLOBALS['request'][1] == "category") {
                 // get ids
                 if (strpos($GLOBALS['request'][2],",") > 0) {
-                    $condition = "id_tree IN (".$GLOBALS['request'][2].")";
+                    $condition = "id_tree IN %ls";
+                    $condition_value = explode(',', $GLOBALS['request'][2]);
                 } else {
-                    $condition = "id_tree = '".$GLOBALS['request'][2]."'";
+                    $condition = "id_tree = %s";
+                    $condition_value = $GLOBALS['request'][2];
                 }
-                $response = $bdd->query("select id,label,login,pw from ".$GLOBALS['pre']."items where ".$condition);
-                while ($data = $response->fetch())
-                {
-                    $id = $data['id'];
-                    $json[$id]['label'] = utf8_encode($data['label']);
-                    $json[$id]['login'] = utf8_encode($data['login']);
-                    $json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
-                }
+                DB::debugMode(false);
+                
 
                 /* load folders */
-                $response = $bdd->query("select id,parent_id,title,nleft,nright,nlevel from ".$GLOBALS['pre']."nested_tree where parent_id='". $GLOBALS['request'][2]."' ORDER BY `title` ASC");
+                $response = DB::query(
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".$GLOBALS['pre']."nested_tree WHERE parent_id=%i ORDER BY `title` ASC",
+                    $GLOBALS['request'][2]
+                );
                 $rows = array();
                 $i = 0;
-                while ($row = $response->fetch())
+                foreach ($response as $row)
                 {
-                    $json['folders'][$i]['id'] = $row['id'];
+                    /*$json['folders'][$i]['id'] = $row['id'];
                     $json['folders'][$i]['parent_id'] = $row['parent_id'];
                     $json['folders'][$i]['title'] = $row['title'];
                     $json['folders'][$i]['nleft'] = $row['nleft'];
                     $json['folders'][$i]['nright'] = $row['nright'];
-                    $json['folders'][$i]['nlevel'] = $row['nlevel'];
+                    $json['folders'][$i]['nlevel'] = $row['nlevel'];*/
                     $i++;
+                    
+                    $response = DB::query("SELECT id,label,login,pw FROM ".$GLOBALS['pre']."items WHERE id_tree=%i", $row['id']);
+                    foreach ($response as $data)
+                    {
+                        $id = $data['id'];
+                        $json[$id]['label'] = utf8_encode($data['label']);
+                        $json[$id]['login'] = utf8_encode($data['login']);
+                        $json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
+                    }
                 }
             }
             elseif($GLOBALS['request'][1] == "items") {
@@ -294,8 +308,8 @@ function rest_get () {
                 } else {
                     rest_error ('NO_ITEM');
                 }
-                $response = $bdd->query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id IN (".$items_list.")");
-                while ($data = $response->fetch())
+                $response = DB::query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id IN %ls", implode(",", $items_list));
+                foreach ($response as $data)
                 {
                     $id = $data['id'];
                     $json[$id]['label'] = utf8_encode($data['label']);
@@ -336,16 +350,16 @@ function rest_get () {
                     }
 
                     // Check Folder ID
-                    $data = $bdd->query("SELECT COUNT(*) FROM ".$GLOBALS['pre']."nested_tree WHERE id = '".$item_folder_id."'");
-                    $data = $data->fetch();
-                    if ($data[0] == 0) {
+                    DB::query("SELECT * FROM ".$GLOBALS['pre']."nested_tree WHERE id = %i", $item_folder_id);
+                    $counter = DB::count();
+                    if ($counter == 0) {
                         rest_error ('BADDEFINITION');
                     }
 
                     // check if element doesn't already exist
-                    $data = $bdd->query("SELECT COUNT(*) FROM ".$GLOBALS['pre']."items WHERE label = '".addslashes($item_label)."' AND inactif = '0'");
-                    $data = $data->fetch();
-                    if ($data[0] != 0) {
+                    DB::query("SELECT * FROM ".$GLOBALS['pre']."items WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                    $counter = DB::count();
+                    if ($counter != 0) {
                         $itemExists = 1;
                     } else {
                         $itemExists = 0;
@@ -411,7 +425,7 @@ function rest_put() {
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
-        $bdd = teampass_connect();
+        teampass_connect();
         $rand_key = teampass_get_randkey();
     }
 }
@@ -462,7 +476,7 @@ function rest_error ($type,$detail = 'N/A') {
 }
 
 function apikey_checker ($apikey_used) {
-    $bdd = teampass_connect();
+    teampass_connect();
     $apikey_pool = teampass_get_keys();
     if (in_array($apikey_used, $apikey_pool)) {
         return(1);
