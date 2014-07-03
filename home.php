@@ -325,7 +325,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 	                        <label for="pdf_password" class="">'.$LANG['admin_action_db_restore_key'].' :</label>
 	                        <input type="password" id="offline_password" name="offline_password" />
 	                        <div id="offline_pw_strength" style="margin:10px 0 0 50px;"></div>
-	                        <div id="offline_pw_strength_value" style="float:right;"></div>
+                            <input type="hidden" id="offline_pw_strength_value" />
 		                    <input type="hidden" id="min_offline_pw_strength_value" value="'.$_SESSION['settings']['offline_key_level'].'" />
 						</div>
 						<div style="margin:10px 0 10px 0;">

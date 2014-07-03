@@ -183,7 +183,7 @@ if (
         "id=%i",
         $_SESSION['user_id']
     );
-echo "ici";
+
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id']);

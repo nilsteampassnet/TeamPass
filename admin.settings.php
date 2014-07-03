@@ -457,13 +457,13 @@ if (isset($_POST['save_button'])) {
     }
     // store backups settings
     if (@$_SESSION['settings']['bck_script_filename'] != $_POST['bck_script_filename']) {
-        updateSettings('bck_script_filename', $_POST['bck_script_filename'], 'settings');
+        updateSettings('bck_script_filename', $_POST['bck_script_filename']);
     }
     if (@$_SESSION['settings']['bck_script_path'] != $_POST['bck_script_path']) {
-        updateSettings('bck_script_path', $_POST['bck_script_path'], 'settings');
+        updateSettings('bck_script_path', $_POST['bck_script_path']);
     }
     if (@$_SESSION['settings']['bck_script_key'] != $_POST['bck_script_key']) {
-        updateSettings('bck_script_key', $_POST['bck_script_key'], 'settings');
+        updateSettings('bck_script_key', $_POST['bck_script_key']);
     }
     // Update insert_manual_entry_item_history
     if (@$_SESSION['settings']['insert_manual_entry_item_history'] != $_POST['insert_manual_entry_item_history']) {

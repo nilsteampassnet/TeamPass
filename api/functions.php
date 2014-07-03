@@ -86,20 +86,20 @@ function addToCacheTable($id)
 {
     teampass_connect();
     // get data
-    $data = $bdd->query(
+    $data = DB::queryfirstrow(
         "SELECT i.label AS label, i.description AS description, i.id_tree AS id_tree, i.perso AS perso, i.restricted_to AS restricted_to, i.login AS login, i.id AS id
         FROM ".$GLOBALS['pre']."items AS i
         AND ".$GLOBALS['pre']."log_items AS l ON (l.id_item = i.id)
-        WHERE i.id = '".intval($id)."'
-        AND l.action = 'at_creation'"
+        WHERE i.id = %i
+        AND l.action = %s",
+        intval($id),
+        at_creation
     );
-    $data = $data->fetch();
 
     // Get all TAGS
     $tags = "";
-    $data_tags = $bdd->query("SELECT tag FROM ".$GLOBALS['pre']."tags WHERE item_id=".$id);
-    $itemTags = $bdd->mysql_fetch_array($data_tags);
-    foreach ($itemTags as $itemTag) {
+    $data_tags = DB::query("SELECT tag FROM ".$GLOBALS['pre']."tags WHERE item_id=%i", $id);
+    foreach ($data_tags as $itemTag) {
         if (!empty($itemTag['tag'])) {
             $tags .= $itemTag['tag']." ";
         }
@@ -118,9 +118,21 @@ function addToCacheTable($id)
         }
     }*/
     // finaly update
-    $bdd->query(
-        "INSERT INTO ".$GLOBALS['pre']."cache (id, label, description, tags, id_tree, perso, restricted_to, login, folder, restricted_to, author)
-                            VALUES ('".$data['id']."', '".$data['label']."', '".$data['description']."', '".$tags."', '".$data['id_tree']."', '".$data['perso']."', '".$data['restricted_to']."', '".$data['login']."', '', '0', '9999999')"
+    DB::insert(
+        $GLOBALS['pre']."cache",
+        array(
+            "id" => $data['id'],
+            "label" => $data['label'],
+            "description" => $data['description'],
+            "tags" => $tags,
+            "id_tree" => $data['id_tree'],
+            "perso" => $data['perso'],
+            "restricted_to" => $data['restricted_to'],
+            "login" => $data['login'],
+            "folder" => "",
+            "restricted_to" => "0",
+            "author" => "9999999",
+        )
     );
 }
 
@@ -375,30 +387,73 @@ function rest_get () {
 
                         // ADD item
                         try {
-                            $result = $bdd->query(
-                                "INSERT INTO ".$GLOBALS['pre']."items (`label`, `description`, `pw`, `email`, `url`, `id_tree`, `login`, `inactif`, `restricted_to`, `perso`, `anyone_can_modify`)
-                            VALUES ('".$item_label."', '".$item_desc."', '".$item_pwd."', '".$item_email."', '".$item_url."', '".intval($item_folder_id)."', '".$item_login."', '0', '', '0', '".intval($item_anyonecanmodify)."')"
+                            DB::insert(
+                                $GLOBALS['pre']."items",
+                                array(
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    "pw" => $item_pwd,
+                                    "email" => $item_email,
+                                    "url" => $item_url,
+                                    "id_tree" => intval($item_folder_id),
+                                    "inactif" => $item_login,
+                                    "restricted_to" => "0",
+                                    "perso" => "",
+                                    "anyone_can_modify" => intval($item_anyonecanmodify)
+                                )
                             );
-                            $newID = $bdd->lastInsertId();
+                            $newID = DB::InsertId();
 
                             // Store generated key
-                            $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."keys (`table`, `id`, `rand_key`) VALUES ('items', ".$newID.", '".$randomKey."')");
+                            DB::insert(
+                                $GLOBALS['pre']."keys",
+                                array(
+                                    "table" => "items",
+                                    "id" => $newID,
+                                    "rand_key" => $randomKey
+                                )
+                            );
 
                             // log
-                            $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."log_items (`id_item`, `date`, `id_user`, `action`) VALUES (".$newID.", '".time()."', 9999999, 'at_creation')");
+                            DB::insert(
+                                $GLOBALS['pre']."log_items",
+                                array(
+                                    "id_item" => $newID,
+                                    "date" => time(),
+                                    "id_user" => "9999999",
+                                    "action" => "at_creation"
+                                )
+                            );
 
                             // Add tags
                             $tags = explode(' ', $item_tags);
                             foreach ($tags as $tag) {
                                 if (!empty($tag)) {
-                                    $result = $bdd->query("INSERT INTO ".$GLOBALS['pre']."tags (`item_id`, `tag`) VALUES ($newID, '".strtolower($tag)."')");
+                                    DB::insert(
+                                        $GLOBALS['pre']."tags",
+                                        array(
+                                            "item_id" => $newID,
+                                            "tag" => strtolower($tag)
+                                        )
+                                    );
                                 }
                             }
 
                             // Update CACHE table
-                            $result = $bdd->exec(
-                                "INSERT INTO ".$GLOBALS['pre']."cache (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`)
-                            VALUES ('".$newID."', '".$item_label."', '".$item_desc."', '".$item_tags."', '".$item_folder_id."', '0', '', '".$item_login."', '', '9999999')"
+                            DB::insert(
+                                $GLOBALS['pre']."cache",
+                                array(
+                                    "id" => $newID,
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    "tags" => $item_tags,
+                                    "id_tree" => $item_folder_id,
+                                    "perso" => "0",
+                                    "restricted_to" => "",
+                                    "login" => $item_login,
+                                    "folder" => "",
+                                    "author" => "9999999"
+                                )
                             );
 
                             echo '{"status":"item added"}';

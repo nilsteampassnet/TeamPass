@@ -49,6 +49,19 @@ switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
     	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+        
+        // check if expected securiy level is reached
+        $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = ".$_SESSION['user_id']);
+        $data = DB::query(
+            "SELECT complexity
+            FROM ".$pre."roles_title
+            WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
+            ORDER BY complexity DESC"
+        );
+        if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
+            echo '[ { "error" : "complexity_level_not_reached" } ]';
+            break;
+        }
         // Prepare variables
         $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
@@ -68,8 +81,9 @@ switch ($_POST['type']) {
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
-                // check if new pw is different that old ones
-            } if (in_array($newPw, $lastPw)) {
+            } 
+            // check if new pw is different that old ones
+            if (in_array($newPw, $lastPw)) {
                 echo '[ { "error" : "already_used" } ]';
                 break;
             } else {
