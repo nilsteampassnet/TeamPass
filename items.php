@@ -74,39 +74,44 @@ foreach ($rows as $reccord) {
 $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
-<input type="hidden" id="complexite_groupe" />
-<input type="hidden" name="selected_items" id="selected_items" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
+<input type="hidden" id="complexite_groupe" value="" />
+<input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlspecialchars(htmlentities($listRoles, ENT_QUOTES, 'UTF-8')).'" />
-<input type="hidden" id="bloquer_creation_complexite" />
-<input type="hidden" id="bloquer_modification_complexite" />
-<input type="hidden" id="error_detected" />
-<input type="hidden" name="random_id" id="random_id" />
+<input type="hidden" id="bloquer_creation_complexite" value="" />
+<input type="hidden" id="bloquer_modification_complexite" value="" />
+<input type="hidden" id="error_detected" value="" />
+<input type="hidden" name="random_id" id="random_id" value="" />
 <input type="hidden" id="edit_wysiwyg_displayed" value="" />
 <input type="hidden" id="richtext_on" value="1" />
 <input type="hidden" id="query_next_start" value="0" />
 <input type="hidden" id="display_categories" value="0" />
 <input type="hidden" id="nb_items_to_display_once" value="', isset($_SESSION['settings']['nb_items_by_query']) ? htmlspecialchars($_SESSION['settings']['nb_items_by_query']) : 'auto', '" />
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
-<input type="hidden" id="request_ongoing" />
-<input type="hidden" id="request_lastItem" />
-<input type="hidden" id="item_editable" />
-<input type="hidden" id="timestamp_item_displayed" />
-<input type="hidden" id="pf_selected" />';
+<input type="hidden" id="request_ongoing" value="" />
+<input type="hidden" id="request_lastItem" value="" />
+<input type="hidden" id="item_editable" value="" />
+<input type="hidden" id="timestamp_item_displayed" value="" />
+<input type="hidden" id="pf_selected" value="" />
+<input type="hidden" id="user_ongoing_action" value="" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
-    echo '<input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '
+    <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
+    <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />
+    <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
     echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
     echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="" />';
+    echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 }
 // Is personal SK available
 echo '
@@ -552,7 +557,7 @@ echo'
             </div>';
 // Line for PW
 echo '
-            <label class="label_cpm">'.$LANG['used_pw'].' :
+            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
 				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>

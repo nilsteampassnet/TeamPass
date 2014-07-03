@@ -1,4 +1,9 @@
-﻿2.1.20
+﻿2.1.21
+ #597 - Rapid click on save button on "Add a folder"
+ #599 - SQL:AUTO_INCREMENT id --> language
+ #600 - preg_replace(): Unknown modifier '|'
+
+2.1.20
  #492 - Default admin password not working
  #509 - Password complexity
  #493 - Unable to purge logs

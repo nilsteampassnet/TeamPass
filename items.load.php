@@ -145,6 +145,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
+    if ($("#hid_cat").val() == groupe_id && $("#open_item_by_get").val() == "" ) return false;
     $("#request_lastItem").val("");
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
@@ -356,8 +357,8 @@ function pwGenerate(elem)
            		$("#div_dialog_message_text").html(data.error_msg);
            		$("#div_dialog_message").dialog("open");
            	} else {
-           		$("#"+elem+"pw1").val(data.key).focus();
-				$("#visible_pw").text(data.key);
+                $("#visible_pw").text(data.key);
+           	    $("#"+elem+"pw1").val(data.key).focus();
            	}
             $("#"+elem+"pw_wait").hide();
         }
@@ -856,7 +857,8 @@ function AddNewFolder()
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']);?>").show();
     } else if ($("#new_rep_complexite").val() == "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>").show();
-    } else{
+    } else if ($("#user_ongoing_action").val() == "") {
+        $("#user_ongoing_action").val("true");
     	$("#new_rep_show_error").hide();
         if ($("#new_rep_role").val() == undefined) {
             role_id = "<?php echo $_SESSION['fonction_id'];?>";
@@ -877,6 +879,7 @@ function AddNewFolder()
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
+                $("#user_ongoing_action").val("");
                 //Check errors
                 if (data[0].error == "error_group_exist") {
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']);?>").show();
@@ -2299,10 +2302,10 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 	//if(sessionStorage.isConnected){
         //Launch items loading
         if ($("#jstree_group_selected").val() == "") {
-                    	var first_group = 1;
-                    } else {
-                    	var first_group = $("#jstree_group_selected").val();
-                    }
+            var first_group = 1;
+        } else {
+            var first_group = $("#jstree_group_selected").val();
+        }
 
         if ($("#hid_cat").val() != "") {
             first_group = $("#hid_cat").val();
@@ -2315,6 +2318,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         //Load item if needed and display items list
         if ($("#open_id").val() != "") {
             AfficherDetailsItem($("#open_id").val());
+            $("#open_item_by_get").val("");
         }
 	//}
     //Password meter for item creation

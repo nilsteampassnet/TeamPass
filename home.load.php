@@ -137,43 +137,43 @@ $(function() {
     });
 
 
-    if ($("#offline_password").length) {
+    //if ($("#offline_password").length) {
         $("#offline_password").simplePassMeter({
-            "requirements": {},
-              "container": "#offline_pw_strength",
-              "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            //"requirements": {},
+            "container": "#offline_pw_strength",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
             "ratings": [
-            {"minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo $LANG['complex_level0'];?>"
-            },
-            {"minScore": 25,
-                "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level1'];?>"
-            },
-            {"minScore": 50,
-                "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level2'];?>"
-            },
-            {"minScore": 60,
-                "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level3'];?>"
-            },
-            {"minScore": 70,
-                "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level4'];?>"
-            },
-            {"minScore": 80,
-                "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level5'];?>"
-            },
-            {"minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level6'];?>"
-            }
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "<?php echo $LANG['complex_level0'];?>"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "<?php echo $LANG['complex_level1'];?>"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "<?php echo $LANG['complex_level2'];?>"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "<?php echo $LANG['complex_level3'];?>"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "<?php echo $LANG['complex_level4'];?>"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "<?php echo $LANG['complex_level5'];?>"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "<?php echo $LANG['complex_level6'];?>"
+                }
             ]
         });
-    }
+    //}
     $("#offline_password").bind({
         "score.simplePassMeter" : function(jQEvent, score) {
             $("#offline_pw_strength_value").val(score);
