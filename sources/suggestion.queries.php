@@ -135,7 +135,9 @@ if (!empty($_POST['type'])) {
 
             // check if similar exists
             DB::query(
-                "SELECT id FROM ".$pre."items WHERE label = %s AND id_tree = %i", $suggestion['label'], $suggestion['folder_id']
+                "SELECT id FROM ".$pre."items WHERE label = %s AND id_tree = %i",
+                $suggestion['label'],
+                $suggestion['folder_id']
             );
             $counter = DB::count();
             if ($counter > 0) {

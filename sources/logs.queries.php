@@ -49,7 +49,6 @@ $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'lo
 $sOrder = $sLimit = "";
 $where = new WhereClause('and');
 $where->add('id_tree IN %ls', $_SESSION['groupes_visibles']);   //limit search to the visible folders
-//$sWhere = "id_tree IN(".implode(',', $_SESSION['groupes_visibles']).")";    //limit search to the visible folders
 
 //get list of personal folders
 $array_pf = array();
@@ -102,49 +101,19 @@ if ($_GET['sSearch'] != "") {
     //$sWhere .= " AND ";
     $subclause = $where->addClause('or');
     for ($i=0; $i<count($aColumns); $i++) {
-        //$sWhere .= $aColumns[$i]." LIKE '%".mysql_real_escape_string($_GET['sSearch'])."%' OR ";
         $subclause->add($aColumns[$i]." LIKE %ls", $_GET['sSearch']);
     }
-    //$sWhere = substr_replace($sWhere, "", -3);
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
 if (!empty($list_pf)) {
     $where->add('id_tree NOT IN %ls', $list_pf);
-    /*if (!empty($sWhere)) {
-        $sWhere .= " AND ";
-    }
-    $sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$list_pf.") ";
-} else {
-    $sWhere = "WHERE ".$sWhere;*/
 }
 
-/*$sql = "SELECT SQL_CALC_FOUND_ROWS *
-        FROM ".$pre."cache
-        $sWhere
-        $sOrder
-        $sLimit";
-
-$rResult = mysql_query($sql) or die(mysql_error()." ; ".$sql);    //$rows = DB::fetchAllArray("*/
 $rows = DB::query("SELECT * FROM ".$pre."cache WHERE %l ".$sOrder." ".$sLimit, $where);
 
-/* Data set length after filtering */
-/*$sql_f = "
-        SELECT FOUND_ROWS()
-";
-$rResultFilterTotal = mysql_query($sql_f) or die(mysql_error());
-$aResultFilterTotal = mysql_fetchArray($rResultFilterTotal);
-$iFilteredTotal = $aResultFilterTotal[0];*/
 $iFilteredTotal = DB::count();
 
-/* Total data set length */
-/*$sql_c = "
-        SELECT COUNT(id)
-        FROM   ".$pre."cache
-";
-$rResultTotal = mysql_query($sql_c) or die(mysql_error());
-$aResultTotal = mysql_fetchArray($rResultTotal);
-$iTotal = $aResultTotal[0];*/
 DB::query("SELECT * FROM ".$pre."cache");
 $iTotal = DB::count();
 

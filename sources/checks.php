@@ -56,9 +56,6 @@ function checkUser($userId, $userKey, $pageVisited)
     DB::$error_handler = 'db_error_handler';
 
     // load user's data
-    /*$sql = "SELECT * FROM ".$pre."users WHERE id = '$userId'";
-    $row = DB::query($sql);
-    $data = DB::fetchArray($row);*/
     $data = DB::queryfirstrow(
         "SELECT login, key_tempo, admin, gestionnaire FROM ".$pre."users WHERE id = %i",
         $userId

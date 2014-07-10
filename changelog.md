@@ -6,6 +6,10 @@
  #602 - can't change user password by very heavy complexity
  #603 - password complexity check only in javascript
  #415 - Items are not show when in folder view. Can easy search and open.
+ #578 - API generate new key
+ #580 - Redirect to login page when accessing directly an item (if not logged)
+ #576 - Mismatch email_body tags
+ #607 - HMTL export erroneous download link
 
 2.1.20
  #492 - Default admin password not working

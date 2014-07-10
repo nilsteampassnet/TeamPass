@@ -72,9 +72,6 @@ function teampass_get_randkey() {
     teampass_connect();
     $response = DB::queryOneColumn("rand_key", "select * from ".$GLOBALS['pre']."keys limit 0,1");
 
-    //$array = $response->fetch(PDO::FETCH_OBJ);
-
-    //return $array->rand_key;
     return $response;
 }
 
@@ -140,6 +137,9 @@ function rest_delete () {
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        if (count($matches) == 0) {
+            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+        }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
@@ -246,7 +246,10 @@ function rest_delete () {
 function rest_get () {
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
+        if (count($matches) == 0) {
+            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+        }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     //print_r($GLOBALS);
@@ -288,10 +291,14 @@ function rest_get () {
                     $response = DB::query("SELECT id,label,login,pw FROM ".$GLOBALS['pre']."items WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
+                        // get ITEM random key
+                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$GLOBALS['pre']."keys WHERE id = %i", $data['id']);
+
+                        // prepare output
                         $id = $data['id'];
                         $json[$id]['label'] = utf8_encode($data['label']);
                         $json[$id]['login'] = utf8_encode($data['login']);
-                        $json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
+                        $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                     }
                 }
             }
@@ -323,10 +330,14 @@ function rest_get () {
                 $response = DB::query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id IN %ls", implode(",", $items_list));
                 foreach ($response as $data)
                 {
+                    // get ITEM random key
+                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$GLOBALS['pre']."keys WHERE id = %i", $data['id']);
+
+                    // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = utf8_encode($data['label']);
                     $json[$id]['login'] = utf8_encode($data['login']);
-                    $json[$id]['pw'] = teampass_decrypt_pw($data['pw'],SALT,$rand_key);
+                    $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                 }
             }
 
@@ -477,6 +488,9 @@ function rest_put() {
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        if (count($matches) == 0) {
+            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+        }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
@@ -519,6 +533,9 @@ function rest_error ($type,$detail = 'N/A') {
         case 'ITEM_MALFORMED':
             $message = Array('err' => 'Item definition not numeric');
             header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'REQUEST_SENT_NOT_UNDERSTANDABLE':
+            $message = Array('err' => 'URL format is not following requirements');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');

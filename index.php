@@ -426,6 +426,8 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     if (!extension_loaded('mcrypt')) {
         $_SESSION['error']['code'] = ERR_NO_MCRYPT;
         include 'error.php';
+    } elseif (isset($_SESSION['initial_url']) && !empty($_SESSION['initial_url'])) {
+        include $_SESSION['initial_url'];
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
         if ($_SESSION['user_admin'] == 1) {
@@ -475,11 +477,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
         include 'error.php';
     }
-} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
+/*} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
     // case where user not logged and can't access a direct link
     $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
-    include 'error.php';
+    include 'error.php';*/
 } elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
     // case where one-shot viewer
 	if (
@@ -537,6 +539,13 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     class="ui-state-error ui-corner-all">
                     <b>'.$LANG['index_session_expired'].'</b>
                 </div>';
+    }
+
+    // case where user not logged and can't access a direct link
+    if (!empty($_GET['page'])) {
+        $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
+    } else {
+        $_SESSION['initial_url'] = "";
     }
 
     // CONNECTION FORM

@@ -97,7 +97,7 @@ if (!empty($_POST['type'])) {
                 $counter = DB::count();
                 if ($counter == 0) {
                     DB::insert(
-                        $re."kb_categories",
+                        $pre."kb_categories",
                         array(
                             'category' => $category
                        )
@@ -125,7 +125,7 @@ if (!empty($_POST['type'])) {
                 } else {
                     //add new KB
                     DB::queryInsert(
-                        "kb",
+                        $pre."kb",
                         array(
                             'label' => $label,
                             'description' => ($description),

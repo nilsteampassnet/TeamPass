@@ -400,16 +400,17 @@ switch ($_POST['type']) {
         foreach ($rows as $item) {
             //$row = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."log_items WHERE id_item=".$item['id']." AND action = 'at_creation'");
             DB::query(
-                $pre."log_items",
-                array(
-                    "id_item" => $item['id'],
-                    "action" => "at_creation"
-                )
+                "SELECT * FROM ".$pre."log_items WHERE id_item = %i AND action = %s",
+                $item['id'],
+                "at_creation"
             );
             $counter = DB::count();
-            if ($row[0] == 0) {
+            if ($counter == 0) {
                 //Create new at_creation entry
-                $rowTmp = DB::queryFirst("SELECT date FROM ".$pre."log_items WHERE id_item=".$item['id']." ORDER BY date ASC");
+                $rowTmp = DB::queryFirstRow(
+                    "SELECT date FROM ".$pre."log_items WHERE id_item=%i ORDER BY date ASC",
+                    $item['id']
+                );
                 DB::insert(
                     $pre.'log_items',
                     array(
@@ -464,8 +465,8 @@ switch ($_POST['type']) {
     case "admin_action_backup_decrypt":
         //get backups infos
         $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = %s", "settings");
-        foreach ($rows as $reccord) {
-            $settings[$reccord['intitule']] = $reccord['valeur'];
+        foreach ($rows as $record) {
+            $settings[$record['intitule']] = $record['valeur'];
         }
 
         //read file
@@ -516,8 +517,8 @@ switch ($_POST['type']) {
 
         //change all passwords in DB
         $rows = DB::query("SELECT id,pw FROM ".$pre."items WHERE perso = %s", "0");
-        foreach ($rows as $reccord) {
-            $pw = decrypt($reccord['pw']);
+        foreach ($rows as $record) {
+            $pw = decrypt($record['pw']);
             //encrypt with new SALT
             DB::update(
                 $pre."items",
@@ -525,13 +526,13 @@ switch ($_POST['type']) {
                     'pw' => encrypt($pw, $new_salt_key),
                ),
                 "id = %i",
-                $reccord['id']
+                $record['id']
             );
         }
         //change all users password in DB
         $rows = DB::query("SELECT id,pw FROM ".$pre."users");
-        foreach ($rows as $reccord) {
-            $pw = decrypt($reccord['pw']);
+        foreach ($rows as $record) {
+            $pw = decrypt($record['pw']);
             //encrypt with new SALT
             DB::update(
                 $pre."users",
@@ -539,7 +540,7 @@ switch ($_POST['type']) {
                     'pw' => encrypt($pw, $new_salt_key),
                ),
                 "id = %i",
-                $reccord['id']
+                $record['id']
             );
         }
 
@@ -587,13 +588,13 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         $rows = DB::query("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", "not_sent", "");
-        foreach ($rows as $reccord) {
+        foreach ($rows as $record) {
             //send email
             $ret = json_decode(
                 @sendEmail(
-                    $reccord['subject'],
-                    $reccord['body'],
-                    $reccord['receivers']
+                    $record['subject'],
+                    $record['body'],
+                    $record['receivers']
                 )
             );
 
@@ -605,11 +606,11 @@ switch ($_POST['type']) {
                         'status' => "not sent"
                    ),
                     "timestamp = %s",
-                    $reccord['timestamp']
+                    $record['timestamp']
                 );
             } else {
                 //delete from DB
-                DB::delete($pre."emails", "timestamp = %s", $reccord['timestamp']);
+                DB::delete($pre."emails", "timestamp = %s", $record['timestamp']);
             }
         }
 
@@ -657,14 +658,14 @@ switch ($_POST['type']) {
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
         $rows = DB::query("SELECT id, pw FROM ".$pre."items WHERE perso = %s", "0");
-        foreach ($rows as $reccord) {
+        foreach ($rows as $record) {
             // check if key exists for this item
-            DB::query("SELECT * FROM ".$pre."keys WHERE `id` = %i AND `table` = %s", $reccord['id'], "items");
+            DB::query("SELECT * FROM ".$pre."keys WHERE `id` = %i AND `table` = %s", $record['id'], "items");
             $counter = DB::count();
             if ($counter == 0) {
                 $storePrefix = false;
                 // decrypt pw
-                $pw = decrypt($reccord['pw']);
+                $pw = decrypt($record['pw']);
                 if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
                     // Pw seems to have a prefix
                     // get old prefix
@@ -688,7 +689,7 @@ switch ($_POST['type']) {
                             'pw' => $pw
                         ),
                         "id=%s",
-                        $reccord['id']
+                        $record['id']
                     );
                     // should we store?
                     $storePrefix = true;
@@ -699,7 +700,7 @@ switch ($_POST['type']) {
                         $pre.'keys',
                         array(
                             'table'     => 'items',
-                            'id'        => $reccord['id'],
+                            'id'        => $record['id'],
                             'rand_key'  => $randomKey
                         )
                     );

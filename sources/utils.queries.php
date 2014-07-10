@@ -73,37 +73,37 @@ switch ($_POST['type']) {
                 $id_managed = '';
                 $i = 1;
                 $items_id_list = array();
-                foreach ($rows as $reccord) {
-                    $restricted_users_array = explode(';', $reccord['restricted_to']);
+                foreach ($rows as $record) {
+                    $restricted_users_array = explode(';', $record['restricted_to']);
                     //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $reccord['id']) {
+                    if (empty($id_managed) || $id_managed != $record['id']) {
                         if (
-                        (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
+                        (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
                         ||
-                        (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
                     ) {
                             //exclude this case
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+                                $pw = decrypt($record['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
                             } else {
-                                $pw = decrypt($reccord['pw']);
+                                $pw = decrypt($record['pw']);
                             }
 
                             $full_listing[$i] = array(
-                                'id' => $reccord['id'],
-                                'label' => $reccord['label'],
-                                'description' => htmlentities(str_replace(";", ".", $reccord['description']), ENT_QUOTES, "UTF-8"),
-                                'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
-                                'login' => $reccord['login'],
-                                'restricted_to' => $reccord['restricted_to'],
-                                'perso' => $reccord['perso']
+                                'id' => $record['id'],
+                                'label' => $record['label'],
+                                'description' => htmlentities(str_replace(";", ".", $record['description']), ENT_QUOTES, "UTF-8"),
+                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'login' => $record['login'],
+                                'restricted_to' => $record['restricted_to'],
+                                'perso' => $record['perso']
                             );
                         }
                         $i++;
                     }
-                    $id_managed = $reccord['id'];
+                    $id_managed = $record['id'];
                 }
             }
             //save the file
