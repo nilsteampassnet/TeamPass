@@ -56,7 +56,6 @@ if (!empty($_POST['type'])) {
         #CASE adding a new role
         case "add_new_role":
             //Check if role already exist : No similar roles
-            //$tmp = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE title = '".mysql_real_escape_string(stripslashes($_POST['name']))."'");
             $tmp = DB::query("SELECT * FROM ".$pre."roles_title WHERE title = %s", stripslashes($_POST['name']));
             $counter = DB::count();
             if ($counter == 0) {
@@ -202,21 +201,21 @@ if (!empty($_POST['type'])) {
 
             //Display table header
             $rows = DB::query("SELECT * FROM ".$pre."roles_title ORDER BY title ASC".$sql_limit);
-            foreach ($rows as $reccord) {
-                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($reccord['id'], $my_functions) || $reccord['creator_id'] == $_SESSION['user_id']))) {
-                    if ($reccord['allow_pw_change'] == 1) {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'>';
+            foreach ($rows as $record) {
+                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                    if ($record['allow_pw_change'] == 1) {
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'>';
                     } else {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$reccord['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$reccord['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
+                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
                     }
 
-                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$reccord['title'].
-                        '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'",'.$reccord['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
-                        '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$reccord['id'].',"'.htmlentities($reccord['title'], ENT_QUOTES, "UTF-8").'")\'>'.
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$record['title'].
+                        '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
+                        '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.
-                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pwComplexity[$reccord['complexity']][1].'&nbsp;]</div></th>';
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pwComplexity[$record['complexity']][1].'&nbsp;]</div></th>';
 
-                    array_push($arrRoles, $reccord['id']);
+                    array_push($arrRoles, $record['id']);
                 }
             }
             $texte .= '</tr></thead><tbody>';

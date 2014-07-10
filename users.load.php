@@ -272,7 +272,7 @@ $(function() {
                         		$("#div_dialog_message_text").html(data.error_msg);
                         		$("#div_dialog_message").dialog("open");
                         	} else {
-                        		$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(pw);
+                                $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(data.key);
                         		$("#change_user_pw_newpw").focus();
                         	}
                     		$("#change_user_pw_wait").hide();

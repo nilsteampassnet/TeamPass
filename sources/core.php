@@ -14,7 +14,7 @@
 
 //session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ) {
-    die('Hacking attempt...3');
+    die('Hacking attempt...');
 }
 
 function redirect($url)
@@ -158,7 +158,6 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    //$dataSession = $db->fetchRow("SELECT key_tempo FROM ".$pre."users WHERE id=".$_SESSION['user_id']);
     $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".$pre."users WHERE id=%i_id",
         array(
             'id' => $_SESSION['user_id']
@@ -209,7 +208,6 @@ if (
     isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
     || empty($_SESSION['settings']['update_needed']))
 ) {
-    //$row = $db->fetchRow("SELECT valeur FROM ".$pre."misc WHERE type = 'admin' AND intitule = 'cpassman_version'");
     $row = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
         array(
             "type" => "admin",
@@ -233,7 +231,6 @@ if (
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
 ) {
     $_SESSION['my_sk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
-    //echo $_SESSION['my_sk_tmp']." - ".$_SESSION['my_sk'] ;
 }
 
 /* CHECK IF MAINTENANCE MODE
@@ -397,7 +394,6 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 */
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty( $_SESSION['item_fields'])) {
     $_SESSION['item_fields'] = array();
-    //$rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE level = 0");
     $rows = DB::query("SELECT * FROM ".$pre."categories WHERE level=%s_level",
         array(
             'level' => "0"
@@ -407,7 +403,6 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
         $arrFields = array();
 
         // get each field
-        //$rows = $db->fetchAllArray("SELECT * FROM ".$pre."categories WHERE parent_id = ".$record['id']);
         $rows = DB::query("SELECT * FROM ".$pre."categories WHERE parent_id=%i_parent_id",
             array(
                 'parent_id' => $record['id']
@@ -453,7 +448,6 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-//$queryCount = $db->fetchRow("SELECT COUNT(*) FROM ".$pre."users WHERE timestamp >= '".intval((time() - 600))."'");
 DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
     array(
         "time" => time() - 600

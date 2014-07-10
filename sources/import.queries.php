@@ -139,7 +139,6 @@ switch ($_POST['type']) {
 
             // Add a checkbox for select/unselect all others
             $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$LANG['all'].'</td></tr>';
-            //echo 'function selectAll() {$("input[type=\'checkbox\']:not([disabled=\'disabled\'])").attr(\'checked\', true);}';
 
             // Prepare a list of all folders that the user can choose
             $display .= '</table><div style=\"margin-top:10px;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\">';

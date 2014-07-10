@@ -135,7 +135,7 @@ if (isset($_POST['type'])) {
             $categoriesSelect = "";
             $arrCategories = $arrFields = array();
             $rows = DB::query("SELECT * FROM ".$pre."categories WHERE level = %i ORDER BY ".$pre."categories.order ASC", 0);
-            foreach ($rows as $reccord) {
+            foreach ($rows as $record) {
                 // get associated folders
                 $foldersList = $foldersNumList = "";
                 $rowsF = DB::query(
@@ -143,15 +143,15 @@ if (isset($_POST['type'])) {
                     FROM ".$pre."categories_folders AS c
                     INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
                     WHERE c.id_category = %i",
-                    $reccord['id']
+                    $record['id']
                 );
-                foreach ($rowsF as $reccordF) {
+                foreach ($rowsF as $recordF) {
                     if (empty($foldersList)) {
-                        $foldersList = $reccordF['title'];
-                        $foldersNumList = $reccordF['id_folder'];
+                        $foldersList = $recordF['title'];
+                        $foldersNumList = $recordF['id_folder'];
                     } else {
-                        $foldersList .= " | ".$reccordF['title'];
-                        $foldersNumList .= ";".$reccordF['id_folder'];
+                        $foldersList .= " | ".$recordF['title'];
+                        $foldersNumList .= ";".$recordF['id_folder'];
                     }
                 }
                 
@@ -160,9 +160,9 @@ if (isset($_POST['type'])) {
                     $arrCategories,
                     array(
                         '1',
-                        $reccord['id'],
-                        $reccord['title'],
-                        $reccord['order'],
+                        $record['id'],
+                        $record['title'],
+                        $record['order'],
                         $foldersList,
                         $foldersNumList
                     )
@@ -171,7 +171,7 @@ if (isset($_POST['type'])) {
                     "SELECT * FROM ".$pre."categories 
                     WHERE parent_id = %i
                     ORDER BY ".$pre."categories.order ASC",
-                    $reccord['id']
+                    $record['id']
                 );
                 if (count($rows) > 0) {
                     foreach ($rows as $field) {
@@ -182,8 +182,8 @@ if (isset($_POST['type'])) {
                                 $field['id'],
                                 $field['title'],
                                 $field['order'],
-                                '',
-                                ''
+                                "",
+                                ""
                             )
                         );
                     }

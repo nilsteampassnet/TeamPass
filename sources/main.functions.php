@@ -571,7 +571,7 @@ function updateCacheTable($action, $id = "")
                     'id_tree' => $record['id_tree'],
                     'perso' => $record['perso'],
                     'restricted_to' => $record['restricted_to'],
-                    'login' => $record['login'],
+                    'login' => $record['login']==null ? "" : $record['login'],
                     'folder' => $folder,
                     'author' => $record['id_user'],
                    )
@@ -762,13 +762,9 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 {
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 
-    //load ClassLoader
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-
     //load library
-    $mail = new SplClassLoader('Email\Phpmailer', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
-    $mail->register();
-    $mail = new Email\Phpmailer\PhpMailer();
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+    $mail = new PHPMailer();
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");

@@ -38,7 +38,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
         DB::update(
-            "users",
+            $pre."users",
             array(
                 'key_tempo' => ''
             ),

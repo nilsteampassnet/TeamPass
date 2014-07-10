@@ -140,7 +140,7 @@ if (!empty($_POST['type'])) {
                 WHERE login LIKE %ss",
                 mysql_real_escape_string(stripslashes($_POST['login']))
             );
-            if (empty($data['id'])) {
+            if (DB::count() == 0) {
                 // Add user in DB
                 DB::insert(
                     $pre."users",
@@ -227,11 +227,15 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // Send email to new user
-                @sendEmail(
-                    $LANG['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $LANG['email_new_user_mail']),
-                    $_POST['email']
-                );
+                try {
+                    sendEmail(
+                        $LANG['email_subject_new_user'],
+                        str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $LANG['email_new_user_mail']),
+                        $_POST['email']
+                    );
+                } catch(Exception $ex) {
+                    echo '<br />' . $ex->getMessage();
+                }
                 // update LOG
                 DB::insert(
                     $pre.'log_system',
@@ -516,12 +520,11 @@ if (!empty($_POST['type'])) {
             );
             // display information
             $text = "";
-            //$val = str_replace(';', ',', $_POST['list']);
             // Check if POST is empty
-            if (!empty($val)) {
+            if (!empty($_POST['list'])) {
                 $rows = DB::query(
                     "SELECT title FROM ".$pre."roles_title WHERE id IN %ls",
-                    implode(";", $_POST['list'])
+                    explode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
                     $text .= '<img src=\"includes/images/arrow-000-small.png\" />'.$record['title']."<br />";
@@ -743,7 +746,7 @@ if (!empty($_POST['type'])) {
                 $_POST['domain'],
                 "0"
             );
-            $counter = DB::cout();
+            $counter = DB::count();
             if ($counter != 0) {
                 $return["folder"] = "exists";
             } else {
@@ -835,7 +838,7 @@ if (!empty($_POST['type'])) {
             if (isset($counter) && $counter != 0) {
                 $nb_pages = ceil($counter / $_POST['nb_items_by_page']);
                 for ($i = 1; $i <= $nb_pages; $i++) {
-                    $pages .= '<td onclick=\'displayLogs('.$i.',\'user_mngt\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                    $pages .= '<td onclick=\'displayLogs('.$i.',\"user_mngt\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
                 }
             }
             $pages .= '</tr></table>';
@@ -843,9 +846,9 @@ if (!empty($_POST['type'])) {
                 foreach ($rows as $record) {
                     if ($_POST['scope'] == "user_mngt") {
                         $user = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i", $record['qui']);
-                        $user_1 = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i",$_POST['id']);
+                        $user_1 = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i", $_POST['id']);
                         $tmp = explode(":", $record['label']);
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1['login']), $LANG[$tmp['login']]).'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1['login']), $LANG['login']).'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
                         $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
                     }

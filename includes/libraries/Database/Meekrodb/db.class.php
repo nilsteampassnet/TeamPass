@@ -609,6 +609,15 @@ class MeekroDB {
     // ----- BEGIN ERROR HANDLING
     if (!$sql || $db->error) {
       if ($this->error_handler) {
+          $db->query(
+              "INSERT INTO ".$GLOBALS['pre']."log_system SET
+              date=".time().",
+              qui=".$_SESSION['user_id'].",
+              label='".addslashes($sql)."<br />".addslashes($db->error)."@".$_SERVER['REQUEST_URI']."',
+              type='error'",
+              MYSQLI_USE_RESULT
+          );
+
         $error_handler = is_callable($this->error_handler) ? $this->error_handler : 'meekrodb_error_handler';
         
         call_user_func($error_handler, array(

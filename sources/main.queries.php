@@ -49,23 +49,25 @@ switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
     	$dataReceived = prepareExchangedData($_POST['data'], "decode");
-        
-        // check if expected securiy level is reached
-        $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = ".$_SESSION['user_id']);
-        $data = DB::query(
-            "SELECT complexity
-            FROM ".$pre."roles_title
-            WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
-            ORDER BY complexity DESC"
-        );
-        if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
-            echo '[ { "error" : "complexity_level_not_reached" } ]';
-            break;
-        }
+
         // Prepare variables
         $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
+
+            // check if expected securiy level is reached
+            $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = %i", $_SESSION['user_id']);
+            $data = DB::query(
+                "SELECT complexity
+                FROM ".$pre."roles_title
+            WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
+            ORDER BY complexity DESC"
+            );
+            if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
+                echo '[ { "error" : "complexity_level_not_reached" } ]';
+                break;
+            }
+
             // Get a string with the old pw array
             $lastPw = explode(';', $_SESSION['last_pw']);
             // if size is bigger then clean the array
@@ -840,16 +842,11 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            "SELECT login, pw FROM ".$pre."users WHERE email = %s",
             mysql_real_escape_string(stripslashes($_POST['email']))
         );
         $counter = DB::count();
         if ($counter != 0) {
-            $data = DB::query(
-                "SELECT login,pw FROM ".$pre."users WHERE email = %s",
-                mysql_real_escape_string(stripslashes($_POST['email']))
-            );
-
         	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
         	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
         	    "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
@@ -858,7 +855,7 @@ switch ($_POST['type']) {
         	    $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
-            $data = $db->query(
+            $data = DB::query(
                 "SELECT * FROM ".$pre."misc WHERE intitule = %s AND type = %s",
                 mysql_real_escape_string($_POST['login']),
                 "password_recovery"

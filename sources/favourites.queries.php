@@ -31,7 +31,7 @@ DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database);
 
-// Construction de la requ?te en fonction du type de valeur
+// manage action required
 if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         #CASE adding a new function

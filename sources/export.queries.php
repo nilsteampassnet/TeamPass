@@ -384,7 +384,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     	fclose($outstream);
 
     	// send back and continue
-    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['path_to_files_folder'].$html_file.'"}]';
+    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
     	break;
 
 	//CASE export in HTML format - Iteration loop

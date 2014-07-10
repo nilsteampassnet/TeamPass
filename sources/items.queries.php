@@ -22,7 +22,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    //include 'error.php';
+    include 'error.php';
     exit();
 }
 
@@ -279,7 +279,7 @@ if (isset($_POST['type'])) {
                             // send it
                             @sendEmail(
                                 $LANG['email_subject'],
-                                $LANG['email_body_1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
+                                $LANG['email_body1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$LANG['email_body2'].$LANG['email_body3'],
                                 $emailAddress,
                                 $LANG['email_altbody_1']." ".mysql_real_escape_string(stripslashes(($_POST['label'])))." ".$LANG['email_altbody_2']
                             );

@@ -67,7 +67,7 @@ if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier*(int) $POST_MAX_SIZE && $POST
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if (!$file_size || $file_size > $max_file_size_in_bytes) {
-    handleError('File exceeds the maximum allowed size');
+    handleError('File exceeds the maximum allowed size', 120);
 }
 if ($file_size <= 0) {
     handleError('File size outside allowed lower bound', 112);
@@ -75,11 +75,11 @@ if ($file_size <= 0) {
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
-    handleError('No upload found in $_FILES for Filedata');
+    handleError('No upload found in $_FILES for Filedata', 121);
 } elseif (isset($_FILES['file']['error']) && $_FILES['file']['error'] != 0) {
-    handleError($uploadErrors[$_FILES['Filedata']['error']]);
+    handleError($uploadErrors[$_FILES['Filedata']['error']], 122);
 } elseif (!isset($_FILES['file']['tmp_name']) || !@is_uploaded_file($_FILES['file']['tmp_name'])) {
-    handleError('Upload failed is_uploaded_file test.');
+    handleError('Upload failed is_uploaded_file test.', 123);
 } elseif (!isset($_FILES['file']['name'])) {
     handleError('File has no name.', 113);
 }

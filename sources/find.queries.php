@@ -160,8 +160,8 @@ $iFilteredTotal = DB::count();
  */
 $sOutput = '{';
 $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
-$sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
+$sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
 $sOutputConst = "";
 
@@ -193,7 +193,6 @@ foreach ($rows as $record) {
         }
     }
 
-    //echo in_array($_SESSION['user_roles'], $a);
     if (
         ($record['perso']==1 && $record['author'] != $_SESSION['user_id'])
         ||
