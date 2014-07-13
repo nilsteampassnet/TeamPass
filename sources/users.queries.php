@@ -37,13 +37,14 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
-// Connect to mysql server
+// connect to the server
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
