@@ -136,7 +136,7 @@ if (isset($_POST['type'])) {
                     }
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                        $pw = encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                        $pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                         $restictedTo = $_SESSION['user_id'];
                     } else {
                         $pw = encrypt($pw);
@@ -274,14 +274,18 @@ if (isset($_POST['type'])) {
                     updateCacheTable("add_value", $newID);
                     // Announce by email?
                     if ($dataReceived['annonce'] == 1) {
+                        // get links url
+                        if (empty($_SESSION['settings']['email_server_url'])) {
+                            $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
+                        }
                         // send email
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                             // send it
                             @sendEmail(
                                 $LANG['email_subject'],
-                                $LANG['email_body1'].mysql_real_escape_string(stripslashes(($_POST['label']))).$LANG['email_body2'].$LANG['email_body3'],
+                                $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
                                 $emailAddress,
-                                $LANG['email_altbody_1']." ".mysql_real_escape_string(stripslashes(($_POST['label'])))." ".$LANG['email_altbody_2']
+                                $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
                             );
                         }
                     }
@@ -461,7 +465,7 @@ if (isset($_POST['type'])) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $sentPw = $pw;
-                        $pw = encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                        $pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                         $restictedTo = $_SESSION['user_id'];
                     } else {
                         $pw = encrypt($pw);
@@ -870,7 +874,7 @@ if (isset($_POST['type'])) {
                     if (empty($dataReceived['salt_key'])) {
                         $pw = decrypt($dataItem['pw']);
                     } else {
-                        $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                        $pw = decrypt($dataItem['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                     }
                     $pw = cleanString($pw);
                     // generate 2d key
@@ -1132,9 +1136,9 @@ if (isset($_POST['type'])) {
             }
             // Uncrypt PW
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
-                $pw = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                $pw = decrypt($dataItem['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                 if (empty($pw)) {
-                    $pw = decryptOld($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                    $pw = decryptOld($dataItem['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                 }
                 $arrData['edit_item_salt_key'] = 1;
             } else {
@@ -1988,7 +1992,7 @@ if (isset($_POST['type'])) {
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($need_sk == true && isset($_SESSION['my_sk'])) {
-                                $pw = decrypt($record['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                                $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                             } else {
                                 $pw = substr(decrypt($record['pw']), strlen($record['rand_key']));
                             }
@@ -2233,7 +2237,7 @@ if (isset($_POST['type'])) {
 
             if ($_POST['field'] == "pw") {
                 if ($dataItem['perso'] == 1) {
-                    $data = decrypt($dataItem['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                    $data = decrypt($dataItem['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                 } else {
                     $pw = decrypt($dataItem['pw']);
                     $dataItemKey = DB::queryfirstrow('SELECT rand_key FROM `'.$pre.'keys` WHERE `table`="items" AND `id`='.$_POST['id']);
@@ -2306,7 +2310,7 @@ if (isset($_POST['type'])) {
                 "SELECT description FROM ".$pre."items WHERE id=%i", $_POST['id_item']
             );
             // Clean up the string
-            // echo '$("#edit_desc").val("'.stripslashes(str_replace('\n','\\\n',mysql_real_escape_string(strip_tags($dataItem['description'])))).'");';
+            // echo '$("#edit_desc").val("'.stripslashes(str_replace('\n','\\\n',mysqli_escape_string($link, strip_tags($dataItem['description'])))).'");';
             echo json_encode(array("description" => strip_tags($dataItem['description'])), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             break;
 
@@ -2410,7 +2414,7 @@ if (isset($_POST['type'])) {
                 );
                 // unsalt previous pw and encrupt with personal key
                 $pw = substr(decrypt($originalData['pw']), strlen($originalData['rand_key']));
-                $pw = encrypt($pw, mysql_real_escape_string(stripslashes($_SESSION['my_sk'])));
+                $pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                 // update pw
                 DB::update(
                     $pre.'items',
@@ -2445,7 +2449,7 @@ if (isset($_POST['type'])) {
                 DB::update(
                     $pre.'items',
                     array(
-                        'pw' => encrypt($randomKey.decrypt($dataSource['pw'], mysql_real_escape_string(stripslashes($_SESSION['my_sk'])))),
+                        'pw' => encrypt($randomKey.decrypt($dataSource['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])))),
                         'perso' => 0
                        ),
                     "id=%i",
@@ -2479,6 +2483,10 @@ if (isset($_POST['type'])) {
                 if (!empty($_POST['content'])) {
                     $content = explode(',', $_POST['content']);
                 }
+                // get links url
+                if (empty($_SESSION['settings']['email_server_url'])) {
+                    $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
+                }
                 if ($_POST['cat'] == "request_access_to_author") {
                     $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".$pre."users WHERE id= ".$content[1]);
                     $dataItem = DB::queryfirstrow("SELECT label FROM ".$pre."items WHERE id= ".$content[0]);
@@ -2489,11 +2497,12 @@ if (isset($_POST['type'])) {
                     );
                 } elseif ($_POST['cat'] == "share_this_item") {
                     $dataItem = DB::queryfirstrow("SELECT label,id_tree FROM ".$pre."items WHERE id= ".$_POST['id']);
+                    // send email
                     $ret = @sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($_SESSION['settings']['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($dataItem['label'])),
+                            array($_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($dataItem['label'])),
                             $LANG['email_share_item_mail']
                         ),
                         $_POST['receipt']

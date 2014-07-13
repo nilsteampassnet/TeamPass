@@ -57,7 +57,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysql_real_escape_string($_GET['iDisplayStart']) .", ". mysql_real_escape_string($_GET['iDisplayLength']) ."" ;
+        $sLimit = "LIMIT ". mysqli_escape_string($link, $_GET['iDisplayStart']) .", ". mysqli_escape_string($link, $_GET['iDisplayLength']) ."" ;
     }
 
     //Ordering
@@ -66,8 +66,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOrder = "ORDER BY  ";
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval(mysql_real_escape_string($_GET['iSortCol_'.$i])) ]."
-                        '".mysql_real_escape_string($_GET['sSortDir_'.$i]) ."', ";
+                $sOrder .= $aColumns[ intval(mysqli_escape_string($link, $_GET['iSortCol_'.$i])) ]."
+                        '".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) ."', ";
             }
         }
 
@@ -175,7 +175,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
                 $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
             }
         }
 
@@ -276,7 +276,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
                 $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
             }
         }
 
@@ -376,7 +376,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
                 $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
             }
         }
 
@@ -479,7 +479,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
             if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
                 $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
             }
         }
 

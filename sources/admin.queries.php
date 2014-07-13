@@ -236,11 +236,6 @@ switch ($_POST['type']) {
         $return = "";
 
         //Get all tables
-        /*$tables = array();
-        $result = mysql_query('SHOW TABLES');
-        while ($row = mysql_fetch_row($result)) {
-            $tables[] = $row[0];
-        }*/
         $tables = array();
         $result = DB::query('SHOW TABLES');
         foreach ($result as $row) {

@@ -41,6 +41,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Columns name
 $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
@@ -81,7 +82,7 @@ if (isset($_GET['iSortCol_0'])) {
     for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
         if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
             $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                    ".mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                    ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
         }
     }
 
@@ -111,7 +112,6 @@ if (!empty($list_pf)) {
 }
 
 $rows = DB::query("SELECT * FROM ".$pre."cache WHERE %l ".$sOrder." ".$sLimit, $where);
-
 $iFilteredTotal = DB::count();
 
 DB::query("SELECT * FROM ".$pre."cache");
@@ -147,7 +147,7 @@ foreach ($rows as $reccord) {
     ) {
         $sOutput .= '"<img src=\"includes/images/lock.png\" />",';
     } else {
-        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags(mysql_real_escape_string($reccord['description'])));
+        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags(mysqli_escape_string($link, $reccord['description'])));
         if (strlen($txt) > 50) {
             $sOutput .= '"'.(substr(htmlspecialchars(stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)), ENT_QUOTES), 0, 50)).'",';
         } else {

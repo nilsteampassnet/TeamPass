@@ -170,14 +170,22 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 
         //change the saltkey dialogbox
         echo '
-                   <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
-                       <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-                       <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
-                       <div style="margin-top:20px;" class="ui-state-highlight">
-                           '.$LANG['new_saltkey_warning'].'
-                       </div>
-                       <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
-                   </div>';
+            <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
+                <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+                <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
+                <div style="margin-top:5px;font-style:italic;">
+                    <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
+                </div>
+                <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
+                   <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
+                   <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
+                </div>
+                <div style="margin-top:20px;" class="ui-state-highlight">
+                   '.$LANG['new_saltkey_warning'].'
+                </div>
+                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
+            </div>';
 
         //saltkey LOST dialogbox
         echo '

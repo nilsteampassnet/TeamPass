@@ -87,7 +87,7 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
                             } else {
                                 $pw = decrypt($reccord['pw']);
                             }
@@ -253,14 +253,14 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
                             } else {
                                 $pw = decrypt($reccord['pw']);
                             }
                             $full_listing[$i] = array(
                                 'id' => $reccord['id'],
                                 'label' => $reccord['label'],
-                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysql_real_escape_string(stripslashes(utf8_decode($reccord['description']))))),
+                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($reccord['description']))))),
                                 'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
                                 'login' => $reccord['login'],
                                 'restricted_to' => $reccord['restricted_to'],
@@ -426,7 +426,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			if (empty($id_managed) || $id_managed != $reccord['id']) {
 				// decrypt PW
 				if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-					$pw = decrypt($reccord['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+					$pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
 				} else {
 					$pw = decrypt($reccord['pw']);
 				}
@@ -434,7 +434,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 				    'id_tree' => $reccord['id_tree'],
 				    'id' => $reccord['id'],
 				    'label' => $reccord['label'],
-				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysql_real_escape_string(stripslashes(utf8_decode($reccord['description']))))),
+				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($reccord['description']))))),
 				    'pw' => substr(($pw), strlen($reccord['rand_key'])),
 				    'login' => $reccord['login'],
 				    'url' => $reccord['url'],
