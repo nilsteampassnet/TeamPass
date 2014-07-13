@@ -130,7 +130,7 @@ if (!empty($_POST['type'])) {
                 exit();
             }
             // Empty user
-            if (mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])) == "") {
+            if (mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])) == "") {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
@@ -138,16 +138,16 @@ if (!empty($_POST['type'])) {
             DB::query(
                 "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".$pre."users
                 WHERE login LIKE %ss",
-                mysql_real_escape_string(stripslashes($_POST['login']))
+                mysqli_escape_string($link, stripslashes($_POST['login']))
             );
             if (DB::count() == 0) {
                 // Add user in DB
                 DB::insert(
                     $pre."users",
                     array(
-                        'login' => mysql_real_escape_string(htmlspecialchars_decode($_POST['login'])),
-                        'name' => mysql_real_escape_string(htmlspecialchars_decode($_POST['name'])),
-                        'lastname' => mysql_real_escape_string(htmlspecialchars_decode($_POST['lastname'])),
+                        'login' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])),
+                        'name' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['name'])),
+                        'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['lastname'])),
                         'pw' => bCrypt(stringUtf8Decode($_POST['pw']), COST),
                         'email' => $_POST['email'],
                         'admin' => $_POST['admin'] == "true" ? '1' : '0',
@@ -181,7 +181,7 @@ if (!empty($_POST['type'])) {
                         $pre."nested_tree",
                         array(
                             'parent_id' => 0,
-                            'title' => mysql_real_escape_string(stripslashes($_POST['domain'])),
+                            'title' => mysqli_escape_string($link, stripslashes($_POST['domain'])),
                             'personal_folder' => 0,
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
@@ -202,7 +202,7 @@ if (!empty($_POST['type'])) {
                     $new_role_id = DB::insert(
                         $pre."roles_title",
                         array(
-                            'title' => mysql_real_escape_string(stripslashes(($_POST['domain'])))
+                            'title' => mysqli_escape_string($link, stripslashes(($_POST['domain'])))
                            )
                     );
                     $new_role_id = DB::insertId();
@@ -226,16 +226,16 @@ if (!empty($_POST['type'])) {
                     // rebuild tree
                     $tree->rebuild();
                 }
-                // Send email to new user
-                try {
-                    sendEmail(
-                        $LANG['email_subject_new_user'],
-                        str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysql_real_escape_string(htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['cpassman_url']), $LANG['email_new_user_mail']),
-                        $_POST['email']
-                    );
-                } catch(Exception $ex) {
-                    echo '<br />' . $ex->getMessage();
+                // get links url
+                if (empty($_SESSION['settings']['email_server_url'])) {
+                    $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
                 }
+                // Send email to new user
+                @sendEmail(
+                    $LANG['email_subject_new_user'],
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                    $_POST['email']
+                );
                 // update LOG
                 DB::insert(
                     $pre.'log_system',

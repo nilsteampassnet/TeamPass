@@ -239,17 +239,18 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 230,
+        height: 250,
         title: "<?php echo $LANG['menu_title_new_personal_saltkey'];?>",
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
                 $("#div_change_personal_saltkey_wait").show();
+                var data = '{"sk":"'+$('#new_personal_saltkey').val() + '", "old_sk":"'+$('#old_personal_saltkey').val() + '"}';
                 //Send query
                 $.post(
                     "sources/main.queries.php",
                     {
-                       type    : "change_personal_saltkey",
-                       sk    : encodeURIComponent($("#new_personal_saltkey").val())
+                        type    : "change_personal_saltkey",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                     },
                     function(data) {
                         $("#div_change_personal_saltkey_wait").hide();

@@ -61,7 +61,7 @@ if (isset($_POST['newtitle'])) {
     DB::update(
         $pre.'nested_tree',
         array(
-            'title' => mysql_real_escape_string(stripslashes(($_POST['newtitle'])))
+            'title' => mysqli_escape_string($link, stripslashes(($_POST['newtitle'])))
         ),
         "id=%i",
         $id[1]
@@ -79,7 +79,7 @@ if (isset($_POST['newtitle'])) {
         DB::update(
             $pre.'nested_tree',
             array(
-                'renewal_period' => mysql_real_escape_string(stripslashes(($_POST['renewal_period'])))
+                'renewal_period' => mysqli_escape_string($link, stripslashes(($_POST['renewal_period'])))
            ),
             "id=%i",
             $id[1]

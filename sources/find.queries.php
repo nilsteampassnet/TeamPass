@@ -96,7 +96,7 @@ if (isset($_GET['iSortCol_0'])) {
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysql_real_escape_string($_GET['sSortDir_'.$i]) .", ";
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
             }
         }
 

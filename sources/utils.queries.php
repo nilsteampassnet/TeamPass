@@ -86,7 +86,7 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($record['pw'], mysql_real_escape_string(stripslashes($_POST['salt_key'])));
+                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
                             } else {
                                 $pw = decrypt($record['pw']);
                             }

@@ -183,7 +183,7 @@ switch ($_POST['type']) {
         $list = "";
 
         include 'main.functions.php';
-        foreach (explode('@_#sep#_@', mysql_real_escape_string(stripslashes($listItems))) as $item) {
+        foreach (explode('@_#sep#_@', mysqli_escape_string($link, stripslashes($listItems))) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
 
@@ -583,7 +583,7 @@ switch ($_POST['type']) {
                     INNER JOIN ".$pre."nested_tree as t ON (m.intitule = t.id)
                     WHERE m.type = %s AND m.intitule = %s",
                     "complex",
-                    mysql_real_escape_string($_POST['destination'])
+                    mysqli_escape_string($link, $_POST['destination'])
                 );
                 $levelPwComplexity = $data['value'];
                 $startPathLevel = $data['nlevel'];

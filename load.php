@@ -95,6 +95,17 @@ $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
+    // ShowHide
+    function showHideDiv (divId)
+    {
+        if ($("#"+divId).is(":visible")) {
+            $("#"+divId).hide();
+        } else {
+            $("#"+divId).show();
+        }
+    }
+
+
     //Menu actions
     function MenuAction(val)
     {

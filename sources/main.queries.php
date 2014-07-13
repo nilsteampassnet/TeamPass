@@ -842,22 +842,26 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT login, pw FROM ".$pre."users WHERE email = %s",
-            mysql_real_escape_string(stripslashes($_POST['email']))
+            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            mysqli_escape_string($link, stripslashes($_POST['email']))
         );
         $counter = DB::count();
         if ($counter != 0) {
+            $data = DB::query(
+                "SELECT login,pw FROM ".$pre."users WHERE email = %s",
+                mysqli_escape_string($link, stripslashes($_POST['email']))
+            );
         	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
         	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-        	    "&login=".mysql_real_escape_string($_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
-        	    "/index.php?action=password_recovery&key=".$key."&login=".mysql_real_escape_string($_POST['login'])."</a>.<br><br>".$LANG['thku'];
-        	$textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysql_real_escape_string($_POST['login'])." - ".
+        	    "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+        	    "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
+        	$textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
         	    $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
             $data = DB::query(
                 "SELECT * FROM ".$pre."misc WHERE intitule = %s AND type = %s",
-                mysql_real_escape_string($_POST['login']),
+                mysqli_escape_string($link, $_POST['login']),
                 "password_recovery"
             );
             $counter = DB::count();
@@ -869,7 +873,7 @@ switch ($_POST['type']) {
                     ),
                     "type = %s and intitule = %s",
                     "password_recovery",
-                    mysql_real_escape_string($_POST['login'])
+                    mysqli_escape_string($link, $_POST['login'])
                 );
             } else {
                 // store in DB the password recovery informations
@@ -877,7 +881,7 @@ switch ($_POST['type']) {
                     $pre.'misc',
                     array(
                         'type' => 'password_recovery',
-                        'intitule' => mysql_real_escape_string($_POST['login']),
+                        'intitule' => mysqli_escape_string($link, $_POST['login']),
                         'valeur' => $key
                     )
                 );
@@ -899,7 +903,7 @@ switch ($_POST['type']) {
         // check if key is okay
         $data = DB::queryFirstRow(
             "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
-            mysql_real_escape_string($login),
+            mysqli_escape_string($link, $login),
             "password_recovery"
         );
         if ($key == $data['valeur']) {
@@ -924,20 +928,20 @@ switch ($_POST['type']) {
                     'pw' => $newPw
                    ),
                 "login = %s",
-                mysql_real_escape_string($login)
+                mysqli_escape_string($link, $login)
             );
             // Delete recovery in DB
             DB::delete(
                 $pre."misc",
                 "type = %s AND intitule = %S AND valeur = %s",
                 "password_recovery",
-                mysql_real_escape_string($login),
+                mysqli_escape_string($link, $login),
                 $key
             );
             // Get email
             $dataUser = DB::queryFirstRow(
                 "SELECT email FROM ".$pre."users WHERE login = %s",
-                mysql_real_escape_string($login)
+                mysqli_escape_string($link, $login)
             );
 
             $_SESSION['validite_pw'] = false;
@@ -1013,8 +1017,16 @@ switch ($_POST['type']) {
      * Change the personal saltkey
      */
     case "change_personal_saltkey":
-        $oldPersonalSaltkey = $_SESSION['my_sk'];
-        $newPersonalSaltkey = str_replace(" ", "+", urldecode($_POST['sk']));
+        //decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        //Prepare variables
+        $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
+        $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
+        if (empty($oldPersonalSaltkey)) {
+            $oldPersonalSaltkey = $_SESSION['my_sk'];
+        }
+
         // Change encryption
         $rows = DB::query(
             "SELECT i.id as id, i.pw as pw
@@ -1122,12 +1134,9 @@ switch ($_POST['type']) {
             );
             if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                 //load library
-                $mail = new SplClassLoader(
-                    'Email\PhpMailer',
-                    $_SESSION['settings']['cpassman_dir'].'/includes/libraries'
-                );
-                $mail->register();
-                $mail = new Email\PhpMailer\PHPMailer();
+                require $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+                // load PHPMailer
+                $mail = new PHPMailer();
 
                 $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language");
                 $mail->isSmtp(); // send via SMTP
@@ -1247,7 +1256,7 @@ switch ($_POST['type']) {
         $data = DB::query(
             "SELECT login, psk FROM ".$pre."users
             WHERE login = %i",
-            mysql_real_escape_string(stripslashes($_POST['userId']))
+            mysqli_escape_string($link, stripslashes($_POST['userId']))
         );
         if (empty($data['login'])) {
             $userOk = false;

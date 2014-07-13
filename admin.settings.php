@@ -455,6 +455,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['email_port'] != $_POST['email_port']) {
         updateSettings('email_port', $_POST['email_port']);
     }
+    // Update email_server_url
+    if (@$_SESSION['settings']['email_server_url'] != $_POST['email_server_url']) {
+        updateSettings('email_server_url', $_POST['email_server_url']);
+    }
     // store backups settings
     if (@$_SESSION['settings']['bck_script_filename'] != $_POST['bck_script_filename']) {
         updateSettings('bck_script_filename', $_POST['bck_script_filename']);
@@ -1915,6 +1919,18 @@ echo '
                         </td>
                         <td>
                             <input id="email_auth_pwd" name="email_auth_pwd" type="password" size="40px" value="', !isset($_SESSION['settings']['email_auth_pwd']) ? $smtp_auth_password : $_SESSION['settings']['email_auth_pwd'], '" />
+                        </td>
+                    </tr>';
+// SMTP server url
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$LANG['admin_email_server_url'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_server_url_tip'].'</h2>" /></span>
+                        </td>
+                        <td>
+                            <input id="email_server_url" name="email_server_url" type="text" size="40px" value="', !isset($_SESSION['settings']['email_server_url']) ? $_SESSION['settings']['cpassman_url'] : $_SESSION['settings']['email_server_url'], '" />
                         </td>
                     </tr>';
 // SMTP port

@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_email_server_url' => 'Server URL for links in emails',
+    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
+    'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
+    'old_saltkey' => 'Old SALT key',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
