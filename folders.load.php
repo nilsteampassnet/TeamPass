@@ -176,6 +176,7 @@ function add_new_folder()
             LoadingPage();
             //prepare data
             var data = '{"title":"'+$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#new_rep_complexite').val().replace(/"/g,'&quot;')+'", '+
+            '"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'"}';
             //send query
             $.post(
                 "sources/folders.queries.php",

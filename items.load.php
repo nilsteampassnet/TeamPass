@@ -20,7 +20,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
     var query_in_progress = 0;
-    ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
+    //ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
+    ZeroClipboard.config( { swfPath: "<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf" } );
 
 //  Part of Safari 6 OS X fix
     //  clean up HTML for sending via JSON to PHP code
@@ -1150,37 +1151,38 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Prepare clipboard copies
                         if (data.pw != "") {
-                            var clip = new ZeroClipboard.Client();
-                            clip.setText(unsanitizeString(data.pw));
-                            clip.addEventListener('complete', function(client, text) {
+                            var client = new ZeroClipboard($("#menu_button_copy_pw"));
+                            client.on('copy', function(event) {
+                                    var clipboard = event.clipboardData;
+                                    clipboard.setData("text/plain", unsanitizeString(data.pw));
                                     $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                             });
-                            clip.glue('menu_button_copy_pw');
                         }
                         if (data.login != "") {
-                            var clip = new ZeroClipboard.Client();
-                            clip.setText(data.login);
-                            clip.addEventListener('complete', function(client, text) {
+                            var clip = new ZeroClipboard($("#menu_button_copy_login"));
+                            clip.on('copy', function(event) {
+                                    var clipboard = event.clipboardData;
+                                    clipboard.setData("text/plain", unsanitizeString(data.login));
                                     $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
-                            clip.glue('menu_button_copy_login');
                         }
                         // #525
                         if (data.url != "") {
-                            var clip = new ZeroClipboard.Client();
-                            clip.setText(data.url);
-                            clip.addEventListener('complete', function(client, text) {
+                            var clip = new ZeroClipboard($("#menu_button_copy_url"));
+                            clip.on('copy', function(event) {
+                                    var clipboard = event.clipboardData;
+                                    clipboard.setData("text/plain", unsanitizeString(data.url));
                                     $("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
                             });
-                            clip.glue('menu_button_copy_url');
                         }
                         //prepare link to clipboard
-                        var clip = new ZeroClipboard.Client();
-                        clip.setText("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id);
-                        clip.addEventListener('complete', function(client, text) {
+                        var clip = new ZeroClipboard($("#menu_button_copy_link"));
+                        // "<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id 
+                        clip.on('copy', function(event) {
+                                var clipboard = event.clipboardData; //$_SESSION['settings']['cpassman_url'].
+                                clipboard.setData("text/plain", "<?php echo $_SESSION['settings']['cpassman_url'];?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id );
                                 $("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
                         });
-                        clip.glue('menu_button_copy_link');
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -1661,21 +1663,25 @@ PreviewImage = function(uri,title) {
  **/
 function get_clipboard_item(field,id)
 {
-	clip = new ZeroClipboard.Client();
+	clip = new ZeroClipboard();
     if (field == "pw") {
-    	clip.setText($("#item_pw_in_list_"+id).val());
-        clip.addEventListener('complete', function(client, text) {
-            $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
-            clip.destroy();
-        });
-        clip.glue('iconpw_'+id);
+        clip.on(
+            'copy', function(event) { 
+                var clipboard = event.clipboardData;
+                clipboard.setData("text/plain", $("#item_pw_in_list_"+id).val());
+                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                clip.destroy();
+            }
+        );
     } else {
-    	clip.setText($("#item_login_in_list_"+id).val());
-        clip.addEventListener('complete', function(client, text) {
-            $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-            clip.destroy();
-        });
-        clip.glue('iconlogin_'+id);
+        clip.on(
+            'copy', function(event) {
+                var clipboard = event.clipboardData;
+                clipboard.setData("text/plain", $("#item_login_in_list_"+id).val());
+                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+                clip.destroy();
+            }
+        );
     }
 
     var div = $('#items_list');

@@ -10,6 +10,8 @@
  #580 - Redirect to login page when accessing directly an item (if not logged)
  #576 - Mismatch email_body tags
  #607 - HMTL export erroneous download link
+ #622 - Tooltip on left menu buttons
+ - New option permitting to send or not an email to User when admin changes his password
 
 2.1.20
  #492 - Default admin password not working

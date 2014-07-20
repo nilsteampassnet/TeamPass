@@ -11,6 +11,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+use League\Csv\Reader;
+use Goodby\CSV\Import\Standard\Lexer;
+use Goodby\CSV\Import\Standard\Interpreter;
+use Goodby\CSV\Import\Standard\LexerConfig;
 
 require_once('sessions.php');
 session_start();
@@ -33,6 +37,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -69,58 +74,79 @@ switch ($_POST['type']) {
 
         // Open file
         if ($fp = fopen($file, "r")) {
+            /*
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/AbstractCsv.php');
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/Config/StreamFilter.php');
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/Reader.php');
+            $csv = new Reader($file);
+            $csv->setDelimiter(',');
+            $csv->setEnclosure('"');
+            $csv->setEscape('\\');
+            $csv->setFlags(SplFileObject::READ_AHEAD|SplFileObject::SKIP_EMPTY);
+            $res = $csv->fetchAssoc(['Label', 'Login', 'Password', 'Web site', 'Comments']);
+            print_r($res);
+            echo "fin";
+            break;
+            */
+
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php');
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php');
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php');echo "ici";
+            $config = new LexerConfig();
+            $lexer = new Lexer($config);
+            $interpreter = new Interpreter();
+            $lexer->parse($file, $interpreter);
+print_r($lexer);
+            echo "fin";
+            break;
+
+            $csv->auto($file);
+            $csv->enclosure = '"';
+            $csv->delimiter = ',';
+            print_r($csv->data);
             // extract one line
-            while (($line = fgetcsv($fp, $size, $separator, $enclosure)) !== false) {
+            foreach ($csv->data as $key => $row) {
                 //Check number of fields. MUST be 5. if not stop importation
-                if ($line_number == 0) {
-                    if (count($line) != 5) {
-                        $importation_possible = false;
-                    }
+                if (count($row) != 5) {
+                    $importation_possible = false;
                     //Stop if file has not expected structure
                     if ($importation_possible == false) {
                         echo '[{"error":"bad_structure"}]';
                         break;
                     }
                 }
-                if ($line_number> 0) {
-                    //Clean single/double quotes
-                    for ($x=0; $x<5; $x++) {
-                        $line[$x] = trim($line[$x], "'");
-                        $line[$x] = trim($line[$x], '"');
-                    }
 
-                    //If any comment is on several lines, then replace 'lf' character
-                    $line[4] = str_replace(array("\r\n", "\n", "\r"), "<br />", $line[4]);
+                //If any comment is on several lines, then replace 'lf' character
+                $row['Comments'] = str_replace(array("\r\n", "\n", "\r"), "<br />", $row['Comments']);
 
-                    // Check if current line contains a "<br />" character in order to identify an ITEM on several CSV lines
-                    if (substr_count('<br />', $line[4]) > 0 || substr_count('<br />', $line[0]) > 0) {
-                        $continue_on_next_line = true;
-                        $comment .= addslashes($line[0]);
-                    } else {
-                        // Store in variable values from previous line
-                        if (!empty($line[0]) && !empty($line[2]) && !empty($account)) {
-                            if ($continue_on_next_line == false) {
-                                // Prepare listing that will be shown to user
-                                $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                // Check if current line contains a "<br />" character in order to identify an ITEM on several CSV lines
+                if (substr_count('<br />', $row['Comments']) > 0 || substr_count('<br />', $row['Label']) > 0) {
+                    $continue_on_next_line = true;
+                    $comment .= addslashes($row['Label']);
+                } else {
+                    // Store in variable values from previous line
+                    if (!empty($row['Label']) && !empty($row['Password']) && !empty($account)) {
+                        if ($continue_on_next_line == false) {
+                            // Prepare listing that will be shown to user
+                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
-                                // Initialize this variable in order to restart from scratch
-                                $account = "";
-                            }
+                            // Initialize this variable in order to restart from scratch
+                            $account = "";
                         }
                     }
+                }
 
-                    // Get values of current line
-                    if ($account == "" && $continue_on_next_line == false) {
-                        $account = addslashes($line[0]);
-                        $login = addslashes($line[1]);
-                        $pw = $line[2];
-                        $url = addslashes($line[3]);
-                    	$to_find = array ( "\"" , "'" );
-                    	$to_ins = array ( "&quot" , "&#39;");
-                    	$comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$line[4])), ENT_QUOTES, 'UTF-8');
+                // Get values of current line
+                if ($account == "" && $continue_on_next_line == false) {
+                    $account = addslashes($row['Label']);
+                    $login = addslashes($row['Login']);
+                    $pw = $row['Password'];
+                    $url = addslashes($row['Web Site']);
+                    $to_find = array ( "\"" , "'" );
+                    $to_ins = array ( "&quot" , "&#39;");
+                    $comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$row['Comments'])), ENT_QUOTES, 'UTF-8');
 
-                        $continue_on_next_line = false;
-                    }
+                    $continue_on_next_line = false;
                 }
 
                 //increment number of lines found
@@ -844,3 +870,18 @@ switch ($_POST['type']) {
         }
         break;
 }
+spl_autoload_register(function ($class) {
+    $prefix = 'League\\Csv\\';echo "ici2";
+    $base_dir = __DIR__ . '/src/';
+    $len = strlen($prefix);
+    if (strncmp($prefix, $class, $len) !== 0) {
+        // no, move to the next registered autoloader
+        echo "ici";
+        return;
+    }
+    $relative_class = substr($class, $len);
+    $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
+    if (file_exists($file)) {
+        require $file;
+    }
+});

@@ -273,6 +273,8 @@ $(function() {
                         		$("#div_dialog_message").dialog("open");
                         	} else {
                                 $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(data.key);
+                                $("#generated_user_pw").text(data.key);
+                                $("#show_generated_pw").show();
                         		$("#change_user_pw_newpw").focus();
                         	}
                     		$("#change_user_pw_wait").hide();
@@ -311,6 +313,10 @@ $(function() {
             	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
                 $(this).dialog("close");
             }
+        },
+        beforeClose: function( event, ui ) {
+            $("#change_user_pw_newpw, #change_user_pw_newpw_confirm, #generated_user_pw").val("");
+            $("#show_generated_pw").hide();
         }
     });
 
@@ -341,10 +347,6 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
             }
-        },
-        close: function(event,ui) {
-            $("#change_user_pw_newpw, change_user_pw_newpw_confirm").val("");
-
         }
     });
 

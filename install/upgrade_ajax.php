@@ -543,6 +543,7 @@ if (isset($_POST['type'])) {
                 array('admin','insert_manual_entry_item_history','0', 0),
                 array('admin','enable_kb','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
+                array('admin','enable_email_notification_on_user_pw_change','0', 0)
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
 	            array('admin','use_md5_password_as_salt','0', 0),

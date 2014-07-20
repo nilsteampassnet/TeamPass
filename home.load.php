@@ -648,7 +648,7 @@ function ImportCSV(file)
         function(data) {
             if (data[0].error == "bad_structure") {
                 $("#import_from_file_info").html("<?php echo $LANG['import_error_no_read_possible'];?>").show();
-            } else {
+            } else {alert(data[0].output);
                 $("#import_status").html(data[0].output);
                 $("#item_all_selection").click(function() {
                     if ($("#item_all_selection").prop("checked")) {
