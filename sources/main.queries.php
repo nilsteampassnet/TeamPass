@@ -170,7 +170,7 @@ switch ($_POST['type']) {
                 WHERE id = %i",
                 $dataReceived['user_id']
             );
-            if (!empty($row['email'])) {
+            if (!empty($row['email']) && isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1) {
                 sendEmail(
                     $LANG['forgot_pw_email_subject'],
                     $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),

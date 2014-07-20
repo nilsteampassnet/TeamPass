@@ -391,6 +391,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['enable_email_notification_on_item_shown'] != $_POST['enable_email_notification_on_item_shown']) {
         updateSettings('enable_email_notification_on_item_shown', $_POST['enable_email_notification_on_item_shown']);
     }
+    // Update enable_email_notification_on_user_pw_change
+    if (@$_SESSION['settings']['enable_email_notification_on_user_pw_change'] != $_POST['enable_email_notification_on_user_pw_change']) {
+        updateSettings('enable_email_notification_on_user_pw_change', $_POST['enable_email_notification_on_user_pw_change']);
+    }
     // Update custom_logo
     if (@$_SESSION['settings']['custom_logo'] != $_POST['custom_logo']) {
         updateSettings('custom_logo', $_POST['custom_logo']);
@@ -1545,6 +1549,18 @@ echo '
                         <input type="radio" id="enable_email_notification_on_item_shown_radio1" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_item_shown_radio1">'.$LANG['yes'].'</label>
                         <input type="radio" id="enable_email_notification_on_item_shown_radio2" name="enable_email_notification_on_item_shown" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_item_shown']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_item_shown_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_enable_email_notification_on_item_shown"><img src="includes/images/status', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
+// enable email notification when user password is changed
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$LANG['enable_email_notification_on_user_pw_change'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="enable_email_notification_on_user_pw_change_radio1" name="enable_email_notification_on_user_pw_change" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? ' checked="checked"' : '', ' /><label for="enable_email_notification_on_user_pw_change_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="enable_email_notification_on_user_pw_change_radio2" name="enable_email_notification_on_user_pw_change" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) ? ' checked="checked"':''), ' /><label for="enable_email_notification_on_user_pw_change_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_enable_email_notification_on_user_pw_change"><img src="includes/images/status', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 

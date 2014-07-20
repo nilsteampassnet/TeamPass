@@ -267,6 +267,7 @@ if (isset($_POST['type'])) {
                 ('admin','insert_manual_entry_item_history','0'),
                 ('admin','enable_kb','0'),
                 ('admin','enable_email_notification_on_item_shown','0'),
+                ('admin','enable_email_notification_on_user_pw_change','0'),
                 ('admin','custom_logo',''),
                 ('admin','custom_login_text',''),
                 ('admin','default_language','english'),

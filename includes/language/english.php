@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'generated_pw' => 'Generated password',
+    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
     'admin_email_server_url' => 'Server URL for links in emails',
     'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
     'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
