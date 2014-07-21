@@ -11,7 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-use League\Csv\Reader;
 use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
@@ -74,38 +73,34 @@ switch ($_POST['type']) {
 
         // Open file
         if ($fp = fopen($file, "r")) {
-            /*
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/AbstractCsv.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/Config/StreamFilter.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/League/Csv/Reader.php');
-            $csv = new Reader($file);
-            $csv->setDelimiter(',');
-            $csv->setEnclosure('"');
-            $csv->setEscape('\\');
-            $csv->setFlags(SplFileObject::READ_AHEAD|SplFileObject::SKIP_EMPTY);
-            $res = $csv->fetchAssoc(['Label', 'Login', 'Password', 'Web site', 'Comments']);
-            print_r($res);
-            echo "fin";
-            break;
-            */
-
+            // data from CSV
+            $valuesToImport = array();
+            // load libraries
             require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php');
             require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php');echo "ici";
+            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php');
+
+            // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
+            $config
+                ->setIgnoreHeaderLine("true")
+            ;
+            // extract data from CSV file
             $interpreter = new Interpreter();
+            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
+                $valuesToImport[] = array(
+                    'Label'     => $row[0],
+                    'Login'     => $row[1],
+                    'Password'  => $row[2],
+                    'Web site'  => $row[3],
+                    'Comments'  => $row[4],
+                );
+            });
             $lexer->parse($file, $interpreter);
-print_r($lexer);
-            echo "fin";
-            break;
 
-            $csv->auto($file);
-            $csv->enclosure = '"';
-            $csv->delimiter = ',';
-            print_r($csv->data);
             // extract one line
-            foreach ($csv->data as $key => $row) {
+            foreach ($valuesToImport as $key => $row) {
                 //Check number of fields. MUST be 5. if not stop importation
                 if (count($row) != 5) {
                     $importation_possible = false;
@@ -128,7 +123,7 @@ print_r($lexer);
                     if (!empty($row['Label']) && !empty($row['Password']) && !empty($account)) {
                         if ($continue_on_next_line == false) {
                             // Prepare listing that will be shown to user
-                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
                             // Initialize this variable in order to restart from scratch
                             $account = "";
@@ -140,7 +135,7 @@ print_r($lexer);
                 if ($account == "" && $continue_on_next_line == false) {
                     $account = addslashes($row['Label']);
                     $login = addslashes($row['Login']);
-                    $pw = $row['Password'];
+                    $pw = str_replace('"', "&quote;", $row['Password']);
                     $url = addslashes($row['Web Site']);
                     $to_find = array ( "\"" , "'" );
                     $to_ins = array ( "&quot" , "&#39;");
