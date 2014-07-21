@@ -169,7 +169,7 @@ $htmlHeaders .= '
 
         //send query
         $.post(
-            "sources/main.queries.php",
+            "sources/identify.php",
             {
                 type : "identify_user",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")

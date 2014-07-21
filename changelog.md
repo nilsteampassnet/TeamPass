@@ -11,6 +11,10 @@
  #576 - Mismatch email_body tags
  #607 - HMTL export erroneous download link
  #622 - Tooltip on left menu buttons
+ #619 - CSV Import does not import passwords
+ #617 - CSV Import doesn't handle passwords with quotes well
+ #627 - Complete authentication bypass
+ #626 - API vulnerable (improvement in progress)
  - New option permitting to send or not an email to User when admin changes his password
 
 2.1.20

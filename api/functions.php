@@ -13,16 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$teampass_config_file = "../includes/settings.php";
 $_SESSION['CPM'] = 1;
 
-global $link;
-
 function teampass_api_enabled() {
+    global $pre;
     teampass_connect();
-    //DB::debugMode(true);
     $response = DB::queryFirstRow(
-        "SELECT `valeur` FROM ".$GLOBALS['pre']."misc WHERE type = %s AND intitule = %s",
+        "SELECT `valeur` FROM ".$pre."misc WHERE type = %s AND intitule = %s",
         "admin",
         "api"
     );
@@ -39,20 +36,22 @@ function teampass_whitelist() {
 
 function teampass_connect()
 {
-    require_once($GLOBALS['teampass_config_file']);
+    global $server, $user, $pass, $database, $pre, $link;
+    require_once("../includes/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
-    DB::$host = $GLOBALS['server'];
-    DB::$user = $GLOBALS['user'];
-    DB::$password = $GLOBALS['pass'];
-    DB::$dbName = $GLOBALS['database'];
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($GLOBALS['server'], $GLOBALS['user'], $GLOBALS['pass'], $GLOBALS['database']);
+    $link = mysqli_connect($server, $user, $pass, $database);
 }
 
 function teampass_get_ips() {
+    global $server, $user, $pass, $database, $pre, $link;
     $array_of_results = array();
     teampass_connect();
-    $response = DB::query("select value from ".$GLOBALS['pre']."api WHERE type = %s", "ip");
+    $response = DB::query("select value from ".$pre."api WHERE type = %s", "ip");
     foreach ($response as $data)
     {
         array_push($array_of_results, $data['value']);
@@ -62,15 +61,17 @@ function teampass_get_ips() {
 }
 
 function teampass_get_keys() {
+    global $server, $user, $pass, $database, $pre, $link;
     teampass_connect();
-    $response = DB::queryOneColumn("value", "select * from ".$GLOBALS['pre']."api WHERE type = %s", "key");
+    $response = DB::queryOneColumn("value", "select * from ".$pre."api WHERE type = %s", "key");
 
     return $response;
 }
 
 function teampass_get_randkey() {
+    global $server, $user, $pass, $database, $pre, $link;
     teampass_connect();
-    $response = DB::queryOneColumn("rand_key", "select * from ".$GLOBALS['pre']."keys limit 0,1");
+    $response = DB::queryOneColumn("rand_key", "select * from ".$pre."keys limit 0,1");
 
     return $response;
 }
@@ -81,12 +82,13 @@ function rest_head () {
 
 function addToCacheTable($id)
 {
+    global $server, $user, $pass, $database, $pre, $link;
     teampass_connect();
     // get data
     $data = DB::queryfirstrow(
         "SELECT i.label AS label, i.description AS description, i.id_tree AS id_tree, i.perso AS perso, i.restricted_to AS restricted_to, i.login AS login, i.id AS id
-        FROM ".$GLOBALS['pre']."items AS i
-        AND ".$GLOBALS['pre']."log_items AS l ON (l.id_item = i.id)
+        FROM ".$pre."items AS i
+        AND ".$pre."log_items AS l ON (l.id_item = i.id)
         WHERE i.id = %i
         AND l.action = %s",
         intval($id),
@@ -95,7 +97,7 @@ function addToCacheTable($id)
 
     // Get all TAGS
     $tags = "";
-    $data_tags = DB::query("SELECT tag FROM ".$GLOBALS['pre']."tags WHERE item_id=%i", $id);
+    $data_tags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
     foreach ($data_tags as $itemTag) {
         if (!empty($itemTag['tag'])) {
             $tags .= $itemTag['tag']." ";
@@ -116,7 +118,7 @@ function addToCacheTable($id)
     }*/
     // finaly update
     DB::insert(
-        $GLOBALS['pre']."cache",
+        $pre."cache",
         array(
             "id" => $data['id'],
             "label" => $data['label'],
@@ -143,6 +145,7 @@ function rest_delete () {
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
+        global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -161,24 +164,24 @@ function rest_delete () {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".$pre."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
                 // Delete items which in category
-                $response = DB::delete($GLOBALS['pre']."items", "id_tree = (".$category_query.")");
+                $response = DB::delete($pre."items", "id_tree = (".$category_query.")");
                 // Delete sub-categories which in category
-                $response = DB::delete($GLOBALS['pre']."nested_tree", "parent_id = (".$category_query.")");
+                $response = DB::delete($pre."nested_tree", "parent_id = (".$category_query.")");
                 // Delete category
-                $response = DB::delete($GLOBALS['pre']."nested_tree", "id = (".$category_query.")");
+                $response = DB::delete($pre."nested_tree", "id = (".$category_query.")");
 
                 $json['type'] = 'category';
                 $json['category'] = $GLOBALS['request'][2];
@@ -208,20 +211,20 @@ function rest_delete () {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".$GLOBALS['pre']."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".$pre."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
                 // Delete item
-                $response = DB::delete($GLOBALS['pre']."items", "id_tree = (".$category_query.") and label LIKE '".$item."'");
+                $response = DB::delete($pre."items", "id_tree = (".$category_query.") and label LIKE '".$item."'");
                 $json['type'] = 'item';
                 $json['item'] = $item;
                 $json['category'] = $GLOBALS['request'][2];
@@ -252,8 +255,8 @@ function rest_get () {
         }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
-    //print_r($GLOBALS);
     if(apikey_checker($GLOBALS['apikey'])) {
+        global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -273,7 +276,7 @@ function rest_get () {
 
                 /* load folders */
                 $response = DB::query(
-                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".$GLOBALS['pre']."nested_tree WHERE parent_id=%i ORDER BY `title` ASC",
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".$pre."nested_tree WHERE parent_id=%i ORDER BY `title` ASC",
                     $GLOBALS['request'][2]
                 );
                 $rows = array();
@@ -288,11 +291,11 @@ function rest_get () {
                     $json['folders'][$i]['nlevel'] = $row['nlevel'];*/
                     $i++;
                     
-                    $response = DB::query("SELECT id,label,login,pw FROM ".$GLOBALS['pre']."items WHERE id_tree=%i", $row['id']);
+                    $response = DB::query("SELECT id,label,login,pw FROM ".$pre."items WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
                         // get ITEM random key
-                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$GLOBALS['pre']."keys WHERE id = %i", $data['id']);
+                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
 
                         // prepare output
                         $id = $data['id'];
@@ -327,11 +330,11 @@ function rest_get () {
                 } else {
                     rest_error ('NO_ITEM');
                 }
-                $response = DB::query("select id,label,login,pw,id_tree from ".$GLOBALS['pre']."items where id IN %ls", implode(",", $items_list));
+                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", implode(",", $items_list));
                 foreach ($response as $data)
                 {
                     // get ITEM random key
-                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$GLOBALS['pre']."keys WHERE id = %i", $data['id']);
+                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
 
                     // prepare output
                     $id = $data['id'];
@@ -373,14 +376,14 @@ function rest_get () {
                     }
 
                     // Check Folder ID
-                    DB::query("SELECT * FROM ".$GLOBALS['pre']."nested_tree WHERE id = %i", $item_folder_id);
+                    DB::query("SELECT * FROM ".$pre."nested_tree WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
                         rest_error ('BADDEFINITION');
                     }
 
                     // check if element doesn't already exist
-                    DB::query("SELECT * FROM ".$GLOBALS['pre']."items WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                    DB::query("SELECT * FROM ".$pre."items WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
                     $counter = DB::count();
                     if ($counter != 0) {
                         $itemExists = 1;
@@ -399,7 +402,7 @@ function rest_get () {
                         // ADD item
                         try {
                             DB::insert(
-                                $GLOBALS['pre']."items",
+                                $pre."items",
                                 array(
                                     "label" => $item_label,
                                     "description" => $item_desc,
@@ -417,7 +420,7 @@ function rest_get () {
 
                             // Store generated key
                             DB::insert(
-                                $GLOBALS['pre']."keys",
+                                $pre."keys",
                                 array(
                                     "table" => "items",
                                     "id" => $newID,
@@ -427,7 +430,7 @@ function rest_get () {
 
                             // log
                             DB::insert(
-                                $GLOBALS['pre']."log_items",
+                                $pre."log_items",
                                 array(
                                     "id_item" => $newID,
                                     "date" => time(),
@@ -441,7 +444,7 @@ function rest_get () {
                             foreach ($tags as $tag) {
                                 if (!empty($tag)) {
                                     DB::insert(
-                                        $GLOBALS['pre']."tags",
+                                        $pre."tags",
                                         array(
                                             "item_id" => $newID,
                                             "tag" => strtolower($tag)
@@ -452,7 +455,7 @@ function rest_get () {
 
                             // Update CACHE table
                             DB::insert(
-                                $GLOBALS['pre']."cache",
+                                $pre."cache",
                                 array(
                                     "id" => $newID,
                                     "label" => $item_label,
@@ -494,6 +497,7 @@ function rest_put() {
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
+        global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
         $rand_key = teampass_get_randkey();
     }

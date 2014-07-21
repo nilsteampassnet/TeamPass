@@ -1,0 +1,9 @@
+﻿"Label","Login","Password","Web Site","Comments"
+"Generic Bank #1","jdoe","superS3cret","https://www.genericbank.com","Checking accounts, etc"
+"Generic Bank #2","jdoe","S3cret with spaces","https://www.genericbank.com","Checking accounts, etc"
+"Retailer Chain #1",,"""Secretstartingwithquotes","https://www.bigboxstore.com",
+"Retailer Chain #2",,"'Secretstartingwithsinglequote","https://www.bigboxstore.com",
+"Retailer Chain #3",,"'Twosinglequotes'","https://www.bigboxstore.com",
+"Health Care #1","jdoe","S3cretwithsinglequote'init","https://www.myhealthcare.com","Health care stuff"
+"Health Care #2","jdoe","S3cretwithcomma,init","https://www.myhealthcare.com","Health care stuff"
+"Health Care #3","jdoe","S3cretwithdoublequote""init","https://www.myhealthcare.com","Health care stuff"
