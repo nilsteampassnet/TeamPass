@@ -1,11 +1,4 @@
 <?php
-require_once('sources/sessions.php');
-session_start();
-@openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
-
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<?php
 /**
  *
  * @file          index.php
@@ -20,19 +13,29 @@ session_start();
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+// Before we start processing, we should abort no install is present
+if (!file_exists('includes/settings.php')) {
+	// This should never happen, but in case it does
+	// this means if headers are sent, redirect will fallback to JS
+	if (!headers_sent()) {
+		echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+	} else {
+		header('Location: install/install.php');
+	}
+	// Now either way, we should stop processing further
+	exit();
+}
+
+require_once('sources/sessions.php');
+session_start();
+@openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
+
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?php
+
 $_SESSION['CPM'] = 1;
 session_id();
-
-// Test if settings.file exists, if not then install
-if (!file_exists('includes/settings.php')) {
-    echo '
-    <script language="javascript" type="text/javascript">
-    <!--
-    document.location.replace("install/install.php");
-    clearInterval(timer);
-    -->
-    </script>';
-}
 
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] == "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
