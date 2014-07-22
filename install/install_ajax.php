@@ -233,7 +233,7 @@ if (isset($_POST['type'])) {
                 ('admin', 'manager_edit', '1'),
                 ('admin', 'cpassman_dir', '".$_SESSION['abspath']."'),
                 ('admin', 'cpassman_url', '".$_SESSION['url_path']."'),
-                ('admin', 'favicon', '".$_SESSION['url_path']."/favico.ico'),
+                ('admin', 'favicon', '".$_SESSION['url_path']."/favicon.ico'),
                 ('admin', 'path_to_upload_folder', '".$_SESSION['abspath']."/upload'),
                 ('admin', 'url_to_upload_folder', '".$_SESSION['url_path']."/upload'),
                 ('admin', 'path_to_files_folder', '".$_SESSION['abspath']."/files'),
