@@ -113,9 +113,9 @@ switch ($_POST['type']) {
                         $login = addslashes($line[1]);
                         $pw = $line[2];
                         $url = addslashes($line[3]);
-                    	$to_find = array ( "\"" , "'" );
-                    	$to_ins = array ( "&quot" , "&#39;");
-                    	$comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$line[4])), ENT_QUOTES, 'UTF-8');
+                        $to_find = array ( "\"" , "'" );
+                        $to_ins = array ( "&quot" , "&#39;");
+                        $comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$line[4])), ENT_QUOTES, 'UTF-8');
 
                         $continue_on_next_line = false;
                     }
@@ -617,7 +617,8 @@ switch ($_POST['type']) {
                     //get folder name
                     if (strrpos($folder, $foldersSeparator) > 0) {
                         $fold = substr($folder, strrpos($folder, $foldersSeparator)+strlen($foldersSeparator));
-                        $parent_id = $foldersArray[$path[$folderLevel-2]]['id'];
+                        $parent = implode($foldersSeparator, array_slice($path, 0, -1));
+                        $parent_id = $foldersArray[$parent]['id'];
                     } else {
                         $fold = $folder;
                         $parent_id = $_POST['destination']; //permits to select the folder destination
@@ -685,12 +686,12 @@ switch ($_POST['type']) {
                                 "parent_id" => intval($parent_id)
                             )
                         );
-                        $id = $data[0];
+                        $id = $row[0];
                     }
 
-                    //store in array
-                    $foldersArray[$fold] = array(
-                        'folder' => $fold,
+                    $foldersArray[$folder] = array(
+                        'folder' => $folder,
+                        'fold' => $fold,
                         'nlevel' => $folderLevel,
                         'id' => $id
                     );
@@ -730,8 +731,9 @@ switch ($_POST['type']) {
 
             while (!feof($cacheFile)) {
                 //prepare an array with item to import
-                $item = fgets($cacheFile, 4096);
-                $item = explode($itemsSeparator, str_replace(array("\r\n", "\n", "\r"), '', $item));
+                $full_item = fgets($cacheFile, 4096);
+                $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
+                $item = explode($itemsSeparator, $full_item);
 
                 if (!empty($item[2])) {
                     //check if not exists
@@ -739,7 +741,7 @@ switch ($_POST['type']) {
                     $data = $db->queryCount(
                         "items",
                         array(
-                            "id_tree" => intval($foldersArray[$item[1]]['id']),
+                            "id_tree" => intval($foldersArray[$item[0]]['id']),
                             "label" => $item[2]
                         )
                     );
@@ -756,7 +758,7 @@ switch ($_POST['type']) {
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
                                 'pw' => encrypt($pw),
                                 'url' => stripslashes($item[6]),
-                                'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[1]]['id'],
+                                'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[0]]['id'],
                                 'login' => stripslashes($item[4]),
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
@@ -801,7 +803,7 @@ switch ($_POST['type']) {
                         if (count($foldersArray)==0) {
                             $folderId = $_POST['destination'];
                         } else {
-                            $folderId = $foldersArray[$item[1]]['id'];
+                            $folderId = $foldersArray[$item[0]]['id'];
                         }
                         // $data = $db->fetchRow("SELECT title FROM ".$pre."nested_tree WHERE id = '".$folderId."'");
                         $data = $db->queryGetRow(
