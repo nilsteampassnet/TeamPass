@@ -269,7 +269,7 @@ function db_error_handler($params) {
  */
 function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions, $refresh)
 {
-    global $server, $user, $pass, $database, $pre;
+    global $server, $user, $pass, $database, $pre, $port;
 
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -280,6 +280,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     //Build tree
@@ -479,13 +480,14 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  */
 function logEvents($type, $label, $who)
 {
-    global $server, $user, $pass, $database, $pre;
+    global $server, $user, $pass, $database, $pre, $port;
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     DB::insert(
@@ -506,7 +508,7 @@ function logEvents($type, $label, $who)
  */
 function updateCacheTable($action, $id = "")
 {
-    global $db, $server, $user, $pass, $database, $pre;
+    global $db, $server, $user, $pass, $database, $pre, $port;
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
@@ -515,8 +517,9 @@ function updateCacheTable($action, $id = "")
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database);
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -682,7 +685,7 @@ function updateCacheTable($action, $id = "")
  */
 function teampassStats()
 {
-    global $server, $user, $pass, $database, $pre;
+    global $server, $user, $pass, $database, $pre, $port;
 
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -694,6 +697,7 @@ function teampassStats()
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     // Prepare stats to be sent
@@ -770,6 +774,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
     $mail->Port = $_SESSION['settings']['email_port']; //COULD BE USED
+    $mail->CharSet = "utf-8";
     // $mail->SMTPSecure = 'ssl';     //COULD BE USED
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers

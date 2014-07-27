@@ -15,6 +15,10 @@
  #617 - CSV Import doesn't handle passwords with quotes well
  #627 - Complete authentication bypass
  #626 - API vulnerable (improvement in progress)
+ #633 - favicon correction
+ #636 - MySQL on non-standard port
+ #632 - Refactor order of index.php
+ #629 - A password for admin account is required during installation
  - New option permitting to send or not an email to User when admin changes his password
 
 2.1.20

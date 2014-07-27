@@ -98,19 +98,13 @@ if (isset($_POST['type'])) {
 
             $res = "";
             // connexion
-            if ($dbTmp = @mysqli_connect($_POST['db_host'], $_POST['db_login'], $dbPassword)) {
-                if (@mysqli_select_db($dbTmp, $_POST['db_bdd'])) {
-                    echo 'gauge.modify($("pbar"),{values:[0.40,1]});';
-                    $res = "Connection is successful";
-                    echo 'document.getElementById("but_next").disabled = "";';
-                } else {
-                    echo 'gauge.modify($("pbar"),{values:[0.30,1]});';
-                    $res = "Failed to connect to table";
-                    echo 'document.getElementById("but_next").disabled = "disabled";';
-                }
+            if ($dbTmp = @mysqli_connect($_POST['db_host'], $_POST['db_login'], $dbPassword, $_POST['db_bdd'], $_POST['db_port'])) {
+                echo 'gauge.modify($("pbar"),{values:[0.40,1]});';
+                $res = "Connection is successful";
+                echo 'document.getElementById("but_next").disabled = "";';
             } else {
                 echo 'gauge.modify($("pbar"),{values:[0.30,1]});';
-                $res = "Failed to connect to server";
+                $res = "Failed to connect to server. ".addslashes(mysqli_connect_error());
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
             echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
@@ -151,9 +145,7 @@ if (isset($_POST['type'])) {
             // Populate dataBase
             $res = "";
 
-            @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd']);
-            $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw']);
-            mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
+            $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
 
             //FORCE UTF8 DATABASE
             mysqli_query($dbTmp, "ALTER DATABASE `".$_SESSION['db_bdd']."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
@@ -940,6 +932,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$user = \"".$_SESSION['db_login']."\";
 \$pass = \"".str_replace("$", "\\$", $_SESSION['db_pw'])."\";
 \$database = \"".$_SESSION['db_bdd']."\";
+\$port = ".$_SESSION['db_port'].";
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);

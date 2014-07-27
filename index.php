@@ -1,11 +1,4 @@
 <?php
-require_once('sources/sessions.php');
-session_start();
-@openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
-
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<?php
 /**
  *
  * @file          index.php
@@ -20,20 +13,29 @@ session_start();
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$_SESSION['CPM'] = 1;
-session_id();
-
-// Test if settings.file exists, if not then install
+// Before we start processing, we should abort no install is present
 if (!file_exists('includes/settings.php')) {
-    echo '
-    <script language="javascript" type="text/javascript">
-    <!--
-    document.location.replace("install/install.php");
-    clearInterval(timer);
-    -->
-    </script>';
+    // This should never happen, but in case it does
+    // this means if headers are sent, redirect will fallback to JS
+    if (!headers_sent()) {
+        echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+    } else {
+        header('Location: install/install.php');
+    }
+    // Now either way, we should stop processing further
+    exit();
 }
 
+require_once('sources/sessions.php');
+session_start();
+@openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
+
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<?php
+
+$_SESSION['CPM'] = 1;
+session_id();
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] == "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
 }
@@ -49,8 +51,9 @@ DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
+DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 //load main functions needed
 require_once 'sources/main.functions.php';
@@ -508,7 +511,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                 '.$LANG['pw_recovery_info'].'
             </div>
             <div style="margin:15px; text-align:center;">
-                <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.$_GET['key'].'\',\''.$_GET['login'].'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
+                <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.htmlspecialchars($_GET['key'], ENT_QUOTES).'\',\''.htmlspecialchars($_GET['login'], ENT_QUOTES).'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
                 <br /><br />
                 <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
             </div>

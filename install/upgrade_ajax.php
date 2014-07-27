@@ -170,6 +170,8 @@ if (isset($_POST['type'])) {
                         $_SESSION['user'] = getSettingValue($val);
                     } elseif (substr_count($val, '$pass')>0) {
                         $_SESSION['pass'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$port')>0) {
+                        $_SESSION['port'] = getSettingValue($val);
                     } elseif (substr_count($val, '$database')>0) {
                         $_SESSION['database'] = getSettingValue($val);
                     } elseif (substr_count($val, '$pre')>0) {
@@ -233,73 +235,67 @@ if (isset($_POST['type'])) {
 
             // connexion
             if (
-                @mysqli_connect(
+                mysqli_connect(
                     $_POST['db_host'],
                     $_POST['db_login'],
-                    $dbPassword
+                    $dbPassword,
+                    $_POST['db_bdd'],
+                    $_POST['db_port']
                 )
             ) {
                 $dbTmp = mysqli_connect(
                     $_POST['db_host'],
                     $_POST['db_login'],
-                    $dbPassword
+                    $dbPassword,
+                    $_POST['db_bdd'],
+                    $_POST['db_port']
                 );
-                if (
-                    @mysqli_select_db($dbTmp,
-                        $_POST['db_bdd']
-                    )
-                ) {
-                    //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                    $res = "Connection is successfull";
-                    echo 'document.getElementById("but_next").disabled = "";';
+                //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
+                $res = "Connection is successfull";
+                echo 'document.getElementById("but_next").disabled = "";';
 
-                    //What CPM version
-                    if (@mysqli_query($dbTmp,
+                //What CPM version
+                if (@mysqli_query($dbTmp,
+                    "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
+                    WHERE type='admin' AND intitule = 'cpassman_version'"
+                )) {
+                    $tmpResult = mysqli_query($dbTmp,
                         "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                         WHERE type='admin' AND intitule = 'cpassman_version'"
-                    )) {
-                        $tmpResult = mysqli_query($dbTmp,
-                            "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                            WHERE type='admin' AND intitule = 'cpassman_version'"
-                        );
-                        $cpmVersion = mysqli_fetch_row($tmpResult);
-                        echo 'document.getElementById("actual_cpm_version").value = "'.
-                            $cpmVersion[0].'";';
-                    } else {
-                        echo 'document.getElementById("actual_cpm_version").value = "0";';
-                    }
-
-                    //Get some infos from DB
-                    if (@mysqli_fetch_row(
-                            mysqli_query($dbTmp, "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                        WHERE type='admin' AND intitule = 'utf8_enabled'")
-                        )
-                    ) {
-                        $cpmIsUTF8 = mysqli_fetch_row(mysqli_query($dbTmp,
-                            "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                            WHERE type='admin' AND intitule = 'utf8_enabled'")
-                        );
-                        echo 'document.getElementById("cpm_isUTF8").value = "'.$cpmIsUTF8[0].'";';
-                        $_SESSION['utf8_enabled'] = $cpmIsUTF8[0];
-                    } else {
-                        echo 'document.getElementById("cpm_isUTF8").value = "0";';
-                        $_SESSION['utf8_enabled'] = 0;
-                    }
-
-                	// put TP in maintenance mode or not
-                	@mysqli_query($dbTmp,
-                	"UPDATE `".$_SESSION['tbl_prefix']."misc`
-                        SET `valeur` = 'maintenance_mode'
-                        WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
-                	);
+                    );
+                    $cpmVersion = mysqli_fetch_row($tmpResult);
+                    echo 'document.getElementById("actual_cpm_version").value = "'.
+                        $cpmVersion[0].'";';
                 } else {
-                    //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                    $res = "Impossible to get connected to database. Error is ".mysqli_error($dbTmp);
-                    echo 'document.getElementById("but_next").disabled = "disabled";';
+                    echo 'document.getElementById("actual_cpm_version").value = "0";';
                 }
+
+                //Get some infos from DB
+                if (@mysqli_fetch_row(
+                        mysqli_query($dbTmp, "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
+                    WHERE type='admin' AND intitule = 'utf8_enabled'")
+                    )
+                ) {
+                    $cpmIsUTF8 = mysqli_fetch_row(mysqli_query($dbTmp,
+                        "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
+                        WHERE type='admin' AND intitule = 'utf8_enabled'")
+                    );
+                    echo 'document.getElementById("cpm_isUTF8").value = "'.$cpmIsUTF8[0].'";';
+                    $_SESSION['utf8_enabled'] = $cpmIsUTF8[0];
+                } else {
+                    echo 'document.getElementById("cpm_isUTF8").value = "0";';
+                    $_SESSION['utf8_enabled'] = 0;
+                }
+
+                // put TP in maintenance mode or not
+                @mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."misc`
+                    SET `valeur` = 'maintenance_mode'
+                    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+                );
             } else {
                 //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                $res = "Impossible to get connected to server. Please verify the credentials.";
+                $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
 
@@ -312,12 +308,14 @@ if (isset($_POST['type'])) {
             @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
             mysqli_select_db(
@@ -387,12 +385,14 @@ if (isset($_POST['type'])) {
             @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
             mysqli_select_db(
@@ -543,7 +543,7 @@ if (isset($_POST['type'])) {
                 array('admin','insert_manual_entry_item_history','0', 0),
                 array('admin','enable_kb','0', 0),
                 array('admin','enable_email_notification_on_item_shown','0', 0),
-                array('admin','enable_email_notification_on_user_pw_change','0', 0)
+                array('admin','enable_email_notification_on_user_pw_change','0', 0),
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
 	            array('admin','use_md5_password_as_salt','0', 0),
@@ -1595,6 +1595,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$user = \"". $_SESSION['db_login'] ."\";
 \$pass = \"". str_replace("$", "\\$", $_SESSION['db_pw']) ."\";
 \$database = \"". $_SESSION['db_bdd'] ."\";
+\$port = ". $_SESSION['db_port'] .";
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
@@ -1667,12 +1668,14 @@ require_once \"".$skFile."\";
             @mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
-                $_SESSION['db_pw']
+                $_SESSION['db_pw'],
+                $_SESSION['db_port']
             );
             @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
             mysqli_select_db(

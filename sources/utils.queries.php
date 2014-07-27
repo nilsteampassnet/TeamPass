@@ -30,8 +30,9 @@ DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
+DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // Construction de la requ?te en fonction du type de valeur
 switch ($_POST['type']) {

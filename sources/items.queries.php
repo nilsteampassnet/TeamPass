@@ -62,8 +62,9 @@ DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
+DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -299,7 +300,7 @@ if (isset($_POST['type'])) {
                     .'" id="'.$newID.'" style="margin-left:-30px;">'
                     .'<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />'
                     .$expirationFlag.'<img src="includes/images/tag-small-green.png">' .
-                    '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')">' .
+                    '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">' .
                     stripslashes($dataReceived['label']);
                     if (!empty($dataReceived['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                         $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($dataReceived['description']), 0, 30))).']</font>';

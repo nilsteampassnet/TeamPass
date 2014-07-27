@@ -36,6 +36,7 @@ if (
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     // Include main functions used by TeamPass

@@ -42,6 +42,8 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
             $_SESSION['user'] = getSettingValue($val);
         } elseif (substr_count($val,'$pass = ')>0) {
             $_SESSION['pass'] = getSettingValue($val);
+        } elseif (substr_count($val,'$port = ')>0) {
+            $_SESSION['port'] = getSettingValue($val);
         } elseif (substr_count($val,'$database = ')>0) {
             $_SESSION['database'] = getSettingValue($val);
         } elseif (substr_count($val,'$pre = ')>0) {
@@ -123,6 +125,7 @@ if (
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
+                    "&db_port="+(document.getElementById("db_port").value)+
 	            	"&db_bdd="+document.getElementById("db_bdd").value+
 	            	"&no_maintenance_mode="+maintenance;
                 } else
@@ -196,6 +199,7 @@ if (isset($_POST['db_host'])) {
     $_SESSION['db_bdd'] = $_POST['db_bdd'];
     $_SESSION['db_login'] = $_POST['db_login'];
     $_SESSION['db_pw'] = $_POST['db_pw'];
+    $_SESSION['db_port'] = $_POST['db_port'];
     $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
 	//$_SESSION['session_start'] = $_POST['session_start'];
     if (isset($_POST['send_stats'])) {
@@ -309,6 +313,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <label for="db_db">dataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
                      <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
                      <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
+                     <label for="db_port">Port :</label><input type="text" id="db_port" name="db_port" class="step" value="',isset($_SESSION['port']) ? $_SESSION['port'] : "3306",'" /><br />
                      <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
                      </fieldset>
 
