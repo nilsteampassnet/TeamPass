@@ -1944,14 +1944,16 @@ $(function() {
         },
         open: function(event,ui) {
             $("#label").focus();
+            $("#visible_pw").html("");
+            $("#item_tabs").tabs("option", "active", 0);
 
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
 		        if ($("#form_tab_fields") != undefined)
-                    $("#item_tabs").tabs( "option", "hidden",3  );
+                    $("#item_tabs").tabs("option", "hidden", 3);
 		    } else {
 		    	if ($("#form_tab_fields") != undefined && $("#display_categories").val() != 1)
-                    $("#item_tabs").tabs( "option", "show",3  );
+                    $("#item_tabs").tabs("option", "show", 3);
 		    }
         },
         close: function(event,ui) {
@@ -2367,7 +2369,12 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         "score.simplePassMeter" : function(jQEvent, score) {
             $("#mypassword_complex").val(score);
         }
+    }).change({
+        "score.simplePassMeter" : function(jQEvent, score) {
+            $("#mypassword_complex").val(score);
+        }
     });
+
     $("#tabs-02").on(
 	    "score.simplePassMeter",
 	    "#pw1",

@@ -116,11 +116,13 @@ if ( file_exists('../includes/settings.php')){
                     "&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
+                    "&db_port="+document.getElementById("db_port").value+
                     "&db_bdd="+document.getElementById("db_bdd").value;
 
                     if (document.getElementById("db_pw").value.indexOf('"') != -1) error = "DB Password should not contain a double quotes!<br>";
                     if (document.getElementById("db_login").value.indexOf('"') != -1) error += "DB Login should not contain a double quotes!<br>";
                     if (document.getElementById("db_bdd").value.indexOf('"') != -1) error += "DB should not contain a double quotes!";
+                    if (document.getElementById("db_port").value == "") error += "Port cannot be empty!";
                 } else
                 if (step == "step3") {
                     document.getElementById("loader").style.display = "";
@@ -317,6 +319,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     <label for="db_db">dataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" /><br />
                     <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" /><br />
                     <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" tilte="Double quotes not allowed!" />
+                    <label for="db_port">Port :</label><input type="text" id="db_port" name="db_port" class="step" value="3306" /><br />
                                         <br />
                                         <div id="error_db" style="display:none;font-size:18px;color:red;margin:10px 0 10px 0;"></div>
                     </fieldset>
@@ -328,6 +331,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     $_SESSION['db_bdd'] = $_POST['db_bdd'];
     $_SESSION['db_login'] = $_POST['db_login'];
     $_SESSION['db_pw'] = $_POST['db_pw'];
+    $_SESSION['db_port'] = $_POST['db_port'];
     // ETAPE 3
     echo '
                     <h3>Step 3</h3>

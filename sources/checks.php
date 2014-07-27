@@ -53,6 +53,7 @@ function checkUser($userId, $userKey, $pageVisited)
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     // load user's data

@@ -34,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 */
 function updateSettings ($setting, $val, $type = '')
 {
-    global $server, $user, $pass, $database, $pre;
+    global $server, $user, $pass, $database, $pre, $port;
 
     if (empty($type)) {
         $type = 'admin';
@@ -48,6 +48,7 @@ function updateSettings ($setting, $val, $type = '')
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
+    DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
