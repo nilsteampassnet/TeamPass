@@ -33,7 +33,7 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 
 ## Installation
 
-* Read [installation related pages] (http://www.teampass.net/tag/installation/)
+* Read [installation related pages] (http://teampass.net/installation/)
 * Once uploaded, launch install/install.php and follow instructions.
 
 ## Update
