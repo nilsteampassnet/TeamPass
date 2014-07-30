@@ -22,7 +22,7 @@ $(function() {
     });
 
     // no paste
-    $('#encrypt_key').bind("paste",function(e) {
+    $('#encrypt_key, #admin_pwd').bind("paste",function(e) {
         alert('Paste option is disabled !!');
         e.preventDefault();
     });
@@ -133,7 +133,7 @@ function CheckPage()
                     $("#step_error").show().html("At least one task has failed! Please correct and relaunch.");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
-                    //$("#but_launch").prop("disabled", true);
+                    $("#but_launch").prop("disabled", true);
                     $("#but_next").prop("disabled", false);
                 }
                 $("#step_result").html("");
@@ -164,7 +164,7 @@ function CheckPage()
                     if (data[0].result != undefined && data[0].result != "" ) {
                         $("#step_result").html("<span style=\"font-weight:bold; margin-right:20px;\">"+data[0].result+"</span>");
                     }
-                    //$("#but_launch").prop("disabled", true);
+                    $("#but_launch").prop("disabled", true);
                     $("#but_next").prop("disabled", false);
                 }
             },
@@ -214,7 +214,7 @@ function GotoNextStep()
                     && $("#encrypt_key").val().length <= 32
             );
         });
-        $('#encrypt_key').live("paste",function(e) {
+        $('#encrypt_key, #admin_pwd').live("paste",function(e) {
             alert('Paste option is disabled !!');
             e.preventDefault();
         });
@@ -240,6 +240,7 @@ function suggestKey() {
         passwd += pwchars.charAt( Math.floor( Math.random() * pwchars.length ) )
     }
     $("#encrypt_key").val(passwd);
+    $("#res4_check1").html("<img src='../includes/images/tick.png' />");
     return true;
 }
 

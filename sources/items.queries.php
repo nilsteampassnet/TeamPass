@@ -2205,7 +2205,8 @@ if (isset($_POST['type'])) {
                     "SELECT t.title
                     FROM ".$pre."roles_values as v
                     INNER JOIN ".$pre."roles_title as t ON (v.role_id = t.id)
-                    WHERE v.folder_id = %i",
+                    WHERE v.folder_id = %i
+                    GROUP BY title",
                     $_POST['groupe']
                 );
                 foreach ($rows as $record) {

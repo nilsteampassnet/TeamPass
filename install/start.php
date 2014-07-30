@@ -35,13 +35,12 @@
         <div id="menu">
             <div style="font-weight:bold;text-align:center;">Installation steps</div>
             <ul>
-                <li id="menu_step1" class="li_inprogress">Welcome&nbsp;<span id="res_1"></span></li>
-                <li id="menu_step2">Server checks&nbsp;<span id="res_2"></span></li>
-                <li id="menu_step3">Database connection&nbsp;<span id="res_3"></span></li>
-                <li id="menu_step4">Preparation&nbsp;<span id="res_4"></span></li>
-                <li id="menu_step5">Tables creation&nbsp;<span id="res_5"></span></li>
-                <!--<li id="menu_step6">Encryption&nbsp;<span id="res_6"></span></li>-->
-                <li id="menu_step6">Finalization&nbsp;<span id="res_6"></span></li>
+                <li id="menu_step1" class="li_inprogress"><span id="step_1">Welcome</span>&nbsp;<span id="res_1"></span></li>
+                <li id="menu_step2"><span id="step_2">Server checks</span>&nbsp;<span id="res_2"></span></li>
+                <li id="menu_step3"><span id="step_3">Database connection</span>&nbsp;<span id="res_3"></span></li>
+                <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
+                <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
+                <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
                 <li id="menu_step7">Resume&nbsp;<span id="res_7"></span></li>
             </ul>
         </div>
@@ -72,6 +71,7 @@
             <span id="step_result"></span>
             <input type="button" id="but_launch" onclick="CheckPage()" class="button" value="LAUNCH" />
             <input type="button" id="but_next" onclick="GotoNextStep()" class="button" value="NEXT" />
+            <input type="button" id="but_restart" onclick="document.location = \'start.php\'" class="button" value="RESTART" />
             &nbsp;&nbsp;
         </div>';
 ?>
