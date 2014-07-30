@@ -305,22 +305,19 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
-            @mysqli_connect(
+            mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
-            );
-            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
-            mysqli_select_db(
-                $dbTmp,
-                $_SESSION['db_bdd']
             );
             $status = "";
 
@@ -386,18 +383,15 @@ if (isset($_POST['type'])) {
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
-            );
-            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
-            mysqli_select_db(
-                $dbTmp,
-                $_SESSION['db_bdd']
             );
 
             ## Populate table MISC
@@ -1669,12 +1663,14 @@ require_once \"".$skFile."\";
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
+                $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
             @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);

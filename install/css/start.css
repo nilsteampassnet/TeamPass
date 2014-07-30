@@ -85,8 +85,18 @@ display:block;
     height:     30px;
     text-align: right;
 }
+h5 {
+    margin-bottom: 10px;
+}
 
 .label_block {
     display: inline-block;
     width:  200px;
+    margin-bottom: 2px;
+}
+
+.label_block_big {
+    display: inline-block;
+    width:  250px;
+    margin-bottom: 2px;
 }

@@ -360,6 +360,7 @@ function pwGenerate(elem)
            	} else {
                 $("#"+elem+"visible_pw").text(data.key);
            	    $("#"+elem+"pw1").val(data.key).focus();
+                
            	}
             $("#"+elem+"pw_wait").hide();
         }
