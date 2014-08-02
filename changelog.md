@@ -19,6 +19,8 @@
  #636 - MySQL on non-standard port
  #632 - Refactor order of index.php
  #629 - A password for admin account is required during installation
+ #654 - Tab character breaks json format
+ #652 - one-time view not working when interface is in French
  - New option permitting to send or not an email to User when admin changes his password
 
 2.1.20

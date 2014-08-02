@@ -501,9 +501,9 @@ function AjouterItem()
 
             //Manage description
             if (CKEDITOR.instances["desc"]) {
-                var description = sanitizeString(CKEDITOR.instances["desc"].getData());
+                var description = sanitizeString(CKEDITOR.instances["desc"].getData()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             } else {
-                var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />');
+                var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             }
 
             // Sanitize description with Safari
@@ -2635,12 +2635,12 @@ function prepareOneTimeView()
         },
         function(data) {
             //check if format error
-            if (data[0].error == "") {
+            if (data.error == "") {
 				$("#div_dialog_message").dialog({minHeight:500,minWidth:750});
                 $("#div_dialog_message").dialog('open');
-                $("#div_dialog_message_text").html(data[0].url);
+                $("#div_dialog_message_text").html(data.url);
             } else {
-                $("#item_history_log_error").html(data[0].error).show();
+                $("#item_history_log_error").html(data.error).show();
             }
         },
         "json"
