@@ -99,13 +99,21 @@ if (isset($_POST['type'])) {
             $tags = htmlspecialchars_decode($dataReceived['tags']);
 
             // is author authorized to create in this folder
-            if (
-                !in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))
-                && !in_array($dataReceived['categorie'], $_SESSION['groupes_visibles'])
-            ) {
-                echo prepareExchangedData(array("error" => "something_wrong"), "encode");
-                break;
+            if (count($_SESSION['list_folders_limited']) > 0) {
+                if (
+                    !in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))
+                    && !in_array($dataReceived['categorie'], $_SESSION['groupes_visibles'])
+                ) {
+                    echo prepareExchangedData(array("error" => "something_wrong"), "encode");
+                    break;
+                }
+            } else {
+                if (!in_array($dataReceived['categorie'], $_SESSION['groupes_visibles'])) {
+                    echo prepareExchangedData(array("error" => "something_wrong"), "encode");
+                    break;
+                }
             }
+
 
             if (!empty($pw)) {
                 // Check length
@@ -2710,13 +2718,16 @@ if (isset($_POST['type'])) {
             $url = $_SESSION['settings']['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
         	$exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + $k['otv_expiration_period']);
 
-        	echo '[{ "error" : "" , "url" : "'.addslashes(
-            	str_replace(
-            		array("#URL#", "#DAY#"),
-            		array($url, $exp_date),
-            		$LANG['one_time_view_item_url_box']
-            	)
-            ).'" }]';
+            echo json_encode(
+                array(
+                    "error" => "",
+                    "url" => str_replace(
+                        array("#URL#", "#DAY#"),
+                        array($url, $exp_date),
+                        $LANG['one_time_view_item_url_box']
+                    )
+                )
+            );
             break;
     }
 }
