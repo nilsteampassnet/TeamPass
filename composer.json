@@ -17,7 +17,7 @@
     },
     "require": {
         "php": ">=5.4.0",
-        "mysqli": ">=5.0.0",
+        "mysqli": ">=5.1.0",
         "mcrypt": "*",
         "mbstring": "*"
     }
