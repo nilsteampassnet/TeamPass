@@ -19,7 +19,6 @@
         "php": ">=5.4.0",
         "mysqli": ">=5.0.0",
         "php-extension": "mcrypt",
-        "php-extension": "mbstring",
-        "php-extension": "openssl"
+        "php-extension": "mbstring"
     }
 }
