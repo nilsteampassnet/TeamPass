@@ -9,7 +9,7 @@ if (!file_exists("../includes/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
-        'If it is an upgrade, it should be there, otherwize select install!";';
+        'If it is an upgrade, it should be there, otherwise select install!";';
     echo 'document.getElementById("loader").style.display = "none";';
     exit;
 }
@@ -251,7 +251,7 @@ if (isset($_POST['type'])) {
                     $_POST['db_port']
                 );
                 //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
-                $res = "Connection is successfull";
+                $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
 
                 //What CPM version
@@ -1649,7 +1649,7 @@ require_once \"".$skFile."\";
                         '"<img src=\"../includes/images/error.png\">&nbsp;Setting.php '.
                         'file doesn\'t exist! Upgrade can\'t continue without this file.<br />'.
                         'Please copy your existing settings.php into the \"includes\" '.
-                        'folder of your cpassman installation ";';
+                        'folder of your TeamPass installation ";';
                 echo 'document.getElementById("loader").style.display = "none";';
             }
 
