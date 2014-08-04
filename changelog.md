@@ -22,6 +22,7 @@
  #654 - Tab character breaks json format
  #652 - one-time view not working when interface is in French
  - New option permitting to send or not an email to User when admin changes his password
+ - Fix for image viewer when option files encryption is set
 
 2.1.20
  #492 - Default admin password not working

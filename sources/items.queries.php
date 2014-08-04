@@ -2729,6 +2729,72 @@ if (isset($_POST['type'])) {
                 )
             );
             break;
+
+        /*
+        * CASE
+        * Free Item for Edition
+        */
+        case "image_preview_preparation":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // prepare image info
+            $tmp = explode("/", $_POST['uri']);
+            $image_code = $tmp[count($tmp)-1];
+            $extension = substr($_POST['title'], strrpos($_POST['title'], '.')+1);
+            
+            // should we decrypt the attachment?
+            if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+                
+                @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
+                
+                // Open the file
+                $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
+                $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
+                
+                // Prepare encryption options
+                $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+                $key = substr(
+                    md5("\x2D\xFC\xD8".SALT, true) .
+                    md5("\x2D\xFC\xD9".SALT, true),
+                    0,
+                    24
+                );
+                $opts = array('iv'=>$iv, 'key'=>$key);
+
+                // Add the Mcrypt stream filter
+                stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+                // copy stream
+                stream_copy_to_stream($fp, $fp_new);
+                // close files
+                fclose($fp);
+                fclose($fp_new);
+                // prepare variable
+                $_POST['uri'] = $_POST['uri']."_delete.";
+            }
+            
+            echo '[ { "error" : "" , "new_file" : "'.$_POST['uri'].$extension.'" } ]';
+            break;
+
+        /*
+        * CASE
+        * Free Item for Edition
+        */
+        case "delete_file":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            $tmp = explode("/", $_POST['file']);
+            $file = $tmp[count($tmp)-1];
+            @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+
+            break;
     }
 }
 // Build the QUERY in case of GET
