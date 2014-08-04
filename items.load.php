@@ -1634,27 +1634,53 @@ function delete_attached_file(file_id)
 //## FUNCTION : Permits to preview an attached image
 //###########
 PreviewImage = function(uri,title) {
-    $("#dialog_files").html('<img id="image_files" src="" />');
-    //Get the HTML Elements
-    imageDialog = $("#dialog_files");
-    imageTag = $('#image_files');
+    $("#div_loading").show();
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "image_preview_preparation",
+            uri     : uri,
+            title   : title,
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
 
-    //Split the URI so we can get the file name
-    uriParts = uri.split("/");
+            $("#dialog_files").html('<img id="image_files" src="" />');
+            //Get the HTML Elements
+            imageDialog = $("#dialog_files");
+            imageTag = $('#image_files');
 
-    //Set the image src
-    imageTag.attr('src', uri);
+            //Set the image src
+            imageTag.attr('src', data[0].new_file);
 
-    //When the image has loaded, display the dialog
-    imageTag.load(function() {
-        imageDialog.dialog({
-            modal: true,
-            resizable: false,
-            draggable: false,
-            width: 'auto',
-            title: title
-        });
-    });
+            //When the image has loaded, display the dialog
+            imageTag.load(function() {
+                $("#div_loading").hide();
+                imageDialog.dialog({
+                    modal: true,
+                    resizable: false,
+                    draggable: false,
+                    width: 'auto',
+                    title: title,
+                    open: function( event, ui ) {
+                        // delete created file
+                        $.post(
+                            "sources/items.queries.php",
+                            {
+                                type    : "delete_file",
+                                file    : data[0].new_file,
+                                key     : "<?php echo $_SESSION['key'];?>"
+                            },
+                            function(data) {
+
+                            }
+                        );
+                    }
+                });
+            });
+        },
+        "json"
+    );    
 }
 
 /**
