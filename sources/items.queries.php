@@ -22,7 +22,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include 'error.php';
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
@@ -1010,7 +1010,7 @@ if (isset($_POST['type'])) {
                     $newID
                 );
                 // Add attached itms
-                $rows = DB::query("SELECT * FROM ".$pre."filesWHERE id_item=%i",$newID);
+                $rows = DB::query("SELECT * FROM ".$pre."files WHERE id_item=%i",$newID);
                 foreach ($rows as $record) {
                     DB::insert(
                         $pre.'files',
@@ -2790,7 +2790,7 @@ if (isset($_POST['type'])) {
                 break;
             }
 
-            $tmp = explode("/", $_POST['file']);
+            $tmp = explode("/", $_POST['filecopy_item']);
             $file = $tmp[count($tmp)-1];
             @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
 

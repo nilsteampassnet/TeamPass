@@ -98,7 +98,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 	}
 } else {
 	$_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-	include 'error.php';
+	include $_SESSION['settings']['cpassman_dir'].'/error.php';
 }
 
 // Load links, css and javascripts
@@ -428,14 +428,14 @@ if (
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
     if (!extension_loaded('mcrypt')) {
         $_SESSION['error']['code'] = ERR_NO_MCRYPT;
-        include 'error.php';
+        include $_SESSION['settings']['cpassman_dir'].'/error.php';
     } elseif (isset($_SESSION['initial_url']) && !empty($_SESSION['initial_url'])) {
         include $_SESSION['initial_url'];
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
         if ($_SESSION['user_admin'] == 1) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include 'error.php';
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
         } else {
             include 'items.php';
         }
@@ -451,7 +451,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             include 'kb.php';
         } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include 'error.php';
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     } elseif ($_GET['page'] == "suggestion") {
         // Show page KB
@@ -459,7 +459,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             include 'suggestion.php';
         } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include 'error.php';
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     } elseif (in_array($_GET['page'], array_keys($mngPages))) {
         // Define if user is allowed to see management pages
@@ -470,21 +470,21 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                 include($mngPages[$_GET['page']]);
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include 'error.php';
+                include $_SESSION['settings']['cpassman_dir'].'/error.php';
             }
         } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include 'error.php';
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     } else {
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
-        include 'error.php';
+        include $_SESSION['settings']['cpassman_dir'].'/error.php';
     }
 /*} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
     // case where user not logged and can't access a direct link
     $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
     $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
-    include 'error.php';*/
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';*/
 } elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
     // case where one-shot viewer
 	if (
@@ -497,7 +497,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
 	} else {
         $_SESSION['error']['code'] = ERR_VALID_SESSION;
         $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
-        include 'error.php';
+        include $_SESSION['settings']['cpassman_dir'].'/error.php';
     }
 } elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
     // Case where user has asked new PW

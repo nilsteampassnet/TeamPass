@@ -27,7 +27,7 @@ if (
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include 'error.php';
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
