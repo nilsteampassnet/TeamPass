@@ -12,10 +12,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 
 $pagesRights = array(
     "user" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders"
     ),
     "manager" => array(
         "home", "items", "find", "kb", "favourites", "manage_roles", "manage_folders", "manage_views", "manage_users", "suggestion"

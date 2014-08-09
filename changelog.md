@@ -21,8 +21,12 @@
  #629 - A password for admin account is required during installation
  #654 - Tab character breaks json format
  #652 - one-time view not working when interface is in French
+ #658 - Rapid Click on Item Copy
+ #657 - Rapid Click on Password Creation
+ #656 - Can't Create Folder as User
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
+ - Fix for password complexity level update
 
 2.1.20
  #492 - Default admin password not working

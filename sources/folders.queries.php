@@ -24,9 +24,9 @@ if (
 
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include 'error.php';
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
@@ -114,6 +114,14 @@ if (isset($_POST['newtitle'])) {
 
     // CASE where complexity is changed
 } elseif (isset($_POST['changer_complexite'])) {
+    /* do checks */
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+    if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        exit();
+    }
+
     $id = explode('_', $_POST['id']);
 
     //Check if group exists
@@ -250,70 +258,78 @@ if (isset($_POST['newtitle'])) {
                     $isPersonal = 0;
                 }
 
-                //create folder
-                DB::insert(
-                    $pre."nested_tree",
-                    array(
-                        'parent_id' => $parentId,
-                        'title' => $title,
-                        'personal_folder' => $isPersonal,
-                        'renewal_period' => $renewalPeriod,
-                        'bloquer_creation' => '0',
-                        'bloquer_modification' => '0'
-                   )
-                );
-                $newId = DB::insertId();
-
-                //Add complexity
-                DB::insert(
-                    $pre."misc",
-                    array(
-                        'type' => 'complex',
-                        'intitule' => $newId,
-                        'valeur' => $complexity
-                    )
-                );
-
-                $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-                $tree->rebuild();
-
                 if (
-                    $isPersonal != 1
-                    && isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                    $isPersonal = 1
+                    || $_SESSION['is_admin'] == 1
+                    || ($_SESSION['user_manager'] == 1)
+                    || (isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 1)
                 ){
-                    //Get user's rights
-                    @identifyUserRights(
-                        $_SESSION['groupes_visibles'].';'.$newId,
-                        $_SESSION['groupes_interdits'],
-                        $_SESSION['is_admin'],
-                        $_SESSION['fonction_id'],
-                        true
+                    //create folder
+                    DB::insert(
+                        $pre."nested_tree",
+                        array(
+                            'parent_id' => $parentId,
+                            'title' => $title,
+                            'personal_folder' => $isPersonal,
+                            'renewal_period' => $renewalPeriod,
+                            'bloquer_creation' => '0',
+                            'bloquer_modification' => '0'
+                       )
+                    );
+                    $newId = DB::insertId();
+
+                    //Add complexity
+                    DB::insert(
+                        $pre."misc",
+                        array(
+                            'type' => 'complex',
+                            'intitule' => $newId,
+                            'valeur' => $complexity
+                        )
                     );
 
-                    //add access to this new folder
-                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+                    $tree->rebuild();
+
+                    if (
+                        $isPersonal != 1
+                        && isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                    ){
+                        //Get user's rights
+                        @identifyUserRights(
+                            $_SESSION['groupes_visibles'].';'.$newId,
+                            $_SESSION['groupes_interdits'],
+                            $_SESSION['is_admin'],
+                            $_SESSION['fonction_id'],
+                            true
+                        );
+
+                        //add access to this new folder
+                        foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                            DB::insert(
+                                $pre.'roles_values',
+                                array(
+                                    'role_id' => $role,
+                                    'folder_id' => $newId
+                                )
+                            );
+                        }
+                    }
+
+                    //If it is a subfolder, then give access to it for all roles that allows the parent folder
+                    $rows = DB::query("SELECT role_id FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
+                    foreach ($rows as $record) {
+                        //add access to this subfolder
                         DB::insert(
                             $pre.'roles_values',
                             array(
-                                'role_id' => $role,
+                                'role_id' => $record['role_id'],
                                 'folder_id' => $newId
-                            )
+                           )
                         );
                     }
-                }
-
-                //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                $rows = DB::query("SELECT role_id FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
-                foreach ($rows as $record) {
-                    //add access to this subfolder
-                    DB::insert(
-                        $pre.'roles_values',
-                        array(
-                            'role_id' => $record['role_id'],
-                            'folder_id' => $newId
-                       )
-                    );
                 }
             }
             echo '[ { "error" : "'.$error.'" } ]';
@@ -385,6 +401,14 @@ if (isset($_POST['newtitle'])) {
 
         //CASE where to update the associated Function
         case "fonction":
+            /* do checks */
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                exit();
+            }
+            // get values
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             //Check if ID already exists
@@ -427,6 +451,14 @@ if (isset($_POST['newtitle'])) {
 
         // CASE where to authorize an ITEM creation without respecting the complexity
         case "modif_droit_autorisation_sans_complexite":
+            /* do checks */
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                exit();
+            }
+            // send query
             DB::update(
                 $pre.'nested_tree',
                 array(
@@ -438,6 +470,15 @@ if (isset($_POST['newtitle'])) {
 
         // CASE where to authorize an ITEM modification without respecting the complexity
         case "modif_droit_modification_sans_complexite":
+            /* do checks */
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
+                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                exit();
+            }
+
+            // send query
             DB::update(
                 $pre.'nested_tree',
                 array(

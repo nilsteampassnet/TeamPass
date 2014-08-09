@@ -360,8 +360,8 @@ function pwGenerate(elem)
            	} else {
                 $("#"+elem+"visible_pw").text(data.key);
            	    $("#"+elem+"pw1").val(data.key).focus();
-                
            	}
+            $("#"+elem+"pw1").show().blur();
             $("#"+elem+"pw_wait").hide();
         }
    );
@@ -554,7 +554,6 @@ function AjouterItem()
                 },
                 function(data) {
                     //decrypt data
-
                     try {
                         data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                     } catch (e) {
@@ -679,9 +678,9 @@ function EditerItem()
 
             //Manage description
             if (CKEDITOR.instances["edit_desc"]) {
-                var description = sanitizeString(CKEDITOR.instances["edit_desc"].getData());
+                var description = sanitizeString(CKEDITOR.instances["edit_desc"].getData()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             } else {
-                var description = sanitizeString($("#edit_desc").val());
+                var description = sanitizeString($("#edit_desc").val()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             }
 
             // Sanitize description with Safari
@@ -1562,8 +1561,12 @@ $("#div_copy_item_to_folder").dialog({
         width: 400,
         height: 200,
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
+        open: function( event, ui ) {
+            $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
+        },
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
+                $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", true);
                 //Send query
                 $.post(
                     "sources/items.queries.php",
@@ -1956,9 +1959,13 @@ $(function() {
         width: 505,
         height: 665,
         title: "<?php echo $LANG['item_menu_add_elem'];?>",
+        open: function( event, ui ) {
+            $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+        },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_loading").show();
+                $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 AjouterItem();
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
@@ -2002,8 +2009,12 @@ $(function() {
         width: 505,
         height: 650,
         title: "<?php echo $LANG['item_menu_edi_elem'];?>",
+        open: function( event, ui ) {
+            $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+        },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
+                $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
 				$("#div_formulaire_edition_item_info").hide().html("");
             },
@@ -2447,11 +2458,11 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         ]
     });
-    $('#edit_pw1').bind({
-        "score.simplePassMeter" : function(jQEvent, score) {
+    $('#edit_pw1').on(
+        "score.simplePassMeter", function(jQEvent, score) {
             $("#edit_mypassword_complex").val(score);
         }
-    });
+    );
 
     //Text search watermark
     var tbval = $('#jstree_search').val();
