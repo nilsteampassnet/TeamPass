@@ -3,7 +3,7 @@
  *
  * @file          english.php
  * @author        Nils Laumaillé
- * @version       2.1.20
+ * @version       2.1.21
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,12 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'generated_pw' => 'Generated password',
-    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
-    'admin_email_server_url' => 'Server URL for links in emails',
-    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
-    'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
-    'old_saltkey' => 'Old SALT key',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -763,6 +757,12 @@ $LANG = array (
     'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
     'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
     'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
+    'old_saltkey' => 'Old SALT key',
+    'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
+    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
+    'admin_email_server_url' => 'Server URL for links in emails',
+    'generated_pw' => 'Generated password',
+    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
     '' => ''
 );
 ?>
