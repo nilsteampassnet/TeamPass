@@ -3,7 +3,7 @@
  *
  * @file          french.php
  * @author        Nils Laumaillé
- * @version       2.1.20
+ * @version       2.1.21
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -754,9 +754,15 @@ $LANG = array (
     'settings_ldap_bind_dn' => 'Ldap Bind Dn',
     'settings_ldap_bind_passwd' => 'Ldap Bind Mot de Passe',
     'settings_ldap_search_base' => 'Ldap Base de Recherche',
-    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
-    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
-    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
+    'settings_ldap_bind_dn_tip' => 'Un Bind dn qui attache et recherche les utilisateurs de l\'arbre',
+    'settings_ldap_bind_passwd_tip' => 'Mot de passe pour le bind dn qui attache et recherche les utilisateurs de l\'arbre',
+    'settings_ldap_search_base_tip' => 'Recherche le root dn pour les recherches dans l\'arbre',
+    'old_saltkey' => 'Ancienne clé de salage',
+    'define_old_saltkey' => 'Je veux définir l\'ancienne clé de salage à utiliser (optionnel)',
+    'admin_email_server_url_tip' => 'Personnaliser l\'URL utilisée par les liens dans les emais si vous ne voulez pas celui par défaut',
+    'admin_email_server_url' => 'URL serveur pour les liens dans les emails',
+    'generated_pw' => 'Generated password',
+    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
     '' => ''
 );
 ?>
