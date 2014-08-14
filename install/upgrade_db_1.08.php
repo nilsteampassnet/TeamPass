@@ -68,7 +68,7 @@ function changeDB()
             } else
             if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
                 $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['tbl_prefix']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']."'")]." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0;
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }
@@ -106,7 +106,7 @@ function changeDB()
             } else
             if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
                 $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['tbl_prefix']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query("UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }

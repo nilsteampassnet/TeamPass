@@ -761,8 +761,8 @@ $LANG = array (
     'define_old_saltkey' => 'Je veux définir l\'ancienne clé de salage à utiliser (optionnel)',
     'admin_email_server_url_tip' => 'Personnaliser l\'URL utilisée par les liens dans les emais si vous ne voulez pas celui par défaut',
     'admin_email_server_url' => 'URL serveur pour les liens dans les emails',
-    'generated_pw' => 'Generated password',
-    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
+    'generated_pw' => 'Générer le motde passe',
+    'enable_email_notification_on_user_pw_change' => 'Envoyer un email à l\'utilisateur une fois son mot de passe changé',
     '' => ''
 );
 ?>
