@@ -24,6 +24,8 @@
  #658 - Rapid Click on Item Copy
  #657 - Rapid Click on Password Creation
  #656 - Can't Create Folder as User
+ #643 - email charset in french interface
+ #641 - Add and save item -> double click on that icon won't work
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update
