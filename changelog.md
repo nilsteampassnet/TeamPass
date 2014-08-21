@@ -24,8 +24,12 @@
  #658 - Rapid Click on Item Copy
  #657 - Rapid Click on Password Creation
  #656 - Can't Create Folder as User
- #643 - email charset in french interface
+ #643 - email charset in UTF-8
  #641 - Add and save item -> double click on that icon won't work
+ #671 - When password is generated, it is added in confirm field too
+ #672 - Changing password makes account inaccessible
+ #637 - Multi Domain LDAP
+ #673 - Changed strategy for quick icon clipboard copy
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update

@@ -20,7 +20,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
     var query_in_progress = 0;
-    //ZeroClipboard.setMoviePath("<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf");
     ZeroClipboard.config( { swfPath: "<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf" } );
 
 //  Part of Safari 6 OS X fix
@@ -359,9 +358,10 @@ function pwGenerate(elem)
            		$("#div_dialog_message").dialog("open");
            	} else {
                 $("#"+elem+"visible_pw").text(data.key);
-           	    $("#"+elem+"pw1").val(data.key).focus();
+           	    $("#"+elem+"pw1, #"+elem+"pw2").val(data.key);
+                $("#"+elem+"pw1").focus();
            	}
-            $("#"+elem+"pw1").show().blur();
+            //$("#"+elem+"pw1").show().blur();
             $("#"+elem+"pw_wait").hide();
         }
    );
@@ -600,7 +600,7 @@ function AjouterItem()
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
                         $(".fields, .item_field, #categorie, #random_id").val("");
-                        $(".fields_div, #item_file_queue").html("");
+                        $(".fields_div, #item_file_queue, #display_title, #visible_pw").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
                     }
@@ -805,6 +805,7 @@ function EditerItem()
                                 $(this).val("");
                             });
                         }
+                        $("#edit_display_title, #edit_visible_pw").html("");
 
                         //calling image lightbox when clicking on link
                         $("a.image_dialog").click(function(event) {
@@ -829,6 +830,8 @@ function EditerItem()
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
 
+
+                        $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                         //Close dialogbox
                         $("#div_formulaire_edition_item").dialog('close');
                         //hide loader
@@ -1686,39 +1689,6 @@ PreviewImage = function(uri,title) {
     );    
 }
 
-/**
- *
- * @access public
- * @return void
- **/
-function get_clipboard_item(field,id)
-{
-	clip = new ZeroClipboard();
-    if (field == "pw") {
-        clip.on(
-            'copy', function(event) { 
-                var clipboard = event.clipboardData;
-                clipboard.setData("text/plain", $("#item_pw_in_list_"+id).val());
-                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
-                clip.destroy();
-            }
-        );
-    } else {
-        clip.on(
-            'copy', function(event) {
-                var clipboard = event.clipboardData;
-                clipboard.setData("text/plain", $("#item_login_in_list_"+id).val());
-                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-                clip.destroy();
-            }
-        );
-    }
-
-    var div = $('#items_list');
-    var box = ZeroClipboard.getDOMObjectPosition(clip.domElement);
-    clip.div.style.top = '' + (box.top - $(div).scrollTop()) + 'px';
-};
-
 function notify_click(status)
 {
     $.post("sources/items.queries.php",
@@ -2009,12 +1979,9 @@ $(function() {
         width: 505,
         height: 650,
         title: "<?php echo $LANG['item_menu_edi_elem'];?>",
-        open: function( event, ui ) {
-            $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
-        },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
-                $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+                $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
 				$("#div_formulaire_edition_item_info").hide().html("");
             },
@@ -2043,7 +2010,8 @@ $(function() {
                     id      : $("#id_item").val(),
                     key        : "<?php echo $_SESSION['key'];?>"
                 }
-           );
+            );
+            $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
         },
 		open: function(event,ui) {
 			//refresh pw complexity
@@ -2058,6 +2026,7 @@ $(function() {
 		    	if ($("#edit_item_more") != undefined && $("#display_categories").val() != 1)
                     $("#edit_item_more").show();
 		    }
+            $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
 		}
     });
     //<=
@@ -2574,6 +2543,30 @@ function proceed_list_update()
     } else {
         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
         $("#items_list_loader").hide();
+
+        // prepare clipboard items
+        var client = new ZeroClipboard( $('.item_clipboard') );
+        $('.item_clipboard').each(function() {
+            // get id of elem
+            var tmp = $(this).prop('id').split("_");
+            var elem = tmp[0];
+            var id = tmp[1];
+
+            // Create the clip, and glue it to the element
+            var client = new ZeroClipboard( $("#"+elem+"_"+id) );
+            client.on( 'copy', function(event) {
+                var clipboard = event.clipboardData;
+                if (elem.indexOf('login') >= 0) {
+                    clipboard.setData("text/plain", $("#item_login_in_list_"+id).val().replace("\\'", "'").replace("&quot;", '"'));
+                    $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+                    $(this).css('cursor','pointer');
+                } else {
+                    clipboard.setData("text/plain", $("#item_pw_in_list_"+id).val().replace("\\'", "'").replace("&quot;", '"'));
+                    $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                    $(this).css('cursor','pointer');
+                }
+            });
+        })
     }
 }
 

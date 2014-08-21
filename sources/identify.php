@@ -75,6 +75,11 @@ function IdentifyUser($sentData)
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
         && $username != "admin"
     ) {
+        //Multiple Domain Names
+        if(strpos(html_entity_decode($username), '\\') == true) {
+            $ldap_suffix="@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+            $username=substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
+        }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -119,7 +124,7 @@ function IdentifyUser($sentData)
             if ($_SESSION['settings']['ldap_type'] == 'posix') {
                 $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
             }
-            elseif ($_SESSION['settings']['ldap_type'] == 'windows') {
+            elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
             }
             $adldap = new LDAP\adLDAP\adLDAP(

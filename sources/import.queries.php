@@ -52,7 +52,7 @@ $aes->register();
 $k['langage'] = @$_SESSION['user_language'];
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
-// Construction de la requ?te en fonction du type de valeur
+// Build query
 switch ($_POST['type']) {
     //Check if import CSV file format is what expected
     case "import_file_format_csv":
@@ -140,7 +140,7 @@ switch ($_POST['type']) {
                     $url = addslashes($row['Web Site']);
                     $to_find = array ( "\"" , "'" );
                     $to_ins = array ( "&quot" , "&#39;");
-                    $comment = htmlentities(addslashes(str_replace($to_find,$to_ins,$row['Comments'])), ENT_QUOTES, 'UTF-8');
+                    $comment = htmlentities(addslashes(str_replace($to_find, $to_ins, $row['Comments'])), ENT_QUOTES, 'UTF-8');
 
                     $continue_on_next_line = false;
                 }
@@ -282,7 +282,6 @@ switch ($_POST['type']) {
                     'author' => $_SESSION['user_id']
                )
             );
-
         }
         echo '[{"items":"'.$list.'"}]';
         break;
@@ -635,7 +634,9 @@ switch ($_POST['type']) {
                     //get folder name
                     if (strrpos($folder, $foldersSeparator) > 0) {
                         $fold = substr($folder, strrpos($folder, $foldersSeparator)+strlen($foldersSeparator));
-                        $parent_id = $foldersArray[$path[$folderLevel-2]]['id'];
+                        //$parent_id = $foldersArray[$path[$folderLevel-2]]['id'];
+                        $parent = implode($foldersSeparator, array_slice($path, 0, -1));
+                        $parent_id = $foldersArray[$parent]['id'];
                     } else {
                         $fold = $folder;
                         $parent_id = $_POST['destination']; //permits to select the folder destination
@@ -652,7 +653,7 @@ switch ($_POST['type']) {
                     $counter = DB::count();
                     if ($counter == 0) {
                         //do query
-                        $id = DB::insert(
+                        DB::insert(
                             $pre."nested_tree",
                             array(
                                 'parent_id' => $parent_id,
@@ -660,6 +661,7 @@ switch ($_POST['type']) {
                                 'nlevel' => $folderLevel
                            )
                         );
+                        $id = DB::insertId();
                         //Add complexity level => level is set to "medium" by default.
                         DB::insert(
                             $pre.'misc',
@@ -689,7 +691,7 @@ switch ($_POST['type']) {
                         //increment number of imported folders
                         $nbFoldersImported++;
                     } else {
-                        //get forlder actual ID
+                        //get folder actual ID
                         $data = DB::queryFirstRow(
                             "SELECT id FROM ".$pre."nested_tree
                             WHERE nlevel = %i AND title = %s AND parent_id = %i",
@@ -711,7 +713,6 @@ switch ($_POST['type']) {
                     $i++;
                 }
             }
-
 
             //if no new folders them inform
             if ($nbFoldersImported == 0) {
@@ -742,15 +743,16 @@ switch ($_POST['type']) {
 
             while (!feof($cacheFile)) {
                 //prepare an array with item to import
-                $item = fgets($cacheFile, 4096);
-                $item = explode($itemsSeparator, str_replace(array("\r\n", "\n", "\r"), '', $item));
+                $full_item = fgets($cacheFile, 4096);
+                $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
+                $item = explode($itemsSeparator, $full_item);
 
                 if (!empty($item[2])) {
                     //check if not exists
                     DB::query(
                         "SELECT * FROM ".$pre."items
                         WHERE id_tree =%i AND label = %s",
-                        intval($foldersArray[$item[1]]['id']),
+                        intval($foldersArray[$item[0]]['id']),
                         $item[2]
                     );
                     $counter = DB::count();
@@ -758,6 +760,17 @@ switch ($_POST['type']) {
                         //Encryption key
                         $randomKey = generateKey();
                         $pw = $randomKey.$item[3];
+
+                        //Get folder label
+                        if (count($foldersArray)==0 || empty($item[0])) {
+                            $folderId = $_POST['destination'];
+                        } else {
+                            $folderId = $foldersArray[$item[0]]['id'];
+                        }
+                        $data = DB::queryFirstRow(
+                            "SELECT title FROM ".$pre."nested_tree WHERE id = %i",
+                            intval($folderId)
+                        );
 
                         //ADD item
                         DB::insert(
@@ -767,7 +780,7 @@ switch ($_POST['type']) {
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
                                 'pw' => encrypt($pw),
                                 'url' => stripslashes($item[6]),
-                                'id_tree' => count($foldersArray)==0 ? $_POST['destination'] : $foldersArray[$item[1]]['id'],
+                                'id_tree' => $folderId,
                                 'login' => stripslashes($item[4]),
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
@@ -807,17 +820,6 @@ switch ($_POST['type']) {
                                 'action' => 'at_creation',
                                 'raison' => 'at_import'
                            )
-                        );
-
-                        //Get folder label
-                        if (count($foldersArray)==0) {
-                            $folderId = $_POST['destination'];
-                        } else {
-                            $folderId = $foldersArray[$item[1]]['id'];
-                        }
-                        $data = DB::queryFirstRow(
-                            "SELECT title FROM ".$pre."nested_tree WHERE id = %i",
-                            intval($folderId)
                         );
 
                         //Add entry to cache table

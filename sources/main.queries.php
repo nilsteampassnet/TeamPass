@@ -61,10 +61,11 @@ switch ($_POST['type']) {
 
         // Prepare variables
         $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
+
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
 
-            // check if expected securiy level is reached
+            // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = %i", $_SESSION['user_id']);
             $data = DB::query(
                 "SELECT complexity
@@ -115,6 +116,7 @@ switch ($_POST['type']) {
                         }
                     }
                 }
+
                 // update sessions
                 $_SESSION['last_pw'] = $oldPw;
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));

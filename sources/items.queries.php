@@ -1739,7 +1739,6 @@ if (isset($_POST['type'])) {
             $where = new WhereClause('and');
             if (isset($_POST['restricted']) && $_POST['restricted'] == 1) {
                 $counter = count($_SESSION['list_folders_limited'][$_POST['id']]);
-                //$whereArg = " AND i.id IN (".implode(',', $_SESSION['list_folders_limited'][$_POST['id']]).")";
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$_POST['id']]);
             }
             // check if this folder is visible
@@ -1752,7 +1751,6 @@ if (isset($_POST['type'])) {
             } else {
                 DB::query("SELECT * FROM ".$pre."items WHERE inactif = %i", 0);
                 $counter = DB::count();
-                //$whereArg = " AND i.id_tree=".intval($_POST['id']);
                 $where->add('i.id_tree=%i', $_POST['id']);
             }
 
@@ -2021,14 +2019,14 @@ if (isset($_POST['type'])) {
                             $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$record['id'].'" class="copy_clipboard tip" />';
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$record['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'login\','.$record['id'].')" title="'.$LANG['item_menu_copy_login'].'" />';
+                                    $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'" />';
                                 }
                                 if (!empty($pw)) {
-                                    $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$record['id'].'" class="copy_clipboard tip" onclick="get_clipboard_item(\'pw\','.$record['id'].')" title="'.$LANG['item_menu_copy_pw'].'" />';
+                                    $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'" />';
                                 }
                             }
                             $html .= $itemLogin.'&nbsp;'.$itemPw .
-                            '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.$pw.'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.$record['login'].'">';
+                            '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
                         }
                         // Prepare make Favorite small icon
                         $html .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
