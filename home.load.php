@@ -203,7 +203,7 @@ $(function() {
                                 type    : "change_pw",
                                 change_pw_origine    : "user_change",
                                 complexity:    $("#pw_strength_value").val(),
-                                data :    aes_encrypt(data)
+                                data :    prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                             },
                             function(data) {
                                 if (data[0].error == "already_used") {
@@ -588,7 +588,7 @@ function ChangeMyPass()
                     type                : "change_pw",
                     change_pw_origine    : "first_change",
                     complexity            :    $("#user_pw_complexity").val(),
-                    data                 :    aes_encrypt(data)
+                    data                 :    prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                 },
                 function(data) {
                     if (data[0].error == "complexity_level_not_reached") {

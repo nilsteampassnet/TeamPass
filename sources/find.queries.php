@@ -208,11 +208,11 @@ foreach ($rows as $record) {
     ) {
         $getItemInList = false;
     } else {
-        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', ''), strip_tags($record['description']));
+        $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', '', ' '), strip_tags($record['description']));
         if (strlen($txt) > 50) {
-            $sOutputItem .= '"'.substr(stripslashes(preg_replace('<[\/]{0,1}[^>]*>|[\t]', '', $txt)), 0, 50).'", ';
+            $sOutputItem .= '"'.substr(stripslashes(preg_replace('/<[\/]{0,1}[^>]*>|[ \t]/', '', $txt)), 0, 50).'", ';
         } else {
-            $sOutputItem .= '"'.stripslashes(preg_replace('/<[^>]*>|[\t]/', '', $txt)).'", ';
+            $sOutputItem .= '"'.stripslashes(preg_replace('/<[^>]*>|[ \t]/', '', $txt)).'", ';
         }
     }
 

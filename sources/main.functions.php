@@ -764,6 +764,7 @@ function teampassStats()
  */
 function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 {
+    global $LANG;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     //load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';

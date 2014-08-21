@@ -200,7 +200,7 @@ if (!empty($_POST['type'])) {
                            )
                     );
                     // Create role
-                    $new_role_id = DB::insert(
+                    DB::insert(
                         $pre."roles_title",
                         array(
                             'title' => mysqli_escape_string($link, stripslashes(($_POST['domain'])))
