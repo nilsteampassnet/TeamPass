@@ -49,6 +49,7 @@ $LANG = array (
     'offline_mode_key_level' => 'Minimální úroveň šifrovacího klíče v off-line modusu',
     'categories' => 'Kategorie',
     'new_category_label' => 'Vytvořit novou kategorii - Zadat jméno',
+    'new_category_button' => 'Vytvořit',
     'no_category_defined' => 'Ještě není definována žádná kategorie',
     'confirm_deletion' => 'Chcete skutečně odstranit?',
     'confirm_rename' => 'Potvrdit přejmenování?',

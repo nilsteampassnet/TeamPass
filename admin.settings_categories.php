@@ -157,7 +157,7 @@ echo '
         <div>
             '.$LANG['new_category_label'].':
             <input type="text" id="new_category_label" class="ui-content" style="margin-left:5px; width: 200px;" />
-            <input type="button" value="Add Category" onclick="categoryAdd()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['new_category_button'].'" onclick="categoryAdd()" style="margin-left:5px;" />
         </div>
         <div style="margin-top:5px;">
             '.$LANG['for_selected_items'].':<br />
