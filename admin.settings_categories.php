@@ -164,7 +164,7 @@ echo '
             <input type="text" id="new_item_title" class="ui-content" style="margin-left:30px; width: 200px;" />
             <input type="button" value="'.$LANG['rename'].'" onclick="renameItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['del_button'].'" onclick="deleteItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
             <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" />
             <select id="moveItemTo" style="margin-left:10px;">'.$categoriesSelect.'</select>
