@@ -30,6 +30,7 @@
  #672 - Changing password makes account inaccessible
  #637 - Multi Domain LDAP
  #673 - Changed strategy for quick icon clipboard copy
+ #639 - Design fix in admin page
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update
