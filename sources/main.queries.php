@@ -338,7 +338,7 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            "SELECT * FROM ".$pre."users WHERE email = %s",
             mysqli_escape_string($link, stripslashes($_POST['email']))
         );
         $counter = DB::count();
