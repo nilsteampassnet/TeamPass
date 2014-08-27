@@ -429,7 +429,7 @@ switch ($_POST['type']) {
             // Delete recovery in DB
             DB::delete(
                 $pre."misc",
-                "type = %s AND intitule = %S AND valeur = %s",
+                "type = %s AND intitule = %s AND valeur = %s",
                 "password_recovery",
                 mysqli_escape_string($link, $login),
                 $key
