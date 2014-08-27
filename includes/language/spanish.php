@@ -49,6 +49,7 @@ $LANG = array (
     'offline_mode_key_level' => 'Off-line encryption key minimum level',
     'categories' => 'Categorías',
     'new_category_label' => 'Create a new Category - Enter label',
+    'new_category_button' => 'Crear',
     'no_category_defined' => 'No category yet defined',
     'confirm_deletion' => 'Va a eliminar, ¿está seguro?',
     'confirm_rename' => 'Confirmar renombrado?',

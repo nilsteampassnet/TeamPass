@@ -49,6 +49,7 @@ $LANG = array (
     'offline_mode_key_level' => 'Минимальная сложность ключа шифрования для автономного режима',
     'categories' => 'Категории',
     'new_category_label' => 'Создать категорию',
+    'new_category_button' => 'Cоздать',
     'no_category_defined' => 'Категории еще не созданы',
     'confirm_deletion' => 'Вы уверены, что хотите удалить?',
     'confirm_rename' => 'Подтверждаете переименование?',

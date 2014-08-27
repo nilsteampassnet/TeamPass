@@ -49,6 +49,7 @@ $LANG = array (
     'offline_mode_key_level' => 'Minimale Schlüsselstärke für den Offline-Modus.',
     'categories' => 'Kategorien',
     'new_category_label' => 'Neue Kategorie erstellen - Namen eingeben',
+    'new_category_button' => 'Schaffen',
     'no_category_defined' => 'Noch keine Kategorie erstellt',
     'confirm_deletion' => 'Sind Sie sicher?',
     'confirm_rename' => 'Wirklich umbenennen?',
