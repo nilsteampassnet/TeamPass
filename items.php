@@ -571,10 +571,10 @@ echo '
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
             <input type="text" id="pw1_txt" class="input_text text ui-widget-content ui-corner-all item_field" style="display:none;" />
-            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" value="default"/>
             <input type="hidden" id="mypassword_complex" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
-            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all item_field" value="default"/>
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
