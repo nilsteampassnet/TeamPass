@@ -1781,8 +1781,12 @@ if (isset($_POST['type'])) {
                         else $limited_to_items .= ",".$record;
                     }
                 }*/
+
+                $items_to_display_once = $_POST['nb_items_to_display_once'];
                 // List all ITEMS
                 if ($folderIsPf == 0) {
+                    // no way to know number of items here since left join makes duplicates
+                    $items_to_display_once = "max";
                     $query = "SELECT DISTINCT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login,
                         i.anyone_can_modify as anyone_can_modify, l.date as date,
@@ -1802,9 +1806,10 @@ if (isset($_POST['type'])) {
                     }
                     $query .= "
                     ORDER BY i.label ASC, l.date DESC";
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
+                    // no way to know number of items here since left join makes duplicates
+                    if ($items_to_display_once != 'max') {
                         $query .= "
-                    LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+                    LIMIT ".$start.",".$items_to_display_once;
                     }
                     $rows = $db->fetchAllArray($query);
                 } else {
@@ -1820,9 +1825,9 @@ if (isset($_POST['type'])) {
                     $whereArg."
                     AND (l.action = 'at_creation')
                     ORDER BY i.label ASC, l.date DESC";
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
+                    if ($items_to_display_once != 'max') {
                         $query .= "
-                        LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+                        LIMIT ".$start.",".$items_to_display_once;
                     }
 
                     $rows = $db->fetchAllArray($query);
@@ -2086,7 +2091,7 @@ if (isset($_POST['type'])) {
             );
         	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
-            if (($_POST['nb_items_to_display_once'] + $start) < $countItems[0] && $_POST['nb_items_to_display_once'] != "max") {
+            if (($items_to_display_once + $start) < $countItems[0] && $items_to_display_once != "max") {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
