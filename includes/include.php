@@ -22,7 +22,6 @@ $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx'
 $k['admin_full_right'] = true;
 $k['admin_no_info'] = false;
 $k['copyright'] = " &copy; 2009 - 2014";
-$k['otv_expiration_period'] = 604800; // 1 week
 $k['allowedTags'] = "<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>";
 
 @define('ERR_NOT_ALLOWED', "1000");

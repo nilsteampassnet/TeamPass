@@ -299,7 +299,8 @@ if (isset($_POST['type'])) {
                 ('admin','api','0'),
                 ('admin','subfolder_rights_as_parent','0'),
                 ('admin','show_only_accessible_folders','0'),
-                ('admin','enable_suggestion','0')
+                ('admin','enable_suggestion','0'),
+                ('admin','otv_expiration_period','7')
                 ;"
             );
 

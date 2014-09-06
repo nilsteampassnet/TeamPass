@@ -21,6 +21,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] == "" || $_SESSION['settings']['cpassman_dir'] == ".") {
+    $_SESSION['settings']['cpassman_dir'] = "..";
+}
+
 IdentifyUser($_POST['data']);
 
 function IdentifyUser($sentData)
@@ -576,4 +580,7 @@ function IdentifyUser($sentData)
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
 			"error" : "'.$logError.'"}]';
     $_SESSION['initial_url'] = "";
+    if ($_SESSION['settings']['cpassman_dir'] == "..") {
+        $_SESSION['settings']['cpassman_dir'] = ".";
+    }
 }

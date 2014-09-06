@@ -28,7 +28,7 @@ if (isset($_POST['type'])) {
                 if (is_writable($abspath."/".$data['task']."/") == true) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 } else {
-                    echo '[{"error" : "true", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : " Path '.$data['task'].' is not writable!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
                 break;
             }
@@ -37,7 +37,7 @@ if (isset($_POST['type'])) {
                 if (extension_loaded($data['task'])) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 } else {
-                    echo '[{"error" : "true", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : " Extension '.$data['task'].' is not loaded!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
                 break;
             }
@@ -90,6 +90,12 @@ if (isset($_POST['type'])) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '".$_SESSION['url_path']."');");
                 } else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$_SESSION['url_path']."' WHERE `key` = 'url_path';");
+                }
+                $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'abspath'"));
+                if ($tmp[0] == 0 || empty($tmp[0])) {
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".$_SESSION['abspath']."');");
+                } else {
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$_SESSION['abspath']."' WHERE `key` = 'abspath';");
                 }
                 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -293,7 +299,8 @@ if (isset($_POST['type'])) {
                                 ('admin','api','0'),
                                 ('admin','subfolder_rights_as_parent','0'),
                                 ('admin','show_only_accessible_folders','0'),
-                                ('admin','enable_suggestion','0')
+                                ('admin','enable_suggestion','0'),
+                                ('admin','otv_expiration_period','7')
                                 ;"
                             );
                         }

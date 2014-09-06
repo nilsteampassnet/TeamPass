@@ -45,6 +45,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -136,11 +137,12 @@ if (!empty($_POST['type'])) {
                 break;
             }
             // Check if user already exists
-            DB::query(
+            $data = DB::query(
                 "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".$pre."users
                 WHERE login LIKE %ss",
                 mysqli_escape_string($link, stripslashes($_POST['login']))
             );
+
             if (DB::count() == 0) {
                 // Add user in DB
                 DB::insert(

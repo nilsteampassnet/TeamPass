@@ -31,6 +31,8 @@
  #637 - Multi Domain LDAP
  #673 - Changed strategy for quick icon clipboard copy
  #639 - Design fix in admin page
+ #681 - Fix for Folder and Users creation as Administrator
+ #680 - Set custom expiry for one time view link
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update

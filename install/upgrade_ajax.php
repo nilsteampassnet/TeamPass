@@ -545,7 +545,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'subfolder_rights_as_parent', '0', 0),
                 array('admin', 'show_only_accessible_folders', '0', 0),
                 array('admin', 'enable_suggestion', '0', 0),
-                array('admin', 'email_server_url', '', 0)
+                array('admin', 'email_server_url', '', 0),
+                array('admin','otv_expiration_period','7', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
