@@ -56,6 +56,7 @@ function checkUser($userId, $userKey, $pageVisited)
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     // load user's data
     $data = DB::queryfirstrow(

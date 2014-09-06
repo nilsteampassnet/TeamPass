@@ -50,6 +50,7 @@ function updateSettings ($setting, $val, $type = '')
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
     $data = DB::query(
@@ -132,6 +133,10 @@ if (isset($_POST['save_button'])) {
     // Update delay_item_edition
     if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] != $_POST['delay_item_edition']) {
         updateSettings('delay_item_edition', $_POST['delay_item_edition']);
+    }
+    // Update otv_expiration_period
+    if (isset($_SESSION['settings']['otv_expiration_period']) && $_SESSION['settings']['otv_expiration_period'] != $_POST['otv_expiration_period']) {
+        updateSettings('otv_expiration_period', $_POST['otv_expiration_period']);
     }
     // Update favourites
     if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != $_POST['enable_favourites']) {
@@ -325,17 +330,9 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
         updateSettings('ldap_search_base', $_POST['ldap_search_base']);
     }
-    // Update LDAP ldap_user_attribute
-    if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
-        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
-    }
     // Update LDAP ldap_bind_passwd
     if (@$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
         updateSettings('ldap_bind_passwd', $_POST['ldap_bind_passwd']);
-    }
-    // Update LDAP ldap_user_attribute
-    if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
-        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
     }
     // Update anyone_can_modify
     if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify']) {
@@ -1205,10 +1202,18 @@ echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$LANG['settings_delay_for_item_edition'].
-                        '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_delay_for_item_edition_tip'].'" /></span>
+    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_delay_for_item_edition_tip'].'" /></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" /></div>
+                </td</tr>';
+// Expired time for OTV - otv_expiration_period
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$LANG['settings_otv_expiration_period'].'</label>
+                    </td><td>
+                    <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" /></div>
                 </td</tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';

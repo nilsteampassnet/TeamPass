@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',

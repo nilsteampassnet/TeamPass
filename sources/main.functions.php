@@ -282,6 +282,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -489,6 +490,7 @@ function logEvents($type, $label, $who)
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     DB::insert(
         $pre."log_system",
@@ -699,6 +701,7 @@ function teampassStats()
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
 
     // Prepare stats to be sent
     // Count no FOLDERS

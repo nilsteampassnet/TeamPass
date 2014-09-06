@@ -2713,8 +2713,11 @@ if (isset($_POST['type'])) {
                 "otv_id"    => $newID
             );
 
+            if (!isset($_SESSION['settings']['otv_expiration_period'])) {
+                $_SESSION['settings']['otv_expiration_period'] = 7;
+            }
             $url = $_SESSION['settings']['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
-        	$exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + $k['otv_expiration_period']);
+        	$exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + (intval($_SESSION['settings']['otv_expiration_period'])*86400));
 
             echo json_encode(
                 array(

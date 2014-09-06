@@ -43,7 +43,6 @@ if (
 	redirect($url);
 }
 
-
 /* LOAD CPASSMAN SETTINGS */
 if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
     $_SESSION['settings']['duplicate_folder'] = 0;  //by default, this is false;

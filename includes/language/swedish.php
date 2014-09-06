@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

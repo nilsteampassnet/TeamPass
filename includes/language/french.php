@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_otv_expiration_period' => 'Nombre de jours avant expiration d\'un objet partagé',
     'user_ga_code' => 'Envoyer le GoogleAuthenticator flash code à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\\\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\\\'a pas d\\\'email de défini !',

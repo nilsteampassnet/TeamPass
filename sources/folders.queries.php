@@ -259,7 +259,7 @@ if (isset($_POST['newtitle'])) {
                 }
 
                 if (
-                    $isPersonal = 1
+                    $isPersonal == 1
                     || $_SESSION['is_admin'] == 1
                     || ($_SESSION['user_manager'] == 1)
                     || (isset($_SESSION['settings']['subfolder_rights_as_parent'])
