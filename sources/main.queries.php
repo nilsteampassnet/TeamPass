@@ -338,7 +338,7 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            "SELECT * FROM ".$pre."users WHERE email = %s",
             mysqli_escape_string($link, stripslashes($_POST['email']))
         );
         $counter = DB::count();
@@ -429,7 +429,7 @@ switch ($_POST['type']) {
             // Delete recovery in DB
             DB::delete(
                 $pre."misc",
-                "type = %s AND intitule = %S AND valeur = %s",
+                "type = %s AND intitule = %s AND valeur = %s",
                 "password_recovery",
                 mysqli_escape_string($link, $login),
                 $key
