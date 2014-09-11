@@ -1,9 +1,9 @@
 <?php
 /**
  * @file          views_database.php
- * @author        Nils LaumaillÃ©
+ * @author        Nils Laumaillé
  * @version       2.1.21
- * @copyright     (c) 2009-2014 Nils LaumaillÃ©
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *

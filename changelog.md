@@ -33,6 +33,9 @@
  #639 - Design fix in admin page
  #681 - Fix for Folder and Users creation as Administrator
  #680 - Set custom expiry for one time view link
+ #682 - Fix SMTP authentication which were used regardless of the settings
+      - Fix a query used in the "lost password" management.
+      - Fix the mysql error message when the session_expired page is accessed…
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update

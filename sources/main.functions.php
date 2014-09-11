@@ -782,7 +782,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     // $mail->SMTPSecure = 'ssl';     //COULD BE USED
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth']; // turn on SMTP authentication
+    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == 'true' ? true : false; // turn on SMTP authentication
     $mail->Username = $_SESSION['settings']['email_auth_username']; // SMTP username
     $mail->Password = $_SESSION['settings']['email_auth_pwd']; // SMTP password
     $mail->From = $_SESSION['settings']['email_from'];
