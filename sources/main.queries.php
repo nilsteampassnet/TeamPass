@@ -2,9 +2,9 @@
 /**
  *
  * @file          main.queries.php
- * @author        Nils LaumaillÃ©
+ * @author        Nils Laumaillé
  * @version       2.1.21
- * @copyright     (c) 2009-2014 Nils LaumaillÃ©
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -338,7 +338,7 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT $ FROM ".$pre."users WHERE email = %s",
+            "SELECT * FROM ".$pre."users WHERE email = %s",
             mysqli_escape_string($link, stripslashes($_POST['email']))
         );
         $counter = DB::count();
@@ -429,7 +429,7 @@ switch ($_POST['type']) {
             // Delete recovery in DB
             DB::delete(
                 $pre."misc",
-                "type = %s AND intitule = %S AND valeur = %s",
+                "type = %s AND intitule = %s AND valeur = %s",
                 "password_recovery",
                 mysqli_escape_string($link, $login),
                 $key
