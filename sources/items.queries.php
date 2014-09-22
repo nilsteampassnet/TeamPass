@@ -2001,7 +2001,7 @@ if (isset($_POST['type'])) {
                             if ($need_sk == true && isset($_SESSION['my_sk'])) {
                                 $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                             } else {
-                                $pw = substr(decrypt($record['pw']), strlen($record['rand_key']));
+                                $pw = substr(decrypt($record['pw']), strlen(@$record['rand_key']));
                             }
                         } else {
                             $pw = "";

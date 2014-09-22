@@ -1911,7 +1911,7 @@ $(function() {
         height: 200,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['delete'];?>": function() {
                 SupprimerFolder();
                 $(this).dialog('close');
             },

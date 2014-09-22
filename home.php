@@ -258,6 +258,11 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
     $prevLevel = "";
     foreach ($fullTree as $t) {
         if (in_array($t->id, $_SESSION['groupes_visibles'])) {
+            if (is_numeric($t->title)) {
+                $user = DB::queryfirstrow("SELECT login FROM ".$pre."users WHERE id = %i", $t->title);
+                $t->title = $user['login'];
+                $t->id = $t->id."-perso";
+            }
             $ident="&nbsp;&nbsp;";
             for ($x=1; $x<$t->nlevel; $x++) {
                 $ident .= "&nbsp;&nbsp;";

@@ -482,6 +482,37 @@ function rest_get () {
                     rest_error ('BADDEFINITION');
                 }
             }
+        } elseif ($GLOBALS['request'][0] == "auth") {
+            // get user credentials
+            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                // get url
+                if(isset($GLOBALS['request'][1])) {
+                    // is user granted?
+                    $user = DB::queryFirstRow(
+                        "SELECT `id`, `pw` FROM ".$pre."users WHERE login = %s",
+                        $GLOBALS['request'][2]
+                    );
+                    if (crypt($GLOBALS['request'][3], $user['pw']) == $user['pw']) {
+                        // find the item associated to the url
+                        $item = DB::query(
+                            "select id, label, login, pw, id_tree from ".$pre."items where url = %s",
+                            $GLOBALS['request'][1]
+                        );
+                        // get ITEM random key
+                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $item['id']);
+                        
+                        $json[$item['id']]['label'] = utf8_encode($item['label']);
+                        $json[$item['id']]['login'] = utf8_encode($item['login']);
+                        $json[$item['id']]['pw'] = teampass_decrypt_pw($item['pw'], SALT, $data_tmp['rand_key']);
+                    } else 
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else 
+                    rest_error ('AUTH_NO_URL');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
         } else {
             rest_error ('METHOD');
         }
@@ -541,6 +572,15 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'REQUEST_SENT_NOT_UNDERSTANDABLE':
             $message = Array('err' => 'URL format is not following requirements');
+            break;
+        case 'AUTH_NOT_GRANTED':
+            $message = Array('err' => 'Bad credentials for user');
+            break;
+        case 'AUTH_NO_URL':
+            $message = Array('err' => 'URL needed to grant access');
+            break;
+        case 'AUTH_NO_IDENTIFIER':
+            $message = Array('err' => 'Credentials needed to grant access');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');

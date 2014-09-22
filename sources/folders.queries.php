@@ -252,7 +252,7 @@ if (isset($_POST['newtitle'])) {
             if ($createNewFolder == true) {
                 //check if parent folder is personal
                 $data = DB::queryfirstrow("SELECT personal_folder FROM ".$pre."nested_tree WHERE id = %i", $parentId);
-                if ($data['personal_folder'] == 1) {
+                if ($data['personal_folder'] == "1") {
                     $isPersonal = 1;
                 } else {
                     $isPersonal = 0;
@@ -264,7 +264,7 @@ if (isset($_POST['newtitle'])) {
                     || ($_SESSION['user_manager'] == 1)
                     || (isset($_SESSION['settings']['subfolder_rights_as_parent'])
                     && $_SESSION['settings']['subfolder_rights_as_parent'] == 1)
-                ){
+                ) {
                     //create folder
                     DB::insert(
                         $pre."nested_tree",
