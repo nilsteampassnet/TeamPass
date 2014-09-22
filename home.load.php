@@ -629,6 +629,7 @@ function ImportKEEPASS(file)
             $("#div_loading").hide();
             $("#import_status").html(data[0].message);
             $("#import_status_ajax_loader").hide();
+            $("#div_import_from_csv").find(".ui-dialog-buttonpane button:eq(1)").prop("disabled", true);
         },
         "json"
    );

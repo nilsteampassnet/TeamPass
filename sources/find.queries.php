@@ -117,7 +117,7 @@ if (isset($_GET['iSortCol_0'])) {
 if ($_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE %ss_".i." OR ";
+        $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 }

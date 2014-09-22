@@ -588,6 +588,7 @@ switch ($_POST['type']) {
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
         if ($numItems>0 || $numGroups>0) {
+            $import_perso = false;
             $itemsArray = array();
             $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$LANG['nb_folders'].': '.
                 $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$LANG['nb_items'].': '.
@@ -597,7 +598,11 @@ switch ($_POST['type']) {
                 $LANG['importing_folders'].':</b><br />';
 
             //if destination is not ROOT then get the complexity level
-            if ($_POST['destination'] > 0) {
+            if (strpos($_POST['destination'], "perso") != false) {
+                $levelPwComplexity = 50;
+                $startPathLevel = 1;
+                $import_perso = true;
+            } else if ($_POST['destination'] > 0) {
                 $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
                     FROM ".$pre."misc as m
@@ -778,7 +783,7 @@ switch ($_POST['type']) {
                             array(
                                 'label' => stripslashes($item[2]),
                                 'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
-                                'pw' => encrypt($pw),
+                                'pw' => $import_perso == true ? encrypt($pw, $_SESSION['my_sk']) : encrypt($pw),
                                 'url' => stripslashes($item[6]),
                                 'id_tree' => $folderId,
                                 'login' => stripslashes($item[4]),

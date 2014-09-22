@@ -1,4 +1,16 @@
 <?php
+/**
+ * @file 		install.queries.php
+ * @author		Nils Laumaillé
+ * @version 	2.1.21
+ * @copyright 	(c) 2009-2014 Nils Laumaillé
+ * @licensing 	GNU AFFERO GPL 3.0
+ * @link		http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
 require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
