@@ -73,8 +73,11 @@ foreach ($tst as $t) {
 /* Display header */
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
-$LANG['admin_groups'].'&nbsp;&nbsp;&nbsp;<img src="includes/images/folder--plus.png" id="open_add_group_div" title="'.$LANG['item_menu_add_rep'].'" style="cursor:pointer;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_folders\')" /></span>
+$LANG['admin_groups'].'&nbsp;&nbsp;&nbsp;<img src="includes/images/folder--plus.png" id="open_add_group_div" title="'.$LANG['item_menu_add_rep'].'" style="cursor:pointer;" />&nbsp;
+<img src="includes/images/folder--minus.png" onclick="delete_multiple_folders()" style="cursor:pointer;" title="'.$LANG['item_menu_del_rep'].'" />
+    <span style="float:right;margin-right:5px;">
+    <img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_folders\')" />
+    </span>
 </div>';
 // Hidden things
 echo '
@@ -85,6 +88,7 @@ echo '
     <div style="width:700px;margin:auto; line-height:20px;">
     <table cellspacing="0" style="margin-top:10px;">
         <thead><tr>
+            <th></th>
             <th>ID</th>
             <th>'.$LANG['group'].'</th>
             <th>'.$LANG['complexity'].'</th>
@@ -128,6 +132,7 @@ foreach ($tst as $t) {
 
         echo '
                 <tr class="ligne0" id="row_'.$t->id.'">
+                    <td align="center""><input type="checkbox" class="cb_selected_folder" id="cb_selected-'.$t->id.'" /></td>
                     <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">'.$t->id.'</td>
                     <td width="50%" onclick="open_edit_folder_dialog('.$t->id.')">
                         '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>

@@ -132,11 +132,11 @@ if (!empty($_POST['type'])) {
 
         //-------------------------------------------
         #CASE change right for a role on a folder via the TM
-        case "change_role_via_tm":
+        case "change_role_via_tm_old":
             //get full tree dependencies
             $tree = $tree->getDescendants($_POST['folder'], true);
 
-            if (isset($_POST['allowed']) AND $_POST['allowed'] == 1) {
+            if (isset($_POST['allowed']) && $_POST['allowed'] == 1) {
                 //case where folder was allowed but not any more
                 foreach ($tree as $node) {
                     //Store in DB
@@ -155,6 +155,36 @@ if (!empty($_POST['type'])) {
                     );
                 }
             }
+            break;
+
+        //-------------------------------------------
+        #CASE change right for a role on a folder via the TM
+        case "change_role_via_tm":
+            //get full tree dependencies
+            $tree = $tree->getDescendants($_POST['folder'], true);
+
+            if ($_POST['access'] == "read" ||$_POST['access'] == "write") {
+                foreach ($tree as $node) {
+                    // delete
+                    DB::delete($pre."roles_values", "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
+                    
+                    //Store in DB
+                    DB::insert(
+                        $pre.'roles_values',
+                        array(
+                            'folder_id' => $node->id,
+                            'role_id' => $_POST['role'],
+                            'type' => $_POST['access'] == "write" ? "W" : "R"
+                       )
+                    );
+                }
+            } else {
+                foreach ($tree as $node) {
+                    // delete
+                    DB::delete($pre."roles_values", "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
+                }
+            }
+            echo '[ { "error" : "no" } ]';
             break;
 
         //-------------------------------------------
@@ -227,24 +257,34 @@ if (!empty($_POST['type'])) {
                 if (in_array($node->id, $_SESSION['groupes_visibles']) && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
                     $ident="";
                     for ($a=1; $a<$node->nlevel; $a++) {
-                        $ident .= "&nbsp;&nbsp;";
+                        $ident .= "&#8212;";
                     }
 
                     //display 1st cell of the line
-                    $texte .= '<tr><td style=\'font-size:10px; font-family:arial;\'>'.$ident.$node->title.'</td>';
+                    $texte .= '<tr><td style=\'font-size:10px; font-family:arial;\' title=\'ID='.$node->id.'\'>'.$ident." ".$node->title.'</td>';
 
                     foreach ($arrRoles as $role) {
                         //check if this role has access or not
                         // if not then color is red; if yes then color is green
-                        $count = DB::query("SELECT * FROM ".$pre."roles_values WHERE folder_id = %i AND role_id = %i", $node->id, $role);
+                        $role_detail = DB::queryfirstrow("SELECT * FROM ".$pre."roles_values WHERE folder_id = %i AND role_id = %i", $node->id, $role);
                         if (DB::count() > 0) {
-                            $couleur = '#008000';
-                            $allowed = 1;
+                            if ($role_detail['type'] == "W") {
+                                $couleur = '#008000';
+                                $allowed = "W";
+                                $title = $LANG['write'];
+                            } else {
+                                $couleur = '#FEBC11';
+                                $allowed = "R";
+                                $title = $LANG['read'];
+                            }
                         } else {
                             $couleur = '#FF0000';
-                            $allowed = 0;
+                            $allowed = false;
+                            $title = $LANG['no_access'];
                         }
-                        $texte .= '<td align=\'center\' style=\'background-color:'.$couleur.'\' onclick=\'tm_change_role('.$role.','.$node->id.','.$i.','.$allowed.')\' id=\'tm_cell_'.$i.'\'></td>';
+                        //$texte .= '<td align=\'center\' style=\'background-color:'.$couleur.'\' onclick=\'tm_change_role('.$role.','.$node->id.','.$i.','.$allowed.')\' id=\'tm_cell_'.$i.'\'></td>';
+                        $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'></td>';
+                        
                         $i++;
                     }
                     $texte .= '</tr>';

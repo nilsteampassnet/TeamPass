@@ -219,6 +219,71 @@ if (isset($_POST['newtitle'])) {
             //Update CACHE table
             updateCacheTable("delete_value", $_POST['id']);
             break;
+           
+          
+        // CASE where DELETING multiple groups
+        case "delete_multiple_folders":
+            //decrypt and retreive data in JSON format
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $error = "";
+            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+            
+            foreach (explode(';', $dataReceived['foldersList']) as $folderId) {        
+                $foldersDeleted = "";
+                // Get through each subfolder
+                $folders = $tree->getDescendants($folderId, true);
+                foreach ($folders as $folder) {
+                    if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
+                        //Store the deleted folder (recycled bin)
+                        DB::insert(
+                            $pre.'misc',
+                            array(
+                                'type' => 'folder_deleted',
+                                'intitule' => "f".$folderId,
+                                'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                    $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
+                                    $folder->nlevel.', 0, 0, 0, 0'
+                           )
+                        );
+                        //delete folder
+                        DB::delete($pre."nested_tree", "id = %i", $folder->id);
+                        //delete items & logs
+                        $items = DB::query("SELECT id FROM ".$pre."items WHERE id_tree=%i", $folder->id);
+                        foreach ($items as $item) {
+                            DB::update(
+                                $pre."items",
+                                array(
+                                    'inactif' => '1',
+                                ),
+                                "id = %i",
+                                $item['id']
+                            );
+                            //log
+                            DB::insert(
+                                $pre."log_items",
+                                array(
+                                    'id_item' => $item['id'],
+                                    'date' => time(),
+                                    'id_user' => $_SESSION['user_id'],
+                                    'action' => 'at_delete'
+                                )
+                            );
+                        }
+                        //Actualize the variable
+                        $_SESSION['nb_folders'] --;
+                    }
+                }
+                //Update CACHE table
+                updateCacheTable("delete_value", $folderId);
+            }
+
+            //rebuild tree
+            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+            $tree->rebuild();
+            
+            echo '[ { "error" : "'.$error.'" } ]';
+            
+            break;
 
         //CASE where ADDING a new group
         case "add_folder":

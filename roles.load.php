@@ -143,6 +143,44 @@ $("#add_new_role").dialog({
         }
     });
 
+    $("#type_of_rights").dialog({
+        bgiframe: false,
+        modal: false,
+        autoOpen: false,
+        width: 300,
+        height: 190,
+        title: "<?php echo $LANG["change_right_access"];?>",
+        buttons: {
+            "<?php echo $LANG["save_button"];?>": function() {
+            	$("#edit_role_error").hide().html("");
+                $.post(
+                    "sources/roles.queries.php",
+                    {
+                        type    : "change_role_via_tm",
+                        access  : $("input[name=right_types_radio]:checked").attr("id").substring(6),
+                        folder  : $("#change_folder").val(),
+                        role    : $('#change_role').val(),
+                        line    : $("#change_line").val()
+                    },
+                    function(data) {
+                        $("#div_loading").show();
+                        refresh_roles_matrix("reload");
+                        $("#type_of_rights").dialog("close");
+                    },
+                    "json"
+               );
+            },
+            "<?php echo $LANG["close"];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        open: function() {
+            $("#accordion").accordion({ autoHeight: false, navigation: true, collapsible: true, active: false });
+        }
+    });
+    
+    
+
     refresh_roles_matrix();
 });
 
@@ -257,5 +295,20 @@ function refresh_roles_matrix(order)
             $("#div_loading").hide();
         }
    );
+}
+
+function openRightsDialog(role, folder, line, right)
+{
+    if (right == "W") {
+        $("#right_write").prop("checked", true);
+    } else if (right == "R") {
+        $("#right_read").prop("checked", true);
+    } else {
+        $("#right_noaccess").prop("checked", true);
+    }
+    $("#change_role").val(role);
+    $("#change_folder").val(folder);
+    $("#change_line").val(line);
+    $("#type_of_rights").dialog("open");
 }
 </script>
