@@ -2109,6 +2109,20 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
+            
+            // check role access on this folder (get the most restrictive) (2.1.22)
+            $accessLevel = 2;
+            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                $access = DB::queryFirstRow(
+                    "SELECT type FROM ".$pre."roles_values WHERE role_id = %i AND folder_id = %i",
+                    $role,
+                    $_POST['id']
+                );
+                if ($access['type'] == "R") $access['type'] = 1;
+                if ($access['type'] == "W") $access['type'] = 0;
+                if ($access['type'] < $accessLevel) $accessLevel = $access['type'];
+            }
+            
 
             // Prepare returned values
             $returnValues = array(
@@ -2124,7 +2138,8 @@ if (isset($_POST['type'])) {
                 "items_count" => $counter,
                 'folder_complexity' => $folderComplexity['valeur'],
                 // "items" => $returnedData
-                'displayCategories' => $displayCategories
+                'displayCategories' => $displayCategories,
+                'access_level' => $accessLevel
             );
             // Check if $rights is not null
             if (count($rights) > 0) {

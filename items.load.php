@@ -195,14 +195,14 @@ function ListerItems(groupe_id, restricted, start)
 
                     $('#menu_button_add_item').attr('disabled', 'disabled');
                     $("#items_list_loader, #div_loading").hide();
-                } else if (data.error == "not_authorized") {
+                } else if (data.error == "not_authorized" || data.access_level == 2) {
                     //warn user
                     $("#hid_cat").val("");
                     $("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").attr('disabled', 'disabled');
                     $("#item_details_nok").show();
                     $("#item_details_ok, #item_details_no_personal_saltkey").hide();
                     $("#items_list_loader").hide();
-                } else if ($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) {
+                } else if (($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) || data.access_level == 1) {
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();

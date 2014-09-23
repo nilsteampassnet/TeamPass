@@ -1,4 +1,7 @@
-﻿2.1.21
+﻿2.1.22
+ #700 - Errors related to "includes/js/jstree/themes/default"
+
+2.1.21
  #597 - Rapid click on save button on "Add a folder"
  #599 - SQL:AUTO_INCREMENT id --> language
  #600 - preg_replace(): Unknown modifier '|'

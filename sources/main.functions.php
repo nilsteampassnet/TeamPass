@@ -363,7 +363,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 if (DB::count() > 0) {
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
-                            array_push($listAllowedFolders, $record['folder_id']);
+                            array_push($listAllowedFolders, $record['folder_id']);//echo $record['folder_id'].";";
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
                         $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);

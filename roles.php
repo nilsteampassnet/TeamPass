@@ -56,7 +56,10 @@ echo '
 <input type="hidden" id="selected_function" />
 <input type="hidden" id="next_role" value="0" />
 <input type="hidden" id="previous_role" value="0" />
-<input type="hidden" id="role_start" value="0" />';
+<input type="hidden" id="role_start" value="0" />
+<input type="hidden" id="change_role" value="0" />
+<input type="hidden" id="change_folder" value="0" />
+<input type="hidden" id="change_line" value="0" />';
 
 // DIV FOR ADDING A ROLE
 echo '
@@ -109,6 +112,17 @@ echo '
 echo '
 <div id="help_on_roles">
     <div>'.$LANG['help_on_roles'].'</div>
+</div>';
+
+// DIV FOR TYPE OF RIGHTS
+echo '
+<div id="type_of_rights">
+    <div>'.$LANG['right_types_label'].'</div>
+    <div style="margin-top:10px; text-align:center;">
+        <input type="radio" name="right_types_radio" id="right_write" /><label for="right_write">'.$LANG['write'].'</label>&nbsp;
+        <input type="radio" name="right_types_radio" id="right_read" /><label for="right_read">'.$LANG['read'].'</label>&nbsp;
+        <input type="radio" name="right_types_radio" id="right_noaccess" /><label for="right_noaccess">'.$LANG['no_access'].'</label>
+    </div>
 </div>';
 
 //call to roles.load.php

@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array (
+    'change_right_access' => 'Define the access rights',
+    'write' => 'Write',
+    'read' => 'Read',
+    'no_access' => 'No Access',
+    'right_types_label' => 'Select the type of access on this folder for the selected group of users',
     'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
