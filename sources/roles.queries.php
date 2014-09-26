@@ -172,7 +172,7 @@ if (!empty($_POST['type'])) {
             );
 
             $tree = $tree->getDescendants();
-            $texte = '<table><thead><tr><th>'.$LANG['group'].'s</th>';
+            $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
             $gpes_ok = array();
             $gpes_nok = array();
             $tab_fonctions = array();
