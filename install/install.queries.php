@@ -156,19 +156,20 @@ if (isset($_POST['type'])) {
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
 
             // launch
-            if ($dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port'])) {
+            $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbBdd = $_SESSION['db_bdd'];
+            if ($dbTmp) {
                 $mysqli_result = "";
 
                 // read install variables
-                $tmp = mysqli_query($dbTmp, "SELECT * FROM `_install`");
-                $tmp2 = mysqli_fetch_all($tmp);
-                foreach ($tmp2 as $row) {
+                $result = mysqli_query($dbTmp, "SELECT * FROM `_install`");
+                while ($row = $result->fetch_array()) {
                     $var[$row[0]] = $row[1];
                 }
 
                 if ($activity == "table") {
                     //FORCE UTF8 DATABASE
-                    mysqli_query($dbTmp, "ALTER DATABASE `".$_SESSION['db_bdd']."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
+                    mysqli_query($dbTmp, "ALTER DATABASE `".$dbBdd."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
                     if ($task == "items") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
@@ -644,9 +645,8 @@ if (isset($_POST['type'])) {
             $dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
 
             // read install variables
-            $tmp = mysqli_query($dbTmp, "SELECT * FROM `_install`");
-            $tmp2 = mysqli_fetch_all($tmp);
-            foreach ($tmp2 as $row) {
+            $result = mysqli_query($dbTmp, "SELECT * FROM `_install`");
+            while ($row = $result->fetch_array()) {
                 $var[$row[0]] = $row[1];
             }
 
