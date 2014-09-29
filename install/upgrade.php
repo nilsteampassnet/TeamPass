@@ -71,11 +71,11 @@ if (
     <head>
         <title>TeamPass Installation</title>
         <link rel="stylesheet" href="install.css" type="text/css" />
-        <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <script type="text/javascript" src="install.js"></script>
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/aes.min.js"></script>
+        <script type="text/javascript" src="install_old.js"></script>
+        <script type="text/javascript" src="../includes/js/functions.js"></script>
 
         <script type="text/javascript">
         //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
