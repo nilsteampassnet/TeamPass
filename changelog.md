@@ -1,5 +1,7 @@
 ﻿2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"
+ New - quick copy to clipboard for password and login
+ Changed - list of restricted users refined by folder selected
 
 2.1.21
  #597 - Rapid click on save button on "Add a folder"

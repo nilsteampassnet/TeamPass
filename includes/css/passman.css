@@ -154,6 +154,7 @@ float:left;
 .td_title{
 font-weight:bold;
 font-family: serif;
+min-width: 150px;
 }
 
 ul{

@@ -164,7 +164,8 @@ function ListerItems(groupe_id, restricted, start)
 
         //Disable menu buttons
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share,#menu_button_otv').attr('disabled', 'disabled');
-
+        $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+        
         // clear existing clips
         //ZeroClipboard.destroy();
 
@@ -394,7 +395,6 @@ function RecupComplexite(val, edit)
         },
         function(data) {
         	data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            //data = $.parseJSON(data);
             if (data.error == undefined || data.error == 0) {
                 $("#complexite_groupe").val(data.val);
                 if (edit == 1) {
@@ -652,15 +652,14 @@ function EditerItem()
 
 
             //Manage restriction
-            var restriction = restriction_role = "";
+            var restriction = restriction_role = "";        
             $("#edit_restricted_to_list option:selected").each(function () {
-                //check if it's a role
-                if ($(this).val().indexOf('role_') != -1) {
-                    restriction_role += $(this).val().substring(5) + ";";
-                } else {
+                if ($(this).attr("class") == "folder_rights_role_edit") {
+                    restriction_role += $(this).val() + ";";
+                } else if ($(this).attr("class") == "folder_rights_user_edit") {
                     restriction += $(this).val() + ";";
                 }
-            });
+            });            
             if (restriction != "" && restriction.indexOf($('#form_user_id').val()) == "-1")
                 restriction = $('#form_user_id').val()+";"+restriction
             if (restriction == ";") restriction = "";
@@ -1156,18 +1155,32 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.pw != "") {
                             var client = new ZeroClipboard($("#menu_button_copy_pw"));
                             client.on('copy', function(event) {
-                                    var clipboard = event.clipboardData;
-                                    clipboard.setData("text/plain", unsanitizeString(data.pw));
-                                    $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                                var clipboard = event.clipboardData;
+                                clipboard.setData("text/plain", unsanitizeString(data.pw));
+                                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                             });
+                            var client = new ZeroClipboard($("#button_quick_pw_copy"));
+                            client.on('copy', function(event) {
+                                var clipboard = event.clipboardData;
+                                clipboard.setData("text/plain", unsanitizeString(data.pw));
+                                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                            });
+                            $("#button_quick_pw_copy").show();
                         }
                         if (data.login != "") {
                             var clip = new ZeroClipboard($("#menu_button_copy_login"));
                             clip.on('copy', function(event) {
-                                    var clipboard = event.clipboardData;
-                                    clipboard.setData("text/plain", unsanitizeString(data.login));
-                                    $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+                                var clipboard = event.clipboardData;
+                                clipboard.setData("text/plain", unsanitizeString(data.login));
+                                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
+                            var client = new ZeroClipboard($("#button_quick_login_copy"));
+                            client.on('copy', function(event) {
+                                var clipboard = event.clipboardData;
+                                clipboard.setData("text/plain", unsanitizeString(data.login));
+                                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+                            });
+                            $("#button_quick_login_copy").show();
                         }
                         // #525
                         if (data.url != "") {
@@ -1473,6 +1486,22 @@ function open_edit_item_div(restricted_to_roles)
         $("#div_editRestricted").hide();
     } else {
     	$("#div_editRestricted").show();
+        // tick selected users / roles
+        if ($('#edit_restricted_to').val() != undefined) {
+            var list = $('#hid_restricted_to').val().split(';');
+            for (var i=0; i<list.length; i++) {
+                var elem = list[i];
+                if (elem != "") {
+                    $(".folder_rights_user_edit").each(function() {
+                        if ($(this).attr("id") == elem) {
+                            $(this).prop("checked", true);
+                            exit;
+                        }
+                    });
+                }
+            }
+        }
+        /*
         if ($('#edit_restricted_to').val() != undefined) {
             $('#edit_restricted_to_list').empty();
             if (restricted_to_roles == 1) {
@@ -1515,7 +1544,6 @@ function open_edit_item_div(restricted_to_roles)
                 j++;
             }
         }
-
         //Prepare multiselect widget
         $("#edit_restricted_to_list").multiselect({
             selectedList: 7,
@@ -1526,6 +1554,7 @@ function open_edit_item_div(restricted_to_roles)
             noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
         $("#edit_restricted_to_list").multiselect('refresh');
+        */
     }
 
 	// disable folder selection if PF
@@ -2566,7 +2595,82 @@ function proceed_list_update()
                     $(this).css('cursor','pointer');
                 }
             });
-        })
+        })                
+                
+        var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
+    
+        // refine users list to the related roles
+        $.post(
+            "sources/items.queries.php",
+            {
+                type        : "get_refined_list_of_users",
+                iFolderId   : $('#hid_cat').val(),
+                key         : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                console.log(data.selOptionsUsers);
+                // *** restricted_to_list ***
+                $("#restricted_to_list").empty();
+                if ($('#restricted_to').val() != undefined) {
+                    $("#restricted_to_list").append(data.selOptionsUsers);
+                    if (restricted_to_roles == 1) {
+                        //add optgroup
+                        var optgroup = $('<optgroup>');
+                        optgroup.attr('label', "<?php echo $LANG['users'];?>");
+                        $(".folder_rights_user").wrapAll(optgroup);
+                    }
+                }
+                //Add list of roles if option is set
+                if (restricted_to_roles == 1 && $('#restricted_to').val() != undefined) {
+                    //add optgroup
+                    var optgroup = $('<optgroup>');
+                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
+                    $("#restricted_to_list").append(data.selOptionsRoles);
+                    $(".folder_rights_role").wrapAll(optgroup);
+                }
+                //Prepare multiselect widget
+                $("#restricted_to_list").multiselect({
+                    selectedList: 7,
+                    minWidth: 430,
+                    height: 145,
+                    checkAllText: "<?php echo $LANG['check_all_text'];?>",
+                    uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
+                    noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
+                });
+                $("#restricted_to_list").multiselect('refresh');
+                
+                // *** edit_restricted_to_list ***
+                $("#edit_restricted_to_list").empty();
+                if ($('#edit_restricted_to').val() != undefined) {
+                    $("#edit_restricted_to_list").append(data.selEOptionsUsers);
+                    if (restricted_to_roles == 1) {
+                        //add optgroup
+                        var optgroup = $('<optgroup>');
+                        optgroup.attr('label', "<?php echo $LANG['users'];?>");
+                        $(".folder_rights_user_edit").wrapAll(optgroup);
+                    }
+                }
+                //Add list of roles if option is set
+                if (restricted_to_roles == 1 && $('#edit_restricted_to').val() != undefined) {
+                    //add optgroup
+                    var optgroup = $('<optgroup>');
+                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
+                    $("#edit_restricted_to_list").append(data.selEOptionsRoles);
+                    $(".folder_rights_role_edit").wrapAll(optgroup);
+                }
+                //Prepare multiselect widget
+                $("#edit_restricted_to_list").multiselect({
+                    selectedList: 7,
+                    minWidth: 430,
+                    height: 145,
+                    checkAllText: "<?php echo $LANG['check_all_text'];?>",
+                    uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
+                    noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
+                });
+                $("#edit_restricted_to_list").multiselect('refresh');
+            }
+       );
     }
 }
 
