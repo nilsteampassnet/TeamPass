@@ -2811,6 +2811,58 @@ if (isset($_POST['type'])) {
             @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
 
             break;
+
+        /*
+        * CASE
+        * Get list of users that have access to the folder
+        */
+        case "get_refined_list_of_users":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            $error = "";
+            
+            // get list of users
+            $aList = array();
+            $selOptionsUsers = "";
+            $selOptionsRoles = "";
+            $selEOptionsUsers = "";
+            $selEOptionsRoles = "";
+            $rows = DB::query(
+                "SELECT r.role_id AS role_id, t.title AS title
+                FROM ".$pre."roles_values AS r
+                INNER JOIN ".$pre."roles_title AS t ON (r.role_id = t.id)
+                WHERE r.folder_id = %i",
+                $_POST['iFolderId']
+            );
+            foreach ($rows as $record) {
+                $selOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
+                $selEOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
+                $rows2 = DB::query("SELECT id, login, fonction_id FROM ".$pre."users WHERE fonction_id LIKE '%".$record['role_id']."%'");
+                foreach ($rows2 as $record2) {
+                    foreach (explode(";", $record2['fonction_id']) as $role) {
+                        if (!in_array($record2['id'], $aList) && $role == $record['role_id']) {
+                            array_push($aList, $record2['id']);
+                            $selOptionsUsers .= '<option value="'.$record2['id'].'" class="folder_rights_user">'.$record2['login'].'</option>';
+                            $selEOptionsUsers .= '<option value="'.$record2['id'].'" class="folder_rights_user_edit">'.$record2['login'].'</option>';
+                        }
+                    }
+                }
+            }
+            
+            // export data
+            $data = array(
+                'error' => $error,
+                'selOptionsUsers' => $selOptionsUsers,
+                'selOptionsRoles' => $selOptionsRoles,
+                'selEOptionsUsers' => $selEOptionsUsers,
+                'selEOptionsRoles' => $selEOptionsRoles
+            );
+            echo prepareExchangedData($data, "encode");
+
+            break;
     }
 }
 // Build the QUERY in case of GET

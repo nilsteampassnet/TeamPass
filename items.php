@@ -43,6 +43,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
+/*
 // Get list of users
 $usersList = array();
 $usersString = "";
@@ -70,6 +71,7 @@ foreach ($rows as $reccord) {
         $listRoles .= ';'.$reccord['id'].'#'.$reccord['title'];
     }
 }
+*/
 // Build list of visible folders
 $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
 // Hidden things
@@ -77,8 +79,6 @@ echo '
 <input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
-<input type="hidden" name="input_liste_utilisateurs" id="input_liste_utilisateurs" value="'.$usersString.'" />
-<input type="hidden" name="input_list_roles" id="input_list_roles" value="'.htmlspecialchars(htmlentities($listRoles, ENT_QUOTES, 'UTF-8')).'" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
 <input type="hidden" id="bloquer_modification_complexite" value="" />
 <input type="hidden" id="error_detected" value="" />
@@ -371,8 +371,9 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :</td>
-                    <td ondblclick="ShowPassword()">
-                        <div id="id_pw" style="float:left;"></div>
+                    <td>
+                        <div id="button_quick_pw_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['pw_copy_clipboard'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
+                        <div id="id_pw" style="float:left; cursor:pointer;" onclick="ShowPassword()"></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
                 </tr>';
@@ -381,6 +382,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['index_login'].' :</td>
                     <td>
+                        <div id="button_quick_login_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['login_copy'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
@@ -593,26 +595,7 @@ echo '
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
             <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple">', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '
-                <optgroup label="'.$LANG['users'].'">' : '';
-    foreach ($usersList as $user) {
-        echo '
-                    <option value="'.$user['id'].'">'.$user['login'].'</option>';
-    }
-    // Build restriction roles
-    if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
-        echo '
-                </optgroup>
-                <optgroup label="'.$LANG['roles'].'">';
-        foreach ($_SESSION['arr_roles_full'] as $role) {
-            echo '
-                    <option value="role_'.$role['id'].'">'.$role['title'].'</option>';
-        }
-        echo '
-                    </optgroup>';
-    }
-    echo '
-            </select>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple"></select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
@@ -705,7 +688,8 @@ echo '
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
+    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>';
 // Prepare TABS
 echo '
     <div id="item_edit_tabs">
@@ -887,7 +871,6 @@ echo '
 echo '
     </div>
     </form>
-    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 
 /*
