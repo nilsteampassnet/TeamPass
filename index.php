@@ -41,7 +41,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // Include files
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';echo "1";
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 

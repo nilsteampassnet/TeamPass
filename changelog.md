@@ -1,5 +1,7 @@
 ﻿2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"
+ #718 - Two factor authentification: "This user has no email set!"
+ #674 - API - User rights
  New - quick copy to clipboard for password and login
  Changed - list of restricted users refined by folder selected
 
