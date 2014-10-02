@@ -243,7 +243,7 @@ switch ($_POST['type']) {
     	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
     	// Check if user exists
-    	$data = DB::query(
+    	$data = DB::queryfirstrow(
     		"SELECT login, email
     		FROM ".$pre."users
     		WHERE id = %i",

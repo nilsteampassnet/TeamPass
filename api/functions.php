@@ -3,7 +3,7 @@
  *
  * @file          configapi.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -36,7 +36,7 @@ function teampass_whitelist() {
 
 function teampass_connect()
 {
-    global $server, $user, $pass, $database, $pre, $link;
+    global $server, $user, $pass, $database, $pre, $link, $port;
     require_once("../includes/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
     DB::$host = $server;
@@ -483,31 +483,87 @@ function rest_get () {
                 }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
+            /*
+            ** FOR SECURITY PURPOSE, it is mandatory to use SSL to connect your teampass instance. The user password is not encrypted!
+            **
+            **
+            ** Expected call format: .../api/index.php/auth/<PROTOCOL>/<URL>/<login>/<password>?apikey=<VALID API KEY>
+            ** Example: https://127.0.0.1/teampass/api/index.php/auth/http/www.zadig-tge.adp.com/U1/test/76?apikey=chahthait5Aidood6johh6Avufieb6ohpaixain
+            ** RESTRICTIONS:
+            **              - <PROTOCOL>        ==> http|https|ftp|...
+            **              - <URL>             ==> encode URL without protocol (example: http://www.teampass.net becomes www.teampass.net)
+            **              - <login>           ==> user's login
+            **              - <password>        ==> currently clear password
+            **
+            ** RETURNED ANSWER:
+            **              - format sent back is JSON
+            **              - Example: {"<item_id>":{"label":"<pass#1>","login":"<login#1>","pw":"<pwd#1>"},"<item_id>":{"label":"<pass#2>","login":"<login#2>","pw":"<pwd#2>"}}
+            **
+            */
             // get user credentials
-            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+            if(isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
                 // get url
-                if(isset($GLOBALS['request'][1])) {
+                if(isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2])) {
                     // is user granted?
                     $user = DB::queryFirstRow(
-                        "SELECT `id`, `pw` FROM ".$pre."users WHERE login = %s",
-                        $GLOBALS['request'][2]
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        $GLOBALS['request'][3]
                     );
-                    if (crypt($GLOBALS['request'][3], $user['pw']) == $user['pw']) {
-                        // find the item associated to the url
-                        $item = DB::query(
-                            "select id, label, login, pw, id_tree from ".$pre."items where url = %s",
-                            $GLOBALS['request'][1]
+                    if (crypt($GLOBALS['request'][4], $user['pw']) == $user['pw']) {
+                        // define the restriction of "id_tree" of this user
+                        $userDef = DB::queryOneColumn('folder_id',
+                            "SELECT DISTINCT folder_id 
+                            FROM ".$pre."roles_values 
+                            WHERE type IN ('R', 'W') ", empty($user['groupes_interdits']) ? "" : "
+                            AND folder_id NOT IN (".str_replace(";", ",", $user['groupes_interdits']).")", " 
+                            AND role_id IN %ls 
+                            GROUP BY folder_id",
+                            explode(";", $user['groupes_interdits'])
                         );
-                        // get ITEM random key
-                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $item['id']);
+                        // complete with "groupes_visibles"
+                        array_push($userDef, $user['groupes_visibles']);
                         
-                        $json[$item['id']]['label'] = utf8_encode($item['label']);
-                        $json[$item['id']]['login'] = utf8_encode($item['login']);
-                        $json[$item['id']]['pw'] = teampass_decrypt_pw($item['pw'], SALT, $data_tmp['rand_key']);
-                    } else 
+                        // find the item associated to the url
+                        $response = DB::query(
+                            "SELECT id, label, login, pw, id_tree, restricted_to
+                            FROM ".$pre."items 
+                            WHERE url LIKE %ss
+                            AND id_tree IN (".implode(",", $userDef).")
+                            ORDER BY id DESC",
+                            $GLOBALS['request'][1]."://".urldecode($GLOBALS['request'][2])
+                        );                        
+                        $counter = DB::count();
+                        
+                        if ($counter > 0) {
+                            $json = "";
+                            foreach ($response as $data) {
+                                // check if item visible
+                                if (
+                                    empty($data['restricted_to']) || 
+                                    ($data['restricted_to'] != "" && in_array($user['id'], explode(";", $data['restricted_to'])))
+                                ) {                                
+                                    // get ITEM random key
+                                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
+                                    
+                                    // prepare export
+                                    $json[$data['id']]['label'] = utf8_encode($data['label']);
+                                    $json[$data['id']]['login'] = utf8_encode($data['login']);
+                                    $json[$data['id']]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                                }
+                            }
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('AUTH_NO_DATA');
+                        }
+                    } else {
                         rest_error ('AUTH_NOT_GRANTED');
                     }
-                } else 
+                } else {
                     rest_error ('AUTH_NO_URL');
                 }
             } else {
@@ -581,6 +637,9 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'AUTH_NO_IDENTIFIER':
             $message = Array('err' => 'Credentials needed to grant access');
+            break;
+        case 'AUTH_NO_DATA':
+            $message = Array('err' => 'Data not allowed for the user');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
