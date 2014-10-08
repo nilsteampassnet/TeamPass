@@ -2,6 +2,10 @@
  #700 - Errors related to "includes/js/jstree/themes/default"
  #718 - Two factor authentification: "This user has no email set!"
  #674 - API - User rights
+ #697 - Default language setting, not being applied to automatically created ldap users.
+ #698 - Default language setting, not being applied to newly created users.
+ #707 - httpRequest is missing in upgrade process
+ New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  Changed - list of restricted users refined by folder selected
 

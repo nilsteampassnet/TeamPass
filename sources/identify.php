@@ -246,7 +246,8 @@ function IdentifyUser($sentData)
                 'fonction_id' => '0',
                 'groupes_interdits' => '0',
                 'groupes_visibles' => '0',
-                'last_pw_change' => time()
+                'last_pw_change' => time(),
+                'user_language' => $_SESSION['settings']['default_language']
             )
         );
         $newUserId = DB::insertId();

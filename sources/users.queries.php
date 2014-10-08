@@ -157,6 +157,7 @@ if (!empty($_POST['type'])) {
                         'gestionnaire' => $_POST['manager'] == "true" ? '1' : '0',
                         'read_only' => $_POST['read_only'] == "true" ? '1' : '0',
                         'personal_folder' => $_POST['personal_folder'] == "true" ? '1' : '0',
+                        'user_language' => $_SESSION['settings']['default_language'],
                         'fonction_id' => $_POST['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
                         'groupes_interdits' => ($_POST['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
                         'groupes_visibles' => ($_POST['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
