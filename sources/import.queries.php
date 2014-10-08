@@ -94,7 +94,7 @@ switch ($_POST['type']) {
                     'Label'     => $row[0],
                     'Login'     => $row[1],
                     'Password'  => $row[2],
-                    'Web site'  => $row[3],
+                    'url'       => $row[3],
                     'Comments'  => $row[4],
                 );
             });
@@ -137,7 +137,7 @@ switch ($_POST['type']) {
                     $account = addslashes($row['Label']);
                     $login = addslashes($row['Login']);
                     $pw = str_replace('"', "&quote;", $row['Password']);
-                    $url = addslashes($row['Web Site']);
+                    $url = addslashes($row['url']);
                     $to_find = array ( "\"" , "'" );
                     $to_ins = array ( "&quot" , "&#39;");
                     $comment = htmlentities(addslashes(str_replace($to_find, $to_ins, $row['Comments'])), ENT_QUOTES, 'UTF-8');

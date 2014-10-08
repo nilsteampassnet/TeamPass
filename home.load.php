@@ -608,6 +608,19 @@ function ChangeMyPass()
     }
 }
 
+function toggle_import_type(type)
+{
+    if (type == "csv") {
+        $('#import_type_csv').show();
+        $('#import_type_keepass').hide();
+        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("enable");
+    } else {
+        $('#import_type_csv').hide();
+        $('#import_type_keepass').show();
+        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("disable");
+    }
+}
+
 //Permits to upload passwords from KEEPASS file
 function ImportKEEPASS(file)
 {
@@ -629,7 +642,6 @@ function ImportKEEPASS(file)
             $("#div_loading").hide();
             $("#import_status").html(data[0].message);
             $("#import_status_ajax_loader").hide();
-            $("#div_import_from_csv").find(".ui-dialog-buttonpane button:eq(1)").prop("disabled", true);
         },
         "json"
    );
@@ -658,6 +670,7 @@ function ImportCSV(file)
                         $("input[class='item_checkbox']:not([disabled='disabled'])").removeAttr("checked");
                     }
                 });
+                $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("disable");
             }
             $("#import_status_ajax_loader").hide();
         },

@@ -221,8 +221,8 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         // Show buttons for selected what kind of import
                         echo '
                         <div id="radio_import_type">
-                            <input type="radio" id="radio1" name="radio" class="import_radio" checked="checked" onclick="javascript:$(\'#import_type_csv\').show();$(\'#import_type_keepass\').hide();" /><label for="radio1">CSV</label>
-                            <input type="radio" id="radio2" name="radio" class="import_radio" onclick="javascript:$(\'#import_type_csv\').hide();$(\'#import_type_keepass\').show();" /><label for="radio2">Keepass XML</label>
+                            <input type="radio" id="radio1" name="radio" class="import_radio" checked="checked" onclick="toggle_import_type(\'csv\')" /><label for="radio1">CSV</label>
+                            <input type="radio" id="radio2" name="radio" class="import_radio" onclick="toggle_import_type(\'keepass\')" /><label for="radio2">Keepass XML</label>
                         </div>';
 
                         //error div
