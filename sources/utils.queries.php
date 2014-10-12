@@ -32,7 +32,9 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
+DB::$encoding = $encoding;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 // Construction de la requ?te en fonction du type de valeur
 switch ($_POST['type']) {

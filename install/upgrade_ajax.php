@@ -250,6 +250,8 @@ if (isset($_POST['type'])) {
                     $_POST['db_bdd'],
                     $_POST['db_port']
                 );
+                $dbTmp->set_charset($encoding);
+
                 //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                 $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
@@ -319,6 +321,7 @@ if (isset($_POST['type'])) {
                 $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
+            $dbTmp->set_charset($encoding);
             $status = "";
 
             //rename tables
@@ -393,6 +396,7 @@ if (isset($_POST['type'])) {
                 $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
+            $dbTmp->set_charset($encoding);
 
             ## Populate table MISC
             $val = array(
@@ -1583,15 +1587,16 @@ if (isset($_POST['type'])) {
                     utf8_encode(
 "<?php
 global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db;
+global \$server, \$user, \$pass, \$database, \$pre, \$db, \$encoding;
 
 ### DATABASE connexion parameters ###
 \$server = \"". $_SESSION['db_host'] ."\";
 \$user = \"". $_SESSION['db_login'] ."\";
 \$pass = \"". str_replace("$", "\\$", $_SESSION['db_pw']) ."\";
 \$database = \"". $_SESSION['db_bdd'] ."\";
-\$port = ". $_SESSION['db_port'] .";
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
+\$port = ". $_SESSION['db_port'] .";
+\$encoding = \"utf8\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');
@@ -1674,6 +1679,8 @@ require_once \"".$skFile."\";
                 $_SESSION['db_bdd'],
                 $_SESSION['db_port']
             );
+            $dbTmp->set_charset($encoding);
+
             @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
             mysqli_select_db(
                 $dbTmp,

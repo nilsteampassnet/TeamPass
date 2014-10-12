@@ -38,7 +38,9 @@ if (
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    DB::$encoding = $encoding;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // Include main functions used by TeamPass
     require_once 'sources/main.functions.php';
