@@ -603,6 +603,7 @@ function AjouterItem()
                         $(".fields_div, #item_file_queue, #display_title, #visible_pw").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
+                        $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                     }
                     $("#div_formulaire_saisi_info").hide().html("");
                     $("#div_loading").hide();
@@ -833,6 +834,7 @@ function EditerItem()
                         $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                         //Close dialogbox
                         $("#div_formulaire_edition_item").dialog('close');
+                        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                         //hide loader
                         $("#div_loading").hide();
                     }
@@ -1831,7 +1833,7 @@ $(function() {
     $("#jstree").jstree({
     	"themes" : {
     		"theme" : "default",
-    		"url" : "includes/js/jstree/themes/default"
+		"url" : "includes/js/jstree/themes/default/style.css"
     	},
         "plugins" : ["themes", "html_data", "ui", "search", "cookies"]
     })
@@ -1894,6 +1896,8 @@ $(function() {
                     $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>");
                     $("#edit_rep_show_error").show();
                 } else {
+                    $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+
                     //prepare data
                     var data = '{"title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", '+
                     '"complexity":"'+$('#edit_folder_complexity').val()+'", '+
@@ -1916,6 +1920,7 @@ $(function() {
                                 $("#edit_folder_title").val($('#edit_folder_title').val());
                                 $("#jstree").jstree("refresh");
                                 $("#div_editer_rep").dialog("close");
+                                $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                             } else {
                                 $("#edit_rep_show_error").html(data[0].error).show();
                             }
@@ -1964,7 +1969,7 @@ $(function() {
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_loading").show();
-                $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+                $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 AjouterItem();
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
@@ -2010,7 +2015,7 @@ $(function() {
         title: "<?php echo $LANG['item_menu_edi_elem'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
-                $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+                $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
 				$("#div_formulaire_edition_item_info").hide().html("");
             },
