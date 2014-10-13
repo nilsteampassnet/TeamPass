@@ -228,7 +228,7 @@ if (isset($_POST['newtitle'])) {
             $error = "";
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
             
-            foreach (explode(';', $dataReceived['foldersList']) as $folderId) {        
+            foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
                 $foldersDeleted = "";
                 // Get through each subfolder
                 $folders = $tree->getDescendants($folderId, true);
@@ -243,7 +243,7 @@ if (isset($_POST['newtitle'])) {
                                 'valeur' => $folder->id.', '.$folder->parent_id.', '.
                                     $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
                                     $folder->nlevel.', 0, 0, 0, 0'
-                           )
+                            )
                         );
                         //delete folder
                         DB::delete($pre."nested_tree", "id = %i", $folder->id);
