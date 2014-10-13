@@ -224,25 +224,31 @@ function open_edit_folder_dialog(id)
 *
 **/
 function delete_multiple_folders()
-{
+{    
     var list_i = "";
     $(".cb_selected_folder:checked").each(function() {
         var elem = $(this).attr("id").split("-");
         if (list_i == "") list_i = elem[1];
         else list_i = list_i+';'+elem[1];
     });
-    var data = '{"foldersList":"'+list_i+'"}';
-    //send query
-    $.post(
-        "sources/folders.queries.php",
-        {
-            type    : "delete_multiple_folders",
-            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
-        },
-        function(data) {
-            RefreshPage("form_groupes");
-        },
-        "json"
-   );
+    if (list_i != "" && $("#action_on_going").val("") == "") {
+        LoadingPage();
+        $("#action_on_going").val("multiple_folders");
+        var data = '{"foldersList":"'+list_i+'"}';
+        //send query
+        $.post(
+            "sources/folders.queries.php",
+            {
+                type    : "delete_multiple_folders",
+                data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
+            },
+            function(data) {
+                RefreshPage("form_groupes");
+                $("#action_on_going").val("");
+                LoadingPage();
+            },
+            "json"
+       );
+   }
 }
 </script>
