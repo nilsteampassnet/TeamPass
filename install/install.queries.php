@@ -80,6 +80,8 @@ if (isset($_POST['type'])) {
             $data = json_decode($json, true);
             // launch
             if ($dbTmp = mysqli_connect($data['db_host'], $data['db_login'], $data['db_pw'], $data['db_bdd'], $data['db_port'])) {
+                $dbTmp->set_charset('utf8');
+
                 // create temporary INSTALL mysqli table
                 $mysqli_result = mysqli_query($dbTmp,
                     "CREATE TABLE IF NOT EXISTS `_install` (
@@ -124,6 +126,7 @@ if (isset($_POST['type'])) {
             $data = json_decode($json, true);
             
             $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp->set_charset('utf8');
 
             // prepare data
             foreach($data as $key=>$value) {
@@ -169,6 +172,7 @@ if (isset($_POST['type'])) {
 
             // launch
             if ($dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port'])) {
+                $dbTmp->set_charset('utf8');
                 $mysqli_result = "";
 
                 // read install variables
@@ -654,6 +658,7 @@ if (isset($_POST['type'])) {
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
 
             $dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp->set_charset('utf8');
 
             // read install variables
             $tmp = mysqli_query($dbTmp, "SELECT * FROM `_install`");
@@ -692,7 +697,7 @@ if (isset($_POST['type'])) {
                         utf8_encode(
                             "<?php
 global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
+global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
 \$server = \"".$_SESSION['db_host']."\";
@@ -701,6 +706,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
 \$database = \"".$_SESSION['db_bdd']."\";
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 \$port = ".$_SESSION['db_port'].";
+\$encoding = \"utf8\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');

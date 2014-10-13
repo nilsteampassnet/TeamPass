@@ -269,7 +269,7 @@ function db_error_handler($params) {
  */
 function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions, $refresh)
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -282,7 +282,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    DB::$encoding = $encoding;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -481,7 +483,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  */
 function logEvents($type, $label, $who)
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
@@ -490,7 +492,9 @@ function logEvents($type, $label, $who)
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    DB::$encoding = $encoding;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     DB::insert(
         $pre."log_system",
@@ -510,7 +514,7 @@ function logEvents($type, $label, $who)
  */
 function updateCacheTable($action, $id = "")
 {
-    global $db, $server, $user, $pass, $database, $pre, $port;
+    global $db, $server, $user, $pass, $database, $pre, $port, $encoding;
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
@@ -521,7 +525,9 @@ function updateCacheTable($action, $id = "")
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    DB::$encoding = $encoding;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -687,7 +693,7 @@ function updateCacheTable($action, $id = "")
  */
 function teampassStats()
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -701,7 +707,9 @@ function teampassStats()
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$error_handler = 'db_error_handler';
+    DB::$encoding = $encoding;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // Prepare stats to be sent
     // Count no FOLDERS
