@@ -483,6 +483,7 @@ $LANG = array (
     'give_new_pw' => 'Please indicate the new password for',
     'god' => 'Administrator',
     'group' => 'Folder',
+    'groups' => 'Folders',
     'group_parent' => 'Parent Folder',
     'group_pw_duration' => 'Renewal period',
     'group_pw_duration_tip' => 'In months. Use 0 to disable.',
