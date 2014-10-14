@@ -63,7 +63,11 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 /* DEFINE WHAT LANGUAGE TO USE */
 if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
-    $dataLanguage = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
+    $dataLanguage = DB::queryFirstRow(
+        "SELECT m.valeur AS valeur, l.flag AS flag
+        FROM ".$pre."misc AS m
+        INNER JOIN ".$pre."languages AS l ON (m.valeur = l.name)
+        WHERE m.type=%s_type AND m.intitule=%s_intitule",
         array(
             'type' => "admin",
             'intitule' => "default_language"
@@ -74,11 +78,9 @@ if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
         $_SESSION['user_language_flag'] = "us.png";
     } else {
         $_SESSION['user_language'] = $dataLanguage['valeur'];
-        $_SESSION['user_language_flag'] = "us.png";
+        $_SESSION['user_language_flag'] = $dataLanguage['flag'];
     }
-} elseif (
-    isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])
-) {
+} elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 } elseif (isset($_POST['language'])) {
     $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
