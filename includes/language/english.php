@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'groups' => 'Folders',
     'change_right_access' => 'Define the access rights',
     'write' => 'Write',
     'read' => 'Read',
