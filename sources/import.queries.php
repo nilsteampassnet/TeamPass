@@ -86,6 +86,8 @@ switch ($_POST['type']) {
             $lexer = new Lexer($config);
             $config
                 ->setIgnoreHeaderLine("true")
+                //->setToCharset('UTF-8')
+                //->setFromCharset('SJIS-win')
             ;
             // extract data from CSV file
             $interpreter = new Interpreter();

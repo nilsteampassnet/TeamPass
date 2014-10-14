@@ -86,6 +86,12 @@ if (strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1) {
     $abs_path = $_SERVER['DOCUMENT_ROOT'];
 }
 $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
+if( isset($_SERVER['HTTPS'] ) ) {
+    $protocol = 'https://';
+} else {
+    $protocol = 'http://';
+}
+
 echo '
 <div id="text_step2" style="display:none;">
     <h5>Teampass instance information:</h5>
@@ -93,7 +99,7 @@ echo '
         <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label><input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
     </div>
     <div class="line_entry">
-        <label for="url_path" class="label_block_big">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="http://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><span style="padding-left:10px;" id="url_path_res"></span>
+        <label for="url_path" class="label_block_big">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><span style="padding-left:10px;" id="url_path_res"></span>
     </div>
 
     <h5>Following elements will be checked:</h5>
