@@ -2,7 +2,7 @@
 /**
  * @file          items.load.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -1723,38 +1723,84 @@ PreviewImage = function(uri,title) {
 function notify_click(status)
 {
     $.post("sources/items.queries.php",
-            {
-                type     : "notify_a_user",
-                user_id : <?php echo $_SESSION['user_id'];?>,
-                status    : status,
-                notify_type : 'on_show',
-                notify_role : '',
-                item_id : $('#id_item').val(),
-                key        : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data) {
-                if (data[0].error == "something_wrong") {
-                    $("#new_show_error").html('ERROR!!');
-                    $("#new_show_error").show();
-                } else {
-                    $("#new_show_error").hide();
-                    if (data[0].new_status == "true") {
-                        $('#menu_button_notify')
-                            .attr('title','<?php echo $LANG['disable_notify'];?>')
-                            .attr('onclick','notify_click(\'false\')');
-                        $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                        $('#item_extra_info').html("<?php echo addslashes($LANG['notify_activated']);?>");
-                    } else if (data[0].new_status == "false") {
-                        $('#menu_button_notify')
-                            .attr('title','<?php echo $LANG['enable_notify'];?>')
-                            .attr('onclick','notify_click(\'true\')');
-                        $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
-                        $('#item_extra_info').html("");
+    {
+        type     : "notify_a_user",
+        user_id : <?php echo $_SESSION['user_id'];?>,
+        status    : status,
+        notify_type : 'on_show',
+        notify_role : '',
+        item_id : $('#id_item').val(),
+        key        : "<?php echo $_SESSION['key'];?>"
+    },
+    function(data) {
+        if (data[0].error == "something_wrong") {
+            $("#new_show_error").html('ERROR!!');
+            $("#new_show_error").show();
+        } else {
+            $("#new_show_error").hide();
+            if (data[0].new_status == "true") {
+                $('#menu_button_notify')
+                    .attr('title','<?php echo $LANG['disable_notify'];?>')
+                    .attr('onclick','notify_click(\'false\')');
+                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
+                $('#item_extra_info').html("<?php echo addslashes($LANG['notify_activated']);?>");
+            } else if (data[0].new_status == "false") {
+                $('#menu_button_notify')
+                    .attr('title','<?php echo $LANG['enable_notify'];?>')
+                    .attr('onclick','notify_click(\'true\')');
+                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
+                $('#item_extra_info').html("");
+            }
+        }
+    },
+    "json"
+    );
+}
+
+/*
+** Checks if current item title is a duplicate in current folder
+*/
+function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders, textFieldId)
+{
+    $("#new_show_error").html("").hide();
+    $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+    if (itemTitle != "") {
+        if (checkInCurrentFolder == "1" || checkInAllFolders == "1") {
+            //prepare data
+            var data = '{"label":"'+itemTitle.replace(/"/g,'&quot;') + '", "idFolder":"'+$('#hid_cat').val()+'"}';
+            
+            if (checkInCurrentFolder == "1") {
+                var typeOfCheck = "same_folder";
+            } else {
+                var typeOfCheck = "all_folders";
+            }
+            
+            // send query
+            $.post(
+                "sources/items.queries.php",
+                {
+                    type    : "check_for_title_duplicate",
+                    option  : typeOfCheck,
+                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                    key     : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    if (data[0].duplicate == "0") {
+                        $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+                        // display title
+                        $("#"+textFieldId).html(itemTitle);
+                    } else {
+                        $("#label").focus();
+                        $("#new_show_error").html("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
+                        $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
                     }
                 }
-            },
-            "json"
-          );
+            );
+        } else {
+            // display title
+            $("#"+textFieldId).html(itemTitle);
+        }
+    }
 }
 
 //###########
@@ -1964,12 +2010,12 @@ $(function() {
         height: 665,
         title: "<?php echo $LANG['item_menu_add_elem'];?>",
         open: function( event, ui ) {
-            $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disabled");
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_loading").show();
-                $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+                $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
                 AjouterItem();
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
@@ -2001,6 +2047,8 @@ $(function() {
             $("#item_upload_list").html("");
             $(".item_field").val("");  // clean values in Fields
             $("#pw1").focus();
+            $("#new_show_error").html("").hide();
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
             $("#div_loading").hide();
         }
     });

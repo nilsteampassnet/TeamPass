@@ -3,7 +3,7 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -178,7 +178,11 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != $_POST['duplicate_item']) {
         updateSettings('duplicate_item', $_POST['duplicate_item']);
     }
-    // Update duplicate item setting
+    // Update item_duplicate_in_same_folder setting
+    if (@$_SESSION['settings']['item_duplicate_in_same_folder'] != $_POST['item_duplicate_in_same_folder']) {
+        updateSettings('item_duplicate_in_same_folder', $_POST['item_duplicate_in_same_folder']);
+    }
+    // Update pwd_maximum_length setting
     if (isset($_SESSION['settings']['pwd_maximum_length']) && $_SESSION['settings']['pwd_maximum_length'] != $_POST['pwd_maximum_length']) {
         updateSettings('pwd_maximum_length', $_POST['pwd_maximum_length']);
     }
@@ -247,7 +251,7 @@ if (isset($_POST['save_button'])) {
         updateSettings('enable_sts', $_POST['enable_sts']);
     }
     // Update sts mode
-    if ( @$_SESSION['settings']['encryptClientServer'] != $_POST['encryptClientServer'] ) {
+    if (@$_SESSION['settings']['encryptClientServer'] != $_POST['encryptClientServer']) {
         updateSettings('encryptClientServer', $_POST['encryptClientServer']);
     }
     // Update send_stats
@@ -1275,6 +1279,18 @@ echo '
                         <input type="radio" id="duplicate_item_radio1" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? ' checked="checked"' : '', ' /><label for="duplicate_item_radio1">'.$LANG['yes'].'</label>
                         <input type="radio" id="duplicate_item_radio2" name="duplicate_item" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['duplicate_item']) ? ' checked="checked"':''), ' /><label for="duplicate_item_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_duplicate_item"><img src="includes/images/status', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
+// Duplicate item name in same folder - item_duplicate_in_same_folder
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$LANG['duplicate_item_in_folder'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="item_duplicate_in_same_folder_radio1" name="item_duplicate_in_same_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? ' checked="checked"' : '', ' /><label for="item_duplicate_in_same_folder_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="item_duplicate_in_same_folder_radio2" name="item_duplicate_in_same_folder" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['item_duplicate_in_same_folder']) ? ' checked="checked"':''), ' /><label for="item_duplicate_in_same_folder_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_item_duplicate_in_same_folder"><img src="includes/images/status', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
                 </td</tr>';
 // Enable show_only_accessible_folders

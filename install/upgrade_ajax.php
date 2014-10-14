@@ -406,6 +406,7 @@ if (isset($_POST['type'])) {
                 array('admin', 'date_format', 'd/m/Y',0),
                 array('admin', 'duplicate_folder', '0',0),
                 array('admin', 'duplicate_item', '0',0),
+                array('admin', 'item_duplicate_in_same_folder', '0',0),
                 array('admin', 'number_of_used_pw', '3',0),
                 array('admin', 'manager_edit', '1',0),
                 array('admin', 'cpassman_dir', '',0),
@@ -1592,6 +1593,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$database = \"". $_SESSION['db_bdd'] ."\";
 \$port = ". $_SESSION['db_port'] .";
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
+\$encoding = ".$_SESSION['db_encoding'].";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');

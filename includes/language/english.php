@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'duplicate' => 'Duplicate',
+    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
+    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',    
     'groups' => 'Folders',
     'change_right_access' => 'Define the access rights',
     'write' => 'Write',

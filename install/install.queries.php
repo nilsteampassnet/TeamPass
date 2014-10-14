@@ -2,7 +2,7 @@
 /**
  * @file 		install.queries.php
  * @author		Nils Laumaillé
- * @version 	2.1.21
+ * @version 	2.1.22
  * @copyright 	(c) 2009-2014 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -233,6 +233,7 @@ if (isset($_POST['type'])) {
                                 ('admin', 'time_format', 'H:i:s'),
                                 ('admin', 'date_format', 'd/m/Y'),
                                 ('admin', 'duplicate_folder', '0'),
+                                ('admin', 'item_duplicate_in_same_folder', '0'),
                                 ('admin', 'duplicate_item', '0'),
                                 ('admin', 'number_of_used_pw', '3'),
                                 ('admin', 'manager_edit', '1'),
@@ -701,6 +702,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
 \$database = \"".$_SESSION['db_bdd']."\";
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 \$port = ".$_SESSION['db_port'].";
+\$encoding = ".$_SESSION['db_encoding'].";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');
