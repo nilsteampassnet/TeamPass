@@ -3,7 +3,7 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -521,7 +521,7 @@ echo '
 // Line for LABEL
 echo '
             <label for="" class="label_cpm">'.$LANG['label'].' : </label>
-            <input type="text" name="label" id="label" onchange="javascript:$(\'#display_title\').html(this.value)" class="item_field input_text text ui-widget-content ui-corner-all" />';
+            <input type="text" name="label" id="label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'display_title\')" class="item_field input_text text ui-widget-content ui-corner-all" />';
 // Line for DESCRIPTION
 echo '
             <label for="" class="label_cpm">'.$LANG['description'].' : </label>
@@ -703,7 +703,7 @@ echo '
         </ul>
         <div id="tabs-1">
             <label for="" class="cpm_label">'.$LANG['label'].' : </label>
-            <input type="text" size="60" id="edit_label" onchange="javascript:$(\'#edit_display_title\').html(this.value)" class="input_text text ui-widget-content ui-corner-all" />
+            <input type="text" size="60" id="edit_label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'edit_display_title\')" class="input_text text ui-widget-content ui-corner-all" />
 
             <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<img src="includes/images/broom.png" style="cursor:pointer;" onclick="clear_html_tags()" /> </label>
             <span id="edit_desc_span">

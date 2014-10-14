@@ -2,7 +2,7 @@
 /**
  * @file          items.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -994,12 +994,11 @@ if (isset($_POST['type'])) {
                 foreach ($originalRecord as $key => $value) {
                     if ($key == "id_tree") {
                         array_push($aSet, array("id_tree" => $_POST['folder_id']));
-                        //$query .= '`id_tree` = "'.$_POST['folder_id'].'", ';
                     } elseif ($key == "pw" && !empty($pw)) {
-                        //$query .= '`pw` = "'.encrypt($randomKey.$pw).'", ';
                         array_push($aSet, array("pw" => encrypt($randomKey.$pw)));
+                    } elseif ($key == "label") {
+                        array_push($aSet, array("label" => str_replace('"', '\"', $value."(".$LANG['duplicate'].")")));
                     } elseif ($key != "id" && $key != "key") {
-                        //$query .= '`'.$key.'` = "'.str_replace('"', '\"', $value).'", ';
                         array_push($aSet, array($key => str_replace('"', '\"', $value)));
                     }
                 }
@@ -2862,6 +2861,75 @@ if (isset($_POST['type'])) {
             );
             echo prepareExchangedData($data, "encode");
 
+            break;
+            
+        /*
+        * CASE
+        * Get list of users that have access to the folder
+        */
+        case "check_for_title_duplicate":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            $error = "";
+            $duplicate = false;
+            
+            // decrypt and retreive data in JSON format
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            // Prepare variables
+            $label = htmlspecialchars_decode($dataReceived['label']);
+            $idFolder = $dataReceived['idFolder'];
+            
+            // don't check if Personal Folder
+            $data = DB::queryFirstRow("SELECT title FROM ".$pre."nested_tree WHERE id = %i", $idFolder);            
+            if ($data['title'] == $_SESSION['user_id']) {
+                // send data
+                echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
+            } else {
+                if ($_POST['option'] == "same_folder") {
+                // case unique folder
+                    DB::query(
+                        "SELECT label
+                        FROM ".$pre."items
+                        WHERE id_tree = %i",
+                        $idFolder
+                    );
+                } else {
+                // case complete database
+                    
+                    //get list of personal folders
+                    $arrayPf = array();
+                    $listPf = "";
+                    if (!empty($row['id'])) {
+                        $rows = DB::query(
+                            "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = %i",
+                            "1"
+                        );
+                        foreach ($rows as $record) {
+                            if (!in_array($record['id'], $arrayPf)) {
+                                array_push($arrayPf, $record['id']);
+                            }
+                        }
+                    }                    
+                    
+                    DB::query(
+                        "SELECT label
+                        FROM ".$pre."items
+                        WHERE id_tree = %i AND id_tree NOT IN (".explode(',', $arrayPf).")",
+                        $idFolder
+                    );
+                }
+                
+                // count results
+                if (DB::count() > 0) {
+                    $duplicate = true;
+                }
+                
+                // send data
+                echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
+            }
             break;
     }
 }

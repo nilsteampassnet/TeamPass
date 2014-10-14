@@ -6,9 +6,11 @@
  #698 - Default language setting, not being applied to newly created users.
  #707 - httpRequest is missing in upgrade process
  #725 - Disable button after item creation or edition 
+ #720 - cannot sign up to 2factor 
  Other: #711 
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
+ New - New option : Prevent against duplicate items in same folder
  Changed - list of restricted users refined by folder selected
 
 2.1.21
