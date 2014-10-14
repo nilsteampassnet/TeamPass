@@ -7,7 +7,7 @@
  #707 - httpRequest is missing in upgrade process
  #725 - Disable button after item creation or edition 
  #720 - cannot sign up to 2factor 
- Other: #711 
+ Other: #711 - #699
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  New - New option : Prevent against duplicate items in same folder
