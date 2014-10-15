@@ -248,3 +248,53 @@ function aes_encrypt(text)
 {
     return Aes.Ctr.encrypt(text, "cpm", 128);
 }
+
+function httpRequest(file,data,type) {
+    var xhr_object = null;
+    var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+
+	if (document.getElementById("menu_action") != null) {
+		document.getElementById("menu_action").value = "action";
+	}
+
+    if(window.XMLHttpRequest) { // Firefox
+        xhr_object = new XMLHttpRequest();
+    } else if(window.ActiveXObject) { // Internet Explorer
+        xhr_object = new ActiveXObject("Microsoft.XMLHTTP");  //Info IE8 now supports =>  xhr_object = new XMLHttpRequest()
+    } else { // XMLHttpRequest non support? par le navigateur
+        alert("Your browser does not support XMLHTTPRequest objects ...");
+        return;
+    }
+
+    if (type == "GET") {
+        xhr_object.open("GET", file+"?"+data, true);
+        xhr_object.send(null);
+    } else {
+        xhr_object.open("POST", file, true);
+        xhr_object.onreadystatechange = function() {
+          if(xhr_object.readyState == 4) {
+              eval(xhr_object.responseText);
+              //Check if query is for user identification. If yes, then reload page.
+              if (data != "" && data.indexOf('ype=identify_user') > 0 ) {
+                  if (is_chrome == true ) PauseInExecution(100);  //Needed pause for Chrome
+                  if (type == "") {
+                      if (document.getElementById('erreur_connexion').style.display == "") {
+                          //rise an error in url. This in order to display the eror after refreshing
+                          window.location.href="index.php?error=rised";
+                      } else {
+                        window.location.href="index.php";
+                      }
+                  } else {
+                      if (type = "?error=rised") {
+                            if (document.getElementById('erreur_connexion').style.display == "none") type = "";   //clean error in url
+                            else type = "?error=rised"; //Maintain the ERROR
+                      }
+                      window.location.href="index.php"+type;
+                  }
+              }
+          }
+        }
+        xhr_object.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
+        xhr_object.send(data);
+    }
+}
