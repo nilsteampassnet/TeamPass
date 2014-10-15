@@ -61,7 +61,17 @@ require_once 'sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
+if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
+    // case of user has change language in the login page
+    $dataLanguage = DB::queryFirstRow(
+        "SELECT flag, name
+        FROM ".$pre."languages
+        WHERE label = %s",
+        $_GET['language']
+    );
+    $_SESSION['user_language'] = $dataLanguage['name'];
+    $_SESSION['user_language_flag'] = $dataLanguage['flag'];
+} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         "SELECT m.valeur AS valeur, l.flag AS flag

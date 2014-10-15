@@ -23,7 +23,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    exit();
+} elseif (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data'])) {
+    // continue
+} else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
