@@ -103,7 +103,7 @@ if (empty($languagesDropmenu)) {
     $rows = DB::query("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
     foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
-            $record['flag'].'"alt="'.$record['label'].'" title="'.
+            $record['flag'].'" alt="'.$record['label'].'" title="'.
             $record['label'].'" onclick="ChangeLanguage(\''.$record['name'].'\')" /></a></li>';
         array_push($languagesList, $record['name']);
         if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {

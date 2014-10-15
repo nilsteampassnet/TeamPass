@@ -312,8 +312,7 @@ $htmlHeaders .= '
             },
             function(data) {
             	if (data == "done") {
-	                $("#language").val(lang);
-	                document.location.href="index.php";
+	                document.location.href="index.php?language="+lang;
 	            }
             }
        );
