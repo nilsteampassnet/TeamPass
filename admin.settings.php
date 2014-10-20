@@ -266,6 +266,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['allow_print'] != $_POST['allow_print']) {
         updateSettings('allow_print', $_POST['allow_print']);
     }
+    // Update roles_allowed_to_print
+    if (@$_SESSION['settings']['roles_allowed_to_print'] != $_POST['roles_allowed_to_print']) {
+        updateSettings('roles_allowed_to_print', $_POST['roles_allowed_to_print']);
+    }
     // Update allow_import
     if (@$_SESSION['settings']['allow_import'] != $_POST['allow_import']) {
         updateSettings('allow_import', $_POST['allow_import']);
@@ -1424,6 +1428,30 @@ echo '
                         <input type="radio" id="allow_print_radio2" name="allow_print" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['allow_print']) ? ' checked="checked"':''), ' /><label for="allow_print_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_allow_print"><img src="includes/images/status', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? '' : '-busy', '.png" /></span>
                     </div>
+                </td></tr>';
+                
+// Enable Printing Groups - roles_allowed_to_print
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>
+                        '.$LANG['settings_roles_allowed_to_print'].'
+                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_roles_allowed_to_print_tip'].'" /></span>
+                    </label>
+                    </td><td>
+                    <input type="hidden" id="roles_allowed_to_print" name="roles_allowed_to_print" value="', isset($_SESSION['settings']['roles_allowed_to_print']) ? $_SESSION['settings']['roles_allowed_to_print'] : '', '" />
+                    <select id="roles_allowed_to_print_select" name="roles_allowed_to_print_select" class="text ui-widget-content" multiple onblur="refreshInput()">';
+                    if (!isset($_SESSION['settings']['roles_allowed_to_print']) || empty($_SESSION['settings']['roles_allowed_to_print'])) {
+                        $arrRolesToPrint = array();
+                    } else {
+                        $arrRolesToPrint = explode(";", $_SESSION['settings']['roles_allowed_to_print']);
+                    }
+                    $roles = DB::query("SELECT id, title FROM ".$pre."roles_title");
+                    foreach ($roles as $role) {
+                        echo '<option value="'.$role['id'].'"', in_array($role['id'], $arrRolesToPrint) ? ' selected="selected"' : '', '>'.addslashes($role['title']).'</option>';
+                    }
+echo '
+                        </select>
                 </td></tr>';
 // Enable IMPORT
 echo '

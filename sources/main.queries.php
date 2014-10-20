@@ -27,7 +27,9 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
-} elseif (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data'])) {
+} elseif (
+    (isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
+    (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -775,5 +777,39 @@ switch ($_POST['type']) {
         }
 
         echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
+        break;
+    /**
+     * Make statistics on item
+     */
+    case "item_stat":
+        if (isset($_POST['scope']) && $_POST['scope'] == "item") {
+            $data = DB::queryfirstrow(
+                "SELECT view FROM ".$pre."statistics WHERE scope = %s AND item_id = %i",
+                'item',
+                $_POST['id']
+            );
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    $pre."statistics",
+                    array(
+                        'scope' => 'item',
+                        'view' => '1',
+                        'item_id' => $_POST['id']
+                    )
+                );
+            } else {
+                DB::update(
+                    $pre."statistics",
+                    array(
+                        'scope' => 'item',
+                        'view' => $data['view']+1
+                    ),
+                    "item_id = %i",
+                    $_POST['id']
+                );
+            }
+        }
+        
         break;
 }

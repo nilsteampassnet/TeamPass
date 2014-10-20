@@ -131,7 +131,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <button title="'.$LANG['import_csv_menu_title'].'" onclick="$(\'#csv_import_options, #kp_import_options\').hide();$(\'#div_import_from_csv\').dialog(\'open\');">
                             <img src="includes/images/database-import.png" alt="Import" />
                         </button>' : '' ,
-                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1) ? '
+                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '
                         &nbsp;
                         <button title="'.$LANG['print_out_menu_title'].'" onclick="print_out_items()">
                             <img src="includes/images/printer.png" alt="Print" />
@@ -298,6 +298,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 </div>';
 
                 //Data Export (PDF/CSV)
+                if (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['temporary']['user_can_printout'] == true) {
                 echo '
                 <div>
                     <div id="div_print_out" style="display:none;padding:4px;">
@@ -323,6 +324,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <div style="text-align:center;margin-top:8px; display:none;" id="div_print_out_wait"><img src="includes/images/ajax-loader.gif" /></div>
                     </div>
                 </div>';
+                }
 
 	// Off line mode
 	if (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1) {

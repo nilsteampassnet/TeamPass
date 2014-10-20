@@ -427,6 +427,7 @@ if (isset($_POST['type'])) {
                 array('admin','ldap_elusers','0',0),
                 array('admin', 'richtext',0,0),
                 array('admin', 'allow_print',0,0),
+                array('admin', 'roles_allowed_to_print',0,0),
                 array('admin', 'show_description',1,0),
                 array('admin', 'anyone_can_modify',0,0),
                 array('admin', 'anyone_can_modify_bydefault',0,0),

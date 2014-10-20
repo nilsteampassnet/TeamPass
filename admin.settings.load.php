@@ -590,4 +590,14 @@ function manageEncryptionOfAttachments(list, cpt) {
         "json"
 	);
 }
+
+function refreshInput()
+{
+    var ids = "";
+    $("#roles_allowed_to_print_select :selected").each(function(i, selected) {
+        if (ids == "") ids = $(selected).val();
+        else ids = ids + ";" + $(selected).val();
+    });
+    $("#roles_allowed_to_print").val(ids);
+}
 </script>
