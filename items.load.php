@@ -840,7 +840,19 @@ function EditerItem()
                     }
                 }
            );
-
+           
+           // statistic
+           $.post(
+                "sources/main.queries.php",
+                {
+                    type                : 'item_stat',
+                    id                  : $('#id_item').val(),
+					stat_action				: "item"
+                },
+                function(data) {
+                
+                }
+            );
 
         } else {
             $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
@@ -1239,6 +1251,19 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#request_ongoing").val("");
                 }
            );
+           
+           // statistic
+           $.post(
+                "sources/main.queries.php",
+                {
+                    type                : 'item_stat',
+                    id                  : id,
+					scope				: "item"
+                },
+                function(data) {
+                
+                }
+            );
        }
     }
     //Store Item id shown
@@ -1629,6 +1654,9 @@ $("#div_copy_item_to_folder").dialog({
                 $("#copy_item_to_folder_show_error").html("").hide();
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
 
@@ -1717,7 +1745,7 @@ PreviewImage = function(uri,title) {
             });
         },
         "json"
-    );    
+    );
 }
 
 function notify_click(status)
@@ -1768,13 +1796,13 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
         if (checkInCurrentFolder == "1" || checkInAllFolders == "1") {
             //prepare data
             var data = '{"label":"'+itemTitle.replace(/"/g,'&quot;') + '", "idFolder":"'+$('#hid_cat').val()+'"}';
-            
+
             if (checkInCurrentFolder == "1") {
                 var typeOfCheck = "same_folder";
             } else {
                 var typeOfCheck = "all_folders";
             }
-            
+
             // send query
             $.post(
                 "sources/items.queries.php",
@@ -1917,6 +1945,9 @@ $(function() {
                 $("#new_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -1979,6 +2010,9 @@ $(function() {
                 $("#edit_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -1998,6 +2032,9 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2030,6 +2067,7 @@ $(function() {
             $("#label").focus();
             $("#visible_pw").html("");
             $("#item_tabs").tabs("option", "active", 0);
+            $(ui-tooltip).siblings(".tooltip").remove();
 
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
@@ -2100,6 +2138,7 @@ $(function() {
 			$("#item_edit_tabs").tabs( "option", "active",1  );
 			$("#edit_pw1").first().focus();
 			$("#item_edit_tabs").tabs( "option", "active",0  );
+            $(ui-tooltip).siblings(".tooltip").remove();
 
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
@@ -2138,6 +2177,9 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2153,6 +2195,9 @@ $(function() {
             "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2168,6 +2213,9 @@ $(function() {
             "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2210,6 +2258,9 @@ $(function() {
             "<?php echo $LANG['close'];?>": function() {
                 $(this).dialog('close');
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2225,6 +2276,9 @@ $(function() {
             "<?php echo $LANG['ok'];?>": function() {
 
             }
+        },
+        open: function(event,ui) {
+            $(ui-tooltip).siblings(".tooltip").remove();
         }
     });
     //<=

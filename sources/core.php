@@ -203,8 +203,9 @@ if (
 
 /* CHECK IF UPDATE IS NEEDED */
 if (
-    isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
-    || empty($_SESSION['settings']['update_needed']))
+    (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
+    || empty($_SESSION['settings']['update_needed'])))
+    && (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1)
 ) {
     $row = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
         array(
@@ -356,6 +357,17 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             $data['fonction_id'],
             false
         );
+
+        // user type
+        if ($_SESSION['user_admin'] == 1) {
+            $_SESSION['user_privilege'] = $LANG['god'];
+        } elseif ($_SESSION['user_manager'] == 1) {
+            $_SESSION['user_privilege'] = $LANG['gestionnaire'];
+        } elseif ($_SESSION['user_read_only'] == 1) {
+            $_SESSION['user_privilege'] = $LANG['read_only_account'];
+        } else {
+            $_SESSION['user_privilege'] = $LANG['user'];
+        }
     }
 }
 
@@ -444,6 +456,19 @@ if (
         $_SESSION['temporary']['send_stats_done'] = true;   //permits to test only once by session
     }
 }
+
+/*
+**
+*/
+if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['user_roles']) && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))) {
+    $_SESSION['temporary']['user_can_printout'] = false;
+    foreach (explode(";", $_SESSION['settings']['roles_allowed_to_print']) as $role) {
+        if (in_array($role, $_SESSION['user_roles'])) {
+            $_SESSION['temporary']['user_can_printout'] = true;
+        }
+    }
+}
+
 
 /* CHECK NUMBER OF USER ONLINE */
 DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",

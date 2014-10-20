@@ -141,28 +141,6 @@ function IdentifyUser($sentData)
                 )
             );
 
-            /*try {
-                $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
-            $adldap->register();
-                $adldap = new LDAP\adLDAP\adLDAP( array(
-                        'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                        'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                        'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                        'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                        'use_tls' => $_SESSION['settings']['ldap_tls']
-                ) );
-            }
-            catch(Exception $e)
-            {
-                echo $e->getMessage();
-            }*/
-            /*$adldap = new adLDAP( array(
-                      'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
-                      'account_suffix' => $_SESSION['settings']['ldap_suffix'],
-                      'domain_controllers' => array( $_SESSION['settings']['ldap_domain_controler'] ),
-                      'use_ssl' => $_SESSION['settings']['ldap_ssl'],
-                      'use_tls' => $_SESSION['settings']['ldap_tls']
-            ) );*/
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
             }
@@ -364,10 +342,18 @@ function IdentifyUser($sentData)
             $_SESSION['can_create_root_folder'] = $data['can_create_root_folder'];
             $_SESSION['key'] = $key;
             $_SESSION['personal_folder'] = $data['personal_folder'];
-            $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
             $_SESSION['user']['ga'] = $data['ga'];
+            
+            // manage session expiration
+            $serverTime = time();
+            if ($dataReceived['TimezoneOffset'] > 0) {
+                $userTime = $serverTime + $dataReceived['TimezoneOffset'];
+            } else {
+                $userTime = $serverTime;
+            }
+            $_SESSION['fin_session'] = $userTime + $dataReceived['duree_session'] * 60;
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (
@@ -389,16 +375,6 @@ function IdentifyUser($sentData)
                 "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s").
                 " {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
             );
-            // user type
-            if ($_SESSION['user_admin'] == 1) {
-                $_SESSION['user_privilege'] = $LANG['god'];
-            } elseif ($_SESSION['user_manager'] == 1) {
-                $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-            } elseif ($_SESSION['user_read_only'] == 1) {
-                $_SESSION['user_privilege'] = $LANG['read_only_account'];
-            } else {
-                $_SESSION['user_privilege'] = $LANG['user'];
-            }
 
             if (empty($data['last_connexion'])) {
                 $_SESSION['derniere_connexion'] = time();

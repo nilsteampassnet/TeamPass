@@ -165,7 +165,11 @@ $htmlHeaders .= '
                 \', "psk_confirm":"\'+sanitizeString($("#psk_confirm").val())+\'"\';
         }
 
-        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'"\'+data+\'}\';
+        // get timezone
+        var d = new Date();
+        var TimezoneOffset = d.getTimezoneOffset()*60;
+
+        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\'}\';
 
         //send query
         $.post(
