@@ -464,7 +464,8 @@ if (isset($_POST['newtitle'])) {
                 array(
                     'bloquer_creation' => $_POST['droit']
                ),
-               "id = %i".$_POST['id']."'"
+               "id = %i",
+               $_POST['id']
             );
             break;
 
@@ -484,7 +485,8 @@ if (isset($_POST['newtitle'])) {
                 array(
                     'bloquer_modification' => $_POST['droit']
                ),
-               "id = %i".$_POST['id']."'"
+               "id = %i",
+               $_POST['id']
             );
             break;
     }
