@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'expand' => 'Expand',
+    'collapse' => 'Collapse',
     'settings_roles_allowed_to_print' => 'Select the roles allowed to print out the Items',
     'settings_roles_allowed_to_print_tip' => 'This is only taken into consideration if printing out option is enabled.',
     'duplicate' => 'Duplicate',

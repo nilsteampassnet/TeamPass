@@ -34,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 */
 function updateSettings ($setting, $val, $type = '')
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     if (empty($type)) {
         $type = 'admin';
@@ -49,6 +49,7 @@ function updateSettings ($setting, $val, $type = '')
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
 

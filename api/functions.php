@@ -36,7 +36,7 @@ function teampass_whitelist() {
 
 function teampass_connect()
 {
-    global $server, $user, $pass, $database, $pre, $link, $port;
+    global $server, $user, $pass, $database, $pre, $link, $port, $encoding;
     require_once("../includes/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
     DB::$host = $server;
@@ -44,6 +44,7 @@ function teampass_connect()
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
 }
