@@ -1937,6 +1937,7 @@ $(function() {
                 $("#div_loading").show();
                 $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 AjouterItem();
+                $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 //Clear upload queue
@@ -1983,6 +1984,7 @@ $(function() {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
+                $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
 				$("#div_formulaire_edition_item_info").hide().html("");
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
