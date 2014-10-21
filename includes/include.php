@@ -11,11 +11,8 @@
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languagesList;
 
-$k['version'] = "2.1.22";
+$k['version'] = "2.1.23";
 $k['tool_name'] = "TeamPass";
-$k['jquery-version'] = "1.9.1";
-$k['jquery-ui-version'] = "1.10.3";
-$k['jquery-ui-theme'] = "overcast";
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
 $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');

@@ -20,12 +20,16 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 // Common elements
 $htmlHeaders = '
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
-        <link rel="stylesheet" href="includes/js/jquery-ui/css/'.$k['jquery-ui-theme'].'/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.css" type="text/css" />
+        <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
+        <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.structure.min.css" type="text/css" />
+        <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
+        <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css">
+
 
         <script type="text/javascript" src="includes/js/functions.js"></script>
 
-        <script type="text/javascript" src="includes/js/jquery-ui/js/jquery-'.$k['jquery-version'].'.js"></script>
-        <script type="text/javascript" src="includes/js/jquery-ui/js/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.js"></script>
+        <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
+        <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
 

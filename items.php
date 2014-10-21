@@ -131,10 +131,20 @@ echo '
 echo '
     <div class="items_tree">
         <div>
-            <div style="margin:3px;font-weight:bold;">
+            <div id="tree_menu" style="float:left; margin-right: 5px;">
+                <ul id="tree_menu_ul">
+                    <li><i class="fa fa-bars"></i>
+                        <ul class="menu_150">
+                            <li id="jstree_open"><i class="fa fa-expand"></i> '.$LANG['expand'].'</li>
+                            <li id="jstree_close"><i class="fa fa-compress"></i> '.$LANG['collapse'].'</li>
+                            <li onclick="open_add_group_div()"><i class="fa fa-plus"></i> '.$LANG['item_menu_add_rep'].'</li>
+                            <li onclick="open_edit_group_div()"><i class="fa fa-edit"></i> '.$LANG['item_menu_edi_rep'].'</li>
+                            <li onclick="open_del_group_div()"><i class="fa fa-eraser"></i> '.$LANG['item_menu_del_rep'].'</li>
+                        </ul>
+                </ul>
+            </div>
+            <div style="margin:18px;font-weight:bold;">
                 '.$LANG['items_browser_title'].'
-                <span id="jstree_open" class="pointer" ><img src="includes/images/chevron-small-expand.png" /></span>
-                <span id="jstree_close" class="pointer"><img alt="" src="includes/images/chevron-small.png" /></span>
                 <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
             </div>
         </div>

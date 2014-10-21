@@ -1850,6 +1850,8 @@ $(function() {
         }
     });
 
+    $("#tree_menu_ul").menu();
+
     $("#pw_size, #edit_pw_size").spinner({
         min:   3,
         step:  1,

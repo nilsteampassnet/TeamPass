@@ -135,3 +135,13 @@ button{
 .ui-autocomplete-loading {
     background: white url('../images/ajax-loader.gif') right center no-repeat;
 }
+
+#tree_menu {
+
+}
+
+.menu_150 {
+    width:150px;
+}
+
+.ui-icon { display: none !important; }

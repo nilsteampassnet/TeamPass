@@ -50,6 +50,7 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 
@@ -73,10 +74,10 @@ $counter_folders = DB::count();
         <title>Teampass - Tools</title>
         <?php
         echo '
-        <link rel="stylesheet" href="../includes/js/jquery-ui/css/'.$k['jquery-ui-theme'].'/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.css" type="text/css" />
+        <link rel="stylesheet" href="../includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <script type="text/javascript" src="../includes/js/jquery-ui/js/jquery-'.$k['jquery-version'].'.js"></script>
-        <script type="text/javascript" src="../includes/js/jquery-ui/js/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.js"></script>
+        <script type="text/javascript" src="../includes/js/jquery-ui/external/jquery/jquery.js"></script>
+        <script type="text/javascript" src="../includes/js/jquery-ui/jquery-ui.min.js"></script>
         <script type="text/javascript" src="../includes/js/jcenter/jquery.center.js"></script>';
         ?>
         <script type="application/javascript">
