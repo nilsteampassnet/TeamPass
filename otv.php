@@ -55,7 +55,7 @@ if (
         && $data['item_id'] == $_GET['item_id']
     ) {
         // otv is too old
-        if ($data['timestamp'] < (time() - $k['otv_expiration_period']) ) {
+        if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period']) ) {
             $html = "Link is too old!";
         } else {
             $dataItem = DB::queryfirstrow(
@@ -105,7 +105,7 @@ if (
         	DB::delete($pre."otv", "id = %i", intval($_GET['otv_id']));
         }
     } else {
-        $html = "Not a valid page2!";
+        $html = "Not a valid page!";
     }
 } else {
     $html = "Not a valid page!";

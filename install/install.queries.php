@@ -15,6 +15,7 @@ require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
+$_SESSION['db_encoding'] = "utf8";
 
 $_SESSION['CPM'] = 1;
 if (isset($_POST['type'])) {
@@ -714,7 +715,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
 \$database = \"".$_SESSION['db_bdd']."\";
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 \$port = ".$_SESSION['db_port'].";
-\$encoding = ".$_SESSION['db_encoding'].";
+\$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');

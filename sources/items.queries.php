@@ -2695,7 +2695,7 @@ if (isset($_POST['type'])) {
             }
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".$pre."otv WHERE timestamp < ".(time() - $k['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".$pre."otv WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
             foreach ($rows as $record) {
                 DB::delete($pre.'otv', "id=%i", $record['id']);
             }

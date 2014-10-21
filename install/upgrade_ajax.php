@@ -2,6 +2,7 @@
 require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+$_SESSION['db_encoding'] = "utf8";
 
 require_once '../includes/language/english.php';
 require_once '../includes/include.php';
@@ -1594,7 +1595,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$database = \"". $_SESSION['db_bdd'] ."\";
 \$port = ". $_SESSION['db_port'] .";
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
-\$encoding = ".$_SESSION['db_encoding'].";
+\$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');
