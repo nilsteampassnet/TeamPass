@@ -1656,7 +1656,7 @@ $("#div_copy_item_to_folder").dialog({
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
 
@@ -1803,6 +1803,9 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                 var typeOfCheck = "all_folders";
             }
 
+            // disable Save button
+            $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
+
             // send query
             $.post(
                 "sources/items.queries.php",
@@ -1813,16 +1816,16 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                     key     : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
-                    if (data[0].duplicate == "0") {
+                    if (data[0].duplicate != "1") {
                         $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
                         // display title
                         $("#"+textFieldId).html(itemTitle);
                     } else {
                         $("#label").focus();
                         $("#new_show_error").html("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
-                        $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
                     }
-                }
+                },
+                "json"
             );
         } else {
             // display title
@@ -1947,7 +1950,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2012,7 +2015,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2034,7 +2037,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2067,7 +2070,7 @@ $(function() {
             $("#label").focus();
             $("#visible_pw").html("");
             $("#item_tabs").tabs("option", "active", 0);
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
 
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
@@ -2138,7 +2141,7 @@ $(function() {
 			$("#item_edit_tabs").tabs( "option", "active",1  );
 			$("#edit_pw1").first().focus();
 			$("#item_edit_tabs").tabs( "option", "active",0  );
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
 
 		    // show tab fields ? Not if PersonalFolder
 		    if ($("#recherche_group_pf").val() == 1) {
@@ -2179,7 +2182,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2197,7 +2200,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2215,7 +2218,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2260,7 +2263,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=
@@ -2278,7 +2281,7 @@ $(function() {
             }
         },
         open: function(event,ui) {
-            $(ui-tooltip).siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
     //<=

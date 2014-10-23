@@ -10,7 +10,7 @@
  #690 - limit password export via PDF/CSV to user/group
  #739
  #737
- Other: #711 - #699
+ Other: #711 - #699 - #726
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  New - New option : Prevent against duplicate items in same folder
