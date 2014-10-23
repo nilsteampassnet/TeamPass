@@ -2893,8 +2893,9 @@ if (isset($_POST['type'])) {
                     DB::query(
                         "SELECT label
                         FROM ".$pre."items
-                        WHERE id_tree = %i",
-                        $idFolder
+                        WHERE id_tree = %i AND label = %s",
+                        $idFolder,
+                        $label
                     );
                 } else {
                 // case complete database
@@ -2917,8 +2918,9 @@ if (isset($_POST['type'])) {
                     DB::query(
                         "SELECT label
                         FROM ".$pre."items
-                        WHERE id_tree = %i AND id_tree NOT IN (".explode(',', $arrayPf).")",
-                        $idFolder
+                        WHERE id_tree = %i AND label = %s AND id_tree NOT IN (".explode(',', $arrayPf).")",
+                        $idFolder,
+                        $label
                     );
                 }
                 
@@ -2928,7 +2930,7 @@ if (isset($_POST['type'])) {
                 }
                 
                 // send data
-                echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
+                echo '[{"duplicate" : "'.$duplicate.'" , "error" : ""}]';
             }
             break;
     }
