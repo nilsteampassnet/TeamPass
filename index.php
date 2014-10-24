@@ -298,28 +298,8 @@ if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_G
         (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1) ||
         (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
       ) ? '
-            <button title="'.$LANG['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
-                <img src="includes/images/folder__plus.png" alt="" />
-            </button>
-            <br />
-            <button title="'.$LANG['item_menu_edi_rep'].'" id="menu_button_edit_group" onclick="open_edit_group_div()">
-                <img src="includes/images/folder__pencil.png" alt="" />
-            </button>
-            <br />
-            <button title="'.$LANG['item_menu_del_rep'].'" id="menu_button_del_group" style="margin-bottom:5px;" onclick="open_del_group_div()">
-                <img src="includes/images/folder__minus.png" alt="" />
-            </button>
+
             <br />' : '', '
-            <button title="'.$LANG['item_menu_add_elem'].'" id="menu_button_add_item" onclick="open_add_item_div()"><img src="includes/images/key__plus.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_edi_elem'].'" id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><img src="includes/images/key__pencil.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_del_elem'].'" id="menu_button_del_item" onclick="open_del_item_div()"><img src="includes/images/key__minus.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_copy_elem'].'" id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()" style="margin-bottom:5px;"><img src="includes/images/key_copy.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['pw_copy_clipboard'].'" id="menu_button_copy_pw" class="copy_clipboard"><img src="includes/images/ui-text-field-password.png" id="div_copy_pw" alt="" /></button>
-            <br />
             <button title="'.$LANG['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
             <br />
             <button title="'.$LANG['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>

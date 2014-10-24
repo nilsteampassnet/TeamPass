@@ -131,8 +131,8 @@ echo '
 echo '
     <div class="items_tree">
         <div>
-            <div id="tree_menu" style="float:left; margin-right: 5px;">
-                <ul id="tree_menu_ul">
+            <div id="quick_menu" style="float:left; margin-right: 5px;">
+                <ul class="quick_menu">
                     <li><i class="fa fa-bars"></i>
                         <ul class="menu_150">
                             <li id="jstree_open"><i class="fa fa-expand"></i> '.$LANG['expand'].'</li>
@@ -331,7 +331,20 @@ echo '
 echo '
     <div id="items_content">
         <div id="items_center">
-            <div id="items_path" class="ui-corner-all"><img src="includes/images/folder-open.png" />&nbsp;<span id="items_path_var"></span></div>
+            <div id="items_path" class="ui-corner-all">
+                <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                <div class="quick_menu" style="float:right; margin-left: 5px;">
+                    <ul class="quick_menu_left">
+                        <li><i class="fa fa-bars"></i>
+                            <ul class="menu_150">
+                                <li onclick="open_add_item_div()"><i class="fa fa-plus"></i> '.$LANG['item_menu_add_elem'].'</li>
+                                <li onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil"></i> '.$LANG['item_menu_edi_elem'].'</li>
+                                <li onclick="open_del_item_div()"><i class="fa fa-eraser"></i> '.$LANG['item_menu_del_elem'].'</li>
+                                <li onclick="open_copy_item_to_folder_div()"><i class="fa fa-retweet"></i> '.$LANG['item_menu_copy_elem'].'</li>
+                            </ul>
+                    </ul>
+                </div>
+            </div>
             <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-idex:1000;"><img src="includes/images/76.gif" /></div>
             <!--<div id="alpha_select">
                 <span id="A" onclick="items_list_filter($(this).attr(\'id\'))">A</span>&nbsp;
