@@ -1763,7 +1763,6 @@ if (isset($_POST['type'])) {
 
                 // List all ITEMS
                 if ($folderIsPf == 0) {
-                    $items_to_display_once = "max";
                     $where->add('i.inactif=%i', 0);
                     $where->add('l.action=%s', "at_creation");
                     if (!empty($limited_to_items)) {
@@ -1789,11 +1788,13 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 } else {
+                    $items_to_display_once = "max";
+                    /*
                     if ($items_to_display_once != 'max') {
                         $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     } else {
                         $query_limit = "";
-                    }
+                    }*/
 
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
@@ -1806,7 +1807,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id
-                        ORDER BY i.label ASC, l.date DESC".$query_limit,
+                        ORDER BY i.label ASC, l.date DESC",
                         $where
                     );
                 }
