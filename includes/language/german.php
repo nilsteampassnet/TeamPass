@@ -3,7 +3,7 @@
  *
  * @file          german.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,11 +14,10 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
-    'error_no_user' => 'Nutzer nicht gefunden.',
+    'error_no_user' => 'Benutzer nicht gefunden!',
     'email_ga_subject' => 'Ihr Google Authenticator Flashcode für Teampass',
     'email_ga_text' => 'Hallo,<br><br>bitte klicken Sie diesen <a href=\'#link#\'>LINK</a> und nehmen Sie ihn mit Ihrer Anwendung Google Authenticator auf, um Ihr Einmalpasswort für Teampass zu erhalten.<br /><br />Tschüss',
     'settings_attachments_encryption' => 'Verschlüsselung von Elementanhängen erlauben',
@@ -762,8 +761,18 @@ $LANG = array (
     'define_old_saltkey' => 'Ich will den alten Salt Key angeben um ihn zu nutzen (optional)',
     'admin_email_server_url_tip' => 'Passen Sie die URL für Links, die in E-Mails verwendet werden an, wenn Sie nicht wollen, dass der Standard verwendet wird.',
     'admin_email_server_url' => 'Server Adresse (URL) für Verknüpfungen in E-Mails',
-    'generated_pw' => 'Generated password',
-    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
+    'generated_pw' => 'Generiertes Passwort',
+    'enable_email_notification_on_user_pw_change' => 'Email-Nachricht an Benutzer versenden, wenn sein Passwort verändert wurde.',
+    'settings_otv_expiration_period' => 'Zeit nach welcher One Time View (OTV) - Items ablaufen (in Tagen)',
+    'change_right_access' => 'Zugriffsrechte definieren',
+    'write' => 'Schreiben',
+    'read' => 'Lesen',
+    'no_access' => 'Kein Zugriff',
+    'right_types_label' => 'Legen Sie den Zugriffstyp des Ordners für bestimmte Benutzergruppen fest',
+    'groups' => 'Folders',
+    'duplicate' => 'Duplicate',
+    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
+    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
     '' => ''
 );
 ?>

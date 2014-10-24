@@ -2,7 +2,7 @@
 /**
  * @file          otv.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -55,7 +55,7 @@ if (
         && $data['item_id'] == $_GET['item_id']
     ) {
         // otv is too old
-        if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period']) ) {
+        if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period'] * 86400) ) {
             $html = "Link is too old!";
         } else {
             $dataItem = DB::queryfirstrow(
