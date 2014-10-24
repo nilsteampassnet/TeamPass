@@ -8,9 +8,10 @@
  #725 - Disable button after item creation or edition 
  #720 - cannot sign up to 2factor 
  #690 - limit password export via PDF/CSV to user/group
+ #745 - Enable again save_button after error on Add/Edit Item
  #739
  #737
- Other: #711 - #699 - #726
+ Other: #711 - #699 - #726 - #744 - #684
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  New - New option : Prevent against duplicate items in same folder
