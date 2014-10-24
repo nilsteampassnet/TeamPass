@@ -2,6 +2,7 @@
 require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
+$_SESSION['db_encoding'] = "utf8";
 
 require_once '../includes/language/english.php';
 require_once '../includes/include.php';
@@ -619,6 +620,11 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "notification",
                 "VARCHAR(250) DEFAULT NULL"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."roles_values",
+                "type",
+                "VARCHAR(1) NOT NULL DEFAULT 'R'"
             );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
@@ -1594,7 +1600,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db;
 \$database = \"". $_SESSION['db_bdd'] ."\";
 \$port = ". $_SESSION['db_port'] .";
 \$pre = \"". $_SESSION['tbl_prefix'] ."\";
-\$encoding = ".$_SESSION['db_encoding'].";
+\$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');

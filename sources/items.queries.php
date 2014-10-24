@@ -1754,18 +1754,14 @@ if (isset($_POST['type'])) {
                 $where->add('i.id_tree=%i', $_POST['id']);
             }
 
+            $items_to_display_once = $_POST['nb_items_to_display_once'];
+
             if ($counter > 0 && empty($showError)) {
                 // init variables
                 $init_personal_folder = false;
                 $expired_item = false;
                 $limited_to_items = "";
 
-                /*if (in_array($_POST['id'],@array_keys($_SESSION['list_restricted_folders_for_items']))) {
-                    foreach ($_SESSION['list_restricted_folders_for_items'][$_POST['id']] as $record) {
-                        if (empty($limited_to_items)) $limited_to_items = $record;
-                        else $limited_to_items .= ",".$record;
-                    }
-                }*/
                 // List all ITEMS
                 if ($folderIsPf == 0) {
                     $where->add('i.inactif=%i', 0);
@@ -1774,11 +1770,7 @@ if (isset($_POST['type'])) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
 
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
-                    } else {
-                        $query_limit = "";
-                    }
+                    $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
@@ -1797,11 +1789,13 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 } else {
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+                    $items_to_display_once = "max";
+                    /*
+                    if ($items_to_display_once != 'max') {
+                        $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     } else {
                         $query_limit = "";
-                    }
+                    }*/
 
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
@@ -1814,7 +1808,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id
-                        ORDER BY i.label ASC, l.date DESC".$query_limit,
+                        ORDER BY i.label ASC, l.date DESC",
                         $where
                     );
                 }
@@ -2078,7 +2072,7 @@ if (isset($_POST['type'])) {
             $counter = DB::count();
         	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
-            if (($_POST['nb_items_to_display_once'] + $start) < $counter && $_POST['nb_items_to_display_once'] != "max") {
+            if (($items_to_display_once + $start) < $counter && $items_to_display_once != "max") {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
@@ -2696,7 +2690,7 @@ if (isset($_POST['type'])) {
             }
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".$pre."otv WHERE timestamp < ".(time() - $k['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".$pre."otv WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
             foreach ($rows as $record) {
                 DB::delete($pre.'otv', "id=%i", $record['id']);
             }
@@ -2894,8 +2888,9 @@ if (isset($_POST['type'])) {
                     DB::query(
                         "SELECT label
                         FROM ".$pre."items
-                        WHERE id_tree = %i",
-                        $idFolder
+                        WHERE id_tree = %i AND label = %s",
+                        $idFolder,
+                        $label
                     );
                 } else {
                 // case complete database
@@ -2918,8 +2913,9 @@ if (isset($_POST['type'])) {
                     DB::query(
                         "SELECT label
                         FROM ".$pre."items
-                        WHERE id_tree = %i AND id_tree NOT IN (".explode(',', $arrayPf).")",
-                        $idFolder
+                        WHERE id_tree = %i AND label = %s AND id_tree NOT IN (".explode(',', $arrayPf).")",
+                        $idFolder,
+                        $label
                     );
                 }
                 
@@ -2929,7 +2925,7 @@ if (isset($_POST['type'])) {
                 }
                 
                 // send data
-                echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
+                echo '[{"duplicate" : "'.$duplicate.'" , "error" : ""}]';
             }
             break;
     }
