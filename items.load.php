@@ -1850,7 +1850,13 @@ $(function() {
         }
     });
 
-    $("#tree_menu_ul").menu();
+    $(".quick_menu").menu();
+    $(".quick_menu_left").menu({
+        position: {
+            my : "right top",
+            at : "left top"
+        }
+    });
 
     $("#pw_size, #edit_pw_size").spinner({
         min:   3,
