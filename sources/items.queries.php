@@ -1765,19 +1765,17 @@ if (isset($_POST['type'])) {
                         else $limited_to_items .= ",".$record;
                     }
                 }*/
+
                 // List all ITEMS
                 if ($folderIsPf == 0) {
+                    $items_to_display_once = "max";
                     $where->add('i.inactif=%i', 0);
                     $where->add('l.action=%s', "at_creation");
                     if (!empty($limited_to_items)) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
 
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
-                    } else {
-                        $query_limit = "";
-                    }
+                    $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
@@ -1796,8 +1794,9 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 } else {
-                    if ($_POST['nb_items_to_display_once'] != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$_POST['nb_items_to_display_once'];
+                    $items_to_display_once = $_POST['nb_items_to_display_once'];
+                    if ($items_to_display_once != 'max') {
+                        $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     } else {
                         $query_limit = "";
                     }
@@ -2077,7 +2076,7 @@ if (isset($_POST['type'])) {
             $counter = DB::count();
         	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
-            if (($_POST['nb_items_to_display_once'] + $start) < $counter && $_POST['nb_items_to_display_once'] != "max") {
+            if (($items_to_display_once + $start) < $counter && $items_to_display_once != "max") {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
