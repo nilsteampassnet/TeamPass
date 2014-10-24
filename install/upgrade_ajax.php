@@ -621,6 +621,11 @@ if (isset($_POST['type'])) {
                 "notification",
                 "VARCHAR(250) DEFAULT NULL"
             );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."roles_values",
+                "type",
+                "VARCHAR(1) NOT NULL DEFAULT 'R'"
+            );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
             );

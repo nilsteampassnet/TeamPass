@@ -315,7 +315,7 @@ if (isset($_POST['type'])) {
                             array('admin','enable_suggestion','0'),
                             array('admin','otv_expiration_period','7')
                         );
-                        foreach ($val as $elem) {
+                        foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
                             $queryRes = mysqli_query($dbTmp,
                                 "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc
@@ -463,7 +463,8 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
-                            `folder_id` int(12) NOT NULL
+                            `folder_id` int(12) NOT NULL,
+                            `type` varchar(1) NOT NULL DEFAULT 'R'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "kb") {

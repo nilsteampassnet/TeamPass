@@ -1753,18 +1753,13 @@ if (isset($_POST['type'])) {
                 $where->add('i.id_tree=%i', $_POST['id']);
             }
 
+            $items_to_display_once = $_POST['nb_items_to_display_once'];
+
             if ($counter > 0 && empty($showError)) {
                 // init variables
                 $init_personal_folder = false;
                 $expired_item = false;
                 $limited_to_items = "";
-
-                /*if (in_array($_POST['id'],@array_keys($_SESSION['list_restricted_folders_for_items']))) {
-                    foreach ($_SESSION['list_restricted_folders_for_items'][$_POST['id']] as $record) {
-                        if (empty($limited_to_items)) $limited_to_items = $record;
-                        else $limited_to_items .= ",".$record;
-                    }
-                }*/
 
                 // List all ITEMS
                 if ($folderIsPf == 0) {
@@ -1794,7 +1789,6 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 } else {
-                    $items_to_display_once = $_POST['nb_items_to_display_once'];
                     if ($items_to_display_once != 'max') {
                         $query_limit = " LIMIT ".$start.",".$items_to_display_once;
                     } else {
