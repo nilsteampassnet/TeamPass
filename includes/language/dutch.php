@@ -3,7 +3,7 @@
  *
  * @file          dutch.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'Deze gebruiker heeft geen email adres ingesteld',
@@ -33,7 +32,7 @@ $LANG = array (
     'admin_action_pw_prefix_correct_tip' => 'Before lauching this script, PLEASE be sure to make a dump of the database. This script will perform an update of passwords prefix. It SHALL only be used if you noticed that passwords are displayed with strange prefix.',
     'items_changed' => 'zijn veranderd.',
     'ga_not_yet_synchronized' => 'Get identified with Google Authenticator',
-    'ga_scan_url' => 'Please scan this flashcode with your mobile Google Authenticator application. Copy from it the identication code.',
+    'ga_scan_url' => 'Please scan this flashcode with your mobile Google Authenticator application. Copy from it the identification code.',
     'ga_identification_code' => 'Identificatiecode',
     'ga_enter_credentials' => 'You need to enter your login credentials',
     'ga_bad_code' => 'The Google Authenticator code is wrong',
@@ -232,7 +231,7 @@ $LANG = array (
     'migrate_pf_no_sk_user' => 'You must enter the User SALT Key',
     'migrate_pf_no_user_id' => 'You must select the User";',
     'email_subject_new_user' => '[TeamPass] Your account creation',
-    'email_new_user_mail' => 'Hello,<br><br>An administrator has created your account for TeampPass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
+    'email_new_user_mail' => 'Hello,<br><br>An administrator has created your account for Teampass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
     'error_empty_data' => 'No data to proceed!',
     'error_not_allowed_to' => 'You are not allowed to do that!',
     'personal_saltkey_lost' => 'I\'ve lost it',
@@ -760,10 +759,20 @@ $LANG = array (
     'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
     'old_saltkey' => 'Old SALT key',
     'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
-    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\\\'t want the by-default one used.',
+    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
     'admin_email_server_url' => 'Server URL for links in emails',
     'generated_pw' => 'Generated password',
     'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
+    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
+    'change_right_access' => 'Define the access rights',
+    'write' => 'Write',
+    'read' => 'Read',
+    'no_access' => 'No Access',
+    'right_types_label' => 'Select the type of access on this folder for the selected group of users',
+    'groups' => 'Folders',
+    'duplicate' => 'Duplicate',
+    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
+    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
     '' => ''
 );
 ?>
