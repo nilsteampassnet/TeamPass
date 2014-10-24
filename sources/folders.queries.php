@@ -2,7 +2,7 @@
 /**
  * @file          folders.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -529,8 +529,9 @@ if (isset($_POST['newtitle'])) {
                 $pre.'nested_tree',
                 array(
                     'bloquer_creation' => $_POST['droit']
-               ),
-               "id = %i".$_POST['id']."'"
+                ),
+                "id = %i",
+                $_POST['id']
             );
             break;
 
@@ -549,8 +550,9 @@ if (isset($_POST['newtitle'])) {
                 $pre.'nested_tree',
                 array(
                     'bloquer_modification' => $_POST['droit']
-               ),
-               "id = %i".$_POST['id']."'"
+                ),
+                "id = %i",
+                $_POST['id']
             );
             break;
     }

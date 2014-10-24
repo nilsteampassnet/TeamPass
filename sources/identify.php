@@ -3,7 +3,7 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -155,7 +155,7 @@ function IdentifyUser($sentData)
             }
 
             // authenticate the user
-            if ($adldap->authenticate($auth_username, $passwordClear)) {
+            if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
             } else {
                 $ldapConnection = false;

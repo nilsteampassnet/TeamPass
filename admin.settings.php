@@ -332,7 +332,7 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
     }
     // Update LDAP ldap_user_attribute
-    if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
+    if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
         updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
     }
     // Update LDAP ldap_search_base

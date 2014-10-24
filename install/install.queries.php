@@ -15,6 +15,7 @@ require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
+$_SESSION['db_encoding'] = "utf8";
 
 $_SESSION['CPM'] = 1;
 if (isset($_POST['type'])) {
@@ -314,7 +315,7 @@ if (isset($_POST['type'])) {
                             array('admin','enable_suggestion','0'),
                             array('admin','otv_expiration_period','7')
                         );
-                        foreach ($val as $elem) {
+                        foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
                             $queryRes = mysqli_query($dbTmp,
                                 "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc
@@ -462,7 +463,8 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
-                            `folder_id` int(12) NOT NULL
+                            `folder_id` int(12) NOT NULL,
+                            `type` varchar(1) NOT NULL DEFAULT 'R'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "kb") {
@@ -714,7 +716,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
 \$database = \"".$_SESSION['db_bdd']."\";
 \$pre = \"".$_SESSION['tbl_prefix']."\";
 \$port = ".$_SESSION['db_port'].";
-\$encoding = ".$_SESSION['db_encoding'].";
+\$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');

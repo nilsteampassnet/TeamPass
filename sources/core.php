@@ -2,7 +2,7 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -460,8 +460,8 @@ if (
 /*
 **
 */
+$_SESSION['temporary']['user_can_printout'] = false;
 if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['user_roles']) && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))) {
-    $_SESSION['temporary']['user_can_printout'] = false;
     foreach (explode(";", $_SESSION['settings']['roles_allowed_to_print']) as $role) {
         if (in_array($role, $_SESSION['user_roles'])) {
             $_SESSION['temporary']['user_can_printout'] = true;

@@ -3,7 +3,7 @@
  *
  * @file          czech.php
  * @author        Nils Laumaillé
- * @version       2.1.21
+ * @version       2.1.22
  * @copyright     (c) 2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_otv_expiration_period' => 'Delay before expiration of one time view (OTV) shared items (in days)',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',
@@ -758,12 +757,22 @@ $LANG = array (
     'settings_ldap_bind_dn_tip' => 'Bind DN, které může spojovat a hledat uživatele ve stromu.',
     'settings_ldap_bind_passwd_tip' => 'Heslo pro Bind DN, které může spojovat a hledat uživatele ve stromu.',
     'settings_ldap_search_base_tip' => 'Kořen (root) DN pro vyhledávání ve stromu',
-    'old_saltkey' => 'Old SALT key',
-    'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
-    'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\\\'t want the by-default one used.',
-    'admin_email_server_url' => 'Server URL for links in emails',
-    'generated_pw' => 'Generated password',
-    'enable_email_notification_on_user_pw_change' => 'Send an email to User when his password has been changed',
+    'old_saltkey' => 'Původní klíč SALT',
+    'define_old_saltkey' => 'Chci zadat původní klíč SALT pro použití (nepovinná možnost)',
+    'admin_email_server_url_tip' => 'Upravit adresu URL používanou jako odkazy obsažené v emailech, pokud nechcete používat adresu standardní.',
+    'admin_email_server_url' => 'Adresa URL používaná jako odkazy v emailech',
+    'generated_pw' => 'Vygenerované heslo',
+    'enable_email_notification_on_user_pw_change' => 'Zaslat uživateli email, pokud bylo změněno jeho heslo',
+    'settings_otv_expiration_period' => 'Prodleva ',
+    'change_right_access' => 'Definovat přístupová práva',
+    'write' => 'přepsat',
+    'read' => 'číst',
+    'no_access' => 'bez přístupu',
+    'right_types_label' => 'Zvolte druh přístupu k této složce pro zvolenou skupinu uživatelů',
+    'groups' => 'Folders',
+    'duplicate' => 'Duplicate',
+    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
+    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
     '' => ''
 );
 ?>
