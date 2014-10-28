@@ -285,43 +285,6 @@ echo '
         <input type="hidden" name="action_on_going" id="action_on_going" value="" />
     </form>';
 
-/* INSERT ITEM BUTTONS IN MENU BAR */
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items" && $_SESSION['user_admin'] == false) {
-    echo '
-        <div style="" class="ui-corner-right" id="div_right_menu">
-            <button title="'.$LANG['item_menu_refresh'].'" id="menu_button_refresh_page" style="margin-bottom:5px;" onclick="javascript:document.new_item.submit()">
-                <img src="includes/images/refresh.png" alt="" />
-            </button>
-            <br />',
-    (
-        (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) ||
-        (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1) ||
-        (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
-      ) ? '
-
-            <br />' : '', '
-            <button title="'.$LANG['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
-            <br />
-            <button title="'.$LANG['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>
-            <br />
-            <button title="'.$LANG['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['link_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
-            <br />
-            <button title="'.$LANG['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
-            <br />
-            <button title="'.$LANG['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share_me.png" id="div_share" alt="" /></button>
-			<br />
-            <button title="'.$LANG['one_time_item_view'].'" id="menu_button_otv" class="" onclick="prepareOneTimeView()"><img src="includes/images/globe-share.png" id="div_otv" alt="" /></button>';
-    if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
-        echo '
-            <br />
-            <button style="margin-bottom:5px;" id="menu_button_notify" class=""><img src="includes/images/alarm-clock.png" id="div_notify" alt="" /></button>';
-    }
-    echo '
-        </div>';
-}
-
 echo '
     <div id="', isset($_GET['page']) && $_GET['page'] == "items" ? "main_simple" : "main", '">';
 // MESSAGE BOX
