@@ -2029,6 +2029,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" />';
                         }
+                        $html .= "</span>";
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
