@@ -33,7 +33,7 @@ DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name

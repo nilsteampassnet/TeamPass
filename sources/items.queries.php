@@ -65,7 +65,7 @@ DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -1726,8 +1726,8 @@ if (isset($_POST['type'])) {
 
             // Check if ID folder send is valid
             if (
-                    !in_array($_POST['id'], $_SESSION['groupes_visibles'])
-                    && !in_array($_POST['id'], array_keys($_SESSION['list_folders_limited']))
+                !in_array($_POST['id'], $_SESSION['groupes_visibles'])
+                && !in_array($_POST['id'], array_keys($_SESSION['list_folders_limited']))
             ) {
                 $_POST['id'] = 1;
             }
@@ -1980,7 +1980,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.';">'.substr(stripslashes($record['label']), 0, 65);
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                         	$tempo = explode("<br />", $record['description']);
                         	if (count($tempo) == 1) {
