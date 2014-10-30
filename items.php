@@ -126,6 +126,11 @@ echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
 
 echo '
+<div id="item_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:80px;" class="ui-state-highlight ui-corner-all">
+    <div id="item_info_box_text"></div>
+</div>';
+
+echo '
 <div id="div_items">';
 // MAIN ITEMS TREE
 echo '
@@ -339,27 +344,22 @@ echo '
                                 <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser"></i> '.$LANG['item_menu_del_elem'].'</li>
                                 <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-retweet"></i> '.$LANG['item_menu_copy_elem'].'</li>
                             </ul>
+                        </li>
                     </ul>
                 </div>
-                <div style="margin-top: 3px;"><i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span></div>
+                <div style="margin-top: 3px;"><i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                    <input type="text" id="search_item" style="float:right" value="'.$LANG['item_menu_find'].'" class="text ui-widget-content ui-corner-all search_tree" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" /></div>
             </div>
-            <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-idex:1000;"><img src="includes/images/76.gif" /></div>
-            <!--<div id="alpha_select">
-                <span id="A" onclick="items_list_filter($(this).attr(\'id\'))">A</span>&nbsp;
-                <span id="I" onclick="items_list_filter($(this).attr(\'id\'))">I</span>&nbsp;
-                <span id="" onclick="items_list_filter()">**</span>
-            </div>-->
+            <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" /></div>
             <div id="items_list"></div>
         </div>';
 // Zone ITEM DETAIL
 echo '
-        <div id="item_details_ok">';
-
-echo '
+        <div id="item_details_ok">
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
-            <div style="height:210px;overflow-y:auto;" id="item_details_scroll">';
+            <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
 // Info
 echo '
                 <div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
@@ -367,7 +367,7 @@ echo '
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
                     <div class="ui-state-error ui-corner-all" style="padding:2px;">
-                        <img src="includes/images/error.png" alt="" />&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                        <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
                 <table>';

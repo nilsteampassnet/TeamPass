@@ -283,7 +283,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -492,7 +492,7 @@ function logEvents($type, $label, $who)
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
     DB::insert(
         $pre."log_system",
@@ -524,7 +524,7 @@ function updateCacheTable($action, $id = "")
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -705,7 +705,7 @@ function teampassStats()
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
 
     // Prepare stats to be sent
     // Count no FOLDERS

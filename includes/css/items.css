@@ -29,6 +29,16 @@ button{
 	color:#242D35;
     background: url(../images/key.png) 0 0 no-repeat;
 }
+
+.liste_items a.file_search, .liste_items a.fileselected_search {
+    padding: 2px 1px 1px 16px;
+    display: inline;
+    font-family:verdana;
+    font-size:11px;
+    color:#242D35;
+    background: url(../images/key.png) 0 0 no-repeat;
+}
+
 .liste_items a.fileselected {
     font-style: italic;
     font-weight:bold;
@@ -117,7 +127,7 @@ button{
 	cursor:move;
 }
 
-.file, .cursor, .folder{
+.file, .cursor, .folder, .file_search {
 	cursor:pointer;
 }
 

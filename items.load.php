@@ -1396,7 +1396,6 @@ function open_del_group_div()
 //###########
 function open_add_item_div()
 {
-    if ($("#selected_items").val() != "") return;
     LoadingPage();
 
     //Check if personal SK is needed and set
@@ -1446,9 +1445,7 @@ function open_edit_item_div(restricted_to_roles)
 	if ($("#selected_items").val() == "") {
 		$("#div_loading").hide();
 	    return;
-	} else {
-        return;
-    }
+	}
     $("#div_loading").show();
 
     // Get complexity level for this folder
@@ -2593,6 +2590,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     var tbval = $('#jstree_search').val();
     $('#jstree_search').focus(function() { $(this).val('');});
     $('#jstree_search').blur(function() { $(this).val(tbval);});
+    $('#search_item').focus(function() { $(this).val('');});
+    $('#search_item').blur(function() { $(this).val(tbval);});
 
     //add date selector
     $(".datepicker").datepicker({
@@ -2908,5 +2907,32 @@ function prepareOneTimeView()
         },
         "json"
    );
+}
+
+function globalItemsSearch()
+{
+    if ($("#search_item").val() != "") {
+        // clean
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+        $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+
+        // send query
+        $.get(
+            "sources/find.queries.php",
+            {
+                type        : "search_for_items",
+                sSearch     : $("#search_item").val(),
+                key         : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                $("#item_info_box_text").html("test");
+                $("#item_info_box").show();
+                setTimeout(function(){$("#item_info_box").effect( "fade", "slow" );}, 1000);
+                //check if format error
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                $("#full_items_list").html(data.items_html);
+            }
+        );
+    }
 }
 </script>
