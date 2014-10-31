@@ -395,13 +395,17 @@ if (!isset($_GET['type'])) {
                 $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
             }
         }
+        
+        // set folder
+        $sOutput .= '&nbsp;<font size="1px" font-style="italic">('.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).')</font>';
 
         $sOutput .= '</li>';
     }
 
-
+$LANG['find_message'] = "%X% objects found.";
     $returnValues = array(
-        "items_html" => $sOutput
+        "items_html" => $sOutput,
+        "message" => str_replace("%X%", $iFilteredTotal, $LANG['find_message'])
     );
 
     echo prepareExchangedData($returnValues, "encode");

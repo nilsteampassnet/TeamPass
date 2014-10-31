@@ -2912,9 +2912,13 @@ function prepareOneTimeView()
 function globalItemsSearch()
 {
     if ($("#search_item").val() != "") {
+        // wait
+        $("#item_info_box_text").html("Please wait ...");
+        $("#item_info_box").show();
         // clean
         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+        $("#full_items_list").html("");
 
         // send query
         $.get(
@@ -2925,11 +2929,9 @@ function globalItemsSearch()
                 key         : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
-                $("#item_info_box_text").html("test");
-                $("#item_info_box").show();
-                setTimeout(function(){$("#item_info_box").effect( "fade", "slow" );}, 1000);
-                //check if format error
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                $("#item_info_box_text").html(data.message);
+                setTimeout(function(){$("#item_info_box").effect( "fade", "slow" );}, 1000);
                 $("#full_items_list").html(data.items_html);
             }
         );
