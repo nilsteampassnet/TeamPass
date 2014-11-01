@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'find_message' => "<i class='fa fa-info-circle'></i> %X% objects found.",
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'settings_roles_allowed_to_print' => 'Select the roles allowed to print out the Items',
@@ -505,7 +506,7 @@ $LANG = array (
     'home' => 'Home',
     'home_personal_menu' => 'Personal Actions',
     'home_personal_saltkey' => 'Your personal SALTKey',
-    'home_personal_saltkey_button' => 'Store it!',
+    'home_personal_saltkey_button' => 'Set the Saltkey',
     'home_personal_saltkey_info' => 'You should enter your personal saltkey if you need to use your personal items.',
     'home_personal_saltkey_label' => 'Enter your personal salt key',
     'importing_details' => 'List of details',

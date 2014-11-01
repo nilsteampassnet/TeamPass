@@ -239,6 +239,7 @@ if (!isset($_GET['type'])) {
     echo $sOutput;
 } else if (isset($_GET['type']) && $_GET['type'] == "search_for_items") {
     include 'main.functions.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
 
@@ -397,12 +398,11 @@ if (!isset($_GET['type'])) {
         }
         
         // set folder
-        $sOutput .= '&nbsp;<font size="1px" font-style="italic">('.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).')</font>';
+        $sOutput .= '&nbsp;&nbsp;<font size="1px" font-style="italic"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</font>';
 
         $sOutput .= '</li>';
     }
 
-$LANG['find_message'] = "%X% objects found.";
     $returnValues = array(
         "items_html" => $sOutput,
         "message" => str_replace("%X%", $iFilteredTotal, $LANG['find_message'])

@@ -138,14 +138,7 @@ echo '
 if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
-            <div style="font-size:12px; margin-left:65px; margin-top:-5px; width:100%; color:white;">
-                <img src="includes/images/user-black.png" /> <b>'.$_SESSION['login'].'</b>
-                ['.$_SESSION['user_privilege'].']
-                <img src="includes/images/alarm-clock.png" style="margin-left:30px;" />&nbsp;
-                '.$LANG['index_expiration_in'].'&nbsp;
-                <div style="display:inline;" id="countdown"></div>
-            </div>
-            <div style="margin-left:65px; margin-top:3px;width:100%;" id="main_menu">
+            <div style="margin-left:65px; margin-top:5px;width:100%;" id="main_menu">
                 <button title="'.$LANG['home'].'" onclick="MenuAction(\'\');">
                     <img src="includes/images/home.png" alt="" />
                 </button>';
@@ -221,16 +214,26 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
     }
-    // 1 hour
     echo '
-                <button style="margin-left:10px;" title="'.$LANG['index_add_one_hour'].'" onclick="IncreaseSessionTime();">
-                    <img src="includes/images/clock__plus.png" alt="" />
-                </button>';
-    // Disconnect menu
-    echo '
-                <button title="'.$LANG['disconnect'].'" onclick="MenuAction(\'deconnexion\');">
-                    <img src="includes/images/door-open.png" alt="" />
-                </button>
+                <div style="float:right;">
+                <ul class="menu" style="">
+                    <li class="" style="padding: 4px;"><i class="fa fa-user fa-fw"></i> '.$_SESSION['login'].'&nbsp;['.$_SESSION['user_privilege'].']
+                        <ul class="menu_200">',
+                            isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
+                            '<li onclick="OpenDialogBox(\'div_changer_mdp\')"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>', '', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                            <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
+                                <ul>
+                                    <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
+                                    <li onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">'.$LANG['personal_saltkey_change_button'].'</li>
+                                    <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
+                                </ul>
+                            </li>' : '', '
+                            <li onclick="IncreaseSessionTime()"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
+                            <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
+                        </ul>
+                    </li>
+                </ul>
+                </div>
             </div>
         </div>';
 }
@@ -272,6 +275,12 @@ if (isset($_SESSION['latest_items_tab'])) {
 }
 echo '
     </div>';
+
+
+    echo '
+<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
+    <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
+</div>';
 
 /* MAIN PAGE */
 echo '
@@ -597,17 +606,17 @@ echo '
             <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
-            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$LANG['users_online'] : "", '
+            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? "<i class='fa fa-users'></i>&nbsp;".$_SESSION['nb_users_online']."&nbsp;".$LANG['users_online']."&nbsp;|&nbsp;" : "", "<i class='fa fa-ticket'></i>&nbsp;".$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>
         </div>
         <div style="float:right;text-align:right;">
-            '. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
         </div>
     </div>';
 // PAGE LOADING
 echo '
     <div id="div_loading" style="display:none;">
         <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all">
-            <img src="includes/images/76.gif" alt="" />
+            <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';
 // Alert BOX
@@ -627,6 +636,62 @@ echo '
     <div id="div_mysql_error" style="display:none;">
         <div style="padding:10px;text-align:center;" id="mysql_error_warning"></div>
     </div>';
+
+
+//change the password
+echo '
+    <div id="div_changer_mdp" style="display:none;padding:4px;">
+        <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
+        <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
+        <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
+        <input type="password" size="15" name="new_pw" id="new_pw" />
+        <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
+        <input type="password" size="15" name="new_pw2" id="new_pw2" />
+
+        <div id="pw_strength" style="margin:10px 0 0 50px;"></div>
+        <input type="hidden" id="pw_strength_value" />
+    </div>';
+
+    //Personnal SALTKEY
+    if (
+        isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+        //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
+    ) {
+        echo '
+            <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
+                <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
+                <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
+            </div>';
+
+        //change the saltkey dialogbox
+        echo '
+            <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
+                <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+                <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
+                <div style="margin-top:5px;font-style:italic;">
+                    <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
+                </div>
+                <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
+                   <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
+                   <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
+                </div>
+                <div style="margin-top:20px;" class="ui-state-highlight">
+                   '.$LANG['new_saltkey_warning'].'
+                </div>
+                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
+            </div>';
+
+        //saltkey LOST dialogbox
+        echo '
+           <div id="div_reset_personal_sk" style="display:none;padding:4px;">
+               <div style="margin-bottom:20px;" class="ui-state-highlight">
+                   '.$LANG['new_saltkey_warning_lost'].'
+               </div>
+               <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+               <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
+           </div>';
+    }
 
 closelog();
 
