@@ -39,6 +39,13 @@ function IncreaseSessionTime(){
 		},
         function(data){
 			if (data[0].new_value != "expired") {
+                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                $("#main_info_box").show().position({
+                    my: "center",
+                    at: "center top+75",
+                    of: "#top"
+                });
+                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
 	        	$("#temps_restant").val(data[0].new_value);
 	        	$("#date_end_session").val(data[0].new_value);
 	        	$('#countdown').css("color","white");
@@ -73,7 +80,7 @@ function countdown()
     //Avertir de la fin imminante de la session
     if ( DayTill == "00:01:00" ){
         $('#div_fin_session').dialog('open');
-        document.getElementById('countdown').style.color="red";
+        $('#countdown').css("color","red");
     }
 
     // Manage end of session

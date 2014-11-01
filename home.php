@@ -122,10 +122,6 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                 <div style="margin-top:15px;" id="personal_menu_actions">
                     <span class="ui-icon ui-icon-script" style="float: left; margin-right: .3em;">&nbsp;</span><b>'.$LANG['home_personal_menu'].'</b>
                     <div style="margin-left:30px;">',
-                        isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-                        '<button title="'.$LANG['index_change_pw'].'" onclick="OpenDialogBox(\'div_changer_mdp\')">
-                            <img src="includes/images/lock--pencil.png" alt="Change pw" />
-                        </button>&nbsp;',
                         $_SESSION['user_admin'] == 1 ? '' :
                         (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) ? '
                         <button title="'.$LANG['import_csv_menu_title'].'" onclick="$(\'#csv_import_options, #kp_import_options\').hide();$(\'#div_import_from_csv\').dialog(\'open\');">
@@ -141,76 +137,6 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
 						<button title="'.$LANG['offline_menu_title'].'" onclick="offlineModeLaunch()">
 						<img src="includes/images/block-share.png" alt="Print" />
 						</button>' : '' , '
-                    </div>
-                </div>';
-
-    //Personnal SALTKEY
-    if (
-        isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
-        //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
-    ) {
-        echo '
-                <div style="margin-top:15px;" id="personal_saltkey">
-                    <span class="ui-icon ui-icon-locked" style="float: left; margin-right: .3em;">&nbsp;</span><b>'.$LANG['home_personal_saltkey'].'</b>
-                    <div style="margin-left:30px;">
-                           <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? '**************************' : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
-                        <button id="personal_sk" onclick="StorePersonalSK()">
-                            '.$LANG['home_personal_saltkey_button'].'
-                        </button>
-                        &nbsp;
-                        <button id="change_personal_sk" onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">
-                            '.$LANG['personal_saltkey_change_button'].'
-                        </button>
-                        &nbsp;
-                        <button id="reset_personal_sk" onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">
-                            '.$LANG['personal_saltkey_lost'].'
-                        </button>
-                    </div>
-                </div>';
-
-        //change the saltkey dialogbox
-        echo '
-            <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
-                <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-                <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
-                <div style="margin-top:5px;font-style:italic;">
-                    <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
-                </div>
-                <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
-                   <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
-                   <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
-                </div>
-                <div style="margin-top:20px;" class="ui-state-highlight">
-                   '.$LANG['new_saltkey_warning'].'
-                </div>
-                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
-            </div>';
-
-        //saltkey LOST dialogbox
-        echo '
-                   <div id="div_reset_personal_sk" style="display:none;padding:4px;">
-                       <div style="margin-bottom:20px;" class="ui-state-highlight">
-                           '.$LANG['new_saltkey_warning_lost'].'
-                       </div>
-                       <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-                       <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
-                   </div>';
-    }
-
-    //change the password
-    echo '
-                <div>
-                    <div id="div_changer_mdp" style="display:none;padding:4px;">
-                        <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
-                        <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
-                        <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
-                        <input type="password" size="15" name="new_pw" id="new_pw" />
-                        <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
-                        <input type="password" size="15" name="new_pw2" id="new_pw2" />
-
-                        <div id="pw_strength" style="margin:10px 0 0 50px;"></div>
-                        <input type="hidden" id="pw_strength_value" />
                     </div>
                 </div>';
 

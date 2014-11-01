@@ -507,8 +507,8 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt(urldecode($_POST['sk']), $_SESSION['key'], 256), true);
-        if ($dataReceived['psk'] != "**************************") {
+        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
+        if ($dataReceived['psk'] != "") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
@@ -523,7 +523,7 @@ switch ($_POST['type']) {
      */
     case "change_personal_saltkey":
         //decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
