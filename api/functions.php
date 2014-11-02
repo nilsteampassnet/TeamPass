@@ -331,7 +331,7 @@ function rest_get () {
                 } else {
                     rest_error ('NO_ITEM');
                 }
-                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", implode(",", $items_list));
+                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", explode(",", $items_list));
                 foreach ($response as $data)
                 {
                     // get ITEM random key
