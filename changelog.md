@@ -1,4 +1,7 @@
-﻿2.1.22
+2.1.23
+ #727 - #729 - Encoding problem
+
+2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"
  #718 - Two factor authentication: "This user has no email set!"
  #674 - API - User rights
