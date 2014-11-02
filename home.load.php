@@ -357,21 +357,66 @@ $(function() {
                     return;
                 }
 
-                //Send query
-                $.post(
-                    "sources/export.queries.php",
-                    {
-                        type    : export_format,
-                        ids        : ids,
-                        pdf_password : $("#pdf_password").val()
-                    },
-                    function(data) {
-                    	
-                        $("#download_link").html(data[0].text);
-                        $("#div_print_out_wait").hide();
-                    },
-                    "json"
-               );
+                if (export_format == "export_to_pdf_format") {
+
+                    $.post(
+                        "sources/export.queries.php",
+                        {
+                            type    : "initialize_export_table"
+                        },
+                        function(data) {
+                            // launch export by building content of export table
+                            var aIds = ids.split(";");
+                            var ajaxReqs = [];
+                            for (index = 0; index < aIds.length; ++index) {
+                                ajaxReqs.push($.ajax({
+                                    url: "sources/export.queries.php",
+                                    type : 'POST',
+                                    dataType : "json",
+                                    data : {
+                                        type    : export_format,
+                                        id     : aIds[index]
+                                    },
+                                    complete : function(data, statut){
+                                        // nothing done here
+                                    }
+                                }));
+                            }
+                            $.when.apply($, ajaxReqs).done(function() {
+                                //Send query
+                                $.post(
+                                    "sources/export.queries.php",
+                                    {
+                                        type    : "finalize_export_pdf",
+                                        pdf_password : $("#pdf_password").val()
+                                    },
+                                    function(data) {
+                                        $("#download_link").html(data[0].text);
+                                        $("#div_print_out_wait").hide();
+                                    },
+                                    "json"
+                                );
+                            });
+                        }
+                    );
+
+
+                } else {
+                    //Send query
+                    $.post(
+                        "sources/export.queries.php",
+                        {
+                            type    : export_format,
+                            ids        : ids,
+                            pdf_password : $("#pdf_password").val()
+                        },
+                        function(data) {
+                            $("#download_link").html(data[0].text);
+                            $("#div_print_out_wait").hide();
+                        },
+                        "json"
+                    );
+                }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");

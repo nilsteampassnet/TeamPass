@@ -635,6 +635,17 @@ if (isset($_POST['type'])) {
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
+
+                        $mysqli_result = mysqli_query($dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."export` (
+                            `id` int(12) NOT NULL,
+                            `label` varchar(255) NOT NULL,
+                            `login` varchar(100) NOT NULL,
+                            `description` text NOT NULL,
+                            `pw` text NOT NULL,
+                            `path` varchar(255) NOT NULL
+                            ) CHARSET=utf8;"
+                        );
                     }
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
