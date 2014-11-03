@@ -133,7 +133,10 @@ function CheckPage()
                             $("#step_result").html(data[0].result);
                         }
                     } else {
-                        $("#step_res").val("false");
+                    	// ignore setting error if regarding setting permissions (step 6, index 2)
+                    	if (step+data[0].index != "62") {
+                    		$("#step_res").val("false");
+                    	}
                         $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
                         if (data[0].result != undefined && data[0].result != "" ) {
                             $("#step_result").html(data[0].result);
