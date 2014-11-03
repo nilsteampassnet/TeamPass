@@ -29,16 +29,19 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
 		$fullPath = $dir."/".$file;
 
 		if(is_dir($fullPath)) {
-			$res |= chmod($fullPath, $dirPermissions);
-			$res |= chmod_r($fullPath, $dirPermissions, $filePermissions);
-		} else {
-			$res |= chmod($fullPath, $filePermissions);
-		}
-
+			if ($res = @chmod($fullPath, $dirPermissions))
+				$res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+			} else {
+				$res = chmod($fullPath, $filePermissions);
+			}
+			if (!$res) {
+				closedir($dp);
+				return false;
+			}
 	}
 	closedir($dp);
-	if (is_dir($dir))
-		$res |= chmod($dir, $dirPermissions);
+	if (is_dir($dir) && $res)
+		$res = @chmod($dir, $dirPermissions);
 
 	return $res;
 }
@@ -804,18 +807,16 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             		# Sort out the file permissions
             		
             		// Change directory permissions
-            		$result = chmod_r($_SESSION['abspath'], 0770,0770);
+	         		$result = chmod_r($_SESSION['abspath'], 0550,0440);
             		if ($result )
-            			$result = chmod_r($_SESSION['abspath'].'/files', 0770,0770);
+            			$result = chmod_r($_SESSION['abspath'].'/files', 0770,0440);
             		if  ($result)
-            			$result = chmod_r($_SESSION['abspath'].'/upload', 0770,0770);
-            		if ($result)
-            			$result = chmod($_SESSION['abspath'], 0775);
-
+            			$result = chmod_r($_SESSION['abspath'].'/upload', 0770,0440);
+  
             	    if ($result === false) {
-                        echo '[{"error" : "Cannot change directory permissions.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
             	}  
             }
