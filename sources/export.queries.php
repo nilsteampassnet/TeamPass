@@ -174,11 +174,13 @@ switch ($_POST['type']) {
                     $pdf->cell(60, 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
+                $record['pw'] = stripslashes($record['pw']);
                 $record['description'] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $record['description']), ENT_QUOTES));
-                //row height calculus
-                $nb=max($nb, nbLines($table_col_width[0], $record['label']));
-                $nb=max($nb, nbLines($table_col_width[3], $record['description']));
-                $nb=max($nb, nbLines($table_col_width[2], $record['pw']));
+                //row height calculation
+                $nb = 0;
+                $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[3], $record['description']));
+                $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
 
                 $h=5*$nb;
                 //Page break needed?
@@ -213,88 +215,6 @@ switch ($_POST['type']) {
             DB::query("TRUNCATE TABLE ".$pre."export");
 
             echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
-        }
-        break;
-
-    case "export_to_pdf_format1":
-        $full_listing = array();
-
-        foreach (explode(';', $_POST['ids']) as $id) {
-            if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows = DB::query(
-                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
-                    l.date as date,
-                    n.renewal_period as renewal_period,
-                    k.rand_key
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
-                    WHERE i.inactif = %i
-                    AND i.id_tree= %i
-                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                    ORDER BY i.label ASC, l.date DESC",
-                    "0",
-                    intval($id),
-                    "at_creation",
-                    "at_modification",
-                    "at_pw :%"
-                );
-
-                $id_managed = '';
-                $i = 0;
-                $items_id_list = array();
-                foreach ($rows as $record) {
-                    $restricted_users_array = explode(';', $record['restricted_to']);
-                    //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $record['id']) {
-                        if (
-                        (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                        ||
-                        (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
-                        ) {
-                            //exclude this case
-                        } else {
-                            //encrypt PW
-                            if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
-                            } else {
-                                $pw = decrypt($record['pw']);
-                            }
-                            if ($record['perso'] != 1) {
-                                $pw = substr(addslashes($pw), strlen($record['rand_key']));
-                            }
-                            /*$full_listing[$record['id']] = array(
-                               'id' => $record['id'],
-                               'label' => $record['label'],
-                               'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
-                               'login' => $record['login']
-                            );*/
-                            $full_listing[$id][$record['id']] = array($record['label'], $record['login'], $pw, $record['description']);
-                        }
-                    }
-                    $id_managed = $record['id'];
-                }
-            }
-        }
-
-        $tree->rebuild();
-        // get node paths for table headers
-        foreach ($full_listing as $key => $val) {
-            $folders = $tree->getPath($key, true);
-            $path = "";
-            foreach ($folders as $val) {
-                if ($path) {
-                    $path .= " » ";
-                }
-                $path .= $val->title;
-            }
-            $paths[$key] = $path;
-        }
-
-        //Build PDF
-        if (!empty($full_listing)) {
-
         }
         break;
 
