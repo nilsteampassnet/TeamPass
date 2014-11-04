@@ -117,9 +117,24 @@ $counter_folders = DB::count();
                 $.when.apply($, ajaxReqs).then(function() {
                     // all requests are complete
                     $("#wait").html("");
-                    $("#next_action").html("<br>Indicate here the length of the password prefix: <input type='text' id='randkey_length' value='<?php echo $_SESSION['prefix_length'];?>' />&nbsp;<a href='javascript:void(0)' onclick='refreshNewPwd()'>Refresh</a><br><br><input type='button' value='Select PWD to clean and press this button' onclick='cleanPwd()' />");
+                    $("#next_action").html("<br><input type='button' value='Select All' onclick='selectAll()' /><br>Indicate here the length of the password prefix: <input type='text' id='randkey_length' value='<?php echo $_SESSION['prefix_length'];?>' />&nbsp;<a href='javascript:void(0)' onclick='refreshNewPwd()'>Refresh</a><br><br><input type='button' value='Select PWD to clean and press this button' onclick='cleanPwd()' />");
                     $("#div_loading").hide();
                 });
+            }
+            
+            function selectAll()
+            {
+                $("#wait").html("   WAIT...");
+                var bChecked = "";
+                $('.pw_cb').each(function () {
+                    if (bChecked == "" && this.checked) {
+                        bChecked = false;
+                    } else {
+                        bChecked = true;
+                    }
+                    $(this).prop('checked', bChecked);
+                });
+                $("#wait").html("");
             }
 
             function cleanPwd()

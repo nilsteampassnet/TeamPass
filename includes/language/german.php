@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
+    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',

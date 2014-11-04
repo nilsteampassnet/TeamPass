@@ -138,7 +138,7 @@ echo '
 if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
-            <div style="margin-left:65px; margin-top:5px;width:100%;" id="main_menu">
+            <div style="margin-left:20px; margin-top:5px;width:590px;" id="main_menu">
                 <button title="'.$LANG['home'].'" onclick="MenuAction(\'\');">
                     <img src="includes/images/home.png" alt="" />
                 </button>';
@@ -606,7 +606,7 @@ echo '
             <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
-            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? "<i class='fa fa-users'></i>&nbsp;".$_SESSION['nb_users_online']."&nbsp;".$LANG['users_online']."&nbsp;|&nbsp;" : "", "<i class='fa fa-ticket'></i>&nbsp;".$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>
+            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-ticket"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div>
         <div style="float:right;text-align:right;">
             <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'

@@ -1437,6 +1437,18 @@ if (isset($_POST['type'])) {
                 break;
             }
 
+            # TABLE EXPORT
+            mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."export` (
+                `id` int(12) NOT NULL,
+                `label` varchar(255) NOT NULL,
+                `login` varchar(100) NOT NULL,
+                `description` text NOT NULL,
+                `pw` text NOT NULL,
+                `path` varchar(255) NOT NULL
+                ) CHARSET=utf8;"
+            );
+
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
                 '<blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
