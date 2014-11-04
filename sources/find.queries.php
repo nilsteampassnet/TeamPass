@@ -398,7 +398,20 @@ if (!isset($_GET['type'])) {
         }
         
         // set folder
-        $sOutput .= '&nbsp;&nbsp;<font size="1px" font-style="italic"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</font>';
+        $sOutput .= '&nbsp;<font size="1px" font-style="italic">('.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).')</font>';
+        
+        
+
+        $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+        
+        // Prepare make Favorite small icon
+        $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+        if (in_array($record['id'], $_SESSION['favourites'])) {
+            $sOutput .= '<img src="includes/images/mini_star_enable.png" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" />';
+        } else {
+            $sOutput .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" />';
+        }
+        $sOutput .= "</span>";
 
         $sOutput .= '</li>';
     }

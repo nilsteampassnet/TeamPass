@@ -230,7 +230,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                     <div id="div_print_out" style="display:none;padding:4px;">
                         <div style="height:20px;text-align:center;margin:2px;" id="print_out_error" class=""></div>
 
-                        <label for="selected_folders" class="form_label">'.$LANG['select_folders'].' :</label>
+                        <label for="selected_folders" class="form_label">'.$LANG['select_folders'].' :&nbsp;<i class="fa fa-cog fa-spin" id="loading_folders_wait" style="display:none;"></i></label>
                         <select id="selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
 
                         <div class="div_radio" stle="text-align:center;">
