@@ -1694,9 +1694,17 @@ require_once \"".$skFile."\";
                 if (empty($pw)) {
                     $pw = decryptOld($data['pw']);
 
-                    // generate Key and encode PW
-                    $randomKey = generateKey();
-                    $pw = $randomKey.$pw;
+                    // if no key ... then add it
+                    $resData = mysqli_query($dbTmp,
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
+                        WHERE `table` = 'items' AND id = ".$data['id']
+                    ) or die(mysqli_error($dbTmp));
+                    $dataTemp = mysqli_fetch_row($resData);
+                    if ($dataTemp[0] == 0) {
+                        // generate Key and encode PW
+                        $randomKey = generateKey();
+                        $pw = $randomKey.$pw;
+                    }
                     $pw = encrypt($pw, $_SESSION['session_start']);
 
                     // store Password
