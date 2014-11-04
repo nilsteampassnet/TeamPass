@@ -14,6 +14,7 @@
  #745 - Enable again save_button after error on Add/Edit Item
  #739 - OTV correction
  #731 - Export password to file
+ #653 - Passwords preprended during upgrade
  Other: #711 - #699 - #726 - #744 - #684 - #737
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
@@ -57,7 +58,7 @@
  #680 - Set custom expiry for one time view link
  #682 - Fix SMTP authentication which were used regardless of the settings
       - Fix a query used in the "lost password" management.
-      - Fix the mysql error message when the session_expired page is accessed…
+      - Fix the mysql error message when the session_expired page is accesseded...
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update
