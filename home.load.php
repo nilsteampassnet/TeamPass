@@ -263,7 +263,6 @@ $(function() {
                                     },
                                     complete : function(data, statut){
                                         // nothing done here
-                                        $("#download_link").html(index);
                                     }
                                 }));
                             }

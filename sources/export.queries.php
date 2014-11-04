@@ -137,6 +137,7 @@ switch ($_POST['type']) {
         $rows = DB::query("SELECT * FROM ".$pre."export");
         $counter = DB::count();
         if ($counter > 0) {
+            // print
             //Some variables
             $table_full_width = 190;
             $table_col_width = array(45, 40, 45, 60);
@@ -160,6 +161,8 @@ switch ($_POST['type']) {
             $pdf->SetFont('DejaVu', '', 12);
             $pdf->Cell(0, 10, $LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
 
+            $prev_path = "";
+            $table = array('label', 'login', 'pw', 'description');
             foreach ($rows as $record) {
                 $printed_ids[] = $record['id'];
                 if ($prev_path != $record['path']) {
@@ -174,12 +177,14 @@ switch ($_POST['type']) {
                     $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
+                if (!isutf8($record['pw'])) $record['pw'] = "";
                 $record['description'] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $record['description']), ENT_QUOTES));
                 //row height calculation
-                $nb=0;
-                $nb=max($nb, nbLines($table_col_width[0], $record['label']));
-                $nb=max($nb, nbLines($table_col_width[3], $record['description']));
-                $nb=max($nb, nbLines($table_col_width[2], $record['pw']));
+                $nb = 0;
+                $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[3], $record['description']));
+                $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
+
                 $h=5*$nb;
                 //Page break needed?
                 checkPageBreak($h);
