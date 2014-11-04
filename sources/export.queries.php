@@ -174,7 +174,7 @@ switch ($_POST['type']) {
                     $pdf->cell(60, 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
-                $record['pw'] = stripslashes($record['pw']);
+                if (!isutf8($record['pw'])) $record['pw'] = "";
                 $record['description'] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $record['description']), ENT_QUOTES));
                 //row height calculation
                 $nb = 0;
