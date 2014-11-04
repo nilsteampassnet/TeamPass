@@ -512,6 +512,7 @@ $htmlHeaders .= '
                                     of: "#top"
                                 });
                                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                                location.reload();
                             }
                             $("#input_personal_saltkey").val("");
                         }
