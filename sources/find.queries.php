@@ -398,7 +398,7 @@ if (!isset($_GET['type'])) {
         }
         
         // set folder
-        $sOutput .= '&nbsp;<font size="1px" font-style="italic">('.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).')</font>';
+        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i  class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
         
         
 
