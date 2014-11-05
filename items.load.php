@@ -617,6 +617,7 @@ function AjouterItem()
     if (erreur != "") {
         $('#new_show_error').html(erreur).show();
         $("#div_formulaire_saisi_info").hide().html("");
+        $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
     }
 }
 
