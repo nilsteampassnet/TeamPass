@@ -613,6 +613,7 @@ function AjouterItem()
             $('#new_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
             $("#div_formulaire_saisi_info").hide().html("");
         }
+        $(":button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
     }
     if (erreur != "") {
         $('#new_show_error').html(erreur).show();
