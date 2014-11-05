@@ -153,7 +153,7 @@ if (
 
         function newEncryptPw(){
             var nb = 1;
-            var start = 1;
+            var start = 0;
             if ($("#change_pw_encryption_start").val() != "") {
                 start = $("#change_pw_encryption_start").val();
             } else {
