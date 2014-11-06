@@ -351,13 +351,12 @@ switch ($_POST['type']) {
                 fputs($inF, decrypt($val, $key)."\n");
             }
             fclose($inF);
-            $handle = fopen($file, "r");
         } else {
-            $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$file, "r");
+            $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
         }
 
         //read sql file
-        if ($handle) {
+        if ($handle = fopen($file, "r")) {
             $query = "";
             while (!feof($handle)) {
                 $query.= fgets($handle, 4096);
@@ -371,7 +370,7 @@ switch ($_POST['type']) {
         }
 
         //delete file
-        unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
+        unlink($file);
 
         //Show done
         echo '[{"result":"db_restore"}]';
