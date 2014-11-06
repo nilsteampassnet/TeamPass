@@ -460,12 +460,12 @@ $(function() {
         autoOpen: false,
         width:100,
         height:140,
-        title: "'.$LANG['admin_action_db_restore_key'].'",
+        title: "<?php echo $LANG['admin_action_db_restore_key'];?>",
         buttons: {
-            "'.$LANG['ok'].'": function() {
+            "<?php echo $LANG['ok'];?>": function() {
                 LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
             },
-            "'.$LANG['cancel_button'].'": function() {
+            "<?php echo $LANG['cancel_button'];?>'": function() {
                 $(this).dialog("close");
             }
         }
