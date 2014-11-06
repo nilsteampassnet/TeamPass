@@ -12,6 +12,7 @@
  #739 - OTV correction
  #731 - Export password to file
  #653 - Passwords preprended during upgrade
+ #767 - Backup restore feature fix
  Other: #711 - #699 - #726 - #744 - #684 - #737
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
