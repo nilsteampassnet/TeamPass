@@ -364,7 +364,7 @@ if (isset($_POST['type'])) {
                             );
                             if ($mysqli_result) {
 	                            $resTmp = mysqli_fetch_row($queryRes);
-    	                        if ($resTmp[0] == 0 ) {
+    	                        if ($resTmp[0] == 0) {
         	                        $queryRes = mysqli_query($dbTmp,
             	                        "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
                 	                    (`type`, `intitule`, `valeur`) VALUES
@@ -817,18 +817,21 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     }
                 } else if ($task == "security") {
             		# Sort out the file permissions
-            		
-            		// Change directory permissions
-	         		$result = chmod_r($_SESSION['abspath'], 0550,0440);
-            		if ($result )
-            			$result = chmod_r($_SESSION['abspath'].'/files', 0770,0440);
-            		if  ($result)
-            			$result = chmod_r($_SESSION['abspath'].'/upload', 0770,0440);
+
+                    // is server Windows or Linux?
+                    if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
+                        // Change directory permissions
+                        $result = chmod_r($_SESSION['abspath'], 0550, 0440);
+                        if ($result )
+                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0440);
+                        if  ($result)
+                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0440);
+                    }
   
             	    if ($result === false) {
                         echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     } else {
-                        echo '[{"error" : "", index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
             	}  
             }
@@ -849,33 +852,35 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                                         
             if ($activity == "file") {
             	if ($task == "deleteInstall") {
-            			function delTree($dir) {
-            				$files = array_diff(scandir($dir), array('.','..'));
-            		 
-            				foreach ($files as $file) {
-            					(is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
-            				}
-            				return rmdir($dir);
-            			}
-            			
-            			$result=true;
-            			$errorMsg = "Cannot delete installation directory";
-            			if (file_exists($_SESSION['abspath'].'/install')) {
-	            			// set the permissions on the install directory and delete
-    	        			chmod_r($_SESSION['abspath'].'/install', 0755);
-        	    			$result = delTree($_SESSION['abspath'].'/install');
-            			}
-            			
-            			if ($result) {
-            				error_log("Deleting table");
-            				$result = mysqli_query($dbTmp, "DROP TABLE `_install`");
-            				$errorMsg = "Cannot remove _install table";
-            			}
-            			if ($result === false) {
-            				echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "Failed", "multiple" : ""}]';
-            			} else {
+                    function delTree($dir) {
+                        $files = array_diff(scandir($dir), array('.','..'));
+
+                        foreach ($files as $file) {
+                            (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
+                        }
+                        return rmdir($dir);
+                    }
+
+                    $result=true;
+                    $errorMsg = "Cannot delete installation directory";
+                    if (file_exists($_SESSION['abspath'].'/install')) {
+                        // set the permissions on the install directory and delete
+                        // is server Windows or Linux?
+                        if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
+                            chmod_r($_SESSION['abspath'].'/install', 0755, 0440);
+                        }
+                        $result = delTree($_SESSION['abspath'].'/install');
+                    }
+
+                    // delete temporary install table
+                    $result = mysqli_query($dbTmp, "DROP TABLE `_install`");
+                    $errorMsg = "Cannot remove _install table";
+
+                    if ($result === false) {
+                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "Failed", "multiple" : ""}]';
+                    } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-              			}
+                    }
          		}
             }
             // delete install table

@@ -55,7 +55,7 @@ function CheckPage()
             error = "Fields need to be filled in!";
         } else {
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
-            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*gmp", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time"];
+            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time"];
             multiple = true;
         }
     }
@@ -127,7 +127,7 @@ function CheckPage()
                 },
                 complete : function(data, statut){
                     data = $.parseJSON(data.responseText);
-                    if (data[0].error == "" ) {
+                    if (data[0].error == "") {
                         $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
                         if (data[0].result != undefined && data[0].result != "" ) {
                             $("#step_result").html(data[0].result);
@@ -210,7 +210,6 @@ function GotoNextStep()
 {
     var step = $("#page_id").val();
     var nextStep = parseInt(step)+1;
- //   var nextStep = 6;
 
     if (nextStep == 8) {
         $("#but_restart, #but_next, #but_launch").hide();

@@ -55,7 +55,7 @@ if( isset($_SERVER['HTTPS'] ) ) {
                 <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
                 <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
                 <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
-        		<li id="menu_step7"><span id="step_6">Clean Up</span>&nbsp;<span id="res_7"></span></li>
+        		<li id="menu_step7"><span id="step_7">Clean Up</span>&nbsp;<span id="res_7"></span></li>
                 <li id="menu_step8">Resume&nbsp;<span id="res_8"></span></li>
             </ul>
         </div>
