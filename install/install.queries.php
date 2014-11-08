@@ -18,6 +18,34 @@ header("Content-type: text/html; charset=utf-8");
 $_SESSION['db_encoding'] = "utf8";
 
 $_SESSION['CPM'] = 1;
+
+function chmod_r($dir, $dirPermissions, $filePermissions) {
+	$dp = opendir($dir);
+	$res = true;
+	while($file = readdir($dp)) {
+		if (($file == ".") || ($file == ".."))
+			continue;
+
+		$fullPath = $dir."/".$file;
+
+		if(is_dir($fullPath)) {
+			if ($res = @chmod($fullPath, $dirPermissions))
+				$res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+			} else {
+				$res = chmod($fullPath, $filePermissions);
+			}
+			if (!$res) {
+				closedir($dp);
+				return false;
+			}
+	}
+	closedir($dp);
+	if (is_dir($dir) && $res)
+		$res = @chmod($dir, $dirPermissions);
+
+	return $res;
+}
+
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
@@ -54,7 +82,16 @@ if (isset($_POST['type'])) {
                 }
                 break;
             }
-            
+ 
+            if (isset($data['activity']) && $data['activity'] == "function") {
+                if (function_exists($data['task'])) {
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                } else {
+                    echo '[{"error" : " Function '.$data['task'].' is not available!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                }
+                break;
+            }
+           
             if (isset($data['activity']) && $data['activity'] == "version") {
                 if (version_compare(phpversion(), '5.3.0', '>=')) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
@@ -220,6 +257,10 @@ if (isset($_POST['type'])) {
                             `valeur` varchar(100) NOT NULL
                             ) CHARSET=utf8;"
                         );
+                        
+                        // include constants 
+                        require_once "../includes/include.php";
+                         
                         // add by default settings
                         $aMiscVal = array(
                             array('admin', 'max_latest_items', '10'),
@@ -276,25 +317,25 @@ if (isset($_POST['type'])) {
                             array('admin','custom_logo',''),
                             array('admin','custom_login_text',''),
                             array('admin','default_language','english'),
-                            array('admin', 'send_stats', $var['send_stats']),
-                            array('admin', 'get_tp_info', '1'),
-                            array('admin', 'send_mail_on_user_login', '0'),
+                            array('admin','send_stats', $var['send_stats']),
+                            array('admin','get_tp_info', '1'),
+                            array('admin','send_mail_on_user_login', '0'),
                             array('cron', 'sending_emails', '0'),
-                            array('admin', 'nb_items_by_query', 'auto'),
-                            array('admin', 'enable_delete_after_consultation', '0'),
-                            array('admin', 'enable_personal_saltkey_cookie', '0'),
-                            array('admin', 'personal_saltkey_cookie_duration', '31'),
-                            array('admin', 'email_smtp_server', $var['smtp_server']),
-                            array('admin', 'email_smtp_auth', $var['smtp_auth']),
-                            array('admin', 'email_auth_username', $var['smtp_auth_username']),
-                            array('admin', 'email_auth_pwd', $var['smtp_auth_password']),
-                            array('admin', 'email_port', $var['smtp_port']),
-                            array('admin', 'email_server_url', $var['url_path']),
-                            array('admin', 'email_from', $var['email_from']),
-                            array('admin', 'email_from_name', $var['email_from_name']),
-                            array('admin', 'pwd_maximum_length', '40'),
-                            array('admin', '2factors_authentication', '0'),
-                            array('admin', 'delay_item_edition', '0'),
+                            array('admin','nb_items_by_query', 'auto'),
+                            array('admin','enable_delete_after_consultation', '0'),
+                            array('admin','enable_personal_saltkey_cookie', '0'),
+                            array('admin','personal_saltkey_cookie_duration', '31'),
+                            array('admin','email_smtp_server', $var['smtp_server']),
+                            array('admin','email_smtp_auth', $var['smtp_auth']),
+                            array('admin','email_auth_username', $var['smtp_auth_username']),
+                            array('admin','email_auth_pwd', $var['smtp_auth_password']),
+                            array('admin','email_port', $var['smtp_port']),
+                            array('admin','email_server_url', $var['url_path']),
+                            array('admin','email_from', $var['email_from']),
+                            array('admin','email_from_name', $var['email_from_name']),
+                            array('admin','pwd_maximum_length', '40'),
+                            array('admin','2factors_authentication', '0'),
+                            array('admin','delay_item_edition', '0'),
                             array('admin','allow_import','0'),
                             array('admin','proxy_ip',''),
                             array('admin','proxy_port',''),
@@ -317,20 +358,23 @@ if (isset($_POST['type'])) {
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
-                            $queryRes = mysqli_query($dbTmp,
+                            $mysqli_result = mysqli_query($dbTmp,
                                 "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc
                                 WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
                             );
-                            $resTmp = mysqli_fetch_row($queryRes);
-                            if ($resTmp[0] == 0) {
-                                $queryRes = mysqli_query($dbTmp,
-                                    "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
-                                    (`type`, `intitule`, `valeur`) VALUES
-                                    ('".$elem[0]."', '".$elem[1]."', '".
-                                    str_replace("'", "", $elem[2])."');"
-                                );
+                            if ($mysqli_result) {
+	                            $resTmp = mysqli_fetch_row($queryRes);
+    	                        if ($resTmp[0] == 0 ) {
+        	                        $queryRes = mysqli_query($dbTmp,
+            	                        "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
+                	                    (`type`, `intitule`, `valeur`) VALUES
+                    	                ('".$elem[0]."', '".$elem[1]."', '".
+                        	            str_replace("'", "", $elem[2])."');"
+                            	    );
+                            	}
                             }
                         }
+                        
                     } else if ($task == "nested_tree") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."nested_tree` (
@@ -523,7 +567,7 @@ if (isset($_POST['type'])) {
                         // add lanaguages
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."languages` WHERE name = 'french'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {
-                            mysqli_query($dbTmp,
+                            $mysql_result = mysqli_query($dbTmp,
                                 "INSERT INTO `".$var['tbl_prefix']."languages` (`name`, `label`, `code`, `flag`) VALUES
                                 ('french', 'French' , 'fr', 'fr.png'),
                                 ('english', 'English' , 'us', 'us.png'),
@@ -672,6 +716,9 @@ if (isset($_POST['type'])) {
             }
 
             mysqli_close($dbTmp);
+            // Destroy session without writing to disk
+			define('NODESTROY_SESSION','true');
+			session_destroy();
             break;
 
         case "step_6":
@@ -768,13 +815,75 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
-                }
+                } else if ($task == "security") {
+            		# Sort out the file permissions
+            		
+            		// Change directory permissions
+	         		$result = chmod_r($_SESSION['abspath'], 0550,0440);
+            		if ($result )
+            			$result = chmod_r($_SESSION['abspath'].'/files', 0770,0440);
+            		if  ($result)
+            			$result = chmod_r($_SESSION['abspath'].'/upload', 0770,0440);
+  
+            	    if ($result === false) {
+                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    } else {
+                        echo '[{"error" : "", index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    }
+            	}  
             }
-            
-            // delete install table
-            mysqli_query($dbTmp, "DROP TABLE `_install`");
 
             mysqli_close($dbTmp);
+            // Destroy session without writing to disk
+            define('NODESTROY_SESSION','true');
+            session_destroy();
             break;
+		case "step_7":
+			
+            //decrypt
+            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
+            $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
+            // launch
+			$dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+                                        
+            if ($activity == "file") {
+            	if ($task == "deleteInstall") {
+            			function delTree($dir) {
+            				$files = array_diff(scandir($dir), array('.','..'));
+            		 
+            				foreach ($files as $file) {
+            					(is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
+            				}
+            				return rmdir($dir);
+            			}
+            			
+            			$result=true;
+            			$errorMsg = "Cannot delete installation directory";
+            			if (file_exists($_SESSION['abspath'].'/install')) {
+	            			// set the permissions on the install directory and delete
+    	        			chmod_r($_SESSION['abspath'].'/install', 0755);
+        	    			$result = delTree($_SESSION['abspath'].'/install');
+            			}
+            			
+            			if ($result) {
+            				error_log("Deleting table");
+            				$result = mysqli_query($dbTmp, "DROP TABLE `_install`");
+            				$errorMsg = "Cannot remove _install table";
+            			}
+            			if ($result === false) {
+            				echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "Failed", "multiple" : ""}]';
+            			} else {
+                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+              			}
+         		}
+            }
+            // delete install table
+            //            	
+           	mysqli_close($dbTmp);
+           	// Destroy session without writing to disk
+           	define('NODESTROY_SESSION','true');
+           	session_destroy();
+           	break;            
     }
 }
