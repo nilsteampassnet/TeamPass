@@ -585,7 +585,7 @@ switch ($_POST['type']) {
             //increment number
             $numItems++;
         }
-error_log("Importing $numItems");
+
         ##################
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
@@ -629,7 +629,7 @@ error_log("Importing $numItems");
             $level = 0;
             $foldersArray = array();
             $nbFoldersImported = 0;
-error_log('Creating Folders');
+
             while (!feof($cacheFileF)) {
                 $folder = fgets($cacheFileF, 4096);
                 if (!empty($folder)) {
@@ -733,7 +733,7 @@ error_log('Creating Folders');
             }
             //show
             $text .= '<br /><b>'.$LANG['importing_items'].':</b><br />';
-error_log("Importing Items");
+
             // Now import ITEMS
             $nbItemsImported = 0;
 
@@ -753,7 +753,7 @@ error_log("Importing Items");
                 $full_item = fgets($cacheFile, 4096);
                 $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
                 $item = explode($itemsSeparator, $full_item);
-error_log("$nbItemsImported items imported");
+
                 if (!empty($item[2])) {
                 	$count++;
                     //check if not exists
@@ -851,7 +851,7 @@ error_log("$nbItemsImported items imported");
 
                         //increment number of imported items
                         $nbItemsImported++;
-                    } else error_log("Imported $nbItemsImported items");
+                    }
                 }
             }
 
