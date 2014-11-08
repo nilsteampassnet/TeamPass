@@ -2,7 +2,7 @@
 /**
  * @file          views.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
+ * @version       2.1.21
  * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -17,42 +17,45 @@ header("Content-type: text/html; charset=utf-8");
 
 // connect to DB
 require_once '../sources/SplClassLoader.php';
-$db = new SplClassLoader('Database\Core', '../includes/libraries');
-$db->register();
-$db = new Database\Core\DbCore($server, $user, $pass, $database, $pre);
-$db->connect();
+
+require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$error_handler = 'db_error_handler';
+$link= mysqli_connect($server, $user, $pass, $database, $port);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 //get backups infos
-$rows = $db->fetchAllArray("SELECT * FROM ".$pre."misc WHERE type = 'settings'");
-foreach ($rows as $reccord) {
-    $settings[$reccord['intitule']] = $reccord['valeur'];
+$rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
+foreach ($rows as $record) {
+    $settings[$record['intitule']] = $record['valeur'];
 }
-
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
     //get all of the tables
     $tables = array();
-    $result = mysql_query('SHOW TABLES');
-    while ($row = mysql_fetch_row($result)) {
+    $result = mysqli_query($link,'SHOW TABLES');
+    while ($row = mysqli_fetch_row($result)) {
         $tables[] = $row[0];
     }
-
     $return = "";
 
     //cycle through each table and format the data
     foreach ($tables as $table) {
-        $result = mysql_query('SELECT * FROM '.$table);
-        $num_fields = mysql_num_fields($result);
+        $result = mysqli_query($link,'SELECT * FROM '.$table);
+        $num_fields = mysqli_num_fields($result);
 
         $return.= 'DROP TABLE '.$table.';';
-        $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
+        $row2 = mysqli_fetch_row(mysqli_query($link,'SHOW CREATE TABLE '.$table));
         $return.= "\n\n".$row2[1].";\n\n";
 
         for ($i = 0; $i < $num_fields; $i++) {
-            while ($row = mysql_fetch_row($result)) {
+            while ($row = mysqli_fetch_row($result)) {
                 $return.= 'INSERT INTO '.$table.' VALUES(';
                 for ($j=0; $j<$num_fields; $j++) {
                     $row[$j] = addslashes($row[$j]);
