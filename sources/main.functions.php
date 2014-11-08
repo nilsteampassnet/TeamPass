@@ -136,20 +136,25 @@ function decryptOld($text, $personalSalt = "")
  */
 function encrypt($decrypted, $personalSalt = "")
 {
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     if (!empty($personalSalt)) {
  	    $staticSalt = $personalSalt;
     } else {
  	    $staticSalt = SALT;
     }
+    
     //set our salt to a variable
     // Get 64 random bits for the salt for pbkdf2
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+ //   $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
+    
     // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
     $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
     //base64 trim
+    
     if (strlen($ivBase64 = rtrim(base64_encode($iv), '=')) != 43) {
         return false;
     }
@@ -168,6 +173,8 @@ function encrypt($decrypted, $personalSalt = "")
  */
 function decrypt($encrypted, $personalSalt = "")
 {
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+	
     if (!empty($personalSalt)) {
 	    $staticSalt = $personalSalt;
     } else {
@@ -179,7 +186,9 @@ function decrypt($encrypted, $personalSalt = "")
     $pbkdf2Salt = substr($encrypted, -64);
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+//   $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
+    
     // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
     $iv = base64_decode(substr($encrypted, 0, 43) . '==');
     // Remove $iv from $encrypted.

@@ -585,7 +585,7 @@ switch ($_POST['type']) {
             //increment number
             $numItems++;
         }
-
+error_log("Importing $numItems");
         ##################
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
@@ -629,7 +629,7 @@ switch ($_POST['type']) {
             $level = 0;
             $foldersArray = array();
             $nbFoldersImported = 0;
-
+error_log('Creating Folders');
             while (!feof($cacheFileF)) {
                 $folder = fgets($cacheFileF, 4096);
                 if (!empty($folder)) {
@@ -733,7 +733,7 @@ switch ($_POST['type']) {
             }
             //show
             $text .= '<br /><b>'.$LANG['importing_items'].':</b><br />';
-
+error_log("Importing Items");
             // Now import ITEMS
             $nbItemsImported = 0;
 
@@ -753,16 +753,18 @@ switch ($_POST['type']) {
                 $full_item = fgets($cacheFile, 4096);
                 $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
                 $item = explode($itemsSeparator, $full_item);
-
+error_log("$nbItemsImported items imported");
                 if (!empty($item[2])) {
+                	$count++;
                     //check if not exists
-                    DB::query(
-                        "SELECT * FROM ".$pre."items
+ /*                   DB::query(
+                        "SELECT id FROM ".$pre."items
                         WHERE id_tree =%i AND label = %s",
                         intval($foldersArray[$item[0]]['id']),
                         $item[2]
                     );
-                    $counter = DB::count();
+                    $counter = DB::count(); */
+                	$counter = 0;
                     if ($counter == 0) {
                         //Encryption key
                         $randomKey = generateKey();
@@ -792,10 +794,10 @@ switch ($_POST['type']) {
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
                         );
-                        $newId = DB::insertId();
+ /*                       $newId = DB::insertId();
 
                             //Store generated key
-                        DB::insert(
+                       DB::insert(
                             $pre.'keys',
                             array(
                                 'table' => 'items',
@@ -816,7 +818,7 @@ switch ($_POST['type']) {
                                 );
                             }
                         }
-
+ 
                         //Add log
                         DB::insert(
                             $pre.'log_items',
@@ -843,13 +845,13 @@ switch ($_POST['type']) {
                                 'author' => $_SESSION['user_id']
                            )
                         );
-
+*/
                         //show
                         $text .= '- '.addslashes($item[2]).'<br />';
 
                         //increment number of imported items
                         $nbItemsImported++;
-                    }
+                    } else error_log("Imported $nbItemsImported items");
                 }
             }
 
