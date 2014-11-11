@@ -17,7 +17,9 @@
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  New - New option : Prevent against duplicate items in same folder
+ New - If folder is read-only for the User then it is striked-through
  Changed - list of restricted users refined by folder selected
+ Fix - Not possible to see more than 8 Roles in Roles matrix
 
 2.1.21
  #597 - Rapid click on save button on "Add a folder"

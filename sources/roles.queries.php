@@ -295,7 +295,7 @@ if (!empty($_POST['type'])) {
 
             $return_values = array(
                 "new_table" => $texte,
-                "all" => $roles_count[0],
+                "all" => $roles_count,
                 "next" => $next,
                 "previous" => $previous
             );

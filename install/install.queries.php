@@ -236,6 +236,7 @@ if (isset($_POST['type'])) {
                             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
+                            `viewed_no` int(12) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
