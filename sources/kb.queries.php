@@ -126,7 +126,7 @@ if (!empty($_POST['type'])) {
                     );
                 } else {
                     //add new KB
-                    DB::queryInsert(
+                    DB::insert(
                         $pre."kb",
                         array(
                             'label' => $label,
