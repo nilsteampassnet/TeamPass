@@ -1437,6 +1437,18 @@ if (isset($_POST['type'])) {
                 break;
             }
 
+            # TABLE EXPORT
+            mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."export` (
+                `id` int(12) NOT NULL,
+                `label` varchar(255) NOT NULL,
+                `login` varchar(100) NOT NULL,
+                `description` text NOT NULL,
+                `pw` text NOT NULL,
+                `path` varchar(255) NOT NULL
+                ) CHARSET=utf8;"
+            );
+
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
                 '<blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
@@ -1699,9 +1711,17 @@ require_once \"".$skFile."\";
                 if (empty($pw)) {
                     $pw = decryptOld($data['pw']);
 
-                    // generate Key and encode PW
-                    $randomKey = generateKey();
-                    $pw = $randomKey.$pw;
+                    // if no key ... then add it
+                    $resData = mysqli_query($dbTmp,
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
+                        WHERE `table` = 'items' AND id = ".$data['id']
+                    ) or die(mysqli_error($dbTmp));
+                    $dataTemp = mysqli_fetch_row($resData);
+                    if ($dataTemp[0] == 0) {
+                        // generate Key and encode PW
+                        $randomKey = generateKey();
+                        $pw = $randomKey.$pw;
+                    }
                     $pw = encrypt($pw, $_SESSION['session_start']);
 
                     // store Password
