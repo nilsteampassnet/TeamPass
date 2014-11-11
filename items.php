@@ -122,6 +122,7 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 } else {
     $firstGroup = "";
 }
+
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
 
@@ -181,7 +182,12 @@ foreach ($folders as $folder) {
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $node);
+                DB::query(
+                    "SELECT * FROM ".$pre."items
+                    WHERE inactif=%i AND id_tree = %i",
+                    0,
+                    $node
+                );
                 $nbChildrenItems += DB::count();
             }
             if (
@@ -203,7 +209,12 @@ foreach ($folders as $folder) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
-            DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $folder->id);
+            DB::query(
+                "SELECT * FROM ".$pre."items
+                WHERE inactif=%i AND id_tree = %i",
+                0,
+                $folder->id
+            );
             $itemsNb = DB::count();
 
             // get 1st folder
@@ -224,6 +235,9 @@ foreach ($folders as $folder) {
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+                if (in_array($folder->id, $_SESSION['read_only_folders'])) {
+                    $fldTitle = '<span style="text-decoration: line-through;">'.$fldTitle.'</span>';
+                }
                 $folderTxt .= '
                             <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
                 // display tree counters

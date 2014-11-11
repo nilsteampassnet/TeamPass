@@ -1267,6 +1267,16 @@ if (isset($_POST['type'])) {
                     $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
                 }
 
+                // statistics
+                DB::update(
+                    $pre."items",
+                    array(
+                        'viewed_no' => $dataItem['viewed_no']+1,
+                    ),
+                    "id = %i",
+                    $_POST['id']
+                );
+
                 // get fields
                 $fieldsTmp = $arrCatList = "";
                 if (
