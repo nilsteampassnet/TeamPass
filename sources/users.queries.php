@@ -58,7 +58,6 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-// Construction de la requ?te en fonction du type de valeur
 if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         case "groupes_visibles":
@@ -133,8 +132,17 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+            // Prepare variables
+            $login = htmlspecialchars_decode($dataReceived['login']);
+            $name = htmlspecialchars_decode($dataReceived['name']);
+            $lastname = htmlspecialchars_decode($dataReceived['lastname']);
+            $pw = htmlspecialchars_decode($dataReceived['pw']);
+
             // Empty user
-            if (mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])) == "") {
+            if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
@@ -142,7 +150,7 @@ if (!empty($_POST['type'])) {
             $data = DB::query(
                 "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".$pre."users
                 WHERE login LIKE %ss",
-                mysqli_escape_string($link, stripslashes($_POST['login']))
+                mysqli_escape_string($link, stripslashes($login))
             );
 
             if (DB::count() == 0) {
@@ -150,25 +158,25 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     $pre."users",
                     array(
-                        'login' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])),
-                        'name' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['name'])),
-                        'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['lastname'])),
-                        'pw' => bCrypt(stringUtf8Decode($_POST['pw']), COST),
-                        'email' => $_POST['email'],
-                        'admin' => $_POST['admin'] == "true" ? '1' : '0',
-                        'gestionnaire' => $_POST['manager'] == "true" ? '1' : '0',
-                        'read_only' => $_POST['read_only'] == "true" ? '1' : '0',
-                        'personal_folder' => $_POST['personal_folder'] == "true" ? '1' : '0',
+                        'login' => $login,
+                        'name' => $name,
+                        'lastname' => $lastname,
+                        'pw' => bCrypt(stringUtf8Decode($pw), COST),
+                        'email' => $dataReceived['email'],
+                        'admin' => $dataReceived['admin'] == "true" ? '1' : '0',
+                        'gestionnaire' => $dataReceived['manager'] == "true" ? '1' : '0',
+                        'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
+                        'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
                         'user_language' => $_SESSION['settings']['default_language'],
-                        'fonction_id' => $_POST['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
-                        'groupes_interdits' => ($_POST['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
-                        'groupes_visibles' => ($_POST['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
-                        'isAdministratedByRole' => $_POST['isAdministratedByRole']
+                        'fonction_id' => $dataReceived['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
+                        'groupes_interdits' => ($dataReceived['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
+                        'groupes_visibles' => ($dataReceived['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole']
                        )
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($_POST['personal_folder'] == "true") {
+                if ($dataReceived['personal_folder'] == "true") {
                     DB::insert(
                         $pre."nested_tree",
                         array(
@@ -181,13 +189,13 @@ if (!empty($_POST['type'])) {
                     );
                 }
                 // Create folder and role for domain
-                if ($_POST['new_folder_role_domain'] == "true") {
+                if ($dataReceived['new_folder_role_domain'] == "true") {
                     // create folder
                     DB::insert(
                         $pre."nested_tree",
                         array(
                             'parent_id' => 0,
-                            'title' => mysqli_escape_string($link, stripslashes($_POST['domain'])),
+                            'title' => mysqli_escape_string($link, stripslashes($dataReceived['domain'])),
                             'personal_folder' => 0,
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
@@ -208,7 +216,7 @@ if (!empty($_POST['type'])) {
                     DB::insert(
                         $pre."roles_title",
                         array(
-                            'title' => mysqli_escape_string($link, stripslashes(($_POST['domain'])))
+                            'title' => mysqli_escape_string($link, stripslashes(($dataReceived['domain'])))
                            )
                     );
                     $new_role_id = DB::insertId();
@@ -239,8 +247,8 @@ if (!empty($_POST['type'])) {
                 // Send email to new user
                 @sendEmail(
                     $LANG['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
-                    $_POST['email']
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                    $dataReceived['email']
                 );
                 // update LOG
                 DB::insert(
