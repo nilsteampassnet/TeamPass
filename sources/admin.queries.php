@@ -247,6 +247,7 @@ switch ($_POST['type']) {
         //cycle through
         foreach ($tables as $table) {
             if (empty($pre) || substr_count($table, $pre) > 0) {
+
                 $result = DB::queryRaw('SELECT * FROM '.$table);
                 $mysqli_result = DB::queryRaw(
                     "SELECT COUNT(*) AS Columns
@@ -258,7 +259,8 @@ switch ($_POST['type']) {
                 );
                 $row = $mysqli_result->fetch_row();
                 $numFields = $row[0];
-                    // prepare a drop table
+
+                // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
                 $row2 = DB::queryfirstrow('SHOW CREATE TABLE '.$table);
                 $return.= "\n\n".$row2["Create Table"].";\n\n";
@@ -344,22 +346,24 @@ switch ($_POST['type']) {
             unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
-            $file = $_SESSION['settings']['path_to_files_folder']."/".time().".log";
+            $file = $_SESSION['settings']['path_to_files_folder']."/".time().".txt";
             $inF = fopen($file, "w");
             while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
             }
             fclose($inF);
+        } else {
+            $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
         }
 
         //read sql file
-        if ($handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$file, "r")) {
+        if ($handle = fopen($file, "r")) {
             $query = "";
             while (!feof($handle)) {
                 $query.= fgets($handle, 4096);
                 if (substr(rtrim($query), -1) == ';') {
                     //launch query
-                    DB::query($query);
+                    DB::queryRaw($query);
                     $query = '';
                 }
             }
@@ -367,7 +371,7 @@ switch ($_POST['type']) {
         }
 
         //delete file
-        unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
+        unlink($file);
 
         //Show done
         echo '[{"result":"db_restore"}]';

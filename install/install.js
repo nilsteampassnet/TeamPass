@@ -13,7 +13,7 @@
 
 $(function() {
     $(".button").button();
-    $("#but_launch, #step_error").hide();
+    $("#but_launch, #step_error, #but_restart").hide();
 
     //SALT KEY non accepted characters management
     $("#encrypt_key").keypress(function (e) {
@@ -55,7 +55,7 @@ function CheckPage()
             error = "Fields need to be filled in!";
         } else {
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
-            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "version*php", "ini*max_execution_time"];
+            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time"];
             multiple = true;
         }
     }
@@ -94,10 +94,17 @@ function CheckPage()
     // STEP 6
     if (step == "6") {
         data = '';
-        tasks = ["file*settings.php", "file*sk.php"];
+        tasks = ["file*settings.php", "file*sk.php", "file*security"];
         multiple = true;
     }
 
+    // STEP 7
+    if (step == "7") {
+        data = '';
+        tasks = ["file*deleteInstall"];
+        multiple = true;
+    }
+    
     // launch query
     if (error == "" && multiple == true) {
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
@@ -120,13 +127,16 @@ function CheckPage()
                 },
                 complete : function(data, statut){
                     data = $.parseJSON(data.responseText);
-                    if (data[0].error == "" ) {
+                    if (data[0].error == "") {
                         $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
                         if (data[0].result != undefined && data[0].result != "" ) {
                             $("#step_result").html(data[0].result);
                         }
                     } else {
-                        $("#step_res").val("false");
+                    	// ignore setting error if regarding setting permissions (step 6, index 2)
+                    	if (step+data[0].index != "62") {
+                    		$("#step_res").val("false");
+                    	}
                         $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
                         if (data[0].result != undefined && data[0].result != "" ) {
                             $("#step_result").html(data[0].result);
@@ -143,7 +153,14 @@ function CheckPage()
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
                     $("#but_launch").prop("disabled", true);
+                    $("#but_launch").hide();
                     $("#but_next").prop("disabled", false);
+                    $("#but_next").show();
+                    // Hide restart button at end of step 6 if successful
+                    if (step == "7") {
+                    	$("#but_restart").prop("disabled", true);
+                    	$("#but_restart").hide();
+                    }
                 }
                 $("#step_result").html("");
             }, 1000);
@@ -174,7 +191,9 @@ function CheckPage()
                         $("#step_result").html("<span style=\"font-weight:bold; margin-right:20px;\">"+data[0].result+"</span>");
                     }
                     $("#but_launch").prop("disabled", true);
-                    $("#but_next").prop("disabled", false);
+                    $("#but_launch").hide();
+                    $("#but_next").prop("disabled", false);  
+                    $("#but_next").show();     
                 }
             },
             error : function(resultat, statut, erreur){
@@ -192,8 +211,9 @@ function GotoNextStep()
     var step = $("#page_id").val();
     var nextStep = parseInt(step)+1;
 
-    if (nextStep == 7) {
-        $("#but_launch, #but_next").hide();
+    if (nextStep == 8) {
+        $("#but_restart, #but_next, #but_launch").hide();
+        $("#but_start").show();
         $("#step_result").html("Installation finished.");
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
@@ -203,7 +223,10 @@ function GotoNextStep()
     } else {
         $("#page_id").val(nextStep);
         $("#but_launch").show().prop("disabled", false);
+        $("#but_launch").show();
+        $("#but_restart").show();
         $("#but_next").prop("disabled", true);
+        $("#but_next").hide();
         $("#menu_step"+step).switchClass("li_inprogress", "li_done");
         $("#menu_step"+nextStep).switchClass("", "li_inprogress");
         $("#res_"+step).html("<img src=\"images/tick.png\">");
@@ -234,6 +257,8 @@ function GotoNextStep()
                 key != 39
             );
         });
+        // Auto start as required
+        if (nextStep == 5 || nextStep == 6 || nextStep ==7 ) CheckPage();
     }
 }
 
@@ -256,57 +281,4 @@ function suggestKey() {
 function aes_encrypt(text)
 {
     return Aes.Ctr.encrypt(text, "cpm", 128);
-}
-
-
-
-//Fonction qui permet d'appeler un fichier qui ex�cute une requete pass�e en parametre
-function httpRequest(file,data,type) {
-    var xhr_object = null;
-    var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
-
-    if (document.getElementById("menu_action") != null) {
-        document.getElementById("menu_action").value = "action";
-    }
-
-    if(window.XMLHttpRequest) { // Firefox
-        xhr_object = new XMLHttpRequest();
-    } else if(window.ActiveXObject) { // Internet Explorer
-        xhr_object = new ActiveXObject("Microsoft.XMLHTTP");  //Info IE8 now supports =>  xhr_object = new XMLHttpRequest()
-    } else { // XMLHttpRequest non support? par le navigateur
-        alert("Your browser does not support XMLHTTPRequest objects ...");
-        return;
-    }
-
-    if (type == "GET") {
-        xhr_object.open("GET", file+"?"+data, true);
-        xhr_object.send(null);
-    } else {
-        xhr_object.open("POST", file, true);
-        xhr_object.onreadystatechange = function() {
-            if(xhr_object.readyState == 4) {
-                eval(xhr_object.responseText);
-                //Check if query is for user identification. If yes, then reload page.
-                if (data != "" && data.indexOf('ype=identify_user') > 0 ) {
-                    if (is_chrome == true ) PauseInExecution(100);  //Needed pause for Chrome
-                    if (type == "") {
-                        if (document.getElementById('erreur_connexion').style.display == "") {
-                            //rise an error in url. This in order to display the eror after refreshing
-                            window.location.href="index.php?error=rised";
-                        } else {
-                            window.location.href="index.php";
-                        }
-                    } else {
-                        if (type = "?error=rised") {
-                            if (document.getElementById('erreur_connexion').style.display == "none") type = "";   //clean error in url
-                            else type = "?error=rised"; //Maintain the ERROR
-                        }
-                        window.location.href="index.php"+type;
-                    }
-                }
-            }
-        }
-        xhr_object.setRequestHeader("Content-type", "application/x-www-form-urlencoded; charset=utf-8");
-        xhr_object.send(data);
-    }
 }
