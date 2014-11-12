@@ -182,22 +182,26 @@ $(function() {
                     $("#add_new_user_error").show().html("<?php echo $LANG['error_must_enter_all_fields'];?>");
                 } else {
                     $("#add_new_user_info").show().html("<?php echo $LANG['please_wait'];?>");
+
+                    //prepare data
+                    var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
+                        '"name":"'+sanitizeString($('#new_name').val())+'", '+
+                        '"lastname":"'+sanitizeString($('#new_lastname').val())+'", '+
+                        '"pw":"'+sanitizeString($('#new_pwd').val())+'", '+
+                        '"email":"'+$("#new_email").val()+'", '+
+                        '"admin":"'+$("#new_admin").prop("checked")+'", '+
+                        '"manager":"'+$("#new_manager").prop("checked")+'", '+
+                        '"read_only":"'+$("#new_read_only").prop("checked")+'", '+
+                        '"personal_folder":"'+$("#new_personal_folder").prop("checked")+'", '+
+                        '"new_folder_role_domain":"'+$("#new_folder_role_domain").prop("checked")+'", '+
+                        '"domain":"'+$('#new_domain').val()+'", '+
+                        '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'"}';
+
                     $.post(
                         "sources/users.queries.php",
                         {
                             type    :"add_new_user",
-                            login    :sanitizeString($("#new_login").val()),
-                            name    :sanitizeString($("#new_name").val()),
-                            lastname    :sanitizeString($("#new_lastname").val()),
-                            pw        :encodeURIComponent($("#new_pwd").val()),
-                            email    :$("#new_email").val(),
-                            admin    :$("#new_admin").prop("checked"),
-                            manager    :$("#new_manager").prop("checked"),
-                            read_only    :$("#new_read_only").prop("checked"),
-                            personal_folder    :$("#new_personal_folder").prop("checked"),
-                            new_folder_role_domain    :$("#new_folder_role_domain").prop("checked"),
-                            domain    :$("#new_domain").val(),
-                            isAdministratedByRole    :$("#new_is_admin_by").val(),
+                            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                             key    : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
