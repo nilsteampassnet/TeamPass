@@ -32,7 +32,7 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
-
+        <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
@@ -63,9 +63,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
-    $htmlHeaders .= '
-        <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
@@ -330,6 +327,15 @@ $htmlHeaders .= '
             }
        );
     }
+    
+    function loadProfileDialog()
+    {
+        $("#dialog_user_profil").dialog({
+            open: function(event, ui) {
+                $("#div_user_profil").load("'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){});                
+            }
+        }).dialog("open");
+    }
 
     /*
     * Clean disconnection of user for security reasons.
@@ -410,6 +416,25 @@ $htmlHeaders .= '
             }
         });
 
+        //DIALOG FOR USER PROFILE
+        $("#dialog_user_profil").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 500,
+            height: 400,
+            title: "'.$LANG['user_profile_dialogbox_menu'].'",
+            buttons: {
+                "'.$LANG['close'].'": function() {
+                    $(this).dialog("close");
+                }
+            },
+            close: function() {
+                $("#dialog_user_profil").dialog("option", "height", 400);
+                $("#div_user_profil").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
+            }
+        });
+
         //MESSAGE DIALOG
         $("#div_dialog_message").dialog({
             bgiframe: true,
@@ -420,61 +445,6 @@ $htmlHeaders .= '
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
                 "'.$LANG['ok'].'": function() {
-                    $(this).dialog("close");
-                }
-            }
-        });
-
-
-        // DIALOG BOX FOR CHANGING PASSWORD
-        $("#div_changer_mdp").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 300,
-            height: 250,
-            title: "'.$LANG['index_change_pw'].'",
-            open: function( event, ui ) {
-                $("#change_pwd_complexPw").html("'.$LANG['complex_asked'].' : '.$pwComplexity[$_SESSION['user_pw_complexity']][1].'");
-                $("#change_pwd_error").hide();
-            },
-            buttons: {
-                "'.$LANG['index_change_pw_button'].'": function() {
-                    $("#change_pwd_error").addClass("ui-state-error ui-corner-all").hide();
-                    if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
-                        if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
-                            var data = "{\'new_pw\':\'"+sanitizeString($("#new_pw").val())+"\'}";
-                            $.post(
-                                "sources/main.queries.php",
-                                {
-                                    type    : "change_pw",
-                                    change_pw_origine    : "user_change",
-                                    complexity:    $("#pw_strength_value").val(),
-                                    data :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
-                                },
-                                function(data) {
-                                    if (data[0].error == "already_used") {
-                                        $("#new_pw, #new_pw2").val("");
-                                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['pw_used'].'</span>");
-                                    } else if (data[0].error == "complexity_level_not_reached") {
-                                        $("#new_pw, #new_pw2").val("");
-                                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_complex_not_enought'].'</span>");
-                                    } else {
-                                        document.main_form.submit();
-                                    }
-                                },
-                                "json"
-                           );
-                        } else {
-                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
-                        }
-                    } else {
-                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
-                    }
-                },
-                "'.$LANG['cancel_button'].'": function() {
-                    $("#change_pwd_error").removeClass("ui-state-error ui-corner-all").html("");
-                    $("#new_pw, #new_pw2").val("");
                     $(this).dialog("close");
                 }
             }
@@ -640,6 +610,18 @@ $htmlHeaders .= '
                 }
             }
         });
+        
+        /*
+        //inline editing
+        $(".editable_textarea").editable("sources/users.queries.php", {
+              indicator : "<img src=\'includes/images/loading.gif\' />",
+              type   : "text",
+              select : true,
+              submit : "<img src=\'includes/images/disk_black.png\' />",
+              cancel : "<img src=\'includes/images/cross.png\' />",
+              name : "newValue"
+        });
+        */
     });';
 
 if (!isset($_GET['page'])) {

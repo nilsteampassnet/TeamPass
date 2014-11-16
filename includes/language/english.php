@@ -14,7 +14,9 @@
  */
 global $LANG;
 $LANG = array (
-    'find_message' => "<i class='fa fa-info-circle'></i> %X% objects found.",
+    'user_profile_dialogbox_menu' => 'Your Teampass informations',
+    'upload_new_avatar' => 'Select avatar PNG file',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found.',
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'settings_roles_allowed_to_print' => 'Select the roles allowed to print out the Items',

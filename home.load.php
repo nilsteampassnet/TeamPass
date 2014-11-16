@@ -92,50 +92,6 @@ $(function() {
         }
     });
 
-    //Password meter
-    if ($("#new_pw").length) {
-        $("#new_pw").simplePassMeter({
-            "requirements": {},
-            "container": "#pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
-            "ratings": [
-            {"minScore": 0,
-                "className": "meterFail",
-                "text": "<?php echo $LANG['complex_level0'];?>"
-            },
-            {"minScore": 25,
-                "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level1'];?>"
-            },
-            {"minScore": 50,
-                "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level2'];?>"
-            },
-            {"minScore": 60,
-                "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level3'];?>"
-            },
-            {"minScore": 70,
-                "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level4'];?>"
-            },
-            {"minScore": 80,
-                "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level5'];?>"
-            },
-            {"minScore": 90,
-                "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level6'];?>"
-            }
-            ]
-        });
-    }
-    $("#new_pw").bind({
-        "score.simplePassMeter" : function(jQEvent, score) {
-            $("#pw_strength_value").val(score);
-        }
-    });
-
 
     $("#offline_password").simplePassMeter({
         "requirements": {},

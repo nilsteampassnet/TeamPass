@@ -291,6 +291,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">File "settings.php" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/install/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/includes/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/includes/avatars/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />

@@ -439,6 +439,8 @@ if (isset($_POST['type'])) {
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
+                            `avatar` varchar(255) NOT null,
+                            `avatar_thumb` varchar(255) NOT null,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -765,8 +767,8 @@ if (isset($_POST['type'])) {
                         $fh,
                         utf8_encode(
                             "<?php
-global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port;
+global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$_SESSION['settings']['pwComplexity'], \$mngPages;
+global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
 \$server = \"".$_SESSION['db_host']."\";

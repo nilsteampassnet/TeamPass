@@ -1656,7 +1656,7 @@ echo '
                     </td>
                     <td>
                         <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content">';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 	echo '<option value="'.$complex[0].'"', isset($_SESSION['settings']['offline_key_level']) && $_SESSION['settings']['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
 }
 echo '
