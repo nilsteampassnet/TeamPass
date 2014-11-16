@@ -217,10 +217,10 @@ if (isset($_SESSION['login'])) {
     echo '
                 <div style="float:right;">
                 <ul class="menu" style="">
-                    <li class="" style="padding: 4px;"><i class="fa fa-user fa-fw"></i> '.$_SESSION['login'].'&nbsp;['.$_SESSION['user_privilege'].']
+                    <li class="" style="padding: 4px;"><i class="fa fa-user fa-fw"></i> '.$_SESSION['login'].'&nbsp;['.$_SESSION['user_privilege'].']&nbsp;&nbsp;
                         <ul class="menu_200">',
                             isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-                            '<li onclick="OpenDialogBox(\'div_changer_mdp\')"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>', '', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                            isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                             <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
                                 <ul>
                                     <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
@@ -229,6 +229,7 @@ if (isset($_SESSION['login'])) {
                                 </ul>
                             </li>' : '', '
                             <li onclick="IncreaseSessionTime()"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
+                            <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
                             <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
                         </ul>
                     </li>
@@ -603,7 +604,7 @@ echo '
 echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
+            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-ticket"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
@@ -637,20 +638,6 @@ echo '
         <div style="padding:10px;text-align:center;" id="mysql_error_warning"></div>
     </div>';
 
-
-//change the password
-echo '
-    <div id="div_changer_mdp" style="display:none;padding:4px;">
-        <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
-        <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
-        <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
-        <input type="password" size="15" name="new_pw" id="new_pw" />
-        <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
-        <input type="password" size="15" name="new_pw2" id="new_pw2" />
-
-        <div id="pw_strength" style="margin:10px 0 0 50px;"></div>
-        <input type="hidden" id="pw_strength_value" />
-    </div>';
 
     //Personnal SALTKEY
     if (
@@ -692,6 +679,16 @@ echo '
                <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
            </div>';
     }
+    
+    // user profile
+        echo '
+        <div id="dialog_user_profil" style="display:none;padding:4px;">
+            <div id="div_user_profil">
+                <i class="fa fa-cog fa-spin fa-2x"></i>
+            </div>
+            
+        </div>';
+    
 
 closelog();
 

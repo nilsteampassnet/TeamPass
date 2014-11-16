@@ -72,7 +72,7 @@ echo '
     <label for="new_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="new_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -100,7 +100,7 @@ echo '
     <label for="edit_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="edit_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '

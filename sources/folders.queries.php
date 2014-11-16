@@ -153,7 +153,7 @@ if (isset($_POST['newtitle'])) {
     }
 
     //Get title to display it
-    echo $pwComplexity[$_POST['changer_complexite']][1];
+    echo $_SESSION['settings']['pwComplexity'][$_POST['changer_complexite']][1];
 
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');

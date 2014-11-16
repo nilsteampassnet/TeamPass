@@ -346,6 +346,8 @@ function IdentifyUser($sentData)
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
             $_SESSION['user']['ga'] = $data['ga'];
+            $_SESSION['user']['avatar'] = $data['avatar'];
+            $_SESSION['user']['avatar_thumb'] = $data['avatar_thumb'];
             
             // manage session expiration
             $serverTime = time();

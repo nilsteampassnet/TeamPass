@@ -42,7 +42,7 @@ header("Pragma: no-cache");
 include 'main.functions.php';
 
 // pw complexity levels
-$pwComplexity = array(
+$_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),
     25 => array(25, $LANG['complex_level1']),
     50 => array(50, $LANG['complex_level2']),
@@ -277,7 +277,7 @@ if (!empty($_POST['type'])) {
                 "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s", $_POST['folder_id'], "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
-                $complexity = $pwComplexity[$data['valeur']][1];
+                $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
             } else {
                 $complexity = $LANG['not_defined'];
             }

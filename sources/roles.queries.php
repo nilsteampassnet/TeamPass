@@ -193,7 +193,7 @@ if (!empty($_POST['type'])) {
         #CASE refresh the matrix
         case "refresh_roles_matrix":
             //pw complexity levels
-            $pwComplexity = array(
+            $_SESSION['settings']['pwComplexity'] = array(
                 0=>array(0,$LANG['complex_level0']),
                 25=>array(25,$LANG['complex_level1']),
                 50=>array(50,$LANG['complex_level2']),
@@ -246,7 +246,7 @@ if (!empty($_POST['type'])) {
                         '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
                         '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.
-                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pwComplexity[$record['complexity']][1].'&nbsp;]</div></th>';
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$_SESSION['settings']['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
 
                     array_push($arrRoles, $record['id']);
                 }

@@ -13,7 +13,7 @@
  */
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...4');
+    die('Hacking attempt...');
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -37,7 +37,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                     <h3>'.$LANG['index_change_pw'].'</h3>
                     <div style="height:20px;text-align:center;margin:2px;display:none;" id="change_pwd_error" class=""></div>
                     <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all">'.
-                        $LANG['complex_asked'].' : '.$pwComplexity[$_SESSION['user_pw_complexity']][1].
+                        $LANG['complex_asked'].' : '.$_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1].
                     '</div>
                     <div id="pw_strength" style="margin:0 0 10px 30px;"></div>
                     <table>
@@ -109,7 +109,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                    '.$LANG['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
                    <br />
                     <span class="ui-icon ui-icon-key" style="float: left; margin-right: .3em;">&nbsp;</span>
-                   '.$LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $numDaysBeforePwExpiration == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$numDaysBeforePwExpiration.' '.$LANG['days'].'.';
+                   '.$LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : date("d/m/Y", $_SESSION['last_pw_change']), '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'.';
     echo '
                    <br /><span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
                    <div id="upload_info">

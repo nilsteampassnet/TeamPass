@@ -90,6 +90,7 @@ if (isset($_POST['type'])) {
                 $abspath."/includes/settings.php",
                 $abspath."/install/",
                 $abspath."/includes/",
+                $abspath."/includes/avatars/",
                 $abspath."/files/",
                 $abspath."/upload/"
             );
@@ -731,6 +732,16 @@ if (isset($_POST['type'])) {
         	    "ga",
         	    "VARCHAR(50) DEFAULT NULL"
         	);
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "avatar",
+                "VARCHAR(255) NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "avatar_thumb",
+                "VARCHAR(255) NOT null"
+            );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
@@ -1607,8 +1618,8 @@ if (isset($_POST['type'])) {
                     $fh,
                     utf8_encode(
 "<?php
-global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db;
+global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$_SESSION['settings']['pwComplexity'], \$mngPages;
+global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
 \$server = \"". $_SESSION['db_host'] ."\";
