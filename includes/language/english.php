@@ -14,6 +14,14 @@
  */
 global $LANG;
 $LANG = array (
+    'alert_page_will_reload' => 'The page will now be reloaded',
+    'csv_import_items_selection' => 'Select the items to import',
+    'csv_import_options' => 'Select import options',
+    'file_protection_password' => 'Define file password',
+    'button_export_file' => 'Export items',
+    'error_export_format_not_selected' => 'A format for export file is required',
+    'select_file_format' => 'Select file format',
+    'button_offline_generate' => 'Generate Offline mode file',
     'user_profile_dialogbox_menu' => 'Your Teampass informations',
     'upload_new_avatar' => 'Select avatar PNG file',
     'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found.',

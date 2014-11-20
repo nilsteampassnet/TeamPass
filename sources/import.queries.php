@@ -173,12 +173,14 @@ switch ($_POST['type']) {
                     for ($x=1; $x<$t->nlevel; $x++) {
                         $ident .= "&nbsp;&nbsp;";
                     }
+                    if (isset($_POST['folder_id']) && $_POST['folder_id'] == $t->id) $selected = " selected";
+                    else $selected = "";
                     if ($prev_level != null && $prev_level < $t->nlevel) {
-                        $display .= '<option value=\"'.$t->id.'\">'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     } elseif ($prev_level != null && $prev_level == $t->nlevel) {
-                        $display .= '<option value=\"'.$t->id.'\">'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     } else {
-                        $display .= '<option value=\"'.$t->id.'\">'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     }
                     $prev_level = $t->nlevel;
                 }
@@ -686,7 +688,8 @@ switch ($_POST['type']) {
                                 $pre."roles_values",
                                 array(
                                     'role_id' => $role['id'],
-                                    'folder_id' => $id
+                                    'folder_id' => $id,
+                                    'type' => "W"
                                )
                             );
                         }

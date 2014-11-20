@@ -2,9 +2,9 @@
 /**
  *
  * @file          index.php
- * @author        Nils Laumaill�
+ * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     (c) 2009-2014 Nils Laumaill�
+ * @copyright     (c) 2009-2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -40,24 +40,28 @@ header("Pragma: no-cache");
 
 // reload user avatar
 $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
-$_SESSION['user']['avatar'] = $userData['avatar'];
-$_SESSION['user']['avatar_thumb'] = $userData['avatar_thumb'];
+@$_SESSION['user']['avatar'] = $userData['avatar'];
+@$_SESSION['user']['avatar_thumb'] = $userData['avatar_thumb'];
 
 echo '
 <table>
     <tr>
-        <td rowspan="3" style="width:95px">
-            <div id="profile_photo"><img src="includes/avatars/'.$_SESSION['user']['avatar'].'" /></div>
+        <td rowspan="4" style="width:94px">
+            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px;"><img src="', isset($userData['avatar']) && !empty($userData['avatar']) ? 'includes/avatars/'.$userData['avatar'] : './includes/images/photo.jpg', '" /></div>
         </td>
-        <td style="width:100px;">'.$LANG['name'].':</td>
+        <td style="width:70px;">&nbsp;'.$LANG['name'].':</td>
         <td><b>', isset($_SESSION['name']) && !empty($_SESSION['name']) ? $_SESSION['name'].' '.$_SESSION['lastname'] : $_SESSION['login'], '</b></td>
     </tr>
     <tr>
-        <td style="width:100px;">'.$LANG['email'].':</td>
+        <td style="width:70px;">&nbsp;'.$LANG['user_login'].':</td>
+        <td><span style="">'.$_SESSION['login'].'</span></td>
+    </tr>
+    <tr>
+        <td style="width:70px;">&nbsp;'.$LANG['email'].':</td>
         <td><span style="" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span></td>
     </tr>
     <tr>
-        <td style="width:100px;">'.$LANG['role'].':</td>
+        <td style="width:70px;">&nbsp;'.$LANG['role'].':</td>
         <td>'.$_SESSION['user_privilege'].'</td>
     </tr>
 </table>
@@ -162,14 +166,14 @@ $(function() {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
             if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
                 $("#password_change_wait").show();
-                var data = "{\'new_pw\':\'"+sanitizeString($("#new_pw").val())+"\'}";
+                var data = '{"new_pw":"'+sanitizeString($("#new_pw").val())+'"}';
                 $.post(
                     "sources/main.queries.php",
                     {
-                        type    : "change_pw",
-                        change_pw_origine    : "user_change",
-                        complexity:    $("#pw_strength_value").val(),
-                        data :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                        type                : "change_pw",
+                        change_pw_origine   : "user_change",
+                        complexity          : $("#pw_strength_value").val(),
+                        data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
                     },
                     function(data) {
                         if (data[0].error == "already_used") {

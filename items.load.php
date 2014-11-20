@@ -2637,9 +2637,69 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
                 return false;
             }
-        });
-});
+        }
+    );
 
+    //DIALOG FOR OFFLINE MODE
+    $("#dialog_offline_mode").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 500,
+        height: 350,
+        title: "<?php echo $LANG['offline_menu_title'];?>",
+        buttons: {
+            "<?php echo $LANG['button_offline_generate'];?>": function() {
+                generateOfflineFile();
+            },
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        close: function() {
+            $("#div_offline_mode").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
+        }
+    });
+
+    //DIALOG FOR EXPORT FILE
+    $("#dialog_export_file").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 500,
+        height: 350,
+        title: "<?php echo $LANG['print_out_menu_title'];?>",
+        buttons: {
+            "<?php echo $LANG['button_export_file'];?>": function() {
+                exportItemsToFile();
+            },
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        close: function() {
+            $("#div_export_file").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
+        }
+    });
+
+    //DIALOG FOR IMPORT FILE
+    $("#dialog_import_file").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 600,
+        height: 500,
+        title: "<?php echo $LANG['import_csv_menu_title'];?>",
+        buttons: {
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        close: function() {
+            $("#div_import_file").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
+        }
+    });
+});
 
 function htmlspecialchars_decode (string, quote_style)
 {
@@ -2945,4 +3005,37 @@ function globalItemsSearch()
         );
     }
 }
+
+    function loadOfflineDialog()
+    {
+        $("#dialog_offline_mode").dialog({
+            open: function(event, ui) {
+                $("#div_offline_mode").load(
+                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.offline.php?key=<?php echo $_SESSION['key'];?>", function(){}
+                );
+            }
+        }).dialog("open");
+    }
+
+    function loadExportDialog()
+    {
+        $("#dialog_export_file").dialog({
+            open: function(event, ui) {
+                $("#div_export_file").load(
+                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.export.php?key=<?php echo $_SESSION['key'];?>", function(){}
+                );
+            }
+        }).dialog("open");
+    }
+
+    function loadImportDialog()
+    {
+        $("#dialog_import_file").dialog({
+            open: function(event, ui) {
+                $("#div_import_file").load(
+                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.import.php?key=<?php echo $_SESSION['key'];?>&folder_id="+$("#hid_cat").val(), function(){}
+                );
+            }
+        }).dialog("open");
+    }
 </script>

@@ -332,7 +332,9 @@ $htmlHeaders .= '
     {
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
-                $("#div_user_profil").load("'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){});                
+                $("#div_user_profil").load(
+                    "'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
+                );
             }
         }).dialog("open");
     }
