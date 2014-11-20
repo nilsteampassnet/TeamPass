@@ -358,7 +358,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $newListeGpVisibles = array();
         $listeGpInterdits = array();
 
-        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = array();
+        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = $listNoAccessFolders = array();
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctionsAssociees as $roleId) {
@@ -367,10 +367,11 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 $rows = DB::query(
                     "SELECT r.folder_id AS folder_id, t.allow_pw_change AS allow_pw_change
                     FROM ".$pre."roles_values AS r
-                    INNER JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
+                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
                     WHERE r.role_id=%i",
                     $roleId
                 );
+
                 if (DB::count() > 0) {
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
@@ -380,27 +381,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         if ($record['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
                             array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
-
-                        // check if folder is read-only
-                        if (!in_array($record['folder_id'], $listReadOnlyFolders)) {
-                            $rows2 = DB::query(
-                                "SELECT type
-                                FROM ".$pre."roles_values
-                                WHERE folder_id = %i AND role_id = %i",
-                                $record['folder_id'],
-                                $roleId
-                            );
-                            $tmp = 0;
-                            foreach ($rows2 as $record2) {
-                                if ($record2['type'] == "W") {
-                                    $tmp = 1;
-                                    continue;
-                                }
-                            }
-                            if ($tmp == 0) array_push($listReadOnlyFolders, $record['folder_id']);
-                        }
-
-
                     }
                     // Check for the users roles if some specific rights exist on items
                     $rows = DB::query(
@@ -421,6 +401,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
+
         // Does this user is allowed to see other items
         $x = 0;
         $rows = DB::query(
@@ -486,6 +467,24 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
                     }
+                }
+            }
+        }
+
+        // get list of readonly folders
+        // rule - if one folder is set as W in one of the Role, then User has access as W
+        foreach ($listAllowedFolders as $folderId) {
+            if (!in_array($folderId, $listReadOnlyFolders) && $folderId != $pf['id']) {
+                DB::query(
+                    "SELECT *
+                    FROM ".$pre."roles_values
+                    WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                    $folderId,
+                    $fonctionsAssociees,
+                    "W"
+                );
+                if (DB::count() == 0) {
+                    array_push($listReadOnlyFolders, $folderId);
                 }
             }
         }

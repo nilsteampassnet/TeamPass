@@ -141,9 +141,9 @@ echo '
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
                         <li onclick="open_edit_group_div()"><i class="fa fa-edit fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
-                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="$(\'#csv_import_options, #kp_import_options\').hide();$(\'#div_import_from_csv\').dialog(\'open\');"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
-                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="print_out_items()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
-						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="offlineModeLaunch()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
+                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
+                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
+						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
             </ul>
         </div>
@@ -1071,141 +1071,32 @@ echo '
     <div style="">'.$LANG['item_updated_text'].'</div>
 </div><br />';
 
-//Import from CSV div
-echo '
-<div style="">
-    <div id="div_import_from_csv" style="display:none;padding:4px;">
-        <!-- Show buttons for selected what kind of import -->
-        <div id="radio_import_type">
-            <input type="radio" id="radio1" name="radio" class="import_radio" checked="checked" onclick="toggle_import_type(\'csv\')" /><label for="radio1">CSV</label>
-            <input type="radio" id="radio2" name="radio" class="import_radio" onclick="toggle_import_type(\'keepass\')" /><label for="radio2">Keepass XML</label>
-        </div>
-        <!-- error div -->
-        <div style="margin:2px;display:none;" id="import_from_file_info" class="ui-state-error ui-corner-all"></div>';
-
-// CSV import type
-echo '
-    <div id="import_type_csv">
-        <div style="margin-bottom:5px;margin-top:5px;padding:5px;" class="ui-widget ui-state-active ui-corner-all">'.$LANG['import_csv_dialog_info'].'</div>
-        <!-- show input file -->
-        <div style="text-align:center;margin-top:10px;">
-            <div id="upload_container_csv">
-                <div id="filelist_csv"></div><br />
-                <a id="pickfiles_csv" href="#">'.$LANG['csv_import_button_text'].'</a>
-            </div>
-            <div id="csv_import_options" style="display:none;">
-                <input type="checkbox" id="import_csv_anyone_can_modify" /><label for="import_csv_anyone_can_modify">'.$LANG['import_csv_anyone_can_modify_txt'].'</label><br />
-                <input type="checkbox" id="import_csv_anyone_can_modify_in_role" /><label for="import_csv_anyone_can_modify_in_role">'.$LANG['import_csv_anyone_can_modify_in_role_txt'].'</label>
-            </div>
-        </div>
-    </div>';
-
-// KEEPASS import type
-echo '
-    <div id="import_type_keepass" style="display:none;">
-        <div style="margin-bottom:5px;margin-top:5px;padding:5px;" class="ui-widget ui-state-active ui-corner-all">'.$LANG['import_keepass_dialog_info'].'</div>
-         <!-- Prepare a list of all folders that the user can choose -->
-        <div style="margin-top:10px;" id="keypass_import_options">
-            <label><b>'.$LANG['import_keepass_to_folder'].'</b></label>&nbsp;
-            <select id="import_keepass_items_to">
-                <option value="0">'.$LANG['root'].'</option>';
-$prevLevel = "";
-foreach ($fullTree as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles'])) {
-        if (is_numeric($t->title)) {
-            $user = DB::queryfirstrow("SELECT login FROM ".$pre."users WHERE id = %i", $t->title);
-            $t->title = $user['login'];
-            $t->id = $t->id."-perso";
-        }
-        $ident="&nbsp;&nbsp;";
-        for ($x=1; $x<$t->nlevel; $x++) {
-            $ident .= "&nbsp;&nbsp;";
-        }
-        if ($prevLevel < $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } elseif ($prevLevel == $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } else {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        }
-        $prevLevel = $t->nlevel;
-    }
-}
-echo '
-                    </select><br />
-                    <input type="checkbox" id="import_kps_anyone_can_modify" /><label for="import_kps_anyone_can_modify">'.$LANG['import_csv_anyone_can_modify_txt'].'</label><br />
-                    <input type="checkbox" id="import_kps_anyone_can_modify_in_role" /><label for="import_kps_anyone_can_modify_in_role">'.$LANG['import_csv_anyone_can_modify_in_role_txt'].'</label>
-                </div>';
-
-echo '
-                <div id="upload_container_kp" style="text-align:center;margin-top:10px;">
-                    <div id="filelist_kp"></div><br />
-                    <a id="pickfiles_kp" href="#">'.$LANG['keepass_import_button_text'].'</a>
-                </div>
-            </div>';
-
-// Import results
-echo '
-            <div id="import_status_ajax_loader" style="margin-top:5px;display:none;text-align:center;"><img src="includes/images/ajax-loader.gif" /></div>
-            <div id="import_status" style="margin-top:10px;"></div>
-        </div>
-    </div>';
-
-//Data Export (PDF/CSV)
-if (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['temporary']['user_can_printout'] == true) {
-    echo '
-    <div>
-        <div id="div_print_out" style="display:none;padding:4px;">
-            <div style="height:20px;text-align:center;margin:2px;" id="print_out_error" class=""></div>
-
-            <label for="selected_folders" class="form_label">'.$LANG['select_folders'].' :&nbsp;<i class="fa fa-cog fa-spin" id="loading_folders_wait" style="display:none;"></i></label>
-            <select id="selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
-
-            <div class="div_radio" stle="text-align:center;">
-                <input type="radio" id="export_format_radio1" name="export_format" value="pdf" /><label for="export_format_radio1">'.$LANG['pdf'].'</label>
-                <input type="radio" id="export_format_radio2" name="export_format" value="csv" /><label for="export_format_radio2">'.$LANG['csv'].'</label>
-            </div>
-
-            <br /><br />
-            <label for="pdf_password" class="">'.$LANG['admin_action_db_restore_key'].' :</label>
-            <input type="password" id="pdf_password" name="pdf_password" />
-
-            <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
-                <span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['print_out_warning'].'
-            </div>
-
-            <div id="download_link" style="text-align:center; width:100%; margin-top:15px;"></div>
-            <div style="text-align:center;margin-top:8px; display:none;" id="div_print_out_wait"><img src="includes/images/ajax-loader.gif" /></div>
-        </div>
-    </div>';
-}
-
 // Off line mode
 if (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1) {
     echo '
-    <div>
-        <div id="div_offline_mode" style="display:none;padding:4px;">
-            <div style="height:20px;text-align:center;margin:2px;" id="offline_mode_error" class=""></div>
-            <div style="margin:10px 0 10px 0;">
-            <label for="offline_mode_selected_folders" class="form_label">'.$LANG['select_folders'].' :</label>
-            <select id="offline_mode_selected_folders" multiple size="7" class="text ui-widget-content ui-corner-all" style="padding:10px;"></select>
-            </div>
-            <div style="margin:10px 0 10px 0;">
-                <label for="pdf_password" class="">'.$LANG['admin_action_db_restore_key'].' :</label>
-                <input type="password" id="offline_password" name="offline_password" />
-                <div id="offline_pw_strength" style="margin:10px 0 0 50px;"></div>
-                <input type="hidden" id="offline_pw_strength_value" />
-                <input type="hidden" id="min_offline_pw_strength_value" value="'.$_SESSION['settings']['offline_key_level'].'" />
-            </div>
-            <div style="margin:10px 0 10px 0;">
-            <div class="ui-state-highlight ui-corner-all" style="margin:10px;padding:10px;">
-            <span class="ui-icon ui-icon-alert" style="float: left; margin-right: .3em;">&nbsp;d</span>'.$LANG['offline_mode_warning'].'
-            </div>
-            </div>
-            <div id="offline_download_link" style="text-align:center; width:100%; margin-top:15px;">&nbsp;</div>
-            <div style="text-align:center;margin-top:8px; display:none;" id="div_offline_mode_wait"><img src="includes/images/ajax-loader.gif" /></div>
-            <input type="hidden" id="offmode_number" />
-            <input type="hidden" id="offmode_list" />
+    <div id="dialog_offline_mode" style="display:none;">
+        <div id="div_offline_mode">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// Export items to file
+if (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['temporary']['user_can_printout'] == true) {
+    echo '
+    <div id="dialog_export_file" style="display:none;">
+        <div id="div_export_file">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// Import items
+if (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) {
+    echo '
+    <div id="dialog_import_file" style="display:none;">
+        <div id="div_import_file">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';
 }
