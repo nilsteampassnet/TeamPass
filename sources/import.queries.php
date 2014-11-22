@@ -52,6 +52,25 @@ $aes->register();
 $k['langage'] = @$_SESSION['user_language'];
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
+// No time limit
+set_time_limit(0);
+
+/*
+ * sanitiseString
+ * 
+ * Used to format the string ready for insertion in to the database
+ */
+function sanitiseString($str, $crLFReplacement) {
+	$str = preg_replace('#[\r\n]#', $crLFReplacement, $str);
+	$str = str_replace('\\', '&#92;', $str);
+	$str = str_replace('"', "&quot;", $str);
+	if (!empty($str)) {
+		addslashes($str);	
+	}
+	return $str;
+}
+
+
 // Build query
 switch ($_POST['type']) {
     //Check if import CSV file format is what expected
@@ -308,6 +327,8 @@ switch ($_POST['type']) {
         $cacheFileNameFolder = $cacheFileName."_folders";
         $cacheFile = fopen($cacheFileName, "w");
         $cacheFileF = fopen($cacheFileNameFolder, "w");
+        $logFileName = "/keepassImport_" . date('YmdHis');
+        $cacheLogFile = fopen($_SESSION['settings']['path_to_files_folder'].$logFileName,'w');
 
         //read xml file
         if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
@@ -537,25 +558,26 @@ switch ($_POST['type']) {
                             $previousLevel = $tempArray['group'];
                         } elseif ($title == true && $nom == "Value") {
                             $title = false;
-                            $tempArray['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['title'] = sanitiseString($elem, '');
                         } elseif ($notes == true && $nom == "Value") {
                             $notes = false;
-                            $tempArray['notes'] = addslashes(preg_replace('#[\r\n]#', $lineEndSeparator, $elem));
+                            $tempArray['notes'] = sanitiseString($elem, $lineEndSeparator);
                         } elseif ($pw == true && $nom == "Value") {
-                            $pw = false;
-                            $tempArray['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $pw = false;    
+                            $tempArray['pw'] = sanitiseString($elem, '');
                         } elseif ($url == true && $nom == "Value") {
                             $url = false;
-                            $tempArray['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['url'] = sanitiseString($elem, '');
                         } elseif ($username == true && $nom == "Value") {
                             $username = false;
-                            $tempArray['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $tempArray['username'] = sanitiseString($elem, '');
                         }
                     }
                 }
             }
         }
 
+        fputs($cacheLogFile, date('H:i:s ') . "Reading XML File ".$_POST['file']."\n");
         // Go through each node of XML file
         recursiveKeepassXML($xml);
 
@@ -564,10 +586,11 @@ switch ($_POST['type']) {
             //Close file & delete it
             fclose($cacheFileF);
             fclose($cacheFile);
-            unlink($cacheFile);
-            unlink($cacheFileF);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+            unlink($cacheFileName);
+            unlink($cacheFileNameFolder);
+//            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
 
+            fputs($cacheLogFile, date('H:i') . $LANG['import_error_no_read_possible_kp']."\n");
             echo '[{"error":"not_kp_file" , "message":"'.$LANG['import_error_no_read_possible_kp'].'"}]';
             break;
         }
@@ -586,18 +609,23 @@ switch ($_POST['type']) {
             $numItems++;
         }
 
+
         ##################
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
         if ($numItems>0 || $numGroups>0) {
+        	
+        	fputs($cacheLogFile, date('H:i:s ') . $LANG['nb_folders']. ' '.$numGroups."\n");
+        	fputs($cacheLogFile, date('H:i:s ') . $LANG['nb_items'] . ' '. $numItems."\n");
+        	        	
             $import_perso = false;
             $itemsArray = array();
             $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$LANG['nb_folders'].': '.
                 $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
-            $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
+  /*          $text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
                 $LANG['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
-                $LANG['importing_folders'].':</b><br />';
+                $LANG['importing_folders'].':</b><br />';*/
 
             //if destination is not ROOT then get the complexity level
             if (strpos($_POST['destination'], "perso") != false) {
@@ -629,7 +657,9 @@ switch ($_POST['type']) {
             $level = 0;
             $foldersArray = array();
             $nbFoldersImported = 0;
-
+            fputs($cacheLogFile, date('H:i:s ') . "Creating Folders\n");            
+			$results = "Folders\n\n";
+            
             while (!feof($cacheFileF)) {
                 $folder = fgets($cacheFileF, 4096);
                 if (!empty($folder)) {
@@ -657,8 +687,10 @@ switch ($_POST['type']) {
                         $fold,
                         $parent_id
                     );
+                    $results.= str_replace($foldersSeparator, '\\', $folder);
                     $counter = DB::count();
                     if ($counter == 0) {
+                    	$results.= " - Inserting\n";
                         //do query
                         DB::insert(
                             $pre."nested_tree",
@@ -694,10 +726,11 @@ switch ($_POST['type']) {
                         array_push($_SESSION['groupes_visibles'], $id);
 
                         //show
-                        $text .= '- '.(($fold)).'<br />';
+ //                       $text .= '- '.(($fold)).'<br />';
                         //increment number of imported folders
                         $nbFoldersImported++;
                     } else {
+                    	$results.= " - Skipped\n";
                         //get folder actual ID
                         $data = DB::queryFirstRow(
                             "SELECT id FROM ".$pre."nested_tree
@@ -710,7 +743,7 @@ switch ($_POST['type']) {
                     }
 
                     //store in array
-                    $foldersArray[$fold] = array(
+                    $foldersArray[$folder] = array(
                         'folder' => $fold,
                         'nlevel' => $folderLevel,
                         'id' => $id
@@ -721,21 +754,27 @@ switch ($_POST['type']) {
                 }
             }
 
+            $results .= "\n\nItems\n\n";
             //if no new folders them inform
             if ($nbFoldersImported == 0) {
-                $text .= $LANG['none'].'<br />';
+ //               $text .= $LANG['none'].'<br />';
             } else {
+            	fputs($cacheLogFile, date('H:i:s ') . "Setting User Rights\n");
                 //Refresh the rights of actual user
                 identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$newId, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
 
+                fputs($cacheLogFile, date('H:i:s ') . "Rebuilding Tree\n");
                 //rebuild full tree
                 $tree->rebuild();
             }
             //show
-            $text .= '<br /><b>'.$LANG['importing_items'].':</b><br />';
+ //           $text .= '<br /><b>'.$LANG['importing_items'].':</b><br />';
+            
+            fputs($cacheLogFile, date('H:i:s ') . "Importing Items\n");
 
             // Now import ITEMS
             $nbItemsImported = 0;
+            $count = 0;
 
             //Get some info about personal folder
             if ($_POST['destination'] == $_SESSION['user_id']) {
@@ -753,23 +792,26 @@ switch ($_POST['type']) {
                 $full_item = fgets($cacheFile, 4096);
                 $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
                 $item = explode($itemsSeparator, $full_item);
-
+                
+                $count++;
+                if (!($count % 10))
+                	fputs($cacheLogFile, date('H:i:s ') . "  Imported $count items (". number_format(($count / $numItems)*100,1).")\n");
                 if (!empty($item[2])) {
-                	$count++;
                     //check if not exists
- /*                   DB::query(
+                	$results .= $foldersArray[$item[0]]['folder'].'\\'.$item[2];
+                   
+                   DB::query(
                         "SELECT id FROM ".$pre."items
                         WHERE id_tree =%i AND label = %s",
                         intval($foldersArray[$item[0]]['id']),
-                        $item[2]
+                        stripslashes($item[2])
                     );
-                    $counter = DB::count(); */
-                	$counter = 0;
+                    $counter = DB::count(); 
                     if ($counter == 0) {
                         //Encryption key
                         $randomKey = generateKey();
                         $pw = $randomKey.$item[3];
-
+                        
                         //Get folder label
                         if (count($foldersArray)==0 || empty($item[0])) {
                             $folderId = $_POST['destination'];
@@ -781,12 +823,13 @@ switch ($_POST['type']) {
                             intval($folderId)
                         );
 
+                        $results .= " - Inserting\n";
                         //ADD item
                         DB::insert(
                             $pre.'items',
                             array(
                                 'label' => stripslashes($item[2]),
-                                'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[5])),
                                 'pw' => $import_perso == true ? encrypt($pw, $_SESSION['my_sk']) : encrypt($pw),
                                 'url' => stripslashes($item[6]),
                                 'id_tree' => $folderId,
@@ -794,9 +837,9 @@ switch ($_POST['type']) {
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
                         );
- /*                       $newId = DB::insertId();
+                        $newId = DB::insertId();
 
-                            //Store generated key
+                       //Store generated key
                        DB::insert(
                             $pre.'keys',
                             array(
@@ -837,7 +880,7 @@ switch ($_POST['type']) {
                             array(
                                 'id' => $newId,
                                 'label' => stripslashes($item[2]),
-                                'description' => str_replace($lineEndSeparator, '<br />', $item[5]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[5])),
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
                                 'login' => stripslashes($item[4]),
@@ -845,30 +888,42 @@ switch ($_POST['type']) {
                                 'author' => $_SESSION['user_id']
                            )
                         );
-*/
-                        //show
-                        $text .= '- '.addslashes($item[2]).'<br />';
 
+                        //show
+ //                       $text .= '- '.addslashes($item[2]).'<br />';
                         //increment number of imported items
                         $nbItemsImported++;
+                    } else {
+                    	$results .= " - Skipped\n";
                     }
                 }
             }
 
             //if no new items them inform
-            if ($nbItemsImported == 0) {
+/*            if ($nbItemsImported == 0) {
                 $text .= $LANG['none'].'<br />';
-            }
-
+            } */
             //SHow finished
+            $text .= "Folders imported: $nbFoldersImported<br />";
+            $text .= "Items imported: $nbItemsImported<br />";
             $text .= '</div><br /><br /><b>'.$LANG['import_kp_finished'].'</b>';
+            $text .= '<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$logFileName.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>';
+            
+            
+            fputs($cacheLogFile, date('H:i:s ') . "Import finished\n");
+            fputs($cacheLogFile, date('H:i:s ') . "Statistics\n");
+            fputs($cacheLogFile, date('H:i:s ') . "Folders imported: $nbFoldersImported\n");
+            fputs($cacheLogFile, date('H:i:s ') . "Items imported: $nbItemsImported\n\n".$results);
 
+            
             //Delete cache file
             fclose($cacheFileF);
             fclose($cacheFile);
-            unlink($cacheFile);
-            unlink($cacheFileF);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+            fclose($cacheLogFile);
+            unlink($cacheFileName);
+            unlink($cacheFileNameFolder);
+            unlink($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
+            
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';

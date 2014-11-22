@@ -413,6 +413,7 @@ $(function() {
                 $.each(files, function(i, file) {
                     ImportCSV(file.name);
                     $("#csv_import_options").show();
+                    $up.splice();	// clear the file queue
                 });
                 $("#import_status_ajax_loader").hide();
             }
@@ -435,6 +436,7 @@ $(function() {
             (err.file ? ", File: " + err.file.name : "") +
             "</div>"
         );
+        up.splice();	// Clear the file queue
         up.refresh(); // Reposition Flash/Silverlight
     });
     uploader_csv.bind("+", function(up, file) {
@@ -480,9 +482,11 @@ $(function() {
             },
             UploadComplete: function(up, files) {
                 ImportKEEPASS(files[0].name);
+                up.splice();		// clear the file queue
             }
         }
     });
+
     // Uploader options
     uploader_kp.bind("UploadProgress", function(up, file) {
         $("#" + file.id + " b").html(file.percent + "%");
@@ -493,6 +497,7 @@ $(function() {
             (err.file ? ", File: " + err.file.name : "") +
             "</div>"
         );
+        up.splice();	// clear the file queue
         up.refresh(); // Reposition Flash/Silverlight
     });
     uploader_kp.bind("+", function(up, file) {
