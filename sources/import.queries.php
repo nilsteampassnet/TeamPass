@@ -378,7 +378,7 @@ switch ($_POST['type']) {
                             $cacheFile,
                             $tree.$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].
                             $itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
-                            $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+                            $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
                         );
 
                         if (!in_array($tempArray['tree'], $arrFolders)) {
@@ -410,6 +410,8 @@ switch ($_POST['type']) {
                         $tempArray['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "url") {
                         $tempArray['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                    } elseif ($entry == true && $nom == "uuid") {
+                        $tempArray['uuid'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "password") {
                         $tempArray['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "notes") {
@@ -442,7 +444,7 @@ switch ($_POST['type']) {
                                 $tempArray['path'].$itemsSeparator.$tempArray['group'].
                                 $itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].
                                 $itemsSeparator.$tempArray['username'].$itemsSeparator.
-                                $tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+                                $tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
                             );
 
                             //Clean temp array
@@ -469,10 +471,10 @@ switch ($_POST['type']) {
                         // recap previous info
                         if (!empty($tempArray['title'])) {
                             //store data
-                            fputs($cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].$itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n");
+                            fputs($cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].$itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n");
 
                             //Clean temp array
-                            $tempArray['title'] = $tempArray['notes'] = $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = "";
+                            $tempArray['title'] = $tempArray['notes'] = $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = $tempArray['uuid'] = "";
 
                             //increment number
                             $numItems++;
@@ -502,6 +504,8 @@ switch ($_POST['type']) {
                         } elseif ($entry == true && $nom == "Key" && $elem == "Notes") {
                             $notes = true;
                             $title = $pw = $url = $username = false;
+                        } elseif ($entry == true && $nom == "UUID") {
+							$tempArray['uuid'] = $elem;
                         } elseif ($entry == true && $nom == "Key" && $elem == "Password") {
                             $pw = true;
                             $notes = $title = $url = $username = false;
@@ -571,13 +575,13 @@ switch ($_POST['type']) {
                         } elseif ($username == true && $nom == "Value") {
                             $username = false;
                             $tempArray['username'] = sanitiseString($elem, '');
-                        }
+                        } 
                     }
                 }
             }
         }
 
-        fputs($cacheLogFile, date('H:i:s ') . "Reading XML File ".$_POST['file']."\n");
+        fputs($cacheLogFile, date('H:i:s ') . "Writing XML File ".$_POST['file']."\n");
         // Go through each node of XML file
         recursiveKeepassXML($xml);
 
@@ -602,7 +606,7 @@ switch ($_POST['type']) {
                 $cacheFile,
                 $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.
                 $tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
-                $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url']."\n"
+                $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
             );
 
             //increment number
@@ -678,7 +682,7 @@ switch ($_POST['type']) {
                         $fold = $folder;
                         $parent_id = $_POST['destination']; //permits to select the folder destination
                     }
-
+                    $fold=stripslashes($fold);
                     //create folder - if not exists at the same level
                     DB::query(
                         "SELECT * FROM ".$pre."nested_tree
@@ -789,7 +793,7 @@ switch ($_POST['type']) {
 
             while (!feof($cacheFile)) {
                 //prepare an array with item to import
-                $full_item = fgets($cacheFile, 4096);
+                $full_item = fgets($cacheFile, 8192);
                 $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
                 $item = explode($itemsSeparator, $full_item);
                 
@@ -799,17 +803,26 @@ switch ($_POST['type']) {
                 if (!empty($item[2])) {
                     //check if not exists
                 	$results .= $foldersArray[$item[0]]['folder'].'\\'.$item[2];
-                   
-                   DB::query(
+                	$randomKey = substr($item[7],0, 15);		// use partial UUID from XML
+                	
+/*                   DB::query(
                         "SELECT id FROM ".$pre."items
                         WHERE id_tree =%i AND label = %s",
                         intval($foldersArray[$item[0]]['id']),
                         stripslashes($item[2])
-                    );
+                    ); */
+                   DB::query(
+                   "SELECT ".$pre."items.id FROM ".$pre."items,".$pre."keys
+                        WHERE ".$pre."items.id=".$pre."keys.id AND id_tree =%i AND label = %s AND rand_key = %s",
+                        intval($foldersArray[$item[0]]['id']),
+                        stripslashes($item[2]),
+                        $randomKey
+                   );
+                   
                     $counter = DB::count(); 
                     if ($counter == 0) {
                         //Encryption key
-                        $randomKey = generateKey();
+                        
                         $pw = $randomKey.$item[3];
                         
                         //Get folder label
