@@ -122,6 +122,11 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
     <head>
         <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
         <title>Collaborative Passwords Manager</title>
+        <script type="text/javascript">
+            if (window.location.href.indexOf("page=") == -1) {
+                location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+            }
+        </script>
 <?php
 echo $htmlHeaders;
 ?>
@@ -138,10 +143,7 @@ echo '
 if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
-            <div style="margin-left:20px; margin-top:5px;width:590px;" id="main_menu">
-                <button title="'.$LANG['home'].'" onclick="MenuAction(\'\');">
-                    <img src="includes/images/home.png" alt="" />
-                </button>';
+            <div style="margin-left:20px; margin-top:5px;width:590px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
@@ -486,7 +488,12 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
 } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
     // When user identified
     // PAGE BY DEFAULT
-    include 'home.php';
+    /*?>
+    <script type="text/javascript">
+        location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+    </script>
+    <?php*/
+    //include 'home.php';
     // When user is not identified
 } else {
     // Automatic redirection
