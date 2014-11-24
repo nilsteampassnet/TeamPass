@@ -25,7 +25,6 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css">
 
-
         <script type="text/javascript" src="includes/js/functions.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
@@ -33,7 +32,9 @@ $htmlHeaders = '
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
-        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
+
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -43,8 +44,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
 
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
-
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
 
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
@@ -433,7 +432,7 @@ $htmlHeaders .= '
             },
             close: function() {
                 $("#dialog_user_profil").dialog("option", "height", 400);
-                $("#div_user_profil").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
+                $("#div_user_profil").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>");
             }
         });
 
