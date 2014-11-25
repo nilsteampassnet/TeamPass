@@ -378,7 +378,8 @@ if (isset($_POST['newtitle'])) {
                                 $pre.'roles_values',
                                 array(
                                     'role_id' => $role,
-                                    'folder_id' => $newId
+                                    'folder_id' => $newId,
+                                    'type' => "W"
                                 )
                             );
                         }
