@@ -352,6 +352,16 @@ $htmlHeaders .= '
             });
         }
     });*/
+    
+    
+    function displayItemNumber (item_id, tree_id)
+    {
+        if (window.location.href.indexOf("page=items") == -1) {
+            location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
+        } else {
+            AfficherDetailsItem(tree_id);
+        }
+    }
 
     $(function() {
         //TOOLTIPS
