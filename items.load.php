@@ -1317,6 +1317,9 @@ function showDetailsStep2(id, param)
 			$(param).prop("disabled", false);
 			$("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
 			$("#div_loading").hide();
+            
+            // refresh
+            refreshListLastSeenItems();
 	     }
 	 );
 };
@@ -1920,7 +1923,7 @@ $(function() {
         checkAllText: "<?php echo $LANG['check_all_text'];?>",
         uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
         noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
-    });
+    }).multiselectfilter();
 
     //Build tree - "cookies",
     $("#jstree").jstree({
@@ -2800,6 +2803,15 @@ function proceed_list_update()
                 console.log(data.selOptionsUsers);
                 // *** restricted_to_list ***
                 $("#restricted_to_list").empty();
+                //Add list of roles if option is set
+                if (restricted_to_roles == 1 && $('#restricted_to').val() != undefined) {
+                    //add optgroup
+                    var optgroup = $('<optgroup>');
+                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
+                    $("#restricted_to_list").append(data.selOptionsRoles);
+                    $(".folder_rights_role").wrapAll(optgroup);
+                }
+                // add list of users
                 if ($('#restricted_to').val() != undefined) {
                     $("#restricted_to_list").append(data.selOptionsUsers);
                     if (restricted_to_roles == 1) {
@@ -2808,14 +2820,6 @@ function proceed_list_update()
                         optgroup.attr('label', "<?php echo $LANG['users'];?>");
                         $(".folder_rights_user").wrapAll(optgroup);
                     }
-                }
-                //Add list of roles if option is set
-                if (restricted_to_roles == 1 && $('#restricted_to').val() != undefined) {
-                    //add optgroup
-                    var optgroup = $('<optgroup>');
-                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
-                    $("#restricted_to_list").append(data.selOptionsRoles);
-                    $(".folder_rights_role").wrapAll(optgroup);
                 }
                 //Prepare multiselect widget
                 $("#restricted_to_list").multiselect({
@@ -2826,7 +2830,7 @@ function proceed_list_update()
                     uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
                     noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
                 });
-                $("#restricted_to_list").multiselect('refresh');
+                $("#restricted_to_list").multiselect('refresh').multiselectfilter();
                 
                 // *** edit_restricted_to_list ***
                 $("#edit_restricted_to_list").empty();

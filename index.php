@@ -157,9 +157,6 @@ if (isset($_SESSION['login'])) {
                 || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
                 '>
                     <img src="includes/images/binocular.png" alt="" />
-                </button>
-                <button title="'.$LANG['last_items_icon_title'].'" onclick="OpenDiv(\'div_last_items\')">
-                    <img src="includes/images/tag_blue.png" alt="" />
                 </button>';
     }
     // Favourites menu
@@ -216,26 +213,53 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
     }
-    echo '
-                <div style="float:right;">
-                <ul class="menu" style="">
-                    <li class="" style="padding: 4px;"><i class="fa fa-user fa-fw"></i> '.$_SESSION['login'].'&nbsp;['.$_SESSION['user_privilege'].']&nbsp;&nbsp;
-                        <ul class="menu_200">',
-                            isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-                            isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
-                            <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
-                                <ul>
-                                    <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
-                                    <li onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">'.$LANG['personal_saltkey_change_button'].'</li>
-                                    <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
-                                </ul>
-                            </li>' : '', '
-                            <li onclick="IncreaseSessionTime()"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
-                            <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
-                            <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
-                        </ul>
-                    </li>
-                </ul>
+    echo '               
+                <div style="float:right;">                
+                    <ul class="menu" style="">
+                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
+                            <ul class="menu_200" style="text-align:left;">',
+                                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
+                                isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
+                                    <ul>
+                                        <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
+                                        <li onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">'.$LANG['personal_saltkey_change_button'].'</li>
+                                        <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
+                                    </ul>
+                                </li>' : '', '
+                                <li onclick="IncreaseSessionTime()"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
+                                <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
+                                <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                
+                
+                <div style="float:right; margin-right:10px;">
+                    <ul class="menu" id="menu_last_seen_items">
+                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
+                            <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">';
+
+                        $rows = DB::query(
+                            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+                            FROM ".$pre."log_items AS l
+                            left JOIN ".$pre."items AS i ON (l.id_item = i.id)
+                            WHERE l.action = %s AND l.id_user = %i
+                            GROUP BY i.id
+                            ORDER BY l.date DESC
+                            LIMIT 0, 10",
+                            "at_shown",
+                            $_SESSION['user_id']
+                        );
+                        foreach ($rows as $record) {
+                            echo '
+                                <li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                        }
+                    echo '
+                            </ul>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>';
@@ -278,7 +302,6 @@ if (isset($_SESSION['latest_items_tab'])) {
 }
 echo '
     </div>';
-
 
     echo '
 <div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
@@ -446,7 +469,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     } else {
-        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
+        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
     }
 /*} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
@@ -486,13 +509,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             </div>
         </div>';
 } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+    // Page doesn't exist
+    $_SESSION['error']['code'] = ERR_NOT_EXIST;
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     // When user identified
     // PAGE BY DEFAULT
-    /*?>
-    <script type="text/javascript">
-        location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
-    </script>
-    <?php*/
     //include 'home.php';
     // When user is not identified
 } else {

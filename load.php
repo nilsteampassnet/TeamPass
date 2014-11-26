@@ -51,6 +51,8 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
 
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
         <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>
@@ -352,6 +354,43 @@ $htmlHeaders .= '
             });
         }
     });*/
+    
+    
+    function displayItemNumber (item_id, tree_id)
+    {
+        if (window.location.href.indexOf("page=items") == -1) {
+            location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
+        } else {
+            AfficherDetailsItem(item_id);
+            if (tree_id != $("#hid_cat").val()) {
+                ListerItems(tree_id);
+            }
+        }
+    }
+    
+    function refreshListLastSeenItems()
+    {        
+        // refresh list of last items seen
+        $.post(
+            "sources/main.queries.php",
+            {
+                type    : "refresh_list_items_seen",
+                key        : "'.$_SESSION["key"].'"
+            },
+            function(data) {
+                //check if format error
+                if (data[0].error == "") {
+                    $("#last_seen_items_list").html((data[0].text));
+                    // rebuild menu
+                    $("#menu_last_seen_items").menu("refresh");
+                } else {
+                    $("#main_info_box_text").html(data[0].error);
+                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                }
+            },
+            "json"
+        );
+    }
 
     $(function() {
         //TOOLTIPS
