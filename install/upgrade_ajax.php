@@ -655,6 +655,9 @@ if (isset($_POST['type'])) {
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL"
             );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+            );
 
             ## Alter USERS table
             $res2 = addColumnIfNotExist(

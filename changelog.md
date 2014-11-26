@@ -1,5 +1,6 @@
 2.1.23
  #727 - #729 - Encoding problem
+ #799 - Error: Field 'field_1' doesn't have a default value
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

@@ -813,4 +813,30 @@ switch ($_POST['type']) {
         }
         
         break;
+    /**
+     * Refresh list of last items seen
+     */
+    case "refresh_list_items_seen":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+        $rows = DB::query(
+            "SELECT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+            FROM ".$pre."log_items AS l
+            LEFT JOIN ".$pre."items AS i ON (l.id_item = i.id)
+            WHERE l.action = %s AND l.id_user = %i
+            GROUP BY i.id
+            ORDER BY l.date DESC
+            LIMIT 0, 10",
+            "at_shown",
+            $_SESSION['user_id']
+        );
+        foreach ($rows as $record) {
+            $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+        }
+        
+        echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
+        
+        break;
 }

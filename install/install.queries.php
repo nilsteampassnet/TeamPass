@@ -463,7 +463,7 @@ if (isset($_POST['type'])) {
                             `date` varchar(30) NOT NULL,
                             `label` text NOT NULL,
                             `qui` varchar(30) NOT NULL,
-                            `field_1` varchar(250) NOT NULL,
+                            `field_1` varchar(250) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
