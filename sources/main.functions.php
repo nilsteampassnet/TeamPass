@@ -357,7 +357,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $newListeGpVisibles = array();
         $listeGpInterdits = array();
 
-        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = array();
+        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = $listWriteFolders = array();
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctionsAssociees as $roleId) {
@@ -366,7 +366,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 $rows = DB::query(
                     "SELECT r.folder_id AS folder_id, t.allow_pw_change AS allow_pw_change
                     FROM ".$pre."roles_values AS r
-                    INNER JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
+                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
                     WHERE r.role_id=%i",
                     $roleId
                 );
@@ -381,7 +381,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         }
 
                         // check if folder is read-only
-                        if (!in_array($record['folder_id'], $listReadOnlyFolders)) {
+                        //if (!in_array($record['folder_id'], $listReadOnlyFolders)) {
                             $rows2 = DB::query(
                                 "SELECT type
                                 FROM ".$pre."roles_values
@@ -392,12 +392,20 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                             $tmp = 0;
                             foreach ($rows2 as $record2) {
                                 if ($record2['type'] == "W") {
+                                    array_push($listWriteFolders, $record['folder_id']);
+                                    // remove folder_id from listReadOnlyFolders array
+                                    if(($key = array_search($record['folder_id'], $listReadOnlyFolders)) !== false) {
+                                        unset($listReadOnlyFolders[$key]);
+                                    }
+                                    
                                     $tmp = 1;
                                     continue;
                                 }
                             }
-                            if ($tmp == 0) array_push($listReadOnlyFolders, $record['folder_id']);
-                        }
+                            if ($tmp == 0 && !in_array($record['folder_id'], $listWriteFolders)) {
+                                array_push($listReadOnlyFolders, $record['folder_id']);
+                            }
+                        //}
 
 
                     }
@@ -405,7 +413,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     $rows = DB::query(
                         "SELECT i.id_tree, r.item_id
                         FROM ".$pre."items as i
-                        INNER JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
+                        LEFT JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
                         WHERE r.role_id=%i
                         ORDER BY i.id_tree ASC",
                         $roleId
@@ -420,6 +428,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
+        $listWriteFolders = array_unique($listWriteFolders);
+        $listReadOnlyFolders = array_unique($listReadOnlyFolders);
+
         // Does this user is allowed to see other items
         $x = 0;
         $rows = DB::query(
