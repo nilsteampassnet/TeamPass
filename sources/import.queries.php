@@ -55,6 +55,17 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 // No time limit
 set_time_limit(0);
 
+// Set some constants for program readability
+define('KP_PATH',0);
+define('KP_GROUP',1);
+define('KP_TITLE',2);
+define('KP_PASSWORD',3);
+define('KP_USERNAME',4);
+define('KP_URL',5);
+define('KP_UUID',6);
+define('KP_NOTES',7);
+
+
 /*
  * sanitiseString
  * 
@@ -316,7 +327,7 @@ switch ($_POST['type']) {
         $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
         $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = "";
         $numGroups = $numItems = 0;
-        $tempArray = $arrFolders = array();
+        $temparray = $arrFolders = array();
         $levelMin = 2;
         $foldersSeparator = '@&##&@';
         $itemsSeparator = '<=|#|=>';
@@ -341,7 +352,7 @@ switch ($_POST['type']) {
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
             global $meta, $root, $group, $name, $entry, $levelMin, $key, $title, $notes, $pw, $username, $url,
-                $newItem, $tempArray, $history, $levelInProgress, $historyLevel, $nbItems,
+                $newItem, $temparray, $history, $levelInProgress, $historyLevel, $nbItems,
                 $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
                 $numItems, $foldersSeparator, $itemsSeparator, $lineEndSeparator, $keepassVersion, $arrFolders;
 
@@ -373,49 +384,49 @@ switch ($_POST['type']) {
                 if ($keepassVersion == 1) {
                     if ($entry == true && $nom == "expiretime") {
                         //save previous keepass entry
-                        $tree = preg_replace('/\\\\/', $foldersSeparator, $tempArray['tree']);
+                        $tree = preg_replace('/\\\\/', $foldersSeparator, $temparray['tree']);
                         fputs(
                             $cacheFile,
-                            $tree.$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].
-                            $itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
-                            $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
+                            $tree.$itemsSeparator.$temparray[KP_GROUP].$itemsSeparator.$temparray[KP_TITLE].
+                            $itemsSeparator.$temparray[KP_PW].$itemsSeparator.$temparray[KP_USERNAME].
+                            $itemsSeparator.$temparray[KP_URL].$itemsSeparator.$temparray[KP_UUID].$itemsSeparator.$temparray[KP_NOTES]."\n"
                         );
 
-                        if (!in_array($tempArray['tree'], $arrFolders)) {
+                        if (!in_array($temparray['tree'], $arrFolders)) {
                             fwrite($cacheFileF, $tree."\n");
-                            array_push($arrFolders, $tempArray['tree']);
+                            array_push($arrFolders, $temparray['tree']);
                         }
 
-                        $tempArray = array();
+                        $temparray = array();
                         $newItem++;
                     }
 
                     if ($entry == true && $nom == "group") {
-                        $tempArray['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_GROUP] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                         foreach ($elem->attributes() as $attributeskey0 => $attributesvalue1) {
                             if ($attributeskey0 == "tree") {
                                 $path = explode('\\', $attributesvalue1);
                                 if (count($path) > 1) {
                                     unset($path[0]);
-                                    $tempArray['tree'] = implode('\\', $path).'\\'.$tempArray['group'];
+                                    $temparray['tree'] = implode('\\', $path).'\\'.$temparray[KP_GROUP];
                                 } else {
-                                    $tempArray['tree'] = $tempArray['group'];
+                                    $temparray['tree'] = $temparray[KP_GROUP];
                                 }
                             }
                         }
                         $numGroups ++;
                     } elseif ($entry == true && $nom == "title") {
-                        $tempArray['title'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_TITLE] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "username") {
-                        $tempArray['username'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_USERNAME] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "url") {
-                        $tempArray['url'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_URL] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "uuid") {
-                        $tempArray['uuid'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_UUID] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "password") {
-                        $tempArray['pw'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_PW] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "notes") {
-                        $tempArray['notes'] = addslashes(preg_replace('#[\r\n]#', $lineEndSeparator, $elem));
+                        $temparray[KP_NOTES] = addslashes(preg_replace('#[\r\n]#', $lineEndSeparator, $elem));
                     }
                 }
 
@@ -437,19 +448,19 @@ switch ($_POST['type']) {
                         $name = "";
 
                         // recap previous info
-                        if (!empty($tempArray['title'])) {
+                        if (!empty($temparray[KP_TITLE])) {
                             //store data
                             fputs(
                                 $cacheFile,
-                                $tempArray['path'].$itemsSeparator.$tempArray['group'].
-                                $itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].
-                                $itemsSeparator.$tempArray['username'].$itemsSeparator.
-                                $tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
+                                $temparray[KP_PATH].$itemsSeparator.$temparray[KP_GROUP].
+                                $itemsSeparator.$temparray[KP_TITLE].$itemsSeparator.$temparray[KP_PW].
+                                $itemsSeparator.$temparray[KP_USERNAME].$itemsSeparator.
+                                $temparray[KP_URL].$itemsSeparator.$temparray[KP_UUID].$itemsSeparator.$temparray[KP_NOTES]."\n"
                             );
 
                             //Clean temp array
-                            $tempArray['title'] = $tempArray['notes'] =
-                                $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = "";
+                            $temparray[KP_TITLE] = $temparray[KP_NOTES] =
+                                $temparray[KP_PW] = $temparray[KP_USERNAME] = $temparray[KP_URL] = "";
 
                             //increment number
                             $numItems++;
@@ -469,12 +480,12 @@ switch ($_POST['type']) {
                         $group = false;
 
                         // recap previous info
-                        if (!empty($tempArray['title'])) {
+                        if (!empty($temparray[KP_TITLE])) {	
                             //store data
-                            fputs($cacheFile, $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.$tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].$itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n");
+                            fputs($cacheFile, $temparray[KP_PATH].$itemsSeparator.$temparray[KP_GROUP].$itemsSeparator.$temparray[KP_TITLE].$itemsSeparator.$temparray[KP_PW].$itemsSeparator.$temparray[KP_USERNAME].$itemsSeparator.$temparray[KP_URL].$itemsSeparator.$temparray[KP_UUID].$itemsSeparator.$temparray[KP_NOTES]."\n");
 
                             //Clean temp array
-                            $tempArray['title'] = $tempArray['notes'] = $tempArray['pw'] = $tempArray['username'] = $tempArray['url'] = $tempArray['uuid'] = "";
+                            $temparray[KP_TITLE] = $temparray[KP_NOTES] = $temparray[KP_PW] = $temparray[KP_USERNAME] = $temparray[KP_URL] = $temparray[KP_UUID] = "";
 
                             //increment number
                             $numItems++;
@@ -505,7 +516,7 @@ switch ($_POST['type']) {
                             $notes = true;
                             $title = $pw = $url = $username = false;
                         } elseif ($entry == true && $nom == "UUID") {
-							$tempArray['uuid'] = $elem;
+							$temparray[KP_UUID] = $elem;
                         } elseif ($entry == true && $nom == "Key" && $elem == "Password") {
                             $pw = true;
                             $notes = $title = $url = $username = false;
@@ -516,65 +527,65 @@ switch ($_POST['type']) {
                             $username = true;
                             $notes = $pw = $url = $title = false;
                         } elseif ($group == true && $nom == "Name") {
-                            $tempArray['group'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
-                            $tempArray['level'] = $xmlLevel;
+                            $temparray[KP_GROUP] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                            $temparray['level'] = $xmlLevel;
                             //build current path
                             if ($xmlLevel > $levelInProgress) {
-                                if (!empty($tempArray['path'])) {
-                                    $tempArray['path'] .= $foldersSeparator.$tempArray['group'];
+                                if (!empty($temparray[KP_PATH])) {
+                                    $temparray[KP_PATH] .= $foldersSeparator.$temparray[KP_GROUP];
                                 } else {
-                                    $tempArray['path'] = $tempArray['group'];
+                                    $temparray[KP_PATH] = $temparray[KP_GROUP];
                                 }
                             } elseif ($xmlLevel == $levelInProgress) {
                                 if ($levelInProgress == 3) {
-                                    $tempArray['path'] = $tempArray['group'];
+                                    $temparray[KP_PATH] = $temparray[KP_GROUP];
                                 } else {
-                                    $tempArray['path'] = substr($tempArray['path'], 0, strrpos($tempArray['path'], $foldersSeparator)+strlen($foldersSeparator)).$tempArray['group'];
+                                    $temparray[KP_PATH] = substr($temparray[KP_PATH], 0, strrpos($temparray[KP_PATH], $foldersSeparator)+strlen($foldersSeparator)).$temparray[GROUP];
                                 }
                             } else {
                                 $diff = abs($xmlLevel-$levelInProgress)+1;
-                                $tmp = explode($foldersSeparator, $tempArray['path']);
-                                $tempArray['path'] = "";
+                                $tmp = explode($foldersSeparator, $temparray[KP_PATH]);
+                                $temparray[KP_PATH] = "";
                                 for ($x=0; $x<(count($tmp)-$diff); $x++) {
-                                    if (!empty($tempArray['path'])) {
-                                        $tempArray['path'] = $tempArray['path']. $foldersSeparator.$tmp[$x];
+                                    if (!empty($temparray[KP_PATH])) {
+                                        $temparray[KP_PATH] = $temparray[KP_PATH]. $foldersSeparator.$tmp[$x];
                                     } else {
-                                        $tempArray['path'] = $tmp[$x];
+                                        $temparray[KP_PATH] = $tmp[$x];
                                     }
                                 }
-                                if (!empty($tempArray['path'])) {
-                                    $tempArray['path'] .= $foldersSeparator.$tempArray['group'];
+                                if (!empty($temparray[KP_PATH])) {
+                                    $temparray[KP_PATH] .= $foldersSeparator.$temparray[KP_GROUP];
                                 } else {
-                                    $tempArray['path'] = $tempArray['group'];
+                                    $temparray[KP_PATH] = $temparray[KP_GROUP];
                                 }
                             }
 
                             //store folders
-                            if (!in_array($tempArray['path'], $groupsArray)) {
-                                fwrite($cacheFileF, $tempArray['path']."\n");
-                                array_push($groupsArray, $tempArray['path']);
+                            if (!in_array($temparray[KP_PATH], $groupsArray)) {
+                                fwrite($cacheFileF, $temparray[KP_PATH]."\n");
+                                array_push($groupsArray, $temparray[KP_PATH]);
                                 //increment number
                                 $numGroups ++;
                             }
 
                             //Store actual level
                             $levelInProgress = $xmlLevel;
-                            $previousLevel = $tempArray['group'];
+                            $previousLevel = $temparray[KP_GROUP];
                         } elseif ($title == true && $nom == "Value") {
                             $title = false;
-                            $tempArray['title'] = sanitiseString($elem, '');
+                            $temparray[KP_TITLE] = sanitiseString($elem, '');
                         } elseif ($notes == true && $nom == "Value") {
                             $notes = false;
-                            $tempArray['notes'] = sanitiseString($elem, $lineEndSeparator);
+                            $temparray[KP_NOTES] = sanitiseString($elem, $lineEndSeparator);
                         } elseif ($pw == true && $nom == "Value") {
                             $pw = false;    
-                            $tempArray['pw'] = sanitiseString($elem, '');
+                            $temparray[KP_PW] = sanitiseString($elem, '');
                         } elseif ($url == true && $nom == "Value") {
                             $url = false;
-                            $tempArray['url'] = sanitiseString($elem, '');
+                            $temparray[KP_URL] = sanitiseString($elem, '');
                         } elseif ($username == true && $nom == "Value") {
                             $username = false;
-                            $tempArray['username'] = sanitiseString($elem, '');
+                            $temparray[KP_USERNAME] = sanitiseString($elem, '');
                         } 
                     }
                 }
@@ -592,7 +603,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-//            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
 
             fputs($cacheLogFile, date('H:i') . $LANG['import_error_no_read_possible_kp']."\n");
             echo '[{"error":"not_kp_file" , "message":"'.$LANG['import_error_no_read_possible_kp'].'"}]';
@@ -600,13 +611,13 @@ switch ($_POST['type']) {
         }
 
         //save last item
-        if (!empty($tempArray['title'])) {
+        if (!empty($temparray[KP_TITLE])) {
             //store data
             fputs(
                 $cacheFile,
-                $tempArray['path'].$itemsSeparator.$tempArray['group'].$itemsSeparator.
-                $tempArray['title'].$itemsSeparator.$tempArray['pw'].$itemsSeparator.$tempArray['username'].
-                $itemsSeparator.$tempArray['notes'].$itemsSeparator.$tempArray['url'].$itemsSeparator.$tempArray['uuid']."\n"
+                $temparray[KP_PATH].$itemsSeparator.$temparray[KP_GROUP].$itemsSeparator.
+                $temparray[KP_TITLE].$itemsSeparator.$temparray[KP_PW].$itemsSeparator.$temparray[KP_USERNAME].
+                $itemsSeparator.$temparray[KP_URL].$itemsSeparator.$temparray[KP_UUID].$itemsSeparator.$temparray[KP_NOTES]."\n"
             );
 
             //increment number
@@ -796,14 +807,14 @@ switch ($_POST['type']) {
                 $full_item = fgets($cacheFile, 8192);
                 $full_item = str_replace(array("\r\n", "\n", "\r"), '', $full_item);
                 $item = explode($itemsSeparator, $full_item);
-                
+
                 $count++;
                 if (!($count % 10))
                 	fputs($cacheLogFile, date('H:i:s ') . "  Imported $count items (". number_format(($count / $numItems)*100,1).")\n");
-                if (!empty($item[2])) {
+                if (!empty($item[KP_TITLE])) {
                     //check if not exists
-                	$results .= $foldersArray[$item[0]]['folder'].'\\'.$item[2];
-                	$randomKey = substr($item[7],0, 15);		// use partial UUID from XML
+                	$results .= str_replace($foldersSeparator,"\\",$item[KP_PATH]).'\\'.$item[KP_TITLE];
+                	$randomKey = substr($item[KP_UUID],0, 15);		// use partial UUID from XML
                 	
 /*                   DB::query(
                         "SELECT id FROM ".$pre."items
@@ -814,8 +825,8 @@ switch ($_POST['type']) {
                    DB::query(
                    "SELECT ".$pre."items.id FROM ".$pre."items,".$pre."keys
                         WHERE ".$pre."items.id=".$pre."keys.id AND id_tree =%i AND label = %s AND rand_key = %s",
-                        intval($foldersArray[$item[0]]['id']),
-                        stripslashes($item[2]),
+                        intval($foldersArray[$item[KP_PATH]]['id']),
+                        stripslashes($item[KP_TITLE]),
                         $randomKey
                    );
                    
@@ -823,13 +834,13 @@ switch ($_POST['type']) {
                     if ($counter == 0) {
                         //Encryption key
                         
-                        $pw = $randomKey.$item[3];
+                        $pw = $randomKey.$item[KP_PASSWORD];
                         
                         //Get folder label
-                        if (count($foldersArray)==0 || empty($item[0])) {
+                        if (count($foldersArray)==0 || empty($item[KP_PATH])) {
                             $folderId = $_POST['destination'];
                         } else {
-                            $folderId = $foldersArray[$item[0]]['id'];
+                            $folderId = $foldersArray[$item[KP_PATH]]['id'];
                         }
                         $data = DB::queryFirstRow(
                             "SELECT title FROM ".$pre."nested_tree WHERE id = %i",
@@ -841,12 +852,12 @@ switch ($_POST['type']) {
                         DB::insert(
                             $pre.'items',
                             array(
-                                'label' => stripslashes($item[2]),
-                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[5])),
+                                'label' => stripslashes($item[KP_TITLE]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'pw' => $import_perso == true ? encrypt($pw, $_SESSION['my_sk']) : encrypt($pw),
-                                'url' => stripslashes($item[6]),
+                                'url' => stripslashes($item[KP_URL]),
                                 'id_tree' => $folderId,
-                                'login' => stripslashes($item[4]),
+                                'login' => stripslashes($item[KP_USERNAME]),
                                 'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
                            )
                         );
@@ -892,11 +903,11 @@ switch ($_POST['type']) {
                             $pre.'cache',
                             array(
                                 'id' => $newId,
-                                'label' => stripslashes($item[2]),
-                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[5])),
+                                'label' => stripslashes($item[KP_TITLE]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
-                                'login' => stripslashes($item[4]),
+                                'login' => stripslashes($item[KP_USERNAME]),
                                 'folder' => $data['title'],
                                 'author' => $_SESSION['user_id']
                            )
