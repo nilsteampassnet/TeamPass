@@ -345,7 +345,6 @@ if (isset($_POST['type'])) {
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
                             `renewal_period` TINYINT(4) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
-                            UNIQUE KEY `id` (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
                             KEY `nested_tree_nright` (`nright`),
@@ -464,7 +463,8 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
-                            `type` varchar(1) NOT NULL DEFAULT 'R'
+                            `type` varchar(1) NOT NULL DEFAULT 'R',
+                        	KEY `role_id_idx` (`role_id`)	
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "kb") {
@@ -506,7 +506,8 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."keys` (
                             `table` varchar(25) NOT NULL,
                             `id` int(20) NOT NULL,
-                            `rand_key` varchar(25) NOT NULL
+                            `rand_key` varchar(25) NOT NULL,
+                        	UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)	
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "languages") {
@@ -617,7 +618,7 @@ if (isset($_POST['type'])) {
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            `originator` tinyint(12) NOT NULL,
+                            `originator` tinyint(12) NOT NULkeysL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
