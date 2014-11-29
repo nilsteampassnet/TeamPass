@@ -370,12 +370,12 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 // Get allowed folders for each Role
                 $rows = DB::query("SELECT folder_id FROM ".$pre."roles_values WHERE role_id=%i", $roleId);
                 if (DB::count() > 0) {
+                	$tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
                             array_push($listAllowedFolders, $record['folder_id']);//echo $record['folder_id'].";";
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
-                        $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
                         if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
                             array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
@@ -476,9 +476,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT * FROM ".$pre."nested_tree");
+        DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT * FROM ".$pre."roles_title");
+        DB::queryfirstrow("SELECT id FROM ".$pre."roles_title");
         $_SESSION['nb_roles'] = DB::count();
     }
 }

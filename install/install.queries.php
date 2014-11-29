@@ -199,7 +199,8 @@ if (isset($_POST['type'])) {
                             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
-                            PRIMARY KEY (`id`)
+                            PRIMARY KEY (`id`),
+                        	KEY	`restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "log_items") {
@@ -348,7 +349,8 @@ if (isset($_POST['type'])) {
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
                             KEY `nested_tree_nright` (`nright`),
-                            KEY `nested_tree_nlevel` (`nlevel`)
+                            KEY `nested_tree_nlevel` (`nlevel`),
+                        	KEY `personal_folder_idx` (`personal_folder`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "rights") {
@@ -498,7 +500,8 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."restriction_to_roles` (
                             `role_id` int(12) NOT NULL,
-                            `item_id` int(12) NOT NULL
+                            `item_id` int(12) NOT NULL,
+                        	KEY `role_id_idx`  (`role_id`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "keys") {
@@ -618,7 +621,7 @@ if (isset($_POST['type'])) {
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            `originator` tinyint(12) NOT NULkeysL,
+                            `originator` tinyint(12) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

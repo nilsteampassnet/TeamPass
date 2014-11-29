@@ -540,7 +540,7 @@ switch ($_POST['type']) {
                                 if ($levelInProgress == 3) {
                                     $temparray[KP_PATH] = $temparray[KP_GROUP];
                                 } else {
-                                    $temparray[KP_PATH] = substr($temparray[KP_PATH], 0, strrpos($temparray[KP_PATH], $foldersSeparator)+strlen($foldersSeparator)).$temparray[GROUP];
+                                    $temparray[KP_PATH] = substr($temparray[KP_PATH], 0, strrpos($temparray[KP_PATH], $foldersSeparator)+strlen($foldersSeparator)).$temparray[KP_GROUP];
                                 }
                             } else {
                                 $diff = abs($xmlLevel-$levelInProgress)+1;
@@ -697,7 +697,7 @@ switch ($_POST['type']) {
                     //create folder - if not exists at the same level
                     DB::query(
                         "SELECT * FROM ".$pre."nested_tree
-                        WHERE nlevel = %i AND title = %s AND parent_id = %i",
+                        WHERE nlevel = %i AND title = %s AND parent_id = %i LIMIT 1",
                         intval($folderLevel+$startPathLevel),
                         $fold,
                         $parent_id
@@ -824,7 +824,7 @@ switch ($_POST['type']) {
                     ); */
                    DB::query(
                    "SELECT ".$pre."items.id FROM ".$pre."items,".$pre."keys
-                        WHERE ".$pre."items.id=".$pre."keys.id AND id_tree =%i AND label = %s AND rand_key = %s",
+                        WHERE ".$pre."items.id=".$pre."keys.id AND id_tree =%i AND label = %s AND rand_key = %s LIMIT 1",
                         intval($foldersArray[$item[KP_PATH]]['id']),
                         stripslashes($item[KP_TITLE]),
                         $randomKey
