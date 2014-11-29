@@ -1798,14 +1798,7 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 } else {
-                    $items_to_display_once = "max";
-                    /*
-                    if ($items_to_display_once != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$items_to_display_once;
-                    } else {
-                        $query_limit = "";
-                    }*/
-
+                    // current folder is PF
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login,
@@ -2081,7 +2074,7 @@ if (isset($_POST['type'])) {
             $counter = DB::count();
         	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
-            if (($items_to_display_once + $start) < $counter && $items_to_display_once != "max") {
+            if (($items_to_display_once + $start) < $counter) { // && $items_to_display_once != "max"
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";

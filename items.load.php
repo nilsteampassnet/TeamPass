@@ -1885,7 +1885,7 @@ $(function() {
     }
 
     //Evaluate number of items to display - depends on screen height
-    if (parseInt($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max") {
+    if (parseInt($("#nb_items_to_display_once").val())) {   // || $("#nb_items_to_display_once").val() == "max"
         //do nothing ... good value
     } else {
         //adapt to the screen height

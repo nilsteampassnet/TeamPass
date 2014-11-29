@@ -715,7 +715,7 @@ function ImportCSV(file)
                         $("input[class='item_checkbox']:not([disabled='disabled'])").removeAttr("checked");
                     }
                 });
-                $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("disable");
+                $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("enable");
             }
             $("#import_status_ajax_loader").hide();
         },
