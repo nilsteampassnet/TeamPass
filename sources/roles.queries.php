@@ -99,7 +99,7 @@ if (!empty($_POST['type'])) {
         case "edit_role":
             //Check if role already exist : No similar roles
             //$tmp = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE id != '".$_POST['id']."' AND title = '".mysqli_escape_string($link, stripslashes($_POST['title']))."'");
-            DB::queryt("SELECT * FROM ".$pre."roles_title WHERE title = %s AND id = %i", $_POST['title'], $_POST['id']);
+            DB::query("SELECT * FROM ".$pre."roles_title WHERE title = %s AND id = %i", $_POST['title'], $_POST['id']);
             $counter = DB::count();
             if ($counter == 0) {
                 DB::update(
