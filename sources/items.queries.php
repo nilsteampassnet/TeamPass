@@ -1747,7 +1747,7 @@ if (isset($_POST['type'])) {
             }
             // check if items exist
             $where = new WhereClause('and');
-            if (isset($_POST['restricted']) && $_POST['restricted'] == 1) {
+            if (isset($_POST['restricted']) && $_POST['restricted'] == 1 && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
                 $counter = count($_SESSION['list_folders_limited'][$_POST['id']]);
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$_POST['id']]);
             }
@@ -2161,6 +2161,18 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "get_complixity_level":
+            // is user allowed to access this folder - readonly
+            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {
+                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {
+                    $returnValues = array(
+                        "error" => "user_is_readonly",
+                        "message" => $LANG['error_not_allowed_to']
+                    );
+                    echo prepareExchangedData($returnValues, "encode");
+                    break;
+                }
+            }
+
             if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = %i", $_POST['item_id']);//echo ">".$dataTmp[0];
