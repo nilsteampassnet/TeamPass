@@ -247,11 +247,13 @@ foreach ($folders as $folder) {
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+                $restricted = "";
                 if (in_array($folder->id, $_SESSION['read_only_folders'])) {
                     $fldTitle = '<i class="fa fa-eye"></i>&nbsp;'.$fldTitle.'';
+                    $restricted = 1;
                 }
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \''.$restricted.'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
                 // display tree counters
                 if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
                     $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
@@ -397,7 +399,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title" colspan="2">
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
-                            <ul class="quick_menu">
+                            <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
                                     <ul class="menu_250">
                                         <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>

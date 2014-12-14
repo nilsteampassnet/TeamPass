@@ -29,11 +29,6 @@ $(function() {
         $("#change_personal_sk").button("disable");
     }
 
-
-
-
-
-
   //only numerics
     $(".numeric_only").numeric();
 
