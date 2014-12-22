@@ -776,4 +776,3 @@ $LANG = array (
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
     '' => ''
 );
-?>
