@@ -99,7 +99,7 @@ class Google2FA
      * Takes the secret key and the timestamp and returns the one time
      * password.
      *
-     * @param binary $key - Secret key in binary form.
+     * @param string $key binary - Secret key in binary form.
      * @param integer $counter - Timestamp as returned by get_timestamp.
      * @return string
      **/
@@ -147,7 +147,7 @@ class Google2FA
 
     /**
      * Extracts the OTP from the SHA1 hash.
-     * @param binary $hash
+     * @param string $hash binary
      * @return integer
      **/
     public function oath_truncate($hash)

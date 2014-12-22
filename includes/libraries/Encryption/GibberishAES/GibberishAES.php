@@ -65,9 +65,9 @@ class GibberishAES {
     /**
      * Crypt AES (256, 192, 128)
      *
-     * @param data $string
+     * @param string $string data
      * @param string $pass
-     * @return base64 encrypted string
+     * @return string base64 encrypted string
      */
     public static function enc($string, $pass) {
 
@@ -100,9 +100,9 @@ class GibberishAES {
     /**
      * Decrypt AES (256, 192, 128)
      *
-     * @param data $string
+     * @param string $string data
      * @param string $pass
-     * @return dencrypted string
+     * @return string dencrypted string
      */
     public static function dec($string, $pass) {
 

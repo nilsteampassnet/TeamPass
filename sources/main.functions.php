@@ -834,7 +834,7 @@ function isDate($date)
 /**
  * isUTF8()
  *
- * @return is the string in UTF8 format.
+ * @return string is the string in UTF8 format.
  */
 
 function isUTF8($string)

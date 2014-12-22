@@ -323,7 +323,7 @@ class adLDAP
     * Tries to bind to the AD domain over LDAP or LDAPs
     *
     * @param array $options Array of options to pass to the constructor
-    * @throws Exception - if unable to bind to Domain Controller
+    * @throws adLDAPException Exception if unable to bind to Domain Controller
     * @return bool
     */
     public function __construct($options = array())
@@ -436,7 +436,7 @@ class adLDAP
     *
     * @param string $username A user's AD username
     * @param string $password A user's AD password
-    * @param bool optional $prevent_rebind
+    * @param bool $optional $prevent_rebind
     * @return bool
     */
     public function authenticate($username, $password, $prevent_rebind = false)
@@ -1185,7 +1185,7 @@ class adLDAP
     * Determine a user's password expiry date
     *
     * @param string $username The username to query
-    * @param book $isGUID Is the username passed a GUID or a samAccountName
+    * @param bool $isGUID Is the username passed a GUID or a samAccountName
     * @requires bcmath http://www.php.net/manual/en/book.bc.php
     * @return array
     */

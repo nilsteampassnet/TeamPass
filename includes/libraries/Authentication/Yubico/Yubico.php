@@ -204,8 +204,8 @@ class Auth_Yubico
      * Parse input string into password, yubikey prefix,
      * ciphertext, and OTP.
      *
-     * @param  string    Input string to parse
-     * @param  string    Optional delimiter re-class, default is '[:]'
+     * @param  string  $str  Input string to parse
+     * @param  string  $delim  Optional delimiter re-class, default is '[:]'
      * @return array Keyed array with fields
      * @access public
      */

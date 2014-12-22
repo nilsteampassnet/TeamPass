@@ -16,10 +16,10 @@ class aesctr extends Aes
     *
     * Unicode multi-byte character safe
     *
-    * @param plaintext source text to be encrypted
-    * @param password  the password to use to generate a key
-    * @param nBits     number of bits to be used in the key (128, 192, or 256)
-    * @return          encrypted text
+    * @param string $plaintext source text to be encrypted
+    * @param string $password  the password to use to generate a key
+    * @param integer $nBits     number of bits to be used in the key (128, 192, or 256)
+    * @return string encrypted text
     */
     public static function encrypt($plaintext, $password, $nBits)
     {
@@ -97,10 +97,10 @@ class aesctr extends Aes
     /**
     * Decrypt a text encrypted by AES in counter mode of operation
     *
-    * @param ciphertext source text to be decrypted
-    * @param password   the password to use to generate a key
-    * @param nBits      number of bits to be used in the key (128, 192, or 256)
-    * @return           decrypted text
+    * @param string $ciphertext source text to be decrypted
+    * @param string $password   the password to use to generate a key
+    * @param integer $nBits      number of bits to be used in the key (128, 192, or 256)
+    * @return string decrypted text
     */
     public static function decrypt($ciphertext, $password, $nBits)
     {
@@ -193,10 +193,10 @@ class Aes
     /**
      * AES Cipher function: encrypt 'input' with Rijndael algorithm
      *
-     * @param input message as byte-array (16 bytes)
-     * @param w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
+     * @param string $input message as byte-array (16 bytes)
+     * @param string $w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
      *              generated from the cipher key by keyExpansion()
-     * @return ciphertext as byte-array (16 bytes)
+     * @return string ciphertext as byte-array (16 bytes)
      */
     public static function cipher($input, $w)
     {
@@ -293,8 +293,8 @@ class Aes
      * Key expansion for Rijndael cipher(): performs key expansion on cipher key
      * to generate a key schedule
      *
-     * @param key cipher key byte-array (16 bytes)
-     * @return key schedule as 2D byte-array (Nr+1 x Nb bytes)
+     * @param string $key cipher key byte-array (16 bytes)
+     * @return string key schedule as 2D byte-array (Nr+1 x Nb bytes)
      */
     public static function keyExpansion($key)
     {
