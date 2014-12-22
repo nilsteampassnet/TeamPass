@@ -46,5 +46,3 @@ switch ($method) {
     rest_error('UNKNOWN');
     break;
 }
-
-?>

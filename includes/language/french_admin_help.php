@@ -168,4 +168,3 @@ Un compte utilisateur est nécessaire pour chaque personne physique devant utili
         </p>
     </div>
 </div>";
-?>

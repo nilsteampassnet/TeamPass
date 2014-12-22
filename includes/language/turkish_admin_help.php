@@ -168,4 +168,3 @@ A user account is needed for each physical person that will have to use TeamPass
         </p>
     </div>
 </div>";
-?>

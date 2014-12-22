@@ -12,4 +12,3 @@ $LANG['kb'] = "Knownledge Base";
 $LANG['kb_anyone_can_modify'] = "Iedereen kan dit aanpassen";
 $LANG['kb_form'] = "Beheer gegevens in KB";
 $LANG['new_kb'] = "Voeg een nieuwe KB toe";
-?>
