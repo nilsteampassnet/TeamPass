@@ -12,4 +12,3 @@ $LANG['kb'] = "Base de conhecimento";
 $LANG['kb_anyone_can_modify'] = "Qualquer um pode modificar";
 $LANG['kb_form'] = "Edita entradas no KB";
 $LANG['new_kb'] = "Adiciona novo KB";
-?>
