@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_email_security' => 'SMTP security',
     'alert_page_will_reload' => 'The page will now be reloaded',
     'csv_import_items_selection' => 'Select the items to import',
     'csv_import_options' => 'Select import options',

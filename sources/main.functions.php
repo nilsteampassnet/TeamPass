@@ -503,6 +503,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         DB::queryfirstrow("SELECT * FROM ".$pre."roles_title");
         $_SESSION['nb_roles'] = DB::count();
     }
+    
+    // update user's timestamp
+    DB::update(
+        prefix_table('users'),
+        array(
+            'timestamp' => time()
+        ),
+        "id=%i",
+        $_SESSION['user_id']
+    );
 }
 
 /**
@@ -868,7 +878,7 @@ function isDate($date)
 /**
  * isUTF8()
  *
- * @return is the string in UTF8 format.
+ * @return string is the string in UTF8 format.
  */
 
 function isUTF8($string)
@@ -953,4 +963,20 @@ function make_thumb($src, $dest, $desired_width) {
 
     /* create the physical thumbnail image to its destination */
     imagejpeg($virtual_image, $dest);
+}
+
+/*
+** check table prefix in SQL query
+*/
+function prefix_table($table)
+{
+    global $pre;
+    $safeTable = mysql_real_escape_string($pre.$table);
+    if (!empty($safeTable)) {
+        // sanitize string
+        return $safeTable;
+    } else {
+        // stop error no table
+        return false;
+    }
 }
