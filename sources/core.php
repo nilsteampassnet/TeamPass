@@ -471,10 +471,5 @@ if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['u
 
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
-    array(
-        "time" => time() - 600
-    )
-);
-$counter = DB::count();
-$_SESSION['nb_users_online'] = $counter;
+DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%i", time() - 600);
+$_SESSION['nb_users_online'] = DB::count();
