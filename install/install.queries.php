@@ -331,6 +331,7 @@ if (isset($_POST['type'])) {
                             array('admin','email_auth_username', $var['smtp_auth_username']),
                             array('admin','email_auth_pwd', $var['smtp_auth_password']),
                             array('admin','email_port', $var['smtp_port']),
+                            array('admin','email_security', $var['smtp_security']),
                             array('admin','email_server_url', $var['url_path']),
                             array('admin','email_from', $var['email_from']),
                             array('admin','email_from_name', $var['email_from_name']),

@@ -387,7 +387,7 @@ if (isset($_POST['newtitle'])) {
                     }
 
                     //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                    $rows = DB::query("SELECT role_id FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
+                    $rows = DB::query("SELECT role_id, type FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
                     foreach ($rows as $record) {
                         //add access to this subfolder
                         DB::insert(

@@ -937,5 +937,3 @@ class MeekroDBEval {
     $this->text = $text;
   }
 }
-
-?>

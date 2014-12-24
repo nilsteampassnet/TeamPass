@@ -1,6 +1,11 @@
 2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
+ #830 - Fix documentation syntax
+ #829 - Removing unecessary php closing tags
+ #807 - Fix rights based on roles for new folders
+ #808 - Add a SMTP security parameter to the email configuration
+ #814
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

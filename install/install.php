@@ -176,6 +176,14 @@ echo '
     <label for="smtp_port" class="label_block_big">SMTP Port :</label><input type="text" id="smtp_port" value="25" style="width:250px;" />&nbsp;<span id="res4_check7"></span>
     </div>
     <div class="line_entry">
+    <label for="smtp_security" class="label_block_big">SMTP security :</label>
+    <select id="smtp_security" name="email_security" class="text ui-widget-content">
+        <option value="none" selected="selected">None</option>
+        <option value="ssl">SSL</option>
+        <option value="tls">TLS</option>
+    </select>
+    </div>
+    <div class="line_entry">
     <label for="email_from" class="label_block_big">Email from :</label><input type="text" id="email_from" value="" style="width:250px;"  />&nbsp;<span id="res4_check8"></span>
     </div>
     <div class="line_entry">

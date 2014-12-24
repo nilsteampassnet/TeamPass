@@ -28,6 +28,10 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
             $_SESSION['smtp_server'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth = ')>0) {
             $_SESSION['smtp_auth'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_port = ')>0) {
+            $_SESSION['smtp_port'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_security = ')>0) {
+            $_SESSION['smtp_security'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth_username = ')>0) {
             $_SESSION['smtp_auth_username'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth_password = ')>0) {
