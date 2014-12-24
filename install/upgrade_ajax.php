@@ -161,6 +161,10 @@ if (isset($_POST['type'])) {
                     } elseif (substr_count($val, '$smtp_auth_username')>0) {
                         $_SESSION['smtp_auth_username'] = getSettingValue($val);
                     } elseif (substr_count($val, '$smtp_auth_password')>0) {
+                        $_SESSION['smtp_port'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_port')>0) {
+                        $_SESSION['smtp_security'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_security')>0) {
                         $_SESSION['smtp_auth_password'] = getSettingValue($val);
                     } elseif (substr_count($val, '$email_from')>0) {
                         $_SESSION['email_from'] = getSettingValue($val);
@@ -514,7 +518,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'email_smtp_auth', @$_SESSION['smtp_auth'], 0),
                 array('admin', 'email_auth_username', @$_SESSION['smtp_auth_username'], 0),
                 array('admin', 'email_auth_pwd', @$_SESSION['smtp_auth_password'], 0),
-                array('admin', 'email_post', '25', 0),
+                array('admin', 'email_port', @$_SESSION['smtp_port'], 0),
+                array('admin', 'email_security', @$_SESSION['smtp_security'], 0),
                 array('admin', 'email_from', @$_SESSION['email_from'], 0),
                 array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
                 array('admin', '2factors_authentication', 0, 0),
