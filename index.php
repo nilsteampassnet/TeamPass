@@ -124,7 +124,11 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
         <title>Collaborative Passwords Manager</title>
         <script type="text/javascript">
             if (window.location.href.indexOf("page=") == -1) {
-                location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+                if (window.location.href.indexOf("session_over=true") == -1) {
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+                } else {
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&session_over=true");
+                }
             }
         </script>
 <?php
@@ -213,12 +217,13 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
     }
+
     echo '               
                 <div style="float:right;">                
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
+                                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) || $_SESSION['user_admin'] == 1 ? '' :
                                 isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                                 <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
                                     <ul>
@@ -233,34 +238,37 @@ if (isset($_SESSION['login'])) {
                             </ul>
                         </li>
                     </ul>
-                </div>
-                
-                
+                </div>';
+
+    if ($_SESSION['user_admin'] != 1) {
+        echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
                             <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">';
 
-                        $rows = DB::query(
-                            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
-                            FROM ".$pre."log_items AS l
-                            left JOIN ".$pre."items AS i ON (l.id_item = i.id)
+        $rows = DB::query(
+            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+                            FROM " . $pre . "log_items AS l
+                            left JOIN " . $pre . "items AS i ON (l.id_item = i.id)
                             WHERE l.action = %s AND l.id_user = %i
                             GROUP BY i.id
                             ORDER BY l.date DESC
                             LIMIT 0, 10",
-                            "at_shown",
-                            $_SESSION['user_id']
-                        );
-                        foreach ($rows as $record) {
-                            echo '
-                                <li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
-                        }
-                    echo '
+            "at_shown",
+            $_SESSION['user_id']
+        );
+        foreach ($rows as $record) {
+            echo '
+                                <li onclick="displayItemNumber(' . $record['id'] . ', ' . $record['id_tree'] . ')"><i class="fa fa-tag fa-fw"></i> &nbsp;' . addslashes($record['label']) . '</li>';
+        }
+        echo '
                             </ul>
                         </li>
                     </ul>
-                </div>
+                </div>';
+    }
+    echo '
             </div>
         </div>';
 }
@@ -321,7 +329,7 @@ echo '
     </form>';
 
 echo '
-    <div id="', isset($_GET['page']) && $_GET['page'] == "items" ? "main_simple" : "main", '">';
+    <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
 // MESSAGE BOX
 echo '
         <div style="" class="div_center">
@@ -530,7 +538,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                 class="ui-state-error ui-corner-all">
                 <b>'.$LANG['index_maintenance_mode'].'</b>
             </div>';
-    } else {
+    } else if (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
         // SESSION FINISHED => RECONNECTION ASKED
         echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
@@ -549,7 +557,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     // CONNECTION FORM
     echo '
             <form method="post" name="form_identify" id="form_identify" action="">
-                <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
+                <div style="width:300px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                         '.$LANG['index_get_identified'].'

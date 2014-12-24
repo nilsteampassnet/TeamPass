@@ -367,7 +367,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 $rows = DB::query(
                     "SELECT r.folder_id AS folder_id, t.allow_pw_change AS allow_pw_change
                     FROM ".$pre."roles_values AS r
-                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
+                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.role_id)
                     WHERE r.role_id=%i",
                     $roleId
                 );
@@ -824,6 +824,10 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->Port = $_SESSION['settings']['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
     // $mail->SMTPSecure = 'ssl';     //COULD BE USED
+    $smtp_security = $_SESSION['settings']['email_security'];
+    if ($smtp_security == "tls" || $smtp_security == "ssl") {
+        $mail->SMTPSecure = $smtp_security;
+    }
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
     $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == 'true' ? true : false; // turn on SMTP authentication

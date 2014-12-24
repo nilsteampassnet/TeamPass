@@ -466,6 +466,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['email_port'] != $_POST['email_port']) {
         updateSettings('email_port', $_POST['email_port']);
     }
+    // Update email_security
+    if (@$_SESSION['settings']['email_security'] != $_POST['email_security']) {
+        updateSettings('email_security', $_POST['email_security']);
+    }
     // Update email_server_url
     if (@$_SESSION['settings']['email_server_url'] != $_POST['email_server_url']) {
         updateSettings('email_server_url', $_POST['email_server_url']);
@@ -1962,7 +1966,7 @@ echo '
                             <div class="div_radio">
                                 <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$LANG['yes'].'</label>
                                 <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$LANG['no'].'</label>
-                                <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == true ? '' : '-busy', '.png" /></span>
+                                <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';
@@ -2009,6 +2013,21 @@ echo '
                         </td>
                         <td>
                             <input id="email_port" name="email_port" type="text" size="40px" value="', !isset($_SESSION['settings']['email_port']) ? '25' : $_SESSION['settings']['email_port'], '" />
+                        </td>
+                    </tr>';
+// SMTP security
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$LANG['admin_email_security'].'
+                        </td>
+                        <td>
+                            <select id="email_security" name="email_security" class="text ui-widget-content">
+                            <option value="none"', !isset($_SESSION['settings']['email_security']) || $_SESSION['settings']['email_security'] == "none" ? ' selected="selected"':"", '>None</option>
+                            <option value="ssl"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "ssl" ? ' selected="selected"':"", '>SSL</option>
+                            <option value="tls"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "tls" ? ' selected="selected"':"", '>TLS</option>
+                        </select>
                         </td>
                     </tr>';
 // SMTP from
