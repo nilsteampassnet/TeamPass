@@ -181,6 +181,7 @@ foreach ($folders as $t) {
                 UploadComplete: function(up, files) {
                     $.each(files, function(i, file) {
                         ImportCSV(file.name);
+                        up.splice();	// clear the file queue
                     });
                 }
             }
@@ -196,6 +197,7 @@ foreach ($folders as $t) {
                 (err.file ? ", File: " + err.file.name : "") +
                 "</div>"
             );
+            up.splice();	// Clear the file queue
             up.refresh(); // Reposition Flash/Silverlight
         });
         uploader_csv.bind("+", function(up, file) {
@@ -243,6 +245,7 @@ foreach ($folders as $t) {
                 },
                 UploadComplete: function(up, files) {
                     ImportKEEPASS(files[0].name);
+                    up.splice();		// clear the file queue
                 }
             }
         });
@@ -256,6 +259,7 @@ foreach ($folders as $t) {
                 (err.file ? ", File: " + err.file.name : "") +
                 "</div>"
             );
+            up.splice();	// clear the file queue
             up.refresh(); // Reposition Flash/Silverlight
         });
         uploader_kp.bind("+", function(up, file) {

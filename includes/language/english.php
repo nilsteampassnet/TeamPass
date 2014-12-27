@@ -28,7 +28,6 @@ $LANG = array (
     'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found.',
     'expand' => 'Expand',
     'collapse' => 'Collapse',
-    'settings_roles_allowed_to_print' => 'Select the roles allowed to print out the Items',
     'settings_roles_allowed_to_print_tip' => 'This is only taken into consideration if printing out option is enabled.',
     'duplicate' => 'Duplicate',
     'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',

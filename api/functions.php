@@ -332,7 +332,7 @@ function rest_get () {
                 } else {
                     rest_error ('NO_ITEM');
                 }
-                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", explode(",", $items_list));
+                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", $items_list);
                 foreach ($response as $data)
                 {
                     // get ITEM random key
@@ -680,14 +680,22 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
 
 function teampass_decrypt_pw($encrypted, $salt, $rand_key, $itcount = 2072)
 {
+    require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     $encrypted = base64_decode($encrypted);
     $pass_salt = substr($encrypted, -64);
     $encrypted = substr($encrypted, 0, -64);
-    $key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
+    //$key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
+    $key = substr(pbkdf2('sha256', $salt, $pass_salt, $itcount, 16+32, true), 32, 16);
     $iv        = base64_decode(substr($encrypted, 0, 43) . '==');
     $encrypted = substr($encrypted, 43);
     $mac       = substr($encrypted, -64);
     $encrypted = substr($encrypted, 0, -64);
     if ($mac !== hash_hmac('sha256', $encrypted, $salt)) return null;
-    return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    //return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    $result = substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    if ($result) {
+        return $result;
+    } else {
+        return "";
+    }
 }

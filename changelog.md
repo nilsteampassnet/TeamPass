@@ -5,6 +5,7 @@
  #829 - Removing unecessary php closing tags
  #807 - Fix rights based on roles for new folders
  #808 - Add a SMTP security parameter to the email configuration
+ #805 - Keepass Import improvements
  #814
 
 2.1.22

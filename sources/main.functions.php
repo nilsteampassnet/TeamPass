@@ -136,19 +136,28 @@ function decryptOld($text, $personalSalt = "")
  */
 function encrypt($decrypted, $personalSalt = "")
 {
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    } else {
+        require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    }
+
     if (!empty($personalSalt)) {
  	    $staticSalt = $personalSalt;
     } else {
  	    $staticSalt = SALT;
     }
+
     //set our salt to a variable
     // Get 64 random bits for the salt for pbkdf2
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
     // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
     $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+
     //base64 trim
     if (strlen($ivBase64 = rtrim(base64_encode($iv), '=')) != 43) {
         return false;
@@ -168,6 +177,12 @@ function encrypt($decrypted, $personalSalt = "")
  */
 function decrypt($encrypted, $personalSalt = "")
 {
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    } else {
+        require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    }
+
     if (!empty($personalSalt)) {
 	    $staticSalt = $personalSalt;
     } else {
@@ -179,7 +194,8 @@ function decrypt($encrypted, $personalSalt = "")
     $pbkdf2Salt = substr($encrypted, -64);
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
     // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
     $iv = base64_decode(substr($encrypted, 0, 43) . '==');
     // Remove $iv from $encrypted.
@@ -364,21 +380,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($fonctionsAssociees as $roleId) {
             if (!empty($roleId)) {
                 // Get allowed folders for each Role
-                $rows = DB::query(
-                    "SELECT r.folder_id AS folder_id, t.allow_pw_change AS allow_pw_change
-                    FROM ".$pre."roles_values AS r
-                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.role_id)
-                    WHERE r.role_id=%i",
-                    $roleId
-                );
+                $rows = DB::query("SELECT folder_id FROM ".$pre."roles_values WHERE role_id=%i", $roleId);
 
                 if (DB::count() > 0) {
+                    $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
                             array_push($listAllowedFolders, $record['folder_id']);//echo $record['folder_id'].";";
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
-                        if ($record['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
+                        if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
                             array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
                     }
@@ -498,9 +509,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT * FROM ".$pre."nested_tree");
+        DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT * FROM ".$pre."roles_title");
+        DB::queryfirstrow("SELECT id FROM ".$pre."roles_title");
         $_SESSION['nb_roles'] = DB::count();
     }
     
@@ -975,7 +986,7 @@ function make_thumb($src, $dest, $desired_width) {
 function prefix_table($table)
 {
     global $pre;
-    $safeTable = mysql_real_escape_string($pre.$table);
+    $safeTable = htmlspecialchars($pre.$table);
     if (!empty($safeTable)) {
         // sanitize string
         return $safeTable;

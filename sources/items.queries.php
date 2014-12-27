@@ -1163,6 +1163,10 @@ if (isset($_POST['type'])) {
                     'SELECT rand_key FROM `'.$pre.'keys` WHERE `table`=%s AND `id`=%i', "items", $_POST['id']
                 );
                 $pw = substr($pw, strlen($dataItemKey['rand_key']));
+                // if error getting substring, then must be a blank password
+                if ($pw === false) {
+                    $pw = "";
+                }
             }
             // check if item is expired
             if (isset($_POST['expired_item']) && $_POST['expired_item'] == 1) {

@@ -29,15 +29,15 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
 		$fullPath = $dir."/".$file;
 
 		if(is_dir($fullPath)) {
-			if ($res = @chmod($fullPath, $dirPermissions))
-				$res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
-			} else {
-				$res = chmod($fullPath, $filePermissions);
-			}
-			if (!$res) {
-				closedir($dp);
-				return false;
-			}
+            if ($res = @chmod($fullPath, $dirPermissions))
+                $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+        } else {
+            $res = chmod($fullPath, $filePermissions);
+        }
+        if (!$res) {
+            closedir($dp);
+            return false;
+        }
 	}
 	closedir($dp);
 	if (is_dir($dir) && $res)
@@ -237,7 +237,8 @@ if (isset($_POST['type'])) {
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
                             `viewed_no` int(12) NOT null DEFAULT '0',
-                            PRIMARY KEY (`id`)
+                            PRIMARY KEY (`id`),
+                            KEY	`restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "log_items") {
@@ -395,7 +396,8 @@ if (isset($_POST['type'])) {
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
                             KEY `nested_tree_nright` (`nright`),
-                            KEY `nested_tree_nlevel` (`nlevel`)
+                            KEY `nested_tree_nlevel` (`nlevel`),
+                            KEY `personal_folder_idx` (`personal_folder`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "rights") {
@@ -512,7 +514,8 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
-                            `type` varchar(1) NOT NULL DEFAULT 'R'
+                            `type` varchar(1) NOT NULL DEFAULT 'R',
+                            KEY `role_id_idx` (`role_id`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "kb") {
@@ -546,7 +549,8 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."restriction_to_roles` (
                             `role_id` int(12) NOT NULL,
-                            `item_id` int(12) NOT NULL
+                            `item_id` int(12) NOT NULL,
+                            KEY `role_id_idx`  (`role_id`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "keys") {
@@ -554,7 +558,8 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."keys` (
                             `table` varchar(25) NOT NULL,
                             `id` int(20) NOT NULL,
-                            `rand_key` varchar(25) NOT NULL
+                            `rand_key` varchar(25) NOT NULL,
+                            UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "languages") {
@@ -825,11 +830,11 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     // is server Windows or Linux?
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
                         // Change directory permissions
-                        $result = chmod_r($_SESSION['abspath'], 0550, 0440);
+                        $result = chmod_r($_SESSION['abspath'], 0770, 0740);
                         if ($result )
-                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0440);
+                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
                         if  ($result)
-                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0440);
+                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
                     }
   
             	    if ($result === false) {
