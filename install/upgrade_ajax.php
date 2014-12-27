@@ -48,6 +48,20 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
+function addIndexIfNotExist($table, $index, $sql ) {
+    global $dbTmp;
+
+    $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
+    $res = mysqli_fetch_row($mysqli_result);
+
+    // if index does not exist, then add it
+    if (!$res) {
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+    }
+
+    return $res;
+}
+
 function tableExists($tablename, $database = false)
 {
     global $dbTmp;
@@ -637,6 +651,9 @@ if (isset($_POST['type'])) {
                 "type",
                 "VARCHAR(1) NOT NULL DEFAULT 'R'"
             );
+
+            $res2 = addIndexIfNotExist($_SESSION['tbl_prefix'].'items', 'restricted_inactif_idx', 'ADD INDEX `restricted_inactif_idx` (`restricted_to`,`inactif`)');
+
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
             );
@@ -766,6 +783,9 @@ if (isset($_POST['type'])) {
                 "renewal_period",
                 "TINYINT(4) NOT null DEFAULT '0'"
             );
+
+            addIndexIfNotExist($_SESSION['tbl_prefix'].'nested_tree', 'personal_folder_idx', 'ADD INDEX `personal_folder_idx` (`personal_folder`)');
+
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
             #to 1.08
@@ -1106,6 +1126,9 @@ if (isset($_POST['type'])) {
                 `item_id` tinyint(12) NOT NULL
                 ) CHARSET=utf8;"
             );
+
+            $res = addIndexIfNotExist($_SESSION['tbl_prefix'].'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
+
             if ($res) {
                 echo 'document.getElementById("tbl_13").innerHTML = '.
                     '"<img src=\"images/tick.png\">";';
@@ -1127,6 +1150,10 @@ if (isset($_POST['type'])) {
                 `rand_key` varchar(25) NOT NULL
                 ) CHARSET=utf8;"
             );
+
+            // add index to table if not already exists
+            $res = addIndexIfNotExist($_SESSION['tbl_prefix'].'keys', 'rand_key_id_idx', 'ADD UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)');
+
             $resTmp = mysqli_fetch_row(
                 mysqli_query($dbTmp,
                     "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys"
@@ -1446,16 +1473,14 @@ if (isset($_POST['type'])) {
                 `comment` text NOT NULL,
                 `key` varchar(50) NOT NULL,
                 PRIMARY KEY (`id`)
-               ) CHARSET=utf8;"
-            );
+               ) CHARSET=utf8;
+            ");
             if ($res) {
-                echo 'document.getElementById("tbl_25").innerHTML = '.
-                    '"<img src=\"images/tick.png\">";';
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = '.
                     '"An error appears on table SUGGESTION! '.mysqli_error($dbTmp).'";';
-                echo 'document.getElementById("tbl_25").innerHTML = '.
-                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysqli_close($dbTmp);
                 break;
@@ -1626,7 +1651,7 @@ if (isset($_POST['type'])) {
                     $fh,
                     utf8_encode(
 "<?php
-global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$_SESSION['settings']['pwComplexity'], \$mngPages;
+global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
@@ -1705,24 +1730,12 @@ require_once \"".$skFile."\";
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
 
-            @mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
-            );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
                 $_SESSION['db_bdd'],
                 $_SESSION['db_port']
-            );
-            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
-            mysqli_select_db(
-                $dbTmp,
-                $_SESSION['db_bdd']
             );
 
             $res = mysqli_query($dbTmp,

@@ -18,6 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+// No time limit
+set_time_limit(0);
+
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
