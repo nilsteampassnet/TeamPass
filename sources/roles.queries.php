@@ -23,6 +23,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_roles")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -99,7 +100,7 @@ if (!empty($_POST['type'])) {
         case "edit_role":
             //Check if role already exist : No similar roles
             //$tmp = DB::fetchRow("SELECT COUNT(*) FROM ".$pre."roles_title WHERE id != '".$_POST['id']."' AND title = '".mysqli_escape_string($link, stripslashes($_POST['title']))."'");
-            DB::queryt("SELECT * FROM ".$pre."roles_title WHERE title = %s AND id = %i", $_POST['title'], $_POST['id']);
+            DB::query("SELECT * FROM ".$pre."roles_title WHERE title = %s AND id = %i", $_POST['title'], $_POST['id']);
             $counter = DB::count();
             if ($counter == 0) {
                 DB::update(
@@ -192,7 +193,7 @@ if (!empty($_POST['type'])) {
         #CASE refresh the matrix
         case "refresh_roles_matrix":
             //pw complexity levels
-            $pwComplexity = array(
+            $_SESSION['settings']['pwComplexity'] = array(
                 0=>array(0,$LANG['complex_level0']),
                 25=>array(25,$LANG['complex_level1']),
                 50=>array(50,$LANG['complex_level2']),
@@ -245,7 +246,7 @@ if (!empty($_POST['type'])) {
                         '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
                         '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.
-                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$pwComplexity[$record['complexity']][1].'&nbsp;]</div></th>';
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$_SESSION['settings']['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
 
                     array_push($arrRoles, $record['id']);
                 }
@@ -295,7 +296,7 @@ if (!empty($_POST['type'])) {
 
             $return_values = array(
                 "new_table" => $texte,
-                "all" => $roles_count[0],
+                "all" => $roles_count,
                 "next" => $next,
                 "previous" => $previous
             );

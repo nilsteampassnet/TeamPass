@@ -48,6 +48,20 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
+function addIndexIfNotExist($table, $index, $sql ) {
+    global $dbTmp;
+
+    $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
+    $res = mysqli_fetch_row($mysqli_result);
+
+    // if index does not exist, then add it
+    if (!$res) {
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+    }
+
+    return $res;
+}
+
 function tableExists($tablename, $database = false)
 {
     global $dbTmp;
@@ -90,6 +104,7 @@ if (isset($_POST['type'])) {
                 $abspath."/includes/settings.php",
                 $abspath."/install/",
                 $abspath."/includes/",
+                $abspath."/includes/avatars/",
                 $abspath."/files/",
                 $abspath."/upload/"
             );
@@ -161,6 +176,10 @@ if (isset($_POST['type'])) {
                         $_SESSION['smtp_auth_username'] = getSettingValue($val);
                     } elseif (substr_count($val, '$smtp_auth_password')>0) {
                         $_SESSION['smtp_auth_password'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_port')>0) {
+                        $_SESSION['smtp_port'] = getSettingValue($val);
+                    } elseif (substr_count($val, '$smtp_security')>0) {
+                        $_SESSION['smtp_security'] = getSettingValue($val);
                     } elseif (substr_count($val, '$email_from')>0) {
                         $_SESSION['email_from'] = getSettingValue($val);
                     } elseif (substr_count($val, '$email_from_name')>0) {
@@ -513,7 +532,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'email_smtp_auth', @$_SESSION['smtp_auth'], 0),
                 array('admin', 'email_auth_username', @$_SESSION['smtp_auth_username'], 0),
                 array('admin', 'email_auth_pwd', @$_SESSION['smtp_auth_password'], 0),
-                array('admin', 'email_post', '25', 0),
+                array('admin', 'email_port', @$_SESSION['smtp_port'], 0),
+                array('admin', 'email_security', @$_SESSION['smtp_security'], 0),
                 array('admin', 'email_from', @$_SESSION['email_from'], 0),
                 array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
                 array('admin', '2factors_authentication', 0, 0),
@@ -622,10 +642,18 @@ if (isset($_POST['type'])) {
                 "VARCHAR(250) DEFAULT NULL"
             );
             $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "viewed_no",
+                "INT(12) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."roles_values",
                 "type",
                 "VARCHAR(1) NOT NULL DEFAULT 'R'"
             );
+
+            $res2 = addIndexIfNotExist($_SESSION['tbl_prefix'].'items', 'restricted_inactif_idx', 'ADD INDEX `restricted_inactif_idx` (`restricted_to`,`inactif`)');
+
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."items MODIFY pw VARCHAR(400)"
             );
@@ -648,6 +676,9 @@ if (isset($_POST['type'])) {
             );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
             );
 
             ## Alter USERS table
@@ -726,6 +757,16 @@ if (isset($_POST['type'])) {
         	    "ga",
         	    "VARCHAR(50) DEFAULT NULL"
         	);
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "avatar",
+                "VARCHAR(255) NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "avatar_thumb",
+                "VARCHAR(255) NOT null"
+            );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table
@@ -742,6 +783,9 @@ if (isset($_POST['type'])) {
                 "renewal_period",
                 "TINYINT(4) NOT null DEFAULT '0'"
             );
+
+            addIndexIfNotExist($_SESSION['tbl_prefix'].'nested_tree', 'personal_folder_idx', 'ADD INDEX `personal_folder_idx` (`personal_folder`)');
+
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
             #to 1.08
@@ -1082,6 +1126,9 @@ if (isset($_POST['type'])) {
                 `item_id` tinyint(12) NOT NULL
                 ) CHARSET=utf8;"
             );
+
+            $res = addIndexIfNotExist($_SESSION['tbl_prefix'].'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
+
             if ($res) {
                 echo 'document.getElementById("tbl_13").innerHTML = '.
                     '"<img src=\"images/tick.png\">";';
@@ -1103,6 +1150,10 @@ if (isset($_POST['type'])) {
                 `rand_key` varchar(25) NOT NULL
                 ) CHARSET=utf8;"
             );
+
+            // add index to table if not already exists
+            $res = addIndexIfNotExist($_SESSION['tbl_prefix'].'keys', 'rand_key_id_idx', 'ADD UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)');
+
             $resTmp = mysqli_fetch_row(
                 mysqli_query($dbTmp,
                     "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys"
@@ -1422,20 +1473,30 @@ if (isset($_POST['type'])) {
                 `comment` text NOT NULL,
                 `key` varchar(50) NOT NULL,
                 PRIMARY KEY (`id`)
-               ) CHARSET=utf8;"
-            );
+               ) CHARSET=utf8;
+            ");
             if ($res) {
-                echo 'document.getElementById("tbl_25").innerHTML = '.
-                    '"<img src=\"images/tick.png\">";';
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
                 echo 'document.getElementById("res_step4").innerHTML = '.
                     '"An error appears on table SUGGESTION! '.mysqli_error($dbTmp).'";';
-                echo 'document.getElementById("tbl_25").innerHTML = '.
-                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/exclamation-red.png\">";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 mysqli_close($dbTmp);
                 break;
             }
+
+            # TABLE EXPORT
+            mysqli_query($dbTmp,
+                "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."export` (
+                `id` int(12) NOT NULL,
+                `label` varchar(255) NOT NULL,
+                `login` varchar(100) NOT NULL,
+                `description` text NOT NULL,
+                `pw` text NOT NULL,
+                `path` varchar(255) NOT NULL
+                ) CHARSET=utf8;"
+            );
 
             //CLEAN UP ITEMS TABLE
             $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
@@ -1591,7 +1652,7 @@ if (isset($_POST['type'])) {
                     utf8_encode(
 "<?php
 global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
-global \$server, \$user, \$pass, \$database, \$pre, \$db;
+global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
 \$server = \"". $_SESSION['db_host'] ."\";
@@ -1669,24 +1730,12 @@ require_once \"".$skFile."\";
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
 
-            @mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
-            );
             $dbTmp = mysqli_connect(
                 $_SESSION['db_host'],
                 $_SESSION['db_login'],
                 $_SESSION['db_pw'],
                 $_SESSION['db_bdd'],
                 $_SESSION['db_port']
-            );
-            @mysqli_select_db($dbTmp, $_SESSION['db_bdd']);
-            mysqli_select_db(
-                $dbTmp,
-                $_SESSION['db_bdd']
             );
 
             $res = mysqli_query($dbTmp,
@@ -1699,9 +1748,17 @@ require_once \"".$skFile."\";
                 if (empty($pw)) {
                     $pw = decryptOld($data['pw']);
 
-                    // generate Key and encode PW
-                    $randomKey = generateKey();
-                    $pw = $randomKey.$pw;
+                    // if no key ... then add it
+                    $resData = mysqli_query($dbTmp,
+                        "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
+                        WHERE `table` = 'items' AND id = ".$data['id']
+                    ) or die(mysqli_error($dbTmp));
+                    $dataTemp = mysqli_fetch_row($resData);
+                    if ($dataTemp[0] == 0) {
+                        // generate Key and encode PW
+                        $randomKey = generateKey();
+                        $pw = $randomKey.$pw;
+                    }
                     $pw = encrypt($pw, $_SESSION['session_start']);
 
                     // store Password

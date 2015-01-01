@@ -23,6 +23,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -152,7 +153,7 @@ if (isset($_POST['newtitle'])) {
     }
 
     //Get title to display it
-    echo $pwComplexity[$_POST['changer_complexite']][1];
+    echo $_SESSION['settings']['pwComplexity'][$_POST['changer_complexite']][1];
 
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
@@ -378,14 +379,15 @@ if (isset($_POST['newtitle'])) {
                                 $pre.'roles_values',
                                 array(
                                     'role_id' => $role,
-                                    'folder_id' => $newId
+                                    'folder_id' => $newId,
+                                    'type' => "W"
                                 )
                             );
                         }
                     }
 
                     //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                    $rows = DB::query("SELECT role_id FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
+                    $rows = DB::query("SELECT role_id, type FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
                     foreach ($rows as $record) {
                         //add access to this subfolder
                         DB::insert(

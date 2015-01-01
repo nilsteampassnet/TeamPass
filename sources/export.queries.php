@@ -18,6 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+// No time limit
+set_time_limit(0);
+
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
@@ -47,14 +50,28 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 ;
 //Manage type of action asked
 switch ($_POST['type']) {
+    case "initialize_export_table":
+        DB::query("TRUNCATE TABLE ".$pre."export");
+        break;
+
     //CASE export to PDF format
     case "export_to_pdf_format":
-        $full_listing = array();
+        $id = $_POST['id'];
+        if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
+            // get path
+            $tree->rebuild();
+            $folders = $tree->getPath($id, true);
+            $path = "";
+            foreach ($folders as $val) {
+                if ($path) {
+                    $path .= " » ";
+                }
+                $path .= $val->title;
+            }
 
-        foreach (explode(';', $_POST['ids']) as $id) {
-            if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows = DB::query(
-                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
+            // send query
+            $rows = DB::query(
+                "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                     l.date as date,
                     n.renewal_period as renewal_period,
                     k.rand_key
@@ -66,69 +83,69 @@ switch ($_POST['type']) {
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                     ORDER BY i.label ASC, l.date DESC",
-                    "0",
-                    intval($id),
-                    "at_creation",
-                    "at_modification",
-                    "at_pw :%"
-                );
+                "0",
+                intval($id),
+                "at_creation",
+                "at_modification",
+                "at_pw :%"
+            );
 
-                $id_managed = '';
-                $i = 0;
-                $items_id_list = array();
-                foreach ($rows as $reccord) {
-                    $restricted_users_array = explode(';', $reccord['restricted_to']);
-                    //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $reccord['id']) {
-                        if (
-                        (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
+            $id_managed = '';
+            $i = 0;
+            $items_id_list = array();
+            foreach ($rows as $record) {
+                $restricted_users_array = explode(';', $record['restricted_to']);
+                //exclude all results except the first one returned by query
+                if (empty($id_managed) || $id_managed != $record['id']) {
+                    if (
+                        (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
                         ||
-                        (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
-                        ) {
-                            //exclude this case
+                        (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                    ) {
+                        //exclude this case
+                    } else {
+                        //encrypt PW
+                        if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                            $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
                         } else {
-                            //encrypt PW
-                            if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
-                            } else {
-                                $pw = decrypt($reccord['pw']);
-                            }
-                            if ($reccord['perso'] != 1) {
-                                $pw = substr(addslashes($pw), strlen($reccord['rand_key']));
-                            }
-                            /*$full_listing[$reccord['id']] = array(
-                               'id' => $reccord['id'],
-                               'label' => $reccord['label'],
-                               'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
-                               'login' => $reccord['login']
-                            );*/
-                            $full_listing[$id][$reccord['id']] = array($reccord['label'], $reccord['login'], $pw, $reccord['description']);
+                            $pw = decrypt($record['pw']);
                         }
+                        if ($record['perso'] != 1) {
+                            $pw = stripslashes($pw);
+                            $pw = substr(addslashes($pw), strlen($record['rand_key']));
+                        }
+                        // store
+                        DB::insert(
+                            $pre.'export',
+                            array(
+                                'id' => $record['id'],
+                                'description' => addslashes($record['description']),
+                                'label' => addslashes($record['label']),
+                                'pw' => ($pw),
+                                'login' => $record['login'],
+                                'path' => $path
+                            )
+                        );
                     }
-                    $id_managed = $reccord['id'];
                 }
+                $id_managed = $record['id'];
+                $folder_title = $record['folder_title'];
             }
         }
+        echo '[{}]';
+        break;
 
-        $tree->rebuild();
-        // get node paths for table headers
-        foreach ($full_listing as $key => $val) {
-            $folders = $tree->getPath($key, true);
-            $path = "";
-            foreach ($folders as $val) {
-                if ($path) {
-                    $path .= " » ";
-                }
-                $path .= $val->title;
-            }
-            $paths[$key] = $path;
-        }
-
-        //Build PDF
-        if (!empty($full_listing)) {
+    case "finalize_export_pdf":
+        // query
+        $rows = DB::query("SELECT * FROM ".$pre."export");
+        $counter = DB::count();
+        if ($counter > 0) {
+            // print
             //Some variables
             $table_full_width = 190;
             $table_col_width = array(45, 40, 45, 60);
+            $table = array('label', 'login', 'pw', 'description');
+            $prev_path = "";
 
             //Prepare the PDF file
             include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
@@ -147,50 +164,50 @@ switch ($_POST['type']) {
             $pdf->SetFont('DejaVu', '', 12);
             $pdf->Cell(0, 10, $LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
 
-            foreach ($full_listing as $key => $val) {
-                $printed_ids[] = $key;
-                $pdf->SetFont('DejaVu', '', 10);
-                $pdf->SetFillColor(192, 192, 192);
-                error_log('key: '.$key.' - paths: '.$paths[$key]);
-                $pdf->cell(0, 6, $paths[$key], 1, 1, "L", 1);
-                $pdf->SetFillColor(222, 222, 222);
-                $pdf->cell(45, 6, $LANG['label'], 1, 0, "C", 1);
-                $pdf->cell(40, 6, $LANG['login'], 1, 0, "C", 1);
-                $pdf->cell(45, 6, $LANG['pw'], 1, 0, "C", 1);
-                $pdf->cell(60, 6, $LANG['description'], 1, 1, "C", 1);
-                foreach ($val as $item) {
-                    //row height calculus
-                    $nb = 0;
-                    for ($i=0; $i<count($item); $i++) {
-                        if ($i==3) {
-                            $item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
-                        }
-                        $nb=max($nb, nbLines($table_col_width[$i], $item[$i]));
-                    }
-                    $h=5*$nb;
-                    //Page break needed?
-                    checkPageBreak($h);
-                    //Draw cells
-                    $pdf->SetFont('DejaVu', '', 9);
-                    for ($i=0; $i<count($item); $i++) {
-                        $w=$table_col_width[$i];
-                        $a='L';
-                        //actual position
-                        $x=$pdf->GetX();
-                        $y=$pdf->GetY();
-                        //Draw
-                        $pdf->Rect($x, $y, $w, $h);
-                        //Write
-                        if ($i==3) {
-                            $item[$i] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $item[$i]), ENT_QUOTES));
-                        }
-                        $pdf->MultiCell($w, 5, $item[$i], 0, $a);
-                        //go to right
-                        $pdf->SetXY($x+$w, $y);
-                    }
-                    //return to line
-                    $pdf->Ln($h);
+            $prev_path = "";
+            $table = array('label', 'login', 'pw', 'description');
+            foreach ($rows as $record) {
+                $printed_ids[] = $record['id'];
+                if ($prev_path != $record['path']) {
+                    $pdf->SetFont('DejaVu', '', 10);
+                    $pdf->SetFillColor(192, 192, 192);
+                    error_log('key: '.$key.' - paths: '.$record['path']);
+                    $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
+                    $pdf->SetFillColor(222, 222, 222);
+                    $pdf->cell($table[0], 6, $LANG['label'], 1, 0, "C", 1);
+                    $pdf->cell($table[1], 6, $LANG['login'], 1, 0, "C", 1);
+                    $pdf->cell($table[2], 6, $LANG['pw'], 1, 0, "C", 1);
+                    $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
+                $prev_path = $record['path'];
+                if (!isutf8($record['pw'])) $record['pw'] = "";
+                $record['description'] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $record['description']), ENT_QUOTES));
+                //row height calculation
+                $nb = 0;
+                $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[3], $record['description']));
+                $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
+
+                $h=5*$nb;
+                //Page break needed?
+                checkPageBreak($h);
+                //Draw cells
+                $pdf->SetFont('DejaVu', '', 9);
+                for ($i=0; $i<count($table); $i++) {
+                    $w=$table_col_width[$i];
+                    $a='L';
+                    //actual position
+                    $x=$pdf->GetX();
+                    $y=$pdf->GetY();
+                    //Draw
+                    $pdf->Rect($x, $y, $w, $h);
+                    //Write
+                    $pdf->MultiCell($w, 5, stripslashes($record[$table[$i]]), 0, $a);
+                    //go to right
+                    $pdf->SetXY($x+$w, $y);
+                }
+                //return to line
+                $pdf->Ln($h);
             }
 
             $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
@@ -198,7 +215,10 @@ switch ($_POST['type']) {
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
             //log
-            logEvents('pdf_export', implode(';', $printed_ids), $_SESSION['user_id']);
+            logEvents('pdf_export', "", $_SESSION['user_id']);
+
+            //clean table
+            DB::query("TRUNCATE TABLE ".$pre."export");
 
             echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         }
@@ -242,36 +262,36 @@ switch ($_POST['type']) {
                     "at_modification",
                     "at_pw :%"
                 );
-                foreach ($rows as $reccord) {
-                    $restricted_users_array = explode(';', $reccord['restricted_to']);
+                foreach ($rows as $record) {
+                    $restricted_users_array = explode(';', $record['restricted_to']);
                     //exclude all results except the first one returned by query
-                    if (empty($id_managed) || $id_managed != $reccord['id']) {
+                    if (empty($id_managed) || $id_managed != $record['id']) {
                         if (
-                            (in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
+                            (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
                             ||
-                            (!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                            (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
                         ) {
                             //exclude this case
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                                $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
                             } else {
-                                $pw = decrypt($reccord['pw']);
+                                $pw = decrypt($record['pw']);
                             }
                             $full_listing[$i] = array(
-                                'id' => $reccord['id'],
-                                'label' => $reccord['label'],
-                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($reccord['description']))))),
-                                'pw' => substr(addslashes($pw), strlen($reccord['rand_key'])),
-                                'login' => $reccord['login'],
-                                'restricted_to' => $reccord['restricted_to'],
-                                'perso' => $reccord['perso']
+                                'id' => $record['id'],
+                                'label' => $record['label'],
+                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
+                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'login' => $record['login'],
+                                'restricted_to' => $record['restricted_to'],
+                                'perso' => $record['perso']
                             );
                             $i++;
                         }
                     }
-                    $id_managed = $reccord['id'];
+                    $id_managed = $record['id'];
                 }
             }
         }
@@ -318,20 +338,20 @@ switch ($_POST['type']) {
                     "at_modification",
                     "at_pw :%"
             	);
-            	foreach ($result as $reccord) {
-            		$restricted_users_array = explode(';', $reccord['restricted_to']);
+            	foreach ($result as $record) {
+            		$restricted_users_array = explode(';', $record['restricted_to']);
             		if (
             			(
-	            			(in_array($id, $_SESSION['personal_visible_groups']) && !($reccord['perso'] == 1 && $_SESSION['user_id'] == $reccord['restricted_to']) && !empty($reccord['restricted_to']))
+	            			(in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
 	            			||
-	            			(!empty($reccord['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+	            			(!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
             			    ||
             			    (in_array($id, $_SESSION['groupes_visibles']))
             			) && (
-            				!in_array($reccord['id'], $idsList)
+            				!in_array($record['id'], $idsList)
 						)
             		) {
-	            		array_push($idsList, $reccord['id']);
+	            		array_push($idsList, $record['id']);
 	            		$objNumber++;
             		}
             	}
@@ -423,29 +443,29 @@ Enter the decryption key : <input type="password" id="saltkey" />
             "at_pw :%"
 		);
 		//AND i.id_tree IN (".implode(',', $list).")
-		foreach ($rows as $reccord) {
+		foreach ($rows as $record) {
 			//exclude all results except the first one returned by query
-			if (empty($id_managed) || $id_managed != $reccord['id']) {
+			if (empty($id_managed) || $id_managed != $record['id']) {
 				// decrypt PW
 				if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-					$pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+					$pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
 				} else {
-					$pw = decrypt($reccord['pw']);
+					$pw = decrypt($record['pw']);
 				}
 				array_push($full_listing,array(
-				    'id_tree' => $reccord['id_tree'],
-				    'id' => $reccord['id'],
-				    'label' => $reccord['label'],
-				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($reccord['description']))))),
-				    'pw' => substr(($pw), strlen($reccord['rand_key'])),
-				    'login' => $reccord['login'],
-				    'url' => $reccord['url'],
-				    'perso' => $reccord['perso']
+				    'id_tree' => $record['id_tree'],
+				    'id' => $record['id'],
+				    'label' => $record['label'],
+				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
+				    'pw' => substr(($pw), strlen($record['rand_key'])),
+				    'login' => $record['login'],
+				    'url' => $record['url'],
+				    'perso' => $record['perso']
 				));
 				$i++;
-				array_push($items_id_list,$reccord['id']);
+				array_push($items_id_list,$record['id']);
 			}
-			$id_managed = $reccord['id'];
+			$id_managed = $record['id'];
 		}
 
 		//save in export file
@@ -571,7 +591,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 function checkPageBreak($h)
 {
     global $pdf;
-    //Continu on a new page if needed
+    //Continue on a new page if needed
     if ($pdf->GetY()+$h>$pdf->PageBreakTrigger) {
         $pdf->addPage($pdf->CurOrientation);
     }

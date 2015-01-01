@@ -77,7 +77,7 @@ foreach ($rows as $record) {
 //pw complexity levels
 if (isset($_SESSION['user_language'])) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    $pwComplexity = array(
+    $_SESSION['settings']['pwComplexity'] = array(
         0=>array(0,$LANG['complex_level0']),
         25=>array(25,$LANG['complex_level1']),
         50=>array(50,$LANG['complex_level2']),
@@ -148,7 +148,7 @@ if (
     echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php"}, 10);
+    setTimeout(function(){document.location.href="index.php?session_over=true"}, 10);
     -->
     </script>';
     exit;
@@ -375,20 +375,20 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$numDaysBeforePwExpiration = "";    //initiliaze variable
+$_SESSION['numDaysBeforePwExpiration'] = "";    //initiliaze variable
 if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change'])) {
         if ($_SESSION['settings']['pw_life_duration'] == 0) {
-            $numDaysBeforePwExpiration = "infinite";
+            $_SESSION['numDaysBeforePwExpiration'] = "infinite";
             $_SESSION['validite_pw'] = true;
         } else {
-            $numDaysBeforePwExpiration = $_SESSION['settings']['pw_life_duration'] - round(
+            $_SESSION['numDaysBeforePwExpiration'] = $_SESSION['settings']['pw_life_duration'] - round(
                 (mktime(0, 0, 0, date('m'), date('d'), date('y'))-$_SESSION['last_pw_change'])/(24*60*60)
             );
-            if ($numDaysBeforePwExpiration <= 0) {
+            if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;
             } else {
                 $_SESSION['validite_pw'] = true;
@@ -471,10 +471,5 @@ if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['u
 
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
-    array(
-        "time" => time() - 600
-    )
-);
-$counter = DB::count();
-$_SESSION['nb_users_online'] = $counter;
+DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%i", time() - 600);
+$_SESSION['nb_users_online'] = DB::count();

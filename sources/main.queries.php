@@ -507,8 +507,8 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = json_decode(Encryption\Crypt\aesctr::decrypt(urldecode($_POST['sk']), $_SESSION['key'], 256), true);
-        if ($dataReceived['psk'] != "**************************") {
+        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
+        if ($dataReceived['psk'] != "") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
@@ -523,7 +523,7 @@ switch ($_POST['type']) {
      */
     case "change_personal_saltkey":
         //decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
@@ -811,6 +811,32 @@ switch ($_POST['type']) {
                 );
             }
         }
+        
+        break;
+    /**
+     * Refresh list of last items seen
+     */
+    case "refresh_list_items_seen":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+        $rows = DB::query(
+            "SELECT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+            FROM ".$pre."log_items AS l
+            LEFT JOIN ".$pre."items AS i ON (l.id_item = i.id)
+            WHERE l.action = %s AND l.id_user = %i
+            GROUP BY i.id
+            ORDER BY l.date DESC
+            LIMIT 0, 10",
+            "at_shown",
+            $_SESSION['user_id']
+        );
+        foreach ($rows as $record) {
+            $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+        }
+        
+        echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
         
         break;
 }

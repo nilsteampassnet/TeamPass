@@ -25,15 +25,16 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css">
 
-
         <script type="text/javascript" src="includes/js/functions.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
+        <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -44,23 +45,25 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
-
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
 
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
 
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>';
+        <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>
+
+        <!--
+        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css">
+        <script src="includes/bootstrap/js/bootstrap.min.js"></script>
+        -->';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
-    $htmlHeaders .= '
-        <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
@@ -325,6 +328,17 @@ $htmlHeaders .= '
             }
        );
     }
+    
+    function loadProfileDialog()
+    {
+        $("#dialog_user_profil").dialog({
+            open: function(event, ui) {
+                $("#div_user_profil").load(
+                    "'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
+                );
+            }
+        }).dialog("open");
+    }
 
     /*
     * Clean disconnection of user for security reasons.
@@ -340,11 +354,56 @@ $htmlHeaders .= '
             });
         }
     });*/
+    
+    
+    function displayItemNumber (item_id, tree_id)
+    {
+        if (window.location.href.indexOf("page=items") == -1) {
+            location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
+        } else {
+            AfficherDetailsItem(item_id);
+            if (tree_id != $("#hid_cat").val()) {
+                ListerItems(tree_id);
+            }
+        }
+    }
+    
+    function refreshListLastSeenItems()
+    {        
+        // refresh list of last items seen
+        $.post(
+            "sources/main.queries.php",
+            {
+                type    : "refresh_list_items_seen",
+                key        : "'.$_SESSION["key"].'"
+            },
+            function(data) {
+                //check if format error
+                if (data[0].error == "") {
+                    $("#last_seen_items_list").html((data[0].text));
+                    // rebuild menu
+                    $("#menu_last_seen_items").menu("refresh");
+                } else {
+                    $("#main_info_box_text").html(data[0].error);
+                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                }
+            },
+            "json"
+        );
+    }
 
     $(function() {
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
         $("#user_session").val(sessionStorage.password);
+
+        $(".menu").menu({
+            icon: {},
+            position: { my: "left top", at: "left bottom" },
+            _closeOnDocumentClick: function( event ) {
+                return true;
+            }
+        });
 
         //Display Tabs
         $("#item_edit_tabs, #item_tabs").tabs();
@@ -397,6 +456,25 @@ $htmlHeaders .= '
             }
         });
 
+        //DIALOG FOR USER PROFILE
+        $("#dialog_user_profil").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 500,
+            height: 400,
+            title: "'.$LANG['user_profile_dialogbox_menu'].'",
+            buttons: {
+                "'.$LANG['close'].'": function() {
+                    $(this).dialog("close");
+                }
+            },
+            close: function() {
+                $("#dialog_user_profil").dialog("option", "height", 400);
+                $("#div_user_profil").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>");
+            }
+        });
+
         //MESSAGE DIALOG
         $("#div_dialog_message").dialog({
             bgiframe: true,
@@ -407,6 +485,113 @@ $htmlHeaders .= '
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
                 "'.$LANG['ok'].'": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+
+        // DIALOG BOX FOR SETTING PERSONAL SALTKEY
+        $("#div_set_personal_saltkey").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 500,
+            height: 150,
+            title: "'.$LANG['home_personal_saltkey_label'].'",
+            open: function( event, ui ) {
+                $("#input_personal_saltkey").val("'.$_SESSION['my_sk'].'");
+            },
+            buttons: {
+                "'.$LANG['save_button'].'": function() {
+                    LoadingPage();
+                    var data = "{\'psk\':\'"+sanitizeString($("#input_personal_saltkey").val())+"\'}";
+                    //Send query
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                           type    : "store_personal_saltkey",
+                           data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                        },
+                        function(data) {
+                            LoadingPage();
+                            if ($("#input_personal_saltkey").val() != "") {
+                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].'");
+                                $("#main_info_box").show().position({
+                                    my: "center",
+                                    at: "center top+75",
+                                    of: "#top"
+                                });
+                                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                                location.reload();
+                            }
+                            $("#input_personal_saltkey").val("");
+                        }
+                    );
+                    $(this).dialog("close");
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+
+        // DIALOG BOX FOR CHANGING PERSONAL SALTKEY
+        $("#div_change_personal_saltkey").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 400,
+            height: 250,
+            title: "'.$LANG['menu_title_new_personal_saltkey'].'",
+            buttons: {
+                "'.$LANG['ok'].'": function() {
+                    $("#div_change_personal_saltkey_wait").show();
+                    var data = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
+                    //Send query
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type    : "change_personal_saltkey",
+                            data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                        },
+                        function(data) {
+                            $("#div_change_personal_saltkey_wait").hide();
+                            $("#div_change_personal_saltkey").dialog("close");
+                        }
+                   );
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+
+        // DIALOG BOX FOR DELETING PERSONAL SALTKEY
+        $("#div_reset_personal_sk").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 400,
+            height: 200,
+            title: "'.$LANG['menu_title_new_personal_saltkey'].'",
+            buttons: {
+                "'.$LANG['ok'].'": function() {
+                    $("#div_loading").show();
+
+                    //Send query
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                           type    : "reset_personal_saltkey",
+                           sk    : encodeURIComponent($("#reset_personal_saltkey").val())
+                        },
+                        function(data) {
+                            $("#div_loading").hide();
+                            $("#div_reset_personal_sk").dialog("close");
+                        }
+                   );
+                },
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }
@@ -465,6 +650,18 @@ $htmlHeaders .= '
                 }
             }
         });
+        
+        /*
+        //inline editing
+        $(".editable_textarea").editable("sources/users.queries.php", {
+              indicator : "<img src=\'includes/images/loading.gif\' />",
+              type   : "text",
+              select : true,
+              submit : "<img src=\'includes/images/disk_black.png\' />",
+              cancel : "<img src=\'includes/images/cross.png\' />",
+              name : "newValue"
+        });
+        */
     });';
 
 if (!isset($_GET['page'])) {

@@ -239,6 +239,7 @@ if (!isset($_GET['type'])) {
     echo $sOutput;
 } else if (isset($_GET['type']) && $_GET['type'] == "search_for_items") {
     include 'main.functions.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
 
@@ -397,12 +398,24 @@ if (!isset($_GET['type'])) {
         }
         
         // set folder
-        $sOutput .= '&nbsp;<font size="1px" font-style="italic">('.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).')</font>';
+        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i  class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
+        
+        
+
+        $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+        
+        // Prepare make Favorite small icon
+        $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+        if (in_array($record['id'], $_SESSION['favourites'])) {
+            $sOutput .= '<img src="includes/images/mini_star_enable.png" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" />';
+        } else {
+            $sOutput .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" />';
+        }
+        $sOutput .= "</span>";
 
         $sOutput .= '</li>';
     }
 
-$LANG['find_message'] = "%X% objects found.";
     $returnValues = array(
         "items_html" => $sOutput,
         "message" => str_replace("%X%", $iFilteredTotal, $LANG['find_message'])

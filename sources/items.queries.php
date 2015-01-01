@@ -19,6 +19,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -37,13 +38,12 @@ if (isset($_SESSION['settings']['timezone'])) {
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 include 'main.functions.php';
 // pw complexity levels
-$pwComplexity = array(
+$_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),
     25 => array(25, $LANG['complex_level1']),
     50 => array(50, $LANG['complex_level2']),
@@ -1163,6 +1163,10 @@ if (isset($_POST['type'])) {
                     'SELECT rand_key FROM `'.$pre.'keys` WHERE `table`=%s AND `id`=%i', "items", $_POST['id']
                 );
                 $pw = substr($pw, strlen($dataItemKey['rand_key']));
+                // if error getting substring, then must be a blank password
+                if ($pw === false) {
+                    $pw = "";
+                }
             }
             // check if item is expired
             if (isset($_POST['expired_item']) && $_POST['expired_item'] == 1) {
@@ -1267,6 +1271,16 @@ if (isset($_POST['type'])) {
                 } else {
                     $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
                 }
+
+                // statistics
+                DB::update(
+                    $pre."items",
+                    array(
+                        'viewed_no' => $dataItem['viewed_no']+1,
+                    ),
+                    "id = %i",
+                    $_POST['id']
+                );
 
                 // get fields
                 $fieldsTmp = $arrCatList = "";
@@ -1737,7 +1751,7 @@ if (isset($_POST['type'])) {
             }
             // check if items exist
             $where = new WhereClause('and');
-            if (isset($_POST['restricted']) && $_POST['restricted'] == 1) {
+            if (isset($_POST['restricted']) && $_POST['restricted'] == 1 && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
                 $counter = count($_SESSION['list_folders_limited'][$_POST['id']]);
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$_POST['id']]);
             }
@@ -2151,6 +2165,18 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "get_complixity_level":
+            // is user allowed to access this folder - readonly
+            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {
+                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {
+                    $returnValues = array(
+                        "error" => "user_is_readonly",
+                        "message" => $LANG['error_not_allowed_to']
+                    );
+                    echo prepareExchangedData($returnValues, "encode");
+                    break;
+                }
+            }
+
             if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
                 // Lock Item (if already locked), go back and warn
                 $dataTmp = DB::queryFirstRow("SELECT timestamp, user_id FROM ".$pre."items_edition WHERE item_id = %i", $_POST['item_id']);//echo ">".$dataTmp[0];
@@ -2208,7 +2234,7 @@ if (isset($_POST['type'])) {
             );
 
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
-                $complexity = $pwComplexity[$data['valeur']][1];
+                $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
             } else {
                 $complexity = $LANG['not_defined'];
             }
@@ -2909,14 +2935,21 @@ if (isset($_POST['type'])) {
                                 array_push($arrayPf, $record['id']);
                             }
                         }
-                    }                    
-                    
+                    }
+
+                    // build WHERE condition
+                    $where = new WhereClause('and');
+                    $where->add('id_tree = %i', $idFolder);
+                    $where->add('label = %s', $label);
+                    if (!empty($arrayPf)) {
+                        $where->add("id_tree NOT IN (".implode(',', $arrayPf).")");
+                    }
+
                     DB::query(
                         "SELECT label
                         FROM ".$pre."items
-                        WHERE id_tree = %i AND label = %s AND id_tree NOT IN (".explode(',', $arrayPf).")",
-                        $idFolder,
-                        $label
+                        WHERE %l",
+                        $where
                     );
                 }
                 

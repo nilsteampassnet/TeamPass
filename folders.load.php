@@ -121,6 +121,17 @@ $(function() {
             }
         }
     });
+    
+    $(".cb_selected_folder").click(function() {
+        var elem = $(this).attr("id").split("-");
+        if ($(this).prop("checked") == true) {
+            $("#row_"+elem[1]).css({"font-weight":"bold"});
+            $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
+        } else {
+            $("#row_"+elem[1]).css({"font-weight":""});
+            $("#title_"+elem[1]).css({"background-color":"#FFF"});
+        }
+    });
 });
 
 function supprimer_groupe(id)
