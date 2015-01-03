@@ -3,8 +3,8 @@
  *
  * @file          french.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,20 +14,18 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
-    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',
     'error_no_user' => 'Aucun utilisateur trouvé !',
     'email_ga_subject' => 'Votre code Google Authenticator pour Teampass',
     'email_ga_text' => 'Bonjour,<br><br>Merci de cliquer ce <a href=\'#link#\'>lien</a> et de flasher le code avec l\'application Google Authenticator de façon à recevoir vos codes d\'identification pour Teampass.<br /><br />Salutations',
-    'settings_attachments_encryption' => 'Activer le cryptage des fichiers joints',
+    'settings_attachments_encryption' => 'Activer le chiffrement des fichiers joints',
     'settings_attachments_encryption_tip' => 'CETTE OPTION PEUT CORROMPRE LES FICHIERS JOINTS. Merci de lire la suite avec attention. Si activée, cette option cryptera les fichiers joints sur le serveur. L\'algorithme de cryptage utilise le SALT défini pour Teampass. Cela requiert également un peu de ressource supplémentaire de la part du serveur. ATTENTION, en cas de changement de stratégie, il est nécessaire de faire tourner le script permettant d\'adapter les fichiers joints existants. Pour cela, voir l\'onglet "Actions spécifiques".',
-    'admin_action_attachments_cryption' => 'Décrypter ou crypter les pièces jointes aux objets',
+    'admin_action_attachments_cryption' => 'Déchiffrer ou chiffrer les pièces jointes aux objets',
     'admin_action_attachments_cryption_tip' => 'ATTENTION : cette opération ne DOIT être faite UNIQUEMENT après avoir modifié l\'option associée dans la page Paramètres. Merci de réaliser une sauvegarde du répertoire \'upload\' avant de procéder.',
-    'encrypt' => 'Crypter',
-    'decrypt' => 'Décrypter',
+    'encrypt' => 'Chiffrer',
+    'decrypt' => 'Déchiffrer',
     'admin_ga_website_name' => 'Nom affiché pour Teampass  dans Google Authenticator',
     'admin_ga_website_name_tip' => 'Ce nom sera affiché pour le code d\'identification dans l\'application Google Authenticator',
     'admin_action_pw_prefix_correct' => 'Corriger le préfixe des mots de passe',
@@ -89,14 +87,14 @@ $LANG = array (
     'settings_enable_sts' => 'Renforcer la sécurité relative à HTTPS -- Attention à bien lire l\'info-bulle.',
     'settings_enable_sts_tip' => 'Cette option renforce le protocole HTTPS. STS permet de déjouer les attaques \'Man-in-the-middle\'. Il est IMPERATIF de disposer d\'un certificat SSL valide pour pouvoir l\'utiliser. Ne pas activer l\'option avec un certificat self-signed! Vous devez vous assurer d\'avoir activé l\'option \'SSLOptions +ExportCertData\' SSL de la configuration d\'Apache.',
     'channel_encryption_no_gmp' => 'L\'extention GMP n\'est pas chargée ! L\'encryptage ne peut pas être initialisé.',
-    'channel_encryption_no_openssl' => 'L\'extention OpenSSL n\'est pas chargée ! L\'encryptage ne peut pas être initialisé.',
-    'channel_encryption_no_file' => 'Fichier des clés de cryptage non trouvé !&lt;br&gt;Merci de lancer la mise à jour.',
-    'admin_action_generate_encrypt_keys' => 'Générer un nouvel ensemble de clés de cryptage.',
+    'channel_encryption_no_openssl' => 'L\'extension OpenSSL n\'est pas chargée ! Le chiffrement ne peut pas être initialisé.',
+    'channel_encryption_no_file' => 'Fichier des clés de chiffrement non trouvé !&lt;br&gt;Merci de lancer la mise à jour.',
+    'admin_action_generate_encrypt_keys' => 'Générer un nouvel ensemble de clés de chiffrement.',
     'admin_action_generate_encrypt_keys_tip' => 'Les clés de chiffrement sont un aspect très important dans la sécurité de votre installation TeamPass. En effet, elles sont utilisées pour chiffrer le canal entre le serveur et le client. Même si ce fichier est sécurisé en dehors de la zone de votre serveur Web, il est recommandé de régénérer de temps en temps ces clés. Notez que cette opération peut prendre jusqu\'à 1 minute.',
     'settings_anyone_can_modify_bydefault' => 'Activer l\'option \'<b><i>Tout le monde peut modifier</b></i>\' par défaut',
-    'channel_encryption_in_progress' => 'Canal en cours de cryptage ...',
+    'channel_encryption_in_progress' => 'Canal en cours de chiffrement',
     'channel_encryption_failed' => 'Identification erronée !',
-    'purge_log' => 'Purger le log depuis',
+    'purge_log' => 'Purger les logs depuis',
     'to' => 'à',
     'purge_now' => 'Purger maintenant !',
     'purge_done' => 'La purge a été faite !&lt;br /&gt;Nombre d\'objets supprimés :',
@@ -214,7 +212,7 @@ $LANG = array (
     'disable_notify' => 'Désactiver la Notification',
     'notify_activated' => 'Notification active',
     'at_email' => 'email',
-    'enable_email_notification_on_item_shown' => 'Envoyer la notification par email lorsque l\'élément est consulté',
+    'enable_email_notification_on_item_shown' => 'Notifier par email lorsque l\'élément est consulté',
     'bad_email_format' => 'L\'adresse email n\'a pas le formalisme requis !',
     'item_share_text' => 'De façon à pouvoir partager cet élément par email, vous devez saisir l\'e-mail et appuyer sur le bouton ENVOYER.',
     'share' => 'Partager cet élément',
@@ -396,7 +394,7 @@ $LANG = array (
     'date_format' => 'Format de la date',
     'days' => 'jours',
     'definition' => 'Définition',
-    'delete' => 'Supprimé',
+    'delete' => 'Supprimer',
     'deletion' => 'Suppressions',
     'deletion_title' => 'Liste des éléments supprimés',
     'del_button' => 'Supprimer',
@@ -572,7 +570,7 @@ $LANG = array (
     'login' => 'Login (si nécessaire)',
     'login_attempts_on' => ' tentatives sur ',
     'login_copied_clipboard' => 'Login copié dans le presse-papier',
-    'login_copy' => 'Copier le compte de connexion dans le Presse-Papier',
+    'login_copy' => 'Copier le nom de compte dans le Presse-Papier',
     'logs' => 'Logs',
     'logs_1' => 'Générer le log de renouvellement des mots de passe pour la journée du',
     'logs_passwords' => 'Générer le log des mots de passe',
@@ -773,8 +771,21 @@ $LANG = array (
     'right_types_label' => 'Sélectionner ',
     'groups' => 'Folders',
     'duplicate' => 'Duplicate',
-    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
+    'duplicate_title_in_same_folder' => 'Un élément portant le même nom existe déjà dans ce répertoire. Les doublons ne sont pas autorisés.',
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
+    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
+    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
+    'user_profile_dialogbox_menu' => 'Your Teampass informations',
+    'admin_email_security' => 'SMTP security',
+    'alert_page_will_reload' => 'The page will now be reloaded',
+    'csv_import_items_selection' => 'Select the items to import',
+    'csv_import_options' => 'Select import options',
+    'file_protection_password' => 'Define file password',
+    'button_export_file' => 'Export items',
+    'error_export_format_not_selected' => 'A format for export file is required',
+    'select_file_format' => 'Select file format',
+    'button_offline_generate' => 'Generate Offline mode file',
+    'upload_new_avatar' => 'Select avatar PNG file',
     '' => ''
 );
-?>

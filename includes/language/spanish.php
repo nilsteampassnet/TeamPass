@@ -3,8 +3,8 @@
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,15 +14,13 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
-    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
-    'user_ga_code' => 'Send GoogleAuthenticator to user by email',
-    'send_ga_code' => 'Google Authenticator for user',
-    'error_no_email' => 'This user has no email set!',
+    'user_ga_code' => 'Enviar GoogleAuthenticatior al usuario vía email',
+    'send_ga_code' => 'Google Authenticator para el usuario',
+    'error_no_email' => 'Este usuario no tiene correo configurado!',
     'error_no_user' => 'No se encontró el usuario!',
     'email_ga_subject' => 'Your Google Authenticator flash code for Teampass',
     'email_ga_text' => 'Hello,<br><br>Please click this <a href=\'#link#\'>LINK</a> and flash it with GoogleAuthenticator application to get your OTP credentials for Teampass.<br /><br />Cheers',
-    'settings_attachments_encryption' => 'Habilitar cifrado de los Items adjuntos',
+    'settings_attachments_encryption' => 'Habilitar cifrado de los items adjuntos',
     'settings_attachments_encryption_tip' => 'THIS OPTION COULD BREAK EXISTING ATTACHMENTS, please read carefully the next. If enabled, Items attachments are stored encrypted on the server. The ecryption uses the SALT defined for Teampass. This requieres more server ressources. WARNING: once you change strategy, it is mandatory to run the script to adapt existing attachments. See tab \'Specific Actions\'.',
     'admin_action_attachments_cryption' => 'Cifrar o descifrar los Items adjunots',
     'admin_action_attachments_cryption_tip' => 'WARNING: this action has ONLY to be performed after changing the associated option in Teampass settings. Please make a copy of the folder \'upload\' before doing any action, just in case ...',
@@ -774,6 +772,19 @@ $LANG = array (
     'duplicate' => 'Duplicate',
     'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
+    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
+    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
+    'user_profile_dialogbox_menu' => 'Your Teampass informations',
+    'admin_email_security' => 'SMTP security',
+    'alert_page_will_reload' => 'The page will now be reloaded',
+    'csv_import_items_selection' => 'Select the items to import',
+    'csv_import_options' => 'Select import options',
+    'file_protection_password' => 'Define file password',
+    'button_export_file' => 'Export items',
+    'error_export_format_not_selected' => 'A format for export file is required',
+    'select_file_format' => 'Select file format',
+    'button_offline_generate' => 'Generate Offline mode file',
+    'upload_new_avatar' => 'Select avatar PNG file',
     '' => ''
 );
-?>
