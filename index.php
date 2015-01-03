@@ -66,7 +66,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         "SELECT flag, name
-        FROM ".$pre."languages
+        FROM ".prefix_table("languages")."
         WHERE label = %s",
         $_GET['language']
     );
@@ -76,8 +76,8 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         "SELECT m.valeur AS valeur, l.flag AS flag
-        FROM ".$pre."misc AS m
-        INNER JOIN ".$pre."languages AS l ON (m.valeur = l.name)
+        FROM ".prefix_table("misc")." AS m
+        INNER JOIN ".prefix_table("languages")." AS l ON (m.valeur = l.name)
         WHERE m.type=%s_type AND m.intitule=%s_intitule",
         array(
             'type' => "admin",
@@ -241,32 +241,33 @@ if (isset($_SESSION['login'])) {
                 </div>';
 
     if ($_SESSION['user_admin'] != 1) {
-        echo '
+        $rows = DB::query(
+            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+            FROM " . $pre . "log_items AS l
+            left JOIN " . $pre . "items AS i ON (l.id_item = i.id)
+            WHERE l.action = %s AND l.id_user = %i
+            GROUP BY i.id
+            ORDER BY l.date DESC
+            LIMIT 0, 10",
+            "at_shown",
+            $_SESSION['user_id']
+        );
+        if (DB::count() > 0) {
+            echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
                             <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">';
-
-        $rows = DB::query(
-            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
-                            FROM " . $pre . "log_items AS l
-                            left JOIN " . $pre . "items AS i ON (l.id_item = i.id)
-                            WHERE l.action = %s AND l.id_user = %i
-                            GROUP BY i.id
-                            ORDER BY l.date DESC
-                            LIMIT 0, 10",
-            "at_shown",
-            $_SESSION['user_id']
-        );
-        foreach ($rows as $record) {
-            echo '
+            foreach ($rows as $record) {
+                echo '
                                 <li onclick="displayItemNumber(' . $record['id'] . ', ' . $record['id_tree'] . ')"><i class="fa fa-tag fa-fw"></i> &nbsp;' . addslashes($record['label']) . '</li>';
-        }
-        echo '
+            }
+            echo '
                             </ul>
                         </li>
                     </ul>
                 </div>';
+        }
     }
     echo '
             </div>

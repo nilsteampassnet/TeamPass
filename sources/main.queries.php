@@ -821,22 +821,27 @@ switch ($_POST['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
+        $x = 1;
+        $arrTmp = array();
         $rows = DB::query(
-            "SELECT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
+            "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
             FROM ".$pre."log_items AS l
-            LEFT JOIN ".$pre."items AS i ON (l.id_item = i.id)
+            RIGHT JOIN ".$pre."items AS i ON (l.id_item = i.id)
             WHERE l.action = %s AND l.id_user = %i
-            GROUP BY i.id
             ORDER BY l.date DESC
-            LIMIT 0, 10",
+            LIMIT 0, 100",
             "at_shown",
             $_SESSION['user_id']
         );
         foreach ($rows as $record) {
-            $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+            if (!in_array($record['id'], $arrTmp)) {
+                $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                $x++;
+                array_push($arrTmp, $record['id']);
+                if ($x >= 10) break;
+            }
         }
         
         echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
-        
         break;
 }

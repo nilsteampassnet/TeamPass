@@ -46,7 +46,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
 
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
 
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
@@ -73,7 +72,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
 
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/dialog-patch.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
 
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />

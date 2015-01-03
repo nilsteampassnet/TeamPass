@@ -6,6 +6,9 @@
  #807 - Fix rights based on roles for new folders
  #808 - Add a SMTP security parameter to the email configuration
  #805 - Keepass Import improvements
+ #790 - Install fixes
+ #835 - Links in items description don't work
+ #817 - Wrong number of users online
  #814
 
 2.1.22

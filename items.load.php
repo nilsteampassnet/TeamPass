@@ -22,6 +22,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     var query_in_progress = 0;
     ZeroClipboard.config( { swfPath: "<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf" } );
 
+    $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
+
 //  Part of Safari 6 OS X fix
     //  clean up HTML for sending via JSON to PHP code
     function clean_up_html_safari(input)
@@ -1463,17 +1465,16 @@ function open_add_item_div()
             return false;
         }
 
-        //Show WYGIWYS editor if enabled
-        //if ($('#richtext_on').val() == "1") {
-            CKEDITOR.replace(
-                "desc",
-                {
-                    toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]],
-                    height: 100,
-                    language: "<?php echo $_SESSION['user_language_code'];?>"
-                }
-           );
-        //}
+        //Show WYGIWYS editor
+        CKEDITOR.replace(
+            "desc",
+            {
+                toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]],
+                height: 100,
+                language: "<?php echo $_SESSION['user_language_code'];?>"
+            }
+        );
+
         if ($("#recherche_group_pf").val() == 1) {
             $("#div_editRestricted").hide();
         } else {

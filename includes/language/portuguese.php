@@ -3,8 +3,8 @@
  *
  * @file          portuguese.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2014 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,8 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
-    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -45,7 +43,7 @@ $LANG = array (
     'category_in_folders' => 'Edit Folders for this Category',
     'select_folders_for_category' => 'Select the Folders to associate to this Category of Fields',
     'offline_mode_warning' => 'Off-line mode permits you to export into an HTML file your Items, so that you can access them when not connected to Teampass server. The passwords are encrypted by a Key you are given.',
-    'offline_menu_title' => 'Export Items for Off-Line mode',
+    'offline_menu_title' => 'Off-Line mode',
     'settings_offline_mode' => 'Activate Off-line mode',
     'settings_offline_mode_tip' => 'Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User.',
     'offline_mode_key_level' => 'Off-line encryption key minimum level',
@@ -774,6 +772,19 @@ $LANG = array (
     'duplicate' => 'Duplicate',
     'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
+    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
+    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
+    'user_profile_dialogbox_menu' => 'Your Teampass informations',
+    'admin_email_security' => 'SMTP security',
+    'alert_page_will_reload' => 'The page will now be reloaded',
+    'csv_import_items_selection' => 'Select the items to import',
+    'csv_import_options' => 'Select import options',
+    'file_protection_password' => 'Define file password',
+    'button_export_file' => 'Export items',
+    'error_export_format_not_selected' => 'A format for export file is required',
+    'select_file_format' => 'Select file format',
+    'button_offline_generate' => 'Generate Offline mode file',
+    'upload_new_avatar' => 'Select avatar PNG file',
     '' => ''
 );
-?>
