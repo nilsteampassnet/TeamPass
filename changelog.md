@@ -9,6 +9,8 @@
  #790 - Install fixes
  #835 - Links in items description don't work
  #817 - Wrong number of users online
+ #838 - Fix for mysqli encoding
+ #839 - Keepass fixes
  #814
 
 2.1.22

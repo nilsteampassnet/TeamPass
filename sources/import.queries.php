@@ -66,7 +66,8 @@ DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -419,15 +420,15 @@ switch ($_POST['type']) {
                     } elseif ($entry == true && $nom == "title") {
                         $temparray[KP_TITLE] = sanitiseString($elem, '');
                     } elseif ($entry == true && $nom == "username") {
-                        $temparray['KP_USERNAME'] = sanitiseString($elem, '');
+                        $temparray[KP_USERNAME] = sanitiseString($elem, '');
                     } elseif ($entry == true && $nom == "url") {
-                        $temparray['KP_URL'] = sanitiseString($elem, '');
+                        $temparray[KP_URL] = sanitiseString($elem, '');
                     } elseif ($entry == true && $nom == "uuid") {
-                        $temparray['KP_UUID'] = addslashes(preg_replace('#[\r\n]#', '', $elem));
+                        $temparray[KP_UUID] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                     } elseif ($entry == true && $nom == "password") {
-                        $temparray['KP_PW'] = sanitiseString($elem, '');
+                        $temparray[KP_PW] = sanitiseString($elem, '');
                     } elseif ($entry == true && $nom == "notes") {
-                        $temparray['KP_NOTES'] = sanitiseString($elem, '');
+                        $temparray[KP_NOTES] = sanitiseString($elem, '');
                     }
                 }
 
@@ -507,7 +508,7 @@ switch ($_POST['type']) {
                         $keepassVersion = 2;
                         break;
                     } elseif ($root == true && $xmlLevel > $levelMin) {
-                        //echo $nom.",".$elem." - ";
+ //                       error_log($nom.",".$elem." - ");
                         //Check each node name and get data from some of them
                         if ($entry == true && $nom == "Key" && $elem == "Title") {
                             $title = true;
@@ -576,16 +577,16 @@ switch ($_POST['type']) {
                             $temparray[KP_TITLE] = sanitiseString($elem, '');
                         } elseif ($notes == true && $nom == "Value") {
                             $notes = false;
-                            $temparray['KP_NOTES'] = sanitiseString($elem, '');
+                            $temparray[KP_NOTES] = sanitiseString($elem, '');
                         } elseif ($pw == true && $nom == "Value") {
                             $pw = false;
-                            $temparray['KP_PW'] = sanitiseString($elem, '');
+                            $temparray[KP_PW] = sanitiseString($elem, '');
                         } elseif ($url == true && $nom == "Value") {
                             $url = false;
-                            $temparray['KP_URL'] = sanitiseString($elem, '');
+                            $temparray[KP_URL] = sanitiseString($elem, '');
                         } elseif ($username == true && $nom == "Value") {
                             $username = false;
-                            $temparray['KP_USERNAME'] = sanitiseString($elem, '');
+                            $temparray[KP_USERNAME] = sanitiseString($elem, '');
                         }
                     }
                 }
