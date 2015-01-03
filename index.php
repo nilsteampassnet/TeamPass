@@ -54,7 +54,8 @@ DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //load main functions needed
 require_once 'sources/main.functions.php';
@@ -241,14 +242,15 @@ if (isset($_SESSION['login'])) {
                 </div>';
 
     if ($_SESSION['user_admin'] != 1) {
+        $x = 1;
+        $arrTmp = array();
         $rows = DB::query(
-            "SELECT DISTINCT i.label AS label, i.id AS id, i.id_tree AS id_tree, l.date
-            FROM " . $pre . "log_items AS l
-            left JOIN " . $pre . "items AS i ON (l.id_item = i.id)
+            "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
+            FROM ".$pre."log_items AS l
+            RIGHT JOIN ".$pre."items AS i ON (l.id_item = i.id)
             WHERE l.action = %s AND l.id_user = %i
-            GROUP BY i.id
             ORDER BY l.date DESC
-            LIMIT 0, 10",
+            LIMIT 0, 100",
             "at_shown",
             $_SESSION['user_id']
         );
@@ -259,8 +261,12 @@ if (isset($_SESSION['login'])) {
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
                             <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">';
             foreach ($rows as $record) {
-                echo '
-                                <li onclick="displayItemNumber(' . $record['id'] . ', ' . $record['id_tree'] . ')"><i class="fa fa-tag fa-fw"></i> &nbsp;' . addslashes($record['label']) . '</li>';
+                if (!in_array($record['id'], $arrTmp)) {
+                    echo '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                    $x++;
+                    array_push($arrTmp, $record['id']);
+                    if ($x >= 10) break;
+                }
             }
             echo '
                             </ul>

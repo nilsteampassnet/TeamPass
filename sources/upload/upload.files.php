@@ -207,7 +207,8 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     DB::$port = $port;
     DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port, $encoding);
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // get current avatar and delete it
     $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
