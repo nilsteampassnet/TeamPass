@@ -858,7 +858,7 @@ function EditerItem()
            );
            
            // statistic
-           $.post(
+           /*$.post(
                 "sources/main.queries.php",
                 {
                     type                : 'item_stat',
@@ -868,7 +868,7 @@ function EditerItem()
                 function(data) {
                 
                 }
-            );
+            );*/
 
         } else {
             $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
@@ -1269,7 +1269,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
            );
            
            // statistic
-           $.post(
+           /*$.post(
                 "sources/main.queries.php",
                 {
                     type                : 'item_stat',
@@ -1279,7 +1279,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 function(data) {
                 
                 }
-            );
+            );*/
        }
     }
     //Store Item id shown

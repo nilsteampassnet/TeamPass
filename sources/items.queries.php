@@ -1158,6 +1158,9 @@ if (isset($_POST['type'])) {
                 }
                 $arrData['edit_item_salt_key'] = 0;
             }
+            if (!isUTF8($pw)) {
+                $pw = '';
+            }
             // extract real pw from salt
             if ($dataItem['perso'] != 1) {
                 $dataItemKey = DB::queryfirstrow(
@@ -2198,7 +2201,7 @@ if (isset($_POST['type'])) {
                 // If edition by same user (and token not freed before for any reason, then update timestamp)
                 if (!empty($dataTmp['timestamp']) && $dataTmp['user_id'] == $_SESSION['user_id']) {
                     DB::update(
-                        prefix_table("nested_tree"),
+                        prefix_table("items_edition"),
                         array(
                             "timestamp" => time()
                         ),
@@ -2209,7 +2212,7 @@ if (isset($_POST['type'])) {
                     // If no token for this Item, then initialize one
                 } elseif (empty($dataTmp[0])) {
                     DB::insert(
-                        prefix_table("nested_tree"),
+                        prefix_table("items_edition"),
                         array(
                                 'timestamp' => time(),
                                 'item_id' => $_POST['item_id'],

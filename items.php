@@ -43,7 +43,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
-/*
+
 // Get list of users
 $usersList = array();
 $usersString = "";
@@ -71,7 +71,7 @@ foreach ($rows as $reccord) {
         $listRoles .= ';'.$reccord['id'].'#'.$reccord['title'];
     }
 }
-*/
+
 // Build list of visible folders
 $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
 // Hidden things
