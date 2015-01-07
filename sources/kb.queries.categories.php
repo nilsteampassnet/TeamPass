@@ -3,7 +3,7 @@
  * @file          kb.queries.categories.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -39,13 +39,13 @@ $link->set_charset($encoding);
 $sOutput = '';
 if (!empty($_GET['term'])) {
     $rows = DB::query(
-        "SELECT id, category FROM ".$pre."kb_categories
+        "SELECT id, category FROM ".prefix_table("kb_categories")."
         WHERE category LIKE %ss
         ORDER BY category ASC",
         $_GET['term']
     );
 } else {
-    $rows = DB::query("SELECT id, category FROM ".$pre."kb_categories ORDER BY category ASC");
+    $rows = DB::query("SELECT id, category FROM ".prefix_table("kb_categories")." ORDER BY category ASC");
 }
 $counter = DB::count();
 

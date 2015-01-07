@@ -4,7 +4,7 @@
  * @file          folders.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link	      http://www.teampass.net
  *
@@ -105,13 +105,13 @@ $arr_ids = array();
 foreach ($tst as $t) {
     if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
         // r?cup $t->parent_id
-        $data = DB::queryFirstRow("SELECT title FROM ".$pre."nested_tree WHERE id = %i", $t->parent_id);
+        $data = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $t->parent_id);
         if ($t->nlevel == 1) {
             $data['title'] = $LANG['root'];
         }
         // r?cup les droits associ?s ? ce groupe
         $tab_droits = array();
-        $rows = DB::query("SELECT fonction_id  FROM ".$pre."rights WHERE authorized=%i AND tree_id = %i", 1, $t->id);
+        $rows = DB::query("SELECT fonction_id  FROM ".prefix_table("rights")." WHERE authorized=%i AND tree_id = %i", 1, $t->id);
         foreach ($rows as $record) {
             array_push($tab_droits, $record['fonction_id']);
         }
@@ -123,8 +123,8 @@ foreach ($tst as $t) {
         // Get some elements from DB concerning this node
         $node_data = DB::queryFirstRow(
             "SELECT m.valeur as valeur, n.renewal_period as renewal_period
-            FROM ".$pre."misc as m,
-            ".$pre."nested_tree as n
+            FROM ".prefix_table("misc")." as m,
+            ".prefix_table("nested_tree")." as n
             WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i",
             "complex",
             $t->id
@@ -153,7 +153,12 @@ foreach ($tst as $t) {
                         <img src="includes/images/folder--minus.png" onclick="supprimer_groupe(\''.$t->id.'\')" style="cursor:pointer;" />
                     </td>';
 
-        $data3 = DB::queryFirstRow("SELECT bloquer_creation,bloquer_modification FROM ".$pre."nested_tree WHERE id = %i", intval($t->id));
+        $data3 = DB::queryFirstRow(
+            "SELECT bloquer_creation,bloquer_modification 
+            FROM ".prefix_table("nested_tree")." 
+            WHERE id = %i", 
+            intval($t->id)
+        );
         echo '
                     <td align="center">
                         <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1 ? 'checked' : '', ' />

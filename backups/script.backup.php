@@ -3,7 +3,7 @@
  * @file          views.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -25,7 +25,9 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
+DB::$encoding = $encoding;
 $link= mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');

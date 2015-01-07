@@ -4,7 +4,7 @@
  * @file          index.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -34,12 +34,13 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
 // reload user avatar
-$userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
+$userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("users")." WHERE id=%i", $_SESSION['user_id']);
 @$_SESSION['user']['avatar'] = $userData['avatar'];
 @$_SESSION['user']['avatar_thumb'] = $userData['avatar_thumb'];
 

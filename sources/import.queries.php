@@ -3,7 +3,7 @@
  * @file          import.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -232,13 +232,13 @@ switch ($_POST['type']) {
         } else {
             $personalFolder = 0;
         }
-        $data_fld = DB::queryFirstRow("SELECT title FROM ".$pre."nested_tree WHERE id = %i", intval($_POST['folder']));
+        $data_fld = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", intval($_POST['folder']));
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
         $list = "";
 
-        include 'main.functions.php';
+        require_once 'main.functions.php';
         foreach (explode('@_#sep#_@', mysqli_escape_string($link, stripslashes($listItems))) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
@@ -249,7 +249,7 @@ switch ($_POST['type']) {
 
             // Insert new item in table ITEMS
             DB::insert(
-                $pre."items",
+                prefix_table("items"),
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
@@ -264,7 +264,7 @@ switch ($_POST['type']) {
 
                 //Store generated key
             DB::insert(
-                $pre.'keys',
+                prefix_table("keys"),
                 array(
                     'table' => 'items',
                     'id' => $newId,
@@ -276,7 +276,7 @@ switch ($_POST['type']) {
             if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
                 foreach ($_SESSION['arr_roles'] as $role) {
                     DB::insert(
-                        $pre.'restriction_to_roles',
+                        prefix_table("restriction_to_roles"),
                         array(
                             'role_id' => $role['id'],
                             'item_id' => $newId
@@ -287,7 +287,7 @@ switch ($_POST['type']) {
 
             // Insert new item in table LOGS_ITEMS
             DB::insert(
-                $pre.'log_items',
+                prefix_table("log_items"),
                 array(
                     'id_item' => $newId,
                     'date' => time(),
@@ -304,7 +304,7 @@ switch ($_POST['type']) {
 
             //Add entry to cache table
             DB::insert(
-                $pre.'cache',
+                prefix_table("cache"),
                 array(
                     'id' => $newId,
                     'label' => $item[0],
@@ -652,8 +652,8 @@ switch ($_POST['type']) {
             } else if ($_POST['destination'] > 0) {
                 $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
-                    FROM ".$pre."misc as m
-                    INNER JOIN ".$pre."nested_tree as t ON (m.intitule = t.id)
+                    FROM ".prefix_table("misc")." as m
+                    INNER JOIN ".prefix_table("nested_tree")." as t ON (m.intitule = t.id)
                     WHERE m.type = %s AND m.intitule = %s",
                     "complex",
                     mysqli_escape_string($link, $_POST['destination'])
@@ -700,7 +700,7 @@ switch ($_POST['type']) {
                     $fold=stripslashes($fold);
                     //create folder - if not exists at the same level
                     DB::query(
-                        "SELECT * FROM ".$pre."nested_tree
+                        "SELECT * FROM ".prefix_table("nested_tree")."
                         WHERE nlevel = %i AND title = %s AND parent_id = %i LIMIT 1",
                         intval($folderLevel+$startPathLevel),
                         $fold,
@@ -712,7 +712,7 @@ switch ($_POST['type']) {
                         $results.= " - Inserting\n";
                         //do query
                         DB::insert(
-                            $pre."nested_tree",
+                            prefix_table("nested_tree"),
                             array(
                                 'parent_id' => $parent_id,
                                 'title' => stripslashes($fold),
@@ -722,7 +722,7 @@ switch ($_POST['type']) {
                         $id = DB::insertId();
                         //Add complexity level => level is set to "medium" by default.
                         DB::insert(
-                            $pre.'misc',
+                            prefix_table("misc"),
                             array(
                                 'type' => 'complex',
                                 'intitule' => $id,
@@ -733,7 +733,7 @@ switch ($_POST['type']) {
                         //For each role to which the user depends on, add the folder just created.
                         foreach ($_SESSION['arr_roles'] as $role) {
                             DB::insert(
-                                $pre."roles_values",
+                                prefix_table("roles_values"),
                                 array(
                                     'role_id' => $role['id'],
                                     'folder_id' => $id,
@@ -753,7 +753,7 @@ switch ($_POST['type']) {
                         $results.= " - Skipped\n";
                         //get folder actual ID
                         $data = DB::queryFirstRow(
-                            "SELECT id FROM ".$pre."nested_tree
+                            "SELECT id FROM ".prefix_table("nested_tree")."
                             WHERE nlevel = %i AND title = %s AND parent_id = %i",
                             intval($folderLevel+$startPathLevel),
                             $fold,
@@ -824,8 +824,8 @@ switch ($_POST['type']) {
                     $results .= str_replace($foldersSeparator,"\\",$item[KP_PATH]).'\\'.$item[KP_TITLE];
                     $randomKey = substr($item[KP_UUID],0, 15);		// use partial UUID from XML
                     DB::query(
-                        "SELECT ".$pre."items.id FROM ".$pre."items,".$pre."keys
-                        WHERE ".$pre."items.id=".$pre."keys.id AND id_tree =%i AND label = %s AND rand_key = %s LIMIT 1",
+                        "SELECT ".prefix_table("items").".id FROM ".prefix_table("items").",".prefix_table("keys")."
+                        WHERE ".prefix_table("items").".id=".prefix_table("keys").".id AND id_tree =%i AND label = %s AND rand_key = %s LIMIT 1",
                         intval($foldersArray[$item[KP_PATH]]['id']),
                         stripslashes($item[KP_TITLE]),
                         $randomKey
@@ -842,14 +842,14 @@ switch ($_POST['type']) {
                             $folderId = $foldersArray[$item[KP_PATH]]['id'];
                         }
                         $data = DB::queryFirstRow(
-                            "SELECT title FROM ".$pre."nested_tree WHERE id = %i",
+                            "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                             intval($folderId)
                         );
 
                         $results .= " - Inserting\n";
                         //ADD item
                         DB::insert(
-                            $pre.'items',
+                            prefix_table("items"),
                             array(
                                 'label' => stripslashes($item[KP_TITLE]),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
@@ -864,7 +864,7 @@ switch ($_POST['type']) {
 
                         //Store generated key
                         DB::insert(
-                            $pre.'keys',
+                            prefix_table("keys"),
                             array(
                                 'table' => 'items',
                                 'id' => $newId,
@@ -876,7 +876,7 @@ switch ($_POST['type']) {
                         if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
                             foreach ($_SESSION['arr_roles'] as $role) {
                                 DB::insert(
-                                    $pre.'restriction_to_roles',
+                                    prefix_table("restriction_to_roles"),
                                     array(
                                         'role_id' => $role['id'],
                                         'item_id' => $newId
@@ -887,7 +887,7 @@ switch ($_POST['type']) {
 
                         //Add log
                         DB::insert(
-                            $pre.'log_items',
+                            prefix_table("log_items"),
                             array(
                                 'id_item' => $newId,
                                 'date' => time(),
@@ -899,7 +899,7 @@ switch ($_POST['type']) {
 
                         //Add entry to cache table
                         DB::insert(
-                            $pre.'cache',
+                            prefix_table("cache"),
                             array(
                                 'id' => $newId,
                                 'label' => stripslashes($item[KP_TITLE]),

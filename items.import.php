@@ -4,7 +4,7 @@
  * @file          items.import.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -98,7 +98,7 @@ $folders = $tree->getDescendants();
 foreach ($folders as $t) {
     if (in_array($t->id, $_SESSION['groupes_visibles'])) {
         if (is_numeric($t->title)) {
-            $user = DB::queryfirstrow("SELECT login FROM ".$pre."users WHERE id = %i", $t->title);
+            $user = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id = %i", $t->title);
             $t->title = $user['login'];
             $t->id = $t->id."-perso";
         }

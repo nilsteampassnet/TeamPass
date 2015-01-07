@@ -3,7 +3,7 @@
  * @file          find.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -46,7 +46,7 @@ $sWhere = "id_tree IN %ls_idtree";    //limit search to the visible folders
 
 //Get current user "personal folder" ID
 $row = DB::query(
-    "SELECT id FROM ".$pre."nested_tree WHERE title = %i",
+    "SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %i",
     intval($_SESSION['user_id'])
 );
 
@@ -55,7 +55,7 @@ $arrayPf = array();
 $listPf = "";
 if (!empty($row['id'])) {
 	$rows = DB::query(
-	    "SELECT id FROM ".$pre."nested_tree
+	    "SELECT id FROM ".prefix_table("nested_tree")."
 	    WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
         "1",
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
@@ -135,12 +135,12 @@ if (!empty($listPf)) {
     $sWhere = "WHERE ".$sWhere;
 }
 
-DB::query("SELECT id FROM ".$pre."cache");
+DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 $rows = DB::query(
     "SELECT *
-    FROM ".$pre."cache
+    FROM ".prefix_table("cache")."
     $sWhere
     $sOrder
     $sLimit",
@@ -187,7 +187,7 @@ if (!isset($_GET['type'])) {
         //get restriction from ROles
         $restrictedToRole = false;
         $rTmp = DB::query(
-            "SELECT role_id FROM " . $pre . "restriction_to_roles WHERE item_id = %i", $record['id']
+            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", $record['id']
         );
         foreach ($rTmp as $aTmp) {
             if ($aTmp['role_id'] != "") {
@@ -239,7 +239,7 @@ if (!isset($_GET['type'])) {
 
     echo $sOutput;
 } else if (isset($_GET['type']) && $_GET['type'] == "search_for_items") {
-    include 'main.functions.php';
+    require_once 'main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
@@ -265,7 +265,7 @@ if (!isset($_GET['type'])) {
         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
         $user_is_included_in_role = 0;
         $roles = DB::query(
-            "SELECT role_id FROM ".$pre."restriction_to_roles WHERE item_id=%i",
+            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id=%i",
             $record['id']
         );
         if (count($roles) > 0) {

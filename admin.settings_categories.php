@@ -4,7 +4,7 @@
  * @file          admin.settings_categories.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -54,7 +54,7 @@ $tree->rebuild();
 $categoriesSelect = "";
 $arrCategories = array();
 $rows = DB::query(
-    "SELECT * FROM ".$pre."categories 
+    "SELECT * FROM ".prefix_table("categories")."
     WHERE level = %i
     ORDER BY ".$pre."categories.order ASC",
     '0'
@@ -84,8 +84,8 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
         $foldersList = $foldersNumList = "";
         $rows = DB::query(
             "SELECT t.title AS title, c.id_folder as id_folder
-            FROM ".$pre."categories_folders AS c
-            INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
+            FROM ".prefix_table("categories_folders")." AS c
+            INNER JOIN ".prefix_table("nested_tree")." AS t ON (c.id_folder = t.id)
             WHERE c.id_category = %i",
             $category[0]
         );
@@ -119,7 +119,7 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
             </td>
         </tr>';
         $rows = DB::query(
-            "SELECT * FROM ".$pre."categories
+            "SELECT * FROM ".prefix_table("categories")."
             WHERE parent_id = %i
             ORDER BY ".$pre."categories.order ASC",
             $category[0]
@@ -208,7 +208,7 @@ echo '
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
             DB::query(
-                "SELECT * FROM ".$pre."nested_tree
+                "SELECT * FROM ".prefix_table("nested_tree")."
                 WHERE personal_folder = %i AND id = %i",
                 '0',
                 $folder->id

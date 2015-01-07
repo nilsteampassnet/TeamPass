@@ -4,7 +4,7 @@
  * @file          index.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -246,8 +246,8 @@ if (isset($_SESSION['login'])) {
         $arrTmp = array();
         $rows = DB::query(
             "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
-            FROM ".$pre."log_items AS l
-            RIGHT JOIN ".$pre."items AS i ON (l.id_item = i.id)
+            FROM ".prefix_table("log_items")." AS l
+            RIGHT JOIN ".prefix_table("items")." AS i ON (l.id_item = i.id)
             WHERE l.action = %s AND l.id_user = %i
             ORDER BY l.date DESC
             LIMIT 0, 100",

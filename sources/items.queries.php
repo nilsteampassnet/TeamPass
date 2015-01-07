@@ -3,7 +3,7 @@
  * @file          items.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -41,7 +41,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
-include 'main.functions.php';
+require_once 'main.functions.php';
 // pw complexity levels
 $_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),

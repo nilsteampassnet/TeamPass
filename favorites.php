@@ -3,7 +3,7 @@
  * @file        favorites.php
  * @author      Nils Laumaillé
  * @version       2.1.22
- * @copyright   (c) 2009-2014 Nils Laumaillé
+ * @copyright   (c) 2009-2015 Nils Laumaillé
  * @licensing   GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -40,8 +40,8 @@ if (empty($_SESSION['favourites'])) {
         if (!empty($fav)) {
             $data = DB::queryFirstRow(
                 "SELECT i.label, i.description, i.id, i.id_tree, t.title
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."nested_tree as t ON (t.id = i.id_tree)
+                FROM ".prefix_table("items")." as i
+                INNER JOIN ".prefix_table("nested_tree")." as t ON (t.id = i.id_tree)
                 WHERE i.id = %i",
                 $fav
             );

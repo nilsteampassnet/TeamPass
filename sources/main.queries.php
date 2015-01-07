@@ -4,7 +4,7 @@
  * @file          main.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -76,10 +76,10 @@ switch ($_POST['type']) {
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
 
             // check if expected security level is reached
-            $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = %i", $_SESSION['user_id']);
+            $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
             $data = DB::query(
                 "SELECT complexity
-                FROM ".$pre."roles_title
+                FROM ".prefix_table("roles_title")."
             WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
             ORDER BY complexity DESC"
             );
@@ -133,7 +133,7 @@ switch ($_POST['type']) {
                 $_SESSION['validite_pw'] = true;
                 // update DB
                 DB::update(
-                    $pre."users",
+                    prefix_table("users"),
                     array(
                         'pw' => $newPw,
                         'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
@@ -144,7 +144,7 @@ switch ($_POST['type']) {
                 );
                 // update LOG
                 DB::insert(
-                    $pre.'log_system',
+                    prefix_table("log_system"),
                     array(
                         'type' => 'user_mngt',
                         'date' => time(),
@@ -162,7 +162,7 @@ switch ($_POST['type']) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
-                FROM ".$pre."users
+                FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_SESSION['user_id']
             );
@@ -177,7 +177,7 @@ switch ($_POST['type']) {
             }
             // update DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
@@ -187,7 +187,7 @@ switch ($_POST['type']) {
             );
             // update LOG
             DB::insert(
-                $pre.'log_system',
+                prefix_table("log_system"),
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
@@ -198,7 +198,7 @@ switch ($_POST['type']) {
             );
             //Send email to user
             $row = DB::queryFirstRow(
-                "SELECT email FROM ".$pre."users
+                "SELECT email FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $dataReceived['user_id']
             );
@@ -218,7 +218,7 @@ switch ($_POST['type']) {
         } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change") {
             // update DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
@@ -229,7 +229,7 @@ switch ($_POST['type']) {
             $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
             // update LOG
             DB::insert(
-                $pre.'log_system',
+                prefix_table("log_system"),
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
@@ -250,12 +250,10 @@ switch ($_POST['type']) {
     * This will generate the QR Google Authenticator
     */
     case "ga_generate_qr":
-    	require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-
     	// Check if user exists
     	$data = DB::queryfirstrow(
     		"SELECT login, email
-    		FROM ".$pre."users
+    		FROM ".prefix_table("users")."
     		WHERE id = %i",
             $_POST['id']
     	);
@@ -275,7 +273,7 @@ switch ($_POST['type']) {
 
     			// save the code
     			DB::update(
-	    			$pre."users",
+	    			prefix_table("users"),
 	    			array(
 	    			    'ga' => $gaSecretKey
 	    			   ),
@@ -310,7 +308,7 @@ switch ($_POST['type']) {
             $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
             // Update table
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'session_end' => $_SESSION['fin_session']
                 ),
@@ -348,13 +346,13 @@ switch ($_POST['type']) {
 
         // Get account and pw associated to email
         DB::query(
-            "SELECT * FROM ".$pre."users WHERE email = %s",
+            "SELECT * FROM ".prefix_table("users")." WHERE email = %s",
             mysqli_escape_string($link, stripslashes($_POST['email']))
         );
         $counter = DB::count();
         if ($counter != 0) {
             $data = DB::query(
-                "SELECT login,pw FROM ".$pre."users WHERE email = %s",
+                "SELECT login,pw FROM ".prefix_table("users")." WHERE email = %s",
                 mysqli_escape_string($link, stripslashes($_POST['email']))
             );
         	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
@@ -366,14 +364,14 @@ switch ($_POST['type']) {
 
             // Check if email has already a key in DB
             $data = DB::query(
-                "SELECT * FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+                "SELECT * FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
                 mysqli_escape_string($link, $_POST['login']),
                 "password_recovery"
             );
             $counter = DB::count();
             if ($counter != 0) {
                 DB::update(
-                    $pre."misc",
+                    prefix_table("misc"),
                     array(
                         'valeur' => $key
                     ),
@@ -384,7 +382,7 @@ switch ($_POST['type']) {
             } else {
                 // store in DB the password recovery informations
                 DB::insert(
-                    $pre.'misc',
+                    prefix_table("misc"),
                     array(
                         'type' => 'password_recovery',
                         'intitule' => mysqli_escape_string($link, $_POST['login']),
@@ -408,7 +406,7 @@ switch ($_POST['type']) {
         $key = htmlspecialchars_decode($dataReceived['key']);
         // check if key is okay
         $data = DB::queryFirstRow(
-            "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+            "SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
             mysqli_escape_string($link, $login),
             "password_recovery"
         );
@@ -429,7 +427,7 @@ switch ($_POST['type']) {
             $newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
             // update DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'pw' => $newPw
                    ),
@@ -438,7 +436,7 @@ switch ($_POST['type']) {
             );
             // Delete recovery in DB
             DB::delete(
-                $pre."misc",
+                prefix_table("misc"),
                 "type = %s AND intitule = %s AND valeur = %s",
                 "password_recovery",
                 mysqli_escape_string($link, $login),
@@ -446,7 +444,7 @@ switch ($_POST['type']) {
             );
             // Get email
             $dataUser = DB::queryFirstRow(
-                "SELECT email FROM ".$pre."users WHERE login = %s",
+                "SELECT email FROM ".prefix_table("users")." WHERE login = %s",
                 mysqli_escape_string($link, $login)
             );
 
@@ -536,8 +534,8 @@ switch ($_POST['type']) {
         // Change encryption
         $rows = DB::query(
             "SELECT i.id as id, i.pw as pw
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
+            FROM ".prefix_table("items")." as i
+            INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
             WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
             "1",
             $_SESSION['user_id'],
@@ -551,7 +549,7 @@ switch ($_POST['type']) {
                 $encryptedPw = encrypt($pw, $newPersonalSaltkey);
                 // update pw in ITEMS table
                 DB::update(
-                    $pre.'items',
+                    prefix_table("items"),
                     array(
                         'pw' => $encryptedPw
                        ),
@@ -577,8 +575,8 @@ switch ($_POST['type']) {
             // delete all previous items of this user
             $rows = DB::query(
                 "SELECT i.id as id
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."log_items as l ON (i.id=l.id_item)
+                FROM ".prefix_table("items")." as i
+                INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
                 WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
                 "1",
                 $_SESSION['user_id'],
@@ -586,9 +584,9 @@ switch ($_POST['type']) {
             );
             foreach ($rows as $record) {
                 // delete in ITEMS table
-                DB::delete($pre."items", "id = %i", $record['id']);
+                DB::delete(prefix_table("items"), "id = %i", $record['id']);
                 // delete in LOGS table
-                DB::delete($pre."log_items", "id_item = %i", $record['id']);
+                DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
             }
             // change salt
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
@@ -611,7 +609,7 @@ switch ($_POST['type']) {
             $language = $dataReceived['lang'];
             // update DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'user_language' => $language
                    ),
@@ -634,7 +632,7 @@ switch ($_POST['type']) {
             && isset($_SESSION['key'])
         ) {
             $row = DB::queryFirstRow(
-                "SELECT valeur FROM ".$pre."misc WHERE type = %s AND intitule = %s",
+                "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
                 "cron",
                 "sending_emails"
             );
@@ -655,7 +653,7 @@ switch ($_POST['type']) {
                 $mail->WordWrap = 80; // set word wrap
                 $mail->isHtml(true); // send as HTML
                 $status = "";
-                $rows = DB::query("SELECT * FROM ".$pre."emails WHERE status != %s", "sent");
+                $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                 foreach ($rows as $record) {
                     // send email
                     $ret = json_decode(
@@ -673,7 +671,7 @@ switch ($_POST['type']) {
                     }
                     // update item_id in files table
                     DB::update(
-                        $pre.'emails',
+                        prefix_table("emails"),
                         array(
                             'status' => $status
                            ),
@@ -687,7 +685,7 @@ switch ($_POST['type']) {
             }
             // update cron time
             DB::update(
-                $pre."misc",
+                prefix_table("misc"),
                 array(
                     'valeur' => time()
                    ),
@@ -704,7 +702,7 @@ switch ($_POST['type']) {
         if (!empty($_SESSION['user_id'])) {
             // update DB
             DB::insert(
-                $pre."log_system",
+                prefix_table("log_system"),
                 array(
                     'type' => 'error',
                     'date' => time(),
@@ -760,7 +758,7 @@ switch ($_POST['type']) {
      */
     case "check_login_exists":
         $data = DB::query(
-            "SELECT login, psk FROM ".$pre."users
+            "SELECT login, psk FROM ".prefix_table("users")."
             WHERE login = %i",
             mysqli_escape_string($link, stripslashes($_POST['userId']))
         );
@@ -786,14 +784,14 @@ switch ($_POST['type']) {
     case "item_stat":
         if (isset($_POST['scope']) && $_POST['scope'] == "item") {
             $data = DB::queryfirstrow(
-                "SELECT view FROM ".$pre."statistics WHERE scope = %s AND item_id = %i",
+                "SELECT view FROM ".prefix_table("statistics")." WHERE scope = %s AND item_id = %i",
                 'item',
                 $_POST['id']
             );
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    $pre."statistics",
+                    prefix_table("statistics"),
                     array(
                         'scope' => 'item',
                         'view' => '1',
@@ -802,7 +800,7 @@ switch ($_POST['type']) {
                 );
             } else {
                 DB::update(
-                    $pre."statistics",
+                    prefix_table("statistics"),
                     array(
                         'scope' => 'item',
                         'view' => $data['view']+1
@@ -826,8 +824,8 @@ switch ($_POST['type']) {
         $arrTmp = array();
         $rows = DB::query(
             "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
-            FROM ".$pre."log_items AS l
-            RIGHT JOIN ".$pre."items AS i ON (l.id_item = i.id)
+            FROM ".prefix_table("log_items")." AS l
+            RIGHT JOIN ".prefix_table("items")." AS i ON (l.id_item = i.id)
             WHERE l.action = %s AND l.id_user = %i
             ORDER BY l.date DESC
             LIMIT 0, 100",

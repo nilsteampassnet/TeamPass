@@ -3,7 +3,7 @@
  * @file          utils.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -22,7 +22,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['u
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-include 'main.functions.php';
+require_once 'main.functions.php';
 
 //Connect to DB
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -58,10 +58,10 @@ switch ($_POST['type']) {
                     l.date as date,
                     n.renewal_period as renewal_period,
                     k.rand_key
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))

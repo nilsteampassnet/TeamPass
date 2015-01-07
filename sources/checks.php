@@ -4,7 +4,7 @@
  * @file          checks.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -47,6 +47,7 @@ function checkUser($userId, $userKey, $pageVisited)
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once 'main.functions.php';
 
     // Connect to mysql server
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -62,7 +63,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // load user's data
     $data = DB::queryfirstrow(
-        "SELECT login, key_tempo, admin, gestionnaire FROM ".$pre."users WHERE id = %i",
+        "SELECT login, key_tempo, admin, gestionnaire FROM ".prefix_table("users")." WHERE id = %i",
         $userId
     );
 
