@@ -3,7 +3,7 @@
  * @file          favourites.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -40,7 +40,7 @@ if (!empty($_POST['type'])) {
         #CASE adding a new function
         case "del_fav":
             //Get actual favourites
-            $data = DB::queryfirstrow("SELECT favourites FROM ".$pre."users WHERE id = %i", $_SESSION['user_id']);
+            $data = DB::queryfirstrow("SELECT favourites FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
             $tmp = explode(";", $data['favourites']);
             $favs = "";
             $tab_favs = array();
@@ -57,7 +57,7 @@ if (!empty($_POST['type'])) {
             }
             //update user's account
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'favourites' => $favs
                ),

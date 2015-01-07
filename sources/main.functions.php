@@ -4,7 +4,7 @@
  * @file          main.functions.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -305,7 +305,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
@@ -315,7 +315,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $rows = DB::query("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = %i", 0);
+        $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -323,7 +323,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['all_non_personal_folders'] = $groupesVisibles;
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
-        //$sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        //$sql = "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = 1";
         $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
         $where->add('personal_folder=%i', 1);
         if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
@@ -333,7 +333,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
         // Get ID of personal folder
         $pf = DB::queryfirstrow(
-            "SELECT id FROM ".$pre."nested_tree WHERE title = %s",
+            "SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s",
             $_SESSION['user_id']
         );
         if (!empty($pf['id'])) {
@@ -341,7 +341,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 array_push($_SESSION['groupes_visibles'], $pf['id']);
                 array_push($_SESSION['personal_visible_groups'], $pf['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title', 'personal_folder');
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($pf['id']);
                 foreach ($tst as $t) {
@@ -354,9 +354,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
-        DB::query("SELECT * FROM ".$pre."nested_tree");
+        DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::query("SELECT * FROM ".$pre."roles_title");
+        DB::query("SELECT * FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     } else {
         // init
@@ -381,10 +381,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($fonctionsAssociees as $roleId) {
             if (!empty($roleId)) {
                 // Get allowed folders for each Role
-                $rows = DB::query("SELECT folder_id FROM ".$pre."roles_values WHERE role_id=%i", $roleId);
+                $rows = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id=%i", $roleId);
 
                 if (DB::count() > 0) {
-                    $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
+                    $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i", $roleId);
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
                             array_push($listAllowedFolders, $record['folder_id']);//echo $record['folder_id'].";";
@@ -397,8 +397,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     // Check for the users roles if some specific rights exist on items
                     $rows = DB::query(
                         "SELECT i.id_tree, r.item_id
-                        FROM ".$pre."items as i
-                        INNER JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
+                        FROM ".prefix_table("items")." as i
+                        INNER JOIN ".prefix_table("restriction_to_roles")." as r ON (r.item_id=i.id)
                         WHERE r.role_id=%i
                         ORDER BY i.id_tree ASC",
                         $roleId
@@ -417,7 +417,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // Does this user is allowed to see other items
         $x = 0;
         $rows = DB::query(
-            "SELECT id, id_tree FROM ".$pre."items
+            "SELECT id, id_tree FROM ".prefix_table("items")."
             WHERE restricted_to=%ss AND inactif=%s",
             $_SESSION['user_id'],
             '0'
@@ -459,7 +459,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $pfs = DB::query("SELECT id FROM ".$pre."nested_tree WHERE %l", $where);
+        $pfs = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
@@ -470,7 +470,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
+            $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     // get all descendants
@@ -489,7 +489,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             if (!in_array($folderId, $listReadOnlyFolders) || (isset($pf) && $folderId != $pf['id'])) {
                 DB::query(
                     "SELECT *
-                    FROM ".$pre."roles_values
+                    FROM ".prefix_table("roles_values")."
                     WHERE folder_id = %i AND role_id IN %li AND type = %s",
                     $folderId,
                     $fonctionsAssociees,
@@ -509,9 +509,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree");
+        DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT id FROM ".$pre."roles_title");
+        DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
     
@@ -547,7 +547,7 @@ function logEvents($type, $label, $who)
     $link->set_charset($encoding);
 
     DB::insert(
-        $pre."log_system",
+        prefix_table("log_system"),
         array(
             'type' => $type,
             'date' => time(),
@@ -582,7 +582,7 @@ function updateCacheTable($action, $id = "")
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Rebuild full cache table
     if ($action == "reload") {
@@ -763,7 +763,7 @@ function teampassStats()
 
     // Prepare stats to be sent
     // Count no FOLDERS
-    DB::query("SELECT * FROM ".$pre."nested_tree");
+    DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
     $dataFolders = DB::count();
     // Count no USERS
     $dataUsers = DB::query("SELECT * FROM ".$pre."users");

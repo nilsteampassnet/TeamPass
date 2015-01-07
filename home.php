@@ -3,7 +3,7 @@
  * @file          home.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -64,8 +64,8 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
                         <span style="font-weight:bold;margin-bottom:10px;">'.$LANG['block_last_created'].'</span><br />';
         $cpt=1;
         $rows = DB::query("SELECT i.label as label, i.id as id, i.id_tree as id_tree
-            FROM ".$pre."log_items l
-            INNER JOIN ".$pre."items i
+            FROM ".prefix_table("log_items")." l
+            INNER JOIN ".prefix_table("items")." i
             WHERE l.action = %s_action
             AND l.id_item = i.id
             AND i.id_tree IN %li_id_tree
@@ -79,7 +79,7 @@ if (empty($_SESSION['last_pw_change']) || $_SESSION['validite_pw'] == false) {
             )
         );
         foreach ($rows as $record) {
-            DB::query("SELECT * FROM ".$pre."log_items WHERE id_item = %i AND action = %s", $record['id'], 'at_delete');
+            DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $record['id'], 'at_delete');
             $counter = DB::count();
             if ($counter == 0) {
                 echo '<span class="ui-icon ui-icon-tag" style="float: left; margin-right: .3em;">&nbsp;</span>

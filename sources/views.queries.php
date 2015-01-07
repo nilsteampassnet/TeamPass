@@ -3,7 +3,7 @@
  * @file          views.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -34,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
-include 'main.functions.php';
+require_once 'main.functions.php';
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -53,7 +53,7 @@ $link->set_charset($encoding);
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
 $tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
 //Constant used
 $nbElements = 20;
@@ -84,9 +84,9 @@ switch ($_POST['type']) {
 
         $rows = DB::query(
             "SELECT u.login as login, i.label as label, i.id_tree as id_tree
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."users as u ON (u.id=l.id_user)
-            INNER JOIN ".$pre."items as i ON (i.id=l.id_item)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (u.id=l.id_user)
+            INNER JOIN ".prefix_table("items")." as i ON (i.id=l.id_item)
             WHERE l.action = %s AND l.raison = %s",
             "Modification",
             "Mot de passe changé"
@@ -126,7 +126,7 @@ switch ($_POST['type']) {
         $texte = "<table cellpadding=3><tr><td><u><b>".$LANG['group']."</b></u></td></tr>";
         $rows = DB::query(
             "SELECT valeur, intitule
-            FROM ".$pre."misc
+            FROM ".prefix_table("misc")."
             WHERE type  = %s",
             "folder_deleted"
         );
@@ -141,9 +141,9 @@ switch ($_POST['type']) {
         $texte .= "<tr><td><u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
         $rows = DB::query(
             "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE i.inactif = %i
             AND l.action = %s
             GROUP BY l.id_item",
@@ -176,7 +176,7 @@ switch ($_POST['type']) {
             foreach (explode(';', $_POST['list_f']) as $id) {
                 $data = DB::queryfirstrow(
                     "SELECT valeur
-                    FROM ".$pre."misc
+                    FROM ".prefix_table("misc")."
                     WHERE type = 'folder_deleted'
                     AND intitule = %s",
                     $id
@@ -185,7 +185,7 @@ switch ($_POST['type']) {
                     $folderData = explode(', ', $data['valeur']);
                     //insert deleted folder
                     DB::insert(
-                        $pre.'nested_tree',
+                        prefix_table("nested_tree"),
                         array(
                             'id' => $folderData[0],
                             'parent_id' => $folderData[1],
@@ -200,7 +200,7 @@ switch ($_POST['type']) {
                        )
                     );
                     //delete log
-                    DB::delete($pre."misc", "type = %s AND intitule = %s", "folder_deleted", $id);
+                    DB::delete(prefix_table("misc"), "type = %s AND intitule = %s", "folder_deleted", $id);
                 }
             }
         }
@@ -208,7 +208,7 @@ switch ($_POST['type']) {
         if (count($_POST['list_i'])>0) {
             foreach (explode(';', $_POST['list_i']) as $id) {
                 DB::update(
-                    $pre."items",
+                    prefix_table("items"),
                     array(
                         'inactif' => '0'
                     ),
@@ -217,7 +217,7 @@ switch ($_POST['type']) {
                 );
                 //log
                 DB::insert(
-                    $pre."log_items",
+                    prefix_table("log_items"),
                     array(
                         "id_item" => $id,
                         "date" => time(),
@@ -242,7 +242,7 @@ switch ($_POST['type']) {
 
                 //delete any subfolder
                 $rows = DB::query(
-                    "SELECT valeur FROM ".$pre."misc WHERE type=%s AND intitule = %s",
+                    "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s AND intitule = %s",
                     folder_deleted,
                     $fId
                 );
@@ -250,34 +250,34 @@ switch ($_POST['type']) {
                     //get folder id
                     $val = explode(", ", $reccord['valeur']);
                     //delete items & logs
-                    $items = DB::query("SELECT id FROM ".$pre."items WHERE id_tree=%i", $val[0]);
+                    $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $val[0]);
                     foreach ($items as $item) {
                         //Delete item
-                        DB::delete($pre."items", "id = %i", $item['id']);
-                        DB::delete($pre."log_items", "id_item = %i", $item['id']);
+                        DB::delete(prefix_table("items"), "id = %i", $item['id']);
+                        DB::delete(prefix_table("log_items"), "id_item = %i", $item['id']);
 
                         //Update CACHE table
-                        DB::delete($pre."cache", "id = %i", $item['id']);
+                        DB::delete(prefix_table("cache"), "id = %i", $item['id']);
                     }
                     //Actualize the variable
                     $_SESSION['nb_folders'] --;
                 }
                 //delete folder
-                DB::delete($pre."misc", "intitule = %s AND type = %s", $fId, "folder_deleted");
+                DB::delete(prefix_table("misc"), "intitule = %s AND type = %s", $fId, "folder_deleted");
             }
         }
 
         foreach (explode(';', $_POST['items']) as $id) {
             //delete from ITEMS
-            DB::delete($pre."items", "id=%i", $id);
+            DB::delete(prefix_table("items"), "id=%i", $id);
             //delete from LOG_ITEMS
-            DB::delete($pre."log_items", "id_item=%i", $id);
+            DB::delete(prefix_table("log_items"), "id_item=%i", $id);
             //delete from FILES
-            DB::delete($pre."files", "id_item=%i", $id);
+            DB::delete(prefix_table("files"), "id_item=%i", $id);
             //delete from TAGS
-            DB::delete($pre."tags", "item_id=%i", $id);
+            DB::delete(prefix_table("tags"), "item_id=%i", $id);
             //delete from KEYS
-            DB::delete($pre."keys", "`id` =%i AND `table`=%s", $id, "items");
+            DB::delete(prefix_table("keys"), "`id` =%i AND `table`=%s", $id, "items");
         }
         break;
 
@@ -290,7 +290,7 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * FROM ".$pre."log_system as l INNER JOIN ".$pre."users as u ON (l.qui=u.id) WHERE l.type = %s",
+            "SELECT * FROM ".prefix_table("log_system")." as l INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id) WHERE l.type = %s",
             "user_connection"
         );
         if (DB::count() != 0) {
@@ -314,8 +314,8 @@ switch ($_POST['type']) {
         //launch query
         $rows = DB::query(
             "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+            FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
             LIMIT $start, $nbElements",
@@ -342,7 +342,10 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * FROM ".$pre."log_system as l INNER JOIN ".$pre."users as u ON (l.qui=u.id) WHERE l.type = %s",
+            "SELECT * 
+            FROM ".prefix_table("log_system")." as l 
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id) 
+            WHERE l.type = %s",
             "error"
         );
         if (DB::count() != 0) {
@@ -365,8 +368,8 @@ switch ($_POST['type']) {
         //launch query
         $rows = DB::query(
             "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+            FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
             LIMIT $start, $nbElements",
@@ -400,8 +403,8 @@ switch ($_POST['type']) {
 
         //get number of pages
         $data = DB::query(
-            "SELECT * FROM ".$pre."log_items as l INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            "SELECT * FROM ".prefix_table("log_items")." as l INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l",
             $where
         );
@@ -423,9 +426,9 @@ switch ($_POST['type']) {
         //launch query
         $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
             LIMIT $start, $nbElements",
@@ -458,9 +461,9 @@ switch ($_POST['type']) {
 
         //get number of pages
         $data = DB::query(
-            "SELECT * FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            "SELECT * FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l",
             $where
         );
@@ -482,9 +485,9 @@ switch ($_POST['type']) {
         //launch query
         $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
             LIMIT $start, $nbElements",
@@ -518,9 +521,9 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            "SELECT * FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l",
             $where
         );
@@ -543,9 +546,9 @@ switch ($_POST['type']) {
         $rows = DB::query(
             "SELECT l.date as date, u.login as login, i.label as label,
             i.perso as perso
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
             LIMIT $start, $nbElements",
@@ -584,8 +587,8 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+            "SELECT * FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE %l",
             $where
         );
@@ -607,8 +610,8 @@ switch ($_POST['type']) {
         //launch query
         $rows = DB::query(
             "SELECT l.date as date, u.login as login, l.label as label
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+            FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE %l
             ORDER BY date DESC
             LIMIT $start, $nbElements",
@@ -644,10 +647,10 @@ switch ($_POST['type']) {
             i.id as id, i.label as label, i.id_tree as id_tree,
             l.date as date, l.id_item as id_item, l.action as action, l.raison as raison,
             n.renewal_period as renewal_period, n.title as title
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            INNER JOIN ".$pre."nested_tree as n ON (n.id=i.id_tree)
+            FROM ".prefix_table("log_items")." as l
+            INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+            INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
+            INNER JOIN ".prefix_table("nested_tree")." as n ON (n.id=i.id_tree)
             WHERE i.inactif = %s
             AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
             AND n.renewal_period != %s
@@ -734,7 +737,7 @@ switch ($_POST['type']) {
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
                 DB::query(
-                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                     "AND date BETWEEN %i AND %i'",
                     "at_shown",
                     intval(strtotime($_POST['purgeFrom'])),
@@ -742,14 +745,14 @@ switch ($_POST['type']) {
                 );
                 $nbElements = DB::count();
                     // Delete
-                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "at_shown",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "connections_logs") {
                 DB::query(
-                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                     "AND date BETWEEN %i AND %i'",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
@@ -757,14 +760,14 @@ switch ($_POST['type']) {
                 );
                 $nbElements = DB::count();
                 // Delete
-                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "errors_logs") {
                 DB::query(
-                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                     "AND date BETWEEN %i AND %i'",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
@@ -772,14 +775,14 @@ switch ($_POST['type']) {
                 );
                 $nbElements = DB::count();
                 // Delete
-                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "copy_logs") {
                 DB::query(
-                    "SELECT * FROM ".$pre."log_items WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                     "AND date BETWEEN %i AND %i'",
                     "at_copy",
                     intval(strtotime($_POST['purgeFrom'])),
@@ -787,7 +790,7 @@ switch ($_POST['type']) {
                 );
                 $nbElements = DB::count();
                 // Delete
-                DB::delete($pre."log_items", "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "at_copy",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))

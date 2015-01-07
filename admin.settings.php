@@ -4,7 +4,7 @@
  * @file          admin.settings.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -40,6 +40,7 @@ function updateSettings ($setting, $val, $type = '')
         $type = 'admin';
     }
 
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Connect to database
@@ -56,7 +57,7 @@ function updateSettings ($setting, $val, $type = '')
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
     $data = DB::query(
-        "SELECT * FROM ".$pre."misc
+        "SELECT * FROM ".prefix_table("misc")."
         WHERE type = %s AND intitule = %s",
         $type,
         $setting
@@ -64,7 +65,7 @@ function updateSettings ($setting, $val, $type = '')
     $counter = DB::count();
     if ($counter == 0) {
         DB::insert(
-            $pre."misc",
+            prefix_table("misc"),
             array(
                 'valeur' => $val,
                 'type' => $type,
@@ -74,7 +75,7 @@ function updateSettings ($setting, $val, $type = '')
         // in case of stats enabled, add the actual time
         if ($setting == 'send_stats') {
             DB::insert(
-                $pre."misc",
+                prefix_table("misc"),
                 array(
                     'valeur' => time(),
                     'type' => $type,
@@ -84,7 +85,7 @@ function updateSettings ($setting, $val, $type = '')
         }
     } else {
         DB::update(
-            $pre."misc",
+            prefix_table("misc"),
             array(
                 'valeur' => $val
                ),
@@ -96,7 +97,7 @@ function updateSettings ($setting, $val, $type = '')
         if ($setting == 'send_stats') {
             // Check if previous time exists, if not them insert this value in DB
             $data_time = DB::query(
-                "SELECT * FROM ".$pre."misc
+                "SELECT * FROM ".prefix_table("misc")."
                 WHERE type = %s AND intitule = %s",
                 $type,
                 $setting.'_time'
@@ -104,7 +105,7 @@ function updateSettings ($setting, $val, $type = '')
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    $pre."misc",
+                    prefix_table("misc"),
                     array(
                         'valeur' => 0,
                         'type' => $type,
@@ -113,7 +114,7 @@ function updateSettings ($setting, $val, $type = '')
                 );
             } else {
                 DB::update(
-                    $pre."misc",
+                    prefix_table("misc"),
                     array(
                         'valeur' => 0
                        ),
@@ -1452,7 +1453,7 @@ echo '
                     } else {
                         $arrRolesToPrint = explode(";", $_SESSION['settings']['roles_allowed_to_print']);
                     }
-                    $roles = DB::query("SELECT id, title FROM ".$pre."roles_title");
+                    $roles = DB::query("SELECT id, title FROM ".prefix_table("roles_title"));
                     foreach ($roles as $role) {
                         echo '<option value="'.$role['id'].'"', in_array($role['id'], $arrRolesToPrint) ? ' selected="selected"' : '', '>'.addslashes($role['title']).'</option>';
                     }
@@ -2079,7 +2080,7 @@ echo '
                         </td>
                     </tr>';
 // Send emails backlog
-DB::query("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", 'not_sent', '');
+DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status = %s OR status = %s", 'not_sent', '');
 $nb_emails = DB::count();
 echo '
                     <tr style="margin-bottom:3px">

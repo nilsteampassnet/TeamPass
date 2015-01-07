@@ -3,7 +3,7 @@
  * @file          export.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -52,7 +52,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 //Manage type of action asked
 switch ($_POST['type']) {
     case "initialize_export_table":
-        DB::query("TRUNCATE TABLE ".$pre."export");
+        DB::query("TRUNCATE TABLE ".prefix_table("export"));
         break;
 
     //CASE export to PDF format
@@ -76,10 +76,10 @@ switch ($_POST['type']) {
                     l.date as date,
                     n.renewal_period as renewal_period,
                     k.rand_key
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -117,7 +117,7 @@ switch ($_POST['type']) {
                         }
                         // store
                         DB::insert(
-                            $pre.'export',
+                            prefix_table("export"),
                             array(
                                 'id' => $record['id'],
                                 'description' => addslashes($record['description']),
@@ -138,7 +138,7 @@ switch ($_POST['type']) {
 
     case "finalize_export_pdf":
         // query
-        $rows = DB::query("SELECT * FROM ".$pre."export");
+        $rows = DB::query("SELECT * FROM ".prefix_table("export"));
         $counter = DB::count();
         if ($counter > 0) {
             // print
@@ -219,7 +219,7 @@ switch ($_POST['type']) {
             logEvents('pdf_export', "", $_SESSION['user_id']);
 
             //clean table
-            DB::query("TRUNCATE TABLE ".$pre."export");
+            DB::query("TRUNCATE TABLE ".prefix_table("export"));
 
             echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         }
@@ -249,10 +249,10 @@ switch ($_POST['type']) {
                        l.date as date,
                        n.renewal_period as renewal_period,
                        k.rand_key
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -325,10 +325,10 @@ switch ($_POST['type']) {
             	// count elements to display
             	$result = DB::query(
                     "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso
-                    FROM ".$pre."items as i
-                    INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                    INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-                    INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -429,10 +429,10 @@ Enter the decryption key : <input type="password" id="saltkey" />
                l.date as date,
                n.renewal_period as renewal_period,
                k.rand_key
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-            INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
-            INNER JOIN ".$pre."keys as k ON (i.id = k.id)
+            FROM ".prefix_table("items")." as i
+            INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+            INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+            INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
             WHERE i.inactif = %i
             AND i.id_tree= %i
             AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))            

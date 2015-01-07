@@ -4,7 +4,7 @@
  * @file          identify.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -49,8 +49,12 @@ function IdentifyUser($sentData)
     $link->set_charset($encoding);
 
 //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-    $aes->register();
+    //$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    //$aes->register();
+    
+// load passwordLib library
+    $pwdlib = new SplClassLoader('Encryption\PasswordLib', '../includes/libraries');
+    $pwdlib->register();
 
 // User's language loading
     $k['langage'] = @$_SESSION['user_language'];
@@ -173,7 +177,7 @@ function IdentifyUser($sentData)
         // nothing
     }
     // Check if user exists
-    $data = DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE login=%s_login",
+    $data = DB::queryFirstRow("SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
         array(
             'login' => $username
         )
@@ -215,7 +219,7 @@ function IdentifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         DB::insert(
-            $pre.'users',
+            prefix_table('users'),
             array(
                 'login' => $username,
                 'pw' => $password,
@@ -234,7 +238,7 @@ function IdentifyUser($sentData)
         // Create personnal folder
         if ($_SESSION['settings']['enable_pf_feature'] == "1") {
             DB::insert(
-                $pre."nested_tree",
+                prefix_table("nested_tree"),
                 array(
                     'parent_id' => '0',
                     'title' => $newUserId,
@@ -245,7 +249,7 @@ function IdentifyUser($sentData)
             );
         }
         // Get info for user
-        //$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
+        //$sql = "SELECT * FROM ".prefix_table("users")." WHERE login = '".addslashes($username)."'";
         //$row = $db->query($sql);
         $proceedIdentification = true;
     }
@@ -280,7 +284,7 @@ function IdentifyUser($sentData)
         ) {
             //update user's password
             $data['pw'] = bCrypt($passwordClear, COST);
-            DB::update($pre.'users',
+            DB::update(prefix_table('users'),
                 array(
                     'pw' => $data['pw']
                 ),
@@ -288,7 +292,7 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
-
+        
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -414,7 +418,7 @@ function IdentifyUser($sentData)
             $_SESSION['user_pw_complexity'] = 0;
             $_SESSION['arr_roles'] = array();
             foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".$pre."roles_title WHERE id=%i", $role);
+                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".prefix_table("roles_title")." WHERE id=%i", $role);
                 $_SESSION['arr_roles'][$role] = array(
                     'id' => $role,
                     'title' => $resRoles['title']
@@ -426,7 +430,7 @@ function IdentifyUser($sentData)
             }
             // build complete array of roles
             $_SESSION['arr_roles_full'] = array();
-            $rows = DB::query("SELECT id, title FROM ".$pre."roles_title ORDER BY title ASC");
+            $rows = DB::query("SELECT id, title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
             foreach ($rows as $record) {
                 $_SESSION['arr_roles_full'][$record['id']] = array(
                     'id' => $record['id'],
@@ -438,7 +442,7 @@ function IdentifyUser($sentData)
             $_SESSION['settings']['update_needed'] = "";
             // Update table
             DB::update(
-                $pre.'users',
+                prefix_table('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'last_connexion' => time(),
@@ -465,7 +469,7 @@ function IdentifyUser($sentData)
             $_SESSION['latest_items_tab'][] = "";
             foreach ($_SESSION['latest_items'] as $item) {
                 if (!empty($item)) {
-                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".$pre."items WHERE id=%i", $item);
+                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id=%i", $item);
                     $_SESSION['latest_items_tab'][$item] = array(
                         'id' => $item,
                         'label' => $data['label'],
@@ -482,7 +486,7 @@ function IdentifyUser($sentData)
             ) {
                 // get all Admin users
                 $receivers = "";
-                $rows = DB::query("SELECT email FROM ".$pre."users WHERE admin = %i", 1);
+                $rows = DB::query("SELECT email FROM ".prefix_table("users")." WHERE admin = %i", 1);
                 foreach ($rows as $record) {
                     if (empty($receivers)) {
                         $receivers = $record['email'];
@@ -492,7 +496,7 @@ function IdentifyUser($sentData)
                 }
                 // Add email to table
                 DB::insert(
-                    $pre.'emails',
+                    prefix_table("emails"),
                     array(
                         'timestamp' => time(),
                         'subject' => $LANG['email_subject_on_user_login'],
@@ -534,7 +538,7 @@ function IdentifyUser($sentData)
                 }
             }
             DB::update(
-                $pre.'users',
+                prefix_table('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'last_connexion' => time(),

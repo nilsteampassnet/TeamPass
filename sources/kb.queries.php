@@ -3,7 +3,7 @@
  * @file          kb.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -39,7 +39,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
-include 'main.functions.php';
+require_once 'main.functions.php';
 
 //Connect to DB
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -86,7 +86,7 @@ if (!empty($_POST['type'])) {
 
             //check if allowed to modify
             if (isset($id) && !empty($id)) {
-                $ret = DB::queryfirstrow("SELECT anyone_can_modify, author_id FROM ".$pre."kb WHERE id = %i", $id);
+                $ret = DB::queryfirstrow("SELECT anyone_can_modify, author_id FROM ".prefix_table("kb")." WHERE id = %i", $id);
                 if ($ret['anyone_can_modify'] == 1 || $ret['author_id'] == $_SESSION['user_id']) {
                     $manage_kb = true;
                 } else {
@@ -97,11 +97,11 @@ if (!empty($_POST['type'])) {
             }
             if ($manage_kb == true) {
                 //Add category if new
-                DB::query("SELECT * FROM ".$pre."kb_categories WHERE category = %s", $category);
+                DB::query("SELECT * FROM ".prefix_table("kb_categories")." WHERE category = %s", $category);
                 $counter = DB::count();
                 if ($counter == 0) {
                     DB::insert(
-                        $pre."kb_categories",
+                        prefix_table("kb_categories"),
                         array(
                             'category' => $category
                        )
@@ -109,14 +109,14 @@ if (!empty($_POST['type'])) {
                     $cat_id = DB::insertId();
                 } else {
                     //get the ID of this existing category
-                    $cat_id = DB::queryfirstrow("SELECT id FROM ".$pre."kb_categories WHERE category = %s", $category);
+                    $cat_id = DB::queryfirstrow("SELECT id FROM ".prefix_table("kb_categories")." WHERE category = %s", $category);
                     $cat_id = $cat_id['id'];
                 }
 
                 if (isset($id) && !empty($id)) {
                     //update KB
                     DB::update(
-                        $pre."kb",
+                        prefix_table("kb"),
                         array(
                             'label' => ($label),
                             'description' => ($description),
@@ -129,7 +129,7 @@ if (!empty($_POST['type'])) {
                 } else {
                     //add new KB
                     DB::insert(
-                        $pre."kb",
+                        prefix_table("kb"),
                         array(
                             'label' => $label,
                             'description' => ($description),
@@ -142,12 +142,12 @@ if (!empty($_POST['type'])) {
                 }
 
                 //delete all associated items to this KB
-                DB::delete($pre."kb_items", "kb_id = %i", $id);
+                DB::delete(prefix_table("kb_items"), "kb_id = %i", $id);
                 
                 //add all items associated to this KB
                 foreach (explode(',', $kb_associated_to) as $item_id) {
                     DB::insert(
-                        $pre."kb_items",
+                        prefix_table("kb_items"),
                         array(
                             'kb_id' => $id,
                             'item_id' => $item_id
@@ -172,15 +172,15 @@ if (!empty($_POST['type'])) {
             }
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
-                FROM ".$pre."kb AS k
-                INNER JOIN ".$pre."kb_categories AS c ON (c.id = k.category_id)
-                INNER JOIN ".$pre."users AS u ON (u.id = k.author_id)
+                FROM ".prefix_table("kb")." AS k
+                INNER JOIN ".prefix_table("kb_categories")." AS c ON (c.id = k.category_id)
+                INNER JOIN ".prefix_table("users")." AS u ON (u.id = k.author_id)
                 WHERE k.id = %i",
                 $_POST['id']
             );
 
             //select associated items
-            $rows = DB::query("SELECT item_id FROM ".$pre."kb_items WHERE kb_id = %i", $_POST['id']);
+            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $_POST['id']);
             $arrOptions = array();
             foreach ($rows as $record) {
                 //echo '$("#kb_associated_to option[value='.$record['item_id'].']").attr("selected","selected");';
@@ -206,7 +206,7 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete($pre."kb", "id=%i", $_POST['id']);
+            DB::delete(prefix_table("kb"), "id=%i", $_POST['id']);
             break;
     }
 }

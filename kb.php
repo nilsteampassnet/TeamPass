@@ -3,7 +3,7 @@
  * @file          kb.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -32,11 +32,12 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 
 //load language
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 //build list of categories
 $tab_users = array();
 $rows = DB::query(
-    "SELECT id, login FROM ".$pre."users ORDER BY login ASC"
+    "SELECT id, login FROM ".prefix_table("users")." ORDER BY login ASC"
 );
 $counter = DB::count();
 if ($counter>0) {
@@ -112,9 +113,9 @@ echo '
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
                     l.date as date,
                     n.renewal_period as renewal_period
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."nested_tree as n ON (i.id_tree = n.id)
-                INNER JOIN ".$pre."log_items as l ON (i.id = l.id_item)
+                FROM ".prefix_table("items")." as i
+                INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
                 WHERE i.inactif = %i
                 AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                 ORDER BY i.label ASC, l.date DESC",

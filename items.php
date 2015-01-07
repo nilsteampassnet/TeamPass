@@ -4,7 +4,7 @@
  * @file          items.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -30,6 +30,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -195,7 +196,7 @@ foreach ($folders as $folder) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
                 DB::query(
-                    "SELECT * FROM ".$pre."items
+                    "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree = %i",
                     0,
                     $node
@@ -222,7 +223,7 @@ foreach ($folders as $folder) {
             }
 
             DB::query(
-                "SELECT * FROM ".$pre."items
+                "SELECT * FROM ".prefix_table("items")."
                 WHERE inactif=%i AND id_tree = %i",
                 0,
                 $folder->id

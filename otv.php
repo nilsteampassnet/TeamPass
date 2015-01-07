@@ -3,7 +3,7 @@
  * @file          otv.php
  * @author        Nils Laumaillé
  * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -29,6 +29,7 @@ if (
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/main.functions.php';
 
     // connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -47,7 +48,7 @@ if (
 
     // check session validity
     $data = DB::queryfirstrow(
-        "SELECT timestamp, code, item_id FROM ".$pre."otv
+        "SELECT timestamp, code, item_id FROM ".prefix_table("otv")."
         WHERE id = %i",
         intval($_GET['otv_id'])
     );
@@ -62,8 +63,8 @@ if (
         } else {
             $dataItem = DB::queryfirstrow(
                 "SELECT *
-                FROM ".$pre."items as i
-                INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+                FROM ".prefix_table("items")." as i
+                INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
                 WHERE i.id = %i AND l.action = %s",
                 intval($_GET['item_id']),
                 'at_creation'
@@ -74,7 +75,7 @@ if (
 
         	// get key for original pw
         	$originalKey = DB::queryfirstrow(
-                "SELECT rand_key FROM `".$pre."keys`
+                "SELECT rand_key FROM `".prefix_table("keys")."`
                 WHERE `table` = %s AND `id` = %i",
                 'items',
                 intval($_GET['item_id'])
@@ -104,7 +105,7 @@ if (
             	"</div>";
 
         	// delete entry
-        	DB::delete($pre."otv", "id = %i", intval($_GET['otv_id']));
+        	DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
         }
     } else {
         $html = "Not a valid page!";
