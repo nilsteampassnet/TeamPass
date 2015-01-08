@@ -452,7 +452,7 @@ if (isset($_POST['type'])) {
                         $originalKey = DB::queryfirstrow(
                             "SELECT `rand_key`
                             FROM `".prefix_table("keys")."`
-                            WHERE `table` LIKE %ss AND `id`= %i",
+                            WHERE `sql_table` LIKE %ss AND `id`= %i",
                             "items",
                             $dataReceived['id']
                         );
@@ -568,7 +568,7 @@ if (isset($_POST['type'])) {
                                 } else {
                                     // get key for original Field
                                     $originalKeyField = DB::queryfirstrow(
-                                        "SELECT rand_key FROM `".prefix_table("keys")."` WHERE `table` LIKE %ss AND `id` = %i",
+                                        "SELECT rand_key FROM `".prefix_table("keys")."` WHERE `sql_table` LIKE %ss AND `id` = %i",
                                         "categories_items",
                                         $dataReceived['id']
                                     );
@@ -901,15 +901,15 @@ if (isset($_POST['type'])) {
                     // Prepare files listing
                     $files = $filesEdit = "";
                     // launch query
-                    $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $dataReceived['id']);
+                    $rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $dataReceived['id']);
                     foreach ($rows as $record) {
                         // get icon image depending on file format
                         $iconImage = fileFormatImage($record['extension']);
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if (in_array($record['extension'], $k['image_file_ext'])) {
-                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a class="image_dialog" href="'.$_SESSION['settings']['url_to_upload_folder'].'/'.$record['file'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
+                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a class="image_dialog" href="#'.$record['id'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
                         } else {
-                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&file='.$record['file'].'&size='.$record['size'].'&type='.urlencode($record['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
+                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
                         }
                         // Prepare list of files for edit dialogbox
                         $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" />&nbsp;'.$record['name']."</span><br />";
@@ -987,7 +987,7 @@ if (isset($_POST['type'])) {
                         )
                     );
                     // get key for original pw
-                    $originalKey = DB::queryfirstrow('SELECT rand_key FROM `".prefix_table("keys")."` WHERE `table` LIKE "items" AND `id` ='.$_POST['item_id']);
+                    $originalKey = DB::queryfirstrow('SELECT rand_key FROM `".prefix_table("keys")."` WHERE `sql_table` LIKE "items" AND `id` ='.$_POST['item_id']);
                     // unsalt previous pw
                     $pw = substr(decrypt($originalRecord['pw']), strlen($originalKey['rand_key']));
                 }
@@ -1164,7 +1164,7 @@ if (isset($_POST['type'])) {
             // extract real pw from salt
             if ($dataItem['perso'] != 1) {
                 $dataItemKey = DB::queryfirstrow(
-                    'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `table`=%s AND `id`=%i', "items", $_POST['id']
+                    'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `sql_table` = %s AND `id` = %i', "items", $_POST['id']
                 );
                 $pw = substr($pw, strlen($dataItemKey['rand_key']));
                 // if error getting substring, then must be a blank password
@@ -1319,7 +1319,7 @@ if (isset($_POST['type'])) {
                             $fieldText = decrypt($row['data']);
                             // extract real pw from salt
                             $dataItemKey = DB::queryfirstrow(
-                                'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `table`=%s AND `id`=%i',
+                                'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `sql_table` = %s AND `id` = %i',
                                 "categories_items",
                                 $_POST['id']
                             );
@@ -1453,7 +1453,7 @@ if (isset($_POST['type'])) {
 
         	// get Item Key for decryption
         	$dataItemKey = DB::queryfirstrow(
-                'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `table`=%s AND `id`=%i', "items", $_POST['id']
+                'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `sql_table` = %s AND `id` = %i', "items", $_POST['id']
             );
 
         	// GET Audit trail
@@ -1514,15 +1514,15 @@ if (isset($_POST['type'])) {
         	// Prepare files listing
         	$files = $filesEdit = "";
         	// launch query
-        	$rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['id']);
+        	$rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['id']);
         	foreach ($rows as $record) {
         		// get icon image depending on file format
         		$iconImage = fileFormatImage($record['extension']);
         		// If file is an image, then prepare lightbox. If not image, then prepare donwload
         		if (in_array($record['extension'], $k['image_file_ext'])) {
-        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a class=\'image_dialog\' href=\''.$_SESSION['settings']['url_to_upload_folder'].'/'.$record['file'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
+        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
         		} else {
-        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&file='.$record['file'].'&size='.$record['size'].'&type='.urlencode($record['type']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'\'>'.$record['name'].'</a><br />';
+        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
         		}
         		// Prepare list of files for edit dialogbox
         		$filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
@@ -2288,7 +2288,7 @@ if (isset($_POST['type'])) {
                     $data = decrypt($dataItem['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                 } else {
                     $pw = decrypt($dataItem['pw']);
-                    $dataItemKey = DB::queryfirstrow('SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `table`="items" AND `id`='.$_POST['id']);
+                    $dataItemKey = DB::queryfirstrow('SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `sql_table` = "items" AND `id` = '.$_POST['id']);
                     $data = substr($pw, strlen($dataItemKey['rand_key']));
                 }
             } else {
@@ -2488,7 +2488,7 @@ if (isset($_POST['type'])) {
                 DB::insert(
                     prefix_table("keys"),
                     array(
-                        'table' => 'items',
+                        'sql_table' => 'items',
                         'id' => $_POST['item_id'],
                         'rand_key' => $randomKey
                        )
@@ -2781,11 +2781,17 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+            
+            // get file info
+            $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
             // prepare image info
-            $tmp = explode("/", $_POST['uri']);
-            $image_code = $tmp[count($tmp)-1];
+            //$tmp = explode("/", $_POST['uri']);
+            //$image_code = $tmp[count($tmp)-1];
+            $image_code = $result['file'];
             $extension = substr($_POST['title'], strrpos($_POST['title'], '.')+1);
+            $file_to_display = $_SESSION['settings']['url_to_upload_folder'].'/'.$image_code;
+            $file_suffix = "";
             
             // should we decrypt the attachment?
             if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
@@ -2814,10 +2820,21 @@ if (isset($_POST['type'])) {
                 fclose($fp);
                 fclose($fp_new);
                 // prepare variable
-                $_POST['uri'] = $_POST['uri']."_delete.";
+                //$_POST['uri'] = $_POST['uri']."_delete.";
+                $file_to_display = $file_to_display."_delete.".$extension;
+                $file_suffix = "_delete.".$extension;
             }
             
-            echo '[ { "error" : "" , "new_file" : "'.$_POST['uri'].$extension.'" } ]';
+            //echo '[ { "error" : "" , "new_file" : "'.$file_to_display.'" , "file_suffix" : "'.$file_suffix.'" } ]';
+            // Encrypt data to return
+            echo prepareExchangedData(
+                array(
+                    "error" => "",
+                    "new_file" => $file_to_display,
+                    "file_suffix" => $file_suffix
+                ),
+                "encode"
+            );
             break;
 
         /*
@@ -2830,10 +2847,11 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+            
+            // get file info
+            $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
-            $tmp = explode("/", $_POST['filecopy_item']);
-            $file = $tmp[count($tmp)-1];
-            @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+            @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'].$_POST['file_suffix']);
 
             break;
 

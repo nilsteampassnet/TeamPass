@@ -15,6 +15,7 @@
 namespace PasswordLib\Password;
 
 use PasswordLib\Password\Implementation\Blowfish;
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Implementation/Blowfish.php";
 
 /**
  * The Password Factory

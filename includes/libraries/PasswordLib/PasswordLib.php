@@ -1,5 +1,5 @@
 <?php
-namespace Encryption\PasswordLib;
+namespace PasswordLib;
 /**
  * A core wrapper class to provide easy access to all of the cryptographic functions
  * contained within the library
@@ -29,8 +29,8 @@ if (!class_exists('\\PasswordLib\Core\AutoLoader', true)) {
 use PasswordLib\Password\Factory as PasswordFactory;
 use PasswordLib\Random\Factory as RandomFactory;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Encryption/PasswordLib/Password/Factory.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Encryption/PasswordLib/Random/Factory.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Factory.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Random/Factory.php";
 
 /**
  * A core wrapper class to provide easy access to some of the cryptographic

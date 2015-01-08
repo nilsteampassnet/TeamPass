@@ -19,6 +19,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 global $k, $settings, $link;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
@@ -384,9 +385,7 @@ if (!isset($_GET['type'])) {
             }
         }
 
-
-
-
+        // prepare new line
         $sOutput .= '<li name="" ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
 
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
@@ -400,8 +399,6 @@ if (!isset($_GET['type'])) {
         
         // set folder
         $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i  class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
-        
-        
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
         

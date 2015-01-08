@@ -277,7 +277,7 @@ switch ($_POST['type']) {
             //delete from TAGS
             DB::delete(prefix_table("tags"), "item_id=%i", $id);
             //delete from KEYS
-            DB::delete(prefix_table("keys"), "`id` =%i AND `table`=%s", $id, "items");
+            DB::delete(prefix_table("keys"), "`id` =%i AND `sql_table`=%s", $id, "items");
         }
         break;
 

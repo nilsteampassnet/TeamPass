@@ -76,7 +76,7 @@ if (
         	// get key for original pw
         	$originalKey = DB::queryfirstrow(
                 "SELECT rand_key FROM `".prefix_table("keys")."`
-                WHERE `table` = %s AND `id` = %i",
+                WHERE `sql_table` = %s AND `id` = %i",
                 'items',
                 intval($_GET['item_id'])
             );

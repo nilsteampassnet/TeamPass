@@ -19,6 +19,8 @@ namespace PasswordLib\Password;
 use PasswordLib\Random\Factory as RandomFactory;
 use DomainException;
 
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Password.php";
+
 /**
  * The base abstract password hashing implementation
  *

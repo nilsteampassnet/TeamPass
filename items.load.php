@@ -1776,14 +1776,15 @@ PreviewImage = function(uri,title) {
             key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
-
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            
             $("#dialog_files").html('<img id="image_files" src="" />');
             //Get the HTML Elements
             imageDialog = $("#dialog_files");
             imageTag = $('#image_files');
 
             //Set the image src
-            imageTag.attr('src', data[0].new_file);
+            imageTag.attr("src", data.new_file);
 
             //When the image has loaded, display the dialog
             imageTag.load(function() {
@@ -1799,9 +1800,10 @@ PreviewImage = function(uri,title) {
                         $.post(
                             "sources/items.queries.php",
                             {
-                                type    : "delete_file",
-                                file    : data[0].new_file,
-                                key     : "<?php echo $_SESSION['key'];?>"
+                                type        : "delete_file",
+                                file_suffix : data.file_suffix,
+                                uri         : uri,
+                                key         : "<?php echo $_SESSION['key'];?>"
                             },
                             function(data) {
 
@@ -1810,8 +1812,7 @@ PreviewImage = function(uri,title) {
                     }
                 });
             });
-        },
-        "json"
+        }
     );
 }
 
