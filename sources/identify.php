@@ -53,8 +53,9 @@ function IdentifyUser($sentData)
     //$aes->register();
     
 // load passwordLib library
-    $pwdlib = new SplClassLoader('Encryption\PasswordLib', '../includes/libraries');
+    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
     $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
 
 // User's language loading
     $k['langage'] = @$_SESSION['user_language'];
@@ -292,6 +293,7 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
+        //echo $pwdlib->createPasswordHash($passwordClear)." -- ".$data['pw'];
         
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok

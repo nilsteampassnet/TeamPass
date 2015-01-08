@@ -104,7 +104,7 @@ if (!empty($_POST['type'])) {
                         'password' => encrypt($randomKey.$pwd),
                         'comment' => $comment,
                         'folder_id' => $folder,
-                        'suggest_key' => $randomKey
+                        'suggestion_key' => $randomKey
                     )
                 );
 
@@ -159,7 +159,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggest_key, folder_id, author_id, comment 
+                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
@@ -192,9 +192,9 @@ if (!empty($_POST['type'])) {
                     $updStatus = DB::update(
                         prefix_table("keys"),
                         array(
-                            'rand_key' => $suggestion['key']
+                            'rand_key' => $suggestion['suggestion_key']
                         ),
-                        "table = %s AND id = %i",
+                        "sql_table = %s AND id = %i",
                         "items",
                         $existing_item_id['id']
                     );
@@ -243,9 +243,9 @@ if (!empty($_POST['type'])) {
                     DB::insert(
                         prefix_table("keys"),
                         array(
-                            'table' => 'items',
+                            'sql_table' => 'items',
                             'id' => $newID,
-                            'rand_key' => $suggestion['suggest_key']
+                            'rand_key' => $suggestion['suggestion_key']
                         )
                     );
 

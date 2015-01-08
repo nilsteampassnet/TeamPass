@@ -662,7 +662,7 @@ switch ($_POST['type']) {
         $rows = DB::query("SELECT id, pw FROM ".prefix_table("items")." WHERE perso = %s", "0");
         foreach ($rows as $record) {
             // check if key exists for this item
-            DB::query("SELECT * FROM ".prefix_table("keys")." WHERE `id` = %i AND `table` = %s", $record['id'], "items");
+            DB::query("SELECT * FROM ".prefix_table("keys")." WHERE `id` = %i AND `sql_table` = %s", $record['id'], "items");
             $counter = DB::count();
             if ($counter == 0) {
                 $storePrefix = false;

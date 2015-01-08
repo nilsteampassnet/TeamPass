@@ -556,7 +556,7 @@ if (isset($_POST['type'])) {
                     } else if ($task == "keys") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."keys` (
-                            `table` varchar(25) NOT NULL,
+                            `sql_table` varchar(25) NOT NULL,
                             `id` int(20) NOT NULL,
                             `rand_key` varchar(25) NOT NULL,
                             UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)
@@ -684,7 +684,7 @@ if (isset($_POST['type'])) {
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
-                            `key` varchar(50) NOT NULL,
+                            `suggestion_key` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

@@ -14,6 +14,8 @@
 
 namespace PasswordLib\Core;
 
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Core/Enum.php";
+
 /**
  * The strength FlyweightEnum class
  *

@@ -680,6 +680,12 @@ if (isset($_POST['type'])) {
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
             );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `key` `suggestion_key` VARCHAR( 50 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."keys CHANGE `table` `sql_table` VARCHAR( 25 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+            );
 
             ## Alter USERS table
             $res2 = addColumnIfNotExist(
@@ -1145,7 +1151,7 @@ if (isset($_POST['type'])) {
             ## TABLE keys
             $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."keys` (
-                `table` varchar(25) NOT NULL,
+                `sql_table` varchar(25) NOT NULL,
                 `id` int(20) NOT NULL,
                 `rand_key` varchar(25) NOT NULL
                 ) CHARSET=utf8;"
@@ -1471,7 +1477,7 @@ if (isset($_POST['type'])) {
                 `author_id` int(12) NOT NULL,
                 `folder_id` int(12) NOT NULL,
                 `comment` text NOT NULL,
-                `key` varchar(50) NOT NULL,
+                `suggestion_key` varchar(50) NOT NULL,
                 PRIMARY KEY (`id`)
                ) CHARSET=utf8;
             ");
@@ -1751,7 +1757,7 @@ require_once \"".$skFile."\";
                     // if no key ... then add it
                     $resData = mysqli_query($dbTmp,
                         "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
-                        WHERE `table` = 'items' AND id = ".$data['id']
+                        WHERE `sql_table` = 'items' AND id = ".$data['id']
                     ) or die(mysqli_error($dbTmp));
                     $dataTemp = mysqli_fetch_row($resData);
                     if ($dataTemp[0] == 0) {
@@ -1777,7 +1783,7 @@ require_once \"".$skFile."\";
                     // if PW exists but no key ... then add it
                     $resData = mysqli_query($dbTmp,
                         "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."keys
-                        WHERE `table` = 'items' AND id = ".$data['id']
+                        WHERE `sql_table` = 'items' AND id = ".$data['id']
                     ) or die(mysqli_error($dbTmp));
                     $dataTemp = mysqli_fetch_row($resData);
                     if ($dataTemp[0] == 0) {

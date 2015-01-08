@@ -17,6 +17,8 @@
 namespace PasswordLib\Random;
 
 use PasswordLib\Core\Strength;
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Core/Strength.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Core/AbstractFactory.php";
 
 /**
  * The Random Factory

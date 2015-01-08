@@ -18,6 +18,8 @@
 namespace PasswordLib\Password\Implementation;
 
 use PasswordLib\Random\Factory as RandomFactory;
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Random/Factory.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Implementation/Crypt.php";
 
 /**
  * The Blowfish password hashing implementation
