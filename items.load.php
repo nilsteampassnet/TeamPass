@@ -638,7 +638,8 @@ function AjouterItem()
 
 function EditerItem()
 {
-    $("#div_formulaire_edition_item_info").show().html("<?php echo addslashes($LANG['please_wait']);?>");
+    $("#div_formulaire_edition_item_info").html("<?php echo addslashes($LANG['please_wait']).' <i class=\"fa fa-cog fa-spin fa-2x\"></i>';?>").show();
+    $("#item_detail_zone_loader").hide();
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
@@ -666,6 +667,7 @@ function EditerItem()
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
             if ($('#edit_annonce').attr('checked')) annonce = 1;
+            $("#item_detail_zone_loader").show();
 
 
             //Manage restriction
@@ -1046,6 +1048,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         $("#edit_item_salt_key").hide();
                     }
+                                        
+                    // clean some not used fields
+                    //$("#item_history_log, #edit_past_pwds, #hid_files, #item_edit_list_files").html("");
 
                     //Show detail item
                     if (data.show_detail_option == "0") {
@@ -1064,6 +1069,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if (data.show_details == "1" && data.show_detail_option != "2") {
                         //unprotect data
                         data.login = unsanitizeString(data.login);
+                        
+                        $("#id_files").html("");
 
                         //Display details
                         $("#id_label").html(data.label).html();
@@ -1093,7 +1100,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_item").val(data.id);
                         $("#id_kbs").html(data.links_to_kbs);
                         $(".tip").tooltip();
-
+                        
                         // show Field values
                         $(".fields").val("");
                         $(".fields_div").html("");
@@ -1307,7 +1314,7 @@ function showDetailsStep2(id, param)
 
             $("#id_files").html(data.files_id);
             $("#hid_files").val(data.files_id);
-            $("#item_edit_list_files").html(data.files_edit).html();
+            $("#item_edit_list_files").html(data.files_edit);
 
 			$("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
 
@@ -1583,7 +1590,7 @@ function open_edit_item_div(restricted_to_roles)
                 }
             }
         }
-        /*
+        
         if ($('#edit_restricted_to').val() != undefined) {
             $('#edit_restricted_to_list').empty();
             if (restricted_to_roles == 1) {
@@ -1636,7 +1643,7 @@ function open_edit_item_div(restricted_to_roles)
             noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
         $("#edit_restricted_to_list").multiselect('refresh');
-        */
+        
     }
 
 	// disable folder selection if PF
@@ -2184,7 +2191,7 @@ $(function() {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
-				$("#div_formulaire_edition_item_info").hide().html("");
+				//$("#div_formulaire_edition_item_info").hide().html("");
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 //Clear upload queue
