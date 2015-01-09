@@ -95,7 +95,9 @@ echo '
 <input type="hidden" id="item_editable" value="" />
 <input type="hidden" id="timestamp_item_displayed" value="" />
 <input type="hidden" id="pf_selected" value="" />
-<input type="hidden" id="user_ongoing_action" value="" />';
+<input type="hidden" id="user_ongoing_action" value="" />
+<input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
+<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -749,8 +751,7 @@ echo '
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>';
+    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
 // Prepare TABS
 echo '
     <div id="item_edit_tabs">
@@ -929,7 +930,8 @@ echo '
         </div>
     </div>';
 }
-echo '
+echo '    
+    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
 </div>';
