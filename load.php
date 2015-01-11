@@ -30,6 +30,9 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
 
+        <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css">
+        <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
+
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
@@ -392,7 +395,7 @@ $htmlHeaders .= '
 
     $(function() {
         //TOOLTIPS
-        $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltip();
+        $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster();
         $("#user_session").val(sessionStorage.password);
 
         $(".menu").menu({
