@@ -12,6 +12,7 @@
  #838 - Fix for mysqli encoding
  #839 - Keepass fixes
  #814
+ API: add FIND feature
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

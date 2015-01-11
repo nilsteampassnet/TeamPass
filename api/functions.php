@@ -358,6 +358,66 @@ function rest_get () {
             } else {
                 rest_error ('EMPTY');
             }
+        } elseif ($GLOBALS['request'][0] == "find") {
+            if($GLOBALS['request'][1] == "item") {
+                $array_category = explode(';', $GLOBALS['request'][2]);
+                $item = $GLOBALS['request'][3];
+                foreach($array_category as $category) {
+                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                        rest_error('CATEGORY_MALFORMED');
+                    }
+                }
+
+                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item, $result)) {
+                    rest_error('ITEM_MALFORMED');
+                } elseif (empty($item) || count($array_category) == 0) {
+                    rest_error('MALFORMED');
+                }
+
+                if(count($array_category) > 1 && count($array_category) < 5) {
+                    for ($i = count($array_category); $i > 0; $i--) {
+                        $slot = $i - 1;
+                        if (!$slot) {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                        } else {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                        }
+                    }
+                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
+                } elseif (count($array_category) == 1) {
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                } else {
+                    rest_error ('NO_CATEGORY');
+                }
+
+                DB::debugMode(false);
+                $response = DB::query(
+                    "select id,label,login,pw,id_tree
+                    from ".prefix_table("items")."
+                    where id_tree = (%s)
+                    and label LIKE %ss",
+                    $category_query,
+                    $item
+                );
+                foreach ($response as $data)
+                {
+                    // get ITEM random key
+                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
+
+                    // prepare output
+                    $json['id'] = utf8_encode($data['id']);
+                    $json['label'] = utf8_encode($data['label']);
+                    $json['login'] = utf8_encode($data['login']);
+                    $json['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json['folder_id'] = $data['id_tree'];
+                    $json['status'] = utf8_encode("OK");
+                }
+                if (isset($json) && $json) {
+                    echo json_encode($json);
+                } else {
+                    rest_error ('EMPTY');
+                }
+            }
         } elseif ($GLOBALS['request'][0] == "add") {
             if($GLOBALS['request'][1] == "item") {
                 include "../sources/main.functions.php";
