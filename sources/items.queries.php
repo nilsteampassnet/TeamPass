@@ -722,6 +722,9 @@ if (isset($_POST['type'])) {
                         DB::delete(prefix_table("restriction_to_roles"), "item_id = %i", $dataReceived['id']);
                         // add roles for item
                         foreach (array_filter(explode(';', $dataReceived['restricted_to_roles'])) as $role) {
+                            $role = explode("role_", $role);
+                            if (count($role) > 1) $role = $role[1];
+                            else $role = $role[0];
                             DB::insert(
                                 prefix_table('restriction_to_roles'),
                                 array(
