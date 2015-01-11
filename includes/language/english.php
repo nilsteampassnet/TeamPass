@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'click_to_change' => 'Click to change',
+    'error_file_is_missing' => 'Error: The file is missing!',
     'admin_email_security' => 'SMTP security',
     'alert_page_will_reload' => 'The page will now be reloaded',
     'csv_import_items_selection' => 'Select the items to import',

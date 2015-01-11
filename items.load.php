@@ -673,9 +673,9 @@ function EditerItem()
             //Manage restriction
             var restriction = restriction_role = "";        
             $("#edit_restricted_to_list option:selected").each(function () {
-                if ($(this).attr("class") == "folder_rights_role_edit") {
+                if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val() + ";";
-                } else if ($(this).attr("class") == "folder_rights_user_edit") {
+                } else {
                     restriction += $(this).val() + ";";
                 }
             });            
@@ -1099,7 +1099,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_categorie").val(data.folder);
                         $("#id_item").val(data.id);
                         $("#id_kbs").html(data.links_to_kbs);
-                        $(".tip").tooltip();
+                        $(".tip").tooltipster();
                         
                         // show Field values
                         $(".fields").val("");
@@ -1642,7 +1642,7 @@ function open_edit_item_div(restricted_to_roles)
             uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
             noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
-        $("#edit_restricted_to_list").multiselect('refresh');
+        $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
         
     }
 
@@ -1794,7 +1794,19 @@ PreviewImage = function(uri,title) {
             imageTag.attr("src", data.new_file);
 
             //When the image has loaded, display the dialog
-            imageTag.load(function() {
+            imageTag
+            .error(function() {
+                $("#div_loading").hide();
+                $("#main_info_box_text").html("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".$LANG['error_file_is_missing'];?>");
+                $("#main_info_box").show().position({
+                    my: "center",
+                    at: "center top+20",
+                    of: "#main_simple"
+                });
+                $("#items_list_loader").hide();
+                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+            })
+            .load(function() {
                 $("#div_loading").hide();
                 imageDialog.dialog({
                     modal: true,
@@ -1936,6 +1948,10 @@ $(function() {
             my : "right top",
             at : "left top"
         }
+    });
+
+    $('.menu_200, .menu_150').on('blur', function () {
+        $(this).hide();
     });
 
     $("#pw_size, #edit_pw_size").spinner({
@@ -2926,7 +2942,7 @@ function proceed_list_update()
                     uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
                     noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
                 });
-                $("#edit_restricted_to_list").multiselect('refresh');
+                $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
             }
        );
     }
