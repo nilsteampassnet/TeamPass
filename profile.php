@@ -59,7 +59,7 @@ echo '
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['email'].':</td>
-        <td title="'.$LANG['click_to_change'].'" class="tip"><span style="" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span></td>
+        <td><span style="" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span></td>
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['role'].':</td>
@@ -107,7 +107,6 @@ echo '
 ?>
 <script type="text/javascript">
 $(function() {
-    $(".tip").tooltipster();
     // password
     $("#change_password").click(function() {
         $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked'];?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1];?>");
