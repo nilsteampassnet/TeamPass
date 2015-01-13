@@ -922,6 +922,10 @@ function isUTF8($string)
 */
 function prepareExchangedData($data, $type)
 {
+    //Load AES
+    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    $aes->register();
+
     if ($type == "encode") {
         if (
             isset($_SESSION['settings']['encryptClientServer'])

@@ -237,6 +237,7 @@ if (isset($_POST['type'])) {
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
                             `viewed_no` int(12) NOT null DEFAULT '0',
+                            `complexity_level` varchar(2) NOT null DEFAULT '-1',
                             PRIMARY KEY (`id`),
                             KEY	`restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
