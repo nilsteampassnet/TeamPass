@@ -73,7 +73,7 @@ echo '
     <br />';
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     echo '
-    <i class="fa fa-calendar fa-fw"></i>&nbsp;', $LANG['index_last_pw_change'].' '. isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'];
+    <i class="fa fa-calendar fa-fw"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'];
 }
 echo '
     <br />
@@ -85,6 +85,8 @@ echo '
 <div style="float:left;width:95%;margin:10px;">
     <span class="button" id="pickfiles_photo">'.$LANG['upload_new_avatar'].'</span>
     <span class="button" id="change_password">'.$LANG['index_change_pw'].'</span>
+    <div style="text-align:center;margin:5px;padding:3px;display:none;" id="profile_info_box" class="ui-widget ui-state-highlight ui-corner-all"></div>
+    <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
     <div id="upload_container_photo" style="display:none;"></div>
     <div id="filelist_photo" style="display:none;"></div>
 
@@ -99,10 +101,7 @@ echo '
         <input type="hidden" id="pw_strength_value" />
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
         <i class="fa fa-cog fa-spin" id="password_change_wait" style="display:none;"></i>
-        <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
     </div>
-
-    <div style="text-align:center;margin:5px;padding:3px;display:none;" id="profile_info_box" class="ui-widget ui-state-highlight ui-corner-all"></div>
 </div>';
 ?>
 <script type="text/javascript">

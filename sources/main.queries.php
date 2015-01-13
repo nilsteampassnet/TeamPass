@@ -68,9 +68,14 @@ switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
     	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+        
+        // load passwordLib library
+        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+        $pwdlib->register();
+        $pwdlib = new PasswordLib\PasswordLib();
 
         // Prepare variables
-        $newPw = bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
+        $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));    //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
 
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
@@ -80,8 +85,8 @@ switch ($_POST['type']) {
             $data = DB::query(
                 "SELECT complexity
                 FROM ".prefix_table("roles_title")."
-            WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
-            ORDER BY complexity DESC"
+                WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
+                ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
                 echo '[ { "error" : "complexity_level_not_reached" } ]';
@@ -424,7 +429,14 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
             $newPwNotCrypted = $pwgen->generate();
-            $newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
+            
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+
+            // Prepare variables
+            $newPw = $pwdlib->createPasswordHash(stringUtf8Decode($newPwNotCrypted)); //$newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
             // update DB
             DB::update(
                 prefix_table("users"),

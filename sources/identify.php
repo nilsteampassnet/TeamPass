@@ -49,8 +49,8 @@ function IdentifyUser($sentData)
     $link->set_charset($encoding);
 
 //Load AES
-    //$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-    //$aes->register();
+    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    $aes->register();
     
 // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -205,9 +205,9 @@ function IdentifyUser($sentData)
             } else {
                 $_SESSION['my_sk'] = $psk;
             }
-        } elseif (crypt($psk, $data['psk']) != $data['psk']) {
+        //} elseif (crypt($psk, $data['psk']) != $data['psk']) {
+        } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
-            //echo $psk." - ".crypt($psk, $data['psk']) ." - ". $data['psk']." - ".bCrypt(htmlspecialchars_decode($psk), COST);
             exit;
         }
     }
@@ -293,7 +293,24 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
-        //echo $pwdlib->createPasswordHash($passwordClear)." -- ".$data['pw'];
+        if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
+            //update user's password
+            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+            DB::update(prefix_table('users'),
+                array(
+                    'pw' => $data['pw']
+                ),
+                "id=%i",
+                $data['id']
+            );
+        }
+        
+        // check the given password
+        if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
+            $userPasswordVerified = true;
+        } else {
+            $userPasswordVerified = false;
+        }
         
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
@@ -302,7 +319,7 @@ function IdentifyUser($sentData)
         // This in order to allow admin by default to connect even if LDAP is activated
         if (
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                && crypt($passwordClear, $data['pw']) == $data['pw'] && $data['disabled'] == 0
+                && $userPasswordVerified == true && $data['disabled'] == 0
             )
             ||
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -314,8 +331,7 @@ function IdentifyUser($sentData)
             )
             ||
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
-                && $data['disabled'] == 0
+                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
             )
         ) {
             $_SESSION['autoriser'] = true;
@@ -452,7 +468,7 @@ function IdentifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk))    //bCrypt(htmlspecialchars_decode($psk), COST)
                 ),
                 "id=%i",
                 $data['id']
