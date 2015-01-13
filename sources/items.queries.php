@@ -170,7 +170,8 @@ if (isset($_POST['type'])) {
                             'inactif' => '0',
                             'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '',
                             'perso' => ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) ? '1' : '0',
-                            'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0'
+                            'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0',
+                            'complexity_level' => $dataReceived['complexity_level']
                            )
                     );
                     $newID = DB::insertId();
@@ -514,7 +515,8 @@ if (isset($_POST['type'])) {
                             'url' => $url,
                             'id_tree' => $dataReceived['categorie'],
                             'restricted_to' => $dataReceived['restricted_to'],
-                            'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0'
+                            'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0',
+                            'complexity_level' => $dataReceived['complexity_level']
                            ),
                         "id=%i",
                         $dataReceived['id']
@@ -1259,6 +1261,10 @@ if (isset($_POST['type'])) {
                 }
 
                 $arrData['label'] = $dataItem['label'];
+                /*if ($dataItem['complexity_level'] != "-1") {
+                    $pw .= " [".$_SESSION['settings']['pwComplexity']
+                        foreach($_SESSION['settings']['pwComplexity'] as $val)
+                }*/
                 $arrData['pw'] = $pw;
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = $dataItem['url'];

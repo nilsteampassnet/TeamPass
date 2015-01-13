@@ -647,6 +647,11 @@ if (isset($_POST['type'])) {
                 "INT(12) NOT null DEFAULT '0'"
             );
             $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "complexity_level",
+                "varchar(2) NOT null DEFAULT '-1'"
+            );
+            $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."roles_values",
                 "type",
                 "VARCHAR(1) NOT NULL DEFAULT 'R'"
