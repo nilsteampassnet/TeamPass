@@ -1697,9 +1697,12 @@ $("#div_copy_item_to_folder").dialog({
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         open: function( event, ui ) {
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
+            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
+            $(".ui-tooltip").siblings(".tooltip").remove();
         },
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
+                $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").show().html("<span><?php echo $LANG['please_wait']." <i class=\'fa fa-cog fa-spin'></i>";?></span>");
                 $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", true);
                 //Send query
                 $.post(
@@ -1721,6 +1724,7 @@ $("#div_copy_item_to_folder").dialog({
                         if (data[0].status == "ok") {
                             window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
                         }
+                        $("#copy_item_info").hide();
                     },
                     "json"
                );
@@ -1729,9 +1733,6 @@ $("#div_copy_item_to_folder").dialog({
                 $("#copy_item_to_folder_show_error").html("").hide();
                 $(this).dialog('close');
             }
-        },
-        open: function(event,ui) {
-            $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
 

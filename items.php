@@ -74,7 +74,7 @@ foreach ($rows as $reccord) {
 }
 
 // Build list of visible folders
-$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
+$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
 // Hidden things
 echo '
 <input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
@@ -295,6 +295,12 @@ foreach ($folders as $folder) {
                 $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
             } else {
                 $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+            }
+            // build select for active folders (where user can do something)
+            if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
+                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+            } else {
+                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
             }
             // build tree
             if ($hide_node == false) {
@@ -1044,9 +1050,10 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$selectVisibleNonPersonalFoldersOptions .
+$selectVisibleActiveFoldersOptions .
 '</select>
     </div>
+    <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';
 // DIALOG FOR HISTORY OF ITEM
 echo '
