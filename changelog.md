@@ -13,6 +13,7 @@
  #839 - Keepass fixes
  #814
  API: add FIND feature
+ Fix: copy not possible in RO folders
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

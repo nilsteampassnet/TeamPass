@@ -187,7 +187,7 @@ if (isset($_POST['type'])) {
                                 DB::insert(
                                     prefix_table('keys'),
                                     array(
-                                        'table' => 'categories_items',
+                                        'sql_table' => 'categories_items',
                                         'id' => $newID,
                                         'rand_key' => $randomKeyFields
                                     )
@@ -224,7 +224,7 @@ if (isset($_POST['type'])) {
                         DB::insert(
                             prefix_table('keys'),
                             array(
-                                'table' => 'items',
+                                'sql_table' => 'items',
                                 'id' => $newID,
                                 'rand_key' => $randomKey
                                )
@@ -465,7 +465,7 @@ if (isset($_POST['type'])) {
                             DB::insert(
                                 prefix_table('keys'),
                                 array(
-                                    'table'     => 'items',
+                                    'sql_table'     => 'items',
                                     'id'        => $data['id'],
                                     'rand_key'  => $randomKey
                                 )
@@ -542,7 +542,7 @@ if (isset($_POST['type'])) {
                                     DB::insert(
                                         prefix_table('keys'),
                                         array(
-                                            'table' => 'categories_items',
+                                            'sql_table' => 'categories_items',
                                             'id' => $dataReceived['id'],
                                             'rand_key' => $randomKeyFields
                                         )
@@ -986,13 +986,19 @@ if (isset($_POST['type'])) {
                     DB::insert(
                         prefix_table('keys'),
                         array(
-                            'table' => 'items',
+                            'sql_table' => 'items',
                             'id' => $newID,
                             'rand_key' => $randomKey
                         )
                     );
                     // get key for original pw
-                    $originalKey = DB::queryfirstrow('SELECT rand_key FROM `".prefix_table("keys")."` WHERE `sql_table` LIKE "items" AND `id` ='.$_POST['item_id']);
+                    $originalKey = DB::queryfirstrow(
+                        "SELECT rand_key 
+                        FROM `".prefix_table("keys")."` 
+                        WHERE `sql_table` LIKE %ss AND `id` = %i",
+                        "items",
+                        $_POST['item_id']
+                    );
                     // unsalt previous pw
                     $pw = substr(decrypt($originalRecord['pw']), strlen($originalKey['rand_key']));
                 }
