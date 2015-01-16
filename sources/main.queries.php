@@ -844,12 +844,14 @@ switch ($_POST['type']) {
             "at_shown",
             $_SESSION['user_id']
         );
-        foreach ($rows as $record) {
-            if (!in_array($record['id'], $arrTmp)) {
-                $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
-                $x++;
-                array_push($arrTmp, $record['id']);
-                if ($x >= 10) break;
+        if (DB::count() > 0) {
+            foreach ($rows as $record) {
+                if (!in_array($record['id'], $arrTmp)) {
+                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                    $x++;
+                    array_push($arrTmp, $record['id']);
+                    if ($x >= 10) break;
+                }
             }
         }
         

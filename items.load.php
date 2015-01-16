@@ -321,6 +321,8 @@ function ListerItems(groupe_id, restricted, start)
                                         //increment / decrement number of items in folders
                                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
+                                        
+                                        displayMessage("<?php echo $LANG['alert_message_done'];?>");
                                     },
                                     "json"
                                );
@@ -416,13 +418,7 @@ function RecupComplexite(val, edit)
                 $("#div_dialog_message").dialog("open");
                 funcReturned = 0;
             } else if (data.error == "user_is_readonly") {
-                $("#main_info_box_text").html(data.message);
-                $("#main_info_box").show().position({
-                    my: "center",
-                    at: "center top+20",
-                    of: "#main_simple"
-                });
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                displayMessage(data.message);
                 funcReturned = 0;
             } else {
             	$("#div_formulaire_edition_item").dialog("close");
@@ -1376,13 +1372,7 @@ function open_add_group_div()
 {
     // exclude for PF
     if ($('#recherche_group_pf').val() == "1") {
-        $("#main_info_box_text").html("<?php echo $LANG['error_not_allowed_to'];?>");
-        $("#main_info_box").show().position({
-            my: "center",
-            at: "center top+20",
-            of: "#main_simple"
-        });
-        setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 1000);
+        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
 
@@ -1401,13 +1391,7 @@ function open_edit_group_div()
 {
     // exclude for PF
     if ($('#recherche_group_pf').val() == "1") {
-        $("#main_info_box_text").html("<?php echo $LANG['error_not_allowed_to'];?>");
-        $("#main_info_box").show().position({
-            my: "center",
-            at: "center top+20",
-            of: "#main_simple"
-        });
-        setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 1000);
+        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
 
@@ -1428,13 +1412,7 @@ function open_del_group_div()
 {
     // exclude for PF
     if ($('#recherche_group_pf').val() == "1") {
-        $("#main_info_box_text").html("<?php echo $LANG['error_not_allowed_to'];?>");
-        $("#main_info_box").show().position({
-            my: "center",
-            at: "center top+20",
-            of: "#main_simple"
-        });
-        setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 1000);
+        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
 
@@ -1722,7 +1700,11 @@ $("#div_copy_item_to_folder").dialog({
                         }
                         //if OK
                         if (data[0].status == "ok") {
-                            window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
+                            //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
+                            ListerItems($('#copy_in_folder').val(),'', 0);
+                            AfficherDetailsItem(data[1].new_id);
+                            $("#copy_in_folder").val("");
+                            $(this).dialog('close');
                         }
                         $("#copy_item_info").hide();
                     },
@@ -1799,14 +1781,7 @@ PreviewImage = function(uri,title) {
             imageTag
             .error(function() {
                 $("#div_loading").hide();
-                $("#main_info_box_text").html("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".$LANG['error_file_is_missing'];?>");
-                $("#main_info_box").show().position({
-                    my: "center",
-                    at: "center top+20",
-                    of: "#main_simple"
-                });
-                $("#items_list_loader").hide();
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                displayMessage("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".$LANG['error_file_is_missing'];?>");
             })
             .load(function() {
                 $("#div_loading").hide();
@@ -3036,6 +3011,7 @@ function aes_decrypt(text)
 function prepareOneTimeView()
 {
     if ($("#selected_items").val() == "") return;
+    $("#div_loading").show();
 
     //Send query
     $.post(
@@ -3054,6 +3030,7 @@ function prepareOneTimeView()
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }
+            $("#div_loading").hide();
         },
         "json"
    );
@@ -3080,14 +3057,7 @@ function globalItemsSearch()
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-                $("#main_info_box_text").html(data.message);
-                $("#main_info_box").show().position({
-                    my: "center",
-                    at: "center top+20",
-                    of: "#main_simple"
-                });
-                $("#items_list_loader").hide();
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                displayMessage(data.message);
                 $("#full_items_list").html(data.items_html);
             }
         );

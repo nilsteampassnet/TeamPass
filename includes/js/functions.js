@@ -250,3 +250,14 @@ function prepareExchangedData(data, type, key)
         }
     }
 }
+
+function displayMessage(textToDisplay)
+{
+    $("#main_info_box_text").html(textToDisplay);
+    $("#main_info_box").show().position({
+        my: "center",
+        at: "center top+20",
+        of: "#main_simple"
+    });
+    setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
+}
