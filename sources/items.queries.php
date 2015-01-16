@@ -1009,8 +1009,8 @@ if (isset($_POST['type'])) {
                         array_push($aSet, array("id_tree" => $_POST['folder_id']));
                     } elseif ($key == "pw" && !empty($pw)) {
                         array_push($aSet, array("pw" => encrypt($randomKey.$pw)));
-                    } elseif ($key == "label") {
-                        array_push($aSet, array("label" => str_replace('"', '\"', $value."(".$LANG['duplicate'].")")));
+                    //} elseif ($key == "label") {
+                    //    array_push($aSet, array("label" => str_replace('"', '\"', $value." (".$LANG['duplicate'].")")));
                     } elseif ($key != "id" && $key != "key") {
                         array_push($aSet, array($key => str_replace('"', '\"', $value)));
                     }
@@ -1050,7 +1050,7 @@ if (isset($_POST['type'])) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => $_POST['item_id'],
+                        'id_item' => $newID,
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_copy'

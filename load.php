@@ -663,6 +663,9 @@ $htmlHeaders .= '
               name : "newValue"
         });
         */
+        
+        // get list of last items
+        refreshListLastSeenItems();
     });';
 
 if (!isset($_GET['page'])) {

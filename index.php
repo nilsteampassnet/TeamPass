@@ -242,38 +242,16 @@ if (isset($_SESSION['login'])) {
                 </div>';
 
     if ($_SESSION['user_admin'] != 1) {
-        $x = 1;
-        $arrTmp = array();
-        $rows = DB::query(
-            "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
-            FROM ".prefix_table("log_items")." AS l
-            RIGHT JOIN ".prefix_table("items")." AS i ON (l.id_item = i.id)
-            WHERE l.action = %s AND l.id_user = %i
-            ORDER BY l.date DESC
-            LIMIT 0, 100",
-            "at_shown",
-            $_SESSION['user_id']
-        );
-        if (DB::count() > 0) {
-            echo '
-                <div style="float:right; margin-right:10px;">
-                    <ul class="menu" id="menu_last_seen_items">
-                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
-                            <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">';
-            foreach ($rows as $record) {
-                if (!in_array($record['id'], $arrTmp)) {
-                    echo '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
-                    $x++;
-                    array_push($arrTmp, $record['id']);
-                    if ($x >= 10) break;
-                }
-            }
-            echo '
-                            </ul>
-                        </li>
-                    </ul>
-                </div>';
-        }
+        echo '
+            <div style="float:right; margin-right:10px;">
+                <ul class="menu" id="menu_last_seen_items">
+                    <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
+                        <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
+                            <li><i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>';
     }
     echo '
             </div>
@@ -292,28 +270,6 @@ if (!isset($_GET['otv'])) {
                 </dd>
             </dl>
         </div>';
-}
-echo '
-    </div>';
-
-/* LAST SEEN */
-echo '
-    <div style="display:none;" id="div_last_items" class="ui-state-active ui-corner-all">
-        '.$LANG['last_items_title'].":&nbsp;";
-if (isset($_SESSION['latest_items_tab'])) {
-    foreach ($_SESSION['latest_items_tab'] as $item) {
-        if (!empty($item)) {
-            echo '
-                    <span class="last_seen_item"
-            onclick="javascript:$(\'#menu_action\').val(\'action\');
-            window.location.href = \''.$item['url'].'\'">
-            <img src="includes/images/tag-small.png" alt="" />
-            <span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span>
-            </span>';
-        }
-    }
-} else {
-    echo $LANG['no_last_items'];
 }
 echo '
     </div>';
