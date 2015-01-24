@@ -41,7 +41,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // Include files
-@require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -247,7 +247,7 @@ if (isset($_SESSION['login'])) {
                 <ul class="menu" id="menu_last_seen_items">
                     <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
                         <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
-                            <li><i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'</li>
+                            <li>'.$LANG['please_wait'].'</li>
                         </ul>
                     </li>
                 </ul>

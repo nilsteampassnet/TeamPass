@@ -4,7 +4,7 @@
  * @file          czech.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     2009 - 2014 Nils Laumaillé
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -769,23 +769,27 @@ $LANG = array (
     'read' => 'číst',
     'no_access' => 'bez přístupu',
     'right_types_label' => 'Zvolte druh přístupu k této složce pro zvolenou skupinu uživatelů',
-    'groups' => 'Folders',
-    'duplicate' => 'Duplicate',
-    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
-    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
-    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
-    'user_profile_dialogbox_menu' => 'Your Teampass informations',
-    'admin_email_security' => 'SMTP security',
-    'alert_page_will_reload' => 'The page will now be reloaded',
-    'csv_import_items_selection' => 'Select the items to import',
-    'csv_import_options' => 'Select import options',
-    'file_protection_password' => 'Define file password',
-    'button_export_file' => 'Export items',
-    'error_export_format_not_selected' => 'A format for export file is required',
-    'select_file_format' => 'Select file format',
-    'button_offline_generate' => 'Generate Offline mode file',
-    'upload_new_avatar' => 'Select avatar PNG file',
+    'groups' => 'Složky',
+    'duplicate' => 'Vytvořit duplikát',
+    'duplicate_title_in_same_folder' => 'Položka s identickým názvem již v této složce existuje! Duplikáty jsou nepřípustné!',
+    'duplicate_item_in_folder' => 'Povolit položky s identickým názvem v běžné složce',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objektů nalezeno',
+    'settings_roles_allowed_to_print' => 'Vybrat uživatelské role s právem exportovat položky',
+    'settings_roles_allowed_to_print_tip' => 'Vybrané uživatelské role budou oprávněny exportovat položky do souboru',
+    'user_profile_dialogbox_menu' => 'Informace k Vaší aplikaci Teampass',
+    'admin_email_security' => 'Zabezpečení SMTP',
+    'alert_page_will_reload' => 'Stránka bude nyní znova natažena',
+    'csv_import_items_selection' => 'Vybrat položky pro import',
+    'csv_import_options' => 'Vybrat volby pro import',
+    'file_protection_password' => 'Zadat heslo souboru',
+    'button_export_file' => 'Exportovat položky',
+    'error_export_format_not_selected' => 'Je třeba zvolit formát pro exportní soubor',
+    'select_file_format' => 'Vybrat formát souboru',
+    'button_offline_generate' => 'Vytvořit soubot pro Offline modus',
+    'upload_new_avatar' => 'Vybrat soubor PNG pro avatara',
+    'expand' => 'Vyklapnout',
+    'collapse' => 'Sklapnout',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );
