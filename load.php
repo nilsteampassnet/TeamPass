@@ -372,6 +372,7 @@ $htmlHeaders .= '
     function refreshListLastSeenItems()
     {        
         // refresh list of last items seen
+        if ("'.$_SESSION["key"].'" == "") return false;
         $.post(
             "sources/main.queries.php",
             {
@@ -663,7 +664,7 @@ $htmlHeaders .= '
               name : "newValue"
         });
         */
-        
+
         // get list of last items
         refreshListLastSeenItems();
     });';

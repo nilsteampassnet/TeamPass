@@ -4,7 +4,7 @@
  * @file          french.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     2009 - 2014 Nils Laumaillé
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -769,23 +769,27 @@ $LANG = array (
     'read' => 'Lecture',
     'no_access' => 'Aucun accès',
     'right_types_label' => 'Sélectionner ',
-    'groups' => 'Folders',
-    'duplicate' => 'Duplicate',
+    'groups' => 'Générer le fichier en mode hors ligne',
+    'duplicate' => 'Dupliquer',
     'duplicate_title_in_same_folder' => 'Un élément portant le même nom existe déjà dans ce répertoire. Les doublons ne sont pas autorisés.',
-    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
-    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
-    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
-    'user_profile_dialogbox_menu' => 'Your Teampass informations',
-    'admin_email_security' => 'SMTP security',
-    'alert_page_will_reload' => 'The page will now be reloaded',
-    'csv_import_items_selection' => 'Select the items to import',
-    'csv_import_options' => 'Select import options',
-    'file_protection_password' => 'Define file password',
-    'button_export_file' => 'Export items',
-    'error_export_format_not_selected' => 'A format for export file is required',
-    'select_file_format' => 'Select file format',
-    'button_offline_generate' => 'Generate Offline mode file',
-    'upload_new_avatar' => 'Select avatar PNG file',
+    'duplicate_item_in_folder' => 'Autoriser les doublons dans un même dossier',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objets trouvés',
+    'settings_roles_allowed_to_print' => 'Définir le rôle autorisé à imprimer les objets',
+    'settings_roles_allowed_to_print_tip' => 'Les rôles sélectionnés seront autorisés à imprimer les objets.',
+    'user_profile_dialogbox_menu' => 'Vos informations Teampass',
+    'admin_email_security' => 'Sécurité SMTP',
+    'alert_page_will_reload' => 'La page va maintenant être rechargée',
+    'csv_import_items_selection' => 'Sélectionner les objets à importer ',
+    'csv_import_options' => 'Sélectionner les options d\'importations',
+    'file_protection_password' => 'Définir le mot de passe du fichier',
+    'button_export_file' => 'Exporter les objets',
+    'error_export_format_not_selected' => 'Un format d\'export est nécessaire',
+    'select_file_format' => 'Sélectionner l\'extension du fichier',
+    'button_offline_generate' => 'Générer le fichier en mode hors ligne',
+    'upload_new_avatar' => 'Sélectionner un avatar (.PNG)',
+    'expand' => 'Étendre ',
+    'collapse' => 'Réduire',
+    'error_file_is_missing' => 'Erreur : le fichier n\'existe pas ou plus !',
+    'click_to_change' => 'Cliquer pour changer',
     '' => ''
 );

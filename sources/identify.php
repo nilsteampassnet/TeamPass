@@ -336,19 +336,9 @@ function IdentifyUser($sentData)
         ) {
             $_SESSION['autoriser'] = true;
 
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-
             // Generate a ramdom ID
-            $key = "";
-            $pwgen->setLength(50);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $key = $pwgen->generate();
+            $key = $pwdlib->getRandomToken(50);
+
             // Log into DB the user's connection
             if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
                 logEvents('user_connection', 'connection', $data['id']);

@@ -4,7 +4,7 @@
  * @file          dutch.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     2009 - 2014 Nils Laumaillé
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -213,8 +213,8 @@ $LANG = array (
     'notify_activated' => 'Notification enabled',
     'at_email' => 'email',
     'enable_email_notification_on_item_shown' => 'Send notification by email when Item is shown',
-    'bad_email_format' => 'Email address has not the expected format!',
-    'item_share_text' => 'In order to share by mail this Item, enter the email address and press SEND button.',
+    'bad_email_format' => 'Email address doesn\'t have the expected format!',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
     'share' => 'Share this Item',
     'share_sent_ok' => 'Email has been sent',
     'email_share_item_subject' => '[TeamPass] An Item was shared with you',
@@ -710,7 +710,7 @@ $LANG = array (
     'warning_screen_height' => 'WAARSCHUWING: scherm resolutie niet hoog genoeg om de lijst te maken!',
     'yes' => 'Ja',
     'your_version' => 'Versie',
-    'disconnect_all_users_sure' => 'Etes-vous sur de vouloir déconnecter tous les utilisateurs ?',
+    'disconnect_all_users_sure' => 'Are you sure you\'d like to disconnect all users?',
     'Test the Email configuration' => 'Tester la configuration des Emails',
     'url_copied_clipboard' => 'URL copied in clipboard',
     'url_copy' => 'Copy URL in clipboard',
@@ -726,7 +726,7 @@ $LANG = array (
     'settings_api_add_key' => 'Add new key',
     'settings_api_key' => 'Key',
     'settings_api_key_label' => 'Label',
-    'settings_api_ip_whitelist' => 'White-list of authorized IP',
+    'settings_api_ip_whitelist' => 'White-list of authorized IPs',
     'settings_api_ip_whitelist_tip' => 'If no IP is listed then any IP is authorized.',
     'settings_api_add_ip' => 'Voeg nieuw IP toe',
     'settings_api_db_intro' => 'Give a label for this new Key (not mandatory but recommended)',
@@ -787,5 +787,9 @@ $LANG = array (
     'select_file_format' => 'Select file format',
     'button_offline_generate' => 'Generate Offline mode file',
     'upload_new_avatar' => 'Select avatar PNG file',
+    'expand' => 'Expand',
+    'collapse' => 'Collapse',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );

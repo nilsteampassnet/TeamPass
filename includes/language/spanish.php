@@ -4,7 +4,7 @@
  * @file          spanish.php
  * @author        Nils Laumaillé
  * @version       2.1.23
- * @copyright     2009 - 2014 Nils Laumaillé
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -725,7 +725,7 @@ $LANG = array (
     'settings_api_add_key' => 'Agregar nueva clave',
     'settings_api_key' => 'Clave',
     'settings_api_key_label' => 'Etiqueta',
-    'settings_api_ip_whitelist' => 'White-list of authorized IP',
+    'settings_api_ip_whitelist' => 'White-list of authorized IPs',
     'settings_api_ip_whitelist_tip' => 'If no IP is listed then any IP is authorized.',
     'settings_api_add_ip' => 'Agregar nueva IP',
     'settings_api_db_intro' => 'Give a label for this new Key (not mandatory but recommended)',
@@ -786,5 +786,9 @@ $LANG = array (
     'select_file_format' => 'Select file format',
     'button_offline_generate' => 'Generate Offline mode file',
     'upload_new_avatar' => 'Select avatar PNG file',
+    'expand' => 'Expand',
+    'collapse' => 'Collapse',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );

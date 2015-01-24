@@ -336,18 +336,12 @@ switch ($_POST['type']) {
      * Used in order to send the password to the user by email
      */
     case "send_pw_by_email":
-        //Load PWGEN
-        $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-        $pwgen->register();
-        $pwgen = new Encryption\PwGen\pwgen();
-        // Generate a ramdom ID
-        $key = "";
-        $pwgen->setLength(50);
-        $pwgen->setSecure(true);
-        $pwgen->setSymbols(false);
-        $pwgen->setCapitalize(true);
-        $pwgen->setNumerals(true);
-        $key = $pwgen->generate();
+        // load passwordLib library
+        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+        $pwdlib->register();
+        $pwdlib = new PasswordLib\PasswordLib();
+        // generate key
+        $key = $pwdlib->getRandomToken(50);
 
         // Get account and pw associated to email
         DB::query(
@@ -416,19 +410,12 @@ switch ($_POST['type']) {
             "password_recovery"
         );
         if ($key == $data['valeur']) {
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-
-            // Generate and change pw
-            $newPw = "";
-            $pwgen->setLength(10);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $newPwNotCrypted = $pwgen->generate();
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            // generate key
+            $newPwNotCrypted = $pwdlib->getRandomToken(10);
             
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
