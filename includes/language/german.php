@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
