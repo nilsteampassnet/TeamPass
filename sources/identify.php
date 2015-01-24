@@ -29,6 +29,7 @@ IdentifyUser($_POST['data']);
 
 function IdentifyUser($sentData)
 {
+    global $debugLdap;
     global $k;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -81,6 +82,21 @@ function IdentifyUser($sentData)
     if ($debugLdap == 1) {
         // create temp file
         $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w");
+        fputs(
+            $dbgLdap,
+           "Get all LDAP params : \n" .
+           'mode : ' . $_SESSION['settings']['ldap_mode'] . "\n" .
+           'type : ' . $_SESSION['settings']['ldap_type'] . "\n" .
+           'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
+           'search_base : ' . $_SESSION['settings']['ldap_search_base']."\n" .
+           'bind_dn : ' . $_SESSION['settings']['ldap_bind_dn']."\n" .
+           'bind_passwd : ' . $_SESSION['settings']['ldap_bind_passwd']."\n" .
+           'user_attribute : ' . $_SESSION['settings']['ldap_user_attribute']."\n" .
+           'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+           'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+           'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+           'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
+       );
     }
 
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -93,12 +109,24 @@ function IdentifyUser($sentData)
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+            if ($debugLdap == 1) {
+                fputs($dbgLdap,"LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
+            }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
                 $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd'] );
+                if ($debugLdap == 1) {
+                    fputs($dbgLdap,"LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
+                }
                 if ($ldapbind) {
-                    $filter="(&(" . $_SESSION[settings][ldap_user_attribute]. "=$username)(objectClass=posixAccount))";
+                    $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=posixAccount))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    if ($debugLdap == 1) {
+                       fputs($dbgLdap,
+                        'Search filter : ' . $filter . "\n" .
+                        'Results : ' . print_r(ldap_get_entries($ldapconn, $result),True) . "\n"
+                        );
+                    }
                     if (ldap_count_entries($ldapconn, $result)) {
                         // try auth
                         $result = ldap_get_entries($ldapconn, $result);
