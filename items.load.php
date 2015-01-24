@@ -1096,7 +1096,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_categorie").val(data.folder);
                         $("#id_item").val(data.id);
                         $("#id_kbs").html(data.links_to_kbs);
-                        $(".tip").tooltipster();
+                        $(".tip").tooltipster({
+                            maxWidth: 400,
+                            contentAsHTML: true
+                        });
                         
                         // show Field values
                         $(".fields").val("");
