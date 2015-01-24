@@ -249,6 +249,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['maintenance_mode'] != $_POST['maintenance_mode']) {
         updateSettings('maintenance_mode', $_POST['maintenance_mode']);
     }
+    // default_session_expiration_time
+    if (@$_SESSION['settings']['default_session_expiration_time'] != $_POST['default_session_expiration_time']) {
+        updateSettings('default_session_expiration_time', $_POST['default_session_expiration_time']);
+    }
     // Update sts mode
     if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
         updateSettings('enable_sts', $_POST['enable_sts']);
@@ -330,7 +334,7 @@ if (isset($_POST['save_button'])) {
 	    updateSettings('ldap_elusers', $_POST['ldap_elusers']);
 	}
     // Update LDAP ldap_bind_dn
-    if (@$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
+    if (isset($_POST['ldap_bind_dn']) && @$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
         updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
     }
     // Update LDAP ldap_user_attribute
@@ -338,11 +342,11 @@ if (isset($_POST['save_button'])) {
         updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
     }
     // Update LDAP ldap_search_base
-    if (@$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
+    if (isset($_POST['ldap_search_base'])&& @$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
         updateSettings('ldap_search_base', $_POST['ldap_search_base']);
     }
     // Update LDAP ldap_bind_passwd
-    if (@$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
+    if (isset($_POST['ldap_bind_passwd'])&& @$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
         updateSettings('ldap_bind_passwd', $_POST['ldap_bind_passwd']);
     }
     // Update anyone_can_modify
@@ -702,6 +706,17 @@ $LANG['settings_maintenance_mode'].'
                     <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
+              <td>
+            </tr>';
+// default_session_expiration_time
+echo '
+            <tr style="margin-bottom:3px">
+            <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$LANG['settings_default_session_expiration_time'].'</label>
+            </td>
+            <td>
+                <input type="text" size="15" id="default_session_expiration_time" name="default_session_expiration_time" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" class="text ui-widget-content" />
               <td>
             </tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';

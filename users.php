@@ -85,7 +85,7 @@ echo '
                     <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
                     <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
 					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/phone.png" /></th>':''
+                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
                 	,'
                 </tr>
             </thead>

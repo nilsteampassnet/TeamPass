@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
