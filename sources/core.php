@@ -63,6 +63,7 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
         }
     }
     $_SESSION['settings']['loaded'] = 1;
+    $_SESSION['settings']['default_session_expiration_time'] = 5;
 }
 
 $rows = DB::query("SELECT valeur, intitule FROM ".prefix_table("misc")." WHERE type=%s_type",

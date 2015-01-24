@@ -73,7 +73,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
     );
     $_SESSION['user_language'] = $dataLanguage['name'];
     $_SESSION['user_language_flag'] = $dataLanguage['flag'];
-} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
+} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language']) && !isset($_SESSION['user_language'])) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         "SELECT m.valeur AS valeur, l.flag AS flag
@@ -569,7 +569,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                        <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                        <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60" ,'" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                     </div>
 
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">

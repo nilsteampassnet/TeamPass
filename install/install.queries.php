@@ -358,7 +358,8 @@ if (isset($_POST['type'])) {
                             array('admin','subfolder_rights_as_parent','0'),
                             array('admin','show_only_accessible_folders','0'),
                             array('admin','enable_suggestion','0'),
-                            array('admin','otv_expiration_period','7')
+                            array('admin','otv_expiration_period','7'),
+                            array('admin','default_session_expiration_time','60')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

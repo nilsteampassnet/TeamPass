@@ -11,7 +11,9 @@
  #817 - Wrong number of users online
  #838 - Fix for mysqli encoding
  #839 - Keepass fixes
- #814
+ #853 - New setting for default session expiration delay
+ #851 - Multiple fixes for LDAP integration
+ #814 - #857
  API: add FIND feature
  Fix: copy not possible in RO folders
 

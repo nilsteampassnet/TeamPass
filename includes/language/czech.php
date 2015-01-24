@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
     'settings_ldap_user_attribute' => 'User attribute to search',
     'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',

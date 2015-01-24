@@ -569,7 +569,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'show_only_accessible_folders', '0', 0),
                 array('admin', 'enable_suggestion', '0', 0),
                 array('admin', 'email_server_url', '', 0),
-                array('admin','otv_expiration_period','7', 0)
+                array('admin','otv_expiration_period','7', 0),
+                array('admin','default_session_expiration_time','60', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
