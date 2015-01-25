@@ -2,7 +2,7 @@
 /**
  * @file          items.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
+ * @version       2.1.23
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -2138,7 +2138,7 @@ if (isset($_POST['type'])) {
                 }
             }
             
-            // check role access on this folder (get the most restrictive) (2.1.22)
+            // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(

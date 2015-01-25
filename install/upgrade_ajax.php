@@ -3,6 +3,7 @@ require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
+$_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
 require_once '../includes/include.php';
@@ -17,7 +18,6 @@ if (!file_exists("../includes/settings.php")) {
 require_once '../includes/settings.php';
 require_once '../sources/main.functions.php';
 
-$_SESSION['CPM'] = 1;
 $_SESSION['settings']['loaded'] = "";
 
 ################
