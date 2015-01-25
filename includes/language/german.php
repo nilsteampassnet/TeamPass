@@ -3,8 +3,8 @@
  *
  * @file          german.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
@@ -769,10 +772,27 @@ $LANG = array (
     'read' => 'Lesen',
     'no_access' => 'Kein Zugriff',
     'right_types_label' => 'Legen Sie den Zugriffstyp des Ordners für bestimmte Benutzergruppen fest',
-    'groups' => 'Folders',
-    'duplicate' => 'Duplicate',
-    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
-    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'groups' => 'Ordner',
+    'duplicate' => 'Duplizieren',
+    'duplicate_title_in_same_folder' => 'Identisches Element existiert bereits im aktuellen Ordner! Duplikate sind nicht zulässig!',
+    'duplicate_item_in_folder' => 'Elemente mit identischem Namen im allgemeinen Ordner zulassen.',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% Objekte gefunden ',
+    'settings_roles_allowed_to_print' => 'Rollen definieren, die Elemente in Datei schreiben dürfen',
+    'settings_roles_allowed_to_print_tip' => 'Ausgewählte Benutzerrollen werden Elemente in Datei schreiben dürfen',
+    'user_profile_dialogbox_menu' => 'Informationen über Ihr Teampass',
+    'admin_email_security' => 'SMTP-Sicherheit',
+    'alert_page_will_reload' => 'Seite wird neu jetzt geladen',
+    'csv_import_items_selection' => 'Zu importierende Elemente auswählen',
+    'csv_import_options' => 'Importoptionen auswählen',
+    'file_protection_password' => 'Passwort für Datei setzen',
+    'button_export_file' => 'Elemente exportieren',
+    'error_export_format_not_selected' => 'Format für Exportdatei ist erforderlich',
+    'select_file_format' => 'Dateiformat auswählen',
+    'button_offline_generate' => 'Datei für Offline-Modus erstellen',
+    'upload_new_avatar' => 'PNG-Datei für Avatar auswählen',
+    'expand' => 'Aufklappen',
+    'collapse' => 'Zusammenklappen',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );
-?>

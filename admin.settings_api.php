@@ -3,8 +3,8 @@
  *
  * @file          admin.settings_api.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -46,8 +46,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 echo '
 <div id="tabs-9">
@@ -74,7 +76,7 @@ echo '
                 <th>'.$LANG['settings_api_key'].'</th>
                 </thead>';
                 $rows = DB::query(
-                    "SELECT id, label, value FROM ".$pre."api
+                    "SELECT id, label, value FROM ".prefix_table("api")."
                     WHERE type = %s
                     ORDER BY timestamp ASC",
                     'key'
@@ -99,7 +101,7 @@ echo '
         </label>
         <div id="api_ips_list">';
 		$data = DB::query(
-            "SELECT id, label, value FROM ".$pre."api
+            "SELECT id, label, value FROM ".prefix_table("api")."
             WHERE type = %s",
             'ip'
         );
@@ -112,7 +114,7 @@ echo '
                 <th>'.$LANG['settings_api_ip'].'</th>
                 </thead>';
 					$rows = DB::query(
-                        "SELECT id, label, value FROM ".$pre."api
+                        "SELECT id, label, value FROM ".prefix_table("api")."
                         WHERE type = %s
                         ORDER BY timestamp ASC",
                         'ip'

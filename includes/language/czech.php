@@ -3,8 +3,8 @@
  *
  * @file          czech.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',
@@ -769,10 +772,27 @@ $LANG = array (
     'read' => 'číst',
     'no_access' => 'bez přístupu',
     'right_types_label' => 'Zvolte druh přístupu k této složce pro zvolenou skupinu uživatelů',
-    'groups' => 'Folders',
-    'duplicate' => 'Duplicate',
-    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
-    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'groups' => 'Složky',
+    'duplicate' => 'Vytvořit duplikát',
+    'duplicate_title_in_same_folder' => 'Položka s identickým názvem již v této složce existuje! Duplikáty jsou nepřípustné!',
+    'duplicate_item_in_folder' => 'Povolit položky s identickým názvem v běžné složce',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objektů nalezeno',
+    'settings_roles_allowed_to_print' => 'Vybrat uživatelské role s právem exportovat položky',
+    'settings_roles_allowed_to_print_tip' => 'Vybrané uživatelské role budou oprávněny exportovat položky do souboru',
+    'user_profile_dialogbox_menu' => 'Informace k Vaší aplikaci Teampass',
+    'admin_email_security' => 'Zabezpečení SMTP',
+    'alert_page_will_reload' => 'Stránka bude nyní znova natažena',
+    'csv_import_items_selection' => 'Vybrat položky pro import',
+    'csv_import_options' => 'Vybrat volby pro import',
+    'file_protection_password' => 'Zadat heslo souboru',
+    'button_export_file' => 'Exportovat položky',
+    'error_export_format_not_selected' => 'Je třeba zvolit formát pro exportní soubor',
+    'select_file_format' => 'Vybrat formát souboru',
+    'button_offline_generate' => 'Vytvořit soubot pro Offline modus',
+    'upload_new_avatar' => 'Vybrat soubor PNG pro avatara',
+    'expand' => 'Vyklapnout',
+    'collapse' => 'Sklapnout',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );
-?>

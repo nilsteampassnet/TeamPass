@@ -2,8 +2,8 @@
 /**
  * @file          roles.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -30,10 +30,11 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 
 //load help
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 //Get full list of groups
 $arr_groups = array();
-$rows = DB::query("SELECT id,title FROM ".$pre."nested_tree");
+$rows = DB::query("SELECT id,title FROM ".prefix_table("nested_tree"));
 foreach ($rows as $reccord) {
     $arr_groups[$reccord['id']] = $reccord['title'];
 }
@@ -72,7 +73,7 @@ echo '
     <label for="new_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="new_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -100,7 +101,7 @@ echo '
     <label for="edit_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="edit_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '

@@ -2,8 +2,8 @@
 /**
  * @file          kb.queries.categories.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -30,20 +30,22 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //manage filtering
 $sOutput = '';
 if (!empty($_GET['term'])) {
     $rows = DB::query(
-        "SELECT id, category FROM ".$pre."kb_categories
+        "SELECT id, category FROM ".prefix_table("kb_categories")."
         WHERE category LIKE %ss
         ORDER BY category ASC",
         $_GET['term']
     );
 } else {
-    $rows = DB::query("SELECT id, category FROM ".$pre."kb_categories ORDER BY category ASC");
+    $rows = DB::query("SELECT id, category FROM ".prefix_table("kb_categories")." ORDER BY category ASC");
 }
 $counter = DB::count();
 

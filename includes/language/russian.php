@@ -3,8 +3,8 @@
  *
  * @file          russian.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Отправить приложение GoogleAuthenticator на ящик пользователю',
     'send_ga_code' => 'Код GoogleAuthenticator для пользователя',
     'error_no_email' => 'У пользователя не задан почтовый ящик!',
@@ -173,7 +176,7 @@ $LANG = array (
     'admin_email_from_name' => 'Имя отправителя (поле from Name)',
     'admin_email_test_configuration' => 'Проверить настроки отправки',
     'admin_email_test_configuration_tip' => 'Этот тест отправляет письмо на указанный адрес. Если Вы его не получили - проверьте свои настройки.',
-    'admin_email_test_subject' => '[TeamPass] Test email',
+    'admin_email_test_subject' => '[TeamPass] Тестовое сообщение',
     'admin_email_test_body' => 'Здравствуйте,&lt;br&gt;&lt;br&gt;Письмо успешно доставлено.',
     'admin_email_result_ok' => 'Письмо отправлено по адресу #email# ... проверьте входящие сообщения.',
     'admin_email_result_nok' => 'Письмо не отправлено... проверьте параметры конфигурации. См. ошибки: ',
@@ -224,8 +227,8 @@ $LANG = array (
     'email_on_open_notification_mail' => 'Здравствуйте,&lt;br&gt;&lt;br&gt;#tp_user# открыл и посмотрел элемент \\"#tp_item#\'\\".&lt;br&gt;Нажмите &lt;a href=\'#tp_link#\'&gt;ссылку&lt;/a&gt;, чтобы получить доступ.',
     'pdf' => 'PDF',
     'csv' => 'CSV',
-    'user_admin_migrate_pw' => 'Migrate personal Items to a user account',
-    'migrate_pf_select_to' => 'Migrate personal Items to user',
+    'user_admin_migrate_pw' => 'Перенос личных элементов для учётной записи пользователя',
+    'migrate_pf_select_to' => 'Перенос личных элементов для пользователя',
     'migrate_pf_user_salt' => 'Введите соль для выбранного пользователя',
     'migrate_pf_no_sk' => 'Не указана соль',
     'migrate_pf_no_sk_user' => 'Необходимо указать соль',
@@ -273,7 +276,7 @@ $LANG = array (
     'admin_action_db_restore' => 'Восстановить БД',
     'admin_action_db_restore_key' => 'Введите ключ шифрования.',
     'admin_action_db_restore_tip' => 'Восстановление БД из файла резервной копии, сделанного при помощи опции резервного копирования.',
-    'admin_action_purge_old_files' => 'Файлы удалены',
+    'admin_action_purge_old_files' => 'Очистить старые файлы',
     'admin_action_purge_old_files_result' => 'Файлы удалены',
     'admin_action_purge_old_files_tip' => 'Это удалит все временные файлы старше 7 дней',
     'admin_action_reload_cache_table' => 'Перезагрузить Cache таблицу',
@@ -691,7 +694,7 @@ $LANG = array (
     'unlock_user' => 'Пользователь заблокирован. Разблокировать эту учетную запись?',
     'update_needed_mode_admin' => 'Рекомендуется обновить вашу инсталляцию TeamPass. Для обновления кликнить &lt;a href=\'install/upgrade.php\'&gt;сюда&lt;/a&gt;',
     'uploaded_files' => 'Существующие файлы',
-    'upload_button_text' => '...',
+    'upload_button_text' => 'Обзор',
     'upload_files' => 'Загрузить новые файлы',
     'url' => 'URL',
     'url_copied' => 'URL скопирован в буфер обмена!',
@@ -770,9 +773,26 @@ $LANG = array (
     'no_access' => 'Нет доступа',
     'right_types_label' => 'Назначьте выбранной группе пользователей тип доступа для данной папки',
     'groups' => 'Папки',
-    'duplicate' => 'Duplicate',
-    'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
-    'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'duplicate' => 'Дублировать',
+    'duplicate_title_in_same_folder' => 'Элемент с аналогичным именем существуют в текущей папке! Одинаковые имена элементов запрещены!',
+    'duplicate_item_in_folder' => 'Разрешить элементы с аналогичными метками в общей папке',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% найдено объекто�',
+    'settings_roles_allowed_to_print' => 'Определить роли которым разрешено печатать элементы',
+    'settings_roles_allowed_to_print_tip' => 'Выбранным ролям будет разрешено печатать элементы в файл',
+    'user_profile_dialogbox_menu' => 'Ваша Teampass информация',
+    'admin_email_security' => 'SMTP безопасность',
+    'alert_page_will_reload' => 'Сейчас страница будет перезагружена',
+    'csv_import_items_selection' => 'Выберите элементы для импорта',
+    'csv_import_options' => 'Выберите параметры импорта',
+    'file_protection_password' => 'Указать файл паролей',
+    'button_export_file' => 'Экспорт элементов',
+    'error_export_format_not_selected' => 'Требуемый формат для экспорта файла',
+    'select_file_format' => 'Выберите формат файла',
+    'button_offline_generate' => 'Создание файла для работы в автономном режим',
+    'upload_new_avatar' => 'Выберите файл аватара в формате PNG',
+    'expand' => 'Развернуть',
+    'collapse' => 'Свернуть',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );
-?>

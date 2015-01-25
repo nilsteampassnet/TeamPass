@@ -46,7 +46,11 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-$targetDir = $_SESSION['settings']['path_to_files_folder'];
+if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+    $targetDir = $_SESSION['settings']['cpassman_dir'].'/includes/avatars';
+} else {
+    $targetDir = $_SESSION['settings']['path_to_files_folder'];
+}
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -181,6 +185,46 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["csvFile"]);
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
     rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["xmlFile"]);
+} else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+    $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext);
+
+    // make thumbnail
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    make_thumb(
+        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] ."_thumb" . '.' . $ext,
+        40
+    );
+
+    //Connect to mysql server
+    require_once '../../includes/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    // get current avatar and delete it
+    $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
+    @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar']);
+    @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar_thumb']);
+
+    DB::query("UPDATE ".$pre."users
+        SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$_POST['newFileName'] ."_thumb" . '.' . $ext."'
+        WHERE id=%i", $_SESSION['user_id']);
+
+    $_SESSION['user']['avatar'] = $_POST['newFileName'].'.'.$ext;
+    $_SESSION['user']['avatar_thumb'] = $_POST['newFileName']."_thumb".'.'.$ext;
+
+    echo '{"filename" : "'.$_POST['newFileName'].'.'.$ext.'"}';
+    exit();
+
 } else {
     rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["File"]);
 }

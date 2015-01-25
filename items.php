@@ -3,8 +3,8 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -30,6 +30,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -43,7 +44,7 @@ if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
-/*
+
 // Get list of users
 $usersList = array();
 $usersString = "";
@@ -71,9 +72,9 @@ foreach ($rows as $reccord) {
         $listRoles .= ';'.$reccord['id'].'#'.$reccord['title'];
     }
 }
-*/
+
 // Build list of visible folders
-$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = "";
+$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
 // Hidden things
 echo '
 <input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
@@ -94,7 +95,9 @@ echo '
 <input type="hidden" id="item_editable" value="" />
 <input type="hidden" id="timestamp_item_displayed" value="" />
 <input type="hidden" id="pf_selected" value="" />
-<input type="hidden" id="user_ongoing_action" value="" />';
+<input type="hidden" id="user_ongoing_action" value="" />
+<input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
+<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -122,21 +125,34 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 } else {
     $firstGroup = "";
 }
+
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
+
 
 echo '
 <div id="div_items">';
 // MAIN ITEMS TREE
 echo '
     <div class="items_tree">
-        <div>
-            <div style="margin:3px;font-weight:bold;">
-                '.$LANG['items_browser_title'].'
-                <span id="jstree_open" class="pointer" ><img src="includes/images/chevron-small-expand.png" /></span>
-                <span id="jstree_close" class="pointer"><img alt="" src="includes/images/chevron-small.png" /></span>
-                <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
-            </div>
+        <div id="quick_menu" style="float:left; margin-right: 5px;">
+            <ul class="quick_menu">
+                <li><i class="fa fa-bars"></i>
+                    <ul class="menu_150">
+                        <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
+                        <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
+                        <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
+                        <li onclick="open_edit_group_div()"><i class="fa fa-edit fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
+                        <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
+                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
+                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
+						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
+                    </ul>
+            </ul>
+        </div>
+        <div style="margin:3px 0px 10px 18px;font-weight:bold;">
+            '.$LANG['items_browser_title'].'
+            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
         </div>
         <div id="sidebar" class="sidebar">';
 
@@ -181,7 +197,12 @@ foreach ($folders as $folder) {
         foreach ($nodeDescendants as $node) {
             // manage tree counters
             if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $node);
+                DB::query(
+                    "SELECT * FROM ".prefix_table("items")."
+                    WHERE inactif=%i AND id_tree = %i",
+                    0,
+                    $node
+                );
                 $nbChildrenItems += DB::count();
             }
             if (
@@ -203,7 +224,12 @@ foreach ($folders as $folder) {
                 $ident .= "&nbsp;&nbsp;";
             }
 
-            DB::query("SELECT * FROM ".$pre."items WHERE inactif=%i AND id_tree = %i", 0, $folder->id);
+            DB::query(
+                "SELECT * FROM ".prefix_table("items")."
+                WHERE inactif=%i AND id_tree = %i",
+                0,
+                $folder->id
+            );
             $itemsNb = DB::count();
 
             // get 1st folder
@@ -224,8 +250,13 @@ foreach ($folders as $folder) {
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+                $restricted = "";
+                if (in_array($folder->id, $_SESSION['read_only_folders'])) {
+                    $fldTitle = '<i class="fa fa-eye"></i>&nbsp;'.$fldTitle.'';
+                    $restricted = 1;
+                }
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \''.$restricted.'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
                 // display tree counters
                 if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
                     $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
@@ -248,7 +279,6 @@ foreach ($folders as $folder) {
             // build select for all visible folders
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                    //$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.str_replace("&", "&amp;", $folder->title).'</option>';
                     if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
                         $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                     } else {
@@ -265,6 +295,12 @@ foreach ($folders as $folder) {
                 $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
             } else {
                 $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+            }
+            // build select for active folders (where user can do something)
+            if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
+                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+            } else {
+                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
             }
             // build tree
             if ($hide_node == false) {
@@ -321,24 +357,41 @@ echo '
 echo '
     <div id="items_content">
         <div id="items_center">
-            <div id="items_path" class="ui-corner-all"><img src="includes/images/folder-open.png" />&nbsp;<span id="items_path_var"></span></div>
-            <div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-idex:1000;"><img src="includes/images/76.gif" /></div>
-            <!--<div id="alpha_select">
-                <span id="A" onclick="items_list_filter($(this).attr(\'id\'))">A</span>&nbsp;
-                <span id="I" onclick="items_list_filter($(this).attr(\'id\'))">I</span>&nbsp;
-                <span id="" onclick="items_list_filter()">**</span>
-            </div>-->
+            <div id="items_path" class="ui-corner-all">
+                <div class="quick_menu1" style="float:left; margin-right: 5px;">
+                    <ul class="quick_menu">
+                        <li><i class="fa fa-bars"></i>
+                            <ul class="menu_150">
+                                <li id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</li>
+                                <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
+                                <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</li>
+                                <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-retweet fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 3px;">
+                    <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+
+                    <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
+                        <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
+                        <input class="form-control text ui-widget-content" type="text" placeholder="'.$LANG['item_menu_find'].'" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+                    </div>
+
+                    <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin"></i>
+                </div>
+            </div>
+            <!--<div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" /></div>-->
             <div id="items_list"></div>
         </div>';
 // Zone ITEM DETAIL
 echo '
-        <div id="item_details_ok">';
-
-echo '
+        <div id="item_details_ok">
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
-            <div style="height:210px;overflow-y:auto;" id="item_details_scroll">';
+            <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
 // Info
 echo '
                 <div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
@@ -346,17 +399,32 @@ echo '
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
                     <div class="ui-state-error ui-corner-all" style="padding:2px;">
-                        <img src="includes/images/error.png" alt="" />&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                        <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
                 <table>';
 // Line for LABEL
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['label'].' :</td>
-                    <td>
+                    <td valign="top" class="td_title" colspan="2">
+                        <div class="quick_menu2" style="float:left; margin-right: 5px;">
+                            <ul class="quick_menu ui-menu">
+                                <li><i class="fa fa-bars"></i>
+                                    <ul class="menu_250">
+                                        <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>
+                                        <li id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</li>
+                                        <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
+                                        <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
+                                        <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
+                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>
+                                        <li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>
+                                        ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
+                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['link_copy'].'</li>' : '', '
+                                    </ul>
+                            </ul>
+                        </div>
+                        <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
-                        <div id="id_label" style="display:inline;"></div>
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -688,8 +756,7 @@ echo '
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>';
+    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
 // Prepare TABS
 echo '
     <div id="item_edit_tabs">
@@ -868,7 +935,8 @@ echo '
         </div>
     </div>';
 }
-echo '
+echo '    
+    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
 </div>';
@@ -895,7 +963,7 @@ echo '
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
             <td><select id="new_rep_complexite">';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -938,7 +1006,7 @@ $selectVisibleFoldersOptions .
             <td>'.$LANG['complex_asked'].' : </td>
             <td><select id="edit_folder_complexity">
                 <option value="">---</option>';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -981,9 +1049,10 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$selectVisibleNonPersonalFoldersOptions .
+$selectVisibleActiveFoldersOptions .
 '</select>
     </div>
+    <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';
 // DIALOG FOR HISTORY OF ITEM
 echo '
@@ -1012,5 +1081,35 @@ echo '
 <div id="div_item_updated" style="display:none;">
     <div style="">'.$LANG['item_updated_text'].'</div>
 </div><br />';
+
+// Off line mode
+if (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1) {
+    echo '
+    <div id="dialog_offline_mode" style="display:none;">
+        <div id="div_offline_mode">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// Export items to file
+if (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['temporary']['user_can_printout'] == true) {
+    echo '
+    <div id="dialog_export_file" style="display:none;">
+        <div id="div_export_file">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// Import items
+if (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1) {
+    echo '
+    <div id="dialog_import_file" style="display:none;">
+        <div id="div_import_file">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
 
 require_once 'items.load.php';

@@ -3,8 +3,8 @@
  *
  * @file          configapi.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -16,10 +16,10 @@
 $_SESSION['CPM'] = 1;
 
 function teampass_api_enabled() {
-    global $pre;
+    include "../sources/main.functions.php";
     teampass_connect();
     $response = DB::queryFirstRow(
-        "SELECT `valeur` FROM ".$pre."misc WHERE type = %s AND intitule = %s",
+        "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
         "admin",
         "api"
     );
@@ -36,7 +36,7 @@ function teampass_whitelist() {
 
 function teampass_connect()
 {
-    global $server, $user, $pass, $database, $pre, $link, $port;
+    global $server, $user, $pass, $database, $link, $port, $encoding;
     require_once("../includes/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
     DB::$host = $server;
@@ -44,15 +44,18 @@ function teampass_connect()
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 }
 
 function teampass_get_ips() {
-    global $server, $user, $pass, $database, $pre, $link;
+    global $server, $user, $pass, $database, $link;
+    include "../sources/main.functions.php";
     $array_of_results = array();
     teampass_connect();
-    $response = DB::query("select value from ".$pre."api WHERE type = %s", "ip");
+    $response = DB::query("select value from ".prefix_table("api")." WHERE type = %s", "ip");
     foreach ($response as $data)
     {
         array_push($array_of_results, $data['value']);
@@ -62,17 +65,19 @@ function teampass_get_ips() {
 }
 
 function teampass_get_keys() {
-    global $server, $user, $pass, $database, $pre, $link;
+    global $server, $user, $pass, $database, $link;
+    include "../sources/main.functions.php";
     teampass_connect();
-    $response = DB::queryOneColumn("value", "select * from ".$pre."api WHERE type = %s", "key");
+    $response = DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key");
 
     return $response;
 }
 
 function teampass_get_randkey() {
-    global $server, $user, $pass, $database, $pre, $link;
+    global $server, $user, $pass, $database, $link;
+    include "../sources/main.functions.php";
     teampass_connect();
-    $response = DB::queryOneColumn("rand_key", "select * from ".$pre."keys limit 0,1");
+    $response = DB::queryOneColumn("rand_key", "select * from ".prefix_table("keys")." limit 0,1");
 
     return $response;
 }
@@ -83,13 +88,14 @@ function rest_head () {
 
 function addToCacheTable($id)
 {
-    global $server, $user, $pass, $database, $pre, $link;
+    global $server, $user, $pass, $database, $link;
+    include "../sources/main.functions.php";
     teampass_connect();
     // get data
     $data = DB::queryfirstrow(
         "SELECT i.label AS label, i.description AS description, i.id_tree AS id_tree, i.perso AS perso, i.restricted_to AS restricted_to, i.login AS login, i.id AS id
-        FROM ".$pre."items AS i
-        AND ".$pre."log_items AS l ON (l.id_item = i.id)
+        FROM ".prefix_table("items")." AS i
+        AND ".prefix_table("log_items")." AS l ON (l.id_item = i.id)
         WHERE i.id = %i
         AND l.action = %s",
         intval($id),
@@ -98,7 +104,7 @@ function addToCacheTable($id)
 
     // Get all TAGS
     $tags = "";
-    $data_tags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
+    $data_tags = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $id);
     foreach ($data_tags as $itemTag) {
         if (!empty($itemTag['tag'])) {
             $tags .= $itemTag['tag']." ";
@@ -119,7 +125,7 @@ function addToCacheTable($id)
     }*/
     // finaly update
     DB::insert(
-        $pre."cache",
+        prefix_table("cache"),
         array(
             "id" => $data['id'],
             "label" => $data['label'],
@@ -147,6 +153,7 @@ function rest_delete () {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
+        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -165,24 +172,24 @@ function rest_delete () {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".$pre."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
                 // Delete items which in category
-                $response = DB::delete($pre."items", "id_tree = (".$category_query.")");
+                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.")");
                 // Delete sub-categories which in category
-                $response = DB::delete($pre."nested_tree", "parent_id = (".$category_query.")");
+                $response = DB::delete(prefix_table("nested_tree"), "parent_id = (".$category_query.")");
                 // Delete category
-                $response = DB::delete($pre."nested_tree", "id = (".$category_query.")");
+                $response = DB::delete(prefix_table("nested_tree"), "id = (".$category_query.")");
 
                 $json['type'] = 'category';
                 $json['category'] = $GLOBALS['request'][2];
@@ -212,20 +219,20 @@ function rest_delete () {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".$pre."nested_tree where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".$pre."nested_tree where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
                 // Delete item
-                $response = DB::delete($pre."items", "id_tree = (".$category_query.") and label LIKE '".$item."'");
+                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.") and label LIKE '".$item."'");
                 $json['type'] = 'item';
                 $json['item'] = $item;
                 $json['category'] = $GLOBALS['request'][2];
@@ -258,6 +265,7 @@ function rest_get () {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
+        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -277,7 +285,7 @@ function rest_get () {
 
                 /* load folders */
                 $response = DB::query(
-                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".$pre."nested_tree WHERE parent_id=%i ORDER BY `title` ASC",
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
                     $GLOBALS['request'][2]
                 );
                 $rows = array();
@@ -292,11 +300,11 @@ function rest_get () {
                     $json['folders'][$i]['nlevel'] = $row['nlevel'];*/
                     $i++;
                     
-                    $response = DB::query("SELECT id,label,login,pw FROM ".$pre."items WHERE id_tree=%i", $row['id']);
+                    $response = DB::query("SELECT id,label,login,pw FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
                         // get ITEM random key
-                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
+                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
 
                         // prepare output
                         $id = $data['id'];
@@ -331,11 +339,11 @@ function rest_get () {
                 } else {
                     rest_error ('NO_ITEM');
                 }
-                $response = DB::query("select id,label,login,pw,id_tree from ".$pre."items where id IN %ls", implode(",", $items_list));
+                $response = DB::query("select id,label,login,pw,id_tree from ".prefix_table("items")." where id IN %ls", $items_list);
                 foreach ($response as $data)
                 {
                     // get ITEM random key
-                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
+                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
 
                     // prepare output
                     $id = $data['id'];
@@ -349,6 +357,66 @@ function rest_get () {
                 echo json_encode($json);
             } else {
                 rest_error ('EMPTY');
+            }
+        } elseif ($GLOBALS['request'][0] == "find") {
+            if($GLOBALS['request'][1] == "item") {
+                $array_category = explode(';', $GLOBALS['request'][2]);
+                $item = $GLOBALS['request'][3];
+                foreach($array_category as $category) {
+                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                        rest_error('CATEGORY_MALFORMED');
+                    }
+                }
+
+                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item, $result)) {
+                    rest_error('ITEM_MALFORMED');
+                } elseif (empty($item) || count($array_category) == 0) {
+                    rest_error('MALFORMED');
+                }
+
+                if(count($array_category) > 1 && count($array_category) < 5) {
+                    for ($i = count($array_category); $i > 0; $i--) {
+                        $slot = $i - 1;
+                        if (!$slot) {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                        } else {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                        }
+                    }
+                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
+                } elseif (count($array_category) == 1) {
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                } else {
+                    rest_error ('NO_CATEGORY');
+                }
+
+                DB::debugMode(false);
+                $response = DB::query(
+                    "select id,label,login,pw,id_tree
+                    from ".prefix_table("items")."
+                    where id_tree = (%s)
+                    and label LIKE %ss",
+                    $category_query,
+                    $item
+                );
+                foreach ($response as $data)
+                {
+                    // get ITEM random key
+                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
+
+                    // prepare output
+                    $json['id'] = utf8_encode($data['id']);
+                    $json['label'] = utf8_encode($data['label']);
+                    $json['login'] = utf8_encode($data['login']);
+                    $json['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json['folder_id'] = $data['id_tree'];
+                    $json['status'] = utf8_encode("OK");
+                }
+                if (isset($json) && $json) {
+                    echo json_encode($json);
+                } else {
+                    rest_error ('EMPTY');
+                }
             }
         } elseif ($GLOBALS['request'][0] == "add") {
             if($GLOBALS['request'][1] == "item") {
@@ -377,14 +445,14 @@ function rest_get () {
                     }
 
                     // Check Folder ID
-                    DB::query("SELECT * FROM ".$pre."nested_tree WHERE id = %i", $item_folder_id);
+                    DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
                         rest_error ('BADDEFINITION');
                     }
 
                     // check if element doesn't already exist
-                    DB::query("SELECT * FROM ".$pre."items WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                    DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
                     $counter = DB::count();
                     if ($counter != 0) {
                         $itemExists = 1;
@@ -403,7 +471,7 @@ function rest_get () {
                         // ADD item
                         try {
                             DB::insert(
-                                $pre."items",
+                                prefix_table("items"),
                                 array(
                                     "label" => $item_label,
                                     "description" => $item_desc,
@@ -421,7 +489,7 @@ function rest_get () {
 
                             // Store generated key
                             DB::insert(
-                                $pre."keys",
+                                prefix_table("keys"),
                                 array(
                                     "table" => "items",
                                     "id" => $newID,
@@ -431,7 +499,7 @@ function rest_get () {
 
                             // log
                             DB::insert(
-                                $pre."log_items",
+                                prefix_table("log_items"),
                                 array(
                                     "id_item" => $newID,
                                     "date" => time(),
@@ -445,7 +513,7 @@ function rest_get () {
                             foreach ($tags as $tag) {
                                 if (!empty($tag)) {
                                     DB::insert(
-                                        $pre."tags",
+                                        prefix_table("tags"),
                                         array(
                                             "item_id" => $newID,
                                             "tag" => strtolower($tag)
@@ -456,7 +524,7 @@ function rest_get () {
 
                             // Update CACHE table
                             DB::insert(
-                                $pre."cache",
+                                prefix_table("cache"),
                                 array(
                                     "id" => $newID,
                                     "label" => $item_label,
@@ -513,7 +581,7 @@ function rest_get () {
                         // define the restriction of "id_tree" of this user
                         $userDef = DB::queryOneColumn('folder_id',
                             "SELECT DISTINCT folder_id 
-                            FROM ".$pre."roles_values 
+                            FROM ".prefix_table("roles_values")."
                             WHERE type IN ('R', 'W') ", empty($user['groupes_interdits']) ? "" : "
                             AND folder_id NOT IN (".str_replace(";", ",", $user['groupes_interdits']).")", " 
                             AND role_id IN %ls 
@@ -526,7 +594,7 @@ function rest_get () {
                         // find the item associated to the url
                         $response = DB::query(
                             "SELECT id, label, login, pw, id_tree, restricted_to
-                            FROM ".$pre."items 
+                            FROM ".prefix_table("items")." 
                             WHERE url LIKE %ss
                             AND id_tree IN (".implode(",", $userDef).")
                             ORDER BY id DESC",
@@ -543,7 +611,7 @@ function rest_get () {
                                     ($data['restricted_to'] != "" && in_array($user['id'], explode(";", $data['restricted_to'])))
                                 ) {                                
                                     // get ITEM random key
-                                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".$pre."keys WHERE id = %i", $data['id']);
+                                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
                                     
                                     // prepare export
                                     $json[$data['id']]['label'] = utf8_encode($data['label']);
@@ -586,6 +654,7 @@ function rest_put() {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
+        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
     }
@@ -679,14 +748,22 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
 
 function teampass_decrypt_pw($encrypted, $salt, $rand_key, $itcount = 2072)
 {
+    require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     $encrypted = base64_decode($encrypted);
     $pass_salt = substr($encrypted, -64);
     $encrypted = substr($encrypted, 0, -64);
-    $key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
+    //$key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
+    $key = substr(pbkdf2('sha256', $salt, $pass_salt, $itcount, 16+32, true), 32, 16);
     $iv        = base64_decode(substr($encrypted, 0, 43) . '==');
     $encrypted = substr($encrypted, 43);
     $mac       = substr($encrypted, -64);
     $encrypted = substr($encrypted, 0, -64);
     if ($mac !== hash_hmac('sha256', $encrypted, $salt)) return null;
-    return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    //return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    $result = substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
+    if ($result) {
+        return $result;
+    } else {
+        return "";
+    }
 }

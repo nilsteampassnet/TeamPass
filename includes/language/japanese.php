@@ -3,8 +3,8 @@
  *
  * @file          japanese.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009 - 2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -43,7 +46,7 @@ $LANG = array (
     'category_in_folders' => 'Edit Folders for this Category',
     'select_folders_for_category' => 'Select the Folders to associate to this Category of Fields',
     'offline_mode_warning' => 'Off-line mode permits you to export into an HTML file your Items, so that you can access them when not connected to Teampass server. The passwords are encrypted by a Key you are given.',
-    'offline_menu_title' => 'Export Items for Off-Line mode',
+    'offline_menu_title' => 'Off-Line mode',
     'settings_offline_mode' => 'Activate Off-line mode',
     'settings_offline_mode_tip' => 'Off-line mode consists in exporting the Items in an HTML file. The Items in this page are encrypted with a key given by User.',
     'offline_mode_key_level' => 'Off-line encryption key minimum level',
@@ -213,8 +216,8 @@ $LANG = array (
     'notify_activated' => 'Notification enabled',
     'at_email' => 'email',
     'enable_email_notification_on_item_shown' => 'Send notification by email when Item is shown',
-    'bad_email_format' => 'Email address has not the expected format!',
-    'item_share_text' => 'In order to share by mail this Item, enter the email address and press SEND button.',
+    'bad_email_format' => 'Email address doesn\'t have the expected format!',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
     'share' => 'Share this Item',
     'share_sent_ok' => 'Email has been sent',
     'email_share_item_subject' => '[TeamPass] An Item was shared with you',
@@ -243,18 +246,18 @@ $LANG = array (
     'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has required an access to \'#tp_item#\'.<br><br>Be sure of the rights of this user before changing the restriction to the Item.<br><br>Regards.',
     'admin_action_change_salt_key' => 'Change the main SALT Key',
     'admin_action_change_salt_key_tip' => 'Before changing the SALT key, please be sure to do a full backup of the database, and to put the tool in maintenance in order to avoid any users being logged.',
-    'block_admin_info' => 'Administrators Info',
+    'block_admin_info' => 'Administrator\'s Info',
     'admin_new1' => '<i><u>14FEB2012:</i></u><br>Administrator profile is no more allowed to see items. This profile is now only an Administrative account.<br />See <a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net page</a> concerning the way to handle this change.',
     'nb_items_by_query' => 'Number of items to get at each query iterration',
     'nb_items_by_query_tip' => '<span style=\'font-size:11px;max-width:300px;\'>More items means more time to display the list.<br />Set to \'auto\' to let the tool to adapt this number depending on the size screen of the user.<br />Set to \'max\' to force to display the complet list in one time.<br />Set a number corresding to the number of items to get at each query iterration.</span>',
     'error_no_selected_folder' => 'You need to select a Folder',
     'open_url_link' => 'Open in new page',
-    'error_pw_too_long' => 'Password is too long! maximum characters is 40.',
+    'error_pw_too_long' => 'Password is too long! Maximum characters is 40.',
     'at_restriction' => 'Restriction',
     'pw_encryption_error' => 'Error encryption of the password!',
     'enable_send_email_on_user_login' => 'Send an email to Admins on User log in',
-    'email_subject_on_user_login' => '[TeamPass] A user has get connected',
-    'email_body_on_user_login' => 'Hello,<br><br>User #tp_user# has get connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.',
+    'email_subject_on_user_login' => '[TeamPass] A user has connected',
+    'email_body_on_user_login' => 'Hello,<br><br>User #tp_user# has connected to TeamPass the #tp_date# at #tp_time#.<br><br>Regards.',
     'account_is_locked' => 'このアカウントはロックされています。',
     'activity' => 'Activity',
     'add_button' => 'Add',
@@ -305,7 +308,7 @@ $LANG = array (
     'admin_script_backup_filename' => 'Backup file name',
     'admin_script_backup_filename_tip' => 'File name you want for your backups file',
     'admin_script_backup_path' => 'Path where backups have to be stored',
-    'admin_script_backup_path_tip' => 'In what folder the backup files have to be stored',
+    'admin_script_backup_path_tip' => 'The folder in which the backup files will be stored',
     'admin_settings' => '設定',
     'admin_settings_title' => 'TeamPass設定',
     'admin_setting_activate_expiration' => 'Enable passwords expiration',
@@ -710,7 +713,7 @@ $LANG = array (
     'warning_screen_height' => 'WARNING: screen height is not enough for displaying items list!',
     'yes' => 'Yes',
     'your_version' => 'Your version',
-    'disconnect_all_users_sure' => 'Etes-vous sur de vouloir déconnecter tous les utilisateurs ?',
+    'disconnect_all_users_sure' => 'Are you sure you\'d like to disconnect all users?',
     'Test the Email configuration' => 'Tester la configuration des Emails',
     'url_copied_clipboard' => 'URL copied in clipboard',
     'url_copy' => 'Copy URL in clipboard',
@@ -726,7 +729,7 @@ $LANG = array (
     'settings_api_add_key' => 'Add new key',
     'settings_api_key' => 'Key',
     'settings_api_key_label' => 'Label',
-    'settings_api_ip_whitelist' => 'White-list of authorized IP',
+    'settings_api_ip_whitelist' => 'White-list of authorized IPs',
     'settings_api_ip_whitelist_tip' => 'If no IP is listed then any IP is authorized.',
     'settings_api_add_ip' => 'Add new IP',
     'settings_api_db_intro' => 'Give a label for this new Key (not mandatory but recommended)',
@@ -773,6 +776,23 @@ $LANG = array (
     'duplicate' => 'Duplicate',
     'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
+    'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
+    'settings_roles_allowed_to_print' => 'Define the roles allowed to print out the items',
+    'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
+    'user_profile_dialogbox_menu' => 'Your Teampass informations',
+    'admin_email_security' => 'SMTP security',
+    'alert_page_will_reload' => 'The page will now be reloaded',
+    'csv_import_items_selection' => 'Select the items to import',
+    'csv_import_options' => 'Select import options',
+    'file_protection_password' => 'Define file password',
+    'button_export_file' => 'Export items',
+    'error_export_format_not_selected' => 'A format for export file is required',
+    'select_file_format' => 'Select file format',
+    'button_offline_generate' => 'Generate Offline mode file',
+    'upload_new_avatar' => 'Select avatar PNG file',
+    'expand' => 'Expand',
+    'collapse' => 'Collapse',
+    'error_file_is_missing' => 'Error: The file is missing!',
+    'click_to_change' => 'Click to change',
     '' => ''
 );
-?>

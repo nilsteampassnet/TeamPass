@@ -3,8 +3,8 @@
  *
  * @file          users.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -30,6 +30,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 // Load file
 require_once 'users.load.php';
@@ -39,12 +40,12 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
 $tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
 $treeDesc = $tree->getDescendants();
 // Build FUNCTIONS list
 $rolesList = array();
-$rows = DB::query("SELECT id,title FROM ".$pre."roles_title ORDER BY title ASC");
+$rows = DB::query("SELECT id,title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
 foreach ($rows as $reccord) {
     $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
 }
@@ -84,7 +85,7 @@ echo '
                     <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
                     <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
 					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/phone.png" /></th>':''
+                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
                 	,'
                 </tr>
             </thead>
@@ -93,7 +94,7 @@ echo '
 $listAvailableUsers = $listAdmins = "";
 $x = 0;
 // Get through all users
-$rows = DB::query("SELECT * FROM ".$pre."users ORDER BY login ASC");
+$rows = DB::query("SELECT * FROM ".prefix_table("users")." ORDER BY login ASC");
 foreach ($rows as $reccord) {
     // Get list of allowed functions
     $listAlloFcts = "";

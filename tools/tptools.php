@@ -3,7 +3,7 @@
  * @file          tptools.php
  * @author        Nils Laumaillé
  * @version       0.1
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -50,8 +50,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 // get some numbers
 DB::query(
@@ -73,10 +75,10 @@ $counter_folders = DB::count();
         <title>Teampass - Tools</title>
         <?php
         echo '
-        <link rel="stylesheet" href="../includes/js/jquery-ui/css/'.$k['jquery-ui-theme'].'/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.css" type="text/css" />
+        <link rel="stylesheet" href="../includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <script type="text/javascript" src="../includes/js/jquery-ui/js/jquery-'.$k['jquery-version'].'.js"></script>
-        <script type="text/javascript" src="../includes/js/jquery-ui/js/jquery-ui-'.$k['jquery-ui-version'].'.custom.min.js"></script>
+        <script type="text/javascript" src="../includes/js/jquery-ui/external/jquery/jquery.js"></script>
+        <script type="text/javascript" src="../includes/js/jquery-ui/jquery-ui.min.js"></script>
         <script type="text/javascript" src="../includes/js/jcenter/jquery.center.js"></script>';
         ?>
         <script type="application/javascript">
@@ -116,9 +118,24 @@ $counter_folders = DB::count();
                 $.when.apply($, ajaxReqs).then(function() {
                     // all requests are complete
                     $("#wait").html("");
-                    $("#next_action").html("<br>Indicate here the length of the password prefix: <input type='text' id='randkey_length' value='<?php echo $_SESSION['prefix_length'];?>' />&nbsp;<a href='javascript:void(0)' onclick='refreshNewPwd()'>Refresh</a><br><br><input type='button' value='Select PWD to clean and press this button' onclick='cleanPwd()' />");
+                    $("#next_action").html("<br><input type='button' value='Select All' onclick='selectAll()' /><br>Indicate here the length of the password prefix: <input type='text' id='randkey_length' value='<?php echo $_SESSION['prefix_length'];?>' />&nbsp;<a href='javascript:void(0)' onclick='refreshNewPwd()'>Refresh</a><br><br><input type='button' value='Select PWD to clean and press this button' onclick='cleanPwd()' />");
                     $("#div_loading").hide();
                 });
+            }
+            
+            function selectAll()
+            {
+                $("#wait").html("   WAIT...");
+                var bChecked = "";
+                $('.pw_cb').each(function () {
+                    if (bChecked == "" && this.checked) {
+                        bChecked = false;
+                    } else {
+                        bChecked = true;
+                    }
+                    $(this).prop('checked', bChecked);
+                });
+                $("#wait").html("");
             }
 
             function cleanPwd()

@@ -2,8 +2,8 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
  *
@@ -49,7 +49,7 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
     $_SESSION['settings']['duplicate_item'] = 0;  //by default, this is false;
     $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
 
-    $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type=%s_type OR type=%s_type2",
+    $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
         array(
             'type' => "admin",
             'type2' => "settings"
@@ -63,9 +63,10 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
         }
     }
     $_SESSION['settings']['loaded'] = 1;
+    $_SESSION['settings']['default_session_expiration_time'] = 5;
 }
 
-$rows = DB::query("SELECT valeur, intitule FROM ".$pre."misc WHERE type=%s_type",
+$rows = DB::query("SELECT valeur, intitule FROM ".prefix_table("misc")." WHERE type=%s_type",
     array(
         'type' => "admin"
     )
@@ -77,7 +78,7 @@ foreach ($rows as $record) {
 //pw complexity levels
 if (isset($_SESSION['user_language'])) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    $pwComplexity = array(
+    $_SESSION['settings']['pwComplexity'] = array(
         0=>array(0,$LANG['complex_level0']),
         25=>array(25,$LANG['complex_level1']),
         50=>array(50,$LANG['complex_level2']),
@@ -100,7 +101,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 if (empty($languagesDropmenu)) {
     $languagesDropmenu = "";
     $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".$pre."languages GROUP BY name ORDER BY name ASC");
+    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name ORDER BY name ASC");
     foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
             $record['flag'].'" alt="'.$record['label'].'" title="'.
@@ -123,7 +124,8 @@ if (
 ) {
     // Update table by deleting ID
     if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
-        DB::update($pre.'users',
+        DB::update(
+            prefix_table("users"),
             array(
                 'key_tempo' => '',
                 'timestamp' => '',
@@ -148,7 +150,7 @@ if (
     echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php"}, 10);
+    setTimeout(function(){document.location.href="index.php?session_over=true"}, 10);
     -->
     </script>';
     exit;
@@ -156,7 +158,7 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".$pre."users WHERE id=%i_id",
+    $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i_id",
         array(
             'id' => $_SESSION['user_id']
         )
@@ -171,7 +173,8 @@ if (
     || empty($dataSession['key_tempo']))
 ) {
     // Update table by deleting ID
-    DB::update($pre.'users',
+    DB::update(
+        prefix_table("users"),
         array(
             'key_tempo' => '',
             'timestamp' => '',
@@ -207,7 +210,7 @@ if (
     || empty($_SESSION['settings']['update_needed'])))
     && (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1)
 ) {
-    $row = DB::queryFirstRow("SELECT valeur FROM ".$pre."misc WHERE type=%s_type AND intitule=%s_intitule",
+    $row = DB::queryFirstRow("SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s_type AND intitule=%s_intitule",
         array(
             "type" => "admin",
             "intitule" => "cpassman_version"
@@ -240,7 +243,8 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
     if (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] != 1) {
         // Update table by deleting ID
         if (isset($_SESSION['user_id'])) {
-            DB::update($pre.'users',
+            DB::update(
+                prefix_table("users"),
                 array(
                     'key_tempo' => '',
                     'timestamp' => '',
@@ -305,7 +309,7 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $data = DB::queryfirstrow("SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".$pre."users WHERE id=%i_id",
+    $data = DB::queryfirstrow("SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i_id",
         array(
             'id' => $_SESSION['user_id']
         )
@@ -340,7 +344,8 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         }
 
         if (!isset($_SESSION['fin_session'])) {
-            DB::update($pre.'users',
+            DB::update(
+                prefix_table("users"),
                 array(
                     'timestamp'=>time()
                 ),
@@ -375,20 +380,20 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$numDaysBeforePwExpiration = "";    //initiliaze variable
+$_SESSION['numDaysBeforePwExpiration'] = "";    //initiliaze variable
 if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change'])) {
         if ($_SESSION['settings']['pw_life_duration'] == 0) {
-            $numDaysBeforePwExpiration = "infinite";
+            $_SESSION['numDaysBeforePwExpiration'] = "infinite";
             $_SESSION['validite_pw'] = true;
         } else {
-            $numDaysBeforePwExpiration = $_SESSION['settings']['pw_life_duration'] - round(
+            $_SESSION['numDaysBeforePwExpiration'] = $_SESSION['settings']['pw_life_duration'] - round(
                 (mktime(0, 0, 0, date('m'), date('d'), date('y'))-$_SESSION['last_pw_change'])/(24*60*60)
             );
-            if ($numDaysBeforePwExpiration <= 0) {
+            if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;
             } else {
                 $_SESSION['validite_pw'] = true;
@@ -404,7 +409,7 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 */
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty( $_SESSION['item_fields'])) {
     $_SESSION['item_fields'] = array();
-    $rows = DB::query("SELECT * FROM ".$pre."categories WHERE level=%s_level",
+    $rows = DB::query("SELECT * FROM ".prefix_table("categories")." WHERE level=%s_level",
         array(
             'level' => "0"
         )
@@ -413,7 +418,7 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
         $arrFields = array();
 
         // get each field
-        $rows = DB::query("SELECT * FROM ".$pre."categories WHERE parent_id=%i_parent_id",
+        $rows = DB::query("SELECT * FROM ".prefix_table("categories")." WHERE parent_id=%i_parent_id",
             array(
                 'parent_id' => $record['id']
             )
@@ -460,8 +465,8 @@ if (
 /*
 **
 */
+$_SESSION['temporary']['user_can_printout'] = false;
 if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['user_roles']) && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))) {
-    $_SESSION['temporary']['user_can_printout'] = false;
     foreach (explode(";", $_SESSION['settings']['roles_allowed_to_print']) as $role) {
         if (in_array($role, $_SESSION['user_roles'])) {
             $_SESSION['temporary']['user_can_printout'] = true;
@@ -471,10 +476,5 @@ if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['u
 
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query("SELECT * FROM ".$pre."users WHERE timestamp>=%t_time",
-    array(
-        "time" => time() - 600
-    )
-);
-$counter = DB::count();
-$_SESSION['nb_users_online'] = $counter;
+DB::query("SELECT * FROM ".prefix_table("users")." WHERE timestamp>=%i", time() - 600);
+$_SESSION['nb_users_online'] = DB::count();

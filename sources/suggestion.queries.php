@@ -2,8 +2,8 @@
 /**
  * @file          suggestion.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -25,6 +25,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "suggestion")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -34,15 +35,14 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "suggestion")) {
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
-include 'main.functions.php';
+require_once 'main.functions.php';
 
 // pw complexity levels
-$pwComplexity = array(
+$_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),
     25 => array(25, $LANG['complex_level1']),
     50 => array(50, $LANG['complex_level2']),
@@ -59,8 +59,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 // load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -86,7 +88,7 @@ if (!empty($_POST['type'])) {
             $comment = htmlspecialchars_decode($data_received['comment']);
 
             // check if similar suggestion exists in same folder
-            DB::query("SELECT * FROM ".$pre."suggestion WHERE label = %s AND folder_id = %i", $label, $folder);
+            DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
                 // generate random key
@@ -94,7 +96,7 @@ if (!empty($_POST['type'])) {
 
                 // query
                 DB::insert(
-                    $pre."suggestion",
+                    prefix_table("suggestion"),
                     array(
                         'label' => $label,
                         'description' => ($description),
@@ -102,7 +104,7 @@ if (!empty($_POST['type'])) {
                         'password' => encrypt($randomKey.$pwd),
                         'comment' => $comment,
                         'folder_id' => $folder,
-                        'suggest_key' => $randomKey
+                        'suggestion_key' => $randomKey
                     )
                 );
 
@@ -118,7 +120,7 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete($pre."suggestion", "id = %i", $_POST['id']);
+            DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
         break;
 
         case "duplicate_suggestion":
@@ -130,13 +132,13 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, folder_id FROM ".$pre."suggestion WHERE id = %i",
+                "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
                 $_POST['id']
             );
 
             // check if similar exists
             DB::query(
-                "SELECT id FROM ".$pre."items WHERE label = %s AND id_tree = %i",
+                "SELECT id FROM ".prefix_table("items")." WHERE label = %s AND id_tree = %i",
                 $suggestion['label'],
                 $suggestion['folder_id']
             );
@@ -157,7 +159,9 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggest_key, folder_id, author_id, comment FROM ".$pre."suggestion WHERE id = %i",
+                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
+                FROM ".prefix_table("suggestion")." 
+                WHERE id = %i",
                 $_POST['id']
             );
 
@@ -165,13 +169,17 @@ if (!empty($_POST['type'])) {
             // if Yes, update the existing one
             // if Not, create new Item
             $existing_item_id = DB::queryfirstrow(
-                "SELECT id FROM ".$pre."items WHERE label = %s AND id_tree = %i", $suggestion['label'], $suggestion['folder_id']
+                "SELECT id 
+                FROM ".prefix_table("items")." 
+                WHERE label = %s AND id_tree = %i", 
+                $suggestion['label'], 
+                $suggestion['folder_id']
             );
             $counter = DB::count();
             if ($counter > 0) {
                 // update existing item
                 $updStatus = DB::update(
-                    $pre.'items',
+                    prefix_table("items"),
                     array(
                         'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
                         'pw' => $suggestion['password']
@@ -182,18 +190,18 @@ if (!empty($_POST['type'])) {
                 if ($updStatus) {
                     // update KEY
                     $updStatus = DB::update(
-                        $pre.'keys',
+                        prefix_table("keys"),
                         array(
-                            'rand_key' => $suggestion['key']
+                            'rand_key' => $suggestion['suggestion_key']
                         ),
-                        "table = %s AND id = %i",
+                        "sql_table = %s AND id = %i",
                         "items",
                         $existing_item_id['id']
                     );
 
                     // update LOG
                     DB::insert(
-                        $pre.'log_items',
+                        prefix_table("log_items"),
                         array(
                             'id_item' => $existing_item_id['id'],
                             'date' => time(),
@@ -208,7 +216,7 @@ if (!empty($_POST['type'])) {
                     updateCacheTable("update_value", $existing_item_id['id']);
 
                     // delete suggestion
-                    DB::delete($pre."suggestion", "id = %i", $_POST['id']);
+                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -217,7 +225,7 @@ if (!empty($_POST['type'])) {
             } else {
                 // add as Item
                 DB::insert(
-                    $pre.'items',
+                    prefix_table("items"),
                     array(
                         'label' => $suggestion['label'],
                         'description' => $suggestion['description'],
@@ -233,17 +241,17 @@ if (!empty($_POST['type'])) {
                 if (is_numeric($newID)) {
                     // add Key
                     DB::insert(
-                        $pre.'keys',
+                        prefix_table("keys"),
                         array(
-                            'table' => 'items',
+                            'sql_table' => 'items',
                             'id' => $newID,
-                            'rand_key' => $suggestion['suggest_key']
+                            'rand_key' => $suggestion['suggestion_key']
                         )
                     );
 
                     // update log
                     DB::insert(
-                        $pre.'log_items',
+                        prefix_table("log_items"),
                         array(
                             'id_item' => $newID,
                             'date' => time(),
@@ -256,7 +264,7 @@ if (!empty($_POST['type'])) {
                     updateCacheTable("add_value", $newID);
 
                     // delete suggestion
-                    DB::delete($pre."suggestion", "id = %i", $_POST['id']);
+                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -276,7 +284,7 @@ if (!empty($_POST['type'])) {
                 "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s", $_POST['folder_id'], "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
-                $complexity = $pwComplexity[$data['valeur']][1];
+                $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
             } else {
                 $complexity = $LANG['not_defined'];
             }

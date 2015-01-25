@@ -28,6 +28,10 @@ if (file_exists($filename)) {    // && empty($_SESSION['server'])
             $_SESSION['smtp_server'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth = ')>0) {
             $_SESSION['smtp_auth'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_port = ')>0) {
+            $_SESSION['smtp_port'] = getSettingValue($val);
+        } elseif (substr_count($val,'$smtp_security = ')>0) {
+            $_SESSION['smtp_security'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth_username = ')>0) {
             $_SESSION['smtp_auth_username'] = getSettingValue($val);
         } elseif (substr_count($val,'$smtp_auth_password = ')>0) {
@@ -291,6 +295,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">File "settings.php" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/install/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/includes/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/includes/avatars/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
