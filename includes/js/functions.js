@@ -31,7 +31,7 @@ function RefreshPage(myform){
 /**
 *	Add 1 hour to session duration
 **/
-function IncreaseSessionTime(){
+function IncreaseSessionTime(message){
 	 $.post(
 		"sources/main.queries.php",
 		{
@@ -39,7 +39,7 @@ function IncreaseSessionTime(){
 		},
         function(data){
 			if (data[0].new_value != "expired") {
-                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                $("#main_info_box_text").html(message);
                 $("#main_info_box").show().position({
                     my: "center",
                     at: "center top+75",

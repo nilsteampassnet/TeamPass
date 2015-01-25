@@ -3,7 +3,7 @@
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.22
+ * @version       2.1.23
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -233,7 +233,7 @@ if (isset($_SESSION['login'])) {
                                         <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
                                     </ul>
                                 </li>' : '', '
-                                <li onclick="IncreaseSessionTime()"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
+                                <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\')"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
                                 <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
                                 <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
                             </ul>
