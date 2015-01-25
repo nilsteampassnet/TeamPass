@@ -2,8 +2,8 @@
 /**
  * @file          folders.load.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -119,6 +119,17 @@ $(function() {
                 //Close
                 $(this).dialog("close");
             }
+        }
+    });
+    
+    $(".cb_selected_folder").click(function() {
+        var elem = $(this).attr("id").split("-");
+        if ($(this).prop("checked") == true) {
+            $("#row_"+elem[1]).css({"font-weight":"bold"});
+            $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
+        } else {
+            $("#row_"+elem[1]).css({"font-weight":""});
+            $("#title_"+elem[1]).css({"background-color":"#FFF"});
         }
     });
 });

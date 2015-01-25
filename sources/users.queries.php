@@ -3,8 +3,8 @@
  *
  * @file          users.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -24,6 +24,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -44,8 +45,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -56,7 +59,6 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-// Construction de la requ?te en fonction du type de valeur
 if (!empty($_POST['type'])) {
     switch ($_POST['type']) {
         case "groupes_visibles":
@@ -64,7 +66,7 @@ if (!empty($_POST['type'])) {
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             // Check if id folder is already stored
-            $data = DB::queryfirstrow("SELECT ".$_POST['type']." FROM ".$pre."users WHERE id = %i", $val[0]);
+            $data = DB::queryfirstrow("SELECT ".$_POST['type']." FROM ".prefix_table("users")." WHERE id = %i", $val[0]);
             $new_groupes = $data[$_POST['type']];
             if (!empty($data[$_POST['type']])) {
                 $groupes = explode(';', $data[$_POST['type']]);
@@ -81,7 +83,7 @@ if (!empty($_POST['type'])) {
             }
             // Store id DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array($_POST['type'] => $new_groupes
                    ),
                 "id = %i",
@@ -95,7 +97,7 @@ if (!empty($_POST['type'])) {
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
             // v?rifier si l'id est d?j? pr?sent
-            $data = DB::queryfirstrow("SELECT fonction_id FROM ".$pre."users WHERE id = %i", $val[0]);
+            $data = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $val[0]);
             $new_fonctions = $data['fonction_id'];
             if (!empty($data['fonction_id'])) {
                 $fonctions = explode(';', $data['fonction_id']);
@@ -114,7 +116,7 @@ if (!empty($_POST['type'])) {
             }
             // Store id DB
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'fonction_id' => $new_fonctions
                    ),
@@ -131,44 +133,53 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+            // Prepare variables
+            $login = htmlspecialchars_decode($dataReceived['login']);
+            $name = htmlspecialchars_decode($dataReceived['name']);
+            $lastname = htmlspecialchars_decode($dataReceived['lastname']);
+            $pw = htmlspecialchars_decode($dataReceived['pw']);
+
             // Empty user
-            if (mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])) == "") {
+            if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
             // Check if user already exists
             $data = DB::query(
-                "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".$pre."users
+                "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
                 WHERE login LIKE %ss",
-                mysqli_escape_string($link, stripslashes($_POST['login']))
+                mysqli_escape_string($link, stripslashes($login))
             );
 
             if (DB::count() == 0) {
                 // Add user in DB
                 DB::insert(
-                    $pre."users",
+                    prefix_table("users"),
                     array(
-                        'login' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['login'])),
-                        'name' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['name'])),
-                        'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($_POST['lastname'])),
-                        'pw' => bCrypt(stringUtf8Decode($_POST['pw']), COST),
-                        'email' => $_POST['email'],
-                        'admin' => $_POST['admin'] == "true" ? '1' : '0',
-                        'gestionnaire' => $_POST['manager'] == "true" ? '1' : '0',
-                        'read_only' => $_POST['read_only'] == "true" ? '1' : '0',
-                        'personal_folder' => $_POST['personal_folder'] == "true" ? '1' : '0',
+                        'login' => $login,
+                        'name' => $name,
+                        'lastname' => $lastname,
+                        'pw' => bCrypt(stringUtf8Decode($pw), COST),
+                        'email' => $dataReceived['email'],
+                        'admin' => $dataReceived['admin'] == "true" ? '1' : '0',
+                        'gestionnaire' => $dataReceived['manager'] == "true" ? '1' : '0',
+                        'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
+                        'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
                         'user_language' => $_SESSION['settings']['default_language'],
-                        'fonction_id' => $_POST['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
-                        'groupes_interdits' => ($_POST['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
-                        'groupes_visibles' => ($_POST['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
-                        'isAdministratedByRole' => $_POST['isAdministratedByRole']
+                        'fonction_id' => $dataReceived['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
+                        'groupes_interdits' => ($dataReceived['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
+                        'groupes_visibles' => ($dataReceived['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole']
                        )
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($_POST['personal_folder'] == "true") {
+                if ($dataReceived['personal_folder'] == "true") {
                     DB::insert(
-                        $pre."nested_tree",
+                        prefix_table("nested_tree"),
                         array(
                             'parent_id' => '0',
                             'title' => $new_user_id,
@@ -179,13 +190,13 @@ if (!empty($_POST['type'])) {
                     );
                 }
                 // Create folder and role for domain
-                if ($_POST['new_folder_role_domain'] == "true") {
+                if ($dataReceived['new_folder_role_domain'] == "true") {
                     // create folder
                     DB::insert(
-                        $pre."nested_tree",
+                        prefix_table("nested_tree"),
                         array(
                             'parent_id' => 0,
-                            'title' => mysqli_escape_string($link, stripslashes($_POST['domain'])),
+                            'title' => mysqli_escape_string($link, stripslashes($dataReceived['domain'])),
                             'personal_folder' => 0,
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
@@ -195,7 +206,7 @@ if (!empty($_POST['type'])) {
                     $new_folder_id = DB::insertId();
                     // Add complexity
                     DB::insert(
-                        $pre."misc",
+                        prefix_table("misc"),
                         array(
                             'type' => 'complex',
                             'intitule' => $new_folder_id,
@@ -204,15 +215,15 @@ if (!empty($_POST['type'])) {
                     );
                     // Create role
                     DB::insert(
-                        $pre."roles_title",
+                        prefix_table("roles_title"),
                         array(
-                            'title' => mysqli_escape_string($link, stripslashes(($_POST['domain'])))
+                            'title' => mysqli_escape_string($link, stripslashes(($dataReceived['domain'])))
                            )
                     );
                     $new_role_id = DB::insertId();
                     // Associate new role to new folder
                     DB::insert(
-                        $pre.'roles_values',
+                        prefix_table("roles_values"),
                         array(
                             'folder_id' => $new_folder_id,
                             'role_id' => $new_role_id
@@ -220,7 +231,7 @@ if (!empty($_POST['type'])) {
                     );
                     // Add the new user to this role
                     DB::update(
-                        $pre.'users',
+                        prefix_table("users"),
                         array(
                             'fonction_id' => is_int($new_role_id)
                            ),
@@ -237,12 +248,12 @@ if (!empty($_POST['type'])) {
                 // Send email to new user
                 @sendEmail(
                     $LANG['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes(mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))), addslashes(stringUtf8Decode($_POST['pw'])), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
-                    $_POST['email']
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                    $dataReceived['email']
                 );
                 // update LOG
                 DB::insert(
-                    $pre.'log_system',
+                    prefix_table("log_system"),
                     array(
                         'type' => 'user_mngt',
                         'date' => time(),
@@ -268,13 +279,13 @@ if (!empty($_POST['type'])) {
             if ($_POST['action'] == "delete") {
                 // delete user in database
                 DB::delete(
-                    $pre.'users',
+                    prefix_table("users"),
                     "id = %i",
                     $_POST['id']
                 );
                 // delete personal folder and subfolders
                 $data = DB::queryfirstrow(
-                    "SELECT id FROM ".$pre."nested_tree
+                    "SELECT id FROM ".prefix_table("nested_tree")."
                     WHERE title = %s AND personal_folder = %i",
                     $_POST['id'],
                     "1"
@@ -284,19 +295,19 @@ if (!empty($_POST['type'])) {
                     $folders = $tree->getDescendants($data['id'], true);
                     foreach ($folders as $folder) {
                         // delete folder
-                        DB::delete($pre."nested_tree", "id = %i AND personal_folder = %i", $folder->id, "1");
+                        DB::delete(prefix_table("nested_tree"), "id = %i AND personal_folder = %i", $folder->id, "1");
                         // delete items & logs
                         $items = DB::query(
-                            "SELECT id FROM ".$pre."items
+                            "SELECT id FROM ".prefix_table("items")."
                             WHERE id_tree=%i AND perso = %i",
                             $folder->id,
                             "1"
                         );
                         foreach ($items as $item) {
                             // Delete item
-                            DB::delete($pre."items", "id = %i", $item['id']);
+                            DB::delete(prefix_table("items"), "id = %i", $item['id']);
                             // log
-                            DB::delete($pre."log_items", "id_item = %i", $item['id']);
+                            DB::delete(prefix_table("log_items"), "id_item = %i", $item['id']);
                         }
                     }
                     // rebuild tree
@@ -305,7 +316,7 @@ if (!empty($_POST['type'])) {
                 }
                 // update LOG
                 DB::insert(
-                    $pre.'log_system',
+                    prefix_table("log_system"),
                     array(
                         'type' => 'user_mngt',
                         'date' => time(),
@@ -317,7 +328,7 @@ if (!empty($_POST['type'])) {
             } else {
                 // lock user in database
                 DB::update(
-                    $pre.'users',
+                    prefix_table("users"),
                     array(
                         'disabled' => 1,
                         'key_tempo' => ""
@@ -327,7 +338,7 @@ if (!empty($_POST['type'])) {
                 );
                 // update LOG
                 DB::insert(
-                    $pre.'log_system',
+                    prefix_table("log_system"),
                     array(
                         'type' => 'user_mngt',
                         'date' => time(),
@@ -350,13 +361,13 @@ if (!empty($_POST['type'])) {
             }
             // Get old email
             $data = DB::queryfirstrow(
-                "SELECT email FROM ".$pre."users
+                "SELECT email FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'email' => $_POST['newemail']
                    ),
@@ -365,7 +376,7 @@ if (!empty($_POST['type'])) {
             );
             // update LOG
             DB::insert(
-                $pre.'log_system',
+                prefix_table("log_system"),
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
@@ -387,7 +398,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'can_create_root_folder' => $_POST['value']
                    ),
@@ -406,7 +417,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'gestionnaire' => $_POST['value']
                    ),
@@ -424,7 +435,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'read_only' => $_POST['value']
                    ),
@@ -443,7 +454,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'admin' => $_POST['value']
                    ),
@@ -462,7 +473,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'personal_folder' => $_POST['value']
                    ),
@@ -478,7 +489,7 @@ if (!empty($_POST['type'])) {
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
-                "SELECT fonction_id FROM ".$pre."users
+                "SELECT fonction_id FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -487,7 +498,7 @@ if (!empty($_POST['type'])) {
             // array of roles for actual user
             $my_functions = explode(';', $_SESSION['fonction_id']);
 
-            $rows = DB::query("SELECT id,title,creator_id FROM ".$pre."roles_title");
+            $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     $text .= '<input type="checkbox" id="cb_change_function-'.$record['id'].'"';
@@ -515,7 +526,7 @@ if (!empty($_POST['type'])) {
             }
             // save data
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'fonction_id' => $_POST['list']
                    ),
@@ -527,7 +538,7 @@ if (!empty($_POST['type'])) {
             // Check if POST is empty
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
-                    "SELECT title FROM ".$pre."roles_title WHERE id IN %ls",
+                    "SELECT title FROM ".prefix_table("roles_title")." WHERE id IN %ls",
                     explode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
@@ -547,7 +558,7 @@ if (!empty($_POST['type'])) {
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
-                "SELECT groupes_visibles FROM ".$pre."users
+                "SELECT groupes_visibles FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -585,7 +596,7 @@ if (!empty($_POST['type'])) {
             }
             // save data
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'isAdministratedByRole' => $_POST['isAdministratedByRole']
                    ),
@@ -606,7 +617,7 @@ if (!empty($_POST['type'])) {
             }
             // save data
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'groupes_visibles' => $_POST['list']
                    ),
@@ -619,7 +630,7 @@ if (!empty($_POST['type'])) {
             // Check if POST is empty
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
-                    "SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN %ls",
+                    "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
                     implode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
@@ -647,7 +658,7 @@ if (!empty($_POST['type'])) {
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
-                "SELECT groupes_interdits FROM ".$pre."users
+                "SELECT groupes_interdits FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -680,7 +691,7 @@ if (!empty($_POST['type'])) {
         case "change_user_forgroups";
             // save data
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'groupes_interdits' => $_POST['list']
                    ),
@@ -693,7 +704,7 @@ if (!empty($_POST['type'])) {
             // Check if POST is empty
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
-                    "SELECT title,nlevel FROM ".$pre."nested_tree WHERE id IN %ls",
+                    "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
                     implode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
@@ -718,7 +729,7 @@ if (!empty($_POST['type'])) {
             }
 
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'disabled' => 0,
                     'no_bad_attempts' => 0
@@ -728,7 +739,7 @@ if (!empty($_POST['type'])) {
             );
             // update LOG
             DB::insert(
-                $pre.'log_system',
+                prefix_table("log_system"),
                 array(
                     'type' => 'user_mngt',
                     'date' => time(),
@@ -745,7 +756,7 @@ if (!empty($_POST['type'])) {
             $return = array();
             // Check if folder exists
             $data = DB::query(
-                "SELECT * FROM ".$pre."nested_tree
+                "SELECT * FROM ".prefix_table("nested_tree")."
                 WHERE title = %s AND parent_id = %i",
                 $_POST['domain'],
                 "0"
@@ -758,7 +769,7 @@ if (!empty($_POST['type'])) {
             }
             // Check if role exists
             $data = DB::query(
-                "SELECT * FROM ".$pre."roles_title
+                "SELECT * FROM ".prefix_table("roles_title")."
                 WHERE title = %s",
                 $_POST['domain']
             );
@@ -787,9 +798,9 @@ if (!empty($_POST['type'])) {
                 // get number of pages
                 DB::query(
                     "SELECT *
-                    FROM ".$pre."log_items as l
-                    INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-                    INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+                    FROM ".prefix_table("log_items")." as l
+                    INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+                    INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i",
                     intval($_POST['id'].$sql_filter)
                 );
@@ -803,9 +814,9 @@ if (!empty($_POST['type'])) {
                 // launch query
                 $rows = DB::query(
                     "SELECT l.date as date, u.login as login, i.label as label, l.action as action
-                    FROM ".$pre."log_items as l
-                    INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-                    INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+                    FROM ".prefix_table("log_items")." as l
+                    INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
+                    INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i
                     ORDER BY date DESC
                     LIMIT ".intval($start).",".intval($_POST['nb_items_by_page']),
@@ -815,7 +826,7 @@ if (!empty($_POST['type'])) {
                 // get number of pages
                 DB::query(
                     "SELECT *
-                    FROM ".$pre."log_system
+                    FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i",
                     "user_mngt",
                     $_POST['id']
@@ -830,7 +841,7 @@ if (!empty($_POST['type'])) {
                 // launch query
                 $rows = DB::query(
                     "SELECT *
-                    FROM ".$pre."log_system
+                    FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i
                     ORDER BY date DESC
                     LIMIT $start,".$_POST['nb_items_by_page'],
@@ -849,8 +860,8 @@ if (!empty($_POST['type'])) {
             if (isset($rows)) {
                 foreach ($rows as $record) {
                     if ($_POST['scope'] == "user_mngt") {
-                        $user = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i", $record['qui']);
-                        $user_1 = DB::queryfirstrow("SELECT login from ".$pre."users WHERE id=%i", $_POST['id']);
+                        $user = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $record['qui']);
+                        $user_1 = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $_POST['id']);
                         $tmp = explode(":", $record['label']);
                         $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1['login']), $LANG['login']).'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
@@ -881,14 +892,14 @@ if (!empty($_POST['type'])) {
             } else {
                 // Get folder id for Admin
                 $admin_folder = DB::queryFirstRow(
-                    "SELECT id FROM ".$pre."nested_tree
+                    "SELECT id FROM ".prefix_table("nested_tree")."
                     WHERE title = %i AND personal_folder = %i",
                     intval($_SESSION['user_id']),
                     "1"
                 );
                 // Get folder id for User
                 $user_folder = DB::queryFirstRow(
-                    "SELECT id FROM ".$pre."nested_tree
+                    "SELECT id FROM ".prefix_table("nested_tree")."
                     WHERE title=%i AND personal_folder = %i",
                     intval($user_id),
                     "1"
@@ -909,8 +920,8 @@ if (!empty($_POST['type'])) {
                     // Get each Items in PF
                     $rows = DB::query(
                         "SELECT i.pw, i.label, l.id_user
-                        FROM ".$pre."items as i
-                        LEFT JOIN ".$pre."log_items as l ON (l.id_item=i.id)
+                        FROM ".prefix_table("items")." as i
+                        LEFT JOIN ".prefix_table("log_items")." as l ON (l.id_item=i.id)
                         WHERE l.action = %s AND i.perso=%i AND i.id_tree=%i",
                         "at_creation",
                         "1",
@@ -920,7 +931,7 @@ if (!empty($_POST['type'])) {
                         echo $record['label']." - ";
                         // Change user
                         DB::update(
-                            $pre."log_items",
+                            prefix_table("log_items"),
                             array(
                                 'id_user' => $user_id
                                ),
@@ -948,7 +959,7 @@ if (!empty($_POST['type'])) {
             }
             // Do
             DB::update(
-                $pre."users",
+                prefix_table("users"),
                 array(
                     'timestamp' => "",
                     'key_tempo' => "",
@@ -970,14 +981,14 @@ if (!empty($_POST['type'])) {
             }
             // Do
             $rows = DB::query(
-                "SELECT id FROM ".$pre."users
+                "SELECT id FROM ".prefix_table("users")."
                 WHERE timestamp != %s AND admin != %i",
                 "",
                 "1"
             );
             foreach ($rows as $record) {
                 DB::update(
-                    $pre."users",
+                    prefix_table("users"),
                     array(
                         'timestamp' => "",
                         'key_tempo' => "",
@@ -994,7 +1005,7 @@ if (!empty($_POST['type'])) {
 elseif (!empty($_POST['newValue'])) {
     $value = explode('_', $_POST['id']);
     DB::update(
-        $pre."users",
+        prefix_table("users"),
         array(
             $value[0] => $_POST['newValue']
            ),
@@ -1003,7 +1014,7 @@ elseif (!empty($_POST['newValue'])) {
     );
     // update LOG
     DB::insert(
-        $pre.'log_system',
+        prefix_table("log_system"),
         array(
             'type' => 'user_mngt',
             'date' => time(),
@@ -1019,7 +1030,7 @@ elseif (!empty($_POST['newValue'])) {
 elseif (isset($_POST['newadmin'])) {
     $id = explode('_', $_POST['id']);
     DB::update(
-        $pre."users",
+        prefix_table("users"),
         array(
             'admin' => $_POST['newadmin']
            ),

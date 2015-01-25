@@ -3,8 +3,8 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -136,19 +136,28 @@ function decryptOld($text, $personalSalt = "")
  */
 function encrypt($decrypted, $personalSalt = "")
 {
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    } else {
+        require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    }
+
     if (!empty($personalSalt)) {
  	    $staticSalt = $personalSalt;
     } else {
  	    $staticSalt = SALT;
     }
+
     //set our salt to a variable
     // Get 64 random bits for the salt for pbkdf2
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
     // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
     $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+
     //base64 trim
     if (strlen($ivBase64 = rtrim(base64_encode($iv), '=')) != 43) {
         return false;
@@ -168,6 +177,12 @@ function encrypt($decrypted, $personalSalt = "")
  */
 function decrypt($encrypted, $personalSalt = "")
 {
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    } else {
+        require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+    }
+
     if (!empty($personalSalt)) {
 	    $staticSalt = $personalSalt;
     } else {
@@ -179,7 +194,8 @@ function decrypt($encrypted, $personalSalt = "")
     $pbkdf2Salt = substr($encrypted, -64);
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
-    $key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
     // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
     $iv = base64_decode(substr($encrypted, 0, 43) . '==');
     // Remove $iv from $encrypted.
@@ -269,7 +285,7 @@ function db_error_handler($params) {
  */
 function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions, $refresh)
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -281,13 +297,15 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
@@ -297,7 +315,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $rows = DB::query("SELECT id FROM ".$pre."nested_tree WHERE personal_folder = %i", 0);
+        $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -305,7 +323,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['all_non_personal_folders'] = $groupesVisibles;
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
-        //$sql = "SELECT id FROM ".$pre."nested_tree WHERE personal_folder = 1";
+        //$sql = "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = 1";
         $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
         $where->add('personal_folder=%i', 1);
         if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
@@ -314,13 +332,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
         // Get ID of personal folder
-        $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
+        $pf = DB::queryfirstrow(
+            "SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s",
+            $_SESSION['user_id']
+        );
         if (!empty($pf['id'])) {
             if (!in_array($pf['id'], $_SESSION['groupes_visibles'])) {
                 array_push($_SESSION['groupes_visibles'], $pf['id']);
                 array_push($_SESSION['personal_visible_groups'], $pf['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title', 'personal_folder');
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($pf['id']);
                 foreach ($tst as $t) {
@@ -333,15 +354,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
-        DB::query("SELECT * FROM ".$pre."nested_tree");
+        DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::query("SELECT * FROM ".$pre."roles_title");
+        DB::query("SELECT * FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     } else {
         // init
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
+        $_SESSION['read_only_folders'] = array();
         $groupesVisibles = array();
         $groupesInterdits = array();
         $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
@@ -353,20 +375,21 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $newListeGpVisibles = array();
         $listeGpInterdits = array();
 
-        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = array();
+        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = $listNoAccessFolders = array();
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctionsAssociees as $roleId) {
             if (!empty($roleId)) {
                 // Get allowed folders for each Role
-                $rows = DB::query("SELECT folder_id FROM ".$pre."roles_values WHERE role_id=%i", $roleId);
+                $rows = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id=%i", $roleId);
+
                 if (DB::count() > 0) {
+                    $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i", $roleId);
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
                             array_push($listAllowedFolders, $record['folder_id']);//echo $record['folder_id'].";";
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
-                        $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".$pre."roles_title WHERE id = %i", $roleId);
                         if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
                             array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
@@ -374,8 +397,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     // Check for the users roles if some specific rights exist on items
                     $rows = DB::query(
                         "SELECT i.id_tree, r.item_id
-                        FROM ".$pre."items as i
-                        INNER JOIN ".$pre."restriction_to_roles as r ON (r.item_id=i.id)
+                        FROM ".prefix_table("items")." as i
+                        INNER JOIN ".prefix_table("restriction_to_roles")." as r ON (r.item_id=i.id)
                         WHERE r.role_id=%i
                         ORDER BY i.id_tree ASC",
                         $roleId
@@ -390,10 +413,11 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
+
         // Does this user is allowed to see other items
         $x = 0;
         $rows = DB::query(
-            "SELECT id, id_tree FROM ".$pre."items
+            "SELECT id, id_tree FROM ".prefix_table("items")."
             WHERE restricted_to=%ss AND inactif=%s",
             $_SESSION['user_id'],
             '0'
@@ -435,7 +459,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $pfs = DB::query("SELECT id FROM ".$pre."nested_tree WHERE %l", $where);
+        $pfs = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
@@ -446,7 +470,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $pf = DB::queryfirstrow("SELECT id FROM ".$pre."nested_tree WHERE title = %s", $_SESSION['user_id']);
+            $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     // get all descendants
@@ -459,19 +483,47 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             }
         }
 
+        // get list of readonly folders
+        // rule - if one folder is set as W in one of the Role, then User has access as W
+        foreach ($listAllowedFolders as $folderId) {
+            if (!in_array($folderId, $listReadOnlyFolders) || (isset($pf) && $folderId != $pf['id'])) {
+                DB::query(
+                    "SELECT *
+                    FROM ".prefix_table("roles_values")."
+                    WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                    $folderId,
+                    $fonctionsAssociees,
+                    "W"
+                );
+                if (DB::count() == 0) {
+                    array_push($listReadOnlyFolders, $folderId);
+                }
+            }
+        }
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
+        $_SESSION['read_only_folders'] = $listReadOnlyFolders;
 
         $_SESSION['list_folders_limited'] = $listFoldersLimited;
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT * FROM ".$pre."nested_tree");
+        DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT * FROM ".$pre."roles_title");
+        DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
+    
+    // update user's timestamp
+    DB::update(
+        prefix_table('users'),
+        array(
+            'timestamp' => time()
+        ),
+        "id=%i",
+        $_SESSION['user_id']
+    );
 }
 
 /**
@@ -481,7 +533,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  */
 function logEvents($type, $label, $who)
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
@@ -489,11 +541,13 @@ function logEvents($type, $label, $who)
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     DB::insert(
-        $pre."log_system",
+        prefix_table("log_system"),
         array(
             'type' => $type,
             'date' => time(),
@@ -510,7 +564,7 @@ function logEvents($type, $label, $who)
  */
 function updateCacheTable($action, $id = "")
 {
-    global $db, $server, $user, $pass, $database, $pre, $port;
+    global $db, $server, $user, $pass, $database, $pre, $port, $encoding;
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
@@ -520,13 +574,15 @@ function updateCacheTable($action, $id = "")
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Rebuild full cache table
     if ($action == "reload") {
@@ -687,7 +743,7 @@ function updateCacheTable($action, $id = "")
  */
 function teampassStats()
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -700,12 +756,14 @@ function teampassStats()
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // Prepare stats to be sent
     // Count no FOLDERS
-    DB::query("SELECT * FROM ".$pre."nested_tree");
+    DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
     $dataFolders = DB::count();
     // Count no USERS
     $dataUsers = DB::query("SELECT * FROM ".$pre."users");
@@ -780,6 +838,10 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->Port = $_SESSION['settings']['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
     // $mail->SMTPSecure = 'ssl';     //COULD BE USED
+    $smtp_security = $_SESSION['settings']['email_security'];
+    if ($smtp_security == "tls" || $smtp_security == "ssl") {
+        $mail->SMTPSecure = $smtp_security;
+    }
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
     $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == 'true' ? true : false; // turn on SMTP authentication
@@ -834,7 +896,7 @@ function isDate($date)
 /**
  * isUTF8()
  *
- * @return is the string in UTF8 format.
+ * @return string is the string in UTF8 format.
  */
 
 function isUTF8($string)
@@ -860,6 +922,10 @@ function isUTF8($string)
 */
 function prepareExchangedData($data, $type)
 {
+    //Load AES
+    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    $aes->register();
+
     if ($type == "encode") {
         if (
             isset($_SESSION['settings']['encryptClientServer'])
@@ -898,5 +964,41 @@ function prepareExchangedData($data, $type)
                 true
             );
         }
+    }
+}
+
+function make_thumb($src, $dest, $desired_width) {
+
+    /* read the source image */
+    $source_image = imagecreatefrompng($src);
+    $width = imagesx($source_image);
+    $height = imagesy($source_image);
+
+    /* find the "desired height" of this thumbnail, relative to the desired width  */
+    $desired_height = floor($height * ($desired_width / $width));
+
+    /* create a new, "virtual" image */
+    $virtual_image = imagecreatetruecolor($desired_width, $desired_height);
+
+    /* copy source image at a resized size */
+    imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
+
+    /* create the physical thumbnail image to its destination */
+    imagejpeg($virtual_image, $dest);
+}
+
+/*
+** check table prefix in SQL query
+*/
+function prefix_table($table)
+{
+    global $pre;
+    $safeTable = htmlspecialchars($pre.$table);
+    if (!empty($safeTable)) {
+        // sanitize string
+        return $safeTable;
+    } else {
+        // stop error no table
+        return false;
     }
 }

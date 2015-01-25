@@ -2,8 +2,8 @@
 /**
  * @file          logs.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -23,6 +23,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -41,8 +42,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Columns name
 $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
@@ -55,7 +58,7 @@ $where->add('id_tree IN %ls', $_SESSION['groupes_visibles']);   //limit search t
 //get list of personal folders
 $array_pf = array();
 $list_pf = "";
-$rows = DB::query("SELECT id FROM ".$pre."nested_tree WHERE personal_folder=%i AND NOT title = %s", 1, $_SESSION['user_id']);
+$rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder=%i AND NOT title = %s", 1, $_SESSION['user_id']);
 foreach ($rows as $reccord) {
     if (!in_array($reccord['id'], $array_pf)) {
         //build an array of personal folders ids
@@ -112,10 +115,10 @@ if (!empty($list_pf)) {
     $where->add('id_tree NOT IN %ls', $list_pf);
 }
 
-$rows = DB::query("SELECT * FROM ".$pre."cache WHERE %l ".$sOrder." ".$sLimit, $where);
+$rows = DB::query("SELECT * FROM ".prefix_table("cache")." WHERE %l ".$sOrder." ".$sLimit, $where);
 $iFilteredTotal = DB::count();
 
-DB::query("SELECT * FROM ".$pre."cache");
+DB::query("SELECT * FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 /*

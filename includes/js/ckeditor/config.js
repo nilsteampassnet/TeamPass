@@ -1,39 +1,36 @@
-﻿/*
-Copyright (c) 2003-2011, CKSource - Frederico Knabben. All rights reserved.
-For licensing, see LICENSE.html or http://ckeditor.com/license
-*/
+/**
+ * @license Copyright (c) 2003-2014, CKSource - Frederico Knabben. All rights reserved.
+ * For licensing, see LICENSE.md or http://ckeditor.com/license
+ */
 
-CKEDITOR.editorConfig = function( config )
-{
+CKEDITOR.editorConfig = function( config ) {
+	// Define changes to default configuration here.
+	// For complete reference see:
+	// http://docs.ckeditor.com/#!/api/CKEDITOR.config
+
 	config.enterMode = CKEDITOR.ENTER_BR;
-	
-	config.toolbar_Full =
-	[
-	    ['Source','-','Save','NewPage','Preview','-','Templates'],
-	    ['Cut','Copy','Paste','PasteText','PasteFromWord','-','Print', 'SpellChecker', 'Scayt'],
-	    ['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],
-	    ['Form', 'Checkbox', 'Radio', 'TextField', 'Textarea', 'Select', 'Button', 'ImageButton', 'HiddenField'],
-	    '/',
-	    ['Bold','Italic','Underline','Strike','-','Subscript','Superscript'],
-	    ['NumberedList','BulletedList','-','Outdent','Indent','Blockquote','CreateDiv'],
-	    ['JustifyLeft','JustifyCenter','JustifyRight','JustifyBlock'],
-	    ['Link','Unlink','Anchor'],
-	    ['Image','Flash','Table','HorizontalRule','Smiley','SpecialChar','PageBreak'],
-	    '/',
-	    ['Styles','Format','Font','FontSize'],
-	    ['TextColor','BGColor'],
-	    ['Maximize', 'ShowBlocks']
-	];
-};
 
-CKEDITOR.on( 'instanceReady', function( ev )
-{    
-    ev.editor.dataProcessor.writer.setRules( 'br',
-    {
-       indent : false,
-       breakBeforeOpen : false,
-       breakAfterOpen : false,
-       breakBeforeClose : false,
-       breakAfterClose : false
-   });
-});
+	// The toolbar groups arrangement, optimized for a single toolbar row.
+	config.toolbarGroups = [
+		{ name: 'document',	   groups: [ 'mode', 'document', 'doctools' ] },
+		{ name: 'clipboard',   groups: [ 'clipboard', 'undo' ] },
+		{ name: 'editing',     groups: [ 'find', 'selection', 'spellchecker' ] },
+		{ name: 'forms' },
+		{ name: 'basicstyles', groups: [ 'basicstyles', 'cleanup' ] },
+		{ name: 'paragraph',   groups: [ 'list', 'indent', 'blocks', 'align', 'bidi' ] },
+		{ name: 'links' },
+		{ name: 'insert' },
+		{ name: 'styles' },
+		{ name: 'colors' },
+		{ name: 'tools' },
+		{ name: 'others' },
+		{ name: 'about' }
+	];
+
+	// The default plugins included in the basic setup define some buttons that
+	// are not needed in a basic editor. They are removed here.
+	config.removeButtons = 'Cut,Copy,Paste,Undo,Redo,Anchor,Underline,Strike,Subscript,Superscript';
+
+	// Dialog windows are also simplified.
+	config.removeDialogTabs = 'link:advanced';
+};

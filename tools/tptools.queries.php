@@ -3,7 +3,7 @@
  * @file          items.queries.php
  * @author        Nils Laumaillé
  * @version       0.1
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -29,8 +29,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 
 //Class loader
@@ -59,19 +61,43 @@ switch ($_POST['type']) {
             );
             foreach ($rows as $record) {
                 $pw = decrypt($record['pw']);
-                if (strlen($pw) > 1) {
-                    $pw = substr($pw, strlen($record['rand_key']));
-                    if ($_SESSION['prefix_length'] >= $pw) $reduced_pw ="";
-                    else $reduced_pw = substr($pw, $_SESSION['prefix_length']);
-                    $pw = str_replace(array('"', "\'"), array("&quot;", "&escapesq;"), $pw);
-                    $reduced_pw = str_replace(array('"', "\'"), array("&quot;", "&escapesq;"), $reduced_pw);
-                    if ($rowColor == true) {
-                        $ret .= "<tr class='alt'><td><input type='checkbox' id='".$record['id']."'></td><td id='old_".$record['id']."'>".$pw."</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
-                        $rowColor = false;
+                if (strlen($pw) >= 1) {
+                    if (isutf8($pw)) {
+                        if (substr($pw, 0, strlen($record['rand_key'])) == $record['rand_key']) {
+                            // case 
+                        }
+                    
+                    
+                        $pw = substr($pw, strlen($record['rand_key']));
+                        
+                        if ($_SESSION['prefix_length'] >= strlen($pw)) {
+                            $reduced_pw = "";
+                        } else {
+                            $reduced_pw = substr($pw, $_SESSION['prefix_length']);
+                        }
+                        $pw = str_replace(array('"', "\'"), array("&quot;", "&escapesq;"), $pw);
+                        $reduced_pw = str_replace(array('"', "\'"), array("&quot;", "&escapesq;"), $reduced_pw);
+                        
+                        if ($rowColor == true) {
+                            $ret .= "<tr class='alt'><td><input class='pw_cb' type='checkbox' id='".$record['id']."'></td><td id='old_".$record['id']."'>".$pw."</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
+                            $rowColor = false;
+                        } else {
+                            $ret .= "<tr><td><input class='pw_cb' type='checkbox' id='".$record['id']."'></td><td id='old_".$record['id']."'>".$pw."</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
+                            $rowColor = true;
+                        }
                     } else {
-                        $ret .= "<tr><td><input type='checkbox' id='".$record['id']."'></td><td id='old_".$record['id']."'>".$pw."</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
-                        $rowColor = true;
+                        $pw = "";
+                        $reduced_pw = "";
+                        
+                        if ($rowColor == true) {
+                            $ret .= "<tr class='alt' style='disabled:disabled;'><td></td><td id='old_".$record['id']."'>Password error encoding</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
+                            $rowColor = false;
+                        } else {
+                            $ret .= "<tr style='disabled:disabled;'><td></td><td id='old_".$record['id']."'>Password error encoding</td><td> -> </td><td id='new_".$record['id']."'>".$reduced_pw."</td><td id='res_".$record['id']."'></td></tr>";
+                            $rowColor = true;
+                        }
                     }
+                    
                 }
             }
             echo '[{"error":"", "result":"'.$ret.'", "index":"'.$_POST['index'].'"}]';

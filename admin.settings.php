@@ -3,8 +3,8 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
  *
@@ -34,12 +34,13 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 */
 function updateSettings ($setting, $val, $type = '')
 {
-    global $server, $user, $pass, $database, $pre, $port;
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     if (empty($type)) {
         $type = 'admin';
     }
 
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Connect to database
@@ -49,12 +50,14 @@ function updateSettings ($setting, $val, $type = '')
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // Check if setting is already in DB. If NO then insert, if YES then update.
     $data = DB::query(
-        "SELECT * FROM ".$pre."misc
+        "SELECT * FROM ".prefix_table("misc")."
         WHERE type = %s AND intitule = %s",
         $type,
         $setting
@@ -62,7 +65,7 @@ function updateSettings ($setting, $val, $type = '')
     $counter = DB::count();
     if ($counter == 0) {
         DB::insert(
-            $pre."misc",
+            prefix_table("misc"),
             array(
                 'valeur' => $val,
                 'type' => $type,
@@ -72,7 +75,7 @@ function updateSettings ($setting, $val, $type = '')
         // in case of stats enabled, add the actual time
         if ($setting == 'send_stats') {
             DB::insert(
-                $pre."misc",
+                prefix_table("misc"),
                 array(
                     'valeur' => time(),
                     'type' => $type,
@@ -82,7 +85,7 @@ function updateSettings ($setting, $val, $type = '')
         }
     } else {
         DB::update(
-            $pre."misc",
+            prefix_table("misc"),
             array(
                 'valeur' => $val
                ),
@@ -94,7 +97,7 @@ function updateSettings ($setting, $val, $type = '')
         if ($setting == 'send_stats') {
             // Check if previous time exists, if not them insert this value in DB
             $data_time = DB::query(
-                "SELECT * FROM ".$pre."misc
+                "SELECT * FROM ".prefix_table("misc")."
                 WHERE type = %s AND intitule = %s",
                 $type,
                 $setting.'_time'
@@ -102,7 +105,7 @@ function updateSettings ($setting, $val, $type = '')
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    $pre."misc",
+                    prefix_table("misc"),
                     array(
                         'valeur' => 0,
                         'type' => $type,
@@ -111,7 +114,7 @@ function updateSettings ($setting, $val, $type = '')
                 );
             } else {
                 DB::update(
-                    $pre."misc",
+                    prefix_table("misc"),
                     array(
                         'valeur' => 0
                        ),
@@ -246,6 +249,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['maintenance_mode'] != $_POST['maintenance_mode']) {
         updateSettings('maintenance_mode', $_POST['maintenance_mode']);
     }
+    // default_session_expiration_time
+    if (@$_SESSION['settings']['default_session_expiration_time'] != $_POST['default_session_expiration_time']) {
+        updateSettings('default_session_expiration_time', $_POST['default_session_expiration_time']);
+    }
     // Update sts mode
     if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts'] ) {
         updateSettings('enable_sts', $_POST['enable_sts']);
@@ -327,19 +334,19 @@ if (isset($_POST['save_button'])) {
 	    updateSettings('ldap_elusers', $_POST['ldap_elusers']);
 	}
     // Update LDAP ldap_bind_dn
-    if (@$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
+    if (isset($_POST['ldap_bind_dn']) && @$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
         updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
     }
     // Update LDAP ldap_user_attribute
-    if (@$_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
+    if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
         updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
     }
     // Update LDAP ldap_search_base
-    if (@$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
+    if (isset($_POST['ldap_search_base'])&& @$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
         updateSettings('ldap_search_base', $_POST['ldap_search_base']);
     }
     // Update LDAP ldap_bind_passwd
-    if (@$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
+    if (isset($_POST['ldap_bind_passwd'])&& @$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
         updateSettings('ldap_bind_passwd', $_POST['ldap_bind_passwd']);
     }
     // Update anyone_can_modify
@@ -464,6 +471,10 @@ if (isset($_POST['save_button'])) {
     // Update email_port
     if (@$_SESSION['settings']['email_port'] != $_POST['email_port']) {
         updateSettings('email_port', $_POST['email_port']);
+    }
+    // Update email_security
+    if (@$_SESSION['settings']['email_security'] != $_POST['email_security']) {
+        updateSettings('email_security', $_POST['email_security']);
     }
     // Update email_server_url
     if (@$_SESSION['settings']['email_server_url'] != $_POST['email_server_url']) {
@@ -695,6 +706,17 @@ $LANG['settings_maintenance_mode'].'
                     <input type="radio" id="maintenance_mode_radio2" name="maintenance_mode" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="0"', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['maintenance_mode']) ? ' checked="checked"':''), ' /><label for="maintenance_mode_radio2">'.$LANG['no'].'</label>
                         <span class="setting_flag" id="flag_maintenance_mode"><img src="includes/images/status', isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1 ? '' : '-busy', '.png" /></span>
                 </div>
+              <td>
+            </tr>';
+// default_session_expiration_time
+echo '
+            <tr style="margin-bottom:3px">
+            <td>
+                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <label>'.$LANG['settings_default_session_expiration_time'].'</label>
+            </td>
+            <td>
+                <input type="text" size="15" id="default_session_expiration_time" name="default_session_expiration_time" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" class="text ui-widget-content" />
               <td>
             </tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -1446,7 +1468,7 @@ echo '
                     } else {
                         $arrRolesToPrint = explode(";", $_SESSION['settings']['roles_allowed_to_print']);
                     }
-                    $roles = DB::query("SELECT id, title FROM ".$pre."roles_title");
+                    $roles = DB::query("SELECT id, title FROM ".prefix_table("roles_title"));
                     foreach ($roles as $role) {
                         echo '<option value="'.$role['id'].'"', in_array($role['id'], $arrRolesToPrint) ? ' selected="selected"' : '', '>'.addslashes($role['title']).'</option>';
                     }
@@ -1655,7 +1677,7 @@ echo '
                     </td>
                     <td>
                         <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content">';
-foreach ($pwComplexity as $complex) {
+foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 	echo '<option value="'.$complex[0].'"', isset($_SESSION['settings']['offline_key_level']) && $_SESSION['settings']['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
 }
 echo '
@@ -1711,7 +1733,7 @@ echo '
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
                 <table>';
 // Domain
-if (isset($ldap_type) && $ldap_type != 'posix') {
+if (isset($ldap_type) && $ldap_type != 'posix' && $ldap_type != 'posix-search') {
 echo '
                     <tr>
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
@@ -1719,12 +1741,14 @@ echo '
                     </tr>';
 }
 
+if (isset($ldap_type) && $ldap_type != 'posix-search') {
 // Domain DN
 echo '
                     <tr>
                         <td><label for="ldap_domain_dn">'.$LANG['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" /></td>
                     </tr>';
+}
 
 // Subtree for posix / openldap
 if (isset($ldap_type) && $ldap_type == 'posix') {
@@ -1736,13 +1760,31 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 }
 
 // LDAP username attribute
-if (isset($ldap_type) && $ldap_type == 'posix') {
+if (isset($ldap_type) && $ldap_type == 'posix-search') {
 		echo '
                 <tr>
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
                         $LANG['settings_ldap_user_attribute_tip'].'" /></label></td>
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
+                </tr>';
+                // LDAP BIND DN for search
+                echo '
+                <tr>
+                    <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_dn_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" /></td>
+                </tr>';
+                // LDAP BIND PASSWD for search
+                echo '
+                <tr>
+                    <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_passwd_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" /></td>
+                </tr>';
+                // LDAP BASE for search
+                echo '
+                <tr>
+                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_search_base_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                 </tr>';
 }
 
@@ -1752,24 +1794,7 @@ echo '
                         <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_domain_controler_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
                     </tr>';
-// LDAP BIND DN for search
-echo '
-                    <tr>
-                        <td><label for="ldap_bind_dn">'.$txt['settings_ldap_bind_dn'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_bind_dn_tip'].'" /></label></td>
-                        <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" /></td>
-                    </tr>';
-// LDAP BIND PASSWD for search
-echo '
-                    <tr>
-                        <td><label for="ldap_bind_passwd">'.$txt['settings_ldap_bind_passwd'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_bind_passwd_tip'].'" /></label></td>
-                        <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" /></td>
-                    </tr>';
-// LDAP BASE for search
-echo '
-                    <tr>
-                        <td><label for="ldap_search_base">'.$txt['settings_ldap_search_base'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_search_base_tip'].'" /></label></td>
-                        <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
-                    </tr>';
+
 // AD SSL
 echo '
                     <tr>
@@ -1961,7 +1986,7 @@ echo '
                             <div class="div_radio">
                                 <input type="radio" id="email_smtp_auth_radio1" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 1)" value="true"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? ' checked="checked"' : '', ' /><label for="email_smtp_auth_radio1">'.$LANG['yes'].'</label>
                                 <input type="radio" id="email_smtp_auth_radio2" name="email_smtp_auth" onclick="changeSettingStatus($(this).attr(\'name\'), 0)" value="false"', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] != "true" ? ' checked="checked"' : (!isset($_SESSION['settings']['email_smtp_auth']) ? ' checked="checked"':''), ' /><label for="email_smtp_auth_radio2">'.$LANG['no'].'</label>
-                                <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == true ? '' : '-busy', '.png" /></span>
+                                <span class="setting_flag" id="flag_email_smtp_auth"><img src="includes/images/status', isset($_SESSION['settings']['email_smtp_auth']) && $_SESSION['settings']['email_smtp_auth'] == "true" ? '' : '-busy', '.png" /></span>
                             </div>
                         </td>
                     </tr>';
@@ -2008,6 +2033,21 @@ echo '
                         </td>
                         <td>
                             <input id="email_port" name="email_port" type="text" size="40px" value="', !isset($_SESSION['settings']['email_port']) ? '25' : $_SESSION['settings']['email_port'], '" />
+                        </td>
+                    </tr>';
+// SMTP security
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$LANG['admin_email_security'].'
+                        </td>
+                        <td>
+                            <select id="email_security" name="email_security" class="text ui-widget-content">
+                            <option value="none"', !isset($_SESSION['settings']['email_security']) || $_SESSION['settings']['email_security'] == "none" ? ' selected="selected"':"", '>None</option>
+                            <option value="ssl"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "ssl" ? ' selected="selected"':"", '>SSL</option>
+                            <option value="tls"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "tls" ? ' selected="selected"':"", '>TLS</option>
+                        </select>
                         </td>
                     </tr>';
 // SMTP from
@@ -2058,7 +2098,7 @@ echo '
                         </td>
                     </tr>';
 // Send emails backlog
-DB::query("SELECT * FROM ".$pre."emails WHERE status = %s OR status = %s", 'not_sent', '');
+DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status = %s OR status = %s", 'not_sent', '');
 $nb_emails = DB::count();
 echo '
                     <tr style="margin-bottom:3px">

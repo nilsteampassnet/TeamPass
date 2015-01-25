@@ -2,8 +2,8 @@
 /**
  * @file          categories.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -23,6 +23,7 @@ if (
 }
 
 /* do checks */
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -33,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset==utf-8");
-include 'main.functions.php';
+require_once 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to mysql server
@@ -43,8 +44,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -55,7 +58,7 @@ if (isset($_POST['type'])) {
         case "addNewCategory":
             // store key
             DB::insert(
-                $pre.'categories',
+                prefix_table("categories"),
                 array(
                     'parent_id' => 0,
                     'title' => $_POST['title'],
@@ -66,15 +69,15 @@ if (isset($_POST['type'])) {
             echo '[{"error" : "", "id" : "'.DB::insertId().'"}]';
             break;
         case "deleteCategory":
-            DB::delete($pre."categories", "id = %i", $_POST['id']);
-            DB::delete($pre."categories_folders", "category_id = %i", $_POST['id']);
+            DB::delete(prefix_table("categories"), "id = %i", $_POST['id']);
+            DB::delete(prefix_table("categories_folders"), "category_id = %i", $_POST['id']);
             echo '[{"error" : ""}]';
             break;
         case "addNewField":
             // store key
             if (!empty($_POST['title']) && !empty($_POST['id'])) {
                 DB::insert(
-                    $pre.'categories',
+                    prefix_table("categories"),
                     array(
                         'parent_id' => $_POST['id'],
                         'title' => $_POST['title'],
@@ -90,7 +93,7 @@ if (isset($_POST['type'])) {
             // update key
             if (!empty($_POST['data']) && !empty($_POST['id'])) {
                 DB::update(
-                    $pre.'categories',
+                    prefix_table("categories"),
                     array(
                         'title' => $_POST['data']
                        ),
@@ -104,7 +107,7 @@ if (isset($_POST['type'])) {
             // update key
             if (!empty($_POST['data']) && !empty($_POST['id'])) {
                 DB::update(
-                    $pre.'categories',
+                    prefix_table("categories"),
                     array(
                         'parent_id' => $_POST['data'],
                         'order' => 99
@@ -121,7 +124,7 @@ if (isset($_POST['type'])) {
                 foreach (explode(';', $_POST['data']) as $data) {
                     $elem = explode(':', $data);
                     DB::update(
-                        $pre.'categories',
+                        prefix_table("categories"),
                         array(
                             'order' => $elem[1]
                            ),
@@ -142,7 +145,7 @@ if (isset($_POST['type'])) {
                 $rowsF = DB::query(
                     "SELECT t.title AS title, c.id_folder as id_folder
                     FROM ".$pre."categories_folders AS c
-                    INNER JOIN ".$pre."nested_tree AS t ON (c.id_folder = t.id)
+                    INNER JOIN ".prefix_table("nested_tree")." AS t ON (c.id_folder = t.id)
                     WHERE c.id_category = %i",
                     $record['id']
                 );
@@ -169,7 +172,7 @@ if (isset($_POST['type'])) {
                     )
                 );
                 $rows = DB::query(
-                    "SELECT * FROM ".$pre."categories 
+                    "SELECT * FROM ".prefix_table("categories")."
                     WHERE parent_id = %i
                     ORDER BY ".$pre."categories.order ASC",
                     $record['id']
@@ -201,7 +204,7 @@ if (isset($_POST['type'])) {
                 $list = "";
                 foreach (explode(';', $_POST['foldersIds']) as $folder) {
                     DB::insert(
-                        $pre.'categories_folders',
+                        prefix_table("categories_folders"),
                         array(
                             'id_category' => $_POST['id'],
                             'id_folder' => $folder
@@ -209,7 +212,7 @@ if (isset($_POST['type'])) {
                     );
                     
                     // prepare a list
-                    $row = DB::queryfirstrow("SELECT title FROM ".$pre."nested_tree WHERE id=%i", $folder);
+                    $row = DB::queryfirstrow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id=%i", $folder);
                     if (empty($list)) {
                         $list = $row['title'];
                     } else {

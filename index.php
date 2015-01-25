@@ -3,8 +3,8 @@
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -41,7 +41,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // Include files
-@require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -52,8 +52,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //load main functions needed
 require_once 'sources/main.functions.php';
@@ -65,18 +67,18 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         "SELECT flag, name
-        FROM ".$pre."languages
+        FROM ".prefix_table("languages")."
         WHERE label = %s",
         $_GET['language']
     );
     $_SESSION['user_language'] = $dataLanguage['name'];
     $_SESSION['user_language_flag'] = $dataLanguage['flag'];
-} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language'])) {
+} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language']) && !isset($_SESSION['user_language'])) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         "SELECT m.valeur AS valeur, l.flag AS flag
-        FROM ".$pre."misc AS m
-        INNER JOIN ".$pre."languages AS l ON (m.valeur = l.name)
+        FROM ".prefix_table("misc")." AS m
+        INNER JOIN ".prefix_table("languages")." AS l ON (m.valeur = l.name)
         WHERE m.type=%s_type AND m.intitule=%s_intitule",
         array(
             'type' => "admin",
@@ -121,6 +123,15 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
     <head>
         <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
         <title>Collaborative Passwords Manager</title>
+        <script type="text/javascript">
+            if (window.location.href.indexOf("page=") == -1) {
+                if (window.location.href.indexOf("session_over=true") == -1) {
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+                } else {
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&session_over=true");
+                }
+            }
+        </script>
 <?php
 echo $htmlHeaders;
 ?>
@@ -137,17 +148,7 @@ echo '
 if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
-            <div style="font-size:12px; margin-left:65px; margin-top:-5px; width:100%; color:white;">
-                <img src="includes/images/user-black.png" /> <b>'.$_SESSION['login'].'</b>
-                ['.$_SESSION['user_privilege'].']
-                <img src="includes/images/alarm-clock.png" style="margin-left:30px;" />&nbsp;
-                '.$LANG['index_expiration_in'].'&nbsp;
-                <div style="display:inline;" id="countdown"></div>
-            </div>
-            <div style="margin-left:65px; margin-top:3px;width:100%;" id="main_menu">
-                <button title="'.$LANG['home'].'" onclick="MenuAction(\'\');">
-                    <img src="includes/images/home.png" alt="" />
-                </button>';
+            <div style="margin-left:20px; margin-top:5px;width:590px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
@@ -161,9 +162,6 @@ if (isset($_SESSION['login'])) {
                 || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
                 '>
                     <img src="includes/images/binocular.png" alt="" />
-                </button>
-                <button title="'.$LANG['last_items_icon_title'].'" onclick="OpenDiv(\'div_last_items\')">
-                    <img src="includes/images/tag_blue.png" alt="" />
                 </button>';
     }
     // Favourites menu
@@ -220,16 +218,42 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/menu_views.png" alt="" />
                 </button>';
     }
-    // 1 hour
+
+    echo '               
+                <div style="float:right;">                
+                    <ul class="menu" style="">
+                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
+                            <ul class="menu_200" style="text-align:left;">',
+                                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) || $_SESSION['user_admin'] == 1 ? '' :
+                                isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
+                                    <ul>
+                                        <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
+                                        <li onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">'.$LANG['personal_saltkey_change_button'].'</li>
+                                        <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
+                                    </ul>
+                                </li>' : '', '
+                                <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\')"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
+                                <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
+                                <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>';
+
+    if ($_SESSION['user_admin'] != 1) {
+        echo '
+            <div style="float:right; margin-right:10px;">
+                <ul class="menu" id="menu_last_seen_items">
+                    <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
+                        <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
+                            <li>'.$LANG['please_wait'].'</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>';
+    }
     echo '
-                <button style="margin-left:10px;" title="'.$LANG['index_add_one_hour'].'" onclick="IncreaseSessionTime();">
-                    <img src="includes/images/clock__plus.png" alt="" />
-                </button>';
-    // Disconnect menu
-    echo '
-                <button title="'.$LANG['disconnect'].'" onclick="MenuAction(\'deconnexion\');">
-                    <img src="includes/images/door-open.png" alt="" />
-                </button>
             </div>
         </div>';
 }
@@ -250,27 +274,10 @@ if (!isset($_GET['otv'])) {
 echo '
     </div>';
 
-/* LAST SEEN */
-echo '
-    <div style="display:none;" id="div_last_items" class="ui-state-active ui-corner-all">
-        '.$LANG['last_items_title'].":&nbsp;";
-if (isset($_SESSION['latest_items_tab'])) {
-    foreach ($_SESSION['latest_items_tab'] as $item) {
-        if (!empty($item)) {
-            echo '
-                    <span class="last_seen_item"
-            onclick="javascript:$(\'#menu_action\').val(\'action\');
-            window.location.href = \''.$item['url'].'\'">
-            <img src="includes/images/tag-small.png" alt="" />
-            <span id="last_items_'.$item['id'].'">'.stripslashes($item['label']).'</span>
-            </span>';
-        }
-    }
-} else {
-    echo $LANG['no_last_items'];
-}
-echo '
-    </div>';
+    echo '
+<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
+    <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
+</div>';
 
 /* MAIN PAGE */
 echo '
@@ -284,65 +291,8 @@ echo '
         <input type="hidden" name="action_on_going" id="action_on_going" value="" />
     </form>';
 
-/* INSERT ITEM BUTTONS IN MENU BAR */
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true && isset($_GET['page']) && $_GET['page'] == "items" && $_SESSION['user_admin'] == false) {
-    echo '
-        <div style="" class="ui-corner-right" id="div_right_menu">
-            <button title="'.$LANG['item_menu_refresh'].'" id="menu_button_refresh_page" style="margin-bottom:5px;" onclick="javascript:document.new_item.submit()">
-                <img src="includes/images/refresh.png" alt="" />
-            </button>
-            <br />',
-    (
-        (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) ||
-        (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1) ||
-        (isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
-      ) ? '
-            <button title="'.$LANG['item_menu_add_rep'].'" id="menu_button_add_group" onclick="open_add_group_div()">
-                <img src="includes/images/folder__plus.png" alt="" />
-            </button>
-            <br />
-            <button title="'.$LANG['item_menu_edi_rep'].'" id="menu_button_edit_group" onclick="open_edit_group_div()">
-                <img src="includes/images/folder__pencil.png" alt="" />
-            </button>
-            <br />
-            <button title="'.$LANG['item_menu_del_rep'].'" id="menu_button_del_group" style="margin-bottom:5px;" onclick="open_del_group_div()">
-                <img src="includes/images/folder__minus.png" alt="" />
-            </button>
-            <br />' : '', '
-            <button title="'.$LANG['item_menu_add_elem'].'" id="menu_button_add_item" onclick="open_add_item_div()"><img src="includes/images/key__plus.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_edi_elem'].'" id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><img src="includes/images/key__pencil.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_del_elem'].'" id="menu_button_del_item" onclick="open_del_item_div()"><img src="includes/images/key__minus.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['item_menu_copy_elem'].'" id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()" style="margin-bottom:5px;"><img src="includes/images/key_copy.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['pw_copy_clipboard'].'" id="menu_button_copy_pw" class="copy_clipboard"><img src="includes/images/ui-text-field-password.png" id="div_copy_pw" alt="" /></button>
-            <br />
-            <button title="'.$LANG['login_copy'].'" id="menu_button_copy_login" class="copy_clipboard"><img src="includes/images/ui-text-field.png" id="div_copy_login" alt="" /></button>
-            <br />
-            <button title="'.$LANG['url_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_url" class="copy_clipboard"><img src="includes/images/ui-toolbar-bookmark.png" id="div_copy_url" alt="" /></button>
-            <br />
-            <button title="'.$LANG['mask_pw'].'" style="margin-bottom:5px;" id="menu_button_show_pw" onclick="ShowPassword()"><img src="includes/images/eye.png" alt="" /></button>
-            <br />
-            <button title="'.$LANG['link_copy'].'" style="margin-bottom:5px;" id="menu_button_copy_link" class="copy_clipboard"><img src="includes/images/target.png" id="div_copy_link" alt="" /></button>
-            <br />
-            <button title="'.$LANG['history'].'" id="menu_button_history" class="" onclick="OpenDialog(\'div_item_history\', \'false\')"><img src="includes/images/report.png" id="div_history" alt="" /></button>
-            <br />
-            <button title="'.$LANG['share'].'" id="menu_button_share" class="" onclick="OpenDialog(\'div_item_share\', \'false\')"><img src="includes/images/share_me.png" id="div_share" alt="" /></button>
-			<br />
-            <button title="'.$LANG['one_time_item_view'].'" id="menu_button_otv" class="" onclick="prepareOneTimeView()"><img src="includes/images/globe-share.png" id="div_otv" alt="" /></button>';
-    if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
-        echo '
-            <br />
-            <button style="margin-bottom:5px;" id="menu_button_notify" class=""><img src="includes/images/alarm-clock.png" id="div_notify" alt="" /></button>';
-    }
-    echo '
-        </div>';
-}
-
 echo '
-    <div id="', isset($_GET['page']) && $_GET['page'] == "items" ? "main_simple" : "main", '">';
+    <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
 // MESSAGE BOX
 echo '
         <div style="" class="div_center">
@@ -490,7 +440,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     } else {
-        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page don't exists
+        $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
     }
 /*} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
@@ -530,9 +480,12 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
             </div>
         </div>';
 } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
+    // Page doesn't exist
+    $_SESSION['error']['code'] = ERR_NOT_EXIST;
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     // When user identified
     // PAGE BY DEFAULT
-    include 'home.php';
+    //include 'home.php';
     // When user is not identified
 } else {
     // Automatic redirection
@@ -548,7 +501,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                 class="ui-state-error ui-corner-all">
                 <b>'.$LANG['index_maintenance_mode'].'</b>
             </div>';
-    } else {
+    } else if (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
         // SESSION FINISHED => RECONNECTION ASKED
         echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
@@ -567,7 +520,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     // CONNECTION FORM
     echo '
             <form method="post" name="form_identify" id="form_identify" action="">
-                <div style="width:300px; margin-left:auto; margin-right:auto;margin-bottom:50px;padding:25px;" class="ui-state-highlight ui-corner-all">
+                <div style="width:300px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
                     <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
     isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                         '.$LANG['index_get_identified'].'
@@ -616,7 +569,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                        <input type="text" size="4" id="duree_session" name="duree_session" value="60" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                        <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60" ,'" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                     </div>
 
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
@@ -650,20 +603,20 @@ echo '
 echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
+            <a href="http://www.teampass.net/about/" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$k['copyright'].'</a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
-            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? $_SESSION['nb_users_online']."&nbsp;".$LANG['users_online'] : "", '
+            ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-ticket"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div>
         <div style="float:right;text-align:right;">
-            '. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
         </div>
     </div>';
 // PAGE LOADING
 echo '
     <div id="div_loading" style="display:none;">
         <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all">
-            <img src="includes/images/76.gif" alt="" />
+            <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';
 // Alert BOX
@@ -683,6 +636,58 @@ echo '
     <div id="div_mysql_error" style="display:none;">
         <div style="padding:10px;text-align:center;" id="mysql_error_warning"></div>
     </div>';
+
+
+    //Personnal SALTKEY
+    if (
+        isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+        //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
+    ) {
+        echo '
+            <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
+                <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
+                <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
+            </div>';
+
+        //change the saltkey dialogbox
+        echo '
+            <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
+                <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+                <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
+                <div style="margin-top:5px;font-style:italic;">
+                    <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
+                </div>
+                <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
+                   <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
+                   <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
+                </div>
+                <div style="margin-top:20px;" class="ui-state-highlight">
+                   '.$LANG['new_saltkey_warning'].'
+                </div>
+                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
+            </div>';
+
+        //saltkey LOST dialogbox
+        echo '
+           <div id="div_reset_personal_sk" style="display:none;padding:4px;">
+               <div style="margin-bottom:20px;" class="ui-state-highlight">
+                   '.$LANG['new_saltkey_warning_lost'].'
+               </div>
+               <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+               <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
+           </div>';
+    }
+    
+    // user profile
+        echo '
+        <div id="dialog_user_profil" style="display:none;padding:4px;">
+            <div id="div_user_profil">
+                <i class="fa fa-cog fa-spin fa-2x"></i>
+            </div>
+            
+        </div>';
+    
 
 closelog();
 

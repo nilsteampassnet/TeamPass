@@ -1,4 +1,23 @@
-﻿2.1.22
+2.1.23
+ #727 - #729 - Encoding problem
+ #799 - Error: Field 'field_1' doesn't have a default value
+ #830 - Fix documentation syntax
+ #829 - Removing unecessary php closing tags
+ #807 - Fix rights based on roles for new folders
+ #808 - Add a SMTP security parameter to the email configuration
+ #805 - Keepass Import improvements
+ #790 - Install fixes
+ #835 - Links in items description don't work
+ #817 - Wrong number of users online
+ #838 - Fix for mysqli encoding
+ #839 - Keepass fixes
+ #853 - New setting for default session expiration delay
+ #851 - Multiple fixes for LDAP integration
+ #814 - #857
+ API: add FIND feature
+ Fix: copy not possible in RO folders
+
+2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"
  #718 - Two factor authentication: "This user has no email set!"
  #674 - API - User rights
@@ -9,12 +28,18 @@
  #720 - cannot sign up to 2factor 
  #690 - limit password export via PDF/CSV to user/group
  #745 - Enable again save_button after error on Add/Edit Item
- #739 - OTV correction 
+ #739 - OTV correction
+ #731 - Export password to file
+ #653 - Passwords preprended during upgrade
+ #767 - Backup restore feature fix
+ #774 - Call to undefined method DB::queryInsert
  Other: #711 - #699 - #726 - #744 - #684 - #737
  New - Rights "Read / Write / No Access" added to folders for better rights management
  New - quick copy to clipboard for password and login
  New - New option : Prevent against duplicate items in same folder
+ New - If folder is read-only for the User then it is striked-through
  Changed - list of restricted users refined by folder selected
+ Fix - Not possible to see more than 8 Roles in Roles matrix
 
 2.1.21
  #597 - Rapid click on save button on "Add a folder"
@@ -53,7 +78,7 @@
  #680 - Set custom expiry for one time view link
  #682 - Fix SMTP authentication which were used regardless of the settings
       - Fix a query used in the "lost password" management.
-      - Fix the mysql error message when the session_expired page is accessed…
+      - Fix the mysql error message when the session_expired page is accesseded...
  - New option permitting to send or not an email to User when admin changes his password
  - Fix for image viewer when option files encryption is set
  - Fix for password complexity level update

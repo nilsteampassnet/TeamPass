@@ -274,3 +274,39 @@ cursor: pointer;
 input.watermark {
 	color: #999;
 }
+
+/* Allow Font Awesome Icons in lieu of jQuery UI and only apply when using a FA icon */
+.ui-icon[class*=" icon-"] {
+    /* Remove the jQuery UI Icon */
+    background: none repeat scroll 0 0 transparent;
+    /* Remove the jQuery UI Text Indent */
+    text-indent: 0;
+    /* Bump it up - jQuery UI is -8px */
+    margin-top: -0.5em;
+}
+
+/* Allow use of icon-large to be properly aligned */
+.ui-icon.icon-large {
+    margin-top: -0.75em;
+}
+
+.ui-button-icon-only .ui-icon[class*=" icon-"] {
+    /* Bump it - jQuery UI is -8px */
+    margin-left: -7px;
+}
+
+.menu_150 {
+    width:150px;
+}
+
+.menu_200 {
+    width:200px;
+}
+
+.menu_250 {
+    width:250px;
+}
+
+.no-icon { display:none !important;}
+
+.ui-menu li {font-size:10pt !important;}

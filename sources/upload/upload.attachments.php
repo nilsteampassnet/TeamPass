@@ -3,7 +3,7 @@
  * @file 		upload.attachments.php
  * @author		Nils Laumaillé
  * @version 	2.1.21
- * @copyright 	(c) 2009-2014 Nils Laumaillé
+ * @copyright 	(c) 2009-2015 Nils Laumaillé
  * @licensing 	GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
  *
@@ -261,8 +261,10 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
+DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Get data from DB
 /*$data = DB::queryfirstrow(

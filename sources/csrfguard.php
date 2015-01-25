@@ -113,5 +113,4 @@ function csrfguard_start()
 	register_shutdown_function("csrfguard_inject");
 }
 //csrfguard_start();
-?>
 

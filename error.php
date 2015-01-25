@@ -2,8 +2,8 @@
 /**
  * @file          error.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sources/sessions.php');
+//require_once('sources/sessions.php');
 @session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -31,8 +31,10 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
     // Include main functions used by TeamPass
     require_once 'sources/main.functions.php';
@@ -54,6 +56,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
     }
 } else {
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
     echo '
     <div style="width:800px;margin:auto;">';
     if (@$_SESSION['error']['code'] == ERR_NOT_ALLOWED) {

@@ -3,8 +3,8 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -29,6 +29,7 @@ IdentifyUser($_POST['data']);
 
 function IdentifyUser($sentData)
 {
+    global $debugLdap;
     global $k;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -43,12 +44,19 @@ function IdentifyUser($sentData)
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
+    DB::$encoding = $encoding;
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
 
 //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
+    
+// load passwordLib library
+    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+    $pwdlib->register();
+    $pwdlib = new PasswordLib\PasswordLib();
 
 // User's language loading
     $k['langage'] = @$_SESSION['user_language'];
@@ -74,6 +82,21 @@ function IdentifyUser($sentData)
     if ($debugLdap == 1) {
         // create temp file
         $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w");
+        fputs(
+            $dbgLdap,
+           "Get all LDAP params : \n" .
+           'mode : ' . $_SESSION['settings']['ldap_mode'] . "\n" .
+           'type : ' . $_SESSION['settings']['ldap_type'] . "\n" .
+           'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
+           'search_base : ' . $_SESSION['settings']['ldap_search_base']."\n" .
+           'bind_dn : ' . $_SESSION['settings']['ldap_bind_dn']."\n" .
+           'bind_passwd : ' . $_SESSION['settings']['ldap_bind_passwd']."\n" .
+           'user_attribute : ' . $_SESSION['settings']['ldap_user_attribute']."\n" .
+           'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
+           'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+           'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+           'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
+       );
     }
 
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -86,12 +109,24 @@ function IdentifyUser($sentData)
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+            if ($debugLdap == 1) {
+                fputs($dbgLdap,"LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
+            }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
                 $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd'] );
+                if ($debugLdap == 1) {
+                    fputs($dbgLdap,"LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
+                }
                 if ($ldapbind) {
-                    $filter="(&(" . $_SESSION[settings][ldap_user_attribute]. "=$username)(objectClass=posixAccount))";
+                    $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=posixAccount))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    if ($debugLdap == 1) {
+                       fputs($dbgLdap,
+                        'Search filter : ' . $filter . "\n" .
+                        'Results : ' . print_r(ldap_get_entries($ldapconn, $result),True) . "\n"
+                        );
+                    }
                     if (ldap_count_entries($ldapconn, $result)) {
                         // try auth
                         $result = ldap_get_entries($ldapconn, $result);
@@ -171,7 +206,7 @@ function IdentifyUser($sentData)
         // nothing
     }
     // Check if user exists
-    $data = DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE login=%s_login",
+    $data = DB::queryFirstRow("SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
         array(
             'login' => $username
         )
@@ -198,9 +233,9 @@ function IdentifyUser($sentData)
             } else {
                 $_SESSION['my_sk'] = $psk;
             }
-        } elseif (crypt($psk, $data['psk']) != $data['psk']) {
+        //} elseif (crypt($psk, $data['psk']) != $data['psk']) {
+        } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
-            //echo $psk." - ".crypt($psk, $data['psk']) ." - ". $data['psk']." - ".bCrypt(htmlspecialchars_decode($psk), COST);
             exit;
         }
     }
@@ -213,7 +248,7 @@ function IdentifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         DB::insert(
-            $pre.'users',
+            prefix_table('users'),
             array(
                 'login' => $username,
                 'pw' => $password,
@@ -232,7 +267,7 @@ function IdentifyUser($sentData)
         // Create personnal folder
         if ($_SESSION['settings']['enable_pf_feature'] == "1") {
             DB::insert(
-                $pre."nested_tree",
+                prefix_table("nested_tree"),
                 array(
                     'parent_id' => '0',
                     'title' => $newUserId,
@@ -243,7 +278,7 @@ function IdentifyUser($sentData)
             );
         }
         // Get info for user
-        //$sql = "SELECT * FROM ".$pre."users WHERE login = '".addslashes($username)."'";
+        //$sql = "SELECT * FROM ".prefix_table("users")." WHERE login = '".addslashes($username)."'";
         //$row = $db->query($sql);
         $proceedIdentification = true;
     }
@@ -278,7 +313,7 @@ function IdentifyUser($sentData)
         ) {
             //update user's password
             $data['pw'] = bCrypt($passwordClear, COST);
-            DB::update($pre.'users',
+            DB::update(prefix_table('users'),
                 array(
                     'pw' => $data['pw']
                 ),
@@ -286,7 +321,25 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
-
+        if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
+            //update user's password
+            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+            DB::update(prefix_table('users'),
+                array(
+                    'pw' => $data['pw']
+                ),
+                "id=%i",
+                $data['id']
+            );
+        }
+        
+        // check the given password
+        if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
+            $userPasswordVerified = true;
+        } else {
+            $userPasswordVerified = false;
+        }
+        
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -294,7 +347,7 @@ function IdentifyUser($sentData)
         // This in order to allow admin by default to connect even if LDAP is activated
         if (
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                && crypt($passwordClear, $data['pw']) == $data['pw'] && $data['disabled'] == 0
+                && $userPasswordVerified == true && $data['disabled'] == 0
             )
             ||
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
@@ -306,25 +359,14 @@ function IdentifyUser($sentData)
             )
             ||
             (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                && $username == "admin" && crypt($passwordClear, $data['pw']) == $data['pw']
-                && $data['disabled'] == 0
+                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
             )
         ) {
             $_SESSION['autoriser'] = true;
 
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-
             // Generate a ramdom ID
-            $key = "";
-            $pwgen->setLength(50);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $key = $pwgen->generate();
+            $key = $pwdlib->getRandomToken(50);
+
             // Log into DB the user's connection
             if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
                 logEvents('user_connection', 'connection', $data['id']);
@@ -345,6 +387,8 @@ function IdentifyUser($sentData)
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
             $_SESSION['user']['ga'] = $data['ga'];
+            $_SESSION['user']['avatar'] = $data['avatar'];
+            $_SESSION['user']['avatar_thumb'] = $data['avatar_thumb'];
             
             // manage session expiration
             $serverTime = time();
@@ -410,7 +454,7 @@ function IdentifyUser($sentData)
             $_SESSION['user_pw_complexity'] = 0;
             $_SESSION['arr_roles'] = array();
             foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".$pre."roles_title WHERE id=%i", $role);
+                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".prefix_table("roles_title")." WHERE id=%i", $role);
                 $_SESSION['arr_roles'][$role] = array(
                     'id' => $role,
                     'title' => $resRoles['title']
@@ -422,7 +466,7 @@ function IdentifyUser($sentData)
             }
             // build complete array of roles
             $_SESSION['arr_roles_full'] = array();
-            $rows = DB::query("SELECT id, title FROM ".$pre."roles_title ORDER BY title ASC");
+            $rows = DB::query("SELECT id, title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
             foreach ($rows as $record) {
                 $_SESSION['arr_roles_full'][$record['id']] = array(
                     'id' => $record['id'],
@@ -434,7 +478,7 @@ function IdentifyUser($sentData)
             $_SESSION['settings']['update_needed'] = "";
             // Update table
             DB::update(
-                $pre.'users',
+                prefix_table('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'last_connexion' => time(),
@@ -442,7 +486,7 @@ function IdentifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk))    //bCrypt(htmlspecialchars_decode($psk), COST)
                 ),
                 "id=%i",
                 $data['id']
@@ -461,7 +505,7 @@ function IdentifyUser($sentData)
             $_SESSION['latest_items_tab'][] = "";
             foreach ($_SESSION['latest_items'] as $item) {
                 if (!empty($item)) {
-                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".$pre."items WHERE id=%i", $item);
+                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id=%i", $item);
                     $_SESSION['latest_items_tab'][$item] = array(
                         'id' => $item,
                         'label' => $data['label'],
@@ -478,7 +522,7 @@ function IdentifyUser($sentData)
             ) {
                 // get all Admin users
                 $receivers = "";
-                $rows = DB::query("SELECT email FROM ".$pre."users WHERE admin = %i", 1);
+                $rows = DB::query("SELECT email FROM ".prefix_table("users")." WHERE admin = %i", 1);
                 foreach ($rows as $record) {
                     if (empty($receivers)) {
                         $receivers = $record['email'];
@@ -488,7 +532,7 @@ function IdentifyUser($sentData)
                 }
                 // Add email to table
                 DB::insert(
-                    $pre.'emails',
+                    prefix_table("emails"),
                     array(
                         'timestamp' => time(),
                         'subject' => $LANG['email_subject_on_user_login'],
@@ -530,7 +574,7 @@ function IdentifyUser($sentData)
                 }
             }
             DB::update(
-                $pre.'users',
+                prefix_table('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'last_connexion' => time(),

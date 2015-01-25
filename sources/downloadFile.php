@@ -2,8 +2,8 @@
 /**
  * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version       2.1.22
- * @copyright     (c) 2009-2014 Nils Laumaillé
+ * @version       2.1.23
+ * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -26,8 +26,24 @@ header("Expires: 0");
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
 } else {
+    // connect to DB
+    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+    
+    // get file key
+    $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
+
     // Open the file
-    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.basename($_GET['file']), 'rb');
+    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'], 'rb');
 
     // should we decrypt the attachment?
     if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
