@@ -43,6 +43,8 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
+//load main functions needed
+require_once 'sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
@@ -312,7 +314,7 @@ foreach ($folders as $t) {
                     $("select").multiselect({
                         multiple: false,
                         selectedText: function(numChecked, numTotal, checkedItems){
-                            return checkedItems[0] + ' checked';
+                            return $(checkedItems[0]).attr('title') + ' checked';
                         }
                     });
                     $("button").button();
