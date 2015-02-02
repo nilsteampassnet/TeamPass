@@ -268,7 +268,7 @@ switch ($_POST['type']) {
             DB::insert(
                 prefix_table("keys"),
                 array(
-                    'table' => 'items',
+                    'sql_table' => 'items',
                     'id' => $newId,
                     'rand_key' => $randomKey
                )
