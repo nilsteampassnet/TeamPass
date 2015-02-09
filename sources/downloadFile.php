@@ -26,6 +26,7 @@ header("Expires: 0");
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
 } else {
+    require_once 'main.functions.php';
     // connect to DB
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
