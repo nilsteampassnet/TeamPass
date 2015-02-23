@@ -24,7 +24,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['u
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
