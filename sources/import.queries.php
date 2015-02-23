@@ -57,6 +57,9 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 //Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
+// call needed functions
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+
 // connect to the server
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
@@ -238,7 +241,6 @@ switch ($_POST['type']) {
         $listItems = htmlspecialchars_decode($dataReceived);
         $list = "";
 
-        require_once 'main.functions.php';
         foreach (explode('@_#sep#_@', mysqli_escape_string($link, stripslashes($listItems))) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
@@ -266,7 +268,7 @@ switch ($_POST['type']) {
             DB::insert(
                 prefix_table("keys"),
                 array(
-                    'table' => 'items',
+                    'sql_table' => 'items',
                     'id' => $newId,
                     'rand_key' => $randomKey
                )
@@ -322,9 +324,6 @@ switch ($_POST['type']) {
 
     //Check if import KEEPASS file format is what expected
     case "import_file_format_keepass":
-        // call needed functions
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-
         //Initialization
         $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
         $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = "";
