@@ -602,6 +602,58 @@ $htmlHeaders .= '
             }
         });
 
+        // DIALOG FOR PSK
+        $("#psk_confirm").focusout(function() {
+            if ($("#psk_confirm").val() != $("#psk").val()) {
+                $("#but_identify_user").prop("disabled", true);
+                $("#psk, #psk_confirm").addClass("ui-state-error");
+            } else {
+                $("#but_identify_user").prop("disabled", false);
+                $("#psk, #psk_confirm").removeClass("ui-state-error");
+            }
+        });
+
+        // DIALOG BOX FOR ASKING PASSWORD
+        $("#div_forgot_pw").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 300,
+            height: 250,
+            title: "'.$LANG['forgot_my_pw'].'",
+            buttons: {
+                "'.$LANG['send'].'": function() {
+                    $("#div_forgot_pw_alert").html("");
+                    $("#div_forgot_pw_status").show();
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type    : "send_pw_by_email",
+                            email    : $("#forgot_pw_email").val(),
+                            login    : $("#forgot_pw_login").val()
+                        },
+                        function(data) {
+                            $("#div_forgot_pw_status").hide();
+                            if (data[0].error != "") {
+                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
+                            } else {
+                                $("#div_forgot_pw_alert").html("");
+                                $("#div_dialog_message_text").html(data[0].message);
+                                $("#div_forgot_pw").dialog("close");
+        	                    $("#div_dialog_message").dialog("open");
+                            }
+                        },
+                        "json"
+                    );
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $("#div_forgot_pw_alert").html("");
+                    $("#forgot_pw_email").val("");
+                    $(this).dialog("close");
+                }
+            }
+        });
+
         //PREPARE MAIN MENU
         $("#main_menu button, #personal_menu_actions button").button();
 
@@ -671,89 +723,6 @@ $htmlHeaders .= '
         // get list of last items
         refreshListLastSeenItems();
     });';
-
-if (!isset($_GET['page'])) {
-    $htmlHeaders .= '
-    $(function() {
-/*
-        $("#login").focusout(function() {
-            if ($("#login").val() != "" && $("#login").val() != "admin") {
-                $("#login_check_wait").show();
-                // check if login exists
-                $.post(
-                    "sources/main.queries.php",
-                    {
-                        type    : "check_login_exists",
-                        userId    : $("#login").val()
-                    },
-                    function(data) {
-                        $("#login_check_wait").hide();
-                        if (data[0].login == "") {
-                            $("#login").addClass("ui-state-error");
-                        } else {
-                            $("#login").removeClass("ui-state-error");
-                        }
-                        if (data[0].psk == "") {
-                            $("#connect_psk_confirm").show();
-                        }
-                    },
-                    "json"
-                );
-            }
-        });
-*/
-        $("#psk_confirm").focusout(function() {
-            if ($("#psk_confirm").val() != $("#psk").val()) {
-                $("#but_identify_user").prop("disabled", true);
-                $("#psk, #psk_confirm").addClass("ui-state-error");
-            } else {
-                $("#but_identify_user").prop("disabled", false);
-                $("#psk, #psk_confirm").removeClass("ui-state-error");
-            }
-        });
-
-        // DIALOG BOX FOR ASKING PASSWORD
-        $("#div_forgot_pw").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 300,
-            height: 250,
-            title: "'.$LANG['forgot_my_pw'].'",
-            buttons: {
-                "'.$LANG['send'].'": function() {
-                    $("#div_forgot_pw_alert").html("");
-                    $("#div_forgot_pw_status").show();
-                    $.post(
-                        "sources/main.queries.php",
-                        {
-                            type    : "send_pw_by_email",
-                            email    : $("#forgot_pw_email").val(),
-                            login    : $("#forgot_pw_login").val()
-                        },
-                        function(data) {
-                            $("#div_forgot_pw_status").hide();
-                            if (data[0].error != "") {
-                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
-                            } else {
-                                $("#div_forgot_pw_alert").html("");
-                                $("#div_dialog_message_text").html(data[0].message);
-                                $("#div_forgot_pw").dialog("close");
-        	                    $("#div_dialog_message").dialog("open");
-                            }
-                        },
-                        "json"
-                    );
-                },
-                "'.$LANG['cancel_button'].'": function() {
-                    $("#div_forgot_pw_alert").html("");
-                    $("#forgot_pw_email").val("");
-                    $(this).dialog("close");
-                }
-            }
-        });
-    });';
-}
 
 if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
