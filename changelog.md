@@ -15,6 +15,7 @@
  #851 - Multiple fixes for LDAP integration
  #814 - #857
  #880 - View logs error redeclared function getBits
+ #881 - "Forgot your password?" not working
  PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders

@@ -241,11 +241,7 @@ foreach ($folders as $folder) {
                 $folder->title = $_SESSION['login'];
             }
         	// resize title if necessary
-        	if (strlen($folder->title) > 20) {
-        		$fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 17)."...";
-        	} else {
-        		$fldTitle = str_replace("&", "&amp;", $folder->title);
-        	}
+            $fldTitle = str_replace("&", "&amp;", $folder->title);
             // Prepare folder
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
