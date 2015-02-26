@@ -59,7 +59,7 @@ echo '
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['email'].':</td>
-        <td title="'.$LANG['click_to_change'].'" class="tip"><span style="" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span></td>
+        <td title="'.$LANG['click_to_change'].'"><span style="" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i></td>
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['role'].':</td>

@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'item_menu_mov_rep' => 'Move a Folder',
     'settings_default_session_expiration_time' => 'By default delay for session expiration',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',

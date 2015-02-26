@@ -481,25 +481,44 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     }
                 }
             }
-        }
-
-        // get list of readonly folders
-        // rule - if one folder is set as W in one of the Role, then User has access as W
-        foreach ($listAllowedFolders as $folderId) {
-            if (!in_array($folderId, $listReadOnlyFolders) || (isset($pf) && $folderId != $pf['id'])) {
-                DB::query(
-                    "SELECT *
-                    FROM ".prefix_table("roles_values")."
-                    WHERE folder_id = %i AND role_id IN %li AND type = %s",
-                    $folderId,
-                    $fonctionsAssociees,
-                    "W"
-                );
-                if (DB::count() == 0) {
-                    array_push($listReadOnlyFolders, $folderId);
+            // get list of readonly folders
+            // rule - if one folder is set as W in one of the Role, then User has access as W
+            foreach ($listAllowedFolders as $folderId) {
+                if (!in_array($folderId, $listReadOnlyFolders) && $folderId != $pf['id']) {   //
+                    DB::query(
+                        "SELECT *
+                        FROM ".prefix_table("roles_values")."
+                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        $folderId,
+                        $fonctionsAssociees,
+                        "W"
+                    );
+                    if (DB::count() == 0) {
+                        array_push($listReadOnlyFolders, $folderId);
+                    }
+                }
+            }
+        } else {
+            // get list of readonly folders
+            // rule - if one folder is set as W in one of the Role, then User has access as W
+            foreach ($listAllowedFolders as $folderId) {
+                if (!in_array($folderId, $listReadOnlyFolders)) {   // || (isset($pf) && $folderId != $pf['id'])
+                    DB::query(
+                        "SELECT *
+                        FROM ".prefix_table("roles_values")."
+                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        $folderId,
+                        $fonctionsAssociees,
+                        "W"
+                    );
+                    if (DB::count() == 0) {
+                        array_push($listReadOnlyFolders, $folderId);
+                    }
                 }
             }
         }
+        
+        
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
@@ -776,7 +795,7 @@ function teampassStats()
     $rows = DB::query(
         "SELECT valeur,intitule FROM ".$pre."misc
         WHERE type = %s
-        AND intitule = %ls",
+        AND intitule IN %ls",
         'admin', array('enable_pf_feature','log_connections','cpassman_version')
     );
     foreach ($rows as $record) {

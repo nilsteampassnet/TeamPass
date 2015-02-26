@@ -332,7 +332,6 @@ function ListerItems(groupe_id, restricted, start)
 
                     proceed_list_update();
                 }
-
                 //Delete data
                 delete data;
             }
@@ -918,6 +917,7 @@ function AddNewFolder()
                 } else if (data[0].error == "error_html_codes") {
                     $("#addgroup_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
                 } else {
+                    NProgress.start();
                     window.location.href = "index.php?page=items";
                 }
             },
@@ -940,6 +940,7 @@ function SupprimerFolder()
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
+                NProgress.start();
                 window.location.href = "index.php?page=items";
             }
        );
@@ -1208,13 +1209,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var clip = new ZeroClipboard($("#menu_button_copy_login"));
                             clip.on('copy', function(event) {
                                 var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", unsanitizeString(data.login));
+                                clipboard.setData("text/plain", (data.login));
                                 $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             var client = new ZeroClipboard($("#button_quick_login_copy"));
                             client.on('copy', function(event) {
                                 var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", unsanitizeString(data.login));
+                                clipboard.setData("text/plain", (data.login));
                                 $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
                             });
                             $("#button_quick_login_copy").show();
@@ -1406,6 +1407,27 @@ function open_edit_group_div()
     $('#edit_folder_title').val($.trim($('#edit_folder_folder :selected').text()));
     $('#edit_folder_complexity').val($('#complexite_groupe').val());
     $('#div_editer_rep').dialog('open');
+}
+
+//###########
+//## FUNCTION : prepare moving folder dialogbox
+//###########
+function open_move_group_div()
+{
+    // exclude for PF
+    if ($('#recherche_group_pf').val() == "1") {
+        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
+        return false;
+    }
+
+    // check if read only or forbidden
+    if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
+
+    //Select the actual forlder in the dialogbox
+    $('#move_folder_id').val($('#hid_cat').val());
+    $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+"[id"+$('#hid_cat').val()+"]");
+    $('#move_folder_id').val(0);
+    $('#div_move_folder').dialog('open');
 }
 
 //###########
@@ -1905,6 +1927,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
+                //$("#txt1").ellipsis({live:true, setTitle:"always"});
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
@@ -2018,7 +2041,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 400,
+        width: 600,
         height: 200,
         title: "<?php echo $LANG['item_menu_add_rep'];?>",
         buttons: {
@@ -2040,7 +2063,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 400,
+        width: 600,
         height: 250,
         title: "<?php echo $LANG['item_menu_edi_rep'];?>",
         buttons: {
@@ -2085,6 +2108,65 @@ $(function() {
                             } else {
                                 $("#edit_rep_show_error").html(data[0].error).show();
                             }
+                        },
+                        "json"
+                   );
+                }
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#edit_rep_show_error").html("").hide();
+                $(this).dialog('close');
+            }
+        },
+        open: function(event,ui) {
+            $(".ui-tooltip").siblings(".tooltip").remove();
+        }
+    });
+    //<=
+    //=> MOVE A GROUP
+    $("#div_move_folder").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 600,
+        height: 250,
+        title: "<?php echo $LANG['item_menu_mov_rep'];?>",
+        buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                //Do some checks
+                $("#move_rep_show_error").hide();
+                if ($("#move_folder_id").val() == "0") {
+                    $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>");
+                    $("#move_rep_show_error").show();
+                } else {
+                    $("#move_folder_loader").show();
+                    $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+
+                    //prepare data
+                    var data = '{"source_folder_id":"'+$('#hid_cat').val() + '", '+
+                    '"target_folder_id":"'+$('#move_folder_id').val()+'"}';
+
+                    //Send query
+                    $.post(
+                        "sources/items.queries.php",
+                        {
+                            type    : "move_folder",
+                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                            key        : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+                            //check if format error
+                            if (data[0].error == "") {
+                                NProgress.start();
+                                $("#jstree").jstree("refresh");
+                                $("#div_move_folder").dialog("close");
+                                $("#div_move_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                                NProgress.set(0.4);
+                                window.location.href = "index.php?page=items&group="+$("#hid_cat").val();
+                            } else {
+                                $("#edit_rep_show_error").html(data[0].error).show();
+                            }
+                            $("#move_folder_loader").hide();
                         },
                         "json"
                    );
@@ -2253,6 +2335,7 @@ $(function() {
                         key        : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
+                        NProgress.start();
                         window.location.href = "index.php?page=items&group="+$("#hid_cat").val();
                     }
                );
@@ -2764,6 +2847,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             $("#div_import_file").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
         }
     });
+    NProgress.done();
 });
 
 function htmlspecialchars_decode (string, quote_style)

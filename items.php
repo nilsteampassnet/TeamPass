@@ -143,6 +143,7 @@ echo '
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
                         <li onclick="open_edit_group_div()"><i class="fa fa-edit fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
+                        <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
@@ -368,7 +369,9 @@ echo '
                 </div>
 
                 <div style="margin-top: 3px;">
-                    <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                    <div id="txt1"  style="float:left;">
+                        <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                    </div>
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
                         <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
@@ -1009,6 +1012,20 @@ echo '
             </select>
         </tr>
     </table>
+</div>';
+// Formulaire MOVE FOLDER
+echo '
+<div id="div_move_folder" style="display:none;">
+    <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div style="text-align:center;margin-top:20px;">
+        The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
+        <select id="move_folder_id">
+            <option value="0">-choisir-</option>'.$selectVisibleFoldersOptions.'
+        </select>
+    </div>
+    <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // Formulaire SUPPRIMER REPERTORIE
 echo '

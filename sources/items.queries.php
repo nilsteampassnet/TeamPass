@@ -1279,7 +1279,7 @@ if (isset($_POST['type'])) {
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
-                $arrData['login'] = str_replace('"', '&quot;', $dataItem['login']);
+                $arrData['login'] = str_replace(array('"'), array('&quot;'), $dataItem['login']);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = str_replace('"', '&quot;', $tags);
@@ -1556,7 +1556,7 @@ if (isset($_POST['type'])) {
         			    'label' => addslashes($data['label']),
         			    'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
         			);
-        			$text .= '<span class="last_seen_item" onclick="javascript:window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
+        			$text .= '<span class="last_seen_item" onclick="javascript:nprogress.start();window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
         		}
         	}
         	$div_last_items = str_replace('"', '&quot;', $text);
@@ -1703,6 +1703,58 @@ if (isset($_POST['type'])) {
 
         /*
         * CASE
+        * Move a Group including sub-folders
+        */
+        case "move_folder":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                // error
+                break;
+            }
+            // decrypt and retreive data in JSON format
+        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            
+            $tmp_source = DB::queryFirstRow(
+                "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                $dataReceived['source_folder_id']
+            );
+            $tmp_target = DB::queryFirstRow(
+                "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                $dataReceived['target_folder_id']
+            );
+            if ( $tmp_source['parent_id'] != 0 || $tmp_source['title'] != $_SESSION['user_id'] || $tmp_source['personal_folder'] != 1 || $tmp_target['title'] != $_SESSION['user_id'] || $tmp_target['personal_folder'] != 1) {
+                
+                // moving SOURCE folder
+                DB::update(
+                    prefix_table("nested_tree"),
+                    array(
+                        'parent_id' => $dataReceived['target_folder_id']
+                       ),
+                    'id=%s',
+                    $dataReceived['source_folder_id']
+                );
+                $tree->rebuild();
+                /*// moving its children
+                $children = $tree->getDescendants($dataReceived['source_folder_id'], false, true);
+                foreach($children as $child) {
+                    DB::update(
+                        prefix_table("nested_tree"),
+                        array(
+                            'parent_id' => $dataReceived['target_folder_id']
+                           ),
+                        'id=%s',
+                        $child->id
+                    );
+                }*/
+            }
+            
+            
+            // send data
+            echo '[{"error" : ""}]';
+            break;
+
+        /*
+        * CASE
         * Store hierarchic position of Group
         */
         case 'save_position':
@@ -1743,11 +1795,7 @@ if (isset($_POST['type'])) {
                 if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
                     $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
                 }
-            	if (strlen($elem->title) > 20) {
-            		$arboHtml_tmp .= '>'. substr(htmlspecialchars(stripslashes($elem->title), ENT_QUOTES), 0, 17)."...". '</a>';
-            	} else {
-            		$arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
-            	}
+            	$arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
                 if (empty($arboHtml)) {
                     $arboHtml = $arboHtml_tmp;
                 } else {
