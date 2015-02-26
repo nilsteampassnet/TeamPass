@@ -25,6 +25,16 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
+function generate_GUID()
+{
+    if (function_exists('com_create_guid') === true)
+    {
+        return trim(com_create_guid(), '{}');
+    }
+
+    return sprintf('%04X%04X-%04X-%04X-%04X-%04X%04X%04X', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
+}
+
 IdentifyUser($_POST['data']);
 
 function IdentifyUser($sentData)
@@ -52,7 +62,7 @@ function IdentifyUser($sentData)
 //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
-    
+
 // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
     $pwdlib->register();
@@ -212,7 +222,7 @@ function IdentifyUser($sentData)
         )
     );
     $counter = DB::count();
-    if ($counter == 0) {
+    if ($counter == 0 && $ldapConnection == false) {
         echo '[{"value" : "error", "text":"user_not_exists"}]';
         exit;
     }
@@ -251,7 +261,7 @@ function IdentifyUser($sentData)
             prefix_table('users'),
             array(
                 'login' => $username,
-                'pw' => $password,
+                'pw' => generate_GUID(),  // randomly generate a password as we dont want user to be able to log in outside of LDAP
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
@@ -280,6 +290,11 @@ function IdentifyUser($sentData)
         // Get info for user
         //$sql = "SELECT * FROM ".prefix_table("users")." WHERE login = '".addslashes($username)."'";
         //$row = $db->query($sql);
+        $data = DB::queryFirstRow("SELECT * FROM ".$pre."users WHERE login=%s_login",
+            array(
+                'login' => $username
+            )
+        );
         $proceedIdentification = true;
     }
 
@@ -332,14 +347,14 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
-        
+
         // check the given password
         if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
             $userPasswordVerified = true;
         } else {
             $userPasswordVerified = false;
         }
-        
+
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -389,7 +404,7 @@ function IdentifyUser($sentData)
             $_SESSION['user']['ga'] = $data['ga'];
             $_SESSION['user']['avatar'] = $data['avatar'];
             $_SESSION['user']['avatar_thumb'] = $data['avatar_thumb'];
-            
+
             // manage session expiration
             $serverTime = time();
             if ($dataReceived['TimezoneOffset'] > 0) {
