@@ -14,8 +14,11 @@
  #853 - New setting for default session expiration delay
  #851 - Multiple fixes for LDAP integration
  #814 - #857
- #880 - View logs error redeclared function getBits
- #881 - "Forgot your password?" not working
+ #880 - Fix for View logs error redeclared function getBits
+ #881 - Fix for "Forgot your password?" not working
+ #900 - Fix for New folder incorrect permissions (read-only)
+ #890 - Fix for Personal Folder only read permission
+ #910 - Fix for Backslashes in accounts are not copied to clipboard
  PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders

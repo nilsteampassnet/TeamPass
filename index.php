@@ -28,7 +28,6 @@ if (!file_exists('includes/settings.php')) {
 
 require_once('sources/sessions.php');
 session_start();
-@openlog("TeamPass", LOG_PID | LOG_PERROR, LOG_LOCAL0);
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -148,7 +147,7 @@ echo '
 if (isset($_SESSION['login'])) {
     echo '
         <div id="menu_top">
-            <div style="margin-left:20px; margin-top:5px;width:590px;" id="main_menu">';
+            <div style="margin-left:20px; margin-top:5px;width:660px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
@@ -243,15 +242,15 @@ if (isset($_SESSION['login'])) {
 
     if ($_SESSION['user_admin'] != 1) {
         echo '
-            <div style="float:right; margin-right:10px;">
-                <ul class="menu" id="menu_last_seen_items">
-                    <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
-                        <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
-                            <li>'.$LANG['please_wait'].'</li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>';
+                <div style="float:right; margin-right:10px;">
+                    <ul class="menu" id="menu_last_seen_items">
+                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
+                            <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
+                                <li>'.$LANG['please_wait'].'</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>';
     }
     echo '
             </div>
@@ -694,3 +693,6 @@ closelog();
 ?>
     </body>
 </html>
+<script>
+    NProgress.start();
+</script>

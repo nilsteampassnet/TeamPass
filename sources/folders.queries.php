@@ -363,7 +363,7 @@ if (isset($_POST['newtitle'])) {
                     if (
                         $isPersonal != 1
                         && isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                     ){
                         //Get user's rights
                         @identifyUserRights(

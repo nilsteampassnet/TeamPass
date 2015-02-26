@@ -37,7 +37,12 @@ $htmlHeaders = '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
+
+        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
+        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
+        
+        <script type="text/javascript" src="includes/js/ellipsis/jquery.autoellipsis-1.0.10.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -117,6 +122,7 @@ $htmlHeaders .= '
     //Menu actions
     function MenuAction(val)
     {
+        NProgress.start();
         if (val == "deconnexion") {
             sessionStorage.clear();
             $("#menu_action").val(val);
@@ -722,6 +728,9 @@ $htmlHeaders .= '
 
         // get list of last items
         refreshListLastSeenItems();
+        
+        
+        setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
 
 if (isset($_GET['page']) && $_GET['page'] == "find") {
@@ -812,6 +821,6 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     }';
 }
 
-$htmlHeaders .= '
+$htmlHeaders .= '    
 // ]]>
 </script>';
