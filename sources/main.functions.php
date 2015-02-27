@@ -486,7 +486,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // get list of readonly folders
         // rule - if one folder is set as W in one of the Role, then User has access as W
         foreach ($listAllowedFolders as $folderId) {
-            if (!in_array($folderId, $listReadOnlyFolders) || (isset($pf) && $folderId != $pf['id'])) {
+            if (!in_array($folderId, $listReadOnlyFolders) && (isset($pf) && $folderId != $pf['id'])) {
                 DB::query(
                     "SELECT *
                     FROM ".prefix_table("roles_values")."
