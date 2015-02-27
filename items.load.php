@@ -190,7 +190,32 @@ function ListerItems(groupe_id, restricted, start)
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
 
                 // display path of folders
+                var path_maxlength = 420;
+                if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
 				$("#items_path_var").html(data.arborescence);
+                var path_levels = data.arborescence.split(" » ").length-1;    
+                if ($("#items_path_var").width() > path_maxlength) {
+                    $("#path_fontsize").val($("#items_path_var").css('font-size'));
+                    // start reducing size of font
+                    $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
+                    if ($("#items_path_var").width() > path_maxlength) $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
+                    if ($("#items_path_var").width() > path_maxlength && path_levels > 2) {
+                        var nb = 1;
+                        $(".path_element").each(function () {
+                            // replace name of folder by ...
+                            if (nb > 1 && nb <= path_levels && $(this).html().length > 8 && $("#items_path_var").width() > path_maxlength) {
+                                $(this).html("<span title='"+$(this).html()+"'>...</span>");
+                            }
+                            // last folder name is still too long
+                            if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
+                                
+                            }
+                            nb++;
+                        });
+                    }
+                }
+                
+                
 
                 // store the categories to be displayed
                 $("#display_categories").val(data.displayCategories);
@@ -245,7 +270,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-                    $("#items_path_var").html(data.arborescence);
+                    //$("#items_path_var").html(data.arborescence);
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -1379,6 +1404,7 @@ function open_add_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
+    $("#div_loading").show();
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
@@ -1386,6 +1412,7 @@ function open_add_group_div()
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe').val($('#hid_cat').val());
     $('#div_ajout_rep').dialog('open');
+    $("#div_loading").hide();
 }
 
 //###########
@@ -1398,6 +1425,7 @@ function open_edit_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
+    $("#div_loading").show();
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
@@ -1407,6 +1435,7 @@ function open_edit_group_div()
     $('#edit_folder_title').val($.trim($('#edit_folder_folder :selected').text()));
     $('#edit_folder_complexity').val($('#complexite_groupe').val());
     $('#div_editer_rep').dialog('open');
+    $("#div_loading").hide();
 }
 
 //###########
@@ -1419,6 +1448,7 @@ function open_move_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
+    $("#div_loading").show();
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
@@ -1428,6 +1458,7 @@ function open_move_group_div()
     $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+"[id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
+    $("#div_loading").hide();
 }
 
 //###########
@@ -1440,12 +1471,14 @@ function open_del_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
+    $("#div_loading").show();
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
 
     $('#delete_rep_groupe').val($('#hid_cat').val());
     $('#div_supprimer_rep').dialog('open');
+    $("#div_loading").hide();
 }
 
 //###########
@@ -1927,7 +1960,6 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
-                //$("#txt1").ellipsis({live:true, setTitle:"always"});
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
@@ -2187,7 +2219,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 600,
         height: 200,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {

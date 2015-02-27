@@ -214,7 +214,7 @@ switch ($_POST['type']) {
             $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
             //send the file
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
-
+echo $_SESSION['settings']['path_to_files_folder']."/".$pdf_file;
             //log
             logEvents('pdf_export', "", $_SESSION['user_id']);
 

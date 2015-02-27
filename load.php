@@ -40,9 +40,7 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
 
         <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
-        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
-        
-        <script type="text/javascript" src="includes/js/ellipsis/jquery.autoellipsis-1.0.10.js"></script>';
+        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '

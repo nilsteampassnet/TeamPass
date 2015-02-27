@@ -292,6 +292,7 @@ if (isset($_POST['type'])) {
                         }
                         // send email
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
+                            if (!empty($emailAddress)) {
                             // send it
                             @sendEmail(
                                 $LANG['email_subject'],
@@ -299,6 +300,7 @@ if (isset($_POST['type'])) {
                                 $emailAddress,
                                 $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
                             );
+                            }
                         }
                     }
                     // Get Expiration date
@@ -922,12 +924,14 @@ if (isset($_POST['type'])) {
                     // Send email
                     if (!empty($dataReceived['diffusion'])) {
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
-                            @sendEmail(
-                                $LANG['email_subject_item_updated'],
-                                str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $LANG['email_body_item_updated']),
-                                $emailAddress,
-                                str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
-                            );
+                            if (!empty($emailAddress)) {
+                                @sendEmail(
+                                    $LANG['email_subject_item_updated'],
+                                    str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $LANG['email_body_item_updated']),
+                                    $emailAddress,
+                                    str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
+                                );
+                            }
                         }
                     }
                     // Prepare some stuff to return
@@ -1791,7 +1795,7 @@ if (isset($_POST['type'])) {
                     $elem->title = $_SESSION['login'];
                     $folderIsPf = 1;
                 }
-                $arboHtml_tmp = '<a id="path_elem_'.$elem->id.'"';
+                $arboHtml_tmp = '<a class="path_element" id="path_elem_'.$elem->id.'"';
                 if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
                     $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
                 }

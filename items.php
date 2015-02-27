@@ -97,7 +97,8 @@ echo '
 <input type="hidden" id="pf_selected" value="" />
 <input type="hidden" id="user_ongoing_action" value="" />
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
-<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />';
+<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />
+<input type="hidden" id="path_fontsize" value="" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -142,7 +143,7 @@ echo '
                         <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
-                        <li onclick="open_edit_group_div()"><i class="fa fa-edit fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
+                        <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
@@ -983,6 +984,9 @@ echo '
        */
 echo '
     </table>
+    <div id="add_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // Formulaire EDITER REPERTORIE
 echo '
@@ -1012,6 +1016,9 @@ echo '
             </select>
         </tr>
     </table>
+    <div id="edit_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // Formulaire MOVE FOLDER
 echo '
@@ -1040,6 +1047,9 @@ $selectVisibleFoldersOptions .
             </select></td>
         </tr>
     </table>
+    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // SUPPRIMER UN ELEMENT
 echo '
