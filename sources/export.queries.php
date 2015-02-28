@@ -57,6 +57,10 @@ switch ($_POST['type']) {
 
     //CASE export to PDF format
     case "export_to_pdf_format":
+        /*
+        $ids = explode(',', $_POST['ids']);
+        foreach ($ids as $id) {
+        */
         $id = $_POST['id'];
         if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
             // get path
@@ -133,6 +137,7 @@ switch ($_POST['type']) {
                 $folder_title = $record['folder_title'];
             }
         }
+        //}
         echo '[{}]';
         break;
 
@@ -175,10 +180,10 @@ switch ($_POST['type']) {
                     error_log('key: '.$key.' - paths: '.$record['path']);
                     $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
@@ -214,7 +219,7 @@ switch ($_POST['type']) {
             $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
             //send the file
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
-echo $_SESSION['settings']['path_to_files_folder']."/".$pdf_file;
+
             //log
             logEvents('pdf_export', "", $_SESSION['user_id']);
 

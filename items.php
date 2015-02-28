@@ -438,9 +438,9 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste" style="cursor:pointer;display:none;float:right;margin-right:2px;"></i></td>
                     <td>
-                        <div id="button_quick_pw_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['pw_copy_clipboard'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
+                        &nbsp;
                         <div id="id_pw" style="float:left; cursor:pointer;" onclick="ShowPassword()"></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
@@ -448,9 +448,8 @@ echo '
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['index_login'].' :</td>
+                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['index_login'].' :<i id="button_quick_login_copy" class="fa fa-paste" style="cursor:pointer;display:none;float:right;margin-right:2px;"></i></td>
                     <td>
-                        <div id="button_quick_login_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['login_copy'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
