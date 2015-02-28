@@ -20,6 +20,7 @@
  #890 - Fix for Personal Folder only read permission
  #910 - Fix for Backslashes in accounts are not copied to clipboard
  #913 - Fix for 'Announce this item by email' fails
+ #915 - Export to PDF corrected
  PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders
