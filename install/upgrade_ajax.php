@@ -692,6 +692,12 @@ if (isset($_POST['type'])) {
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."keys CHANGE `table` `sql_table` VARCHAR( 25 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
             );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY `key_tempo` varchar(100) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY `raison` text NULL"
+            );
 
             ## Alter USERS table
             $res2 = addColumnIfNotExist(

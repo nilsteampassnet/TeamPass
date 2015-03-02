@@ -1,0 +1,4 @@
+<?php
+@define('SALT', 'PFYfmJd4pcA8PLpCF2fBtXyBvdmp'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
+?>
