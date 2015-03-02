@@ -249,7 +249,7 @@ if (isset($_POST['type'])) {
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
                             `action` varchar(250) NOT NULL,
-                            `raison` text NOT NULL
+                            `raison` text NULL
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "misc") {
@@ -420,7 +420,7 @@ if (isset($_POST['type'])) {
                             `pw` varchar(400) NOT NULL,
                             `groupes_visibles` varchar(250) NOT NULL,
                             `derniers` text NOT NULL,
-                            `key_tempo` varchar(100) NOT NULL,
+                            `key_tempo` varchar(100) NULL,
                             `last_pw_change` varchar(30) NOT NULL,
                             `last_pw` text NOT NULL,
                             `admin` tinyint(1) NOT null DEFAULT '0',

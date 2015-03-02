@@ -9,12 +9,15 @@
  * @link
  */
 // session_start();
+//define pbkdf2 iteration count
+@define('ITCOUNT', '2072');
+
+if (function_exists('getBits'))
+	return;
+
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
-
-//define pbkdf2 iteration count
-@define('ITCOUNT', '2072');
 
 //Generate N# of random bits for use as salt
 function getBits($n)
@@ -776,7 +779,7 @@ function teampassStats()
     $rows = DB::query(
         "SELECT valeur,intitule FROM ".$pre."misc
         WHERE type = %s
-        AND intitule = %ls",
+        AND intitule in %ls",
         'admin', array('enable_pf_feature','log_connections','cpassman_version')
     );
     foreach ($rows as $record) {
