@@ -12,8 +12,7 @@
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
 
-if (function_exists('getBits'))
-	return;
+if (!function_exists('getBits')) {
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -1004,4 +1003,6 @@ function prefix_table($table)
         // stop error no table
         return false;
     }
+}
+
 }
