@@ -444,8 +444,8 @@ if (isset($_POST['type'])) {
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
-                            `avatar` varchar(255) NOT null,
-                            `avatar_thumb` varchar(255) NOT null,
+                            `avatar` varchar(255) NOT null DEFAULT '',
+                            `avatar_thumb` varchar(255) NOT null DEFAULT '',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
