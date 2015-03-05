@@ -78,12 +78,10 @@ switch ($_POST['type']) {
             $rows = DB::query(
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                     l.date as date,
-                    n.renewal_period as renewal_period,
-                    k.rand_key
+                    n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -115,10 +113,10 @@ switch ($_POST['type']) {
                         } else {
                             $pw = decrypt($record['pw']);
                         }
-                        if ($record['perso'] != 1) {
+                        /*if ($record['perso'] != 1) {
                             $pw = stripslashes($pw);
                             $pw = substr(addslashes($pw), strlen($record['rand_key']));
-                        }
+                        }*/
                         // store
                         DB::insert(
                             prefix_table("export"),
@@ -126,7 +124,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'description' => addslashes($record['description']),
                                 'label' => addslashes($record['label']),
-                                'pw' => ($pw),
+                                'pw' => stripslashes($pw),
                                 'login' => $record['login'],
                                 'path' => $path
                             )
@@ -252,12 +250,10 @@ switch ($_POST['type']) {
                 $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                        l.date as date,
-                       n.renewal_period as renewal_period,
-                       k.rand_key
+                       n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -289,7 +285,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'pw' => addslashes($pw),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -333,7 +329,6 @@ switch ($_POST['type']) {
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -432,12 +427,10 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		$rows = DB::query(
 			"SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
                l.date as date,
-               n.renewal_period as renewal_period,
-               k.rand_key
+               n.renewal_period as renewal_period
             FROM ".prefix_table("items")." as i
             INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
             INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-            INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
             WHERE i.inactif = %i
             AND i.id_tree= %i
             AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))            
@@ -463,7 +456,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 				    'id' => $record['id'],
 				    'label' => $record['label'],
 				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-				    'pw' => substr(($pw), strlen($record['rand_key'])),
+				    'pw' => $pw,
 				    'login' => $record['login'],
 				    'url' => $record['url'],
 				    'perso' => $record['perso']

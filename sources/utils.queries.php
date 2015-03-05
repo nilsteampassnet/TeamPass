@@ -56,12 +56,10 @@ switch ($_POST['type']) {
                 $rows =DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
                     l.date as date,
-                    n.renewal_period as renewal_period,
-                    k.rand_key
+                    n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
