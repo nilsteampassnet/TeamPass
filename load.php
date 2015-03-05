@@ -524,7 +524,7 @@ $htmlHeaders .= '
                         function(data) {
                             LoadingPage();
                             if ($("#input_personal_saltkey").val() != "") {
-                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].'");
+                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",
                                     at: "center top+75",
@@ -653,6 +653,47 @@ $htmlHeaders .= '
                 "'.$LANG['cancel_button'].'": function() {
                     $("#div_forgot_pw_alert").html("");
                     $("#forgot_pw_email").val("");
+                    $(this).dialog("close");
+                }
+            }
+        });
+
+
+
+        // DIALOG BOX FOR PERSONAL PASSWORDS UPGRADE
+        $("#dialog_upgrade_personal_passwords").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: true,
+            width: 500,
+            height: 300,
+            title: "'.$LANG['upgrade_needed'].'",
+            buttons: {
+                "'.$LANG['send'].'": function() {
+                    $("#div_forgot_pw_alert").html("");
+                    $("#div_forgot_pw_status").show();
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type    : "send_pw_by_email",
+                            email    : $("#forgot_pw_email").val(),
+                            login    : $("#forgot_pw_login").val()
+                        },
+                        function(data) {
+                            $("#div_forgot_pw_status").hide();
+                            if (data[0].error != "") {
+                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
+                            } else {
+                                $("#div_forgot_pw_alert").html("");
+                                $("#div_dialog_message_text").html(data[0].message);
+                                $("#div_forgot_pw").dialog("close");
+        	                    $("#div_dialog_message").dialog("open");
+                            }
+                        },
+                        "json"
+                    );
+                },
+                "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
             }

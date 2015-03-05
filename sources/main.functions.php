@@ -12,12 +12,21 @@
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
 
-if (function_exists('getBits'))
-    return;
+//if (function_exists('getBits'))
+//    return;
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
+
+// load phpCrypt
+if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+    require_once '../includes/libraries/phpcrypt/phpCrypt.php';
+} else {
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/phpcrypt/phpCrypt.php';
+}
+use PHP_Crypt\PHP_Crypt as PHP_Crypt;
+use PHP_Crypt\Cipher as Cipher;
 
 //Generate N# of random bits for use as salt
 function getBits($n)
@@ -237,6 +246,51 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
+/*
+ * cryption() - Encrypt and decrypt string based upon phpCrypt library
+ *
+ * Using AES_128 and mode CBC
+ *
+ * $key and $iv have to be given in hex format
+ */
+function cryption($string, $key, $iv, $type)
+{
+    // manage key origin
+    if (empty($key)) $key = SALT;
+
+    // check key (AES-128 requires a 16 bytes length key)
+    if (strlen($key) < 16) {
+        for($x=strlen($key)+1; $x<=16; $x++) {
+            $key .= chr(0);
+        }
+    } else if (strlen($key) > 16) {
+        $key = substr($key, 16);
+    }
+
+    // load crypt
+    $crypt = new PHP_Crypt($key, PHP_Crypt::CIPHER_AES_128, PHP_Crypt::MODE_CBC);
+
+    if ($type == "encrypt") {
+        // generate IV and encrypt
+        $iv = $crypt->createIV();
+        $encrypt = $crypt->encrypt($string);
+        // return
+        return array(
+            "string" => bin2hex($encrypt),
+            "iv" => bin2hex($iv)
+        );
+    } else if ($type == "decrypt") {
+        if (empty($iv)) return "";
+        $string = hex2bin(trim($string));
+        $iv = hex2bin($iv);
+        // load IV
+        $crypt->IV($iv);
+        // decrypt
+        $decrypt = $crypt->decrypt($string);
+        // return
+        return str_replace(chr(0), "", $decrypt);
+    }
+}
 
 /**
  * trimElement()

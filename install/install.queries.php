@@ -446,6 +446,7 @@ if (isset($_POST['type'])) {
                             `ga` varchar(50) NULL,
                             `avatar` varchar(255) NOT null,
                             `avatar_thumb` varchar(255) NOT null,
+                            `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

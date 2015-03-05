@@ -402,7 +402,7 @@ echo'
                         <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
-                <table>';
+                <table width="100%">';
 // Line for LABEL
 echo '
                 <tr>
@@ -430,7 +430,7 @@ echo '
 // Line for DESCRIPTION
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['description'].' :</td>
+                    <td valign="top" class="td_title" width="180px"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['description'].' :</td>
                     <td>
                         <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
                     </td>
@@ -1129,6 +1129,22 @@ if (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow
     echo '
     <div id="dialog_import_file" style="display:none;">
         <div id="div_import_file">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// USERS passwords upgrade
+if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+    && $_SESSION['user_admin'] != 1 && isset($_SESSION['user']['upgrade_needed']) && $_SESSION['user']['upgrade_needed'] == 1
+) {
+    echo '
+    <div id="dialog_upgrade_personal_passwords" style="display:none;">
+        <div style="">
+            <div>'.$txt['pf_change_encryption'].'</div>
+            <div id="dialog_upgrade_personal_passwords_status">', isset($_SESSION['my_sk']) ? $txt['pf_sk_set'] : $txt['pf_sk_not_set'], '</div>
+        </div>
+        <div id="div_personal_passwords_wait">
             <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';
