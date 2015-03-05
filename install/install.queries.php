@@ -631,9 +631,9 @@ if (isset($_POST['type'])) {
                             `parent_id` int(12) NOT NULL,
                             `title` varchar(255) NOT NULL,
                             `level` int(2) NOT NULL,
-                            `description` text NOT NULL,
-                            `type` varchar(50) NOT NULL,
-                            `order` int(12) NOT NULL,
+                            `description` text NULL,
+                            `type` varchar(50) NULL default '',
+                            `order` int(12) NOT NULL default '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
