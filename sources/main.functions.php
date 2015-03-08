@@ -258,13 +258,15 @@ function cryption($string, $key, $iv, $type)
     // manage key origin
     if (empty($key)) $key = SALT;
 
-    // check key (AES-128 requires a 16 bytes length key)
-    if (strlen($key) < 16) {
-        for($x=strlen($key)+1; $x<=16; $x++) {
-            $key .= chr(0);
+    if ($key != SALT) {
+        // check key (AES-128 requires a 16 bytes length key)
+        if (strlen($key) < 16) {
+            for ($x = strlen($key) + 1; $x <= 16; $x++) {
+                $key .= chr(0);
+            }
+        } else if (strlen($key) > 16) {
+            $key = substr($key, 16);
         }
-    } else if (strlen($key) > 16) {
-        $key = substr($key, 16);
     }
 
     // load crypt

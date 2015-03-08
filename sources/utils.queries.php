@@ -116,4 +116,54 @@ switch ($_POST['type']) {
             fclose($handle);
         }
         break;
+
+
+    #CASE start user personal pwd re-encryption
+    case "reencrypt_personal_pwd_start":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+
+        $pws_list = array();
+        $rows = DB::query(
+            "SELECT i.id AS id
+            FROM  ".prefix_table("nested_tree")." AS n
+            LEFT JOIN ".prefix_table("items")." AS i ON i.id_tree = n.id
+            WHERE i.perso = %i AND n.title = %i",
+            "1",
+            $_POST['user_id']
+        );
+        foreach ($rows as $record) {
+            array_push($pws_list, $record['id']);
+        }
+
+        echo '[{"pws_list" : "'.implode(',', $pws_list).'" , "nb" : "'.count($pws_list).'"}]';
+        break;
+
+
+    #CASE user personal pwd re-encryption
+    case "reencrypt_personal_pwd":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+
+        // prepare lists
+        $remainingIds = explode(",", $_POST['ids']);
+
+        // get data about pw
+        $data = DB::query(
+            "SELECT id, pw, pw_iv
+            FROM ".prefix_table("items")."
+            WHERE id = %i",
+            $remainingIds[0]
+        );
+
+        //
+        $pws_list = array_slice($remainingIds, 1);
+
+
+        echo '[{"pws_list" : "'.implode(',', $pws_list).'" , "count" : "'.count($pws_list).'" , "nb" : "'.$_POST['nb'].'"}]';
+        break;
 }

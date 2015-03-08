@@ -1136,16 +1136,13 @@ if (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow
 
 // USERS passwords upgrade
 if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
-    && $_SESSION['user_admin'] != 1 && isset($_SESSION['user']['upgrade_needed']) && $_SESSION['user']['upgrade_needed'] == 1
+    && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1
 ) {
     echo '
     <div id="dialog_upgrade_personal_passwords" style="display:none;">
-        <div style="">
-            <div>'.$txt['pf_change_encryption'].'</div>
-            <div id="dialog_upgrade_personal_passwords_status">', isset($_SESSION['my_sk']) ? $txt['pf_sk_set'] : $txt['pf_sk_not_set'], '</div>
-        </div>
-        <div id="div_personal_passwords_wait">
-            <i class="fa fa-cog fa-spin fa-2x"></i>
+        <div style="text-align:center;">
+            <div>'.$LANG['pf_change_encryption'].'</div>
+            <div id="dialog_upgrade_personal_passwords_status" style="margin:15px 0 15px 0; font-weight:bold;">', isset($_SESSION['my_sk']) ? $LANG['pf_sk_set'] : $LANG['pf_sk_not_set'], '</div>
         </div>
     </div>';
 }

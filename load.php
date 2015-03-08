@@ -658,47 +658,6 @@ $htmlHeaders .= '
             }
         });
 
-
-
-        // DIALOG BOX FOR PERSONAL PASSWORDS UPGRADE
-        $("#dialog_upgrade_personal_passwords").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: true,
-            width: 500,
-            height: 300,
-            title: "'.$LANG['upgrade_needed'].'",
-            buttons: {
-                "'.$LANG['send'].'": function() {
-                    $("#div_forgot_pw_alert").html("");
-                    $("#div_forgot_pw_status").show();
-                    $.post(
-                        "sources/main.queries.php",
-                        {
-                            type    : "send_pw_by_email",
-                            email    : $("#forgot_pw_email").val(),
-                            login    : $("#forgot_pw_login").val()
-                        },
-                        function(data) {
-                            $("#div_forgot_pw_status").hide();
-                            if (data[0].error != "") {
-                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
-                            } else {
-                                $("#div_forgot_pw_alert").html("");
-                                $("#div_dialog_message_text").html(data[0].message);
-                                $("#div_forgot_pw").dialog("close");
-        	                    $("#div_dialog_message").dialog("open");
-                            }
-                        },
-                        "json"
-                    );
-                },
-                "'.$LANG['cancel_button'].'": function() {
-                    $(this).dialog("close");
-                }
-            }
-        });
-
         //PREPARE MAIN MENU
         $("#main_menu button, #personal_menu_actions button").button();
 
