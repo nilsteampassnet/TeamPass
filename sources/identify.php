@@ -386,10 +386,10 @@ function IdentifyUser($sentData)
             $_SESSION['personal_folder'] = $data['personal_folder'];
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
-            $_SESSION['user']['ga'] = $data['ga'];
-            $_SESSION['user']['avatar'] = $data['avatar'];
-            $_SESSION['user']['avatar_thumb'] = $data['avatar_thumb'];
-            $_SESSION['user']['upgrade_needed'] = $data['upgrade_needed'];
+            $_SESSION['user_ga'] = $data['ga'];
+            $_SESSION['user_avatar'] = $data['avatar'];
+            $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
+            $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
             
             // manage session expiration
             $serverTime = time();

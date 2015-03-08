@@ -21,6 +21,7 @@
  #910 - Fix for Backslashes in accounts are not copied to clipboard
  #913 - Fix for 'Announce this item by email' fails
  #915 - Export to PDF corrected
+ #907 - Move folder feature
  #917 - Fix on API
  PR : #871 - #887
  API: add FIND feature

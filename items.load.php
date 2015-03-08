@@ -2879,6 +2879,42 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             $("#div_import_file").html("<i class=\"fa fa-cog fa-spin fa-2x\"></i>");
         }
     });
+
+
+    // DIALOG BOX FOR PERSONAL PASSWORDS UPGRADE
+    $("#dialog_upgrade_personal_passwords").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: true,
+        width: 500,
+        height: 300,
+        title: "<?php echo $LANG['upgrade_needed'];?>",
+        buttons: {
+            "<?php echo $LANG['admin_action_db_backup_start_tip'];?>": function() {
+                $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
+                $.post(
+                    "sources/utils.queries.php",
+                    {
+                        type    : "reencrypt_personal_pwd_start",
+                        user_id : "<?php echo $_SESSION['user_id'];?>",
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        if (data[0].error != "") {
+                            $("#dialog_upgrade_personal_passwords_status").html(data[0].error).addClass("ui-state-error").show();
+                        } else {
+                            reEncryptPersonalPwds(data[0].nb, data[0].nb, data[0].pws_list);
+                        }
+                    },
+                    "json"
+                );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
+
     NProgress.done();
 });
 
@@ -3214,5 +3250,43 @@ function globalItemsSearch()
                 );
             }
         }).dialog("open");
+    }
+
+    function reEncryptPersonalPwds(remain, nb, remainingIds)
+    {
+        $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
+console.log("ici");
+        $.ajax({
+            url: "sources/.queries.php",
+            type : 'POST',
+            dataType : "json",
+            data : {
+                type    : "reencrypt_personal_pwd",
+                nb      : nb,
+                ids     : remainingIds,
+                user_id : "<?php echo $_SESSION['user_id'];?>",
+                key     : "<?php echo $_SESSION['key'];?>"
+            },
+            complete : function(data, statut){
+                console.log(data[0].pws_list);
+                $("#reencryption_progress").html(Math.floor(((data[0].nb-data[0].count) / data[0].nb) * 100)+"%");
+                if (data[0].count != "0") {
+                    reEncryptPersonalPwds(data[0].count, data[0].pws_list, data[0].nb);
+                } else {
+                    //Send query
+                    $.post(
+                        "sources/utils.queries.php",
+                        {
+                            type    : "finalize_export_pdf",
+                            pdf_password : $("#export_pdf_password").val()
+                        },
+                        function(data) {
+                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                        },
+                        "json"
+                    );
+                }
+            }
+        })
     }
 </script>

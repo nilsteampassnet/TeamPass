@@ -219,8 +219,8 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
         SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$_POST['newFileName'] ."_thumb" . '.' . $ext."'
         WHERE id=%i", $_SESSION['user_id']);
 
-    $_SESSION['user']['avatar'] = $_POST['newFileName'].'.'.$ext;
-    $_SESSION['user']['avatar_thumb'] = $_POST['newFileName']."_thumb".'.'.$ext;
+    $_SESSION['user_avatar'] = $_POST['newFileName'].'.'.$ext;
+    $_SESSION['user_avatar_thumb'] = $_POST['newFileName']."_thumb".'.'.$ext;
 
     echo '{"filename" : "'.$_POST['newFileName'].'.'.$ext.'"}';
     exit();

@@ -1579,6 +1579,16 @@ if (isset($_POST['type'])) {
                 );
             }
 
+
+            // 2.1.23 - check if personal need to be upgraded
+            $tmpResult = mysqli_query($dbTmp,
+                "SELECT `pw_iv` FROM ".$_SESSION['tbl_prefix']."items WHERE perso='1'"
+            );
+            $tmp = mysqli_fetch_row($tmpResult);
+            if ($tmp[0] == "") {
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."users SET upgrade_needed = true WHERE 1 = 1");
+            }
+
             // Since 2.1.17, encrypt process is changed.
             // Previous PW need to be re-encrypted
             if (@mysqli_query($dbTmp,
@@ -1607,6 +1617,7 @@ if (isset($_POST['type'])) {
 
                 }
             }
+
 
             /* Unlock this step */
             //echo 'gauge.modify($("pbar"),{values:[0.75,1]});';
