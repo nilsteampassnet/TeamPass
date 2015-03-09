@@ -481,11 +481,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         </div>';
 } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
     // Page doesn't exist
-    $_SESSION['error']['code'] = ERR_NOT_EXIST;
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    // $_SESSION['error']['code'] = ERR_NOT_EXIST;
+    // include $_SESSION['settings']['cpassman_dir'].'/error.php';
     // When user identified
     // PAGE BY DEFAULT
-    //include 'home.php';
+    include 'home.php';
     // When user is not identified
 } else {
     // Automatic redirection

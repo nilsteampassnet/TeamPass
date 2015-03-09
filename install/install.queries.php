@@ -249,7 +249,7 @@ if (isset($_POST['type'])) {
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
                             `action` varchar(250) NOT NULL,
-                            `raison` text NOT NULL
+                            `raison` text NULL
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "misc") {
@@ -419,18 +419,18 @@ if (isset($_POST['type'])) {
                             `login` varchar(50) NOT NULL,
                             `pw` varchar(400) NOT NULL,
                             `groupes_visibles` varchar(250) NOT NULL,
-                            `derniers` text NOT NULL,
-                            `key_tempo` varchar(100) NOT NULL,
-                            `last_pw_change` varchar(30) NOT NULL,
-                            `last_pw` text NOT NULL,
+                            `derniers` text NULL,
+                            `key_tempo` varchar(100) NULL,
+                            `last_pw_change` varchar(30) NULL,
+                            `last_pw` text NULL,
                             `admin` tinyint(1) NOT null DEFAULT '0',
-                            `fonction_id` varchar(255) NOT NULL,
-                            `groupes_interdits` varchar(255) NOT NULL,
-                            `last_connexion` varchar(30) NOT NULL,
+                            `fonction_id` varchar(255) NULL,
+                            `groupes_interdits` varchar(255) NULL,
+                            `last_connexion` varchar(30) NULL,
                             `gestionnaire` int(11) NOT null DEFAULT '0',
                             `email` varchar(300) NOT NULL,
-                            `favourites` varchar(300) NOT NULL,
-                            `latest_items` varchar(300) NOT NULL,
+                            `favourites` varchar(300) NULL,
+                            `latest_items` varchar(300) NULL,
                             `personal_folder` int(1) NOT null DEFAULT '0',
                             `disabled` tinyint(1) NOT null DEFAULT '0',
                             `no_bad_attempts` tinyint(1) NOT null DEFAULT '0',
@@ -444,8 +444,8 @@ if (isset($_POST['type'])) {
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
-                            `avatar` varchar(255) NOT null,
-                            `avatar_thumb` varchar(255) NOT null,
+                            `avatar` varchar(255) NOT null DEFAULT '',
+                            `avatar_thumb` varchar(255) NOT null DEFAULT '',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -631,9 +631,9 @@ if (isset($_POST['type'])) {
                             `parent_id` int(12) NOT NULL,
                             `title` varchar(255) NOT NULL,
                             `level` int(2) NOT NULL,
-                            `description` text NOT NULL,
-                            `type` varchar(50) NOT NULL,
-                            `order` int(12) NOT NULL,
+                            `description` text NULL,
+                            `type` varchar(50) NULL default '',
+                            `order` int(12) NOT NULL default '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

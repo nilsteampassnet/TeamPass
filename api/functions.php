@@ -14,9 +14,9 @@
  */
 
 $_SESSION['CPM'] = 1;
+require_once "../sources/main.functions.php";
 
 function teampass_api_enabled() {
-    include "../sources/main.functions.php";
     teampass_connect();
     $response = DB::queryFirstRow(
         "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
@@ -52,7 +52,6 @@ function teampass_connect()
 
 function teampass_get_ips() {
     global $server, $user, $pass, $database, $link;
-    include "../sources/main.functions.php";
     $array_of_results = array();
     teampass_connect();
     $response = DB::query("select value from ".prefix_table("api")." WHERE type = %s", "ip");
@@ -66,7 +65,6 @@ function teampass_get_ips() {
 
 function teampass_get_keys() {
     global $server, $user, $pass, $database, $link;
-    include "../sources/main.functions.php";
     teampass_connect();
     $response = DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key");
 
@@ -75,7 +73,6 @@ function teampass_get_keys() {
 
 function teampass_get_randkey() {
     global $server, $user, $pass, $database, $link;
-    include "../sources/main.functions.php";
     teampass_connect();
     $response = DB::queryOneColumn("rand_key", "select * from ".prefix_table("keys")." limit 0,1");
 
@@ -89,7 +86,6 @@ function rest_head () {
 function addToCacheTable($id)
 {
     global $server, $user, $pass, $database, $link;
-    include "../sources/main.functions.php";
     teampass_connect();
     // get data
     $data = DB::queryfirstrow(
@@ -153,7 +149,6 @@ function rest_delete () {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
-        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -255,6 +250,7 @@ function rest_delete () {
 }
 
 function rest_get () {
+	$_SESSION['user_id'] = "'api'";
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
@@ -265,7 +261,6 @@ function rest_get () {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
-        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
         $category_query = "";
@@ -420,13 +415,14 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "add") {
             if($GLOBALS['request'][1] == "item") {
-                include "../sources/main.functions.php";
-
                 // get item definition
+                // attention: documentation talks about a comma as the separator
+                // anyway it is a semicolon !
                 $array_item = explode(';', $GLOBALS['request'][2]);
                 if (count($array_item) != 9) {
                     rest_error ('BADDEFINITION');
                 }
+                
                 $item_label = $array_item[0];
                 $item_pwd = $array_item[1];
                 $item_desc = $array_item[2];
@@ -437,6 +433,12 @@ function rest_get () {
                 $item_tags = $array_item[7];
                 $item_anyonecanmodify = $array_item[8];
 
+                // added so one can sent data including the http or https !
+                // anyway we have to urlencode this data
+                $item_url = urldecode($item_url);
+                // same for the email
+                $item_email = urldecode($item_email);
+                
                 // do some checks
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
@@ -456,6 +458,10 @@ function rest_get () {
                     $counter = DB::count();
                     if ($counter != 0) {
                         $itemExists = 1;
+                        // prevent the error if the label already exists
+                        // so lets just add the time() as a random factor
+                        $item_label .= " (" . time() .")";
+                        $itemExists = 0;
                     } else {
                         $itemExists = 0;
                     }
@@ -479,9 +485,10 @@ function rest_get () {
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
-                                    "inactif" => $item_login,
-                                    "restricted_to" => "0",
-                                    "perso" => "",
+                                	"login" => $item_login,
+                                	"inactif" => 0,
+                                	"restricted_to" => "",
+                                	"perso" => 0,
                                     "anyone_can_modify" => intval($item_anyonecanmodify)
                                 )
                             );
@@ -491,7 +498,7 @@ function rest_get () {
                             DB::insert(
                                 prefix_table("keys"),
                                 array(
-                                    "table" => "items",
+                                	"sql_table" => "items",
                                     "id" => $newID,
                                     "rand_key" => $randomKey
                                 )
@@ -510,7 +517,7 @@ function rest_get () {
 
                             // Add tags
                             $tags = explode(' ', $item_tags);
-                            foreach ($tags as $tag) {
+                            foreach ((array)$tags as $tag) {
                                 if (!empty($tag)) {
                                     DB::insert(
                                         prefix_table("tags"),
@@ -589,16 +596,18 @@ function rest_get () {
                             explode(";", $user['groupes_interdits'])
                         );
                         // complete with "groupes_visibles"
-                        array_push($userDef, $user['groupes_visibles']);
+                        foreach (explode(";", $user['groupes_visibles']) as $v) {
+                        	array_push($userDef, $v);
+                        }
                         
                         // find the item associated to the url
                         $response = DB::query(
                             "SELECT id, label, login, pw, id_tree, restricted_to
                             FROM ".prefix_table("items")." 
-                            WHERE url LIKE %ss
+                            WHERE url LIKE %s
                             AND id_tree IN (".implode(",", $userDef).")
                             ORDER BY id DESC",
-                            $GLOBALS['request'][1]."://".urldecode($GLOBALS['request'][2])
+                            $GLOBALS['request'][1]."://".urldecode($GLOBALS['request'][2].'%')
                         );                        
                         $counter = DB::count();
                         
@@ -654,7 +663,6 @@ function rest_put() {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
-        include "../sources/main.functions.php";
         teampass_connect();
         $rand_key = teampass_get_randkey();
     }
