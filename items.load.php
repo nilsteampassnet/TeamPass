@@ -86,10 +86,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     {
         if ($("#selected_items").val() == "") return;
 
-        if ($('#id_pw').html() == '<img src="includes/images/masked_pw.png">' || $('#id_pw').html() == '<IMG src="includes/images/masked_pw.png">') {
+        if ($('#id_pw').html().indexOf("fa-star") != -1) {
             $('#id_pw').text($('#hid_pw').val());
         } else {
-            $('#id_pw').html('<img src="includes/images/masked_pw.png" />');
+            $('#id_pw').html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
         }
     }
 
@@ -817,7 +817,7 @@ function EditerItem()
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
                         $("#id_info").html(unsanitizeString(data.history));
-                        $('#id_pw').html('<img src="includes/images/masked_pw.png" />');
+                        $('#id_pw').html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
@@ -1098,7 +1098,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Display details
                         $("#id_label").html(data.label).html();
                         $("#hid_label").val(data.label);
-                        $("#id_pw").html('<img src="includes/images/masked_pw.png" />');
+                        $("#id_pw").html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
@@ -1724,57 +1724,6 @@ function open_copy_item_to_folder_div()
     }
 }
 
-$("#div_copy_item_to_folder").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 200,
-        title: "<?php echo $LANG['item_menu_copy_elem'];?>",
-        open: function( event, ui ) {
-            $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
-            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
-            $(".ui-tooltip").siblings(".tooltip").remove();
-        },
-        buttons: {
-            "<?php echo $LANG['ok'];?>": function() {
-                $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").show().html("<span><?php echo $LANG['please_wait']." <i class=\'fa fa-cog fa-spin'></i>";?></span>");
-                $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", true);
-                //Send query
-                $.post(
-                    "sources/items.queries.php",
-                    {
-                        type    : "copy_item",
-                        item_id : $('#id_item').val(),
-                        folder_id : $('#copy_in_folder').val(),
-                        key        : "<?php echo $_SESSION['key'];?>"
-                    },
-                    function(data) {
-                        //check if format error
-                        if (data[0].error == "no_item") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                        } else if (data[0].error == "not_allowed") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                        }
-                        //if OK
-                        if (data[0].status == "ok") {
-                            //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
-                            ListerItems($('#copy_in_folder').val(),'', 0);
-                            AfficherDetailsItem(data[1].new_id);
-                            $("#copy_in_folder").val("");
-                            $(this).dialog('close');
-                        }
-                        $("#copy_item_info").hide();
-                    },
-                    "json"
-               );
-            },
-            "<?php echo $LANG['cancel_button'];?>": function() {
-                $("#copy_item_to_folder_show_error").html("").hide();
-                $(this).dialog('close');
-            }
-        }
-    });
 
 //###########
 //## FUNCTION : Clear HTML tags from a string
@@ -2031,7 +1980,7 @@ $(function() {
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
-
+    
     //Build multiselect box
     $("#restricted_to_list").multiselect({
         selectedList: 7,
@@ -2155,6 +2104,61 @@ $(function() {
         }
     });
     //<=
+    
+    // =>
+    $("#div_copy_item_to_folder").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 200,
+        title: "<?php echo $LANG['item_menu_copy_elem'];?>",
+        open: function( event, ui ) {
+            $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
+            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
+            $(".ui-tooltip").siblings(".tooltip").remove();
+        },
+        buttons: {
+            "<?php echo $LANG['ok'];?>": function() {
+                $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").show().html("<span><?php echo $LANG['please_wait']." <i class=\'fa fa-cog fa-spin'></i>";?></span>");
+                $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", true);
+                //Send query
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type    : "copy_item",
+                        item_id : $('#id_item').val(),
+                        folder_id : $('#copy_in_folder').val(),
+                        key        : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        //check if format error
+                        if (data[0].error == "no_item") {
+                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                        } else if (data[0].error == "not_allowed") {
+                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                        }
+                        //if OK
+                        if (data[0].status == "ok") {
+                            //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
+                            ListerItems($('#copy_in_folder').val(),'', 0);
+                            AfficherDetailsItem(data[1].new_id);
+                            $("#copy_in_folder").val("");
+                            $(this).dialog('close');
+                        }
+                        $("#copy_item_info").hide();
+                    },
+                    "json"
+               );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#copy_item_to_folder_show_error").html("").hide();
+                $(this).dialog('close');
+            }
+        }
+    });
+    // <=
+    
     //=> MOVE A GROUP
     $("#div_move_folder").dialog({
         bgiframe: true,
@@ -2885,7 +2889,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     $("#dialog_upgrade_personal_passwords").dialog({
         bgiframe: true,
         modal: true,
-        autoOpen: true,
+        autoOpen: false,
         width: 500,
         height: 300,
         title: "<?php echo $LANG['upgrade_needed'];?>",
@@ -2903,7 +2907,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                         if (data[0].error != "") {
                             $("#dialog_upgrade_personal_passwords_status").html(data[0].error).addClass("ui-state-error").show();
                         } else {
-                            reEncryptPersonalPwds(data[0].nb, data[0].nb, data[0].pws_list);
+                            reEncryptPersonalPwds(data[0].pws_list, data[0].currentId, data[0].nb);
                         }
                     },
                     "json"
@@ -2914,6 +2918,11 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         }
     });
+    
+    // open personal pwds re-encryption dialogbox
+    if ($("#personal_upgrade_needed").value() == "1") {
+        $("#dialog_upgrade_personal_passwords").dialog("open");
+    }
 
     NProgress.done();
 });
@@ -3252,39 +3261,36 @@ function globalItemsSearch()
         }).dialog("open");
     }
 
-    function reEncryptPersonalPwds(remain, nb, remainingIds)
+    function reEncryptPersonalPwds(remainingIds, currentId, nb)
     {
+        console.log(remainingIds+";"+currentId+";"+nb);
         $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
-console.log("ici");
+
         $.ajax({
-            url: "sources/.queries.php",
+            url: "sources/utils.queries.php",
             type : 'POST',
             dataType : "json",
             data : {
-                type    : "reencrypt_personal_pwd",
-                nb      : nb,
-                ids     : remainingIds,
-                user_id : "<?php echo $_SESSION['user_id'];?>",
-                key     : "<?php echo $_SESSION['key'];?>"
+                type        : "reencrypt_personal_pwd",
+                currentId   : currentId,
+                user_id     : "<?php echo $_SESSION['user_id'];?>",
+                key         : "<?php echo $_SESSION['key'];?>"
             },
             complete : function(data, statut){
-                console.log(data[0].pws_list);
-                $("#reencryption_progress").html(Math.floor(((data[0].nb-data[0].count) / data[0].nb) * 100)+"%");
-                if (data[0].count != "0") {
-                    reEncryptPersonalPwds(data[0].count, data[0].pws_list, data[0].nb);
+                var aIds = remainingIds.split(",");
+                var currentID = aIds[0];
+                aIds.shift();
+                var nb2 = aIds.length;
+                aIds = aIds.toString();
+                if (nb == 0) 
+                    $("#reencryption_progress").html("100%");
+                else 
+                    $("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
+                
+                if (nb2 != "0") {
+                    reEncryptPersonalPwds(aIds, currentID, nb);
                 } else {
-                    //Send query
-                    $.post(
-                        "sources/utils.queries.php",
-                        {
-                            type    : "finalize_export_pdf",
-                            pdf_password : $("#export_pdf_password").val()
-                        },
-                        function(data) {
-                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
-                        },
-                        "json"
-                    );
+                    $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
                 }
             }
         })

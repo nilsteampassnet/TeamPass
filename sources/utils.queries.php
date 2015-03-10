@@ -125,6 +125,7 @@ switch ($_POST['type']) {
             break;
         }
 
+        $currentID = "";
         $pws_list = array();
         $rows = DB::query(
             "SELECT i.id AS id
@@ -135,10 +136,23 @@ switch ($_POST['type']) {
             $_POST['user_id']
         );
         foreach ($rows as $record) {
-            array_push($pws_list, $record['id']);
+            if (empty($currentID)) {
+                $currentID = $record['id'];
+            } else {
+                array_push($pws_list, $record['id']);
+            }
         }
+        
+        // 
+        DB::update(
+            prefix_table('users'),
+            array(
+                'upgrade_needed' => 1
+               ),
+            "id = %i", $_POST['user_id']
+        );
 
-        echo '[{"pws_list" : "'.implode(',', $pws_list).'" , "nb" : "'.count($pws_list).'"}]';
+        echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
         break;
 
 
@@ -148,22 +162,60 @@ switch ($_POST['type']) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
-
-        // prepare lists
-        $remainingIds = explode(",", $_POST['ids']);
+        if (empty($_POST['currentId'])) {
+            echo '[{"error" : "No ID provided"}]';
+            break;
+        }
+        if (empty($_SESSION['my_sk'])) {
+            echo '[{"error" : "No personnal saltkey provided"}]';
+            break;
+        }
 
         // get data about pw
-        $data = DB::query(
+        $data = DB::queryfirstrow(
             "SELECT id, pw, pw_iv
             FROM ".prefix_table("items")."
             WHERE id = %i",
-            $remainingIds[0]
+            $_POST['currentId']
         );
+        if (empty($data['pw_iv'])) {
+            // check if pw encrypted with protocol #2
+            $pw = decrypt($data['pw'], $_SESSION['my_sk']);
+            if (empty($pw)) {
+                // used protocol is #1
+                $pw = decryptOld($data['pw'], $_SESSION['my_sk']);  // decrypt using protocol #1
+            } else {
+                // used protocol is #2
+                // get key for this pw
+                $dataItem = DB::queryfirstrow(
+                    "SELECT rand_key 
+                    FROM ".prefix_table("keys")."
+                    WHERE `sql_table` = %s AND id = %i",
+                    "items",
+                    $data['id']
+                );
+                if (!empty($dataItem['rand_key'])) {
+                    // remove key from pw
+                    $pw = substr($pw, strlen($dataTemp['rand_key']));
+                }
+            }
+            
+            // encrypt it
+            $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+            
+            // store Password
+            DB::update(
+                prefix_table('items'),
+                array(
+                    'pw' => $encrypt['string'],
+                    'pw_iv' => $encrypt['iv']
+                   ),
+                "id = %i", $data['id']
+            );
+        } else {
+            // already re-encrypted
+        }
 
-        //
-        $pws_list = array_slice($remainingIds, 1);
-
-
-        echo '[{"pws_list" : "'.implode(',', $pws_list).'" , "count" : "'.count($pws_list).'" , "nb" : "'.$_POST['nb'].'"}]';
+        echo '[{"error" : ""}]';
         break;
 }

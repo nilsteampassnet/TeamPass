@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',
     'pf_change_encryption' => 'The encryption algorithm has changed and your personal passwords have to be re-encoded. You need to run this process to use your passwords. This process may take several minutes depending on the number of items you have.',
     'pf_sk_set' => 'Your personal Salt Key is correctly set, You can click on button Start',
     'pf_sk_not_set' => 'Your personal Salt Key is NOT set! Please enter it.',
