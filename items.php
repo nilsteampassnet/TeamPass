@@ -119,7 +119,8 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />
+<input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1':'0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
@@ -441,7 +442,7 @@ echo '
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste" style="cursor:pointer;display:none;float:right;margin-right:2px;"></i></td>
                     <td>
                         &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer;" onclick="ShowPassword()"></div>
+                        <div id="id_pw" style="float:left; cursor:pointer;" onClick="ShowPassword()"></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
                 </tr>';
