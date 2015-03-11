@@ -442,7 +442,7 @@ echo '
                     <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste" style="cursor:pointer;display:none;float:right;margin-right:2px;"></i></td>
                     <td>
                         &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer;" onClick="ShowPassword()"></div>
+                        <div id="id_pw" style="float:left; cursor:pointer;" onClick=""></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
                 </tr>';
