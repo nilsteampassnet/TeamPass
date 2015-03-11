@@ -86,10 +86,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     {
         if ($("#selected_items").val() == "") return;
 
-        if ($('#id_pw').html().indexOf("fa-star") != -1) {
+        if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
             $('#id_pw').text($('#hid_pw').val());
         } else {
-            $('#id_pw').html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
+            $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
         }
     }
 
@@ -817,7 +817,7 @@ function EditerItem()
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
                         $("#id_info").html(unsanitizeString(data.history));
-                        $('#id_pw').html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
+                        $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
@@ -1098,7 +1098,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Display details
                         $("#id_label").html(data.label).html();
                         $("#hid_label").val(data.label);
-                        $("#id_pw").html('<i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i><i class="fa fa-star"></i>');
+                        $("#id_pw").html('<i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
@@ -2920,12 +2920,32 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     });
     
     // open personal pwds re-encryption dialogbox
-    if ($("#personal_upgrade_needed").value() == "1") {
+    if ($("#personal_upgrade_needed").val() == "1") {
         $("#dialog_upgrade_personal_passwords").dialog("open");
     }
 
     NProgress.done();
 });
+
+var mouseStillDown = false;
+$("#id_pw").mousedown(function(event) {
+     mouseStillDown = true;
+     showPwdContinuous();
+}).mouseup(function(event) {
+     mouseStillDown = false;
+});
+var showPwdContinuous = function(){
+    if(mouseStillDown){//only run this function when the mouse is clicked
+        if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
+            $('#id_pw').text($('#hid_pw').val());
+        } else {
+            $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
+        }
+        setTimeout("showPwdContinuous()", 1000); //run this function once per second if your mouse is down.
+    } else {
+        return;
+    }
+}
 
 function htmlspecialchars_decode (string, quote_style)
 {
@@ -3291,6 +3311,8 @@ function globalItemsSearch()
                     reEncryptPersonalPwds(aIds, currentID, nb);
                 } else {
                     $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
+                    // disable button
+                    $("#dialog_upgrade_personal_passwords ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['admin_action_db_backup_start_tip'];?>')").prop("disabled", false);
                 }
             }
         })

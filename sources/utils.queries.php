@@ -147,7 +147,7 @@ switch ($_POST['type']) {
         DB::update(
             prefix_table('users'),
             array(
-                'upgrade_needed' => 1
+                'upgrade_needed' => 0
                ),
             "id = %i", $_POST['user_id']
         );
