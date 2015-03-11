@@ -2144,14 +2144,18 @@ if (isset($_POST['type'])) {
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
                         // display quick icon shortcuts ?
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-                            $itemLogin = '<img src="includes/images/mini_user_disable.png" id="icon_login_'.$record['id'].'" />';
-                            $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$record['id'].'" class="copy_clipboard tip" />';
+                            //$itemLogin = '<img src="includes/images/mini_user_disable.png" id="icon_login_'.$record['id'].'" />';
+                            $itemLogin = '&nbsp;&nbsp;';
+                            //$itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$record['id'].'" class="copy_clipboard tip" />';
+                            $itemPw = '&nbsp;&nbsp;';
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'" />';
+                                    //$itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'" />';
+                                    $itemLogin = '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-user"></i>&nbsp;</span>';
                                 }
                                 if (!empty($pw)) {
-                                    $itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'" />';
+                                    //$itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'" />';
+                                    $itemPw  = '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-lock"></i>&nbsp;</span>';
                                 }
                             }
                             $html .= $itemLogin.'&nbsp;'.$itemPw .
@@ -2160,17 +2164,17 @@ if (isset($_POST['type'])) {
                         // Prepare make Favorite small icon
                         $html .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<img src="includes/images/mini_star_enable.png" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" />';
+                            $html .= '<i class="fa fa-star-o" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" /></i>';
                         } else {
-                            $html .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" />';
+                            $html .= '<i class="fa fa-star" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" /></i>';
                         }
                         $html .= "</span>";
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$LANG['item_menu_collab_enable'].'" class="tip" />';
+                                $itemCollab = '&nbsp;<i class="fa fa-users tip" title="'.$LANG['item_menu_collab_enable'].'"></i>';
                             } else {
-                                $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" class="tip" />';
+                                $itemCollab = "";// '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" class="tip" />';
                             }
                             $html .= '</span>'.$itemCollab.'</span>';
                         } else {

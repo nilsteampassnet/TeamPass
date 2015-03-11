@@ -16,6 +16,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+$var['hidden_asterisk'] = '<i class="fa fa-eye fa-border tip" title="'.$LANG['show_password'].'"></i>&nbsp;&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>';
+
 ?>
 
 <script type="text/javascript">
@@ -89,7 +91,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
             $('#id_pw').text($('#hid_pw').val());
         } else {
-            $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
+            $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         }
     }
 
@@ -355,6 +357,8 @@ function ListerItems(groupe_id, restricted, start)
                         });
                     }
 
+                    $(".tip").tooltipster();
+                    $(".item_clipboard").css("cursor", "pointer");
                     proceed_list_update();
                 }
                 //Delete data
@@ -817,7 +821,7 @@ function EditerItem()
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
                         $("#id_info").html(unsanitizeString(data.history));
-                        $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
+                        $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
@@ -1098,7 +1102,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Display details
                         $("#id_label").html(data.label).html();
                         $("#hid_label").val(data.label);
-                        $("#id_pw").html('<i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i><i class="fa fa-asterisk"></i>');
+                        $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
@@ -2927,6 +2931,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     NProgress.done();
 });
 
+    // show password during longpress
 var mouseStillDown = false;
 $("#id_pw").mousedown(function(event) {
      mouseStillDown = true;
@@ -2935,15 +2940,12 @@ $("#id_pw").mousedown(function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(){
-    if(mouseStillDown){//only run this function when the mouse is clicked
-        if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
-            $('#id_pw').text($('#hid_pw').val());
-        } else {
-            $('#id_pw').html('<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>');
-        }
-        setTimeout("showPwdContinuous()", 1000); //run this function once per second if your mouse is down.
+    if(mouseStillDown){
+        $('#id_pw').text($('#hid_pw').val());
+        setTimeout("showPwdContinuous()", 50);
     } else {
-        return;
+        $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
+        $('.tip').tooltipster();
     }
 }
 

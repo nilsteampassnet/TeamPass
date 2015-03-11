@@ -149,8 +149,10 @@ switch ($_POST['type']) {
             array(
                 'upgrade_needed' => 0
                ),
-            "id = %i", $_POST['user_id']
+            "id = %i",
+            $_POST['user_id']
         );
+        $_SESSION['user_upgrade_needed'] = 0;
 
         echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
         break;
