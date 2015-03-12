@@ -1269,18 +1269,6 @@ echo '
                     </td><td>
                     <input type="text" size="4" id="max_last_items" name="max_last_items" value="', isset($_SESSION['settings']['max_latest_items']) ? $_SESSION['settings']['max_latest_items'] : '', '" class="text ui-widget-content" />
                 <tr><td>';
-// Show last items
-echo '
-                <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label>'.$LANG['show_last_items'].'</label>
-                    </td><td>
-                    <div class="div_radio">
-                        <input type="radio" id="show_last_items_radio1" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? ' checked="checked"' : '', ' /><label for="show_last_items_radio1">'.$LANG['yes'].'</label>
-                        <input type="radio" id="show_last_items_radio2" name="show_last_items" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['show_last_items']) ? ' checked="checked"':''), ' /><label for="show_last_items_radio2">'.$LANG['no'].'</label>
-                        <span class="setting_flag" id="flag_show_last_items"><img src="includes/images/status', isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] == 1 ? '' : '-busy', '.png" /></span>
-                    </div>
-                </td</tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Duplicate folder

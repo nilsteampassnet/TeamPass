@@ -460,33 +460,6 @@ if (isset($_POST['type'])) {
                         WHERE i.id=%i",
                         $dataReceived['id']
                     );
-                    /*// Manage salt key
-                    if ($data['perso'] != 1) {
-                        // Get original key
-                        $originalKey = DB::queryfirstrow(
-                            "SELECT `rand_key`
-                            FROM `".prefix_table("keys")."`
-                            WHERE `sql_table` LIKE %ss AND `id`= %i",
-                            "items",
-                            $dataReceived['id']
-                        );
-                        // if no randkey then generate it
-                        if (empty($originalKey['rand_key'])) {
-                            $randomKey = generateKey();
-                            $pw = $sentPw = $randomKey.$pw;
-                            // store key prefix
-                            DB::insert(
-                                prefix_table('keys'),
-                                array(
-                                    'sql_table'     => 'items',
-                                    'id'        => $data['id'],
-                                    'rand_key'  => $randomKey
-                                )
-                            );
-                        } else {
-                            $pw = $sentPw = $originalKey['rand_key'].$pw;
-                        }
-                    }*/
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $sentPw = $pw;
@@ -1364,7 +1337,7 @@ if (isset($_POST['type'])) {
                         );
                         foreach ($rows_tmp as $row) {
                             //$fieldText = decrypt($row['data']);
-                            $fieldText = cryption($row['data'], SALT, $data['data_iv'], "decrypt");
+                            $fieldText = cryption($row['data'], SALT, $row['data_iv'], "decrypt");
                             /*// extract real pw from salt
                             $dataItemKey = DB::queryfirstrow(
                                 'SELECT rand_key FROM `'.prefix_table("keys").'` WHERE `sql_table` = %s AND `id` = %i',
@@ -1521,13 +1494,7 @@ if (isset($_POST['type'])) {
         		if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
         			// don't do if item is PF
         			if ($dataItem['perso'] != 1) {
-        				//$reason[1] = decrypt($reason[1]);   //substr(decrypt($reason[1]), strlen($dataItemKey['rand_key']));
-                        //echo $reason[1]." - ".SALT." - ".$record['raison_iv'];
                         $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
-                        //echo " > ". str_replace(chr(0), "", $reason[1])."\n";
-                        /*$crypt = new PHP_Crypt(SALT);
-                        $decrypt = $crypt->decrypt($reason[1]);
-                        $reason[1] = $decrypt;*/
         			}
         			// if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
         			if (!isUTF8($reason[1])) {
@@ -1539,7 +1506,7 @@ if (isset($_POST['type'])) {
                     $record['login'] = $LANG['imported_via_api'];
                 }
 
-        		if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual") {
+        		if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual"|| $record['action'] == "at_modification") {
         			if (empty($history)) {
         				$history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
         			} else {
