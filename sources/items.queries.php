@@ -852,12 +852,15 @@ if (isset($_POST['type'])) {
                     /*PASSWORD */
                     if (isset($dataReceived['salt_key']) && !empty($dataReceived['salt_key'])) {
                         $oldPw = $data['pw'];
+                        $oldPwIV = $data['pw_iv'];
+                        $oldPwClear = cryption($oldPw, $dataReceived['salt_key'], "", "decrypt");
                     } else {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
+                        $oldPwClear = cryption($oldPw, SALT, $oldPwIV, "decrypt");
                     }
                     //$oldPw = $encrypt['string'];
-                    if ($sentPw != $oldPw) {
+                    if ($sentPw != $oldPwClear) {
                         DB::insert(
                             prefix_table("log_items"),
                             array(
@@ -1304,7 +1307,7 @@ if (isset($_POST['type'])) {
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = $dataItem['url'];
                 if (!empty($dataItem['url'])) {
-                    $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'><img src='includes/images/arrow_skip.png' style='border:0px;' title='".$LANG['open_url_link']."'></a>";
+                    $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'>&nbsp;<i class='fa fa-link tip' title='".$LANG['open_url_link']."'></i></a>";
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
@@ -2095,7 +2098,7 @@ if (isset($_POST['type'])) {
                         $html .= '" id="'.$record['id'].'" style="margin-left:-30px;">';
 
                         if ($canMove == 1) {
-                            $html .= '<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />';
+                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows"></i>&nbsp;</span>';
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
@@ -2138,47 +2141,36 @@ if (isset($_POST['type'])) {
                         // test charset => may cause a json error if is not utf8
                         if (!isUTF8($pw) || empty($pw)) {
                             $pw = "";
-                            $html .= '&nbsp;<img src="includes/images/exclamation_small_red.png" title="'.$LANG['pw_encryption_error'].'" />';
+                            $html .= '&nbsp;<i class="fa fa-warning fa-sm tip" title="'.$LANG['pw_encryption_error'].'"></i>';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
-                        // display quick icon shortcuts ?
-                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-                            //$itemLogin = '<img src="includes/images/mini_user_disable.png" id="icon_login_'.$record['id'].'" />';
-                            $itemLogin = '&nbsp;&nbsp;';
-                            //$itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$record['id'].'" class="copy_clipboard tip" />';
-                            $itemPw = '&nbsp;&nbsp;';
-                            if ($displayItem == true) {
-                                if (!empty($record['login'])) {
-                                    //$itemLogin = '<img src="includes/images/mini_user_enable.png" id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'" />';
-                                    $itemLogin = '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-user"></i>&nbsp;</span>';
-                                }
-                                if (!empty($pw)) {
-                                    //$itemPw = '<img src="includes/images/mini_lock_enable.png" id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'" />';
-                                    $itemPw  = '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-lock"></i>&nbsp;</span>';
-                                }
-                            }
-                            $html .= $itemLogin.'&nbsp;'.$itemPw .
-                            '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
-                        }
-                        // Prepare make Favorite small icon
-                        $html .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
-                        if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-star-o" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" /></i>';
-                        } else {
-                            $html .= '<i class="fa fa-star" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" /></i>';
-                        }
-                        $html .= "</span>";
+                        
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $itemCollab = '&nbsp;<i class="fa fa-users tip" title="'.$LANG['item_menu_collab_enable'].'"></i>';
-                            } else {
-                                $itemCollab = "";// '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" class="tip" />';
+                                $html .= '<i class="fa fa-pencil fa-sm tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
-                            $html .= '</span>'.$itemCollab.'</span>';
+                        }
+                        
+                        // display quick icon shortcuts ?
+                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
+                            if ($displayItem == true) {
+                                if (!empty($record['login'])) {
+                                    $html .= '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user"></i>&nbsp;</span>&nbsp;';
+                                }
+                                if (!empty($pw)) {
+                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock"></i>&nbsp;</span>&nbsp;';
+                                }
+                            }
+                            $html .= '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
+                        }
+                        // Prepare make Favorite small icon
+                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+                        if (in_array($record['id'], $_SESSION['favourites'])) {
+                            $html .= '<i class="fa fa-sm fa-star" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '</span>';
+                            $html .= '<i class="fa fa-sm fa-star-o" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
                         $html .= '</span></li>';
@@ -2504,7 +2496,7 @@ if (isset($_POST['type'])) {
                     $_SESSION['user_id']
                 );
                 // Update SESSION with this new favourite
-                $data = DB::query("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id = ".$_POST['id']);
+                $data = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id = ".$_POST['id']);
                 $_SESSION['favourites_tab'][$_POST['id']] = array(
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$_POST['id']

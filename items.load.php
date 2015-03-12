@@ -1383,9 +1383,9 @@ function ActionOnQuickIcon(id, action)
 {
     //change quick icon
     if (action == 1) {
-        $("#quick_icon_fav_"+id).html("<img src='includes/images/mini_star_enable.png' onclick='ActionOnQuickIcon("+id+",0)' //>");
+        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star' onclick='ActionOnQuickIcon("+id+",0)'></i>");
     } else if (action == 0) {
-        $("#quick_icon_fav_"+id).html("<img src='includes/images/mini_star_disable.png' onclick='ActionOnQuickIcon("+id+",1)' //>");
+        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star-o' onclick='ActionOnQuickIcon("+id+",1)'></i>");
     }
 
     //Send query
@@ -3031,7 +3031,10 @@ function proceed_list_update()
                     $(this).css('cursor','pointer');
                 }
             });
-        })                
+        })    
+
+        $(".tip").tooltipster();
+        $(".item_clipboard").css("cursor", "pointer");
                 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
     
