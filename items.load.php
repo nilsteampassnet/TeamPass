@@ -357,8 +357,6 @@ function ListerItems(groupe_id, restricted, start)
                         });
                     }
 
-                    $(".tip").tooltipster();
-                    $(".item_clipboard").css("cursor", "pointer");
                     proceed_list_update();
                 }
                 //Delete data
@@ -3035,7 +3033,7 @@ function proceed_list_update()
 
         $(".tip").tooltipster();
         $(".item_clipboard").css("cursor", "pointer");
-                
+
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
     
         // refine users list to the related roles
