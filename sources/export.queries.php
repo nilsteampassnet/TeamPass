@@ -407,7 +407,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     	fclose($outstream);
 
     	// send back and continue
-    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
+    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['path_to_files_folder'].$html_file.'" , "file_link":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
     	break;
 
 	//CASE export in HTML format - Iteration loop
@@ -526,7 +526,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		fclose($outstream);
 
 		// send back and continue
-		echo '[{"loop":"true", "number":"'.$_POST['number'].'", "cpt":"'.$_POST['cpt'].'", "file":"'.$_POST['file'].'", "idsList":"'.$_POST['idsList'].'"}]';
+		echo '[{"loop":"true", "number":"'.$_POST['number'].'", "cpt":"'.$_POST['cpt'].'", "file":"'.$_POST['file'].'", "idsList":"'.$_POST['idsList'].'" , "file_link":"'.$_POST['file_link'].'"}]';
 	break;
 
 		//CASE export in HTML format - Iteration loop
@@ -582,7 +582,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_POST['file_link'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
 		break;
 }
 
