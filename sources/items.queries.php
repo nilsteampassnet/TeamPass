@@ -507,7 +507,7 @@ if (isset($_POST['type'])) {
                             if (count($field_data)>1 && !empty($field_data[1])) {
                                 $dataTmp = DB::queryFirstRow(
                                     "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv
-                                    FROM ".prefix_table("categories")."_items AS i
+                                    FROM ".prefix_table("categories_items")." AS i
                                     INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i",
                                     $field_data[0],
@@ -522,7 +522,6 @@ if (isset($_POST['type'])) {
                                         array(
                                             'item_id' => $dataReceived['id'],
                                             'field_id' => $field_data[0],
-                                            //'data' => encrypt($field_data[1])  //encrypt($randomKeyFields.$field_data[1])
                                             'data' => $encrypt['string'],
                                             'data_iv' => $encrypt['iv']
                                         )
@@ -540,14 +539,13 @@ if (isset($_POST['type'])) {
                                     );
                                 } else {
                                     // compare the old and new value
-                                    $oldVal = cryption($dataTmp[1], SALT, $dataTmp['data_iv'], "decrypt");
+                                    $oldVal = cryption($dataTmp['data'], SALT, $dataTmp['data_iv'], "decrypt");
                                     if ($field_data[1] != $oldVal) {
                                         $encrypt = cryption($field_data[1], SALT, "", "encrypt");
                                         // update value
                                         DB::update(
                                             prefix_table('categories_items'),
                                             array(
-                                                //'data' => encrypt($field_data[1])
                                                 'data' => $encrypt['string'],
                                                 'data_iv' => $encrypt['iv']
                                             ),
@@ -1991,6 +1989,7 @@ if (isset($_POST['type'])) {
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($need_sk == true && isset($_SESSION['my_sk'])) {
+                                /*
                                 // re-encrypt with new protocol 2.1.23
                                 if (empty($record['pw_iv'])) {
                                     $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
@@ -2008,6 +2007,8 @@ if (isset($_POST['type'])) {
                                 } else {
                                     $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
                                 }
+                                */
+                                $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
@@ -2158,15 +2159,36 @@ if (isset($_POST['type'])) {
         * Get complexity level of a group
         */
         case "get_complixity_level":
+            // get some info about ITEM
+            $dataItem = DB::queryfirstrow(
+                "SELECT perso, anyone_can_modify 
+                FROM ".prefix_table("items")." 
+                WHERE id=%i", 
+                $_POST['item_id']
+            );
             // is user allowed to access this folder - readonly
-            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {
-                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {
-                    $returnValues = array(
-                        "error" => "user_is_readonly",
-                        "message" => $LANG['error_not_allowed_to']
-                    );
-                    echo prepareExchangedData($returnValues, "encode");
-                    break;
+            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {                
+                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {                    
+                    // check if this item can be modified by anyone
+                    if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
+                        if ($dataItem['anyone_can_modify'] != 1) {
+                            // else return not authorized
+                            $returnValues = array(
+                                "error" => "user_is_readonly",
+                                "message" => $LANG['error_not_allowed_to']
+                            );
+                            echo prepareExchangedData($returnValues, "encode");
+                            break;
+                        }
+                    } else {
+                        // else return not authorized
+                        $returnValues = array(
+                            "error" => "user_is_readonly",
+                            "message" => $LANG['error_not_allowed_to']
+                        );
+                        echo prepareExchangedData($returnValues, "encode");
+                        break;
+                    }                    
                 }
             }
 

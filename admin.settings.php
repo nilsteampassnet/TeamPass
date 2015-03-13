@@ -145,10 +145,12 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != $_POST['enable_favourites']) {
         updateSettings('enable_favourites', $_POST['enable_favourites']);
     }
+    /*
     // Update last shown items
     if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != $_POST['show_last_items']) {
         updateSettings('show_last_items', $_POST['show_last_items']);
     }
+    */
     // Update personal feature
     if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != $_POST['enable_pf_feature']) {
         updateSettings('enable_pf_feature', $_POST['enable_pf_feature']);
