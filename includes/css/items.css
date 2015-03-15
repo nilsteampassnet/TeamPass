@@ -150,3 +150,19 @@ button{
 
 }
 /*.ui-icon { display: none !important; }*/
+
+.mi-green {
+	color: #388952;
+}
+.mi-yellow {
+	color: #FC9300;
+}
+.mi-red {
+	color: #CC0000;
+}
+.mi-black {
+	color: #222222;
+}
+.mi-grey-1 {
+	color: #9B9B9B;
+}
