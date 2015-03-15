@@ -1460,9 +1460,9 @@ if (isset($_POST['type'])) {
         		$iconImage = fileFormatImage($record['extension']);
         		// If file is an image, then prepare lightbox. If not image, then prepare donwload
         		if (in_array($record['extension'], $k['image_file_ext'])) {
-        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
+        			$files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
         		} else {
-        			$files .= '<img src=\'includes/images/'.$iconImage.'\' /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
+        			$files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
         		}
         		// Prepare list of files for edit dialogbox
         		$filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
@@ -1820,13 +1820,14 @@ if (isset($_POST['type'])) {
                         $expirationFlag = '';
                         $expired_item = 0;
                         if ($_SESSION['settings']['activate_expiration'] == 1) {
-                            $expirationFlag = '<img src="includes/images/flag-green.png">';
                             if (
                                 $record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
                             ) {
-                                $expirationFlag = '<img src="includes/images/flag-red.png">';
+                                $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
                                 $expired_item = 1;
+                            } else {
+                                $expirationFlag = '<i class="fa fa-flag mi-green fa-sm"></i>&nbsp;';
                             }
                         }
                         // list of restricted users
@@ -1878,7 +1879,7 @@ if (isset($_POST['type'])) {
                             && $item_is_restricted_to_role == 1
                             && !in_array($_SESSION['user_id'], $restricted_users_array)
                         ) {
-                            $perso = '<img src="includes/images/tag-small-red.png">';
+                            $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
@@ -1903,7 +1904,7 @@ if (isset($_POST['type'])) {
                                     && in_array($_POST['id'], $_SESSION['list_folders_editable_by_role']))
                             && in_array($_SESSION['user_id'], $restricted_users_array)
                         ) {
-                            $perso = '<img src="includes/images/tag-small-yellow.png">';
+                            $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
@@ -1931,13 +1932,13 @@ if (isset($_POST['type'])) {
                                 && $user_is_included_in_role == 0
                                 && $item_is_restricted_to_role == 1
                             ) {
-                                $perso = '<img src="includes/images/tag-small-red.png">';
+                                $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                                 $findPfGroup = 0;
                                 $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
                                 $displayItem = $need_sk = $canMove = 0;
                             } else {
-                                $perso = '<img src="includes/images/tag-small-yellow.png">';
+                                $perso = '<i class="fa fa-tag tag-yellow fa-sm"></i>&nbsp';
                                 $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                                 // reinit in case of not personal group
@@ -1951,7 +1952,7 @@ if (isset($_POST['type'])) {
                                 }
                             }
                         } else {
-                            $perso = '<img src="includes/images/tag-small-green.png">';
+                            $perso = '<i class="fa fa-tag mi-green fa-sm"></i>&nbsp';
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = 1;
@@ -1972,7 +1973,7 @@ if (isset($_POST['type'])) {
                         $html .= '" id="'.$record['id'].'" style="margin-left:-30px;">';
 
                         if ($canMove == 1) {
-                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows"></i>&nbsp;</span>';
+                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-black"></i>&nbsp;</span>';
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
@@ -1989,25 +1990,6 @@ if (isset($_POST['type'])) {
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($need_sk == true && isset($_SESSION['my_sk'])) {
-                                /*
-                                // re-encrypt with new protocol 2.1.23
-                                if (empty($record['pw_iv'])) {
-                                    $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
-                                    $val = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
-                                    // save in DB
-                                    DB::update(
-                                        prefix_table("items"),
-                                        array(
-                                            "pw" => $val['string'],
-                                            "pw_iv" => $val['iv']
-                                        ),
-                                        "id = %i",
-                                        $record['id']
-                                    );
-                                } else {
-                                    $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
-                                }
-                                */
                                 $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
@@ -2018,7 +2000,7 @@ if (isset($_POST['type'])) {
                         // test charset => may cause a json error if is not utf8
                         if (!isUTF8($pw) || empty($pw)) {
                             $pw = "";
-                            $html .= '&nbsp;<i class="fa fa-warning fa-sm tip" title="'.$LANG['pw_encryption_error'].'"></i>';
+                            $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-black tip" title="'.$LANG['pw_encryption_error'].'"></i>';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
@@ -2026,7 +2008,7 @@ if (isset($_POST['type'])) {
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $html .= '<i class="fa fa-pencil fa-sm tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                                $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
                         }
                         
@@ -2034,10 +2016,10 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user"></i>&nbsp;</span>&nbsp;';
+                                    $html .= '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock"></i>&nbsp;</span>&nbsp;';
+                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>&nbsp;';
                                 }
                             }
                             $html .= '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
@@ -2045,9 +2027,9 @@ if (isset($_POST['type'])) {
                         // Prepare make Favorite small icon
                         $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-sm fa-star" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '<i class="fa fa-sm fa-star-o" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
                         $html .= '</span></li>';
