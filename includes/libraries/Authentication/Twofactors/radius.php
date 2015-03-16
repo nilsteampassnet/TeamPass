@@ -51,8 +51,9 @@ class Radius
 		$retval = false;
 		if(radius_create_request($this->radius,RADIUS_ACCESS_REQUEST)) {
 			radius_put_attr($this->radius, RADIUS_NAS_IDENTIFIER,$_SERVER['SERVER_NAME']);
-			radius_put_string($this->radius,RADIUS_USER_NAME,$login);
-			radius_put_string($this->radius,RADIUS_USER_PASSWORD,$code);
+			radius_put_attr($this->radius, RADIUS_CALLING_STATION_ID,$_SERVER['REMOTE_ADDR']);
+			radius_put_attr($this->radius,RADIUS_USER_NAME,$login);
+			radius_put_attr($this->radius,RADIUS_USER_PASSWORD,$code);
 			switch(radius_send_request($this->radius)) {
 				case RADIUS_ACCESS_ACCEPT:
 					$retval = true;
