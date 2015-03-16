@@ -555,17 +555,25 @@ $htmlHeaders .= '
             buttons: {
                 "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
-                    var data = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
+                    var data_to_share = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
                     //Send query
                     $.post(
                         "sources/main.queries.php",
                         {
-                            type    : "change_personal_saltkey",
-                            data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                            type            : "change_personal_saltkey",
+                            data_to_share   : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
                         },
                         function(data) {
+                            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                            if (data.error != "no") {
+                                changePersonalSaltKey(data_to_share, data.list);
+                            } else {
+                                
+                            }
+                            /*
                             $("#div_change_personal_saltkey_wait").hide();
                             $("#div_change_personal_saltkey").dialog("close");
+                            */
                         }
                    );
                 },

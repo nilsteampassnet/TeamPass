@@ -172,6 +172,22 @@ switch ($_POST['type']) {
             echo '[{"error" : "No personnal saltkey provided"}]';
             break;
         }
+        if (isset($_POST['data_to_share'])) {
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
+
+            //Prepare variables
+            $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
+            $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
+            if (empty($oldPersonalSaltkey)) {
+                $oldPersonalSaltkey = $_SESSION['my_sk'];
+            }
+            
+            if (empty($newPersonalSaltkey)) {
+                echo '[{"error" : "No personal saltkey provided"}]';
+                break;
+            }
+        }
 
         // get data about pw
         $data = DB::queryfirstrow(
