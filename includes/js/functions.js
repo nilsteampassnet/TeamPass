@@ -261,3 +261,30 @@ function displayMessage(textToDisplay)
     });
     setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
 }
+
+function changePersonalSaltKey(credentials, ids)
+{
+    // extract current id and adapt list
+    var aIds = ids.split(",");
+    var currentID = aIds[0];
+    aIds.shift();
+    var nb = aIds.length;
+    aIds = aIds.toString();
+    console.log(currentID+" -- "+aIds);
+    $.post(
+		"sources/utils.queries.php",
+		{
+			type            : "reencrypt_personal_pwd",
+			data_to_share   : credentials,
+			currentId       : currentID,
+            key             : "<?php echo $_SESSION['key'];?>"
+		},
+        function(data){
+        	if (aIds == "" && currentID == "") {
+                console.log("done");
+            } else {
+                changePersonalSaltKey(credentials, aIds);
+            }
+        }
+	);
+}

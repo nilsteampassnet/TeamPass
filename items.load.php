@@ -3310,7 +3310,7 @@ function globalItemsSearch()
                 else 
                     $("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
                 
-                if (nb2 != "0") {
+                if (nb2 != "0" || (nb2 == "" && currentID != "")) {
                     reEncryptPersonalPwds(aIds, currentID, nb);
                 } else {
                     $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
