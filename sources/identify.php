@@ -301,6 +301,24 @@ function IdentifyUser($sentData)
             $logError = "ga_code_wrong";
         }
     }
+    // check radius code
+    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 2 ) {
+        if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
+		include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/Twofactors/radius.php");
+		//$r = new Authentication\TwoFactors\Radius($dataReceived['login'],$dataReceived['GACode']);
+		$r = new Authentication\TwoFactors\Radius();
+		$r->add_servers($_SESSION['settings']['radius_servers'],$_SESSION['settings']['radius_secret']);
+		if($r->checkCode($dataReceived['login'],$dataReceived['GACode'])) {
+			$proceedIdentification = true;
+		} else {
+                	$proceedIdentification = false;
+                	$logError = "bad_onetime_token";
+		}
+        } else {
+            $proceedIdentification = false;
+            $logError = "bad_onetime_token";
+        }
+    }
 
     if ($proceedIdentification === true) {
         // User exists in the DB

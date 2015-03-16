@@ -535,7 +535,7 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     </div>
                     <div id="connect_pw" style="margin-bottom:3px;">
                         <label for="pw" class="form_label">'.$LANG['index_password'].'</label>
-                        <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                        <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] >= 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
 
 	// Personal salt key
@@ -557,6 +557,20 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     <div id="ga_code_div" style="margin-bottom:10px;">
                     	'.$LANG['ga_identification_code'].'
                         <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
+                        <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
+                            '.$LANG['ga_scan_url'].'<br />
+                            <span style="margin:10px;"><img id="ga_qr" src="" /></span>
+                        </div>
+                        <!--<div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
+	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
+	                    </div>-->
+                    </div>';
+	}
+	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 2) {
+		echo '
+                    <div id="ga_code_div" style="margin-bottom:10px;">
+                    	'.$LANG['radius_identification_code'].'
+                        <input type="password" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
                         <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
                             '.$LANG['ga_scan_url'].'<br />
                             <span style="margin:10px;"><img id="ga_qr" src="" /></span>

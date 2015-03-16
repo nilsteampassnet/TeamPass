@@ -203,6 +203,23 @@ function changeSettingStatus(id, val) {
     }
 }
 
+function changeTwoFactorOpts(val) {
+	console.log("TwoFactorOpts called: " + val);
+	if(val == 0) {
+		$(".ga_website_name_row").css({display:"none"});
+		$(".radius_row").css({display:"none"});
+	} 
+
+	if(val == 1) {
+		$(".ga_website_name_row").css({display:"table-row"});
+		$(".radius_row").css({display:"none"});
+	}
+	if(val == 2) {
+		$(".ga_website_name_row").css({display:"none"});
+		$(".radius_row").css({display:"table-row"});
+	}
+}
+
 //###########
 //## FUNCTION : Launch the action the admin wants
 //###########

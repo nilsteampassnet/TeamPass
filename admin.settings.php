@@ -201,6 +201,14 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != $_POST['ga_website_name']) {
         updateSettings('ga_website_name', $_POST['ga_website_name']);
     }
+    // update radius_servers
+    if(isset($_SESSION['settings']['radius_servers']) && $_SESSION['settings']['radius_servers'] != $_POST['radius_servers']) {
+        updateSettings('radius_servers', $_POST['radius_servers']);
+    }
+    // update radius_secret
+    if(isset($_SESSION['settings']['radius_secret']) && $_SESSION['settings']['radius_secret'] != $_POST['radius_secret']) {
+        updateSettings('radius_secret', $_POST['radius_secret']);
+    }
     // Update number_of_used_pw setting
     if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {
         updateSettings('number_of_used_pw', $_POST['number_of_used_pw']);
@@ -824,17 +832,18 @@ echo '
                       &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_2factors_authentication_setting_tip'].'" />
                   </label>
             </td>
-            <td>
-                <div class="div_radio">
-                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$LANG['yes'].'</label>
-                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$LANG['no'].'</label>
-                        <span class="setting_flag" id="flag_2factors_authentication"><img src="includes/images/status', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '' : '-busy', '.png" /></span>
-                </div>
+		<td>
+                        <select id="2factors_authentication_select1"" name="2factors_authentication" class="text ui-widget-content" onchange="changeTwoFactorOpts(this.value)">
+                            <option value="0"', !isset($_SESSION['settings']['2factors_authentication']) || $_SESSION['settings']['2factors_authentication'] == 0 ? ' selected="selected"':"", '>None</option>
+                            <option value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' selected="selected"':"", '>Google</option>
+                            <option value="2"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 2 ? ' selected="selected"':"", '>Radius</option>
+			</select>
+		</td>
               <td>
             </tr>';
 // Google Authenticator website name
 echo '
-            <tr style="margin-bottom:3px">
+	<tr style="margin-bottom:3px',isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '"' : ';display:none;"',' class="ga_website_name_row">
                 <td>
                     <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
@@ -844,6 +853,29 @@ echo '
                     <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
                 <td>
             </tr>';
+// Radius Authenticator Settings
+echo '
+	<tr style="margin-bottom:3px',isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 2 ? '"' : ';display:none;"',' class="radius_row">
+                <td>
+                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label for="radius_servers">'.$LANG['admin_radius_servers'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_radius_servers_tip'].'" />
+                </td>
+                <td>
+                    <input type="text" size="30" id="radius_servers" name="radius_servers" value="', isset($_SESSION['settings']['radius_servers']) ? $_SESSION['settings']['radius_servers'] : '', '" class="text ui-widget-content" />
+                <td>
+	</tr>';
+echo '
+	<tr style="margin-bottom:3px',isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 2 ? '"' : ';display:none;"',' class="radius_row">
+                <td>
+                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label for="radius_secret">'.$LANG['admin_radius_secret'].'</label>
+                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_radius_secret_tip'].'" />
+                </td>
+                <td>
+                    <input type="text" size="30" id="radius_secret" name="radius_secret" value="', isset($_SESSION['settings']['radius_secret']) ? $_SESSION['settings']['radius_secret'] : '', '" class="text ui-widget-content" />
+                <td>
+	</tr>';
 /*
 // psk_authentication
 echo '
