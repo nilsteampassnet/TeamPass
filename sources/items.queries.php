@@ -143,12 +143,6 @@ if (isset($_POST['type'])) {
                     ||
                     (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1)
                 ) {
-                    // set key if non personal item
-                    /*if ($dataReceived['is_pf'] != 1) {
-                        // generate random key
-                        $randomKey = generateKey();
-                        $pw = $randomKey.$pw;
-                    }*/
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         //$pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
@@ -312,45 +306,42 @@ if (isset($_POST['type'])) {
                     // Prepare full line
                     $html = '<li class="item_draggable'
                     .'" id="'.$newID.'" style="margin-left:-30px;">'
-                    .'<img src="includes/images/grippy.png" style="margin-right:5px;cursor:hand;" alt="" class="grippy"  />'
-                    .$expirationFlag.'<img src="includes/images/tag-small-green.png">' .
+                    .'<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-black"></i>&nbsp;</span>'
+                    .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;' .
                     '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">' .
                     stripslashes($dataReceived['label']);
                     if (!empty($dataReceived['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                         $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($dataReceived['description']), 0, 30))).']</font>';
                     }
-                    $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
+                    $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';                    
+                    // mini icon for collab
+                    if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
+                        if ($dataReceived['anyone_can_modify'] == 1) {
+                            $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                        }
+                    }
                     // display quick icon shortcuts ?
                     if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                         $itemLogin = '<img src="includes/images/mini_user_disable.png" id="icon_login_'.$newID.'" />';
                         $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" />';
 
                         if (!empty($dataReceived['login'])) {
-                            $itemLogin = '<img src="includes/images/mini_user_enable.png" id="icon_login_'.$newID.'" class="copy_clipboard" title="'.$LANG['item_menu_copy_login'].'" />';
+                            $itemLogin = '<span id="iconlogin_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>';
                         }
                         if (!empty($dataReceived['pw'])) {
-                            $itemPw = '<img src="includes/images/mini_lock_enable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" title="'.$LANG['item_menu_copy_pw'].'" />';
+                            $itemPw = '<span id="iconpw_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>';
                         }
                         $html .= $itemLogin.'&nbsp;'.$itemPw;
                     }
                     // Prepare make Favorite small icon
                     $html .= '&nbsp;<span id="quick_icon_fav_'.$newID.'" title="Manage Favorite" class="cursor">';
                     if (in_array($newID, $_SESSION['favourites'])) {
-                        $html .= '<img src="includes/images/mini_star_enable.png" onclick="ActionOnQuickIcon('.$newID.',0)" />';
+                        $html .= '<i class="fa fa-sm fa-star mi-black" onclick="ActionOnQuickIcon('.$newID.',0)" class="tip"></i>';
                     } else {
-                        $html .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$newID.',1)" />';
-                    }
-                    // mini icon for collab
-                    if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
-                        if ($dataReceived['anyone_can_modify'] == 1) {
-                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_enable.png" title="'.$LANG['item_menu_collab_enable'].'" />';
-                        } else {
-                            $itemCollab = '&nbsp;<img src="includes/images/mini_collab_disable.png" title="'.$LANG['item_menu_collab_disable'].'" />';
-                        }
-                        $html .= '</span>'.$itemCollab.'</span>';
+                        $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$newID.',1)" class="tip"></i>';
                     }
 
-                    $html .= '</li>';
+                    $html .= '</span></li>';
                     // Build array with items
                     $itemsIDList = array($newID, $dataReceived['pw'], $login);
 
@@ -1890,7 +1881,7 @@ if (isset($_POST['type'])) {
                             in_array($_POST['id'], $_SESSION['personal_visible_groups'])
                             && $record['perso'] == 1
                         ) {
-                            $perso = '<img src="includes/images/tag-small-alert.png">';
+                            $perso = '<i class="fa fa-warning mi-yellow fa-sm"></i>&nbsp';
                             $findPfGroup = 1;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
@@ -2907,7 +2898,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             $error = "";
-            $duplicate = false;
+            $duplicate = 0;
             
             // decrypt and retreive data in JSON format
         	$dataReceived = prepareExchangedData($_POST['data'], "decode");
@@ -2966,7 +2957,7 @@ if (isset($_POST['type'])) {
                 
                 // count results
                 if (DB::count() > 0) {
-                    $duplicate = true;
+                    $duplicate = 1;
                 }
                 
                 // send data

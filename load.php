@@ -398,6 +398,40 @@ $htmlHeaders .= '
         );
     }
 
+    function changePersonalSaltKey(credentials, ids, nb_total)
+    {
+        // extract current id and adapt list
+        var aIds = ids.split(",");
+        var currentID = aIds[0];
+        aIds.shift();
+        var nb = aIds.length;
+        aIds = aIds.toString();
+        //console.log(currentID+" -- "+aIds);
+        if (nb == 0) 
+            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+"100%");
+        else 
+            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+Math.floor(((nb_total-nb) / nb_total) * 100)+"%");
+        
+        $.post(
+            "sources/utils.queries.php",
+            {
+                type            : "reencrypt_personal_pwd",
+                data_to_share   : credentials,
+                currentId       : currentID,
+                key             : "'.$_SESSION['key'].'"
+            },
+            function(data){
+                if (aIds == "" && currentID == "") {
+                    $("#div_change_personal_saltkey_wait").html("'.$LANG['alert_message_done'].'");
+                    location.reload();
+                } else {
+                    
+                    changePersonalSaltKey(credentials, aIds, nb_total);
+                }
+            }
+        );
+    }
+
     $(function() {
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
@@ -549,9 +583,13 @@ $htmlHeaders .= '
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 400,
-            height: 250,
+            width: 450,
+            height: 310,
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
+            open: function() {
+                $("#new_personal_saltkey").val("");
+                $("#old_personal_saltkey").val("'.$_SESSION['my_sk'].'");
+            },
             buttons: {
                 "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
@@ -561,12 +599,13 @@ $htmlHeaders .= '
                         "sources/main.queries.php",
                         {
                             type            : "change_personal_saltkey",
-                            data_to_share   : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                            data_to_share   : prepareExchangedData(data_to_share, "encode", "'.$_SESSION['key'].'"),
+                            key             : "'.$_SESSION['key'].'"
                         },
                         function(data) {
                             data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
-                            if (data.error != "no") {
-                                changePersonalSaltKey(data_to_share, data.list);
+                            if (data.error == "no") {
+                                changePersonalSaltKey(data_to_share, data.list, data.nb_total);
                             } else {
                                 
                             }

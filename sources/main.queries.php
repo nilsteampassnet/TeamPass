@@ -546,6 +546,7 @@ switch ($_POST['type']) {
             $_SESSION['user_id'],
             "at_creation"
         );
+        $nb = DB::count();
         foreach ($rows as $record) {
             if (!empty($record['pw'])) {
                 if (empty($list)) {
@@ -555,10 +556,21 @@ switch ($_POST['type']) {
                 }
             }
         }
+        
+        // change salt
+        $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
+        setcookie(
+            "TeamPass_PFSK_".md5($_SESSION['user_id']),
+            encrypt($_SESSION['my_sk'], ""),
+            time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+            '/'
+        );
+        
         echo prepareExchangedData(
         	array(
 	        	"list" => $list,
-	        	"error" => "no"
+	        	"error" => "no",
+                "nb_total" => $nb
         	),
         	"encode"
         );

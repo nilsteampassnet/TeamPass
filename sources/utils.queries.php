@@ -177,7 +177,7 @@ switch ($_POST['type']) {
             $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
 
             //Prepare variables
-            $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
+            $personal_sk = htmlspecialchars_decode($dataReceived['sk']);
             $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
             if (empty($oldPersonalSaltkey)) {
                 $oldPersonalSaltkey = $_SESSION['my_sk'];
@@ -187,7 +187,12 @@ switch ($_POST['type']) {
                 echo '[{"error" : "No personal saltkey provided"}]';
                 break;
             }
+        } else {
+            $personal_sk = $_SESSION['my_sk'];
         }
+        
+        echo $_POST['data_to_share'];
+        break;
 
         // get data about pw
         $data = DB::queryfirstrow(
@@ -219,7 +224,7 @@ switch ($_POST['type']) {
             }
             
             // encrypt it
-            $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+            $encrypt = cryption($pw, $personal_sk, "", "encrypt");
             
             // store Password
             DB::update(
