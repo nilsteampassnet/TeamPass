@@ -1897,8 +1897,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                         $("#label").focus();
                         $("#new_show_error").html("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
                     }
-                },
-                "json"
+                }
             );
         } else {
             // display title
@@ -2923,6 +2922,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     
     // open personal pwds re-encryption dialogbox
     if ($("#personal_upgrade_needed").val() == "1") {
+        
         $("#dialog_upgrade_personal_passwords").dialog("open");
     }
 
@@ -3286,7 +3286,7 @@ function globalItemsSearch()
 
     function reEncryptPersonalPwds(remainingIds, currentId, nb)
     {
-        console.log(remainingIds+";"+currentId+";"+nb);
+        //console.log(remainingIds+";"+currentId+";"+nb);
         $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
 
         $.ajax({

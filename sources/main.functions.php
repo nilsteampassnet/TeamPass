@@ -1000,6 +1000,8 @@ function isUTF8($string)
 */
 function prepareExchangedData($data, $type)
 {
+    //load ClassLoader
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
     //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
