@@ -423,10 +423,13 @@ $htmlHeaders .= '
             function(data){
                 if (aIds == "" && currentID == "") {
                     $("#div_change_personal_saltkey_wait").html("'.$LANG['alert_message_done'].'");
-                    location.reload();
+                    //location.reload();
                 } else {
-                    
-                    changePersonalSaltKey(credentials, aIds, nb_total);
+                    if (data.error == "") {
+                        changePersonalSaltKey(credentials, aIds, nb_total);
+                    } else {
+                        $("#div_change_personal_saltkey_wait").html(data.error);
+                    }
                 }
             }
         );
