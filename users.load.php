@@ -454,7 +454,9 @@ $(function() {
 			$('tr.data-row').removeClass('selected');
 		}
 	});
-
+    
+    // load list of users
+    loadUsersList(0);
 });
 
 function pwGenerate(elem)
@@ -790,5 +792,35 @@ function htmlspecialchars_decode (string, quote_style)
     }
 
     return string;
+}
+
+/**
+*
+*/
+function loadUsersList(from)
+{
+    console.log(from);
+    $.post(
+        "sources/users.queries.php",
+        {
+            type    : "load_users_list",
+            from    : from,
+            nb      : "2",
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            if (data.error != "") {
+                console.log("Error!");
+            } else {
+                if (data.end_reached == false) {
+                    console.log("done!");
+                } else {
+                    $("#tbody_users").append(data.html);
+                    loadUsersList(data.from);
+                }
+            }
+        }
+	);
 }
 </script>
