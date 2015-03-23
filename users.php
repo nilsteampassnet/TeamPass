@@ -89,7 +89,7 @@ echo '
                 	,'
                 </tr>
             </thead>
-            <tbody>';
+            <tbody id="tbody_users">';
 
 $listAvailableUsers = $listAdmins = "";
 $x = 0;

@@ -611,14 +611,29 @@ function AjouterItem()
                         $("#new_show_error").html('<?php echo addslashes($LANG['error_item_exists']);?>');
                         $("#new_show_error").show();
                         LoadingPage();
-                    } else if (data.error == "something_wrong") {
+                    } else if (data.error == "ERR_KEY_NOT_CORRECT") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('ERROR!!');
+                        $("#new_show_error").html('Key verification for Query is not correct!');
                         $("#new_show_error").show();
                         LoadingPage();
-                    } else if (data.error == "pw_too_long") {
+                    } else if (data.error == "ERR_FOLDER_NOT_ALLOWED") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html('User not allowed to access this folder!');
+                        $("#new_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_PWD_TOO_LONG") {
                         $("#div_formulaire_saisi").dialog("open");
                         $("#new_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']);?>');
+                        $("#new_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html('Item password could not be correctly encrypted!');
+                        $("#new_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_PWD_EMPTY") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html('Item password is empty!');
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.new_id != "") {
@@ -789,14 +804,29 @@ function EditerItem()
                     }
 
                     //check if format error
-                    if (data.error == "format") {
+                    if (data.error == "ERR_JSON_FORMAT") {
                         $("#div_loading").hide();
                         $("#edit_show_error").html(data.error+' ERROR (JSON is broken)!!!!!');
                         $("#edit_show_error").show();
-                    } else if (data.error == "pw_too_long") {
+                    } else if (data.error == "ERR_KEY_NOT_CORRECT") {
+                        $("#div_loading").hide();
+                        $("#edit_show_error").html('Key verification for Query is not correct!');
+                        $("#edit_show_error").show();
+                        LoadingPage();
+                    else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
+                        $("#div_loading").hide();
+                        $("#edit_show_error").html('Item password could not be correctly encrypted!');
+                        $("#edit_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_PWD_TOO_LONG") {
                         $("#div_loading").hide();
                         $("#edit_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']);?>');
                         $("#edit_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_NOT_ALLOWED_TO_EDIT") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html('User not allowed to edit this Item!');
+                        $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.error != "") {
                         $("#div_loading").hide();
