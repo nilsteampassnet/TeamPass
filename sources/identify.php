@@ -191,6 +191,15 @@ function IdentifyUser($sentData)
             // authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
+                //update user's password
+                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                DB::update(prefix_table('users'),
+                    array(
+                        'pw' => $data['pw']
+                    ),
+                    "login=%s",
+                    $username
+                );
             } else {
                 $ldapConnection = false;
             }
@@ -247,11 +256,14 @@ function IdentifyUser($sentData)
         && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
+        $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
-                'pw' => $password,
+                //'pw' => $password,
+                'pw' => $data['pw'],
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',

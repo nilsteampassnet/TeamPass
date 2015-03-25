@@ -542,7 +542,7 @@ if (!empty($_POST['type'])) {
                     explode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
-                    $text .= '<img src=\"includes/images/arrow-000-small.png\" />'.$record['title']."<br />";
+                    $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
                 }
             } else {
                 $text = '<span style=\"text-align:center\"><img src=\"includes/images/error.png\" /></span>';
@@ -631,14 +631,10 @@ if (!empty($_POST['type'])) {
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
                     "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
-                    implode(";", $_POST['list'])
+                    explode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
-                    $ident = "";
-                    for ($y = 1; $y < $record['nlevel']; $y++) {
-                        $ident .= "&nbsp;&nbsp;";
-                    }
-                    $text .= '<img src=\"includes/images/arrow-000-small.png\" />'.$ident.$record['title']."<br />";
+                    $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
                 }
             }
             // send back data
@@ -708,11 +704,7 @@ if (!empty($_POST['type'])) {
                     implode(";", $_POST['list'])
                 );
                 foreach ($rows as $record) {
-                    $ident = "";
-                    for ($y = 1; $y < $record['nlevel']; $y++) {
-                        $ident .= "&nbsp;&nbsp;";
-                    }
-                    $text .= '<img src=\"includes/images/arrow-000-small.png\" />'.$ident.$record['title']."<br />";
+                    $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$ident.$record['title']."<br />";
                 }
             }
             // send back data
@@ -1024,6 +1016,7 @@ if (!empty($_POST['type'])) {
             }
             
             $listAvailableUsers = $listAdmins = $html = "";
+            $listAlloFcts_position = false;
             $x = 0;
             // Get through all users
             $rows = DB::query("SELECT * FROM ".prefix_table("users")." ORDER BY login ASC LIMIT ".$_POST['from'].", ".$_POST['nb']."");
@@ -1034,12 +1027,14 @@ if (!empty($_POST['type'])) {
                     if (count($rolesList) > 0) {
                         foreach ($rolesList as $fonction) {
                             if (in_array($fonction['id'], explode(";", $reccord['fonction_id']))) {
-                                $listAlloFcts .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
+                                $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
                             }
                         }
+                        $listAlloFcts_position = true;
                     }
                     if (empty($listAlloFcts)) {
-                        $listAlloFcts = '<img src="includes/images/error.png" title="'.$LANG['user_alarm_no_function'].'" />';
+                        $listAlloFcts = '<i class="fa fa-exclamation fa-lg mi-red tip" title="'.$LANG['user_alarm_no_function'].'"></i>';
+                        $listAlloFcts_position = false;
                     }
                 }
                 // Get list of allowed groups
@@ -1050,7 +1045,7 @@ if (!empty($_POST['type'])) {
                             if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                                 $ident = "";
                                 if (in_array($t->id, explode(";", $reccord['groupes_visibles']))) {
-                                    $listAlloGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                                    $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
                                 }
                                 $prev_level = $t->nlevel;
                             }
@@ -1064,7 +1059,7 @@ if (!empty($_POST['type'])) {
                         foreach ($treeDesc as $t) {
                             $ident = "";
                             if (in_array($t->id, explode(";", $reccord['groupes_interdits']))) {
-                                $listForbGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                                $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
                             }
                             $prev_level = $t->nlevel;
                         }
@@ -1092,9 +1087,21 @@ if (!empty($_POST['type'])) {
                 
                 // Display Grid
                 if ($showUserFolders == true) {
-                    if ($reccord['disabled'] == 1) $row_style = ' style="background-color:#FF8080;font-size:11px;"';
-                    else $row_style = ' class="ligne'.($x % 2).' data-row"';  
-
+                    // <-- prepare all possible conditions
+                    // If user is active, then you could lock it
+                    // If user is locked, you could delete it
+                    if ($reccord['disabled'] == 1) {
+                        $userTxt = $LANG['user_del'];
+                        $actionOnUser = '<i class="fa fa-user-times fa-lg tip" style="cursor:pointer;" onclick="action_on_user(\''.$reccord['id'].'\',\'delete\')" title="'.$userTxt.'">';
+                        $userIcon = "user--minus";
+                        $row_style = ' style="background-color:#FF8080;font-size:11px;"';
+                    } else {
+                        $userTxt = $LANG['user_lock'];
+                        $actionOnUser = '<i class="fa fa-lock fa-lg tip" style="cursor:pointer;" onclick="action_on_user(\''.$reccord['id'].'\',\'lock\')" title="'.$userTxt.'">';
+                        $userIcon = "user-locked";
+                        $row_style = ' class="ligne'.($x % 2).' data-row"';     
+                    }
+                    
                     if ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) 
                         $td_class = 'class="editable_textarea"';
                     else $td_class = '';
@@ -1102,9 +1109,11 @@ if (!empty($_POST['type'])) {
                     if ($reccord['admin'] == 1) {
                         $is_admin = ' style="display:none;"';
                         $admin_checked = ' checked';
+                        $admin_disabled = ' disabled="disabled"';
                     } else {
                         $is_admin = '';
                         $admin_checked = '';
+                        $admin_disabled = '';
                     }
                     
                     if ($_SESSION['user_manager'] == 1) $is_manager = 'disabled="disabled"';
@@ -1116,23 +1125,43 @@ if (!empty($_POST['type'])) {
                     if ($showUserFolders == false) {
                         $show_folders = 'display:none;';
                         $show_folders_disabled = 'disabled="disabled"';
+                        $user_action = 'src="includes/images/user--minus_disabled.png"';
+                        $pw_change = 'src="includes/images/lock__pencil_disabled.png"';
+                        $log_report = 'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px; cursor:pointer;" title="'.$LANG['see_logs'].'"';
                     } else {
                         $show_folders = '';
                         $show_folders_disabled = '';
+                        $user_action = '<i class="fa fa-user fa-lg tip" style="cursor:pointer;" onclick="'.$actionOnUser.'" title="'.$userTxt.'">';
+                        $pw_change = '<i class="fa fa-key fa-lg tip" style="cursor:pointer;" onclick="mdp_user(\''.$reccord['id'].'\')" title="'.$LANG['change_password'].'"></i>';
+                        $log_report = '<i class="fa fa-newspaper-o fa-lg tip" onclick="user_action_log_items(\''.$reccord['id'].'\')" style="cursor:pointer;" title="'.$LANG['see_logs'].'"></i>';
                     }
                                         
                     if ($_SESSION['user_manager'] == 1 || $reccord['admin'] == 1) $tmp1 = 'disabled="disabled"';
                     else $tmp1 = '';
                     
                     if ($reccord['read_only'] == 1) $is_ro = 'checked';
-                    else $is_ro = '';
+                    else $is_ro = '';            
+
+                    if ($reccord['can_create_root_folder'] == 1) $can_create_root_folder = 'checked';
+                    else $can_create_root_folder = '';
+                    
+                    if ($reccord['personal_folder'] == 1) $personal_folder = 'checked';
+                    else $personal_folder = '';
+                    
+                    if (empty($reccord['email'])) $email_change = 'mail--exclamation.png';
+                    else $email_change = 'mail--pencil.png';
+                    
+                    if (empty($reccord['ga'])) $ga_code = 'phone_add';
+                    else $ga_code = 'phone_sound' ;
+                    // -->
                     
                     $html .= '
                             <tr'.$row_style.'>
                                 <td align="center">'.$reccord['id'].'</td>
-                                <td align="center">'. $reccord['disabled'] == 1 ? '
-                                    <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['unlock_user'].'" />' :
-                                ''. '
+                                <td align="center">';
+                    if ($reccord['disabled'] == 1) $html .= '
+                                    <i class="fa fa-warning fa-lg mi-red tip" style="padding:2px;cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" title="'.$LANG['unlock_user'].'"></i>';
+                    $html .= '
                                 </td>
                                 <td align="center">
                                     <p '.$td_class.' id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
@@ -1148,19 +1177,27 @@ if (!empty($_POST['type'])) {
                                         <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
                                         </div>
                                         <div style="text-align:center;">
-                                            <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')" />
+                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')"></i>
                                         </div>'. '
                                     </div>
 
                                 </td>
                                 <td>
-                                    <div '.$is_admin.'>
+                                    <div '.$is_admin.'>';
+                                    if ($listAlloFcts_position == false)
+                                        $html .= '
+                                        <div style="text-align:center;'.$show_folders.'">
+                                            '.$listAlloFcts.'&nbsp;&nbsp;<i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'"></i>
+                                        </div>';
+                                    else
+                                        $html .= '
                                         <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
                                             '.$listAlloFcts.'
                                         </div>
-                                        <div style="text-align:center;'.$show_folders.'">
-                                            <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'" />
-                                        </div>'. '
+                                        <div style="text-align:center; padding-top:2px;'.$show_folders.'">
+                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'"></i>
+                                        </div>';
+                                $html .= '
                                     </div>
                                 </td>
                                 <td>
@@ -1169,7 +1206,7 @@ if (!empty($_POST['type'])) {
                     .$listAlloGrps.'
                                         </div>
                                         <div style="text-align:center;'.$show_folders.'">
-                                            <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$LANG['change_authorized_groups'].'" />
+                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$LANG['change_authorized_groups'].'"></i>
                                         </div>
                                     </div>
                                 </td>
@@ -1179,7 +1216,7 @@ if (!empty($_POST['type'])) {
                     .$listForbGrps.'
                                         </div>
                                         <div style="text-align:center;'.$show_folders.'">
-                                            <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$LANG['change_forbidden_groups'].'" />
+                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$LANG['change_forbidden_groups'].'"></i>
                                         </div>
                                     </div>
                                 </td>
@@ -1192,57 +1229,46 @@ if (!empty($_POST['type'])) {
                     // Read Only privilege
                     $html .= '
                                 <td align="center">
-                                    <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"'$is_ro.' '.$show_folders_disabled.' />
+                                    <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"'.$is_ro.' '.$show_folders_disabled.' />
                                 </td>';
                     // Can create at root
                     $html .= '
                                 <td align="center">
-                                    <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"'. $reccord['can_create_root_folder'] == 1 ? 'checked' : ''. ''. $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"'. ' />
+                                    <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"'.$can_create_root_folder.''.$admin_disabled.' />
                                 </td>';
                     if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
                     $html .= '
                                 <td align="center">
-                                    <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"'. $reccord['personal_folder'] == 1 ? 'checked' : ''. ''. $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"'. ' />
+                                    <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"'.$personal_folder. ''.$admin_disabled.' />
                                 </td>';
-                    }
-                    // If user is active, then you could lock it
-                    // If user is locked, you could delete it
-                    if ($reccord['disabled'] == 1) {
-                        $actionOnUser = "action_on_user('".$reccord['id']."','delete')";
-                        $userIcon = "user--minus";
-                        $userTxt = $LANG['user_del'];
-                    } else {
-                        $actionOnUser = "action_on_user('".$reccord['id']."','lock')";
-                        $userIcon = "user-locked";
-                        $userTxt = $LANG['user_lock'];
                     }
 
                     $html .= '
                                 <td align="center">
-                                    <img '. ($showUserFolders == true) ? 'src="includes/images/'.$userIcon.'.png" onclick="'.$actionOnUser.'" class="button" style="padding:2px;" title="'.$userTxt.'"':'src="includes/images/user--minus_disabled.png"'. ' />
+                                    '.$actionOnUser.'
                                 </td>
                                 <td align="center">
-                                    &nbsp;<img '. ($showUserFolders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"'. ' />
+                                    '.$pw_change.'
                                 </td>
                                 <td align="center">
                                     &nbsp;';
-                    if ($showUserFolders != true) {
-                        $html .= '<img src="includes/images/mail--pencil_disabled.png" />';
+                    if (empty($reccord['email'])) {
+                        $html .= '<i class="fa fa-exclamation fa-lg mi-yellow tip"></i>&nbsp;<i class="fa fa-envelope mi-yellow tip" style="cursor:pointer;" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" title="'.$LANG['email'].'"></i>';
                     } else {
-                        $html .= '<img id="useremail_'.$reccord['id'].'" src="includes/images/'. empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png'. '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"'. ' />';
+                        $html .= '<i class="fa fa-envelope-o fa-lg tip" style="cursor:pointer;" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" title="'.$reccord['email'].'"></i>';
                     }
                     $html .= '
                                 </td>';
                     // Log reports
                     $html .= '
-                                <td align="center">
-                                    &nbsp;<img '. ($showUserFolders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['see_logs'].'"'. ' />
+                                <td style="text-align:center;">
+                                    '.$log_report.'
                                 </td>';
                     // GA code
                     if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
                         $html .= '
-                                <td>
-                                    &nbsp;<img src="includes/images/'. empty($reccord['ga']) ? 'phone_add' : 'phone_sound' .'.png" onclick="user_action_ga_code(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['user_ga_code'].'" />
+                                <td style="text-align:center;">
+                                    <i class="fa fa-qrcode fa-lg tip" style="cursor:pointer;" onclick="user_action_ga_code(\''.$reccord['id'].'\')" title="'.$LANG['user_ga_code'].'"></i>
                                 </td>';
                     }
                     // end
@@ -1256,12 +1282,12 @@ if (!empty($_POST['type'])) {
             $next_start = intval($_POST['from']) + intval($_POST['nb']);
             DB::query("SELECT * FROM ".prefix_table("users"));
             if ($next_start > DB::count()) {
-                $end_is_reached = true;
+                $end_is_reached = 1;
             } else {
-                $end_is_reached = false;
+                $end_is_reached = 0;
             }
             
-            echo $html;
+            //echo $html;
             
             echo prepareExchangedData(
                 array(
