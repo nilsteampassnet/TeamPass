@@ -139,7 +139,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 160,
+        height: 200,
         title: "<?php echo $LANG['is_administrated_by_role'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -456,6 +456,8 @@ $(function() {
 	});
     
     // load list of users
+    $("#users_list_load").show();
+    $("#but_users_reload").prop("disabled", true);
     loadUsersList(0);
 });
 
@@ -552,6 +554,7 @@ function ChangeUserParm(id, parameter)
 
 function Open_Div_Change(id,type)
 {
+    $("#div_loading").show();
     $.post("sources/users.queries.php",
         {
             type    : "open_div_"+type,
@@ -560,6 +563,7 @@ function Open_Div_Change(id,type)
         },
         function(data) {
             data = $.parseJSON(data);
+            $("#div_loading").hide();
             if (type == "functions") {
                 $("#change_user_functions_list").html(data.text);
                 $("#selected_user").val(id);
@@ -589,6 +593,8 @@ function Change_user_rights(id,type)
     if (type == "functions") var form = document.forms.tmp_functions;
     if (type == "autgroups") var form = document.forms.tmp_autgroups;
     if (type == "forgroups") var form = document.forms.tmp_forgroups;
+    
+    $("#div_loading").show();
 
     for (i=0 ; i<= form.length-1 ; i++) {
         if (form[i].type == "checkbox" && form[i].checked) {
@@ -597,13 +603,13 @@ function Change_user_rights(id,type)
             else list = list + ";" + function_id[1];
         }
     }
-
+    
     $.post("sources/users.queries.php",
         {
             type    : "change_user_"+type,
             id      : id,
             list    : list,
-            key        : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
             if (type == "functions") {
@@ -613,6 +619,7 @@ function Change_user_rights(id,type)
             } else if (type == "forgroups") {
                 $("#list_forgroups_user_"+id).html(data[0].text);
             }
+            $("#div_loading").hide();
         },
         "json"
    );
@@ -799,13 +806,12 @@ function htmlspecialchars_decode (string, quote_style)
 */
 function loadUsersList(from)
 {
-    console.log(from);
     $.post(
         "sources/users.queries.php",
         {
             type    : "load_users_list",
             from    : from,
-            nb      : "2",
+            nb      : "4",
             key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
@@ -813,14 +819,26 @@ function loadUsersList(from)
             if (data.error != "") {
                 console.log("Error!");
             } else {
-                if (data.end_reached == false) {
-                    console.log("done!");
+                $("#tbody_users").append(data.html);
+                if (data.end_reached == true) {
+                    $("#users_list_load").hide();
+                    $("#but_users_reload").prop("disabled", false);
+                    $(".tip").tooltipster();
                 } else {
-                    $("#tbody_users").append(data.html);
                     loadUsersList(data.from);
                 }
             }
         }
 	);
+}
+
+/**
+*
+*/
+function reloadUsersList()
+{
+    $("#users_list_load").show();
+    $("#tbody_users").html("");
+    loadUsersList(0);
 }
 </script>

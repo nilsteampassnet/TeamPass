@@ -490,9 +490,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // Clean arrays
         $allowedFoldersTmp = array();
         $listAllowedFolders = array_unique($listAllowedFolders);
+        $groupesVisiblesUser = trimElement($groupesVisiblesUser, ";");
         // Add user allowed folders
         $allowedFoldersTmp = array_unique(
-            array_merge($listAllowedFolders, explode(';', trimElement($groupesVisiblesUser, ";")))
+            array_merge($listAllowedFolders, explode(';', $groupesVisiblesUser))
         );
         // Exclude from allowed folders all the specific user forbidden folders
         $allowedFolders = array();

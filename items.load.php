@@ -813,7 +813,7 @@ function EditerItem()
                         $("#edit_show_error").html('Key verification for Query is not correct!');
                         $("#edit_show_error").show();
                         LoadingPage();
-                    else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
+                    }else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
                         $("#div_loading").hide();
                         $("#edit_show_error").html('Item password could not be correctly encrypted!');
                         $("#edit_show_error").show();
