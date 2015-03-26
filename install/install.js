@@ -18,7 +18,7 @@ $(function() {
     //SALT KEY non accepted characters management
     $("#encrypt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
-        if ($("#encrypt_key").val().length < 15)
+        if ($("#encrypt_key").val().length != 16 || ("#encrypt_key").val().length != 24 || ("#encrypt_key").val().length != 32)
             $("#res4_check1").html("<img src='../includes/images/cross.png' />");
         else
             $("#res4_check1").html("<img src='../includes/images/tick.png' />");
@@ -74,6 +74,8 @@ function CheckPage()
     // STEP 4
     if (step == "4") {
         if ($("#encrypt_key").val() == "") {
+            error = "You must define a SALTkey!";
+        } else if ($("#encrypt_key").val().length != 16 && $("#encrypt_key").val().length != 24 && $("#encrypt_key").val().length != 32) {
             error = "You must define a SALTkey!";
         } else if ($("#admin_pwd").val() == "") {
             error = "You must define a password for Admin account!";
@@ -267,7 +269,7 @@ function suggestKey() {
     // "editors and viewers regard the password as multiple words and
     // things like double click no longer work"
     var pwchars = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
-    var passwordlength = 28;    // length of the salt
+    var passwordlength = 16;    // length of the salt
     var passwd = "";
 
     for ( i = 0; i < passwordlength; i++ ) {
