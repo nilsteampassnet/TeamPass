@@ -52,11 +52,8 @@ foreach ($rows as $reccord) {
 // Display list of USERS
 echo '
 <div class="title ui-widget-content ui-corner-all">
-    '.$LANG['admin_users'].'
-    <span style="font-size:14px; margin-left:15px;" class="fa-stack">
-        <i class="fa fa-square-o fa-stack-2x"></i>
-        <i class="fa fa-refresh fa-stack-1x tip" style="cursor:pointer;" onclick="reloadUsersList()" title="'.$LANG['reload_table'].'"></i>&nbsp;
-    </span>
+    '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
+    <img src="includes/images/refresh.png" title="'.$LANG['reload_table'].'" onclick="reloadUsersList()"class="button" style="padding:2px;" />
     <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
 <input type="text" name="search" id="search" />

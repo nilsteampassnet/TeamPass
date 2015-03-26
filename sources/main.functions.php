@@ -490,10 +490,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // Clean arrays
         $allowedFoldersTmp = array();
         $listAllowedFolders = array_unique($listAllowedFolders);
-        $groupesVisiblesUser = trimElement($groupesVisiblesUser, ";");
+        $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
         // Add user allowed folders
         $allowedFoldersTmp = array_unique(
-            array_merge($listAllowedFolders, explode(';', $groupesVisiblesUser))
+            array_merge($listAllowedFolders, $groupesVisiblesUser)
         );
         // Exclude from allowed folders all the specific user forbidden folders
         $allowedFolders = array();
@@ -553,7 +553,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $fonctionsAssociees,
                         "W"
                     );
-                    if (DB::count() == 0) {
+                    if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
                     }
                 }
@@ -571,7 +571,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $fonctionsAssociees,
                         "W"
                     );
-                    if (DB::count() == 0) {
+                    if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
                     }
                 }
