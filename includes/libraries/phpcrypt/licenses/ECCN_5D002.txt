@@ -1,0 +1,7 @@
+phpCrypt is self classified under ECCN 5D002 in the United States as freely
+available encryption source code. Both BIS and the NSA were notified of
+phpCrypt and the URLs which host the phpCrypt source code as required under
+740.13(e) of the EAR on July 30, 2013 at the following email addresses:
+
+crypt@bis.doc.gov
+enc@nsa.gov

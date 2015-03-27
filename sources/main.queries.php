@@ -520,8 +520,12 @@ switch ($_POST['type']) {
      * Change the personal saltkey
      */
     case "change_personal_saltkey":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
         //decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
+        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
@@ -529,6 +533,8 @@ switch ($_POST['type']) {
         if (empty($oldPersonalSaltkey)) {
             $oldPersonalSaltkey = $_SESSION['my_sk'];
         }
+        
+        $list = "";
 
         // Change encryption
         $rows = DB::query(
@@ -540,30 +546,33 @@ switch ($_POST['type']) {
             $_SESSION['user_id'],
             "at_creation"
         );
+        $nb = DB::count();
         foreach ($rows as $record) {
             if (!empty($record['pw'])) {
-                // get pw
-                $pw = decrypt($record['pw'], $oldPersonalSaltkey);
-                // encrypt
-                $encryptedPw = encrypt($pw, $newPersonalSaltkey);
-                // update pw in ITEMS table
-                DB::update(
-                    prefix_table("items"),
-                    array(
-                        'pw' => $encryptedPw
-                       ),
-                    "id=%i",
-                    $record['id']
-                );
+                if (empty($list)) {
+                    $list = $record['id'];
+                } else {
+                    $list .= ",".$record['id'];
+                }
             }
         }
+        
         // change salt
-        $_SESSION['my_sk'] = $newPersonalSaltkey;
+        $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
         setcookie(
             "TeamPass_PFSK_".md5($_SESSION['user_id']),
             encrypt($_SESSION['my_sk'], ""),
             time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
             '/'
+        );
+        
+        echo prepareExchangedData(
+        	array(
+	        	"list" => $list,
+	        	"error" => "no",
+                "nb_total" => $nb
+        	),
+        	"encode"
         );
         break;
     /**
