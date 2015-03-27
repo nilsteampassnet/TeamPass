@@ -421,17 +421,18 @@ $htmlHeaders .= '
                 key             : "'.$_SESSION['key'].'"
             },
             function(data){
-                if (aIds == "" && currentID == "") {
+                if (currentID == "") {
                     $("#div_change_personal_saltkey_wait").html("'.$LANG['alert_message_done'].'");
-                    //location.reload();
+                    location.reload();
                 } else {
-                    if (data.error == "") {
+                    if (data[0].error == "") {
                         changePersonalSaltKey(credentials, aIds, nb_total);
                     } else {
-                        $("#div_change_personal_saltkey_wait").html(data.error);
+                        $("#div_change_personal_saltkey_wait").html(data[0].error);
                     }
                 }
-            }
+            },
+            "json"
         );
     }
 
@@ -622,6 +623,9 @@ $htmlHeaders .= '
                 "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
+            },
+            close: function() {
+                $("#div_change_personal_saltkey_wait").hide();
             }
         });
 

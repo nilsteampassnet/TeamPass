@@ -185,47 +185,62 @@ switch ($_POST['type']) {
                 $oldPersonalSaltkey = $_SESSION['my_sk'];
             }
             
-            if (empty($newPersonalSaltkey)) {
+            if (empty($personal_sk)) {
                 echo '[{"error" : "No personal saltkey provided"}]';
                 break;
             }
             
-            // check if pw encrypted with protocol #2
-            $pw = decrypt($data['pw'], $_SESSION['my_sk']);
-            if (empty($pw)) {
-                // used protocol is #1
-                $pw = decryptOld($data['pw'], $_SESSION['my_sk']);  // decrypt using protocol #1
+            // get data about pw
+            $data = DB::queryfirstrow(
+                "SELECT id, pw, pw_iv
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $_POST['currentId']
+            );
+            // check if current encryption protocol #3
+            if (!empty($data['pw_iv']) && !empty($data['pw'])) {
+                // decrypt it
+                $pw = cryption($data['pw'], $oldPersonalSaltkey, $data['pw_iv'], "decrypt");
             } else {
-                // used protocol is #2
-                // get key for this pw
-                $dataItem = DB::queryfirstrow(
-                    "SELECT rand_key 
-                    FROM ".prefix_table("keys")."
-                    WHERE `sql_table` = %s AND id = %i",
-                    "items",
-                    $data['id']
-                );
-                if (!empty($dataItem['rand_key'])) {
-                    // remove key from pw
-                    $pw = substr($pw, strlen($dataTemp['rand_key']));
+                // check if pw encrypted with protocol #2
+                $pw = decrypt($data['pw'], $oldPersonalSaltkey);
+                if (empty($pw)) {
+                    // used protocol is #1
+                    $pw = decryptOld($data['pw'], $oldPersonalSaltkey);  // decrypt using protocol #1                    
+                } else {
+                    // used protocol is #2
+                    // get key for this pw
+                    $dataItem = DB::queryfirstrow(
+                        "SELECT rand_key 
+                        FROM ".prefix_table("keys")."
+                        WHERE `sql_table` = %s AND id = %i",
+                        "items",
+                        $data['id']
+                    );
+                    if (!empty($dataItem['rand_key'])) {
+                        // remove key from pw
+                        $pw = substr($pw, strlen($dataTemp['rand_key']));
+                    }                
                 }
             }
-            
             // encrypt it
-            $encrypt = cryption($pw, $personal_sk, "", "encrypt");
-            echo $pw." | ".$personal_sk." | ".$encrypt['string']." | ".$encrypt['iv']." ;; ";
-            // store Password
-            /*DB::update(
-                prefix_table('items'),
-                array(
-                    'pw' => $encrypt['string'],
-                    'pw_iv' => $encrypt['iv']
-                   ),
-                "id = %i", $data['id']
-            );*/
-            
+            if (!empty($pw) && isUTF8($pw)) {
+                $encrypt = cryption($pw, $personal_sk, "", "encrypt");
+                if (isUTF8($pw)) {
+                    // store Password
+                    DB::update(
+                        prefix_table('items'),
+                        array(
+                            'pw' => $encrypt['string'],
+                            'pw_iv' => $encrypt['iv']
+                           ),
+                        "id = %i", $data['id']
+                    );
+                }
+            }
         } else {
             // COMPLETE RE-ENCRYPTION
+            
             $personal_sk = $_SESSION['my_sk'];
             
             // get data about pw

@@ -311,7 +311,7 @@ if (isset($_POST['type'])) {
                 // Prepare full line
                 $html = '<li class="item_draggable'
                 .'" id="'.$newID.'" style="margin-left:-30px;">'
-                .'<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-black"></i>&nbsp;</span>'
+                .'<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>'
                 .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;' .
                 '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">' .
                 stripslashes($dataReceived['label']);
@@ -1967,7 +1967,7 @@ if (isset($_POST['type'])) {
                         $html .= '" id="'.$record['id'].'" style="margin-left:-30px;">';
 
                         if ($canMove == 1) {
-                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-black"></i>&nbsp;</span>';
+                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
