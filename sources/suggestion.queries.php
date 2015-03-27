@@ -91,8 +91,8 @@ if (!empty($_POST['type'])) {
             DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
-                // generate random key
-                $randomKey = generateKey();
+                /*// generate random key
+                $randomKey = generateKey();*/
 
                 // query
                 DB::insert(
@@ -101,10 +101,9 @@ if (!empty($_POST['type'])) {
                         'label' => $label,
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
-                        'password' => encrypt($randomKey.$pwd),
+                        'password' => encrypt($pwd),
                         'comment' => $comment,
-                        'folder_id' => $folder,
-                        'suggestion_key' => $randomKey
+                        'folder_id' => $folder
                     )
                 );
 
@@ -188,7 +187,7 @@ if (!empty($_POST['type'])) {
                     $existing_item_id['id']
                 );
                 if ($updStatus) {
-                    // update KEY
+                    /*// update KEY
                     $updStatus = DB::update(
                         prefix_table("keys"),
                         array(
@@ -197,7 +196,7 @@ if (!empty($_POST['type'])) {
                         "sql_table = %s AND id = %i",
                         "items",
                         $existing_item_id['id']
-                    );
+                    );*/
 
                     // update LOG
                     DB::insert(
@@ -239,7 +238,7 @@ if (!empty($_POST['type'])) {
                 $newID = DB::insertId();
 
                 if (is_numeric($newID)) {
-                    // add Key
+                    /*// add Key
                     DB::insert(
                         prefix_table("keys"),
                         array(
@@ -247,7 +246,7 @@ if (!empty($_POST['type'])) {
                             'id' => $newID,
                             'rand_key' => $suggestion['suggestion_key']
                         )
-                    );
+                    );*/
 
                     // update log
                     DB::insert(

@@ -14,6 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+    'change_password' => 'Change password',
+    'show_password' => 'Show password',
+    'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',
+    'pf_change_encryption' => 'The encryption algorithm has changed and your personal passwords have to be re-encoded. You need to run this process to use your passwords. This process may take several minutes depending on the number of items you have.',
+    'pf_sk_set' => 'Your personal Salt Key is correctly set, You can click on button Start',
+    'pf_sk_not_set' => 'Your personal Salt Key is NOT set! Please enter it.',
+    'upgrade_needed' => 'Upgrade needed',
     'item_menu_mov_rep' => 'Move a Folder',
     'settings_default_session_expiration_time' => 'By default delay for session expiration',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',

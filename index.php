@@ -664,7 +664,7 @@ echo '
                 <div style="margin-top:20px;" class="ui-state-highlight">
                    '.$LANG['new_saltkey_warning'].'
                 </div>
-                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b></div>
+                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b><span id="div_change_personal_saltkey_wait_progress"></span></div>
             </div>';
 
         //saltkey LOST dialogbox

@@ -191,6 +191,15 @@ function IdentifyUser($sentData)
             // authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
+                //update user's password
+                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                DB::update(prefix_table('users'),
+                    array(
+                        'pw' => $data['pw']
+                    ),
+                    "login=%s",
+                    $username
+                );
             } else {
                 $ldapConnection = false;
             }
@@ -247,11 +256,14 @@ function IdentifyUser($sentData)
         && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
+        $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
-                'pw' => $password,
+                //'pw' => $password,
+                'pw' => $data['pw'],
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
@@ -386,9 +398,10 @@ function IdentifyUser($sentData)
             $_SESSION['personal_folder'] = $data['personal_folder'];
             $_SESSION['user_language'] = $data['user_language'];
             $_SESSION['user_email'] = $data['email'];
-            $_SESSION['user']['ga'] = $data['ga'];
-            $_SESSION['user']['avatar'] = $data['avatar'];
-            $_SESSION['user']['avatar_thumb'] = $data['avatar_thumb'];
+            $_SESSION['user_ga'] = $data['ga'];
+            $_SESSION['user_avatar'] = $data['avatar'];
+            $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
+            $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
             
             // manage session expiration
             $serverTime = time();
