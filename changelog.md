@@ -1,4 +1,16 @@
-2.1.23
+Last changes
+ * Removal of Keys table
+ * Implementation of PhpCrypt library as encryption library (AES-128 with CBC mode)
+ * Implementation of Awesomefont in Items page
+ * Clean up of old comments
+ * Added "long press" to show password
+ * Fix of bug in Offline export
+ * List of Users is now loaded through Ajax to prevent timeout in case of long list of users
+ * Personal saltkey change is now performed through Ajax to prevent timeout in case of long list of passwords
+ * Fix for users with "Allowed folders" that can't write inside them.
+ * Removed extra files from Yubico folder
+ 
+ 2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
  #830 - Fix documentation syntax
