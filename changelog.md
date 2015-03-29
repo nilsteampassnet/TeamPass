@@ -9,6 +9,8 @@ Last changes
  * Personal saltkey change is now performed through Ajax to prevent timeout in case of long list of passwords
  * Fix for users with "Allowed folders" that can't write inside them.
  * Removed extra files from Yubico folder
+ * Update process: suggestions passwords are reencrypted
+ * Suggestion migrated to new encryption
  
  2.1.23
  #727 - #729 - Encoding problem

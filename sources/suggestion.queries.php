@@ -91,8 +91,8 @@ if (!empty($_POST['type'])) {
             DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
-                /*// generate random key
-                $randomKey = generateKey();*/
+                // encrypt
+                $encrypt = cryption($pwd , SALT, "", "encrypt");
 
                 // query
                 DB::insert(
@@ -101,9 +101,10 @@ if (!empty($_POST['type'])) {
                         'label' => $label,
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
-                        'password' => encrypt($pwd),
+                        'pw' => $encrypt['string'],
                         'comment' => $comment,
-                        'folder_id' => $folder
+                        'folder_id' => $folder,
+                        'pw_iv' => $encrypt['iv']
                     )
                 );
 
@@ -158,7 +159,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
+                "SELECT label, description, pw, suggestion_key, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
@@ -181,7 +182,8 @@ if (!empty($_POST['type'])) {
                     prefix_table("items"),
                     array(
                         'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
-                        'pw' => $suggestion['password']
+                        'pw' => $suggestion['pw'],
+                        'pw_iv' => $suggestion['pw_iv']
                     ),
                     "id=%i",
                     $existing_item_id['id']
@@ -228,11 +230,12 @@ if (!empty($_POST['type'])) {
                     array(
                         'label' => $suggestion['label'],
                         'description' => $suggestion['description'],
-                        'pw' => $suggestion['password'],
+                        'pw' => $suggestion['pw'],
                         'id_tree' => $suggestion['folder_id'],
                         'inactif' => '0',
                         'perso' => '0',
-                        'anyone_can_modify' => '0'
+                        'anyone_can_modify' => '0',
+                        'pw_iv' => $suggestion['pw_iv']
                     )
                 );
                 $newID = DB::insertId();
