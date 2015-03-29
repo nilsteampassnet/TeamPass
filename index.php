@@ -482,9 +482,6 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
     // Page doesn't exist
     $_SESSION['error']['code'] = ERR_NOT_EXIST;
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
-    // When user identified
-    // PAGE BY DEFAULT
-    //include 'home.php';
     // When user is not identified
 } else {
     // Automatic redirection

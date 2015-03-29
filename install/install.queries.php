@@ -687,7 +687,7 @@ if (isset($_POST['type'])) {
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
-                            `suggestion_key` varchar(50) NOT NULL,
+                            `pw_iv` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
