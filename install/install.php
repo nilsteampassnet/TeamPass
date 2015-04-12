@@ -135,7 +135,7 @@ echo '
     <label for="db_login" class="label_block">Login :</label><input type="text" id="db_login" style="width:250px;" />
     </div>
     <div class="line_entry">
-    <label for="db_pw" class="label_block">Password :</label><input type="text" id="db_pw" tilte="Double quotes not allowed!" style="width:250px;" />
+    <label for="db_pw" class="label_block">Password :</label><input type="password" id="db_pw" tilte="Double quotes not allowed!" style="width:250px;" />
     </div>
     <div class="line_entry">
     <label for="db_port" class="label_block">Port :</label><input type="text" id="db_port" value="3306" style="width:250px;" />
