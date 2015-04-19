@@ -1755,19 +1755,19 @@ echo '
 // LDAP BIND DN for search
 echo '
                     <tr>
-                        <td><label for="ldap_bind_dn">'.$txt['settings_ldap_bind_dn'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_bind_dn_tip'].'" /></label></td>
+                        <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_dn_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" /></td>
                     </tr>';
 // LDAP BIND PASSWD for search
 echo '
                     <tr>
-                        <td><label for="ldap_bind_passwd">'.$txt['settings_ldap_bind_passwd'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_bind_passwd_tip'].'" /></label></td>
+                        <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_passwd_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" /></td>
                     </tr>';
 // LDAP BASE for search
 echo '
                     <tr>
-                        <td><label for="ldap_search_base">'.$txt['settings_ldap_search_base'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$txt['settings_ldap_search_base_tip'].'" /></label></td>
+                        <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_search_base_tip'].'" /></label></td>
                         <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                     </tr>';
 // AD SSL
