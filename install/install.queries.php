@@ -682,7 +682,7 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."suggestion` (
                             `id` tinyint(12) NOT NULL AUTO_INCREMENT,
                             `label` varchar(255) NOT NULL,
-                            `password` text NOT NULL,
+                            `pw` text NOT NULL,
                             `description` text NOT NULL,
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
