@@ -490,10 +490,10 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			} else {
 				$login = addslashes($elem['login']);
 			}
-			if (empty($elem['restricted_to'])) {
-				$rest = '&nbsp;';
+			if (empty($elem['url'])) {
+				$url = '&nbsp;';
 			} else {
-				$rest = addslashes($elem['restricted_to']);
+				$url = addslashes($elem['url']);
 			}
 
 			// Prepare tree
@@ -520,7 +520,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			<td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
 		    <td>'.$desc.'</td>
 		    <td align="center">'.$login.'</td>
-		    <td align="center">'.$rest.'</td>
+		    <td align="center">'.$url.'</td>
 		    </tr>'
 			);
 		}
