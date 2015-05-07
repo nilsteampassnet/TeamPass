@@ -407,7 +407,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     	fclose($outstream);
 
     	// send back and continue
-    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
+    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$html_file.'"}]';
     	break;
 
 	//CASE export in HTML format - Iteration loop
@@ -470,7 +470,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		}
 
 		//save in export file
-		$outstream = fopen($_POST['file'], "a");
+		$outstream = fopen($_SESSION['settings']['path_to_files_folder'].$_POST['file'], "a");
 
 		$lineType = "line1";
 		$idTree = "";
@@ -535,7 +535,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 	case "export_to_html_format_finalize":
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		// open file
-		$outstream = fopen($_POST['file'], "a");
+		$outstream = fopen($_SESSION['settings']['path_to_files_folder'].$_POST['file'], "a");
 
 		fputs(
 		$outstream,
@@ -584,7 +584,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
 		break;
 }
 
