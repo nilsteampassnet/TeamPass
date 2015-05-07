@@ -175,10 +175,10 @@ switch ($_POST['type']) {
                     error_log('key: '.$key.' - paths: '.$record['path']);
                     $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
