@@ -175,10 +175,10 @@ switch ($_POST['type']) {
                     error_log('key: '.$key.' - paths: '.$record['path']);
                     $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
@@ -316,7 +316,7 @@ switch ($_POST['type']) {
     	// - prepare export file
     	// - get full list of objects id to export
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
         $idsList = array();
     	$objNumber = 0;
 
@@ -407,7 +407,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     	fclose($outstream);
 
     	// send back and continue
-    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
+    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$html_file.'"}]';
     	break;
 
 	//CASE export in HTML format - Iteration loop
@@ -422,7 +422,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		$full_listing = array();
 		include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 	
 		$rows = DB::query(
 			"SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
@@ -470,7 +470,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		}
 
 		//save in export file
-		$outstream = fopen($_POST['file'], "a");
+		$outstream = fopen($_SESSION['settings']['path_to_files_folder'].$_POST['file'], "a");
 
 		$lineType = "line1";
 		$idTree = "";
@@ -490,10 +490,10 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			} else {
 				$login = addslashes($elem['login']);
 			}
-			if (empty($elem['restricted_to'])) {
-				$rest = '&nbsp;';
+			if (empty($elem['url'])) {
+				$url = '&nbsp;';
 			} else {
-				$rest = addslashes($elem['restricted_to']);
+				$url = addslashes($elem['url']);
 			}
 
 			// Prepare tree
@@ -520,7 +520,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			<td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
 		    <td>'.$desc.'</td>
 		    <td align="center">'.$login.'</td>
-		    <td align="center">'.$rest.'</td>
+		    <td align="center">'.$url.'</td>
 		    </tr>'
 			);
 		}
@@ -535,7 +535,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 	case "export_to_html_format_finalize":
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		// open file
-		$outstream = fopen($_POST['file'], "a");
+		$outstream = fopen($_SESSION['settings']['path_to_files_folder'].$_POST['file'], "a");
 
 		fputs(
 		$outstream,
@@ -584,7 +584,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
 		break;
 }
 
