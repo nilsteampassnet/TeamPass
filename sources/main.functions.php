@@ -366,7 +366,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 $rows = DB::query(
                     "SELECT r.folder_id AS folder_id, t.allow_pw_change AS allow_pw_change
                     FROM ".$pre."roles_values AS r
-                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.folder_id)
+                    LEFT JOIN  ".$pre."roles_title AS t ON (t.id = r.role_id)
                     WHERE r.role_id=%i",
                     $roleId
                 );
