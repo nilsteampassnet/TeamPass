@@ -422,6 +422,48 @@ $(function() {
 		}
 	});
 
+    $("#user_edit_login_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 280,
+        title: "<?php echo $LANG['admin_action'];?>",
+        buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                $("#user_edit_login_dialog_message").html("<?php echo $LANG['please_wait'];?>");
+                $.post(
+                    "sources/users.queries.php",
+                    {
+                        type    : "user_edit_login",
+                        id      : $("#selected_user").val(),
+                        login   : $("#edit_login").val(),
+                        name    : $("#edit_name").val(),
+                        lastname: $("#edit_lastname").val(),
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#name_"+$("#selected_user").html()).html($("#edit_name").val());
+                        $("#lastname_"+$("#selected_user").val()).html($("#edit_lastname").val());
+                        $("#login_"+$("#selected_user").val()).html($("#edit_login").val());
+                        $("#user_edit_login_dialog").dialog("close");
+                    }
+                );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        open: function() {
+            $("#edit_name").val($("#name_"+$("#selected_user").val()).html());
+            $("#edit_lastname").val($("#lastname_"+$("#selected_user").val()).html());
+            $("#edit_login").val($("#login_"+$("#selected_user").val()).html());
+        },
+        close: function() {
+            $("#user_edit_login_dialog_message").html("");
+        }
+    });
+
 	var watermark = 'Search a user';
 
 	//init, set watermark text and class
@@ -718,6 +760,13 @@ function user_action_ga_code(id)
 	"json"
 	);
 }
+
+function user_edit_login(id)
+{
+    $("#selected_user").val(id);
+    $("#user_edit_login_dialog").dialog("open");
+}
+
 
 /**
  *

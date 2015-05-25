@@ -1102,9 +1102,11 @@ if (!empty($_POST['type'])) {
                         $row_style = ' class="ligne'.($x % 2).' data-row"';     
                     }
                     
-                    if ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) 
-                        $td_class = 'class="editable_textarea"';
-                    else $td_class = '';
+                    if ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true)
+                        $show_edit = '<i class="fa fa-pencil fa-lg tip" style="cursor:pointer;" onclick="user_edit_login('.$reccord['id'].')" title="'.$LANG['edit_user'].'">&nbsp;';
+                    else
+                        $show_edit = '';
+                    $td_class = '';
                     
                     if ($reccord['admin'] == 1) {
                         $is_admin = ' style="display:none;"';
@@ -1157,7 +1159,7 @@ if (!empty($_POST['type'])) {
                     
                     $html .= '
                             <tr'.$row_style.'>
-                                <td align="center">'.$reccord['id'].'</td>
+                                <td align="center">'.$show_edit.$reccord['id'].'</td>
                                 <td align="center">';
                     if ($reccord['disabled'] == 1) $html .= '
                                     <i class="fa fa-warning fa-lg mi-red tip" style="padding:2px;cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" title="'.$LANG['unlock_user'].'"></i>';
@@ -1299,6 +1301,28 @@ if (!empty($_POST['type'])) {
                 "encode"
             );
             
+            break;
+
+        /**
+         * UPDATE CAN CREATE ROOT FOLDER RIGHT
+         */
+        case "user_edit_login":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            DB::update(
+                prefix_table("users"),
+                array(
+                    'login' => $_POST['login'],
+                    'name' => $_POST['name'],
+                    'lastname' => $_POST['lastname']
+                ),
+                "id = %i",
+                $_POST['id']
+            );
             break;
     }
 }

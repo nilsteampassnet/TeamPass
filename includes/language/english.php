@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'edit_user' => 'Edit user',
     'change_password' => 'Change password',
     'show_password' => 'Show password',
     'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',

@@ -302,3 +302,19 @@ $LANG['activity'].':
     </table>
     <div id="log_pages" style="margin-top:10px;"></div>
 </div>';
+
+// USER EDIT DIALOG
+echo '
+<div id="user_edit_login_dialog" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_edit_login_dialog_message"></div>
+    <div>
+        <label for="edit_name" class="label_cpm">'.$LANG['name'].'</label>
+        <input type="text" id="edit_name" class="input_text text ui-widget-content ui-corner-all" value="" />
+        <br />
+        <label for="edit_lastname" class="label_cpm">'.$LANG['lastname'].'</label>
+        <input type="text" id="edit_lastname" class="input_text text ui-widget-content ui-corner-all" value="" />
+        <br />
+        <label for="edit_login" class="label_cpm">'.$LANG['login'].'</label>
+        <input type="text" id="edit_login" class="input_text text ui-widget-content ui-corner-all" value="" />
+    </div>
+</div>';
