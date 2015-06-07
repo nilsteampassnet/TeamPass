@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -54,7 +54,7 @@ switch ($_POST['type']) {
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 $rows =DB::query(
-                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
+                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
                     l.date as date,
                     n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
@@ -87,9 +87,9 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($reccord['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
                             } else {
-                                $pw = decrypt($record['pw']);
+                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
 
                             $full_listing[$i] = array(
@@ -142,8 +142,8 @@ switch ($_POST['type']) {
                 array_push($pws_list, $record['id']);
             }
         }
-        
-        // 
+
+        //
         DB::update(
             prefix_table('users'),
             array(
@@ -174,7 +174,7 @@ switch ($_POST['type']) {
         }
         if (isset($_POST['data_to_share'])) {
             // ON DEMAND
-            
+
             //decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
 
@@ -184,12 +184,12 @@ switch ($_POST['type']) {
             if (empty($oldPersonalSaltkey)) {
                 $oldPersonalSaltkey = $_SESSION['my_sk'];
             }
-            
+
             if (empty($personal_sk)) {
                 echo '[{"error" : "No personal saltkey provided"}]';
                 break;
             }
-            
+
             // get data about pw
             $data = DB::queryfirstrow(
                 "SELECT id, pw, pw_iv
@@ -206,12 +206,12 @@ switch ($_POST['type']) {
                 $pw = decrypt($data['pw'], $oldPersonalSaltkey);
                 if (empty($pw)) {
                     // used protocol is #1
-                    $pw = decryptOld($data['pw'], $oldPersonalSaltkey);  // decrypt using protocol #1                    
+                    $pw = decryptOld($data['pw'], $oldPersonalSaltkey);  // decrypt using protocol #1
                 } else {
                     // used protocol is #2
                     // get key for this pw
                     $dataItem = DB::queryfirstrow(
-                        "SELECT rand_key 
+                        "SELECT rand_key
                         FROM ".prefix_table("keys")."
                         WHERE `sql_table` = %s AND id = %i",
                         "items",
@@ -220,7 +220,7 @@ switch ($_POST['type']) {
                     if (!empty($dataItem['rand_key'])) {
                         // remove key from pw
                         $pw = substr($pw, strlen($dataTemp['rand_key']));
-                    }                
+                    }
                 }
             }
             // encrypt it
@@ -240,9 +240,9 @@ switch ($_POST['type']) {
             }
         } else {
             // COMPLETE RE-ENCRYPTION
-            
+
             $personal_sk = $_SESSION['my_sk'];
-            
+
             // get data about pw
             $data = DB::queryfirstrow(
                 "SELECT id, pw, pw_iv
@@ -260,7 +260,7 @@ switch ($_POST['type']) {
                     // used protocol is #2
                     // get key for this pw
                     $dataItem = DB::queryfirstrow(
-                        "SELECT rand_key 
+                        "SELECT rand_key
                         FROM ".prefix_table("keys")."
                         WHERE `sql_table` = %s AND id = %i",
                         "items",
@@ -271,10 +271,10 @@ switch ($_POST['type']) {
                         $pw = substr($pw, strlen($dataTemp['rand_key']));
                     }
                 }
-                
+
                 // encrypt it
                 $encrypt = cryption($pw, $personal_sk, "", "encrypt");
-                
+
                 // store Password
                 DB::update(
                     prefix_table('items'),
@@ -288,7 +288,7 @@ switch ($_POST['type']) {
                 // already re-encrypted
             }
         }
-        
+
 
         echo '[{"error" : ""}]';
         break;

@@ -71,7 +71,7 @@ if (
             );
 
             // get data
-            $pw = decrypt($dataItem['pw']);
+            $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
 
         	// get key for original pw
         	$originalKey = DB::queryfirstrow(

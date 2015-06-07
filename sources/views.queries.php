@@ -12,12 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -342,9 +342,9 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * 
-            FROM ".prefix_table("log_system")." as l 
-            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id) 
+            "SELECT *
+            FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s",
             "error"
         );
@@ -733,27 +733,28 @@ switch ($_POST['type']) {
      * CASE purging logs
      */
     case "purgeLogs":
+    	db::debugMode(true);
         if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "at_shown",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
                 $nbElements = DB::count();
                     // Delete
-                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
-                    "at_shown",
-                    intval(strtotime($_POST['purgeFrom'])),
-                    intval(strtotime($_POST['purgeTo']))
-                );
+//                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+//                     "at_shown",
+//                     intval(strtotime($_POST['purgeFrom'])),
+//                     intval(strtotime($_POST['purgeTo']))
+//                 );
             } elseif ($_POST['logType'] == "connections_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -768,7 +769,7 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "errors_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -783,7 +784,7 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "copy_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "at_copy",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -797,7 +798,7 @@ switch ($_POST['type']) {
                 );
             }
 
-            echo '[{"status" : "ok", "nb":"'.$nbElements[0].'"}]';
+            echo '[{"status" : "ok", "nb":"'.$nbElements.'"}]';
         } else {
             echo '[{"status" : "nok"}]';
         }

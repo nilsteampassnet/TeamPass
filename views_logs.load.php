@@ -234,7 +234,9 @@ $(function() {
     	changeYear: true,
     	numberOfMonths: 1,
     	onClose: function( selectedDate ) {
-    	    $( "#to" ).datepicker( "option", "minDate", selectedDate );
+    		var minDate = new Date(Date.parse(selectedDate));
+            minDate.setDate(minDate.getDate() + 1);
+    	    $( "#to" ).datepicker( "option", "minDate", minDate );
     	}
 	});
 	$( "#purgeTo" ).datepicker({
@@ -243,7 +245,9 @@ $(function() {
     	changeYear: true,
     	numberOfMonths: 1,
     	onClose: function( selectedDate ) {
-    	    $( "#from" ).datepicker( "option", "maxDate", selectedDate );
+    		var maxDate = new Date(Date.parse(selectedDate));
+    		maxDate.setDate(maxDate.getDate() + 1);
+    	    $( "#from" ).datepicker( "option", "maxDate", maxDate );
     	}
 	});
 });

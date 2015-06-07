@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -77,7 +77,7 @@ switch ($_POST['type']) {
             // send query
             $rows = DB::query(
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
-                    l.date as date,
+                    l.date as date, i.pw_iv as pw_iv,
                     n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
@@ -109,9 +109,9 @@ switch ($_POST['type']) {
                     } else {
                         //encrypt PW
                         if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                            $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                            $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
                         } else {
-                            $pw = decrypt($record['pw']);
+                            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                         }
                         /*if ($record['perso'] != 1) {
                             $pw = stripslashes($pw);
@@ -249,7 +249,7 @@ switch ($_POST['type']) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
-                       l.date as date,
+                       l.date as date, i.pw_iv as pw_iv,
                        n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
@@ -277,9 +277,9 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
                             } else {
-                                $pw = decrypt($record['pw']);
+                            	$pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
@@ -423,17 +423,17 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		$full_listing = array();
 		include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
-	
+
 		$rows = DB::query(
 			"SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
-               l.date as date,
+               l.date as date, i.pw_iv as pw_iv,
                n.renewal_period as renewal_period
             FROM ".prefix_table("items")." as i
             INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
             INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
             WHERE i.inactif = %i
             AND i.id_tree= %i
-            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))            
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
             ORDER BY i.label ASC, l.date DESC",
             "0",
             intval($_POST['idTree']),
@@ -447,9 +447,9 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			if (empty($id_managed) || $id_managed != $record['id']) {
 				// decrypt PW
 				if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-					$pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+					$pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
 				} else {
-					$pw = decrypt($record['pw']);
+                    $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
 				}
 				array_push($full_listing,array(
 				    'id_tree' => $record['id_tree'],
