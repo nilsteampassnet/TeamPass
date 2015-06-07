@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -120,7 +120,7 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
-            
+
             // is pwd empty?
             if (empty($pw)) {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
@@ -150,11 +150,9 @@ if (isset($_POST['type'])) {
             ) {
                 // encrypt PW
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    //$pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
                     $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
                     $restictedTo = $_SESSION['user_id'];
                 } else {
-                    //$pw = encrypt($pw);
                     $encrypt = cryption($pw, SALT, "", "encrypt");
                 }
                 if (empty($encrypt['string'])) {
@@ -318,7 +316,7 @@ if (isset($_POST['type'])) {
                 if (!empty($dataReceived['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                     $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($dataReceived['description']), 0, 30))).']</font>';
                 }
-                $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';                    
+                $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
                 // mini icon for collab
                 if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                     if ($dataReceived['anyone_can_modify'] == 1) {
@@ -363,7 +361,7 @@ if (isset($_POST['type'])) {
             } elseif (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 0 && $itemExists == 1) {
                 $returnValues = array("error" => "item_exists");
             }
-            
+
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
             break;
@@ -461,7 +459,7 @@ if (isset($_POST['type'])) {
                     // ---Manage tags
                     // deleting existing tags for this item
                     DB::delete($pre."tags", "item_id = %i", $dataReceived['id']);
-                    
+
                     // Add new tags
                     $tags = explode(' ', $tags);
                     foreach ($tags as $tag) {
@@ -1632,7 +1630,7 @@ if (isset($_POST['type'])) {
             }
             // decrypt and retreive data in JSON format
         	$dataReceived = prepareExchangedData($_POST['data'], "decode");
-            
+
             $tmp_source = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $dataReceived['source_folder_id']
@@ -1642,7 +1640,7 @@ if (isset($_POST['type'])) {
                 $dataReceived['target_folder_id']
             );
             if ( $tmp_source['parent_id'] != 0 || $tmp_source['title'] != $_SESSION['user_id'] || $tmp_source['personal_folder'] != 1 || $tmp_target['title'] != $_SESSION['user_id'] || $tmp_target['personal_folder'] != 1) {
-                
+
                 // moving SOURCE folder
                 DB::update(
                     prefix_table("nested_tree"),
@@ -1654,8 +1652,8 @@ if (isset($_POST['type'])) {
                 );
                 $tree->rebuild();
             }
-            
-            
+
+
             // send data
             echo '[{"error" : ""}]';
             break;
@@ -1759,7 +1757,7 @@ if (isset($_POST['type'])) {
                     }
 
                     $query_limit = " LIMIT ".$start.",".$items_to_display_once;
-                    
+
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
                         i.label as label, i.description as description, i.pw as pw, i.login as login,
@@ -1998,14 +1996,14 @@ if (isset($_POST['type'])) {
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
-                        
+
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
                                 $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
                         }
-                        
+
                         // display quick icon shortcuts ?
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
@@ -2088,7 +2086,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            
+
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
@@ -2101,7 +2099,7 @@ if (isset($_POST['type'])) {
                 if ($access['type'] == "W") $access['type'] = 0;
                 if ($access['type'] < $accessLevel) $accessLevel = $access['type'];
             }
-            
+
 
             // Prepare returned values
             $returnValues = array(
@@ -2137,14 +2135,14 @@ if (isset($_POST['type'])) {
         case "get_complixity_level":
             // get some info about ITEM
             $dataItem = DB::queryfirstrow(
-                "SELECT perso, anyone_can_modify 
-                FROM ".prefix_table("items")." 
-                WHERE id=%i", 
+                "SELECT perso, anyone_can_modify
+                FROM ".prefix_table("items")."
+                WHERE id=%i",
                 $_POST['item_id']
             );
             // is user allowed to access this folder - readonly
-            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {                
-                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {                    
+            if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {
+                if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {
                     // check if this item can be modified by anyone
                     if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                         if ($dataItem['anyone_can_modify'] != 1) {
@@ -2164,7 +2162,7 @@ if (isset($_POST['type'])) {
                         );
                         echo prepareExchangedData($returnValues, "encode");
                         break;
-                    }                    
+                    }
                 }
             }
 
@@ -2766,7 +2764,7 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            
+
             // get file info
             $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
@@ -2775,16 +2773,16 @@ if (isset($_POST['type'])) {
             $extension = substr($_POST['title'], strrpos($_POST['title'], '.')+1);
             $file_to_display = $_SESSION['settings']['url_to_upload_folder'].'/'.$image_code;
             $file_suffix = "";
-            
+
             // should we decrypt the attachment?
             if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
-                
+
                 @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
-                
+
                 // Open the file
                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
                 $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
-                
+
                 // Prepare encryption options
                 $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
                 $key = substr(
@@ -2807,7 +2805,7 @@ if (isset($_POST['type'])) {
                 $file_to_display = $file_to_display."_delete.".$extension;
                 $file_suffix = "_delete.".$extension;
             }
-            
+
             //echo '[ { "error" : "" , "new_file" : "'.$file_to_display.'" , "file_suffix" : "'.$file_suffix.'" } ]';
             // Encrypt data to return
             echo prepareExchangedData(
@@ -2830,7 +2828,7 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            
+
             // get file info
             $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
@@ -2849,7 +2847,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             $error = "";
-            
+
             // get list of users
             $aList = array();
             $selOptionsUsers = "";
@@ -2877,7 +2875,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            
+
             // export data
             $data = array(
                 'error' => $error,
@@ -2889,7 +2887,7 @@ if (isset($_POST['type'])) {
             echo prepareExchangedData($data, "encode");
 
             break;
-            
+
         /*
         * CASE
         * Get list of users that have access to the folder
@@ -2902,15 +2900,15 @@ if (isset($_POST['type'])) {
             }
             $error = "";
             $duplicate = 0;
-            
+
             // decrypt and retreive data in JSON format
         	$dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $idFolder = $dataReceived['idFolder'];
-            
+
             // don't check if Personal Folder
-            $data = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $idFolder);            
+            $data = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $idFolder);
             if ($data['title'] == $_SESSION['user_id']) {
                 // send data
                 echo '[{"duplicate" : "'.$duplicate.'" , error" : ""}]';
@@ -2926,7 +2924,7 @@ if (isset($_POST['type'])) {
                     );
                 } else {
                 // case complete database
-                    
+
                     //get list of personal folders
                     $arrayPf = array();
                     $listPf = "";
@@ -2957,12 +2955,12 @@ if (isset($_POST['type'])) {
                         $where
                     );
                 }
-                
+
                 // count results
                 if (DB::count() > 0) {
                     $duplicate = 1;
                 }
-                
+
                 // send data
                 echo '[{"duplicate" : "'.$duplicate.'" , "error" : ""}]';
             }
