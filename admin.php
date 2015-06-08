@@ -43,7 +43,7 @@ echo '
             <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                 Access to <a target="_blank" href="http://www.teampass.net" style="font-weight:bold;font-style:italic;">TeamPass website</a><br />
             <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
-                You discovered a Bug or you have an improvement Proposal, please use the <a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github channel</a>. <i>If you are not sure, always use the Forum before to obtain a confirmation. This will prevent having to much open tickets at Github</i>.<br />
+                If you discovered a Bug or you have an improvement Proposal, please use the <a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github channel</a>. <i>If you are not sure, always use the Forum before to obtain a confirmation. This will prevent having too many open tickets at Github</i>.<br />
             <div style="text-align:center;margin-top:10px;">
                 '.$LANG['thku'].'
             </div>
