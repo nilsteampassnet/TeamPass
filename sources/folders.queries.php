@@ -15,9 +15,9 @@
 require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -222,15 +222,15 @@ if (isset($_POST['newtitle'])) {
             //Update CACHE table
             updateCacheTable("delete_value", $_POST['id']);
             break;
-           
-          
+
+
         // CASE where DELETING multiple groups
         case "delete_multiple_folders":
             //decrypt and retreive data in JSON format
         	$dataReceived = prepareExchangedData($_POST['data'], "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-            
+
             foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
                 $foldersDeleted = "";
                 // Get through each subfolder
@@ -283,9 +283,9 @@ if (isset($_POST['newtitle'])) {
             //rebuild tree
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
             $tree->rebuild();
-            
+
             echo '[ { "error" : "'.$error.'" } ]';
-            
+
             break;
 
         //CASE where ADDING a new group
@@ -395,7 +395,8 @@ if (isset($_POST['newtitle'])) {
                             prefix_table("roles_values"),
                             array(
                                 'role_id' => $record['role_id'],
-                                'folder_id' => $newId
+                                'folder_id' => $newId,
+                            	'type' => $record['type']
                            )
                         );
                     }
@@ -444,7 +445,7 @@ if (isset($_POST['newtitle'])) {
                     'bloquer_creation' => '0',
                     'bloquer_modification' => '0'
                 ),
-                "id=%i", 
+                "id=%i",
                 $dataReceived['id']
             );
 
