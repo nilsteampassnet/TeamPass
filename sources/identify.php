@@ -52,7 +52,7 @@ function IdentifyUser($sentData)
 //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
-    
+
 // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
     $pwdlib->register();
@@ -221,10 +221,7 @@ function IdentifyUser($sentData)
         )
     );
     $counter = DB::count();
-    if ($counter == 0) {
-        echo '[{"value" : "error", "text":"user_not_exists"}]';
-        exit;
-    }
+
     // Check PSK
     if (
         isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
@@ -257,7 +254,7 @@ function IdentifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
-        
+
         DB::insert(
             prefix_table('users'),
             array(
@@ -293,6 +290,18 @@ function IdentifyUser($sentData)
         //$sql = "SELECT * FROM ".prefix_table("users")." WHERE login = '".addslashes($username)."'";
         //$row = $db->query($sql);
         $proceedIdentification = true;
+    }
+
+    // Check if user exists (and has been created in case of new LDAP user)
+    $data = DB::queryFirstRow("SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+	    array(
+	    		'login' => $username
+	    )
+    );
+    $counter = DB::count();
+    if ($counter == 0) {
+    	echo '[{"value" : "error", "text":"user_not_exists"}]';
+    	exit;
     }
 
     // check GA code
@@ -344,14 +353,14 @@ function IdentifyUser($sentData)
                 $data['id']
             );
         }
-        
+
         // check the given password
         if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
             $userPasswordVerified = true;
         } else {
             $userPasswordVerified = false;
         }
-        
+
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -402,7 +411,7 @@ function IdentifyUser($sentData)
             $_SESSION['user_avatar'] = $data['avatar'];
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
-            
+
             // manage session expiration
             $serverTime = time();
             if ($dataReceived['TimezoneOffset'] > 0) {

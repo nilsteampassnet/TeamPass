@@ -11,6 +11,7 @@ Last changes
  * Removed extra files from Yubico folder
  * Update process: suggestions passwords are reencrypted
  * Suggestion migrated to new encryption
+ #941 - Fix for user_not_exists message (LDAP)
  
  2.1.23
  #727 - #729 - Encoding problem
