@@ -2175,7 +2175,7 @@ $(function() {
                             ListerItems($('#copy_in_folder').val(),'', 0);
                             AfficherDetailsItem(data[1].new_id);
                             $("#copy_in_folder").val("");
-                            $(this).dialog('close');
+                            $("#div_copy_item_to_folder").dialog('close');
                         }
                         $("#copy_item_info").hide();
                     },
@@ -2184,7 +2184,7 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#copy_item_to_folder_show_error").html("").hide();
-                $(this).dialog('close');
+                $("#div_copy_item_to_folder").dialog('close');
             }
         }
     });

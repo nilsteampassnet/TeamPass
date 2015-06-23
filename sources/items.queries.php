@@ -944,15 +944,16 @@ if (isset($_POST['type'])) {
                     )
                 );
                 $newID = DB::insertId();
-                $pw = cryption($originalRecord['pw'], SALT, $originalRecord['pw_iv'], "decrypt");
+                //$pw = cryption($originalRecord['pw'], SALT, $originalRecord['pw_iv'], "decrypt");
                 // generate the query to update the new record with the previous values
                 $aSet = array();
                 foreach ($originalRecord as $key => $value) {
                     if ($key == "id_tree") {
                         array_push($aSet, array("id_tree" => $_POST['folder_id']));
                     } elseif ($key == "pw" && !empty($pw)) {
-                        $encrypt = cryption($pw, SALT, "", "encrypt");
-                        array_push($aSet, array("pw" => $encrypt['string']));
+                        //$encrypt = cryption($pw, SALT, "", "encrypt");
+                        array_push($aSet, array("pw" => $originalRecord['pw']));
+                        array_push($aSet, array("pw_iv" => $originalRecord['pw_iv']));
                     } elseif ($key != "id" && $key != "key") {
                         array_push($aSet, array($key => str_replace('"', '\"', $value)));
                     }
@@ -1992,7 +1993,7 @@ if (isset($_POST['type'])) {
                         // test charset => may cause a json error if is not utf8
                         if (!isUTF8($pw) || empty($pw)) {
                             $pw = "";
-                            $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-black tip" title="'.$LANG['pw_encryption_error'].'"></i>';
+                            $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';

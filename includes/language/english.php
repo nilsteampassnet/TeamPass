@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array (
+	'log_user_initial_pwd_changed' => 'Initial password defined',
+	'log_user_email_changed' => 'User email changed to ',
+	'log_user_created' => 'User account created',
+	'log_user_locked' => 'User has been locked',
+	'log_user_unlocked' => 'User has been unlocked',
+	'log_user_pwd_changed' => 'User password has been changed',
     'edit_user' => 'Edit user',
     'change_password' => 'Change password',
     'show_password' => 'Show password',

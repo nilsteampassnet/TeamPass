@@ -27,7 +27,7 @@ if (!file_exists('includes/settings.php')) {
 }
 
 require_once('sources/sessions.php');
-session_start();
+session_start();//session_unset();
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -442,11 +442,6 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
     }
-/*} elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && !empty($_GET['page'])) {
-    // case where user not logged and can't access a direct link
-    $_SESSION['error']['code'] = ERR_SESS_EXPIRED;
-    $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';*/
 } elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
     // case where one-shot viewer
 	if (
@@ -634,56 +629,56 @@ echo '
     </div>';
 
 
-    //Personnal SALTKEY
-    if (
-        isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
-        //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
-    ) {
-        echo '
-            <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
-                <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-                <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
-            </div>';
-
-        //change the saltkey dialogbox
-        echo '
-            <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
-                <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-                <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
-                <div style="margin-top:5px;font-style:italic;">
-                    <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
-                </div>
-                <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
-                   <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
-                   <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
-                </div>
-                <div style="margin-top:20px;" class="ui-state-highlight">
-                   '.$LANG['new_saltkey_warning'].'
-                </div>
-                <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b><span id="div_change_personal_saltkey_wait_progress"></span></div>
-            </div>';
-
-        //saltkey LOST dialogbox
-        echo '
-           <div id="div_reset_personal_sk" style="display:none;padding:4px;">
-               <div style="margin-bottom:20px;" class="ui-state-highlight">
-                   '.$LANG['new_saltkey_warning_lost'].'
-               </div>
-               <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-               <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
-           </div>';
-    }
-    
-    // user profile
-        echo '
-        <div id="dialog_user_profil" style="display:none;padding:4px;">
-            <div id="div_user_profil">
-                <i class="fa fa-cog fa-spin fa-2x"></i>
-            </div>
-            
+//Personnal SALTKEY
+if (
+    isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+    //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
+) {
+    echo '
+        <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
+            <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
+            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
         </div>';
-    
+
+    //change the saltkey dialogbox
+    echo '
+        <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
+            <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+            <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
+            <div style="margin-top:5px;font-style:italic;">
+                <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
+                <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
+            </div>
+            <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
+               <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
+               <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
+            </div>
+            <div style="margin-top:20px;" class="ui-state-highlight">
+               '.$LANG['new_saltkey_warning'].'
+            </div>
+            <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b><span id="div_change_personal_saltkey_wait_progress"></span></div>
+        </div>';
+
+    //saltkey LOST dialogbox
+    echo '
+       <div id="div_reset_personal_sk" style="display:none;padding:4px;">
+           <div style="margin-bottom:20px;" class="ui-state-highlight">
+               '.$LANG['new_saltkey_warning_lost'].'
+           </div>
+           <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
+           <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
+       </div>';
+}
+
+// user profile
+    echo '
+    <div id="dialog_user_profil" style="display:none;padding:4px;">
+        <div id="div_user_profil">
+            <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+        
+    </div>';
+
 
 closelog();
 
