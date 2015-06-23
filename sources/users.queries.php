@@ -855,7 +855,23 @@ if (!empty($_POST['type'])) {
                         $user = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $record['qui']);
                         $user_1 = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $_POST['id']);
                         $tmp = explode(":", $record['label']);
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace(array('"', '#user_login#'), array('\"', $user_1['login']), $LANG['login']).'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
+                        // extract action done
+                        $label = "";
+                        if ($tmp[0] == "at_user_initial_pwd_changed") {
+                        	$label = $LANG['log_user_initial_pwd_changed'];
+                        } else if ($tmp[0] == "at_user_email_changed") {
+                        	$label = $LANG['log_user_email_changed'].$tmp[1];
+                        } else if ($tmp[0] == "at_user_added") {
+                        	$label = $LANG['log_user_created'];
+                        } else if ($tmp[0] == "at_user_locked") {
+                        	$label = $LANG['log_user_locked'];
+                        } else if ($tmp[0] == "at_user_unlocked") {
+                        	$label = $LANG['log_user_unlocked'];
+                        } else if ($tmp[0] == "at_user_pwd_changed") {
+                        	$label = $LANG['log_user_pwd_changed'];
+                        }
+                        // prepare log
+                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
                         $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
                     }
