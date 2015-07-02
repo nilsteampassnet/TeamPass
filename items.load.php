@@ -2956,10 +2956,21 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         $("#dialog_upgrade_personal_passwords").dialog("open");
     }
 
+    //Simulate a CRON activity
+    $.post(
+        "sources/main.queries.php",
+        {
+            type : "send_wainting_emails"
+        },
+        function(data) {
+            //
+        }
+   );
+
     NProgress.done();
 });
 
-    // show password during longpress
+// show password during longpress
 var mouseStillDown = false;
 $("#id_pw").mousedown(function(event) {
      mouseStillDown = true;
