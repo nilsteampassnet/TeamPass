@@ -20,15 +20,15 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 function chmod_r($dir, $dirPermissions, $filePermissions) {
-	$dp = opendir($dir);
-	$res = true;
-	while($file = readdir($dp)) {
-		if (($file == ".") || ($file == ".."))
-			continue;
+    $dp = opendir($dir);
+    $res = true;
+    while($file = readdir($dp)) {
+        if (($file == ".") || ($file == ".."))
+            continue;
 
-		$fullPath = $dir."/".$file;
+        $fullPath = $dir."/".$file;
 
-		if(is_dir($fullPath)) {
+        if(is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions))
                 $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
         } else {
@@ -38,12 +38,12 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
             closedir($dp);
             return false;
         }
-	}
-	closedir($dp);
-	if (is_dir($dir) && $res)
-		$res = @chmod($dir, $dirPermissions);
+    }
+    closedir($dp);
+    if (is_dir($dir) && $res)
+        $res = @chmod($dir, $dirPermissions);
 
-	return $res;
+    return $res;
 }
 
 if (isset($_POST['type'])) {
@@ -368,15 +368,15 @@ if (isset($_POST['type'])) {
                                 WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
                             );
                             if ($mysqli_result) {
-	                            $resTmp = mysqli_fetch_row($queryRes);
-    	                        if ($resTmp[0] == 0) {
-        	                        $queryRes = mysqli_query($dbTmp,
-            	                        "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
-                	                    (`type`, `intitule`, `valeur`) VALUES
-                    	                ('".$elem[0]."', '".$elem[1]."', '".
-                        	            str_replace("'", "", $elem[2])."');"
-                            	    );
-                            	}
+                                $resTmp = mysqli_fetch_row($queryRes);
+                                if ($resTmp[0] == 0) {
+                                    $queryRes = mysqli_query($dbTmp,
+                                        "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
+                                        (`type`, `intitule`, `valeur`) VALUES
+                                        ('".$elem[0]."', '".$elem[1]."', '".
+                                        str_replace("'", "", $elem[2])."');"
+                                    );
+                                }
                             }
                         }
                         
@@ -444,8 +444,8 @@ if (isset($_POST['type'])) {
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
-                            `avatar` varchar(255) NOT null,
-                            `avatar_thumb` varchar(255) NOT null,
+                            `avatar` varchar(255) NULL,
+                            `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
@@ -729,8 +729,8 @@ if (isset($_POST['type'])) {
 
             mysqli_close($dbTmp);
             // Destroy session without writing to disk
-			define('NODESTROY_SESSION','true');
-			session_destroy();
+            define('NODESTROY_SESSION','true');
+            session_destroy();
             break;
 
         case "step_6":
@@ -828,7 +828,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
                 } else if ($task == "security") {
-            		# Sort out the file permissions
+                    # Sort out the file permissions
 
                     // is server Windows or Linux?
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
@@ -840,12 +840,12 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                             $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
                     }
   
-            	    if ($result === false) {
+                    if ($result === false) {
                         echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
-            	}  
+                }  
             }
 
             mysqli_close($dbTmp);
@@ -853,17 +853,17 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             define('NODESTROY_SESSION','true');
             session_destroy();
             break;
-		case "step_7":
-			
+        case "step_7":
+            
             //decrypt
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             // launch
-			$dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
                                         
             if ($activity == "file") {
-            	if ($task == "deleteInstall") {
+                if ($task == "deleteInstall") {
                     function delTree($dir) {
                         $files = array_diff(scandir($dir), array('.','..'));
 
@@ -893,14 +893,14 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
-         		}
+                }
             }
             // delete install table
             //            	
-           	mysqli_close($dbTmp);
-           	// Destroy session without writing to disk
-           	define('NODESTROY_SESSION','true');
-           	session_destroy();
-           	break;            
+            mysqli_close($dbTmp);
+            // Destroy session without writing to disk
+            define('NODESTROY_SESSION','true');
+            session_destroy();
+            break;            
     }
 }

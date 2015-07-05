@@ -563,8 +563,8 @@ if (isset($_POST['type'])) {
                 array('admin','enable_email_notification_on_user_pw_change','0', 0),
                 array('admin','enable_sts','0', 0),
                 array('admin','encryptClientServer','1', 0),
-	            array('admin','use_md5_password_as_salt','0', 0),
-	            array('admin','api','0', 0),
+                array('admin','use_md5_password_as_salt','0', 0),
+                array('admin','api','0', 0),
                 array('admin', 'subfolder_rights_as_parent', '0', 0),
                 array('admin', 'show_only_accessible_folders', '0', 0),
                 array('admin', 'enable_suggestion', '0', 0),
@@ -781,20 +781,20 @@ if (isset($_POST['type'])) {
                 "psk",
                 "VARCHAR(400) DEFAULT NULL"
             );
-        	$res2 = addColumnIfNotExist(
-        	    $_SESSION['tbl_prefix']."users",
-        	    "ga",
-        	    "VARCHAR(50) DEFAULT NULL"
-        	);
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "ga",
+                "VARCHAR(50) DEFAULT NULL"
+            );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar_thumb",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
@@ -1437,25 +1437,25 @@ if (isset($_POST['type'])) {
                 break;
             }
 
-        	## TABLE categories_folders
-        	$res = mysqli_query($dbTmp,
-        	"CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_folders` (
+            ## TABLE categories_folders
+            $res = mysqli_query($dbTmp,
+            "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."categories_folders` (
                 `id_category` int(12) NOT NULL,
                 `id_folder` int(12) NOT NULL
                ) CHARSET=utf8;"
-        	);
-        	if ($res) {
-        		echo 'document.getElementById("tbl_22").innerHTML = '.
-        		    '"<img src=\"images/tick.png\">";';
-        	} else {
-        		echo 'document.getElementById("res_step4").innerHTML = '.
-        		    '"An error appears on table categories_folders! '.mysqli_error($dbTmp).'";';
-        		echo 'document.getElementById("tbl_22").innerHTML = '.
-        		    '"<img src=\"images/exclamation-red.png\">";';
-        		echo 'document.getElementById("loader").style.display = "none";';
-        		mysqli_close($dbTmp);
-        		break;
-        	}
+            );
+            if ($res) {
+                echo 'document.getElementById("tbl_22").innerHTML = '.
+                    '"<img src=\"images/tick.png\">";';
+            } else {
+                echo 'document.getElementById("res_step4").innerHTML = '.
+                    '"An error appears on table categories_folders! '.mysqli_error($dbTmp).'";';
+                echo 'document.getElementById("tbl_22").innerHTML = '.
+                    '"<img src=\"images/exclamation-red.png\">";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                mysqli_close($dbTmp);
+                break;
+            }
 
             ## TABLE api
             $res = mysqli_query($dbTmp,
