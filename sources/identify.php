@@ -212,7 +212,7 @@ function IdentifyUser($sentData)
         )
     );
     $counter = DB::count();
-    if ($counter == 0) {
+    if ($counter == 0 && !$ldapConnection) {
         echo '[{"value" : "error", "text":"user_not_exists"}]';
         exit;
     }
@@ -251,7 +251,7 @@ function IdentifyUser($sentData)
             prefix_table('users'),
             array(
                 'login' => $username,
-                'pw' => $password,
+                'pw' => $passwordClear,
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
