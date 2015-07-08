@@ -553,9 +553,6 @@ echo '
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
                 <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
                 <br />
-                <div style="text-align:center;">
-                    <u><a href="index.php">'.$LANG['home'].'</a></u>
-                </div>
             </div>
         </div>';
 
