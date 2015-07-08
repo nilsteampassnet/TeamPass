@@ -552,10 +552,6 @@ echo '
         <div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
                 <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
-                <br />
-                <div style="text-align:center;">
-                    <u><a href="index.php">'.$LANG['home'].'</a></u>
-                </div>
             </div>
         </div>';
 
