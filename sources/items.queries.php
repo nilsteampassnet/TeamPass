@@ -2710,6 +2710,22 @@ if (isset($_POST['type'])) {
                 DB::delete(prefix_table('otv'), "id=%i", $record['id']);
             }
 
+            // get a list of pre-existing otv ids
+            $existingIDs = array();
+            $rows = DB::query("SELECT id FROM ".prefix_table("otv"));
+            foreach ($rows as $record) {
+                $existingIDs[] = $record['id'];
+            }
+            
+            // generate a new otv ID - up to 8 digits
+            $newID = '';
+            srand();
+            // If the ID already exists, try again until we find an unused one.
+            while (!$newID) {
+                $randomID = mt_rand(1,99999999);
+                if (!in_array($randomID,$existingIDs)) { $newID = $randomID; }
+            }
+
             // generate session
             $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
             $pwgen->register();
@@ -2721,14 +2737,13 @@ if (isset($_POST['type'])) {
             DB::insert(
                 prefix_table("otv"),
                 array(
-                	'id' => null,
+              	    'id' => $newID,
                     'item_id' => intval($_POST['id']),
                     'timestamp' => time(),
                     'originator' => intval($_SESSION['user_id']),
                     'code' => $otv_code
                    )
             );
-            $newID = DB::insertId();
 
             $otv_session = array(
                 "code"      => $otv_code,
