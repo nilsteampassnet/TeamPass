@@ -201,7 +201,7 @@ echo '
             },
             function(data) {
                 if (data[0].loop != null && data[0].loop == "true") {
-                    exportHTMLLoop(ids, data[0].file,  ids.split(';').length, 1, pdf_password);
+                    exportHTMLLoop(ids, data[0].file,  ids.split(';').length, 1, pdf_password, data[0].file_link);
                 }
                 $("#offline_information").html(data[0].text);
             },
@@ -212,7 +212,7 @@ echo '
     /*
      * Loading Item details step 2
      */
-    function exportHTMLLoop(idsList, file, number, cpt, pdf_password)
+    function exportHTMLLoop(idsList, file, number, cpt, pdf_password, file_link)
     {
         // prpare list of ids to treat during this run
         if (idsList != "") {
@@ -233,7 +233,8 @@ echo '
                     file    : file,
                     cpt     : cpt,
                     number  : number,
-                    pdf_password : pdf_password
+                    pdf_password : pdf_password,
+                    file_link : file_link
                 },
                 function(data) {
                     // relaunch for next run
@@ -242,7 +243,8 @@ echo '
                         data[0].file,
                         number,
                         cpt,
-                        pdf_password
+                        pdf_password,
+                        data[0].file_link
                     );
                 },
                 "json"
@@ -252,7 +254,8 @@ echo '
                 "sources/export.queries.php",
                 {
                     type 	: "export_to_html_format_finalize",
-                    file    : file
+                    file    : file,
+                    file_link : file_link
                 },
                 function(data) {
                     $("#offline_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);

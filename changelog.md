@@ -31,6 +31,8 @@ Last changes
  PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders
+ Fix: If GA activated, Users can ask for a new code from the login page
+ Fix: Off-line file url was not correct in download button
  Removal of Keys table
  Implementation of PhpCrypt library as encryption library (AES-128 with CBC mode)
  Implementation of Awesomefont in Items page

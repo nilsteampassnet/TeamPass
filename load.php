@@ -242,11 +242,12 @@ $htmlHeaders .= '
 	            "sources/main.queries.php",
 	            {
 	                type : "ga_generate_qr",
-	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'"),
+	                send_email : "1"
 	            },
 	            function(data) {
 	            	if (data[0].error == "0") {
-						$("#ga_qr").attr("src", data[0].ga_url);
+						//$("#ga_qr").attr("src", data[0].ga_url);
                 	    $("#div_ga_url").show();
 	            	} else {
 						$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
@@ -333,7 +334,7 @@ $htmlHeaders .= '
             }
        );
     }
-    
+
     function loadProfileDialog()
     {
         $("#dialog_user_profil").dialog({
@@ -359,8 +360,8 @@ $htmlHeaders .= '
             });
         }
     });*/
-    
-    
+
+
     function displayItemNumber (item_id, tree_id)
     {
         if (window.location.href.indexOf("page=items") == -1) {
@@ -372,9 +373,9 @@ $htmlHeaders .= '
             }
         }
     }
-    
+
     function refreshListLastSeenItems()
-    {        
+    {
         // refresh list of last items seen
         if ("'.$_SESSION["key"].'" == "") return false;
         $.post(
@@ -407,11 +408,11 @@ $htmlHeaders .= '
         var nb = aIds.length;
         aIds = aIds.toString();
         //console.log(currentID+" -- "+aIds);
-        if (nb == 0) 
+        if (nb == 0)
             $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+"100%");
-        else 
+        else
             $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+Math.floor(((nb_total-nb) / nb_total) * 100)+"%");
-        
+
         $.post(
             "sources/utils.queries.php",
             {
@@ -611,7 +612,7 @@ $htmlHeaders .= '
                             if (data.error == "no") {
                                 changePersonalSaltKey(data_to_share, data.list, data.nb_total);
                             } else {
-                                
+
                             }
                             /*
                             $("#div_change_personal_saltkey_wait").hide();
@@ -765,7 +766,7 @@ $htmlHeaders .= '
                 }
             }
         });
-        
+
         /*
         //inline editing
         $(".editable_textarea").editable("sources/users.queries.php", {
@@ -780,8 +781,8 @@ $htmlHeaders .= '
 
         // get list of last items
         refreshListLastSeenItems();
-        
-        
+
+
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
 
@@ -873,6 +874,6 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     }';
 }
 
-$htmlHeaders .= '    
+$htmlHeaders .= '
 // ]]>
 </script>';

@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'user_ga_code_sent_by_email' => 'Your new GoogleAuthenticator code was sent to your email address.',
 	'log_user_initial_pwd_changed' => 'Initial password defined',
 	'log_user_email_changed' => 'User email changed to ',
 	'log_user_created' => 'User account created',
