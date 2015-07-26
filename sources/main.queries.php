@@ -31,6 +31,9 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
     (isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
+} elseif (
+    (isset($_POST['data']) && $_POST['type'] == "ga_generate_qr")) {
+	// continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -68,7 +71,7 @@ switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
     	$dataReceived = prepareExchangedData($_POST['data'], "decode");
-        
+
         // load passwordLib library
         $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
         $pwdlib->register();
@@ -108,7 +111,7 @@ switch ($_POST['type']) {
             } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
                 $_SESSION['last_pw'] = "";
                 $lastPw = array();
-            } 
+            }
             // check if new pw is different that old ones
             if (in_array($newPw, $lastPw)) {
                 echo '[ { "error" : "already_used" } ]';
@@ -256,12 +259,26 @@ switch ($_POST['type']) {
     */
     case "ga_generate_qr":
     	// Check if user exists
-    	$data = DB::queryfirstrow(
-    		"SELECT login, email
-    		FROM ".prefix_table("users")."
-    		WHERE id = %i",
-            $_POST['id']
-    	);
+    	if (!isset($_POST['id']) || empty($_POST['id'])) {
+    		// decrypt and retreive data in JSON format
+    		$dataReceived = prepareExchangedData($_POST['data'], "decode");
+    		// Prepare variables
+    		$login = htmlspecialchars_decode($dataReceived['login']);
+
+    		$data = DB::queryfirstrow(
+    			"SELECT id, email
+	    		FROM ".prefix_table("users")."
+	    		WHERE login = %s",
+    			$login
+    		);
+    	} else {
+	    	$data = DB::queryfirstrow(
+	    		"SELECT login, email
+	    		FROM ".prefix_table("users")."
+	    		WHERE id = %i",
+	            $_POST['id']
+	    	);
+    	}
     	$counter = DB::count();
     	if ($counter == 0) {
     		// not a registered user !
@@ -416,7 +433,7 @@ switch ($_POST['type']) {
             $pwdlib = new PasswordLib\PasswordLib();
             // generate key
             $newPwNotCrypted = $pwdlib->getRandomToken(10);
-            
+
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
             $pwdlib->register();
@@ -533,7 +550,7 @@ switch ($_POST['type']) {
         if (empty($oldPersonalSaltkey)) {
             $oldPersonalSaltkey = $_SESSION['my_sk'];
         }
-        
+
         $list = "";
 
         // Change encryption
@@ -556,7 +573,7 @@ switch ($_POST['type']) {
                 }
             }
         }
-        
+
         // change salt
         $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
         setcookie(
@@ -565,7 +582,7 @@ switch ($_POST['type']) {
             time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
             '/'
         );
-        
+
         echo prepareExchangedData(
         	array(
 	        	"list" => $list,
@@ -818,7 +835,7 @@ switch ($_POST['type']) {
                 );
             }
         }
-        
+
         break;
     /**
      * Refresh list of last items seen
@@ -850,7 +867,7 @@ switch ($_POST['type']) {
                 }
             }
         }
-        
+
         echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
         break;
 }

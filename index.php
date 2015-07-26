@@ -119,10 +119,10 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 ?>
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-        <title>Collaborative Passwords Manager</title>
-        <script type="text/javascript">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Collaborative Passwords Manager</title>
+<script type="text/javascript">
             if (window.location.href.indexOf("page=") == -1) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
                     location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
@@ -136,7 +136,7 @@ echo $htmlHeaders;
 ?>
     </head>
 
-    <body onload="countdown()">
+<body onload="countdown()">
     <?php
 
 /* HEADER */
@@ -218,8 +218,8 @@ if (isset($_SESSION['login'])) {
                 </button>';
     }
 
-    echo '               
-                <div style="float:right;">                
+    echo '
+                <div style="float:right;">
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
@@ -549,12 +549,11 @@ if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empt
                     	'.$LANG['ga_identification_code'].'
                         <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) identifyUser(\''.$nextUrl.'\')" />
                         <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
-                            '.$LANG['ga_scan_url'].'<br />
-                            <span style="margin:10px;"><img id="ga_qr" src="" /></span>
+                            '.$LANG['user_ga_code_sent_by_email'].'
                         </div>
-                        <!--<div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
+                        <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
 	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
-	                    </div>-->
+	                    </div>
                     </div>';
 	}
     echo '
@@ -676,7 +675,7 @@ if (
         <div id="div_user_profil">
             <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
-        
+
     </div>';
 
 
