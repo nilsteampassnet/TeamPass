@@ -254,7 +254,7 @@ function rest_get () {
         if (count($matches) == 0) {
             rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] =  explode('/',$matches[2], 3);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
@@ -355,6 +355,7 @@ function rest_get () {
                 include "../sources/main.functions.php";
 
                 // get item definition
+                $GLOBALS['request'][2] = str_replace('%20', ' ', $GLOBALS['request'][2]);
                 $array_item = explode(';', $GLOBALS['request'][2]);
                 if (count($array_item) != 9) {
                     rest_error ('BADDEFINITION');
@@ -411,7 +412,7 @@ function rest_get () {
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
-                                    "inactif" => $item_login,
+                                    "login" => $item_login,
                                     "restricted_to" => "0",
                                     "perso" => "",
                                     "anyone_can_modify" => intval($item_anyonecanmodify)
