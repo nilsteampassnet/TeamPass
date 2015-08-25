@@ -14,9 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_default_session_expiration_time' => 'By default delay for session expiration',
-    'settings_ldap_user_attribute' => 'User attribute to search',
-    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -793,5 +790,24 @@ $LANG = array (
     'collapse' => 'Collapse',
     'error_file_is_missing' => 'Error: The file is missing!',
     'click_to_change' => 'Click to change',
+    'settings_ldap_user_attribute' => 'User attribute to search',
+    'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
+    'user_ga_code_sent_by_email' => 'Your new GoogleAuthenticator code was sent to your email address.',
+    'log_user_initial_pwd_changed' => 'Initial password defined',
+    'log_user_email_changed' => 'User email changed to ',
+    'log_user_created' => 'User account created',
+    'log_user_locked' => 'User has been locked',
+    'log_user_unlocked' => 'User has been unlocked',
+    'log_user_pwd_changed' => 'User password has been changed',
+    'edit_user' => 'Edit user',
+    'pf_change_encryption' => 'The encryption algorithm has changed and your personal passwords have to be re-encoded. You need to run this process to use your passwords. This process may take several minutes depending on the number of items you have.',
+    'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',
+    'show_password' => 'Show password',
+    'change_password' => 'Change password',
+    'pf_sk_set' => 'Your personal Salt Key is correctly set, You can click on button Start',
+    'pf_sk_not_set' => 'Your personal Salt Key is NOT set! Please enter it.',
+    'upgrade_needed' => 'Upgrade needed',
+    'item_menu_mov_rep' => 'Move a Folder',
+    'settings_default_session_expiration_time' => 'By default delay for session expiration',
     '' => ''
 );
