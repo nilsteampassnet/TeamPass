@@ -114,6 +114,14 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 	include $_SESSION['settings']['cpassman_dir'].'/error.php';
 }
 
+// Loading Duo if expected
+$_SESSION['settings']['duo'] = 1;
+if (isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == "1") {
+	// DUO keys are defined in sk.php - To be added by hand
+	// TODO: to be added via administration gui
+	//require_once './includes/libraries/Authentication/Duo/duo_web.php';
+}
+
 // Load links, css and javascripts
 @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
 ?>

@@ -387,6 +387,17 @@ function identifyUser($sentData)
                                 && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
                                 )
         ) {
+        	// DUO authentication 
+        	if (isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == "1") {
+        		// load library
+        		require_once './includes/libraries/Authentication/Duo/duo_web.php';
+        		
+        		echo '<script type="text/javascript" src="Duo-Web-v2.js"></script>
+        <link rel="stylesheet" type="text/css" href="Duo-Frame.css">
+        <iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="<?php echo $sig_request; ?>"></iframe>';
+        	}
+        	
+        	
             $_SESSION['autoriser'] = true;
 
             // Generate a ramdom ID

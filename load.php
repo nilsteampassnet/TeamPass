@@ -41,6 +41,7 @@ $htmlHeaders = '
 
         <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
+
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
