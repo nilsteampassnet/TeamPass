@@ -385,7 +385,7 @@ function rest_get () {
                     }
 
                     // check if element doesn't already exist
-                    DB::query("SELECT * FROM ".$pre."items WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                    DB::query("SELECT * FROM ".$pre."items WHERE label = %s AND inactif = %i AND id_tree = %i", addslashes($item_label), "0", $item_folder_id);
                     $counter = DB::count();
                     if ($counter != 0) {
                         $itemExists = 1;
