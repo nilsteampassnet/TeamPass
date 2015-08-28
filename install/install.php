@@ -36,7 +36,14 @@ if( isset($_SERVER['HTTPS'] ) ) {
 
     echo '
     <input type="hidden" id="page_id" value="1" />
-    <input type="hidden" id="step_res" value="" />';
+    <input type="hidden" id="step_res" value="" />
+    <input type="hidden" id="hid_db_host" value="" />
+    <input type="hidden" id="hid_db_login" value="" />
+    <input type="hidden" id="hid_db_pwd" value="" />
+    <input type="hidden" id="hid_db_port" value="" />
+    <input type="hidden" id="hid_db_bdd" value="" />
+    <input type="hidden" id="hid_abspath" value="" />
+    <input type="hidden" id="hid_url_path" value="" />';
     // # LOADER
     echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>';

@@ -57,6 +57,8 @@ function CheckPage()
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
             tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars"];
             multiple = true;
+            $("#hid_abspath").val($("#root_path").val());
+            $("#hid_url_path").val($("#url_path").val());
         }
     }
 
@@ -65,9 +67,14 @@ function CheckPage()
         if ($("#db_host").val() == "" || $("#db_db").val() == "" || $("#db_login").val() == "" || $("#db_port").val() == "") {
             error = "Paths need to be filled in!";
         } else {
-            data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'"}';
+            data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'", "abspath":"'+$("#hid_abspath").val()+'", "url_path":"'+$("#hid_url_path").val()+'"}';
             tasks = ["connection*test"];
             multiple = "";
+            $("#hid_db_host").val($("#db_host").val());
+            $("#hid_db_bdd").val($("#db_bdd").val());
+            $("#hid_db_login").val($("#db_login").val());
+            $("#hid_db_pwd").val($("#db_pw").val());
+            $("#hid_db_port").val($("#db_port").val());
         }
     }
 
@@ -114,7 +121,7 @@ function CheckPage()
         $("#step_res").val("true");
         var ajaxReqs = [];
         for (index = 0; index < tasks.length; ++index) {
-            var tsk = tasks[index].split("*");
+            var tsk = tasks[index].split("*");//console.log(tsk[1]);
             ajaxReqs.push($.ajax({
                 url: "install.queries.php",
                 type : 'POST',
@@ -124,6 +131,7 @@ function CheckPage()
                     data:       aes_encrypt(data), //
                     activity:   aes_encrypt(tsk[0]),
                     task:       aes_encrypt(tsk[1]),
+                    db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
                     index:      index,
                     multiple:   multiple
                 },
@@ -147,11 +155,12 @@ function CheckPage()
                 }
             }));
         }
-        $.when.apply($, ajaxReqs).done(function() {
+        $.when.apply($, ajaxReqs).done(function(data, statut) {
             setTimeout(function(){
                 // all requests are complete
                 if ($("#step_res").val() == "false") {
-                    $("#step_error").show().html("At least one task has failed! Please correct and relaunch.");
+                	data = $.parseJSON(data.responseText);
+                    $("#step_error").show().html("At least one task has failed! Please correct and relaunch. ");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
                     $("#but_launch").prop("disabled", true);
@@ -179,6 +188,7 @@ function CheckPage()
                 data:       aes_encrypt(data),
                 activity:   aes_encrypt(tsk[0]),
                 task:       aes_encrypt(tsk[1]),
+                db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
                 index:      index,
                 multiple:   multiple
             },
