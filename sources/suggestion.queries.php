@@ -189,17 +189,6 @@ if (!empty($_POST['type'])) {
                     $existing_item_id['id']
                 );
                 if ($updStatus) {
-                    /*// update KEY
-                    $updStatus = DB::update(
-                        prefix_table("keys"),
-                        array(
-                            'rand_key' => $suggestion['suggestion_key']
-                        ),
-                        "sql_table = %s AND id = %i",
-                        "items",
-                        $existing_item_id['id']
-                    );*/
-
                     // update LOG
                     DB::insert(
                         prefix_table("log_items"),
@@ -241,16 +230,6 @@ if (!empty($_POST['type'])) {
                 $newID = DB::insertId();
 
                 if (is_numeric($newID)) {
-                    /*// add Key
-                    DB::insert(
-                        prefix_table("keys"),
-                        array(
-                            'sql_table' => 'items',
-                            'id' => $newID,
-                            'rand_key' => $suggestion['suggestion_key']
-                        )
-                    );*/
-
                     // update log
                     DB::insert(
                         prefix_table("log_items"),
