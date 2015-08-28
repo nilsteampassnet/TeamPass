@@ -116,8 +116,11 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
+            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $db = json_decode($json, true);
+            
             // launch
-            if ($dbTmp = mysqli_connect($data['db_host'], $data['db_login'], $data['db_pw'], $data['db_bdd'], $data['db_port'])) {
+            if ($dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port'])) {
                 // create temporary INSTALL mysqli table
                 $mysqli_result = mysqli_query($dbTmp,
                     "CREATE TABLE IF NOT EXISTS `_install` (
@@ -137,15 +140,15 @@ if (isset($_POST['type'])) {
                 }
                 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'url_path'"));
                 if ($tmp[0] == 0 || empty($tmp[0])) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '".$_SESSION['url_path']."');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'], "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$_SESSION['url_path']."' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'],"' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'abspath'"));
                 if ($tmp[0] == 0 || empty($tmp[0])) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".$_SESSION['abspath']."');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'],"');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$_SESSION['abspath']."' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'],"' WHERE `key` = 'abspath';");
                 }
                 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -160,8 +163,10 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
+            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $db = json_decode($json, true);
             
-            $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
 
             // prepare data
             foreach($data as $key=>$value) {
@@ -204,10 +209,12 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $db = json_decode($json, true);
 
             // launch
-            $dbTmp = mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
-            $dbBdd = $_SESSION['db_bdd'];
+            $dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
+            $dbBdd = $db['db_bdd'];
             if ($dbTmp) {
                 $mysqli_result = "";
 
@@ -227,6 +234,8 @@ if (isset($_POST['type'])) {
                             `label` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
+                            `pw_iv` text NOT NULL,
+                            `pw_len` int(5) NOT NULL,
                             `url` varchar(250) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
@@ -249,7 +258,8 @@ if (isset($_POST['type'])) {
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
                             `action` varchar(250) NULL,
-                            `raison` text NULL
+                            `raison` text NULL,
+                            `raison_iv` text NULL
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "misc") {
@@ -363,20 +373,20 @@ if (isset($_POST['type'])) {
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
-                            $mysqli_result = mysqli_query($dbTmp,
-                                "SELECT COUNT(*) FROM ".$_SESSION['tbl_prefix']."misc
-                                WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
-                            );
-                            if ($mysqli_result) {
-	                            $resTmp = mysqli_fetch_row($queryRes);
-    	                        if ($resTmp[0] == 0) {
-        	                        $queryRes = mysqli_query($dbTmp,
-            	                        "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
-                	                    (`type`, `intitule`, `valeur`) VALUES
-                    	                ('".$elem[0]."', '".$elem[1]."', '".
-                        	            str_replace("'", "", $elem[2])."');"
-                            	    );
-                            	}
+                        	$tmp = mysqli_fetch_row(
+                        		mysqli_query(
+                        			$dbTmp,
+                        			"SELECT COUNT(*) FROM `".$var['tbl_prefix']."misc`
+                        			WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
+                        		)
+                        	);
+                        	if ($tmp[0] == 0 || empty($tmp[0])) {
+        	                	$queryRes = mysqli_query($dbTmp,
+            	                	"INSERT INTO `".$var['tbl_prefix']."misc`
+                	                (`type`, `intitule`, `valeur`) VALUES
+                    	            ('".$elem[0]."', '".$elem[1]."', '".
+                        	        str_replace("'", "", $elem[2])."');"
+                            	);	// or die(mysqli_error($dbTmp))
                             }
                         }
                         
@@ -645,6 +655,7 @@ if (isset($_POST['type'])) {
                             `field_id` int(11) NOT NULL,
                             `item_id` int(11) NOT NULL,
                             `data` text NOT NULL,
+                            `data_iv` text NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -683,11 +694,12 @@ if (isset($_POST['type'])) {
                             `id` tinyint(12) NOT NULL AUTO_INCREMENT,
                             `label` varchar(255) NOT NULL,
                             `pw` text NOT NULL,
+                            `pw_iv` text NOT NULL,
+                            `pw_len` int(5) NOT NULL,
                             `description` text NOT NULL,
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
-                            `pw_iv` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -738,8 +750,10 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $db = json_decode($json, true);
 
-            $dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp = @mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
 
             // read install variables
             $result = mysqli_query($dbTmp, "SELECT * FROM `_install`");
@@ -780,12 +794,12 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"".$_SESSION['db_host']."\";
-\$user = \"".$_SESSION['db_login']."\";
-\$pass = \"".str_replace("$", "\\$", $_SESSION['db_pw'])."\";
-\$database = \"".$_SESSION['db_bdd']."\";
-\$pre = \"".$_SESSION['tbl_prefix']."\";
-\$port = ".$_SESSION['db_port'].";
+\$server = \"".$db['db_host']."\";
+\$user = \"".$db['db_login']."\";
+\$pass = \"".str_replace("$", "\\$", $db['db_pw'])."\";
+\$database = \"".$db['db_bdd']."\";
+\$pre = \"".$var['tbl_prefix']."\";
+\$port = ".$db['db_port'].";
 \$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);

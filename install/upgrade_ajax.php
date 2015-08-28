@@ -799,7 +799,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
-                "TEXT NOT null"
+                "TEXT null"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."categories_items",
@@ -810,6 +810,11 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "pw_iv",
                 "TEXT NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "pw_len",
+                "INT(5) NOT null DEFAULT '0'"
             );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 

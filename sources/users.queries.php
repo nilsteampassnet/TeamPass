@@ -1171,6 +1171,20 @@ if (!empty($_POST['type'])) {
                     
                     if (empty($reccord['ga'])) $ga_code = 'phone_add';
                     else $ga_code = 'phone_sound' ;
+                    
+                    // Get Administrated role
+                    if ($reccord['isAdministratedByRole'] == 0) {
+                    	$administratedBy = $LANG['god'];
+                    } else {
+                    	$tmp = DB::queryFirstRow(
+                    		"SELECT title FROM ".prefix_table("role_title")."
+                    		WHERE id = %i",
+                    		intval($reccord['isAdministratedByRole'])
+                    	);
+                    	$administratedBy = $tmp['title'];
+                    }
+                    
+                    
                     // -->
                     
                     $html .= '
@@ -1193,6 +1207,7 @@ if (!empty($_POST['type'])) {
                                 <td align="center">
                                     <div '.$is_admin.'>
                                         <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
+                                        	'.$administratedBy.'
                                         </div>
                                         <div style="text-align:center;">
                                             <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')"></i>

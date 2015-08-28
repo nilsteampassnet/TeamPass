@@ -159,7 +159,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, pw, suggestion_key, folder_id, author_id, comment, pw_iv
+                "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
