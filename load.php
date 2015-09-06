@@ -138,6 +138,15 @@ $htmlHeaders .= '
         return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
+    function launchIdentify(isDuo, redirect, psk)
+    {
+        if (isDuo == "false") identifyUser(redirect, psk);
+        else {
+        	loadDuoDialog();
+
+        }
+    }
+
     //Identify user
     function identifyUser(redirect, psk)
     {
@@ -436,6 +445,20 @@ $htmlHeaders .= '
             },
             "json"
         );
+    }
+
+    // DUO box
+    function loadDuoDialog()
+    {
+        $("#dialog_duo").dialog({
+            width: 600,
+            height: 500,
+            open: function(event, ui) {
+                $("#div_duo").load(
+                    "'.$_SESSION['settings']['cpassman_url'].'/duo.load.php", function(){}
+                );
+            }
+        }).dialog("open");
     }
 
     $(function() {

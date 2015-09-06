@@ -15,9 +15,9 @@ class Duo {
 	const ERR_USER = 'ERR|The username passed to sign_request() is invalid.';
 	const ERR_IKEY = 'ERR|The Duo integration key passed to sign_request() is invalid.';
 	const ERR_SKEY = 'ERR|The Duo secret key passed to sign_request() is invalid.';
-	const ERR_AKEY = 'ERR|The application secret key passed to sign_request() must be at least 40 characters.'; 
+	const ERR_AKEY = 'ERR|The application secret key passed to sign_request() must be at least 40 characters.';
 
-	private static function sign_vals($key, $vals, $prefix, $expire, $time=NULL) { 
+	private static function sign_vals($key, $vals, $prefix, $expire, $time=NULL) {
 		$exp = ($time ? $time : time()) + $expire;
 		$val = $vals . '|' . $exp;
 		$b64 = base64_encode($val);
@@ -99,5 +99,3 @@ class Duo {
 		return $auth_user;
 	}
 }
-
-?>
