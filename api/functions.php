@@ -482,6 +482,82 @@ function rest_get () {
                 } else {
                     rest_error ('BADDEFINITION');
                 }
+            } elseif($GLOBALS['request'][1] == "folder") {
+                // get item definition
+                $GLOBALS['request'][2] = str_replace('%20', ' ', $GLOBALS['request'][2]);
+                $array_item = explode(';', $GLOBALS['request'][2]);
+                if (count($array_item) != 5) {
+                    rest_error ('BADDEFINITION');
+                }
+                $title = $array_item[0];
+                $complexity = $array_item[1];
+		if ($complexity == '') $complexity = 0;
+                $parentId = $array_item[2];
+		if ($parentId == '') $parentId = 0;
+                $renewalPeriod = $array_item[3];
+		if ($renewalPeriod == '') $renewalPeriod = 0;
+
+                // do some checks
+                if (!empty($title)) {
+                    // check if element doesn't already exist
+                    DB::query("SELECT * FROM ".$pre."nested_tree WHERE title = %s AND parent_id = %i", $title, $parentId);
+                    $counter = DB::count();
+                    if ($counter != 0) {
+                        $itemExists = 1;
+                    } else {
+                        $itemExists = 0;
+                    }
+                    if ($itemExists == 0) {
+			    DB::insert(
+				$pre."nested_tree",
+				array(
+				    'parent_id' => $parentId,
+				    'title' => $title,
+				    'personal_folder' => '0',
+				    'renewal_period' => $renewalPeriod,
+				    'bloquer_creation' => '0',
+				    'bloquer_modification' => '0'
+			       )
+			    );
+			    $newId = DB::insertId();
+
+			    //Add complexity
+			    DB::insert(
+				$pre."misc",
+				array(
+				    'type' => 'complex',
+				    'intitule' => $newId,
+				    'valeur' => $complexity
+				)
+			    );
+		
+			    //load ClassLoader
+			    require_once '../sources/SplClassLoader.php';
+                            $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                            $tree->register();
+
+			    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+			    $tree->rebuild();
+
+			    //If it is a subfolder, then give access to it for all roles that allows the parent folder
+			    $rows = DB::query("SELECT role_id,type FROM ".$pre."roles_values WHERE folder_id = %i", $parentId);
+			    foreach ($rows as $record) {
+				//add access to this subfolder
+				DB::insert(
+				    $pre.'roles_values',
+				    array(
+					'role_id' => $record['role_id'],
+					'folder_id' => $newId,
+					'type' => $record['type']
+				   )
+				);
+			    }
+                    } else {
+                        rest_error ('BADDEFINITION');
+                    }
+                } else {
+                    rest_error ('BADDEFINITION');
+                }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
             /*
