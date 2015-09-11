@@ -98,9 +98,15 @@ echo '
         <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
         <input type="password" size="15" name="new_pw2" id="new_pw2" />
         <div id="pw_strength" style="margin:10px 0 10px 120px;text-align:center;"></div>
-        <input type="hidden" id="pw_strength_value" />
+        <input type="hidden" id="pw_strength_value" />';
+		
+// if DUOSecurity enabled then changing PWD is not allowed
+if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
+	echo '
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-        <i class="fa fa-cog fa-spin" id="password_change_wait" style="display:none;"></i>
+        <i class="fa fa-cog fa-spin" id="password_change_wait" style="display:none;"></i>';
+
+echo '
     </div>
 </div>';
 ?>

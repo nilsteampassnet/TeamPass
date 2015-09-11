@@ -335,7 +335,8 @@ window.Duo = (function(document, window) {
 
         // add the response token input to the form
         form.appendChild(input);
-
+        console.log("fait!");
+        
         // away we go!
         form.submit();
     }

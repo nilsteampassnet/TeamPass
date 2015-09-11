@@ -14,6 +14,19 @@
  */
 global $LANG;
 $LANG = array (
+	'duo_message' => 'DUO Security checks are now done. Sending your credentials to Teampass.<br />Please wait ... the page will be reloaded once authentication process will be done.',
+	'duo_loading_iframe' => 'DUOSecurity authentication frame is currently being loaded. Please wait.',
+	'settings_duo' => 'Enable DUO Security as User 2-Factor authentication',
+	'settings_duo_tip' => 'User 2-Factor authentication can be ensured using DUOSecurity.com. This library guarantees a high level of security related to user authentication.',
+	'admin_duo_akey' => 'AKEY',
+	'admin_duo_ikey' => 'IKEY',
+	'admin_duo_skey' => 'SKEY',
+	'admin_duo_host' => 'HOST',
+	'generate_random_key' => 'Generate consistent random key',
+	'duo_save_sk_file' => 'Save data in sk.php file',
+	'settings_duo_explanation' => 'Those credentials are issued from the web application you specially created for Teampass from the DUOSecurity administration page.<br />By clicking the save button they will stored in the sk.php file.',
+	'admin_duo_intro' => 'Fill in the next ields with expected data',
+	'admin_duo_stored' => 'Credentials stored successfully!',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

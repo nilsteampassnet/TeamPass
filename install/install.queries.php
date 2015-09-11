@@ -369,7 +369,8 @@ if (isset($_POST['type'])) {
                             array('admin','show_only_accessible_folders','0'),
                             array('admin','enable_suggestion','0'),
                             array('admin','otv_expiration_period','7'),
-                            array('admin','default_session_expiration_time','60')
+                            array('admin','default_session_expiration_time','60'),
+                            array('admin','duo','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -566,6 +567,7 @@ if (isset($_POST['type'])) {
                             KEY `role_id_idx`  (`role_id`)
                             ) CHARSET=utf8;"
                         );
+                    /*
                     } else if ($task == "keys") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."keys` (
@@ -575,6 +577,7 @@ if (isset($_POST['type'])) {
                             UNIQUE KEY `rand_key_id_idx` (`rand_key`,`id`)
                             ) CHARSET=utf8;"
                         );
+                    */
                     } else if ($task == "languages") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."languages` (

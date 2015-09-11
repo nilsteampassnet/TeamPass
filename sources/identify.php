@@ -27,6 +27,8 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 
 // DUO
 if ($_POST['type'] === "identify_duo_user") {
+	// This step creates the DUO request encrypted key
+	
 	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 	// load library
 	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -35,15 +37,17 @@ if ($_POST['type'] === "identify_duo_user") {
 	echo '[{"sig_request" : "'.$sig_request.'"}]';
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
+	// this step is verifying the response received from the server
+	
 	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 	// load library
 	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
 	$resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
 
 	if ($resp === $_POST['login']) {
-		echo '[{"value" : "'.$sig_request.'"}]';
+		echo '[{"resp" : "'.$resp.'"}]';
 	} else {
-		echo '[{"value" : "'.$resp.'"}]';
+		echo '[{"resp" : "'.$resp.'"}]';
 	}
 } elseif ($_POST['type'] == "identify_user") {
 	identifyUser($_POST['data']);
@@ -411,25 +415,6 @@ function identifyUser($sentData)
                                 && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
                                 )
         ) {
-        	// DUO authentication
-        	if (isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == "1") {
-        		// load library
-        		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-        		$sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $username);
-
-        		//$duoLib = new SplClassLoader('Authentication\Duo', '../includes/libraries');
-        		//$duoLib->register();echo "ici";
-        		//$duoLib = new Duo/Duo/Duo();
-        		//$sig_request = $duoLib -> signRequest(IKEY, SKEY, AKEY, $username);
-
-        		echo " - ".$sig_request;
-        		/*echo '<script type="text/javascript" src="./includes/libraries/Authentication/Duo/js/Duo-Web-v2.js"></script>
-        <link rel="stylesheet" type="text/css" href="Duo-Frame.css">
-        <iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="<?php echo $sig_request; ?>"></iframe>';
-        */
-        	}
-
-
             $_SESSION['autoriser'] = true;
 
             // Generate a ramdom ID

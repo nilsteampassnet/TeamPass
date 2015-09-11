@@ -1,9 +1,9 @@
 <?php
 /**
  *
- * @file          index.php
+ * @file          duo.load.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -23,9 +23,13 @@ if (
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 ?>
 
+// this page contains the javascript call for DUOSecurity api
+// It loads the expected iFrame where user gives his DUO credentials
+// It sends the request to the DUO server
 
 <script type="text/javascript">
 $(function() {
+	$.getScript("./includes/libraries/Authentication/DuoSecurity/js/Duo-Web-v2.min.js");
 	$.post(
 		"sources/identify.php",
 		{
@@ -33,51 +37,23 @@ $(function() {
 			login: sanitizeString($("#login").val())
 		},
 		function(data) {
-			var cssLink = $("<link rel='stylesheet' type='text/css' href='./includes/libraries/Authentication/DuoSecurity/Duo-Frame.css'>");
-	    	$("head").append(cssLink);
+			var ret = data[0].sig_request.split('|');
+			if (ret[0] === "ERR") {
+				$("#div_duo").html("ERROR " + ret[1]);
+			} else {
+				// preparing the DUO iframe
+				var cssLink = $("<link rel='stylesheet' type='text/css' href='./includes/libraries/Authentication/DuoSecurity/Duo-Frame.css'>");
+		    	$("head").append(cssLink);
+				$("#div_duo").html('<iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
 
-	$.getScript("./includes/libraries/Authentication/DuoSecurity/js/Duo-Web-v2.js");
+				// loading the DUO iframe
+			    Duo.init({
+	                'host': '<?php echo HOST; ?>',
+	                'sig_request': data[0].sig_request
+	            });
 
-		    //$('#duo_iframe').attr("data-host", "<?php echo HOST; ?>");
-		    //$('#duo_iframe').attr("data-sig-request", data[0].sig_request);
-		    //console.log('<iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
-		    $("#div_duo").html('<iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
-
-		    Duo.init({
-                'host': '<?php echo HOST; ?>',
-                'sig_request': data[0].sig_request,
-                'post_action' : 'https://localhost/teampass/index.php?duo_status=valid&sig_response='
-              });
-
-		    /*var ifr=$('<iframe/>', {
-	            id: 'duo_iframe',
-	            load:function(){
-	                $(this).show();
-	                Duo.init({
-	                    'host': '<?php echo HOST; ?>',
-	                    'sig_request': data[0].sig_request
-	                  });
-	            }
-	        });
-	        $('#div_duo').html(ifr);*/
-
-
-			/*if (data[0].value != "") {
-
-				$.post(
-						"sources/identify.php",
-						{
-							type : "identify_duo_user_check",
-							sig_response : data[0].value,
-							login: sanitizeString($("#login").val())
-						},
-						function(data) {
-							console.log(data[0].value);
-						},
-						"json"
-								);
-
-			}*/
+	            $("#duo_login").val($("#login").val());
+			}
 		},
 		"json"
 	);
