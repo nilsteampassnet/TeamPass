@@ -138,19 +138,10 @@ $htmlHeaders .= '
         return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
+    
     function launchIdentify(isDuo, redirect, psk)
     {
-        if (isDuo == "false") identifyUser(redirect, psk);
-        else {
-        	loadDuoDialog();
-
-        }
-    }
-
-    //Identify user
-    function identifyUser(redirect, psk)
-    {
-        $("#connection_error").hide();
+		$("#connection_error").hide();
         if (redirect == undefined) redirect = ""; //Check if redirection
         // Check form data
         if (psk == 1 && $("#psk").val() == "") {
@@ -193,6 +184,18 @@ $htmlHeaders .= '
 
         data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\'}\';
 
+        // Handle if DUOSecurity is enabled
+        if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
+        	identifyUser(redirect, psk, data, randomstring);
+        } else {
+        	$("#duo_data").val(data)
+        	loadDuoDialog();
+        }
+    }
+
+    //Identify user
+    function identifyUser(redirect, psk, data, randomstring)
+    {
         //send query
         $.post(
             "sources/identify.php",
@@ -417,7 +420,7 @@ $htmlHeaders .= '
         aIds.shift();
         var nb = aIds.length;
         aIds = aIds.toString();
-        //console.log(currentID+" -- "+aIds);
+        
         if (nb == 0)
             $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+"100%");
         else
@@ -447,12 +450,13 @@ $htmlHeaders .= '
         );
     }
 
-    // DUO box
+    // DUO box - identification
     function loadDuoDialog()
     {
         $("#dialog_duo").dialog({
             width: 600,
             height: 500,
+            title: "DUO Security",
             open: function(event, ui) {
                 $("#div_duo").load(
                     "'.$_SESSION['settings']['cpassman_url'].'/duo.load.php", function(){}
@@ -461,7 +465,59 @@ $htmlHeaders .= '
         }).dialog("open");
     }
 
+    // DUO box - wait 
+    function loadDuoDialogWait()
+    {
+        $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['duo_wait'].'</center>");
+        $("#dialog_duo").dialog({
+            width: 400,
+            height: 250,
+            title: "DUO Security - please wait ..."
+        }).dialog("open");
+    }
+
     $(function() {
+        // load DUO login
+		if ($("#duo_sig_response").val() != "") {
+			$("#login").val($("#duo_login").val());
+			
+        	// checking that response is corresponding to user credentials
+			$.post(
+				"sources/identify.php",
+				{
+					type : 			"identify_duo_user_check",
+					login: 			sanitizeString($("#login").val()),
+		            sig_response: 	$("#duo_sig_response").val()
+				},
+				function(data) {
+					var ret = data[0].resp.split("|");
+					if (ret[0] === "ERR") {
+						$("#div_duo").html("ERROR " + ret[1]);
+					} else {
+						// finally launch identification process inside Teampass.
+        				loadDuoDialogWait();
+		                
+		                $.post(
+							"sources/identify.php",
+							{
+								type : 	"identify_user",
+								data : 	$("#duo_data").val()
+							},
+							function(data) {
+								$("#connection_error").hide();
+			                    //redirection for admin is specific
+			                    if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+			                    else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
+			                    else window.location.href="index.php";
+							},
+							"json"
+						);
+					}
+				},
+				"json"
+			);
+		}
+        
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
 			maxWidth: 400,

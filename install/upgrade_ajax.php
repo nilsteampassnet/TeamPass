@@ -570,7 +570,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'enable_suggestion', '0', 0),
                 array('admin', 'email_server_url', '', 0),
                 array('admin','otv_expiration_period','7', 0),
-                array('admin','default_session_expiration_time','60', 0)
+                array('admin','default_session_expiration_time','60', 0),
+	            array('admin','duo','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -1749,6 +1750,7 @@ require_once \"".$skFile."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
                         )
                     );
