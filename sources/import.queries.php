@@ -15,7 +15,7 @@ use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -245,9 +245,10 @@ switch ($_POST['type']) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
 
-            //Encryption key
+            /*//Encryption key
             $randomKey = generateKey();
-            $pw = $randomKey.$item[2];
+            $pw = $randomKey.$item[2];*/
+            $pw = $item[2];
 
             // Insert new item in table ITEMS
             DB::insert(
@@ -264,7 +265,7 @@ switch ($_POST['type']) {
             );
             $newId = DB::insertId();
 
-                //Store generated key
+            /*    //Store generated key
             DB::insert(
                 prefix_table("keys"),
                 array(
@@ -272,7 +273,7 @@ switch ($_POST['type']) {
                     'id' => $newId,
                     'rand_key' => $randomKey
                )
-            );
+            );*/
 
             //if asked, anyone in role can modify
             if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
@@ -821,18 +822,15 @@ switch ($_POST['type']) {
                     //$count++;
                     //check if not exists
                     $results .= str_replace($foldersSeparator,"\\",$item[KP_PATH]).'\\'.$item[KP_TITLE];
-                    $randomKey = substr($item[KP_UUID],0, 15);		// use partial UUID from XML
                     DB::query(
-                        "SELECT ".prefix_table("items").".id FROM ".prefix_table("items").",".prefix_table("keys")."
-                        WHERE ".prefix_table("items").".id=".prefix_table("keys").".id AND id_tree =%i AND label = %s AND rand_key = %s LIMIT 1",
+                        "SELECT id FROM ".prefix_table("items")."
+                        WHERE id_tree =%i AND label = %s LIMIT 1",
                         intval($foldersArray[$item[KP_PATH]]['id']),
-                        stripslashes($item[KP_TITLE]),
-                        $randomKey
+                        stripslashes($item[KP_TITLE])
                     );
                     $counter = DB::count();
                     if ($counter == 0) {
-                        //Encryption key
-                        $pw = $randomKey.$item[KP_PASSWORD];
+                        $pw = $item[KP_PASSWORD];
 
                         //Get folder label
                         if (count($foldersArray)==0 || empty($item[KP_PATH])) {
@@ -861,7 +859,7 @@ switch ($_POST['type']) {
                         );
                         $newId = DB::insertId();
 
-                        //Store generated key
+                        /*//Store generated key
                         DB::insert(
                             prefix_table("keys"),
                             array(
@@ -869,7 +867,7 @@ switch ($_POST['type']) {
                                 'id' => $newId,
                                 'rand_key' => $randomKey
                            )
-                        );
+                        );*/
 
                         //if asked, anyone in role can modify
                         if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {

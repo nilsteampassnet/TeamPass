@@ -139,7 +139,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 160,
+        height: 200,
         title: "<?php echo $LANG['is_administrated_by_role'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -422,6 +422,48 @@ $(function() {
 		}
 	});
 
+    $("#user_edit_login_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 280,
+        title: "<?php echo $LANG['admin_action'];?>",
+        buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                $("#user_edit_login_dialog_message").html("<?php echo $LANG['please_wait'];?>");
+                $.post(
+                    "sources/users.queries.php",
+                    {
+                        type    : "user_edit_login",
+                        id      : $("#selected_user").val(),
+                        login   : $("#edit_login").val(),
+                        name    : $("#edit_name").val(),
+                        lastname: $("#edit_lastname").val(),
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#name_"+$("#selected_user").html()).html($("#edit_name").val());
+                        $("#lastname_"+$("#selected_user").val()).html($("#edit_lastname").val());
+                        $("#login_"+$("#selected_user").val()).html($("#edit_login").val());
+                        $("#user_edit_login_dialog").dialog("close");
+                    }
+                );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        open: function() {
+            $("#edit_name").val($("#name_"+$("#selected_user").val()).html());
+            $("#edit_lastname").val($("#lastname_"+$("#selected_user").val()).html());
+            $("#edit_login").val($("#login_"+$("#selected_user").val()).html());
+        },
+        close: function() {
+            $("#user_edit_login_dialog_message").html("");
+        }
+    });
+
 	var watermark = 'Search a user';
 
 	//init, set watermark text and class
@@ -454,7 +496,11 @@ $(function() {
 			$('tr.data-row').removeClass('selected');
 		}
 	});
-
+    
+    // load list of users
+    $("#users_list_load").show();
+    $("#but_users_reload").prop("disabled", true);
+    loadUsersList(0);
 });
 
 function pwGenerate(elem)
@@ -550,6 +596,7 @@ function ChangeUserParm(id, parameter)
 
 function Open_Div_Change(id,type)
 {
+    $("#div_loading").show();
     $.post("sources/users.queries.php",
         {
             type    : "open_div_"+type,
@@ -558,6 +605,7 @@ function Open_Div_Change(id,type)
         },
         function(data) {
             data = $.parseJSON(data);
+            $("#div_loading").hide();
             if (type == "functions") {
                 $("#change_user_functions_list").html(data.text);
                 $("#selected_user").val(id);
@@ -587,6 +635,8 @@ function Change_user_rights(id,type)
     if (type == "functions") var form = document.forms.tmp_functions;
     if (type == "autgroups") var form = document.forms.tmp_autgroups;
     if (type == "forgroups") var form = document.forms.tmp_forgroups;
+    
+    $("#div_loading").show();
 
     for (i=0 ; i<= form.length-1 ; i++) {
         if (form[i].type == "checkbox" && form[i].checked) {
@@ -595,13 +645,13 @@ function Change_user_rights(id,type)
             else list = list + ";" + function_id[1];
         }
     }
-
+    
     $.post("sources/users.queries.php",
         {
             type    : "change_user_"+type,
             id      : id,
             list    : list,
-            key        : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
             if (type == "functions") {
@@ -611,6 +661,7 @@ function Change_user_rights(id,type)
             } else if (type == "forgroups") {
                 $("#list_forgroups_user_"+id).html(data[0].text);
             }
+            $("#div_loading").hide();
         },
         "json"
    );
@@ -710,6 +761,13 @@ function user_action_ga_code(id)
 	);
 }
 
+function user_edit_login(id)
+{
+    $("#selected_user").val(id);
+    $("#user_edit_login_dialog").dialog("open");
+}
+
+
 /**
  *
  * @access public
@@ -790,5 +848,46 @@ function htmlspecialchars_decode (string, quote_style)
     }
 
     return string;
+}
+
+/**
+*
+*/
+function loadUsersList(from)
+{
+    $.post(
+        "sources/users.queries.php",
+        {
+            type    : "load_users_list",
+            from    : from,
+            nb      : "4",
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            if (data.error != "") {
+                console.log("Error!");
+            } else {
+                $("#tbody_users").append(data.html);
+                if (data.end_reached == true) {
+                    $("#users_list_load").hide();
+                    $("#but_users_reload").prop("disabled", false);
+                    $(".tip").tooltipster();
+                } else {
+                    loadUsersList(data.from);
+                }
+            }
+        }
+	);
+}
+
+/**
+*
+*/
+function reloadUsersList()
+{
+    $("#users_list_load").show();
+    $("#tbody_users").html("");
+    loadUsersList(0);
 }
 </script>

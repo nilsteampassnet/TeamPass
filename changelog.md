@@ -1,4 +1,6 @@
-2.1.23
+Last changes
+ 
+ 2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
  #830 - Fix documentation syntax
@@ -14,10 +16,35 @@
  #853 - New setting for default session expiration delay
  #851 - Multiple fixes for LDAP integration
  #814 - #857
- #880 - View logs error redeclared function getBits
+ #880 - Fix for View logs error redeclared function getBits
+ #881 - Fix for "Forgot your password?" not working
+ #900 - Fix for New folder incorrect permissions (read-only)
+ #890 - Fix for Personal Folder only read permission
+ #910 - Fix for Backslashes in accounts are not copied to clipboard
+ #913 - Fix for 'Announce this item by email' fails
+ #915 - Export to PDF corrected
+ #907 - Move folder feature
+ #917 - Fix on API
+ #941 - Fix for user_not_exists message (LDAP)
+ #988 - Error on copy item
+ #992 - Added to Log User Created By
  PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders
+ Fix: If GA activated, Users can ask for a new code from the login page
+ Fix: Off-line file url was not correct in download button
+ Removal of Keys table
+ Implementation of PhpCrypt library as encryption library (AES-128 with CBC mode)
+ Implementation of Awesomefont in Items page
+ Clean up of old comments
+ Added "long press" to show password
+ Fix of bug in Offline export
+ List of Users is now loaded through Ajax to prevent timeout in case of long list of users
+ Personal saltkey change is now performed through Ajax to prevent timeout in case of long list of passwords
+ Fix for users with "Allowed folders" that can't write inside them.
+ Removed extra files from Yubico folder
+ Update process: suggestions passwords are reencrypted
+ Suggestion migrated to new encryption
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

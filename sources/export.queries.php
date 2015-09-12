@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -57,6 +57,10 @@ switch ($_POST['type']) {
 
     //CASE export to PDF format
     case "export_to_pdf_format":
+        /*
+        $ids = explode(',', $_POST['ids']);
+        foreach ($ids as $id) {
+        */
         $id = $_POST['id'];
         if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
             // get path
@@ -73,13 +77,11 @@ switch ($_POST['type']) {
             // send query
             $rows = DB::query(
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
-                    l.date as date,
-                    n.renewal_period as renewal_period,
-                    k.rand_key
+                    l.date as date, i.pw_iv as pw_iv,
+                    n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -107,14 +109,14 @@ switch ($_POST['type']) {
                     } else {
                         //encrypt PW
                         if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                            $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                            $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
                         } else {
-                            $pw = decrypt($record['pw']);
+                            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                         }
-                        if ($record['perso'] != 1) {
+                        /*if ($record['perso'] != 1) {
                             $pw = stripslashes($pw);
                             $pw = substr(addslashes($pw), strlen($record['rand_key']));
-                        }
+                        }*/
                         // store
                         DB::insert(
                             prefix_table("export"),
@@ -122,7 +124,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'description' => addslashes($record['description']),
                                 'label' => addslashes($record['label']),
-                                'pw' => ($pw),
+                                'pw' => stripslashes($pw),
                                 'login' => $record['login'],
                                 'path' => $path
                             )
@@ -133,6 +135,7 @@ switch ($_POST['type']) {
                 $folder_title = $record['folder_title'];
             }
         }
+        //}
         echo '[{}]';
         break;
 
@@ -175,10 +178,10 @@ switch ($_POST['type']) {
                     error_log('key: '.$key.' - paths: '.$record['path']);
                     $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table[3], 6, $LANG['description'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
@@ -246,13 +249,11 @@ switch ($_POST['type']) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
-                       l.date as date,
-                       n.renewal_period as renewal_period,
-                       k.rand_key
+                       l.date as date, i.pw_iv as pw_iv,
+                       n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -276,15 +277,15 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
                             } else {
-                                $pw = decrypt($record['pw']);
+                            	$pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'pw' => addslashes($pw),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -328,7 +329,6 @@ switch ($_POST['type']) {
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                    INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
                     WHERE i.inactif = %i
                     AND i.id_tree= %i
                     AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
@@ -407,7 +407,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     	fclose($outstream);
 
     	// send back and continue
-    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
+    	echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$_SESSION['settings']['path_to_files_folder'].$html_file.'" , "file_link":"'.$_SESSION['settings']['url_to_files_folder'].$html_file.'"}]';
     	break;
 
 	//CASE export in HTML format - Iteration loop
@@ -423,19 +423,17 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		$full_listing = array();
 		include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 		require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
-	
+
 		$rows = DB::query(
 			"SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
-               l.date as date,
-               n.renewal_period as renewal_period,
-               k.rand_key
+               l.date as date, i.pw_iv as pw_iv,
+               n.renewal_period as renewal_period
             FROM ".prefix_table("items")." as i
             INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
             INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-            INNER JOIN ".prefix_table("keys")." as k ON (i.id = k.id)
             WHERE i.inactif = %i
             AND i.id_tree= %i
-            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))            
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
             ORDER BY i.label ASC, l.date DESC",
             "0",
             intval($_POST['idTree']),
@@ -449,16 +447,16 @@ Enter the decryption key : <input type="password" id="saltkey" />
 			if (empty($id_managed) || $id_managed != $record['id']) {
 				// decrypt PW
 				if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-					$pw = decrypt($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])));
+					$pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
 				} else {
-					$pw = decrypt($record['pw']);
+                    $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
 				}
 				array_push($full_listing,array(
 				    'id_tree' => $record['id_tree'],
 				    'id' => $record['id'],
 				    'label' => $record['label'],
 				    'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-				    'pw' => substr(($pw), strlen($record['rand_key'])),
+				    'pw' => $pw,
 				    'login' => $record['login'],
 				    'url' => $record['url'],
 				    'perso' => $record['perso']
@@ -528,7 +526,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 		fclose($outstream);
 
 		// send back and continue
-		echo '[{"loop":"true", "number":"'.$_POST['number'].'", "cpt":"'.$_POST['cpt'].'", "file":"'.$_POST['file'].'", "idsList":"'.$_POST['idsList'].'"}]';
+		echo '[{"loop":"true", "number":"'.$_POST['number'].'", "cpt":"'.$_POST['cpt'].'", "file":"'.$_POST['file'].'", "idsList":"'.$_POST['idsList'].'" , "file_link":"'.$_POST['file_link'].'"}]';
 	break;
 
 		//CASE export in HTML format - Iteration loop
@@ -584,7 +582,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
 		fclose($outstream);
 
-		echo '[{"text":"<a href=\''.$_POST['file'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+		echo '[{"text":"<a href=\''.$_POST['file_link'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
 		break;
 }
 

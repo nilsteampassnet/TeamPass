@@ -155,9 +155,10 @@ if (
             }
         }
 
-        function newEncryptPw(){
+        function newEncryptPw(suggestion){
             var nb = 1;
             var start = 0;
+
             if ($("#change_pw_encryption_start").val() != "") {
                 start = $("#change_pw_encryption_start").val();
             } else {
@@ -165,19 +166,25 @@ if (
             }
             request = $.post("upgrade_ajax.php",
                 {
-                    type     : "new_encryption_of_pw",
-                    start         : start,
-                    total         : $("#change_pw_encryption_total").val(),
-                    nb : nb
+                    type        : "new_encryption_of_pw",
+                    start       : start,
+                    total       : $("#change_pw_encryption_total").val(),
+                    suggestion  : suggestion,
+                    nb          : nb
                 },
                 function(data) {
-                    if (data[0].finish != 1) {
+                    if (data[0].finish != 1 && data[0].finish != "suggestion") {
+                        // handle re-encryption of passwords in Items table
                     	$("#change_pw_encryption_start").val(data[0].next);
                     	$("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
                     	if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
-                    	    newEncryptPw();
+                    	    newEncryptPw("0");
                     	}
+                    } else if (data[0].finish == "suggestion") {
+                        // handle the re-encryption of passwords in suggestion table
+                        newEncryptPw("1");
                     } else {
+                        // handle finishing
                     	$("#change_pw_encryption_progress").html("Done");
                     	$("#but_encrypt_continu").hide();
                     	/* Unlock this step */
@@ -404,7 +411,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <p>
                              <div style="display:none;" id="change_pw_encryption_progress"></div>
                          </p>
-                         <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(1);" />
+                         <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(0);" />
                          <input type="hidden" id="change_pw_encryption_start" value="" />
                          <input type="hidden" id="change_pw_encryption_total" value="" />
                      </div>

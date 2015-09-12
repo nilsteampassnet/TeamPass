@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -91,8 +91,8 @@ if (!empty($_POST['type'])) {
             DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
-                // generate random key
-                $randomKey = generateKey();
+                // encrypt
+                $encrypt = cryption($pwd , SALT, "", "encrypt");
 
                 // query
                 DB::insert(
@@ -101,10 +101,10 @@ if (!empty($_POST['type'])) {
                         'label' => $label,
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
-                        'password' => encrypt($randomKey.$pwd),
+                        'pw' => $encrypt['string'],
                         'comment' => $comment,
                         'folder_id' => $folder,
-                        'suggestion_key' => $randomKey
+                        'pw_iv' => $encrypt['iv']
                     )
                 );
 
@@ -159,7 +159,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
+                "SELECT label, description, pw, suggestion_key, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
@@ -182,13 +182,14 @@ if (!empty($_POST['type'])) {
                     prefix_table("items"),
                     array(
                         'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
-                        'pw' => $suggestion['password']
+                        'pw' => $suggestion['pw'],
+                        'pw_iv' => $suggestion['pw_iv']
                     ),
                     "id=%i",
                     $existing_item_id['id']
                 );
                 if ($updStatus) {
-                    // update KEY
+                    /*// update KEY
                     $updStatus = DB::update(
                         prefix_table("keys"),
                         array(
@@ -197,7 +198,7 @@ if (!empty($_POST['type'])) {
                         "sql_table = %s AND id = %i",
                         "items",
                         $existing_item_id['id']
-                    );
+                    );*/
 
                     // update LOG
                     DB::insert(
@@ -229,17 +230,18 @@ if (!empty($_POST['type'])) {
                     array(
                         'label' => $suggestion['label'],
                         'description' => $suggestion['description'],
-                        'pw' => $suggestion['password'],
+                        'pw' => $suggestion['pw'],
                         'id_tree' => $suggestion['folder_id'],
                         'inactif' => '0',
                         'perso' => '0',
-                        'anyone_can_modify' => '0'
+                        'anyone_can_modify' => '0',
+                        'pw_iv' => $suggestion['pw_iv']
                     )
                 );
                 $newID = DB::insertId();
 
                 if (is_numeric($newID)) {
-                    // add Key
+                    /*// add Key
                     DB::insert(
                         prefix_table("keys"),
                         array(
@@ -247,7 +249,7 @@ if (!empty($_POST['type'])) {
                             'id' => $newID,
                             'rand_key' => $suggestion['suggestion_key']
                         )
-                    );
+                    );*/
 
                     // update log
                     DB::insert(

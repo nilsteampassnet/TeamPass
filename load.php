@@ -37,7 +37,10 @@ $htmlHeaders = '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
+
+        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
+        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -117,6 +120,7 @@ $htmlHeaders .= '
     //Menu actions
     function MenuAction(val)
     {
+        NProgress.start();
         if (val == "deconnexion") {
             sessionStorage.clear();
             $("#menu_action").val(val);
@@ -238,11 +242,12 @@ $htmlHeaders .= '
 	            "sources/main.queries.php",
 	            {
 	                type : "ga_generate_qr",
-	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'"),
+	                send_email : "1"
 	            },
 	            function(data) {
 	            	if (data[0].error == "0") {
-						$("#ga_qr").attr("src", data[0].ga_url);
+						//$("#ga_qr").attr("src", data[0].ga_url);
                 	    $("#div_ga_url").show();
 	            	} else {
 						$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
@@ -329,7 +334,7 @@ $htmlHeaders .= '
             }
        );
     }
-    
+
     function loadProfileDialog()
     {
         $("#dialog_user_profil").dialog({
@@ -355,8 +360,8 @@ $htmlHeaders .= '
             });
         }
     });*/
-    
-    
+
+
     function displayItemNumber (item_id, tree_id)
     {
         if (window.location.href.indexOf("page=items") == -1) {
@@ -368,9 +373,9 @@ $htmlHeaders .= '
             }
         }
     }
-    
+
     function refreshListLastSeenItems()
-    {        
+    {
         // refresh list of last items seen
         if ("'.$_SESSION["key"].'" == "") return false;
         $.post(
@@ -388,6 +393,44 @@ $htmlHeaders .= '
                 } else {
                     $("#main_info_box_text").html(data[0].error);
                     setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                }
+            },
+            "json"
+        );
+    }
+
+    function changePersonalSaltKey(credentials, ids, nb_total)
+    {
+        // extract current id and adapt list
+        var aIds = ids.split(",");
+        var currentID = aIds[0];
+        aIds.shift();
+        var nb = aIds.length;
+        aIds = aIds.toString();
+        //console.log(currentID+" -- "+aIds);
+        if (nb == 0)
+            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+"100%");
+        else
+            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+Math.floor(((nb_total-nb) / nb_total) * 100)+"%");
+
+        $.post(
+            "sources/utils.queries.php",
+            {
+                type            : "reencrypt_personal_pwd",
+                data_to_share   : credentials,
+                currentId       : currentID,
+                key             : "'.$_SESSION['key'].'"
+            },
+            function(data){
+                if (currentID == "") {
+                    $("#div_change_personal_saltkey_wait").html("'.$LANG['alert_message_done'].'");
+                    location.reload();
+                } else {
+                    if (data[0].error == "") {
+                        changePersonalSaltKey(credentials, aIds, nb_total);
+                    } else {
+                        $("#div_change_personal_saltkey_wait").html(data[0].error);
+                    }
                 }
             },
             "json"
@@ -520,7 +563,7 @@ $htmlHeaders .= '
                         function(data) {
                             LoadingPage();
                             if ($("#input_personal_saltkey").val() != "") {
-                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].'");
+                                $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",
                                     at: "center top+75",
@@ -545,29 +588,45 @@ $htmlHeaders .= '
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 400,
-            height: 250,
+            width: 450,
+            height: 310,
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
+            open: function() {
+                $("#new_personal_saltkey").val("");
+                $("#old_personal_saltkey").val("'.$_SESSION['my_sk'].'");
+            },
             buttons: {
                 "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
-                    var data = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
+                    var data_to_share = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
                     //Send query
                     $.post(
                         "sources/main.queries.php",
                         {
-                            type    : "change_personal_saltkey",
-                            data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                            type            : "change_personal_saltkey",
+                            data_to_share   : prepareExchangedData(data_to_share, "encode", "'.$_SESSION['key'].'"),
+                            key             : "'.$_SESSION['key'].'"
                         },
                         function(data) {
+                            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                            if (data.error == "no") {
+                                changePersonalSaltKey(data_to_share, data.list, data.nb_total);
+                            } else {
+
+                            }
+                            /*
                             $("#div_change_personal_saltkey_wait").hide();
                             $("#div_change_personal_saltkey").dialog("close");
+                            */
                         }
                    );
                 },
                 "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
                 }
+            },
+            close: function() {
+                $("#div_change_personal_saltkey_wait").hide();
             }
         });
 
@@ -597,6 +656,58 @@ $htmlHeaders .= '
                    );
                 },
                 "'.$LANG['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            }
+        });
+
+        // DIALOG FOR PSK
+        $("#psk_confirm").focusout(function() {
+            if ($("#psk_confirm").val() != $("#psk").val()) {
+                $("#but_identify_user").prop("disabled", true);
+                $("#psk, #psk_confirm").addClass("ui-state-error");
+            } else {
+                $("#but_identify_user").prop("disabled", false);
+                $("#psk, #psk_confirm").removeClass("ui-state-error");
+            }
+        });
+
+        // DIALOG BOX FOR ASKING PASSWORD
+        $("#div_forgot_pw").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 300,
+            height: 250,
+            title: "'.$LANG['forgot_my_pw'].'",
+            buttons: {
+                "'.$LANG['send'].'": function() {
+                    $("#div_forgot_pw_alert").html("");
+                    $("#div_forgot_pw_status").show();
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type    : "send_pw_by_email",
+                            email    : $("#forgot_pw_email").val(),
+                            login    : $("#forgot_pw_login").val()
+                        },
+                        function(data) {
+                            $("#div_forgot_pw_status").hide();
+                            if (data[0].error != "") {
+                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
+                            } else {
+                                $("#div_forgot_pw_alert").html("");
+                                $("#div_dialog_message_text").html(data[0].message);
+                                $("#div_forgot_pw").dialog("close");
+        	                    $("#div_dialog_message").dialog("open");
+                            }
+                        },
+                        "json"
+                    );
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $("#div_forgot_pw_alert").html("");
+                    $("#forgot_pw_email").val("");
                     $(this).dialog("close");
                 }
             }
@@ -655,7 +766,7 @@ $htmlHeaders .= '
                 }
             }
         });
-        
+
         /*
         //inline editing
         $(".editable_textarea").editable("sources/users.queries.php", {
@@ -670,90 +781,10 @@ $htmlHeaders .= '
 
         // get list of last items
         refreshListLastSeenItems();
-    });';
 
-if (!isset($_GET['page'])) {
-    $htmlHeaders .= '
-    $(function() {
-/*
-        $("#login").focusout(function() {
-            if ($("#login").val() != "" && $("#login").val() != "admin") {
-                $("#login_check_wait").show();
-                // check if login exists
-                $.post(
-                    "sources/main.queries.php",
-                    {
-                        type    : "check_login_exists",
-                        userId    : $("#login").val()
-                    },
-                    function(data) {
-                        $("#login_check_wait").hide();
-                        if (data[0].login == "") {
-                            $("#login").addClass("ui-state-error");
-                        } else {
-                            $("#login").removeClass("ui-state-error");
-                        }
-                        if (data[0].psk == "") {
-                            $("#connect_psk_confirm").show();
-                        }
-                    },
-                    "json"
-                );
-            }
-        });
-*/
-        $("#psk_confirm").focusout(function() {
-            if ($("#psk_confirm").val() != $("#psk").val()) {
-                $("#but_identify_user").prop("disabled", true);
-                $("#psk, #psk_confirm").addClass("ui-state-error");
-            } else {
-                $("#but_identify_user").prop("disabled", false);
-                $("#psk, #psk_confirm").removeClass("ui-state-error");
-            }
-        });
 
-        // DIALOG BOX FOR ASKING PASSWORD
-        $("#div_forgot_pw").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 300,
-            height: 250,
-            title: "'.$LANG['forgot_my_pw'].'",
-            buttons: {
-                "'.$LANG['send'].'": function() {
-                    $("#div_forgot_pw_alert").html("");
-                    $("#div_forgot_pw_status").show();
-                    $.post(
-                        "sources/main.queries.php",
-                        {
-                            type    : "send_pw_by_email",
-                            email    : $("#forgot_pw_email").val(),
-                            login    : $("#forgot_pw_login").val()
-                        },
-                        function(data) {
-                            $("#div_forgot_pw_status").hide();
-                            if (data[0].error != "") {
-                                $("#div_forgot_pw_alert").html(data[0].message).addClass("ui-state-error").show();
-                            } else {
-                                $("#div_forgot_pw_alert").html("");
-                                $("#div_dialog_message_text").html(data[0].message);
-                                $("#div_forgot_pw").dialog("close");
-        	                    $("#div_dialog_message").dialog("open");
-                            }
-                        },
-                        "json"
-                    );
-                },
-                "'.$LANG['cancel_button'].'": function() {
-                    $("#div_forgot_pw_alert").html("");
-                    $("#forgot_pw_email").val("");
-                    $(this).dialog("close");
-                }
-            }
-        });
+        setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
-}
 
 if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
