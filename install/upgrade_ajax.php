@@ -570,7 +570,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'enable_suggestion', '0', 0),
                 array('admin', 'email_server_url', '', 0),
                 array('admin','otv_expiration_period','7', 0),
-                array('admin','default_session_expiration_time','60', 0)
+                array('admin','default_session_expiration_time','60', 0),
+	            array('admin','duo','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -799,7 +800,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
-                "TEXT NOT null"
+                "TEXT null"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."categories_items",
@@ -810,6 +811,11 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "pw_iv",
                 "TEXT NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "pw_len",
+                "INT(5) NOT null DEFAULT '0'"
             );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
@@ -1744,6 +1750,7 @@ require_once \"".$skFile."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
                         )
                     );

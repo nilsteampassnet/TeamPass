@@ -1083,3 +1083,11 @@ function prefix_table($table)
         return false;
     }
 }
+
+/*
+ * Creates a KEY using Crypt
+ */
+function GenerateCryptKey($size)
+{
+	return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
+}

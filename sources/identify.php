@@ -25,7 +25,35 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
-identifyUser($_POST['data']);
+// DUO
+if ($_POST['type'] === "identify_duo_user") {
+	// This step creates the DUO request encrypted key
+	
+	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+	// load library
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+	$sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
+
+	echo '[{"sig_request" : "'.$sig_request.'"}]';
+
+} elseif ($_POST['type'] == "identify_duo_user_check") {
+	// this step is verifying the response received from the server
+	
+	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+	// load library
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+	$resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
+
+	if ($resp === $_POST['login']) {
+		echo '[{"resp" : "'.$resp.'"}]';
+	} else {
+		echo '[{"resp" : "'.$resp.'"}]';
+	}
+} elseif ($_POST['type'] == "identify_user") {
+	identifyUser($_POST['data']);
+}
+
+
 
 function identifyUser($sentData)
 {

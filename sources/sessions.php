@@ -110,6 +110,7 @@ class CryptSession {
             return false;
         }
 	  	$data      = file_get_contents($sess_file);
+	  	if (empty($data)) {return false;}
         list($hmac, $iv, $encrypted)= explode(':',$data);
         $iv        = base64_decode($iv);
         $encrypted = base64_decode($encrypted);

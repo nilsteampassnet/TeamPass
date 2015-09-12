@@ -1774,8 +1774,6 @@ if (isset($_POST['type'])) {
                         ORDER BY i.label ASC, l.date DESC".$query_limit,//
                         $where
                     );
-                        //,k.rand_key as rand_key
-                        //LEFT JOIN ".prefix_table("keys")." as k ON (k.id = i.id)
                 } else {
                     $items_to_display_once = "max";
                     /*
@@ -1987,13 +1985,14 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
+
+                            // test charset => may cause a json error if is not utf8
+                            if (!isUTF8($pw) || empty($pw)) {
+                            	$pw = "";
+                            	$html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
+                            }
                         } else {
                             $pw = "";
-                        }
-                        // test charset => may cause a json error if is not utf8
-                        if (!isUTF8($pw) || empty($pw)) {
-                            $pw = "";
-                            $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
