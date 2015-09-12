@@ -577,6 +577,7 @@ echo '
                 <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
                 <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
+                <li><a href="admin.settings_duo.php">DuoSecurity</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1

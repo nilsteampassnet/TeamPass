@@ -306,7 +306,9 @@ $(function() {
 	});
 	$('#tabs').click(function(e){
 		var current_index = $("#tabs").tabs("option","active");
-		if (current_index != 9) {
+		if (current_index == 9 || current_index == 10) {
+			$("#save_button").hide();
+		} else {
 			$("#save_button").show();
 		}
 	});

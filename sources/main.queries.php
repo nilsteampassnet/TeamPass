@@ -43,6 +43,8 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
 global $k;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
+header("Cache-Control: no-cache, must-revalidate");
+header("Pragma: no-cache");
 error_reporting(E_ERROR);
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -870,4 +872,16 @@ switch ($_POST['type']) {
 
         echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
         break;
+    /**
+     * Generates a KEY with CRYPT
+     */
+    case "generate_new_key":    	
+    	// load passwordLib library
+        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+        $pwdlib->register();
+        $pwdlib = new PasswordLib\PasswordLib();
+        // generate key
+        $key = $pwdlib->getRandomToken($_POST['size']);
+    	echo '[{"key" : "'.$key.'"}]';
+    	break;
 }
