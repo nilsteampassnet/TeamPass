@@ -248,8 +248,8 @@ if (isset($_POST['type'])) {
                             `id_item` int(8) NOT NULL,
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
-                            `action` varchar(250) NOT NULL,
-                            `raison` text NOT NULL
+                            `action` varchar(250) NULL,
+                            `raison` text NULL
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "misc") {
@@ -420,7 +420,7 @@ if (isset($_POST['type'])) {
                             `pw` varchar(400) NOT NULL,
                             `groupes_visibles` varchar(250) NOT NULL,
                             `derniers` text NOT NULL,
-                            `key_tempo` varchar(100) NOT NULL,
+                            `key_tempo` varchar(100) NULL,
                             `last_pw_change` varchar(30) NOT NULL,
                             `last_pw` text NOT NULL,
                             `admin` tinyint(1) NOT null DEFAULT '0',
@@ -446,6 +446,7 @@ if (isset($_POST['type'])) {
                             `ga` varchar(50) NULL,
                             `avatar` varchar(255) NOT null,
                             `avatar_thumb` varchar(255) NOT null,
+                            `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -681,12 +682,12 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."suggestion` (
                             `id` tinyint(12) NOT NULL AUTO_INCREMENT,
                             `label` varchar(255) NOT NULL,
-                            `password` text NOT NULL,
+                            `pw` text NOT NULL,
                             `description` text NOT NULL,
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
-                            `suggestion_key` varchar(50) NOT NULL,
+                            `pw_iv` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

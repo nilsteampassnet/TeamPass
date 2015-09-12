@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -192,7 +192,7 @@ switch ($_POST['type']) {
                 array_push($foldersIds, $folder->id);
             }
         }
-        
+
         $items = DB::query("SELECT id,label FROM ".prefix_table("items")." WHERE id_tree NOT IN %li", $foldersIds);
         foreach ($items as $item) {
             $text .= $item['label']."[".$item['id']."] - ";
@@ -518,9 +518,9 @@ switch ($_POST['type']) {
         $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
 
         //change all passwords in DB
-        $rows = DB::query("SELECT id,pw FROM ".prefix_table("items")." WHERE perso = %s", "0");
+        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("items")." WHERE perso = %s", "0");
         foreach ($rows as $record) {
-            $pw = decrypt($record['pw']);
+            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
             DB::update(
                 prefix_table("items"),
@@ -532,9 +532,9 @@ switch ($_POST['type']) {
             );
         }
         //change all users password in DB
-        $rows = DB::query("SELECT id,pw FROM ".prefix_table("users"));
+        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("users"));
         foreach ($rows as $record) {
-            $pw = decrypt($record['pw']);
+            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
             DB::update(
                 prefix_table("users"),
@@ -659,7 +659,7 @@ switch ($_POST['type']) {
         require_once 'main.functions.php';
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
-        $rows = DB::query("SELECT id, pw FROM ".prefix_table("items")." WHERE perso = %s", "0");
+        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("items")." WHERE perso = %s", "0");
         foreach ($rows as $record) {
             // check if key exists for this item
             DB::query("SELECT * FROM ".prefix_table("keys")." WHERE `id` = %i AND `sql_table` = %s", $record['id'], "items");
@@ -667,7 +667,7 @@ switch ($_POST['type']) {
             if ($counter == 0) {
                 $storePrefix = false;
                 // decrypt pw
-                $pw = decrypt($record['pw']);
+                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                 if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
                     // Pw seems to have a prefix
                     // get old prefix

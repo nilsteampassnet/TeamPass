@@ -97,7 +97,8 @@ echo '
 <input type="hidden" id="pf_selected" value="" />
 <input type="hidden" id="user_ongoing_action" value="" />
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
-<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />';
+<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />
+<input type="hidden" id="path_fontsize" value="" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -118,7 +119,8 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />
+<input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1':'0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
@@ -142,7 +144,8 @@ echo '
                         <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
-                        <li onclick="open_edit_group_div()"><i class="fa fa-edit fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
+                        <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
+                        <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
@@ -241,11 +244,7 @@ foreach ($folders as $folder) {
                 $folder->title = $_SESSION['login'];
             }
         	// resize title if necessary
-        	if (strlen($folder->title) > 20) {
-        		$fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 17)."...";
-        	} else {
-        		$fldTitle = str_replace("&", "&amp;", $folder->title);
-        	}
+            $fldTitle = str_replace("&", "&amp;", $folder->title);
             // Prepare folder
             $folderTxt = '
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
@@ -372,7 +371,9 @@ echo '
                 </div>
 
                 <div style="margin-top: 3px;">
-                    <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                    <div id="txt1"  style="float:left;">
+                        <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                    </div>
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
                         <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
@@ -402,7 +403,7 @@ echo'
                         <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
-                <table>';
+                <table width="100%">';
 // Line for LABEL
 echo '
                 <tr>
@@ -430,7 +431,7 @@ echo '
 // Line for DESCRIPTION
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['description'].' :</td>
+                    <td valign="top" class="td_title" width="180px">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['description'].' :</td>
                     <td>
                         <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
                     </td>
@@ -438,19 +439,18 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['pw'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td>
-                        <div id="button_quick_pw_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['pw_copy_clipboard'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
-                        <div id="id_pw" style="float:left; cursor:pointer;" onclick="ShowPassword()"></div>
+                        &nbsp;
+                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;" onClick=""></div>
                         <input type="hidden" id="hid_pw" value="" />
                     </td>
                 </tr>';
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['index_login'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<i id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></i></td>
                     <td>
-                        <div id="button_quick_login_copy" style="float:left; width:16px; margin:0 5px 0 -21px; display:none;" title="'.$LANG['login_copy'].'"><img src="includes/images/broom.png" style=" cursor:pointer;" alt="" /></div>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
@@ -458,7 +458,7 @@ echo '
 // Line for EMAIL
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['email'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['email'].' :</td>
                     <td>
                         <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
                     </td>
@@ -466,7 +466,7 @@ echo '
 // Line for URL
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['url'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['url'].' :</td>
                     <td>
                         <div id="id_url" style="display:inline;"></div><input type="hidden" id="hid_url" value="" />
                     </td>
@@ -474,7 +474,7 @@ echo '
 // Line for FILES
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float:left; margin-right:.3em;">&nbsp;</span>'.$LANG['files_&_images'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['files_&_images'].' :</td>
                     <td>
                         <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
                         <div id="dialog_files" style="display: none;">
@@ -485,7 +485,7 @@ echo '
 // Line for RESTRICTED TO
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['restricted_to'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['restricted_to'].' :</td>
                     <td>
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
                     </td>
@@ -493,7 +493,7 @@ echo '
 // Line for TAGS
 echo '
                 <tr>
-                    <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['tags'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['tags'].' :</td>
                     <td>
                         <div id="id_tags" style="display:inline;"></div><input type="hidden" id="hid_tags" />
                     </td>
@@ -502,7 +502,7 @@ echo '
 if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
     echo '
                     <tr>
-                        <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['kbs'].' :</td>
+                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
                         <td>
                             <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
                         </td>
@@ -514,13 +514,13 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
         $itemCatName = $elem[0];
     echo '
                     <tr class="tr_fields itemCatName_'.$itemCatName.'">
-                        <td valign="top" class="td_title"><span class="ui-icon ui-icon-carat-1-e" style="float: left; margin-right: .3em;">&nbsp;</span>'.$elem[1].' :</td>
+                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
                     echo '
                     <tr class="tr_fields itemCatName_'.$itemCatName.'">
-                        <td valign="top" class="td_title">&nbsp;&nbsp;<span class="ui-icon ui-icon-carat-1-e" style="float: left; margin: 0 .3em 0 15px; font-size:9px;">&nbsp;</span><i>'.$field[1].'</i> :</td>
+                        <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
                         <td>
                             <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'" class="fields" />
                         </td>
@@ -984,6 +984,9 @@ echo '
        */
 echo '
     </table>
+    <div id="add_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // Formulaire EDITER REPERTORIE
 echo '
@@ -1013,6 +1016,23 @@ echo '
             </select>
         </tr>
     </table>
+    <div id="edit_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
+</div>';
+// Formulaire MOVE FOLDER
+echo '
+<div id="div_move_folder" style="display:none;">
+    <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div style="text-align:center;margin-top:20px;">
+        The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
+        <select id="move_folder_id">
+            <option value="0">-choisir-</option>'.$selectVisibleFoldersOptions.'
+        </select>
+    </div>
+    <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // Formulaire SUPPRIMER REPERTORIE
 echo '
@@ -1027,6 +1047,9 @@ $selectVisibleFoldersOptions .
             </select></td>
         </tr>
     </table>
+    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 // SUPPRIMER UN ELEMENT
 echo '
@@ -1108,6 +1131,19 @@ if (isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow
     <div id="dialog_import_file" style="display:none;">
         <div id="div_import_file">
             <i class="fa fa-cog fa-spin fa-2x"></i>
+        </div>
+    </div>';
+}
+
+// USERS passwords upgrade
+if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
+    && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1
+) {
+    echo '
+    <div id="dialog_upgrade_personal_passwords" style="display:none;">
+        <div style="text-align:center;">
+            <div>'.$LANG['pf_change_encryption'].'</div>
+            <div id="dialog_upgrade_personal_passwords_status" style="margin:15px 0 15px 0; font-weight:bold;">', isset($_SESSION['my_sk']) ? $LANG['pf_sk_set'] : $LANG['pf_sk_not_set'], '</div>
         </div>
     </div>';
 }
