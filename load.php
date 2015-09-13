@@ -220,12 +220,15 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.$LANG['bad_psk_confirmation'].'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$LANG['psk_required'].'");
+                    $("#connection_error").html("' . $LANG['psk_required'] . '");
                     $("#connection_error, #connect_psk_confirm").show();
+                } else if (data[0].value == "user_not_exists") {
+                    $("#connection_error").html("'.$LANG['user_not_exists'].'").show();
+                    console.log("'.$LANG['user_not_exists'].'");
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                     $("#connection_error").html(data + "'.$LANG['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
-                    $("#mysql_error_warning").html(data[0].text);
+                    $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
@@ -757,7 +760,7 @@ $htmlHeaders .= '
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 300,
+            width: 400,
             height: 250,
             title: "'.$LANG['forgot_my_pw'].'",
             buttons: {

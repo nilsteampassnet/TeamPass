@@ -29,7 +29,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 
 <script type="text/javascript">
 $(function() {
-	$.getScript("./includes/libraries/Authentication/DuoSecurity/js/Duo-Web-v2.min.js");
+	$.getScript("./includes/libraries/Authentication/DuoSecurity/Duo-Web-v2.min.js");
 	$.post(
 		"sources/identify.php",
 		{

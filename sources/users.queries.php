@@ -188,6 +188,7 @@ if (!empty($_POST['type'])) {
                             'personal_folder' => '1'
                            )
                     );
+                    $tree->rebuild();
                 }
                 // Create folder and role for domain
                 if ($dataReceived['new_folder_role_domain'] == "true") {

@@ -258,7 +258,7 @@ function rest_get () {
         if (count($matches) == 0) {
             rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] =  explode('/',$matches[2], 3);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
@@ -304,8 +304,8 @@ function rest_get () {
 
                         // prepare output
                         $id = $data['id'];
-                        $json[$id]['label'] = utf8_encode($data['label']);
-                        $json[$id]['login'] = utf8_encode($data['login']);
+                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                         $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                     }
                 }
@@ -343,8 +343,8 @@ function rest_get () {
 
                     // prepare output
                     $id = $data['id'];
-                    $json[$id]['label'] = utf8_encode($data['label']);
-                    $json[$id]['login'] = utf8_encode($data['login']);
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                 }
             }
@@ -401,9 +401,9 @@ function rest_get () {
                     $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
 
                     // prepare output
-                    $json['id'] = utf8_encode($data['id']);
-                    $json['label'] = utf8_encode($data['label']);
-                    $json['login'] = utf8_encode($data['login']);
+                    $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                     $json['folder_id'] = $data['id_tree'];
                     $json['status'] = utf8_encode("OK");
@@ -622,8 +622,8 @@ function rest_get () {
                                     $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
                                     
                                     // prepare export
-                                    $json[$data['id']]['label'] = utf8_encode($data['label']);
-                                    $json[$data['id']]['login'] = utf8_encode($data['login']);
+                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                                     $json[$data['id']]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                                 }
                             }

@@ -330,7 +330,7 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
     if ($counter == 0) {
-        echo '[{"value" : "error", "text":"user_not_exists"}]';
+        echo '[{"value" : "user_not_exists", "text":""}]';
         exit;
     }
 
