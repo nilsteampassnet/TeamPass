@@ -1776,6 +1776,7 @@ if (isset($_POST['type'])) {
                     );
                 } else {
                     $items_to_display_once = "max";
+                    $where->add('i.inactif=%i',0);
                     /*
                     if ($items_to_display_once != 'max') {
                         $query_limit = " LIMIT ".$start.",".$items_to_display_once;
