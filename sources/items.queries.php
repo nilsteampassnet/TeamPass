@@ -1776,12 +1776,7 @@ if (isset($_POST['type'])) {
                     );
                 } else {
                     $items_to_display_once = "max";
-                    /*
-                    if ($items_to_display_once != 'max') {
-                        $query_limit = " LIMIT ".$start.",".$items_to_display_once;
-                    } else {
-                        $query_limit = "";
-                    }*/
+                    $where->add('i.inactif=%i',0);
 
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,

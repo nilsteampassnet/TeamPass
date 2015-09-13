@@ -790,12 +790,12 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar_thumb",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
