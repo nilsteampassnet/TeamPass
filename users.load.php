@@ -27,6 +27,20 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 		}
 	});
 
+    var _alphabetSearch = '';
+
+    $.fn.dataTable.ext.search.push( function ( settings, searchData ) {
+        if ( ! _alphabetSearch ) {
+            return true;
+        }
+
+        if ( searchData[0].charAt(0) === _alphabetSearch ) {
+            return true;
+        }
+
+        return false;
+    } );
+
 $(function() {
     $(".button").button();
     //inline editing
@@ -38,6 +52,46 @@ $(function() {
           cancel : "<img src=\'includes/images/cross.png\' />",
           name : "newValue"
     });
+
+    //Launch the datatables pluggin
+    var table = $("#t_users").dataTable({
+        "order": [[ 1, "asc" ]],
+        "pagingType": "full_numbers",
+        "processing": true,
+        "serverSide": true,
+        "ajax": "sources/datatable/datatable.users.php",
+        "language": {
+            "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+        }
+    });
+    var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
+
+    $('<span class="clear active"/>')
+        .data( 'letter', '' )
+        .html( 'None' )
+        .appendTo( alphabet );
+
+    for ( var i=0 ; i<26 ; i++ ) {
+        var letter = String.fromCharCode( 65 + i );
+
+        $('<span/>')
+            .data( 'letter', letter )
+            .html( letter )
+            .appendTo( alphabet );
+    }
+
+    alphabet.insertBefore( table.table().container() );
+
+    alphabet.on( 'click', 'span', function () {
+        alphabet.find( '.active' ).removeClass( 'active' );
+        $(this).addClass( 'active' );
+
+        _alphabetSearch = $(this).data('letter');
+        table.draw();
+    } );
+
+
+
 
     $("#change_user_pw_newpw").simplePassMeter({
         "requirements": {},
