@@ -1178,7 +1178,7 @@ if (!empty($_POST['type'])) {
                     	$administratedBy = $LANG['god'];
                     } else {
                     	$tmp = DB::queryFirstRow(
-                    		"SELECT title FROM ".prefix_table("role_title")."
+                    		"SELECT title FROM ".prefix_table("roles_title")."
                     		WHERE id = %i",
                     		intval($reccord['isAdministratedByRole'])
                     	);
