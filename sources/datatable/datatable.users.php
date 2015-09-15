@@ -319,7 +319,8 @@ foreach ($rows as $record) {
         
         //col11
         if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'read_only\', \'0\')\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'read_only\', \'1\')\"></i>"';
+        //else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'read_only\', \'1\')\"></i>"';
+        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
         $sOutput .= ',';
         
         //col12
@@ -335,6 +336,10 @@ foreach ($rows as $record) {
         //col14
         if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-user-times fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'delete\')\" title=\"'.$LANG['user_del'].'\">"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\"></i>"';
+        $sOutput .= ',';
+
+        //col15
+        $sOutput .= '"<i class=\"fa fa-key fa-lg tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>"';
         $sOutput .= ',';
         
         //col15
