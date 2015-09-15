@@ -7,6 +7,8 @@ table.dataTable {
   clear: both;
   border-collapse: separate;
   border-spacing: 0;
+  text-align: center;
+  font-size: 1.0em;
   /*
    * Header and footer styles
    */
@@ -70,6 +72,7 @@ table.dataTable tbody tr.selected {
 table.dataTable tbody th,
 table.dataTable tbody td {
   padding: 8px 10px;
+  font-size: 0.8em;
 }
 table.dataTable.row-border tbody th, table.dataTable.row-border tbody td, table.dataTable.display tbody th, table.dataTable.display tbody td {
   border-top: 1px solid #ddd;

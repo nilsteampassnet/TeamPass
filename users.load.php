@@ -54,12 +54,18 @@ $(function() {
     });
 
     //Launch the datatables pluggin
-    var table = $("#t_users").dataTable({
+    var tableUsers = $("#t_users").dataTable({
         "order": [[ 1, "asc" ]],
+        "ordering": false,
         "pagingType": "full_numbers",
         "processing": true,
         "serverSide": true,
-        "ajax": "sources/datatable/datatable.users.php",
+        "ajax": {
+            url: "sources/datatable/datatable.users.php",
+            data: function(d) {
+                d.letter = _alphabetSearch
+            }
+        },
         "language": {
             "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
         }
@@ -80,14 +86,16 @@ $(function() {
             .appendTo( alphabet );
     }
 
-    alphabet.insertBefore( table.table().container() );
+    alphabet.insertBefore( "#t_users_alphabet" );
 
     alphabet.on( 'click', 'span', function () {
         alphabet.find( '.active' ).removeClass( 'active' );
         $(this).addClass( 'active' );
-
+        
         _alphabetSearch = $(this).data('letter');
-        table.draw();
+
+        tableUsers.api().ajax.reload();
+        //tableUsers.draw();
     } );
 
 
@@ -508,11 +516,6 @@ $(function() {
 			$('tr.data-row').removeClass('selected');
 		}
 	});
-    
-    // load list of users
-    $("#users_list_load").show();
-    $("#but_users_reload").prop("disabled", true);
-    loadUsersList(0);
 });
 
 function pwGenerate(elem)
@@ -570,33 +573,12 @@ function mail_user(id,email)
     $("#change_user_email").dialog("open");
 }
 
-function ChangeUserParm(id, parameter)
+function ChangeUserParm(id, parameter, new_value)
 {
-    if (parameter == "can_create_root_folder") {
-        var val = $("#"+parameter+"_"+id+":checked").val();
-        if (val == "on") val = 1;
-        else val = 0;
-    } else if (parameter == "personal_folder") {
-        var val = $("#"+parameter+"_"+id+":checked").val();
-        if (val == "on") val = 1;
-        else val = 0;
-    } else if (parameter == "gestionnaire") {
-        var val = $("#"+parameter+"_"+id+":checked").val();
-        if (val == "on") val = 1;
-        else val = 0;
-    } else if (parameter == "admin") {
-        var val = $("#"+parameter+"_"+id+":checked").val();
-        if (val == "on") val = 1;
-        else val = 0;
-    } else if (parameter == "read_only") {
-            var val = $("#"+parameter+"_"+id+":checked").val();
-            if (val == "on") val = 1;
-            else val = 0;
-        }
     $.post("sources/users.queries.php",
         {
             type    : parameter,
-            value   : val,
+            value   : new_value,
             id      : id,
             key        : "<?php echo $_SESSION['key'];?>"
         },
@@ -855,44 +837,4 @@ function htmlspecialchars_decode (string, quote_style)
     return string;
 }
 
-/**
-*
-*/
-function loadUsersList(from)
-{
-    $.post(
-        "sources/users.queries.php",
-        {
-            type    : "load_users_list",
-            from    : from,
-            nb      : "4",
-            key     : "<?php echo $_SESSION['key'];?>"
-        },
-        function(data) {
-            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-            if (data.error != "") {
-                console.log("Error!");
-            } else {
-                $("#tbody_users").append(data.html);
-                if (data.end_reached == true) {
-                    $("#users_list_load").hide();
-                    $("#but_users_reload").prop("disabled", false);
-                    $(".tip").tooltipster();
-                } else {
-                    loadUsersList(data.from);
-                }
-            }
-        }
-	);
-}
-
-/**
-*
-*/
-function reloadUsersList()
-{
-    $("#users_list_load").show();
-    $("#tbody_users").html("");
-    loadUsersList(0);
-}
 </script>
