@@ -56,14 +56,13 @@ echo '
     <img src="includes/images/refresh.png" title="'.$LANG['reload_table'].'" onclick="reloadUsersList()"class="button" style="padding:2px;" />
     <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
-<input type="text" name="search" id="search" />
-    <span id="users_list_load" style="display:none; font-size:16px; font-family:arial;">'.$LANG['please_wait'].'&nbsp;<i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;</span>
 </div>';
 
 
 //Show the KB in a table view
 echo '
 <div style="margin:10px auto 25px auto;min-height:250px;" id="users_page">
+<div id="t_users_alphabet" style="margin-top:25px;"></div>
 <table id="t_users" cellspacing="0" cellpadding="5" width="100%">
     <thead><tr>
         <th style="width:50px;">ID</th>
@@ -72,16 +71,14 @@ echo '
         <th>'.$LANG['lastname'].'</th>
         <th>'.$LANG['managed_by'].'</th>
         <th>'.$LANG['functions'].'</th>
-        <th>'.$LANG['authorized_groups'].'</th>
-        <th>'.$LANG['forbidden_groups'].'</th>
+        <!--<th>'.$LANG['authorized_groups'].'</th>
+        <th>'.$LANG['forbidden_groups'].'</th>-->
         <th title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
         <th title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
         <th title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
         <th title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-        ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ?
-'<th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : ''
-,'
-        <th title="'.$LANG['user_action'].'"><img src="includes/images/user-locked.png" /></th>
+        <th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
+        <th title="'.$LANG['user_del'].'"><img src="includes/images/user-locked.png" /></th>
         <th title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
         <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
         <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
@@ -97,43 +94,6 @@ echo '
 
 
 echo '
-<form name="form_utilisateurs" method="post" action="">
-    <div style="line-height:20px;"  align="center">
-        <table cellspacing="0" cellpadding="2">
-            <thead>
-                <tr>
-                    <th width="20px">ID</th>
-                    <th></th>
-                    <th>'.$LANG['user_login'].'</th>
-                    <th>'.$LANG['name'].'</th>
-                    <th>'.$LANG['lastname'].'</th>
-                    <th>'.$LANG['managed_by'].'</th>
-                    <th>'.$LANG['functions'].'</th>
-                    <th>'.$LANG['authorized_groups'].'</th>
-                    <th>'.$LANG['forbidden_groups'].'</th>
-                    <th title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
-                    <th title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-                    <th title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-                    <th title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-                    ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ?
-                    	'<th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : ''
-                    ,'
-                    <th title="'.$LANG['user_action'].'"><img src="includes/images/user-locked.png" /></th>
-                    <th title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-                    <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
-                    <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
-					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
-                	,'
-                </tr>
-            </thead>
-            <tbody id="tbody_users">';
-
-echo '
-            </tbody>
-        </table>
-    </div>
-</form>
 <input type="hidden" id="selected_user" />
 <input type="hidden" id="log_page" value="1" />';
 // DIV FOR CHANGING FUNCTIONS
