@@ -98,6 +98,10 @@ $(function() {
         //tableUsers.draw();
     } );
 
+    $(".fa-toggle-off").click(function(event) {
+        var tmp = $(this).prev().attr('tp');
+        console.log("TTT"+tmp);
+    })
 
 
 
@@ -584,6 +588,8 @@ function ChangeUserParm(id, parameter, new_value)
         },
         function(data) {
             $("#div_dialog_message_text").html("<div style=\"font-size:16px; text-align:center;\"><span class=\"ui-icon ui-icon-info\" style=\"float: left; margin-right: .3em;\"></span><?php echo $LANG['alert_message_done'];?></div>");$("#div_dialog_message").dialog("open");
+
+
         }
    );
 }
