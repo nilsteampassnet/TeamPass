@@ -69,7 +69,14 @@ $(function() {
         "language": {
             "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
         }
-    });
+    })
+    .on('xhr.dt', function ( e, settings, json, xhr ) {
+        console.log("Datatable loaded.");
+        $(".tip").tooltipster({
+			maxWidth: 400,
+			contentAsHTML: true
+		});
+    } );
     var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
 
     $('<span class="clear active"/>')
@@ -95,14 +102,31 @@ $(function() {
         _alphabetSearch = $(this).data('letter');
 
         tableUsers.api().ajax.reload();
-        //tableUsers.draw();
     } );
-
-    $(".fa-toggle-off").click(function(event) {
-        var tmp = $(this).prev().attr('tp');
-        console.log("TTT"+tmp);
-    })
-
+    
+    // manage the click on toggle icons
+    $(document).on({
+        click: function (event) {
+            $("#div_loading").show();
+            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue  
+            
+            // send change to be stored
+            $.post(
+                "sources/users.queries.php",
+                {
+                    type    : tmp[1],
+                    value   : tmp[2],
+                    id      : tmp[0],
+                    key        : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    $("#div_loading").hide();
+                    // refresh table content
+                    tableUsers.api().ajax.reload();
+                }
+            );            
+        }
+    }, ".fa-toggle-off, .fa-toggle-on");
 
 
     $("#change_user_pw_newpw").simplePassMeter({
@@ -473,6 +497,7 @@ $(function() {
            );
         }
     });
+    
 
 	$("#manager_dialog").dialog({
 		bgiframe: true,
@@ -486,6 +511,70 @@ $(function() {
 				$(this).dialog("close");
 			}
 		}
+	});
+
+	$("#user_management_dialog").dialog({
+		bgiframe: true,
+		modal: true,
+		autoOpen: false,
+		width: 600,
+		height: 500,
+		title: "<?php echo $LANG['admin_action'];?>",
+        open:  function() {
+            //prepare data
+            var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
+                '"name":"'+sanitizeString($('#new_name').val())+'", '+
+                '"lastname":"'+sanitizeString($('#new_lastname').val())+'", '+
+                '"pw":"'+sanitizeString($('#new_pwd').val())+'", '+
+                '"email":"'+$("#new_email").val()+'", '+
+                '"admin":"'+$("#new_admin").prop("checked")+'", '+
+                '"manager":"'+$("#new_manager").prop("checked")+'", '+
+                '"read_only":"'+$("#new_read_only").prop("checked")+'", '+
+                '"personal_folder":"'+$("#new_personal_folder").prop("checked")+'", '+
+                '"new_folder_role_domain":"'+$("#new_folder_role_domain").prop("checked")+'", '+
+                '"domain":"'+$('#new_domain').val()+'", '+
+                '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'"}';
+                        
+            $.post(
+                "sources/users.queries.php",
+                {
+                    type    : "store_user_changes",
+                    data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                    key       : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    if (data[0].error == "no") {
+                        $("#tbody_logs").empty().append(data[0].table_logs);
+                        $("#log_pages").empty().append(data[0].pages);
+                    }
+                    $("#user_edit_wait").hide();
+                    $("#user_edit_div").show();
+                },
+                "json"
+           );
+            
+        },
+		buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                $.post(
+                    "sources/users.queries.php",
+                    {
+                        type      : "modif_mail_user",
+                        id        : $("#change_user_email_id").val(),
+                        newemail  : $("#change_user_email_newemail").val(),
+                        key       : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#useremail_"+$("#change_user_email_id").val()).attr("title", $("#change_user_email_newemail").val());
+                        $("#change_user_email").dialog("close");
+                    },
+                    "json"
+               );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
 	});
 
 	var watermark = 'Search a user';
@@ -588,7 +677,6 @@ function ChangeUserParm(id, parameter, new_value)
         },
         function(data) {
             $("#div_dialog_message_text").html("<div style=\"font-size:16px; text-align:center;\"><span class=\"ui-icon ui-icon-info\" style=\"float: left; margin-right: .3em;\"></span><?php echo $LANG['alert_message_done'];?></div>");$("#div_dialog_message").dialog("open");
-
 
         }
    );
@@ -770,6 +858,17 @@ function migrate_pf(user_id)
 {
     $("#migrate_pf_admin_id").val(user_id);
     $('#migrate_pf_dialog').dialog('open');
+}
+
+/**
+*
+*/
+function user_edit(user_id)
+{
+    $("#user_edit_wait").show();
+    $("#user_edit_div").hide();
+    $("#user_edit_id").val(user_id);
+    $('#user_management_dialog').dialog('open');
 }
 
 /**
