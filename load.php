@@ -69,7 +69,17 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_views")) {
+} else if (isset($_GET['page']) && $_GET['page'] == "manage_users") {
+    $htmlHeaders .= '
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.css" />
+        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.js"></script>
+        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
+} else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.css" />

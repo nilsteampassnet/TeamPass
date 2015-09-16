@@ -55,7 +55,6 @@ echo '
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
     <img src="includes/images/refresh.png" title="'.$LANG['reload_table'].'" onclick="reloadUsersList()"class="button" style="padding:2px;" />
     <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
 </div>';
 
 
@@ -228,11 +227,6 @@ $LANG['give_new_email'].'
     </div>
     <input type="hidden" id="change_user_email_id" />
 </div>';
-// DIV FOR HELP
-echo '
-<div id="help_on_users" style="">
-    <div>'.$LANG['help_on_users'].'</div>
-</div>';
 // USER MANAGER
 echo '
 <div id="manager_dialog" style="display:none;">
@@ -306,18 +300,27 @@ echo '
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
     <div id="user_edit_div" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_edit_error"></div>' .
-$LANG['give_new_pw'].'
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_edit_error"></div>
 
-    
-
-
-    <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_pw_show_login"></div>
-    <div style="margin-top:20px; width:100%;">
-        <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
-        <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
-        <span id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></span>
+    <div style="width:100%;">
+        <label class="form_label" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="30" id="user_edit_login" class="input_text text ui-widget-content ui-corner-all" /><br />
+        <label class="form_label" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="30" id="user_edit_name" class="input_text text ui-widget-content ui-corner-all" /><br />
+        <label class="form_label" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="30" id="user_edit_lastname" class="input_text text ui-widget-content ui-corner-all" />
+        <br />
+        <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].' : </label>
+        <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
+        <select name="user_edit_managedby" id="user_edit_managedby" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
+        <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].' : </label>
+        <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"></select>
+        <br />
     </div>
+
     <div style="width:100%;height:20px;">
         <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
     </div>

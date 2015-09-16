@@ -870,7 +870,7 @@ if (!empty($_POST['type'])) {
         */
         case "migrate_admin_pf":
             // decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
@@ -991,6 +991,57 @@ if (!empty($_POST['type'])) {
                 );
             }
             break;
+        /**
+         * Get user info
+         */
+        case "get_user_info":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            // get User info
+            $rowUser = DB::queryFirstRow(
+                "SELECT login, name, lastname, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            // get FUNCTIONS
+            $functionsList = "";
+            $users_functions = explode(';', $rowUser['fonction_id']);
+            // array of roles for actual user
+            $my_functions = explode(';', $_SESSION['fonction_id']);
+
+            $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
+            foreach ($rows as $record) {
+                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                    if (in_array($record['id'], $users_functions)) $tmp = ' selected="selected"';
+                    else $tmp = "";
+                    $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role"'.$tmp.'>'.$record['title'].'</option>';
+                }
+            }
+
+            // get MANAGEDBY
+            $rolesList = array();
+            $rows = DB::query("SELECT id,title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
+            foreach ($rows as $reccord) {
+                $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
+            }
+            $managedBy = '<option value="0">'.$LANG['administrators_only'].'</option>';
+            foreach ($rolesList as $fonction) {
+                if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
+                    else $tmp = "";
+                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+                }
+            }
+
+            echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" } ]';
+            break;
+
         /**
          * EDIT user
          */
