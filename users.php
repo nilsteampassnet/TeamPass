@@ -298,3 +298,30 @@ $LANG['activity'].':
     </table>
     <div id="log_pages" style="margin-top:10px;"></div>
 </div>';
+
+// DIV FOR USER MNG
+echo '
+<div id="user_management_dialog" style="display:none;">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="user_edit_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+    <div id="user_edit_div" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_edit_error"></div>' .
+$LANG['give_new_pw'].'
+
+    
+
+
+    <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_pw_show_login"></div>
+    <div style="margin-top:20px; width:100%;">
+        <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
+        <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
+        <span id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></span>
+    </div>
+    <div style="width:100%;height:20px;">
+        <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+    </div>
+    <div style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" /></div>
+    <input type="hidden" id="user_edit_id" />
+    </div>
+</div>';

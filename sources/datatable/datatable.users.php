@@ -276,7 +276,7 @@ foreach ($rows as $record) {
         else $ga_code = 'phone_sound' ;
         
         //col1
-        $sOutput .= '"<i class=\"fa fa-external-link fa-lg tip\" style=\"cursor:pointer;\" onclick=\"edit_user(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>&nbsp;'.$record['id'].'"';
+        $sOutput .= '"<i class=\"fa fa-external-link fa-lg tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>&nbsp;'.$record['id'].'"';
         $sOutput .= ',';
         
         //col2
@@ -313,29 +313,31 @@ foreach ($rows as $record) {
         $sOutput .= ',';
         
         //col10
-        if ($record['gestionnaire'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'gestionnaire\', \'0\')\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'gestionnaire\', \'1\')\"></i>"';
+        if ($record['gestionnaire'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
+        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
         $sOutput .= ',';
         
         //col11
-        if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'read_only\', \'0\')\"></i>"';
-        //else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'read_only\', \'1\')\"></i>"';
+        if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
         $sOutput .= ',';
         
         //col12
-        if ($record['can_create_root_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'can_create_root_folder\', \'0\')\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'can_create_root_folder\', \'1\')\"></i>"';
+        if ($record['can_create_root_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
+        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
         $sOutput .= ',';
         
         //col13
-        if ($record['personal_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'personal_folder\', \'0\')\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" onclick=\"ChangeUserParm(\''.$record['id'].'\',\'personal_folder\', \'1\')\"></i>"';
+        if ($record['personal_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on fa-lg mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
+        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
         $sOutput .= ',';
         
         //col14
-        if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-user-times fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'delete\')\" title=\"'.$LANG['user_del'].'\">"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\"></i>"';
+        if ($record['disabled'] == 1) {
+            $sOutput .= '"<i class=\"fa fa-user-times fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'delete\')\" title=\"'.$LANG['user_del'].'\">"';
+        } else {
+            $sOutput .= '"<i class=\"fa fa-lock fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'lock\')\" title=\"'.$LANG['user_lock'].'\">"';
+        }
         $sOutput .= ',';
 
         //col15
