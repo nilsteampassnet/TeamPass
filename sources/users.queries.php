@@ -1000,6 +1000,11 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
+            
+            //Build tree
+            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
             // get User info
             $rowUser = DB::queryFirstRow(
@@ -1035,11 +1040,50 @@ if (!empty($_POST['type'])) {
                 if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
                     if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
                     else $tmp = "";
-                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'</option>';
                 }
             }
+            
+            // get FOLDERS FORBIDDEN
+            $forbiddenFolders = "";
+            $userForbidFolders = explode(';', $rowUser['groupes_interdits']);
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    $tmp = "";
+                    $ident = "";
+                    for ($y = 1;$y < $t->nlevel;$y++) {
+                        $ident .= "&nbsp;&nbsp;";
+                    }
+                    if (in_array($t->id, $userForbidFolders)) {
+                        $tmp = ' selected="selected"';
+                    }                    
+                    $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';                    
+                    $prev_level = $t->nlevel;
+                }
+            }
+            
+            // get FOLDERS ALLOWED
+            $allowedFolders = "";
+            $userAllowFolders = explode(';', $rowUser['groupes_visibles']);
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    $tmp = "";
+                    $ident = "";
+                    for ($y = 1; $y < $t->nlevel; $y++) {
+                        $ident .= "&nbsp;&nbsp;";
+                    }
+                    if (in_array($t->id, $userAllowFolders)) {
+                        $tmp = ' selected="selected"';
+                    }
+                    $allowedFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+                    $prev_level = $t->nlevel;
+                }
+            }
+            
 
-            echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" } ]';
+            echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" } ]';
             break;
 
         /**
@@ -1051,7 +1095,32 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-
+            
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            
+            // Empty user
+            if (mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])) == "") {
+                echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
+                break;
+            }
+            
+            DB::update(
+                prefix_table("users"),
+                array(
+                    'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
+                    'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
+                    'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
+                    'isAdministratedByRole' => $dataReceived['managedby'],
+                    'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
+                    'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ";"),
+                    'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
+                   ),
+                "id = %i",
+                $_POST['id']
+            );
+            
+/*
             DB::update(
                 prefix_table("users"),
                 array(
@@ -1072,6 +1141,9 @@ if (!empty($_POST['type'])) {
                     'field_1' => $_POST['id']
                    )
             );
+            */
+            
+            echo '[ { "error" : "no" } ]';
             break;
     }
 }

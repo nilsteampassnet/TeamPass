@@ -502,10 +502,10 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 600,
-        height: 500,
+        height: 550,
         title: "<?php echo $LANG['admin_action'];?>",
         open:  function() {
-            $("#user_edit_functions_list, #user_edit_managedby").empty();
+            $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
             $.post(
                 "sources/users.queries.php",
                 {
@@ -514,7 +514,6 @@ $(function() {
                     key  : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
-                    console.log(data[0].function);
                     if (data[0].error == "no") {
                         $("#user_edit_login").val(data[0].log);
                         $("#user_edit_name").val(data[0].name);
@@ -526,6 +525,12 @@ $(function() {
                         $("#user_edit_managedby").append(data[0].managedby);
                         $("#user_edit_managedby").multiselect('refresh');
 
+                        $("#user_edit_auth").append(data[0].foldersAllow);
+                        $("#user_edit_auth").multiselect('refresh');
+
+                        $("#user_edit_forbid").append(data[0].foldersForbid);
+                        $("#user_edit_forbid").multiselect('refresh');
+
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     }
@@ -536,34 +541,45 @@ $(function() {
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
+                var functions = managedby = allowFld = forbidFld = "";
+                $("#user_edit_functions_list option:selected").each(function () {
+                    functions += $(this).val() + ";";
+                }); 
+                $("#user_edit_managedby option:selected").each(function () {
+                    managedby = $(this).val();
+                }); 
+                $("#user_edit_auth option:selected").each(function () {
+                    allowFld += $(this).val() + ";";
+                }); 
+                $("#user_edit_forbid option:selected").each(function () {
+                    forbidFld += $(this).val() + ";";
+                }); 
+                
                 //prepare data
-                var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
-                    '"name":"'+sanitizeString($('#new_name').val())+'", '+
-                    '"lastname":"'+sanitizeString($('#new_lastname').val())+'", '+
-                    '"pw":"'+sanitizeString($('#new_pwd').val())+'", '+
-                    '"email":"'+$("#new_email").val()+'", '+
-                    '"admin":"'+$("#new_admin").prop("checked")+'", '+
-                    '"manager":"'+$("#new_manager").prop("checked")+'", '+
-                    '"read_only":"'+$("#new_read_only").prop("checked")+'", '+
-                    '"personal_folder":"'+$("#new_personal_folder").prop("checked")+'", '+
-                    '"new_folder_role_domain":"'+$("#new_folder_role_domain").prop("checked")+'", '+
-                    '"domain":"'+$('#new_domain').val()+'", '+
-                    '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'"}';
+                var data = '{"login":"'+sanitizeString($('#user_edit_login').val())+'", '+
+                    '"name":"'+sanitizeString($('#user_edit_name').val())+'", '+
+                    '"lastname":"'+sanitizeString($('#user_edit_lastname').val())+'", '+
+                    '"functions":"'+functions+'", '+
+                    '"managedby":"'+managedby+'", '+
+                    '"allowFld":"'+allowFld+'", '+
+                    '"forbidFld":"'+forbidFld+'"}';
 
+                $("#user_edit_wait").show();
                 $.post(
                     "sources/users.queries.php",
                     {
                         type    : "store_user_changes",
-                        data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                        key       : "<?php echo $_SESSION['key'];?>"
+                        id      : $('#user_edit_id').val(),
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                        key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
                         if (data[0].error == "no") {
-                            $("#tbody_logs").empty().append(data[0].table_logs);
-                            $("#log_pages").empty().append(data[0].pages);
+                            
                         }
-                        $("#user_edit_wait").hide();
-                        $("#user_edit_div").show();
+                        // refresh table content
+                        tableUsers.api().ajax.reload();
+                        $("#user_management_dialog").dialog("close");
                     },
                     "json"
                 );

@@ -311,7 +311,7 @@ echo '
         <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"></select>
         <br />
         <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
-        <select name="user_edit_managedby" id="user_edit_managedby" multiple="multiple"></select>
+        <select name="user_edit_managedby" id="user_edit_managedby"></select>
         <br />
         <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
         <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"></select>
