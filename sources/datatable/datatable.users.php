@@ -291,8 +291,13 @@ foreach ($rows as $record) {
         $sOutput .= '"'.$record['lastname'].'"';
         $sOutput .= ',';
         
-        //col5
-        $sOutput .= '""';
+        //col5 - MANAGED BY
+        $txt = "";
+        $rows2 = DB::query("SELECT title FROM ".$pre."roles_title"." WHERE id = '".$record['isAdministratedByRole']."' ORDER BY title ASC");
+        foreach ($rows2 as $record2) {
+            $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of'].' '.@htmlspecialchars($record2['title'], ENT_COMPAT, "UTF-8")).'<br />';
+        }
+        $sOutput .= '"'.$txt.'"';
         $sOutput .= ',';
         
         //col6
