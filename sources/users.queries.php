@@ -1008,7 +1008,7 @@ if (!empty($_POST['type'])) {
 
             // get User info
             $rowUser = DB::queryFirstRow(
-                "SELECT login, name, lastname, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
@@ -1082,8 +1082,15 @@ if (!empty($_POST['type'])) {
                 }
             }
             
+            // get USER STATUS
+            if ($rowUser['disabled'] == 1) {
+                $info = $LANG['user_info_locked'].'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.$LANG['user_info_unlock_question'].'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk"  name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.$LANG['user_info_delete_question']."</label>";
+            } else {
+                $info = $LANG['user_info_active'].'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.$LANG['user_info_lock_question'];
+            }
+            
 
-            echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" } ]';
+            echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "email" : "'.addslashes($rowUser['email']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" , "info" : "'.addslashes($info).'" } ]';
             break;
 
         /**
@@ -1105,43 +1112,148 @@ if (!empty($_POST['type'])) {
                 break;
             }
             
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
-                    'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
-                    'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
-                    'isAdministratedByRole' => $dataReceived['managedby'],
-                    'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
-                    'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ";"),
-                    'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
-                   ),
-                "id = %i",
-                $_POST['id']
-            );
+            $account_status_action = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['action_on_user']));
             
-/*
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'disabled' => 0,
-                    'no_bad_attempts' => 0
-                   ),
-                "id = %i",
-                $_POST['id']
-            );
-            // update LOG
-            DB::insert(
-                prefix_table("log_system"),
-                array(
-                    'type' => 'user_mngt',
-                    'date' => time(),
-                    'label' => 'at_user_unlocked',
-                    'qui' => $_SESSION['user_id'],
-                    'field_1' => $_POST['id']
-                   )
-            );
-            */
+            // delete account
+            // delete user in database
+            if ($account_status_action == "delete") {
+                DB::delete(
+                    prefix_table("users"),
+                    "id = %i",
+                    $_POST['id']
+                );
+                // delete personal folder and subfolders
+                $data = DB::queryfirstrow(
+                    "SELECT id FROM ".prefix_table("nested_tree")."
+                    WHERE title = %s AND personal_folder = %i",
+                    $_POST['id'],
+                    "1"
+                );
+                // Get through each subfolder
+                if (!empty($data['id'])) {
+                    $folders = $tree->getDescendants($data['id'], true);
+                    foreach ($folders as $folder) {
+                        // delete folder
+                        DB::delete(prefix_table("nested_tree"), "id = %i AND personal_folder = %i", $folder->id, "1");
+                        // delete items & logs
+                        $items = DB::query(
+                            "SELECT id FROM ".prefix_table("items")."
+                            WHERE id_tree=%i AND perso = %i",
+                            $folder->id,
+                            "1"
+                        );
+                        foreach ($items as $item) {
+                            // Delete item
+                            DB::delete(prefix_table("items"), "id = %i", $item['id']);
+                            // log
+                            DB::delete(prefix_table("log_items"), "id_item = %i", $item['id']);
+                        }
+                    }
+                    // rebuild tree
+                    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+                    $tree->rebuild();
+                }
+                // update LOG
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_deleted',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
+            }
+            else {
+                        
+                // Get old data about user
+                $oldData = DB::queryfirstrow(
+                    "SELECT * FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $_POST['id']
+                );
+                
+                // manage account status
+                $accountDisabled = 0;
+                if ($account_status_action == "unlock") {
+                    $accountDisabled = 0;
+                    $logDisabledText = "at_user_unlocked";
+                } elseif ($account_status_action == "lock") {
+                    $accountDisabled = 1;        
+                    $logDisabledText = "at_user_locked";        
+                }
+                
+                // update user
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
+                        'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
+                        'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
+                        'email' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email'])),
+                        'disabled' => $accountDisabled,
+                        'isAdministratedByRole' => $dataReceived['managedby'],
+                        'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
+                        'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ";"),
+                        'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
+                       ),
+                    "id = %i",
+                    $_POST['id']
+                );
+                
+                
+                // update LOG
+                if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => 'at_user_email_changed:'.$oldData['email'],
+                            'qui' => intval($_SESSION['user_id']),
+                            'field_1' => intval($_POST['id'])
+                           )
+                    );
+                }
+                
+                if ($oldData['disabled'] != $accountDisabled) {
+                    // update LOG
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => $logDisabledText,
+                            'qui' => $_SESSION['user_id'],
+                            'field_1' => $_POST['id']
+                           )
+                    );
+                }
+                
+    /*
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'disabled' => 0,
+                        'no_bad_attempts' => 0
+                       ),
+                    "id = %i",
+                    $_POST['id']
+                );
+                // update LOG
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_unlocked',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
+                */
+            }
             
             echo '[ { "error" : "no" } ]';
             break;
