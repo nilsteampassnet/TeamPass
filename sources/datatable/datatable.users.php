@@ -257,8 +257,8 @@ foreach ($rows as $record) {
             $log_report = '<i class=\"fa fa-newspaper-o fa-lg tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.$LANG['see_logs'].'\"></i>';
         }
                             
-        if ($_SESSION['user_manager'] == 1 || $record['admin'] == 1) $tmp1 = 'disabled="disabled"';
-        else $tmp1 = '';
+        if ($_SESSION['user_manager'] == 1 || $record['admin'] == 1) $row_is_disabled = 'disabled="disabled"';
+        else $row_is_disabled = '';
         
         if ($record['read_only'] == 1) $is_ro = 'checked';
         else $is_ro = '';            
@@ -276,7 +276,12 @@ foreach ($rows as $record) {
         else $ga_code = 'phone_sound' ;
         
         //col1
-        $sOutput .= '"<i class=\"fa fa-external-link fa-lg tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>&nbsp;'.$record['id'].'"';
+        if ($record['disabled'] == 1) {
+            $sOutput .= '"<i class=\"fa fa-user-times fa-lg tip mi-red\" title=\"'.$LANG['account_is_locked'].'\"></i>&nbsp;';
+        } else {
+            $sOutput .= '"';
+        }
+        $sOutput .= '<i class=\"fa fa-external-link fa-lg tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>"';
         $sOutput .= ',';
         
         //col2
@@ -294,8 +299,12 @@ foreach ($rows as $record) {
         //col5 - MANAGED BY
         $txt = "";
         $rows2 = DB::query("SELECT title FROM ".$pre."roles_title"." WHERE id = '".$record['isAdministratedByRole']."' ORDER BY title ASC");
-        foreach ($rows2 as $record2) {
-            $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of'].' '.@htmlspecialchars($record2['title'], ENT_COMPAT, "UTF-8")).'<br />';
+        if (DB::count() > 0) {
+            foreach ($rows2 as $record2) {
+                $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of'].' '.@htmlspecialchars($record2['title'], ENT_COMPAT, "UTF-8")).'<br />';
+            }
+        } else {
+            $txt = '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['god']);
         }
         $sOutput .= '"'.$txt.'"';
         $sOutput .= ',';
@@ -337,21 +346,8 @@ foreach ($rows as $record) {
         else $sOutput .= '"<i class=\"fa fa-toggle-off fa-lg\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
         $sOutput .= ',';
         
-        //col14
-        if ($record['disabled'] == 1) {
-            $sOutput .= '"<i class=\"fa fa-user-times fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'delete\')\" title=\"'.$LANG['user_del'].'\">"';
-        } else {
-            $sOutput .= '"<i class=\"fa fa-lock fa-lg tip\" style=\"cursor:pointer;\" onclick=\"action_on_user(\''.$record['id'].'\',\'lock\')\" title=\"'.$LANG['user_lock'].'\">"';
-        }
-        $sOutput .= ',';
-
         //col15
         $sOutput .= '"<i class=\"fa fa-key fa-lg tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>"';
-        $sOutput .= ',';
-        
-        //col15
-        if ($record['email'] == "") $sOutput .= '"<i class=\"fa fa-exclamation fa-lg mi-yellow tip\"></i>&nbsp;<i class=\"fa fa-envelope fa-lg mi-yellow tip\" style=\"cursor:pointer;\" onclick=\"mail_user(\''.$record['id'].'\',\''.addslashes($record['email']).'\')\" title=\"'.$LANG['email'].'\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-check fa-lg mi-green\"></i>"';
         $sOutput .= ',';
         
         //col16

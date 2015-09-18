@@ -297,7 +297,9 @@ $(function() {
                         },
                         function(data) {
                             if (data[0].error == "no") {
-                                window.location.href = "index.php?page=manage_users";
+                                // refresh table content
+                                tableUsers.api().ajax.reload();
+                                $("#add_new_user").dialog("close");
                             } else {
                                 $("#add_new_user_error").html(data[0].error).show();
                             }
@@ -346,7 +348,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 430,
-        height: 230,
+        height: 260,
         title: "<?php echo $LANG['admin_action'];?>",
         buttons: {
         	"<?php echo $LANG['pw_generate'];?>": function() {
@@ -415,36 +417,6 @@ $(function() {
         }
     });
 
-    $("#change_user_email").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 200,
-        title: "<?php echo $LANG['admin_action'];?>",
-        buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
-                $.post(
-                    "sources/users.queries.php",
-                    {
-                        type      : "modif_mail_user",
-                        id        : $("#change_user_email_id").val(),
-                        newemail  : $("#change_user_email_newemail").val(),
-                        key       : "<?php echo $_SESSION['key'];?>"
-                    },
-                    function(data) {
-                        $("#useremail_"+$("#change_user_email_id").val()).attr("title", $("#change_user_email_newemail").val());
-                        $("#change_user_email").dialog("close");
-                    },
-                    "json"
-               );
-            },
-            "<?php echo $LANG['cancel_button'];?>": function() {
-                $(this).dialog("close");
-            }
-        }
-    });
-
     $("#user_logs_dialog").dialog({
         bgiframe: false,
         modal: false,
@@ -503,7 +475,7 @@ $(function() {
         autoOpen: false,
         width: 600,
         height: 550,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['dialog_admin_user_edit_title'];?>",
         open:  function() {
             $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
             $.post(
@@ -518,6 +490,8 @@ $(function() {
                         $("#user_edit_login").val(data[0].log);
                         $("#user_edit_name").val(data[0].name);
                         $("#user_edit_lastname").val(data[0].lastname);
+                        $("#user_edit_email").val(data[0].email);
+                        $("#user_edit_info").html(data[0].info);
 
                         $("#user_edit_functions_list").append(data[0].function);
                         $("#user_edit_functions_list").multiselect('refresh');
@@ -541,7 +515,8 @@ $(function() {
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
-                var functions = managedby = allowFld = forbidFld = "";
+                var functions = managedby = allowFld = forbidFld = action_on_user = "";
+                // manage the multiselect boxes
                 $("#user_edit_functions_list option:selected").each(function () {
                     functions += $(this).val() + ";";
                 }); 
@@ -555,10 +530,20 @@ $(function() {
                     forbidFld += $(this).val() + ";";
                 }); 
                 
+                // manage the account status
+                $(".chk:checked").each(function() {
+                    if ($(this).val() == "lock") action_on_user = "lock";
+                    else if ($(this).val() == "delete") action_on_user = "delete";
+                    else if ($(this).val() == "unlock") action_on_user = "unlock";
+                });
+                
+                
                 //prepare data
                 var data = '{"login":"'+sanitizeString($('#user_edit_login').val())+'", '+
                     '"name":"'+sanitizeString($('#user_edit_name').val())+'", '+
                     '"lastname":"'+sanitizeString($('#user_edit_lastname').val())+'", '+
+                    '"email":"'+sanitizeString($('#user_edit_email').val())+'", '+
+                    '"action_on_user":"'+sanitizeString(action_on_user)+'", '+
                     '"functions":"'+functions+'", '+
                     '"managedby":"'+managedby+'", '+
                     '"allowFld":"'+allowFld+'", '+
@@ -585,11 +570,32 @@ $(function() {
                 );
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#user_edit_deletion_warning").hide();
                 $(this).dialog("close");
             }
         }
 	});
 });
+
+/*
+* Adds some warnings when decision is to delete an account
+*/
+function confirmDeletion()
+{
+    if ($("#account_delete").prop("checked") == true) {        
+        if ($("#confirm_deletion").val() == "") {
+            $("#account_delete").prop("checked", false);
+            $("#confirm_deletion").val("1");
+            $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete'];?>");
+        } else {
+            $("#user_edit_error").hide().html("");
+            $("#user_edit_deletion_warning").show();
+        }
+    } else {
+        $("#confirm_deletion").val("");
+            $("#user_edit_error").hide().html("");
+    }
+}
 
 function pwGenerate(elem)
 {
@@ -636,14 +642,6 @@ function mdp_user(id)
     $("#change_user_pw_id").val(id);
     $("#change_user_pw_show_login").html($("#login_"+id).text());
     $("#change_user_pw").dialog("open");
-}
-
-function mail_user(id,email)
-{
-    $("#change_user_email_id").val(id);
-    $("#change_user_email_show_login").html($("#login_"+id).text());
-    $("#change_user_email_newemail").val(email);
-    $("#change_user_email").dialog("open");
 }
 
 function ChangeUserParm(id, parameter, new_value)
