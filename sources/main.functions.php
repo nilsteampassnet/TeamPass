@@ -673,7 +673,6 @@ function updateCacheTable($action, $id = "")
             "SELECT *
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
-            INNER JOIN ".$pre."nested_tree as n ON (n.id = i.id_tree)
             AND l.action = %s
             AND i.inactif = %i",
             'at_creation',
@@ -688,6 +687,9 @@ function updateCacheTable($action, $id = "")
                     $tags .= $itemTag['tag']." ";
                 }
             }
+            // Get renewal period
+            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".$pre."nested_tree WHERE id=%i", $record['id_tree']);
+
             // form id_tree to full foldername
             $folder = "";
             $arbo = $tree->getPath($record['id_tree'], true);
@@ -715,7 +717,7 @@ function updateCacheTable($action, $id = "")
                     'login' => $record['login']==null ? "" : $record['login'],
                     'folder' => $folder,
                     'author' => $record['id_user'],
-                    'renewal_period' => $record['renewal_period'],
+                    'renewal_period' => $resNT['renewal_period']
                    )
             );
         }
