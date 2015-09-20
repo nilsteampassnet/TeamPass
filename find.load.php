@@ -143,4 +143,30 @@ $("#div_item_data").dialog({
           }
       }
   });
+
+$(function() {
+    //Launch the datatables pluggin
+    oTable = $("#t_items").dataTable({
+        "aaSorting": [[ 1, "asc" ]],
+        "sPaginationType": "full_numbers",
+        "bProcessing": true,
+        "bServerSide": true,
+        "sAjaxSource": "sources/find.queries.php",
+        "bJQueryUI": true,
+        "oLanguage": {
+            "sUrl": "includes/language/datatables.'.$_SESSION['user_language'].'.txt"
+        },
+        "fnInitComplete": function() {
+            $("#find_page input").focus();
+        },
+        "columns": [
+            { "width": "10%" },
+            null,
+            null,
+            null,
+            null,
+            null
+        ]
+    });
+});
 </script>

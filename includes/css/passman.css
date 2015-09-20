@@ -327,3 +327,8 @@ input.watermark {
 .mi-grey-1 {
 	color: #9B9B9B;
 }
+
+.form_text {
+    padding:2px;
+    margin-bottom:5px;
+}

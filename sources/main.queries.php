@@ -34,7 +34,7 @@ if (isset($_POST['type']) && $_POST['type'] == "send_pw_by_email") {
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
 } elseif (
-    (isset($_POST['data']) && $_POST['type'] == "ga_generate_qr")) {
+    (isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
 	// continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
