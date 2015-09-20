@@ -141,7 +141,7 @@ DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 $rows = DB::query(
-    "SELECT *
+    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period
     FROM ".prefix_table("cache")."
     $sWhere
     $sOrder

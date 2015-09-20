@@ -154,7 +154,7 @@ $(function() {
         "sAjaxSource": "sources/find.queries.php",
         "bJQueryUI": true,
         "oLanguage": {
-            "sUrl": "includes/language/datatables.'.$_SESSION['user_language'].'.txt"
+            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
         },
         "fnInitComplete": function() {
             $("#find_page input").focus();
