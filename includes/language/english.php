@@ -16,7 +16,7 @@ global $LANG;
 $LANG = array (
     'dialog_admin_user_edit_title' => 'User account edition',
     'user_info_delete' => 'Please reclick to confirm the DELETION of this account.',
-    'user_info_delete_warning' => 'By clicking the Save button, you will delete this account from Teampass. No return is possible.',
+    'user_info_delete_warning' => 'By clicking the Save button, you will delete this account from Teampass.<br />No return is possible.',
     'edit' => 'Edit',
     'user_info_locked' => 'User is currently LOCKED.',
     'user_info_unlock_question' => 'Unlock account?',

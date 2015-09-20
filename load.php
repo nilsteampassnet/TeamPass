@@ -71,18 +71,18 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_users") {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.css" />
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.css" />
-        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.js"></script>
-        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
+        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.css" />
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
@@ -92,8 +92,10 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
 
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
-        <script type="text/javascript" src="includes/js/datatable/jquery.dataTables.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
+        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
@@ -101,8 +103,10 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
 
-        <link rel="stylesheet" type="text/css" href="includes/js/datatable/jquery.dataTablesUI.css" />
-        <script type="text/javascript" src="includes/js/datatable/jquery.dataTables.min.js"></script>';
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
+        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>';
 } else if (!isset($_GET['page'])) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
@@ -800,23 +804,7 @@ $htmlHeaders .= '
 if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
     $htmlHeaders .= '
-    $(function() {
-        //Launch the datatables pluggin
-        oTable = $("#t_items").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
-            "sPaginationType": "full_numbers",
-            "bProcessing": true,
-            "bServerSide": true,
-            "sAjaxSource": "sources/find.queries.php",
-            "bJQueryUI": true,
-            "oLanguage": {
-                "sUrl": "includes/language/datatables.'.$_SESSION['user_language'].'.txt"
-            },
-            "fnInitComplete": function() {
-                $("#find_page input").focus();
-            }
-        });
-    });';
+    ';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     // JAVASCRIPT FOR ADMIN PAGE
     $htmlHeaders .= '

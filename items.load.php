@@ -3276,6 +3276,7 @@ function globalItemsSearch()
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
                 $("#full_items_list").html(data.items_html);
+                $("#items_list_loader").hide();
             }
         );
     }

@@ -21,23 +21,21 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 
 
-	$.extend($.expr[":"], {
-		"containsIN": function(elem, i, match, array) {
-			return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
-		}
-	});
+    $.extend($.expr[":"], {
+        "containsIN": function(elem, i, match, array) {
+            return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
+        }
+    });
 
+    // prepare Alphabet
     var _alphabetSearch = '';
-
     $.fn.dataTable.ext.search.push( function ( settings, searchData ) {
         if ( ! _alphabetSearch ) {
             return true;
         }
-
         if ( searchData[0].charAt(0) === _alphabetSearch ) {
             return true;
         }
-
         return false;
     } );
 
@@ -69,22 +67,34 @@ $(function() {
         },
         "language": {
             "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
-        }
+        },
+        "columns": [
+            {"width": "12%"},
+            {"width": "15%"},
+            {"width": "15%"},
+            {"width": "15%"},
+            {"width": "15%"},
+            {"width": "15%"},
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        ]
     })
     .on('xhr.dt', function ( e, settings, json, xhr ) {
-        console.log("Datatable loaded.");
-        $(".tip").tooltipster({
-			maxWidth: 400,
-			contentAsHTML: true
-		});
+        $(".tip").tooltipster();
     } );
-    var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
 
+    // manage the Alphabet
+    var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
     $('<span class="clear active"/>')
         .data( 'letter', '' )
         .html( 'None' )
         .appendTo( alphabet );
-
     for ( var i=0 ; i<26 ; i++ ) {
         var letter = String.fromCharCode( 65 + i );
 
@@ -93,9 +103,7 @@ $(function() {
             .html( letter )
             .appendTo( alphabet );
     }
-
     alphabet.insertBefore( "#t_users_alphabet" );
-
     alphabet.on( 'click', 'span', function () {
         alphabet.find( '.active' ).removeClass( 'active' );
         $(this).addClass( 'active' );
@@ -234,7 +242,7 @@ $(function() {
         title: "<?php echo $LANG['is_administrated_by_role'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
-            	$.post(
+                $.post(
                     "sources/users.queries.php",
                     {
                         type    :"change_user_adminby",
@@ -244,13 +252,13 @@ $(function() {
                     },
                     function(data) {
                         if ($("#user_admin_by").val() == "0") {
-                        	$("#list_adminby_"+$("#selected_user").val()).
+                            $("#list_adminby_"+$("#selected_user").val()).
                             html("<?php echo $LANG['admin_small'];?>");
                         } else {
-                        	$("#list_adminby_"+$("#selected_user").val()).
+                            $("#list_adminby_"+$("#selected_user").val()).
                             html($("#user_admin_by option:selected").text().match(/"([^"]+)"/)[1]);
                         }
-                    	$("#change_user_adminby").dialog("close");
+                        $("#change_user_adminby").dialog("close");
                     }
                )
             },
@@ -351,9 +359,9 @@ $(function() {
         height: 260,
         title: "<?php echo $LANG['admin_action'];?>",
         buttons: {
-        	"<?php echo $LANG['pw_generate'];?>": function() {
-            	$("#change_user_pw_wait").show();
-            	$.post(
+            "<?php echo $LANG['pw_generate'];?>": function() {
+                $("#change_user_pw_wait").show();
+                $.post(
                         "sources/main.queries.php",
                         {
                             type       : "generate_a_password",
@@ -364,20 +372,20 @@ $(function() {
                             numerals   : true
                         },
                         function(data) {
-                        	data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-                        	if (data.error == "true") {
-                        		$("#div_dialog_message_text").html(data.error_msg);
-                        		$("#div_dialog_message").dialog("open");
-                        	} else {
+                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                            if (data.error == "true") {
+                                $("#div_dialog_message_text").html(data.error_msg);
+                                $("#div_dialog_message").dialog("open");
+                            } else {
                                 $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(data.key);
                                 $("#generated_user_pw").text(data.key);
                                 $("#show_generated_pw").show();
-                        		$("#change_user_pw_newpw").focus();
-                        	}
-                    		$("#change_user_pw_wait").hide();
+                                $("#change_user_pw_newpw").focus();
+                            }
+                            $("#change_user_pw_wait").hide();
                         }
                    );
-        	},
+            },
             "<?php echo $LANG['save_button'];?>": function() {
                 if ($("#change_user_pw_newpw").val() == $("#change_user_pw_newpw_confirm").val()) {
                                 var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
@@ -407,7 +415,7 @@ $(function() {
                 }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
-            	$("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
+                $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
                 $(this).dialog("close");
             }
         },
@@ -455,19 +463,19 @@ $(function() {
     });
     
 
-	$("#manager_dialog").dialog({
-		bgiframe: true,
-		modal: true,
-		autoOpen: false,
-		width: 400,
-		height: 200,
-		title: "<?php echo $LANG['admin_action'];?>",
-		buttons: {
-			"<?php echo $LANG['cancel_button'];?>": function() {
-				$(this).dialog("close");
-			}
-		}
-	});
+    $("#manager_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 200,
+        title: "<?php echo $LANG['admin_action'];?>",
+        buttons: {
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
 
     $("#user_management_dialog").dialog({
         bgiframe: true,
@@ -574,7 +582,7 @@ $(function() {
                 $(this).dialog("close");
             }
         }
-	});
+    });
 });
 
 /*
@@ -589,11 +597,12 @@ function confirmDeletion()
             $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete'];?>");
         } else {
             $("#user_edit_error").hide().html("");
-            $("#user_edit_deletion_warning").show();
+            $(".ui-dialog-buttonpane").append("<span id='user_edit_deletion_warning'><?php echo $LANG['user_info_delete_warning'];?></span>");
         }
     } else {
         $("#confirm_deletion").val("");
-            $("#user_edit_error").hide().html("");
+        $("#user_edit_error").hide().html("");
+        $("#user_edit_deletion_warning").remove();
     }
 }
 
@@ -612,13 +621,13 @@ function pwGenerate(elem)
             force    : false
         },
         function(data) {
-        	data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-        	if (data.error == "true") {
-        		$("#div_dialog_message_text").html(data.error_msg);
-        		$("#div_dialog_message").dialog("open");
-        	} else {
-        		$("#"+elem).val(data.key).focus();
-        	}
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            if (data.error == "true") {
+                $("#div_dialog_message_text").html(data.error_msg);
+                $("#div_dialog_message").dialog("open");
+            } else {
+                $("#"+elem).val(data.key).focus();
+            }
         }
    );
 }
@@ -691,7 +700,7 @@ function Open_Div_Change(id,type)
 
 function ChangeUSerAdminBy(id)
 {
-	$("#selected_user").val(id);
+    $("#selected_user").val(id);
     $("#change_user_adminby").dialog("open");
 }
 
@@ -804,27 +813,29 @@ function user_action_log_items(id)
 
 function user_action_ga_code(id)
 {
-	$.post(
-	"sources/main.queries.php",
-	{
-		type    : "ga_generate_qr",
-		id      : id,
-		send_email : "1"
-	},
-	function(data) {
-		if (data[0].error == "0") {
-			$("#manager_dialog_error").html("<div><?php echo $LANG['share_sent_ok'];?></div>");
-		} else {
-			if (data[0].error == "no_email") {
-				$("#manager_dialog_error").html("<?php echo $LANG['error_no_email'];?>");
-			} else if (data[0].error == "no_user") {
-				$("#manager_dialog_error").html("<?php echo $LANG['error_no_user'];?>");
-			}
-		}
-		$("#manager_dialog").dialog('open');
-	},
-	"json"
-	);
+    $("#div_loading").show();
+    $.post(
+    "sources/main.queries.php",
+    {
+        type    : "ga_generate_qr",
+        id      : id,
+        send_email : "1"
+    },
+    function(data) {
+        if (data[0].error == "0") {
+            $("#manager_dialog_error").html("<div><?php echo $LANG['share_sent_ok'];?></div>");
+        } else {
+            if (data[0].error == "no_email") {
+                $("#manager_dialog_error").html("<?php echo $LANG['error_no_email'];?>");
+            } else if (data[0].error == "no_user") {
+                $("#manager_dialog_error").html("<?php echo $LANG['error_no_user'];?>");
+            }
+        }
+        $("#manager_dialog").dialog('open');
+        $("#div_loading").hide();
+    },
+    "json"
+    );
 }
 
 /**
@@ -865,7 +876,7 @@ function user_edit(user_id)
 
 function loginCreation()
 {
-	$("#new_login").val($("#new_name").val().toLowerCase().replace(/ /g,"")+"."+$("#new_lastname").val().toLowerCase().replace(/ /g,""));
+    $("#new_login").val($("#new_name").val().toLowerCase().replace(/ /g,"")+"."+$("#new_lastname").val().toLowerCase().replace(/ /g,""));
 }
 
 function aes_decrypt(text)
