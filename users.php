@@ -71,16 +71,14 @@ echo '
         <th>'.$LANG['functions'].'</th>
         <!--<th>'.$LANG['authorized_groups'].'</th>
         <th>'.$LANG['forbidden_groups'].'</th>-->
-        <th style="width:25px;" title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
-        <th style="width:25px;" title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-        <th style="width:25px;" title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-        <th style="width:25px;" title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-        <th style="width:25px;" title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
-        <th style="width:25px;" title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-        <th style="width:25px;" title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
-        ', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
-,'
+        <th style="width:20px;" title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
+        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
+        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
+        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
+        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
+        <th style="width:20px;" title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
+        <th style="width:20px;" title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
+        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>
     </tr></thead>
     <tbody>
         <tr><td></td></tr>
@@ -301,11 +299,11 @@ echo '
 
     <div style="width:100%;">
         <div style="width:70%; float:left;">
-            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="50" id="user_edit_login" class="ui-widget-content ui-corner-all form_text" /><br />
-            <label class="form_label_100" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="50" id="user_edit_name" class="ui-widget-content ui-corner-all form_text" /><br />
-            <label class="form_label_100" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="50" id="user_edit_lastname" class="ui-widget-content ui-corner-all form_text" />
+            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="45" id="user_edit_login" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="45" id="user_edit_name" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="45" id="user_edit_lastname" class="ui-widget-content ui-corner-all form_text" />
             <br />
-            <label class="form_label_100" for="user_edit_email">'.$LANG['email'].'</label>&nbsp;<input type="text" size="50" id="user_edit_email" class="ui-widget-content ui-corner-all form_text" />
+            <label class="form_label_100" for="user_edit_email">'.$LANG['email'].'</label>&nbsp;<input type="text" size="45" id="user_edit_email" class="ui-widget-content ui-corner-all form_text" />
         </div>
         <div style="width:30%; float:right;">
             <input type="hidden" id="confirm_deletion" value="" />
@@ -328,7 +326,7 @@ echo '
         <br />
     </div>
 
-    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_deletion_warning">'.$LANG['user_info_delete_warning'].'</div>
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_deletion_warning1">'.$LANG['user_info_delete_warning'].'</div>
     <input type="hidden" id="user_edit_id" />
     </div>
 </div>';

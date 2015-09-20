@@ -805,6 +805,11 @@ if (isset($_POST['type'])) {
                 "pw_iv",
                 "TEXT NOT null"
             );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."cache",
+                "renewal_period",
+                "TINYINT(4) NOT null DEFAULT '0'"
+            );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
             // Clean timestamp for users table

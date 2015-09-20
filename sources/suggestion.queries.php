@@ -91,9 +91,7 @@ if (!empty($_POST['type'])) {
             DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
-                /*// generate random key
-                $randomKey = generateKey();*/
-
+                $encrypt = cryption($pwd, SALT, "", "encrypt");
                 // query
                 DB::insert(
                     prefix_table("suggestion"),
@@ -101,12 +99,12 @@ if (!empty($_POST['type'])) {
                         'label' => $label,
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
-                        'password' => encrypt($pwd),
+                        'pw' => $encrypt['string'],
+                        'pw_iv' => $encrypt['iv'],
                         'comment' => $comment,
                         'folder_id' => $folder
                     )
                 );
-
                 echo '[ { "status" : "done" } ]';
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';
@@ -158,7 +156,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
+                "SELECT label, description, pw, suggestion_key, folder_id, author_id, comment
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
