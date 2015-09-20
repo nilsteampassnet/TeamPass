@@ -92,7 +92,7 @@ if (!empty($_POST['type'])) {
             $counter = DB::count();
             if ($counter == 0) {
                 // encrypt
-                $encrypt = cryption($pwd , SALT, "", "encrypt");
+                $encrypt = cryption($pwd, SALT, "", "encrypt");
 
                 // query
                 DB::insert(
@@ -102,12 +102,11 @@ if (!empty($_POST['type'])) {
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
                         'pw' => $encrypt['string'],
+                        'pw_iv' => $encrypt['iv'],
                         'comment' => $comment,
-                        'folder_id' => $folder,
-                        'pw_iv' => $encrypt['iv']
+                        'folder_id' => $folder
                     )
                 );
-
                 echo '[ { "status" : "done" } ]';
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';

@@ -117,9 +117,9 @@ foreach ($rows as $record) {
     $sOutput .= "[";
 
     //col1
-    $sOutput .= '"<img src=\"includes/images/direction_arrow.png\" onclick=\"openKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
+    $sOutput .= '"<i class=\"fa fa-external-link fa-lg\" onclick=\"openKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\"></i>';
     if ($record['anyone_can_modify'] == 1 || $record['author_id'] == $_SESSION['user_id']) {
-        $sOutput .= '<img src=\"includes/images/direction_minus.png\" onclick=\"deleteKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
+        $sOutput .= '&nbsp;&nbsp;<i class=\"fa fa-trash-o mi-red fa-lg\" onclick=\"deleteKB(\''.$record['id'].'\')\" style=\"cursor:pointer;\"></i>';
     }
     $sOutput .= '",';
 
