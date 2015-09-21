@@ -2,7 +2,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright (c) 2009-2014, [Nils Laumaillé] (Nils@TeamPass.net)
+> Copyright (c) 2009-2015, [Nils Laumaillé] (Nils@TeamPass.net)
 
 ## Licence Agreement
 
@@ -43,16 +43,22 @@ Once uploaded, launch install/upgrade.php and follow instructions.
 ## Languages
 
 Teampass is translated in next languages:
-
-* ENGLISH 		by Nils and Petr
-* FRENCH 		by Nils
-* CZECH 		by Petr and Philipp
-* GERMAN 		by Philipp
-* RUSSIAN 		by Anton
-* TURKISH 		by Ahmet
-* NORWEGIAN 	by Kai
-* JAPANESE		by Shinji
-* PORTUGUESE 	by Luiz LeFort
-* ITALIAN		by Federico
+* CATALAN
+* CHINESE
+* CZECH 
+* DUTCH
+* ENGLISH
+* FRENCH 
+* GERMAN 
+* ITALIAN
+* JAPANESE
+* NORWEGIAN 
+* PORTUGUESE
+* PORTUGUESE (BR)
+* ROMANIAN
+* RUSSIAN 
+* SPANISH
+* TURKISH
+* UKRAINIAN
 
 Languages strings are managed at [POEditor.com] (https://poeditor.com/projects/view?id=16418).

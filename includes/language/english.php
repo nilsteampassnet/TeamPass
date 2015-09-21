@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_domain_posix' => 'LDAP account suffix for your domain',
     'user_not_exists' => 'This user do not exist!',
     'duo_message' => 'DUO Security checks are now done. Sending your credentials to Teampass.<br />Please wait ... the page will be reloaded once authentication process will be done.',
     'duo_loading_iframe' => 'DUOSecurity authentication frame is currently being loaded. Please wait.',

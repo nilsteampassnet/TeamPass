@@ -67,7 +67,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
     $dataLanguage = DB::queryFirstRow(
         "SELECT flag, name
         FROM ".prefix_table("languages")."
-        WHERE label = %s",
+        WHERE name = %s",
         $_GET['language']
     );
     $_SESSION['user_language'] = $dataLanguage['name'];

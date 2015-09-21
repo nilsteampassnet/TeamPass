@@ -710,6 +710,48 @@ if (isset($_POST['type'])) {
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `suggestion_key` `pw_iv` VARCHAR( 50 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
             );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `type` `type` varchar(50) NULL default ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `derniers` `derniers` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw` `last_pw` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `favourites` `favourites` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items CHANGE `raison` `raison` text NULL"
+            );
 
             ## Alter USERS table
             $res2 = addColumnIfNotExist(
