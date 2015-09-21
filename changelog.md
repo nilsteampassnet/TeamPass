@@ -1,11 +1,16 @@
 Last changes
 2.1.24
+ #1042 - Pagination on Users Page
  #1041 - "Forgot your password?" not working
  #953 - Make sure to rebuild the tree when creating an user with a personal folder
  #1035 - added php-xml install check
  #950 - #1005 - can not create Admin account
  #936 - #937 - Session file_exists not allowed while running through open_basedir restriction
  #970 - API special char fix
+ #962 - Error message when using the Find-function
+ #955 - Fix LDAP Settings UI
+ Fix empty URL column in off-line html
+ New: implemented DUOSecurity feature
  
  2.1.23
  #727 - #729 - Encoding problem
