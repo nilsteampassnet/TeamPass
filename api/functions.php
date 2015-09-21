@@ -177,12 +177,16 @@ function rest_delete () {
                     rest_error ('NO_CATEGORY');
                 }
 
-                // Delete items which in category
-                $response = DB::delete($pre."items", "id_tree = (".$category_query.")");
-                // Delete sub-categories which in category
-                $response = DB::delete($pre."nested_tree", "parent_id = (".$category_query.")");
-                // Delete category
-                $response = DB::delete($pre."nested_tree", "id = (".$category_query.")");
+		// Get category id
+		$obj_id = DB::queryOneColumn("id", $category_query);
+		if(count($obj_id) > 0) {
+			// Delete items which in category
+			$response = DB::delete($pre."items", "id_tree = ".$obj_id[0]);
+			// Delete sub-categories which in category
+			$response = DB::delete($pre."nested_tree", "parent_id = ".$obj_id[0]);
+			// Delete category
+			$response = DB::delete($pre."nested_tree", "id = ".$obj_id[0]);
+		}
 
                 $json['type'] = 'category';
                 $json['category'] = $GLOBALS['request'][2];
