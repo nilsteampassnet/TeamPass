@@ -227,6 +227,7 @@ if (isset($_POST['type'])) {
                             `label` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
+                            `pw_iv` text NOT NULL,
                             `url` varchar(250) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
@@ -645,6 +646,7 @@ if (isset($_POST['type'])) {
                             `field_id` int(11) NOT NULL,
                             `item_id` int(11) NOT NULL,
                             `data` text NOT NULL,
+                            `data_iv` text NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
