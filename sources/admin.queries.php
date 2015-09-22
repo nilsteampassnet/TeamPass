@@ -1063,4 +1063,69 @@ switch ($_POST['type']) {
 		// send data
 		echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
 		break;
+
+    case "save_fa_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // 2factors_authentication
+        if (htmlspecialchars_decode($dataReceived['2factors_authentication']) == "false") $tmp = 0;
+        else $tmp = 1;
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "2factors_authentication");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "2factors_authentication",
+                    'valeur' => $tmp
+                )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => $tmp
+                ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "2factors_authentication"
+            );
+        }
+        $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
+
+        // ga_website_name
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "ga_website_name",
+                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "ga_website_name"
+            );
+        }
+        $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
 }
