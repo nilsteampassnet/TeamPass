@@ -577,7 +577,7 @@ echo '
                 <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
                 <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
-                <li><a href="admin.settings_duo.php">DuoSecurity</a></li>
+                <li><a href="admin.settings_duo.php">2FA Options</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1
@@ -817,7 +817,7 @@ echo '
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-
+/*
 // 2factors_code
 echo '
             <tr style="margin-bottom:3px">

@@ -84,6 +84,42 @@ while (list($key,$val) = each($skFile)) {
 echo '
 <div id="tabs-9">
 	<div style="margin-bottom:3px;">
+		<table>
+		 <!-- 2factors_code -->
+		<tr style="margin-bottom:3px">
+			<td>
+				<i class="fa fa-sm fa-wrench"></i>&nbsp;
+				<label>'.$LANG['admin_2factors_authentication_setting'].'
+				&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_2factors_authentication_setting_tip'].'" />
+				</label>
+	        </td>
+	        <td>
+	            <div class="div_radio">
+	                <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$LANG['yes'].'</label>
+	                <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$LANG['no'].'</label>
+	            </div>
+			<td>
+		</tr>
+	<!-- // Google Authenticator website name -->
+		<tr style="margin-bottom:3px">
+			<td>
+				<i class="fa fa-sm fa-wrench"></i>&nbsp;
+				<label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
+				&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_ga_website_name_tip'].'" />
+				</td>
+				<td>
+				<input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
+			<td>
+		</tr>
+		</table>
+		<div style="margin:5px 0 5px 20px;">
+			<input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" style="cursor:pointer; padding:4px; width:75px;" />
+			&nbsp;<span id="savefa_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+		</div>
+	</div>
+	<hr style="margin:10px 0 10px 0;">
+	<div style="margin-bottom:3px;">
+		<i class="fa fa-sm fa-wrench"></i>&nbsp;
         <label for="api" style="width:350px;">' .
         $LANG['settings_duo'].'
             &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_duo_tip'].'" />
@@ -95,7 +131,6 @@ echo '
         &nbsp;<span id="save_status_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
     </div>
     <div id="duo_enabled" style="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', '">
-    <hr>
     <div style="margin-bottom:3px;">
     	<h3>'.$LANG['admin_duo_intro'].'</h3>
     </div>
@@ -184,7 +219,7 @@ function saveDuoStatus(status)
 			}
 	);
 }
-		
+
 function GenerateCryptKey(size)
 {
 	$("#generate_wait").show();
@@ -201,11 +236,11 @@ function GenerateCryptKey(size)
 		"json"
 	);
 }
-		
+
 function SaveKeys()
 {
 	$("#save_wait").show();
-		
+
 	var data = "{\"akey\":\""+sanitizeString($("#duo_akey").val())+"\", \"ikey\":\""+sanitizeString($("#duo_ikey").val())+"\", \"skey\":\""+sanitizeString($("#duo_skey").val())+"\", \"host\":\""+sanitizeString($("#duo_host").val())+"\"}";
 	$.post(
 		"sources/admin.queries.php",
@@ -231,10 +266,48 @@ function SaveKeys()
 		"json"
 	);
 }
-		
+
 $(".tip").tooltipster({
 	maxWidth: 400,
 	contentAsHTML: true
 });
+
+function SaveFA()
+{
+	$("#savefa_wait").show();
+
+	var data = "{\"2factors_authentication\":\""+$("input[name=\"2factors_authentication\"]").prop("checked")+"\", \"ga_website_name\":\""+sanitizeString($("#ga_website_name").val())+"\"}";
+	$.post(
+		"sources/admin.queries.php",
+		{
+			type : "save_fa_options",
+			data : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
+            key  : "'.$_SESSION['key'].'"
+		},
+		function(data) {
+            if (data[0].error == "") {
+				$("#main_info_box_text").html(data[0].result);
+				console.log($("input[name=\"2factors_authentication\"]").prop("checked"));
+				if ($("input[name=\"2factors_authentication\"]").prop("checked") == "true") {
+					$("#temp_session_fa_status").val("1");
+				} else {
+					$("#temp_session_fa_status").val("0");
+				}
+				$("#temp_session_fa_website").val($("#ga_website_name").val());
+            } else {
+	        	$("#main_info_box_text").html(data[0].error);
+            }
+            $("#main_info_box").show().position({
+            	my: "center",
+                at: "center top+75",
+                of: "#top"
+            });
+	        setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 2000);
+			$("#savefa_wait").hide();
+		},
+		"json"
+	);
+}
+
 </script>
 ';
