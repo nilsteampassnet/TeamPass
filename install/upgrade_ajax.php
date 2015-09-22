@@ -570,7 +570,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'enable_suggestion', '0', 0),
                 array('admin', 'email_server_url', '', 0),
                 array('admin','otv_expiration_period','7', 0),
-                array('admin','default_session_expiration_time','60', 0)
+                array('admin','default_session_expiration_time','60', 0),
+	            array('admin','duo','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -709,6 +710,48 @@ if (isset($_POST['type'])) {
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `suggestion_key` `pw_iv` VARCHAR( 50 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
             );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `type` `type` varchar(50) NULL default ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `derniers` `derniers` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw` `last_pw` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `favourites` `favourites` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items CHANGE `raison` `raison` text NULL"
+            );
 
             ## Alter USERS table
             $res2 = addColumnIfNotExist(
@@ -789,17 +832,17 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar_thumb",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
-                "TEXT NOT null"
+                "TEXT null"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."categories_items",
@@ -810,6 +853,16 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "pw_iv",
                 "TEXT NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "pw_len",
+                "INT(5) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."cache",
+                "renewal_period",
+                "TINYINT(4) NOT null DEFAULT '0'"
             );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
@@ -1744,6 +1797,7 @@ require_once \"".$skFile."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
                         )
                     );

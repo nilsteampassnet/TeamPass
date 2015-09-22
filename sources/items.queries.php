@@ -1987,13 +1987,13 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
+                            // test charset => may cause a json error if is not utf8
+                            if (!isUTF8($pw) || empty($pw)) {
+                                $pw = "";
+                                $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>';
+                            }
                         } else {
                             $pw = "";
-                        }
-                        // test charset => may cause a json error if is not utf8
-                        if (!isUTF8($pw) || empty($pw)) {
-                            $pw = "";
-                            $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>';
                         }
 
                         $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
