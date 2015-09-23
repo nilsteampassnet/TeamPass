@@ -109,6 +109,10 @@ if (isset($_POST['type'])) {
                 $abspath."/upload/"
             );
             foreach ($tab as $elem) {
+            	// try to create it if not existing
+                if(!is_dir($elem)) {
+                    mkdir($elem);
+                }
                 if (is_writable($elem)) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.
                         $elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
