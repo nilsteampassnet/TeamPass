@@ -18,6 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 <script type="text/javascript">
 $(function() {
+    //buttons
+    $("#button_new_role, #button_role_refresh").button();
+
 $("#add_new_role").dialog({
         bgiframe: true,
         modal: true,

@@ -40,7 +40,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     } );
 
 $(function() {
-    $(".button").button();
+    //buttons
+    $("#button_new_user").button();
+
     $("#tabs").tabs();
 
     //Build multiselect box
