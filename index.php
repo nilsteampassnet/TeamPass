@@ -105,13 +105,13 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-	require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-	if (isset($_GET['page']) && $_GET['page'] == "kb") {
-		require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
-	}
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    if (isset($_GET['page']) && $_GET['page'] == "kb") {
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
+    }
 } else {
-	$_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-	include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
 }
 
 // Load links, css and javascripts
@@ -258,7 +258,7 @@ if (isset($_SESSION['login'])) {
 }
 // Display language menu
 if (!isset($_GET['otv'])) {
-	echo '
+    echo '
         <div style="float:right;">
             <dl id="flags" class="dropdown">
                 <dt><img src="includes/images/flags/'.$_SESSION['user_language_flag'].'" alt="" /></dt>
@@ -290,7 +290,7 @@ echo '
         <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'">';
 
 echo '
-	';
+    ';
 
 echo '
     <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
@@ -469,14 +469,14 @@ if (
     }
 } elseif ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
     // case where one-shot viewer
-	if (
-		isset($_GET['code']) && !empty($_GET['code'])
-		&& isset($_GET['item_id']) && !empty($_GET['item_id'])
-		&& isset($_GET['stamp']) && !empty($_GET['stamp'])
-		&& isset($_GET['otv_id'])
-	) {
-		include 'otv.php';
-	} else {
+    if (
+        isset($_GET['code']) && !empty($_GET['code'])
+        && isset($_GET['item_id']) && !empty($_GET['item_id'])
+        && isset($_GET['stamp']) && !empty($_GET['stamp'])
+        && isset($_GET['otv_id'])
+    ) {
+        include 'otv.php';
+    } else {
         $_SESSION['error']['code'] = ERR_VALID_SESSION;
         $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -554,7 +554,7 @@ if (
                         <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                     </div>';
 
-	// Personal salt key
+    // Personal salt key
     if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
         echo '
                     <div id="connect_psk" style="margin-bottom:3px;">
@@ -568,19 +568,19 @@ if (
     }
 
     // Google Authenticator code
-	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-		echo '
+    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+        echo '
                     <div id="ga_code_div" style="margin-bottom:10px;">
-                    	'.$LANG['ga_identification_code'].'
+                        '.$LANG['ga_identification_code'].'
                         <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
                         <div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
                             '.$LANG['user_ga_code_sent_by_email'].'
                         </div>
                         <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
-	                        <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
-	                    </div>
+                            <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
+                        </div>
                     </div>';
-	}
+    }
     echo '
                     <div style="margin-bottom:3px;">
                         <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
@@ -590,7 +590,7 @@ if (
                     <div style="text-align:center;margin-top:5px;font-size:10pt;">
                         <span onclick="OpenDialogBox(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                     </div>
-					<div style="text-align:center;margin-top:15px;">
+                    <div style="text-align:center;margin-top:15px;">
                         <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                     </div>
                 </div>
@@ -708,10 +708,10 @@ if (
     <div id="dialog_duo" style="display:none;padding:4px;">
         <div id="div_duo"></div>
         '.$LANG['duo_loading_iframe'].'
-		<form method="POST" id="duo_form">
-			<input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
-			<input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
-		</form>
+        <form method="POST" id="duo_form">
+            <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
+            <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
+        </form>
     </div>';
 
 
