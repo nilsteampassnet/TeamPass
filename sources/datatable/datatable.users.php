@@ -289,7 +289,7 @@ foreach ($rows as $record) {
 }
 
 if (count($rows) > 0) {
-    $sOutput = substr_replace($sOutput, "", -1);
+    if (strrchr($sOutput, "[") != '[') $sOutput = substr_replace($sOutput, "", -1);
     $sOutput .= '] }';
 } else {
     $sOutput .= '[] }';

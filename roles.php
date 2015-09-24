@@ -43,8 +43,12 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    &nbsp;<img src="includes/images/users--plus.png" title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" style="cursor:pointer;" />
-    &nbsp;<a onClick="refresh_roles_matrix()"><img src="includes/images/arrow_refresh.png" style="cursor:pointer" title="'.$LANG['refresh_matrix'].'" /></a>
+    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" id="button_new_role">
+        <img src="includes/images/user--plus.png" alt="" />
+    </button>
+    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" id="button_role_refresh">
+        <img src="includes/images/arrow_refresh.png" alt="" />
+    </button>
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_roles\')" /></span>
 </div>
 <div style="line-height:20px;" align="center">
