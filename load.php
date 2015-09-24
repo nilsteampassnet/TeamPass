@@ -6,7 +6,7 @@
  * @version       2.1.23
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -157,7 +157,7 @@ $htmlHeaders .= '
     
     function launchIdentify(isDuo, redirect, psk)
     {
-		$("#connection_error").hide();
+        $("#connection_error").hide();
         if (redirect == undefined) redirect = ""; //Check if redirection
         // Check form data
         if (psk == 1 && $("#psk").val() == "") {
@@ -202,10 +202,10 @@ $htmlHeaders .= '
 
         // Handle if DUOSecurity is enabled
         if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
-        	identifyUser(redirect, psk, data, randomstring);
+            identifyUser(redirect, psk, data, randomstring);
         } else {
-        	$("#duo_data").val(data)
-        	loadDuoDialog();
+            $("#duo_data").val(data)
+            loadDuoDialog();
         }
     }
 
@@ -249,9 +249,9 @@ $htmlHeaders .= '
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {
-                	$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
-                	$("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
+                    $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
                 } else {
                     $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                 }
@@ -263,35 +263,35 @@ $htmlHeaders .= '
 
     function getGASynchronization()
     {
-    	if ($("#login").val() != "" && $("#pw").val() != "") {
+        if ($("#login").val() != "" && $("#pw").val() != "") {
             $("#ajax_loader_connexion").show();
             $("#connection_error").hide();
             $("#div_ga_url").hide();
-    		data = \'{"login":"\'+sanitizeString($("#login").val())+\'" ,\'+
+            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" ,\'+
                    \'"pw":"\'+sanitizeString($("#pw").val())+\'"}\';
-	        //send query
-	        $.post(
-	            "sources/main.queries.php",
-	            {
-	                type : "ga_generate_qr",
-	                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'"),
-	                send_email : "1"
-	            },
-	            function(data) {
-	            	if (data[0].error == "0") {
-						//$("#ga_qr").attr("src", data[0].ga_url);
-                	    $("#div_ga_url").show();
-	            	} else {
-						$("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
-                	    $("#div_ga_url").hide();
-	            	}
+            //send query
+            $.post(
+                "sources/main.queries.php",
+                {
+                    type : "ga_generate_qr",
+                    data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'"),
+                    send_email : "1"
+                },
+                function(data) {
+                    if (data[0].error == "0") {
+                        //$("#ga_qr").attr("src", data[0].ga_url);
+                        $("#div_ga_url").show();
+                    } else {
+                        $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                        $("#div_ga_url").hide();
+                    }
                     $("#ajax_loader_connexion").hide();
-	            },
-	            "json"
-	        );
-    	} else {
-    		$("#connection_error").html("'.$LANG['ga_enter_credentials'].'").show();
-    	}
+                },
+                "json"
+            );
+        } else {
+            $("#connection_error").html("'.$LANG['ga_enter_credentials'].'").show();
+        }
     }
 
     /*
@@ -306,7 +306,7 @@ $htmlHeaders .= '
         //send query
         $.post("sources/main.queries.php", {
                 type :    "generate_new_password",
-    		    data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
                 if (data == "done") {
@@ -360,9 +360,9 @@ $htmlHeaders .= '
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
-            	if (data == "done") {
-	                document.location.href="index.php?language="+lang;
-	            }
+                if (data == "done") {
+                    document.location.href="index.php?language="+lang;
+                }
             }
        );
     }
@@ -494,54 +494,84 @@ $htmlHeaders .= '
             title: "DUO Security - please wait ..."
         }).dialog("open");
     }
+    function ChangeMyPass()
+    {
+        if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
+            if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+                var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type                : "change_pw",
+                        change_pw_origine    : "first_change",
+                        complexity            :    $("#user_pw_complexity").val(),
+                        data                 :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
+                    },
+                    function(data) {
+                        if (data[0].error == "complexity_level_not_reached") {
+                            $("#new_pw, #new_pw2").val("");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_complex_not_enought'].'></span>");
+                        } else {
+                            location.reload(true);
+                        }
+                    },
+                    "json"
+                );
+            } else {
+                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
+            }
+        } else {
+            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
+        }
+    }
 
     $(function() {
         // load DUO login
-		if ($("#duo_sig_response").val() != "") {
-			$("#login").val($("#duo_login").val());
-			
-        	// checking that response is corresponding to user credentials
-			$.post(
-				"sources/identify.php",
-				{
-					type : 			"identify_duo_user_check",
-					login: 			sanitizeString($("#login").val()),
-		            sig_response: 	$("#duo_sig_response").val()
-				},
-				function(data) {
-					var ret = data[0].resp.split("|");
-					if (ret[0] === "ERR") {
-						$("#div_duo").html("ERROR " + ret[1]);
-					} else {
-						// finally launch identification process inside Teampass.
-        				loadDuoDialogWait();
-		                
-		                $.post(
-							"sources/identify.php",
-							{
-								type : 	"identify_user",
-								data : 	$("#duo_data").val()
-							},
-							function(data) {
-								$("#connection_error").hide();
-			                    //redirection for admin is specific
-			                    if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-			                    else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-			                    else window.location.href="index.php";
-							},
-							"json"
-						);
-					}
-				},
-				"json"
-			);
-		}
+        if ($("#duo_sig_response").val() != "") {
+            $("#login").val($("#duo_login").val());
+            
+            // checking that response is corresponding to user credentials
+            $.post(
+                "sources/identify.php",
+                {
+                    type :             "identify_duo_user_check",
+                    login:             sanitizeString($("#login").val()),
+                    sig_response:     $("#duo_sig_response").val()
+                },
+                function(data) {
+                    var ret = data[0].resp.split("|");
+                    if (ret[0] === "ERR") {
+                        $("#div_duo").html("ERROR " + ret[1]);
+                    } else {
+                        // finally launch identification process inside Teampass.
+                        loadDuoDialogWait();
+                        
+                        $.post(
+                            "sources/identify.php",
+                            {
+                                type :     "identify_user",
+                                data :     $("#duo_data").val()
+                            },
+                            function(data) {
+                                $("#connection_error").hide();
+                                //redirection for admin is specific
+                                if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
+                                else if (data[0].initial_url != "") window.location.href="'.substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")).'";
+                                else window.location.href="index.php";
+                            },
+                            "json"
+                        );
+                    }
+                },
+                "json"
+            );
+        }
         
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
-			maxWidth: 400,
-			contentAsHTML: true
-		});
+            maxWidth: 400,
+            contentAsHTML: true
+        });
         $("#user_session").val(sessionStorage.password);
 
         $(".menu").menu({
@@ -798,7 +828,7 @@ $htmlHeaders .= '
                                 $("#div_forgot_pw_alert").html("");
                                 $("#div_dialog_message_text").html(data[0].message);
                                 $("#div_forgot_pw").dialog("close");
-        	                    $("#div_dialog_message").dialog("open");
+                                $("#div_dialog_message").dialog("open");
                             }
                         },
                         "json"
@@ -866,17 +896,52 @@ $htmlHeaders .= '
             }
         });
 
-        /*
-        //inline editing
-        $(".editable_textarea").editable("sources/users.queries.php", {
-              indicator : "<img src=\'includes/images/loading.gif\' />",
-              type   : "text",
-              select : true,
-              submit : "<img src=\'includes/images/disk_black.png\' />",
-              cancel : "<img src=\'includes/images/cross.png\' />",
-              name : "newValue"
+
+        //Password meter for item creation
+        $("#new_pw").simplePassMeter({
+            "requirements": {},
+            "container": "#pw_strength",
+            "defaultText" : "'.$LANG['index_pw_level_txt'].'",
+            "ratings": [
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "'.$LANG['complex_level0'].'"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level1'].'"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level2'].'"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level3'].'"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level4'].'"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level5'].'"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level6'].'"
+                }
+            ]
         });
-        */
+        $("#new_pw").bind({
+            "score.simplePassMeter" : function(jQEvent, score) {
+        $("#pw_strength_value").val(score);
+    }
+        }).change({
+            "score.simplePassMeter" : function(jQEvent, score) {
+        $("#pw_strength_value").val(score);
+    }
+        });
 
         // get list of last items
         refreshListLastSeenItems();
