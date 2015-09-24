@@ -1983,8 +1983,8 @@ if (isset($_POST['type'])) {
 
                             // test charset => may cause a json error if is not utf8
                             if (!isUTF8($pw) || empty($pw)) {
-                            	$pw = "";
-                            	$html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
+                                $pw = "";
+                                $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
                             }
                         } else {
                             $pw = "";

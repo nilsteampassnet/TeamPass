@@ -109,6 +109,11 @@ if (isset($_POST['type'])) {
                 $abspath."/upload/"
             );
             foreach ($tab as $elem) {
+                // try to create it if not existing
+                if(!is_dir($elem)) {
+                    mkdir($elem);
+                }
+                // check if writable
                 if (is_writable($elem)) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.
                         $elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
@@ -832,12 +837,12 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
-                "VARCHAR(255) NULL"
+                "VARCHAR(255) NOT null DEFAULT ''"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar_thumb",
-                "VARCHAR(255) NULL"
+                "VARCHAR(255) NOT null DEFAULT ''"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",

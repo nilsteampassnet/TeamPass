@@ -78,8 +78,8 @@ switch ($_POST['type']) {
                 if (!$fp) {
                     $error = "connection";
                 } else {
-                    $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
-                    $out .= "Host: www.teampass.net\r\n";
+                    $out = "GET http://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
+                    $out .= "Host: teampass.net\r\n";
                     $out .= "Connection: Close\r\n\r\n";
                     fwrite($fp, $out);
 
