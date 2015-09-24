@@ -204,7 +204,7 @@ $htmlHeaders .= '
         if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
             identifyUser(redirect, psk, data, randomstring);
         } else {
-            $("#duo_data").val(data)
+            $("#duo_data").val(data);
             loadDuoDialog();
         }
     }
@@ -556,8 +556,7 @@ $htmlHeaders .= '
                                 $("#connection_error").hide();
                                 //redirection for admin is specific
                                 if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-                                else if (data[0].initial_url != "") window.location.href="'.substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")).'";
-                                else window.location.href="index.php";
+                                else $( "#duo_form" ).submit();
                             },
                             "json"
                         );
