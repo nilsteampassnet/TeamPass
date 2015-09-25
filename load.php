@@ -565,6 +565,8 @@ $htmlHeaders .= '
                 "json"
             );
         }
+
+        $(".button").button();
         
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({

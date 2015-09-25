@@ -333,6 +333,7 @@ function ListerItems(groupe_id, restricted, start)
                         });
                         $(".folder").droppable({
                             hoverClass: "ui-state-active",
+                            tolerance: 'pointer',
                             drop: function(event, ui) {
                                 ui.draggable.hide();
                                 //move item
@@ -1940,6 +1941,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
+
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
@@ -2028,7 +2030,14 @@ $(function() {
     		"theme" : "default",
     		"url" : "includes/js/jstree/themes/default/style.css"
     	},
-        "plugins" : ["themes", "html_data", "ui", "search", "cookies"]
+        /*"json_data" : {
+            "ajax" : {
+                type  : "json",
+                url: "./sources/tree.php",
+                async : true
+            }
+        },*/
+        "plugins" : ["themes", "html_data", "ui", "search", "cookies"]  //, "json_data"
     })
     //search in tree
     .bind("search.jstree", function (e, data) {

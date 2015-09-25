@@ -112,8 +112,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
     }
 
     $(function() {
-        //buttons
-        $("#button_new_suggestion").button();
 
         //Launch the datatables pluggin
         $("#t_suggestion").dataTable({
