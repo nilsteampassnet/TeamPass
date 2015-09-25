@@ -250,12 +250,14 @@ foreach ($folders as $folder) {
                     <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
             if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
                 $restricted = "";
+                $folderClass = "folder";
                 if (in_array($folder->id, $_SESSION['read_only_folders'])) {
                     $fldTitle = '<i class="fa fa-eye"></i>&nbsp;'.$fldTitle.'';
                     $restricted = 1;
+                    $folderClass = "folder_not_droppable";
                 }
                 $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \''.$restricted.'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
+                            <a id="fld_'.$folder->id.'" class="'.$folderClass.'" onclick="ListerItems(\''.$folder->id.'\', \''.$restricted.'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
                 // display tree counters
                 if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
                     $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);

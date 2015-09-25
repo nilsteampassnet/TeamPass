@@ -74,10 +74,10 @@ foreach ($tst as $t) {
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
     $LANG['admin_groups'].'&nbsp;&nbsp;
-    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'add_new_role\')" id="open_add_group_div">
+    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'add_new_role\')" class="button">
         <img src="includes/images/folder--plus.png" alt="" />
     </button>
-    <button title="'.$LANG['item_menu_del_rep'].'" onclick="delete_multiple_folders()" id="button_delete">
+    <button title="'.$LANG['item_menu_del_rep'].'" onclick="delete_multiple_folders()" class="button">
         <img src="includes/images/folder--minus.png" alt="" />
     </button>
     <span style="float:right;margin-right:5px;">

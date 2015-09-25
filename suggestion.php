@@ -113,7 +113,7 @@ foreach ($folders as $folder) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" id="button_new_suggestion">
+    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" class="button">
         <img src="includes/images/direction_plus.png" alt="" />
     </button>
 </div>';

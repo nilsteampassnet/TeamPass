@@ -53,7 +53,7 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" id="button_new_user">
+    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button">
         <img src="includes/images/user--plus.png" alt="" />
     </button>
 </div>';

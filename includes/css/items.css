@@ -127,7 +127,7 @@ button{
 	cursor:move;
 }
 
-.file, .cursor, .folder, .file_search {
+.file, .cursor, .folder, .file_search, .folder_not_droppable {
 	cursor:pointer;
 }
 

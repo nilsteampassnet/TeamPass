@@ -20,9 +20,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 
 $(function() {
-    //buttons
-    $("#open_add_group_div, #button_delete").button();
-
     //Prepare creation dialogbox
     $("#open_add_group_div").click(function() {
         $("#div_add_group").dialog("open");
