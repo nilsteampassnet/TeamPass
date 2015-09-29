@@ -472,6 +472,23 @@ $htmlHeaders .= '
     // DUO box - identification
     function loadDuoDialog()
     {
+		// save data connection
+		$.post(
+            "sources/identify.php",
+            {
+                type   : "store_data_in_cookie",
+                data   : prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION['key'].'>"),
+                key    : "'.$_SESSION['key'].'"
+            },
+			function(data) {
+				if (data[0].error == "something_wrong") {
+					
+				}
+			},
+			"json"
+        );
+		
+		// show dialog
         $("#dialog_duo").dialog({
             width: 600,
             height: 500,

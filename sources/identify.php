@@ -14,7 +14,7 @@
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
-$debugDuo = 0; //Can be used in order to debug LDAP authentication
+$debugDuo = 1; //Can be used in order to debug LDAP authentication
 
 require_once 'sessions.php';
 session_start();
@@ -72,13 +72,25 @@ if ($_POST['type'] === "identify_duo_user") {
 	}
 } elseif ($_POST['type'] == "identify_user") {
 	identifyUser($_POST['data']);
+} elseif ($_POST['type'] == "store_data_in_cookie") {
+	if ($_POST['key'] != $_SESSION['key']) {
+		echo '[{"error" : "something_wrong"}]';
+		break;
+	}
+	// store some connection data in cookie
+	setcookie(
+		"TeamPassC",
+		$_POST['data'],
+		time() + 60 * 60,
+		'/'
+	);
 }
 
 
 
 function identifyUser($sentData)
 {
-    global $debugLdap;
+    global $debugLdap, $debugDuo;
     global $k;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -88,6 +100,18 @@ function identifyUser($sentData)
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
+    }
+	
+	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
+		$sentData = $_COOKIE['TeamPassC'];
+		setcookie('TeamPassC', "", time()-3600);
+	}
+	
+	if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "Content of data sent '" . $sentData . "'\n"
+        );
     }
 
     // connect to the server
