@@ -9,8 +9,10 @@ Last changes
  #970 - API special char fix
  #962 - Error message when using the Find-function
  #955 - Fix LDAP Settings UI
+ Fix passwords are empty when importing from Keepass
  Fix empty URL column in off-line html
  New: implemented DUOSecurity feature
+ New: create User via API
  
  2.1.23
  #727 - #729 - Encoding problem

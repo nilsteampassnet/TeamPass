@@ -200,8 +200,8 @@ if (isset($_POST['save_button'])) {
         updateSettings('show_only_accessible_folders', $_POST['show_only_accessible_folders']);
     }
     // Update ga_website_name
-    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != $_POST['ga_website_name']) {
-        updateSettings('ga_website_name', $_POST['ga_website_name']);
+    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != @$_POST['ga_website_name']) {
+        updateSettings('ga_website_name', @$_POST['ga_website_name']);
     }
     // Update number_of_used_pw setting
     if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {

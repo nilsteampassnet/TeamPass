@@ -450,7 +450,7 @@ function rest_get () {
                     DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('ITEMBADDEFINITION');
                     }
 
                     // check if element doesn't already exist
@@ -550,11 +550,140 @@ function rest_get () {
                             echo '<br />' . $ex->getMessage();
                         }
                     } else {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('ITEMBADDEFINITION');
                     }
                 } else {
-                    rest_error ('BADDEFINITION');
+                    rest_error ('ITEMBADDEFINITION');
                 }
+            }
+            /*
+             * Case where a new user has to be added
+             * 
+             * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1|ROLE2|...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
+             * with:
+             * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
+			 * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
+			 *
+			 * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers|Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
+			 *
+             */
+            elseif($GLOBALS['request'][1] == "user") {
+            	
+            	// get user definition
+            	$array_user = explode(';', $GLOBALS['request'][2]);
+            	if (count($array_user) != 11) {
+            		rest_error ('USERBADDEFINITION');
+            	}
+            	
+            	$login = $array_user[0];
+            	$name = $array_user[1];
+            	$lastname = $array_user[2];
+            	$password = $array_user[3];
+            	$email = $array_user[4];
+            	$adminby = $array_user[5];
+            	$isreadonly = $array_user[6];
+            	$roles = $array_user[7];
+            	$isadmin = $array_user[8];
+            	$ismanager = $array_user[9];
+            	$haspf = $array_user[10];
+            	
+            	// Empty user
+            	if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
+            		rest_error ('USERLOGINEMPTY');
+            	}
+            	// Check if user already exists
+            	$data = DB::query(
+            			"SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
+                WHERE login LIKE %ss",
+            			mysqli_escape_string($link, stripslashes($login))
+            	);
+            	
+            	if (DB::count() == 0) {
+            		try {
+	            		// find AdminRole code in DB
+            			$resRole = DB::queryFirstRow(
+            					"SELECT id
+            					FROM ".prefix_table("roles_title")."
+                				WHERE title LIKE %ss",
+            					mysqli_escape_string($link, stripslashes($adminby))
+            			);
+						
+						// get default language
+						$lang = DB::queryFirstRow(
+							"SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+							"admin",
+							"default_language"
+						);
+						
+						// prepare roles list
+						$rolesList = "";
+						foreach (explode('|', $roles) as $role) {echo $role."-";
+							$tmp = DB::queryFirstRow(
+								"SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
+								$role
+							);
+							if (empty($rolesList)) $rolesList = $tmp['id'];
+							else $rolesList .= ";" . $tmp['id'];
+						}
+	            		
+	            		// Add user in DB
+	            		DB::insert(
+	            				prefix_table("users"),
+	            				array(
+	            						'login' => $login,
+	            						'name' => $name,
+	            						'lastname' => $lastname,
+	            						'pw' => bCrypt(stringUtf8Decode($password), COST),
+	            						'email' => $email,
+	            						'admin' => intval($isadmin),
+	            						'gestionnaire' => intval($ismanager),
+	            						'read_only' => intval($isreadonly),
+	            						'personal_folder' => intval($haspf),
+	            						'user_language' => $lang['valeur'],
+	            						'fonction_id' => $rolesList,
+	            						'groupes_interdits' => '0',
+	            						'groupes_visibles' => '0',
+	            						'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
+	            				)
+	            		);
+	            		$new_user_id = DB::insertId();
+	            		// Create personnal folder
+	            		if (intval($haspf) == 1) {
+	            			DB::insert(
+	            					prefix_table("nested_tree"),
+	            					array(
+	            							'parent_id' => '0',
+	            							'title' => $new_user_id,
+	            							'bloquer_creation' => '0',
+	            							'bloquer_modification' => '0',
+	            							'personal_folder' => '1'
+	            					)
+	            			);
+	            		}
+	            		// Send email to new user
+	            		@sendEmail(
+	            				$LANG['email_subject_new_user'],
+	            				str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+	            				$email
+	            		);
+	            		// update LOG
+	            		DB::insert(
+	            				prefix_table("log_system"),
+	            				array(
+	            						'type' => 'user_mngt',
+	            						'date' => time(),
+	            						'label' => 'at_user_added',
+	            						'qui' => 'api - '.$GLOBALS['apikey'],
+	            						'field_1' => $new_user_id
+	            				)
+	            		);
+	            		echo '{"status":"user added"}';
+                    } catch(PDOException $ex) {
+                        echo '<br />' . $ex->getMessage();
+                    }
+            	} else {
+            		rest_error ('USERALREADYEXISTS');
+            	}
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
             /*
@@ -694,12 +823,24 @@ function rest_error ($type,$detail = 'N/A') {
             $message = Array('err' => 'Method not authorized');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
-        case 'BADDEFINITION':
+        case 'ITEMBADDEFINITION':
             $message = Array('err' => 'Item definition not complete');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'ITEM_MALFORMED':
             $message = Array('err' => 'Item definition not numeric');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERBADDEFINITION':
+            $message = Array('err' => 'User definition not complete');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERLOGINEMPTY':
+            $message = Array('err' => 'Empty Login given');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERALREADYEXISTS':
+            $message = Array('err' => 'User already exists');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'REQUEST_SENT_NOT_UNDERSTANDABLE':

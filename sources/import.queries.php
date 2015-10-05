@@ -245,10 +245,12 @@ switch ($_POST['type']) {
             //For each item, insert into DB
             $item = explode('@|@', $item);   //explode item to get all fields
 
-            /*//Encryption key
-            $randomKey = generateKey();
-            $pw = $randomKey.$item[2];*/
-            $pw = $item[2];
+            //Encryption key
+			if ($personalFolder == 1) {
+				$encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
+			} else {
+				$encrypt = cryption($item[2], SALT, "", "encrypt");
+			}
 
             // Insert new item in table ITEMS
             DB::insert(
@@ -256,7 +258,8 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-                    'pw' => encrypt(str_replace('&quote;', '"', $pw)),
+					'pw' => $encrypt['string'],
+					'pw_iv' => $encrypt['iv'],
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
@@ -264,16 +267,6 @@ switch ($_POST['type']) {
                )
             );
             $newId = DB::insertId();
-
-            /*    //Store generated key
-            DB::insert(
-                prefix_table("keys"),
-                array(
-                    'sql_table' => 'items',
-                    'id' => $newId,
-                    'rand_key' => $randomKey
-               )
-            );*/
 
             //if asked, anyone in role can modify
             if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
@@ -844,13 +837,22 @@ switch ($_POST['type']) {
                         );
 
                         $results .= " - Inserting\n";
+						
+						// prepare PW
+						if ($import_perso == true) {
+							$encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+						} else {
+							$encrypt = cryption($pw, SALT, "", "encrypt");
+						}
+						
                         //ADD item
                         DB::insert(
                             prefix_table("items"),
                             array(
                                 'label' => stripslashes($item[KP_TITLE]),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'pw' => $import_perso == true ? encrypt($pw, $_SESSION['my_sk']) : encrypt($pw),
+                                'pw' => $encrypt['string'],
+								'pw_iv' => $encrypt['iv'],
                                 'url' => stripslashes($item[KP_URL]),
                                 'id_tree' => $folderId,
                                 'login' => stripslashes($item[KP_USERNAME]),
@@ -858,16 +860,6 @@ switch ($_POST['type']) {
                            )
                         );
                         $newId = DB::insertId();
-
-                        /*//Store generated key
-                        DB::insert(
-                            prefix_table("keys"),
-                            array(
-                                'sql_table' => 'items',
-                                'id' => $newId,
-                                'rand_key' => $randomKey
-                           )
-                        );*/
 
                         //if asked, anyone in role can modify
                         if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
