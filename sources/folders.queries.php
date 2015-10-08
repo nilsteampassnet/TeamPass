@@ -214,6 +214,11 @@ if (isset($_POST['newtitle'])) {
                     $_SESSION['nb_folders'] --;
                 }
             }
+			
+			// delete folder from SESSION
+			if(($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
+				unset($messages[$key]);
+			}
 
             //rebuild tree
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -272,6 +277,12 @@ if (isset($_POST['newtitle'])) {
                                 )
                             );
                         }
+			
+						// delete folder from SESSION
+						if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
+							unset($messages[$key]);
+						}
+						
                         //Actualize the variable
                         $_SESSION['nb_folders'] --;
                     }
@@ -356,7 +367,11 @@ if (isset($_POST['newtitle'])) {
                             'valeur' => $complexity
                         )
                     );
+					
+					// add new folder id in SESSION
+					array_push($_SESSION['groupes_visibles'], $newId);
 
+					// rebuild tree
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
 
@@ -402,7 +417,7 @@ if (isset($_POST['newtitle'])) {
                     }
                 }
             }
-            echo '[ { "error" : "'.$error.'" } ]';
+            echo '[ { "error" : "'.$error.'" , "newid" : "'.$newId.'" } ]';
 
             break;
 
