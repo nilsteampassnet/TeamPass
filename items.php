@@ -32,13 +32,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-//Build tree
-$tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-$tree->rebuild();
-$folders = $tree->getDescendants();
-
 if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
@@ -73,11 +66,9 @@ foreach ($rows as $reccord) {
     }
 }
 
-// Build list of visible folders
-$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
@@ -131,7 +122,6 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
 
-
 echo '
 <div id="div_items">';
 // MAIN ITEMS TREE
@@ -143,6 +133,7 @@ echo '
                     <ul class="menu_150">
                         <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
+                        <li onclick="refreshTree()"><i class="fa fa-refresh fa-fw"></i>&nbsp; '.$LANG['refresh'].'</li>
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
                         <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
@@ -158,7 +149,7 @@ echo '
             <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
         </div>
         <div id="sidebar" class="sidebar">';
-
+/*
 $tabItems = array();
 $cptTotal = 0;
 $folderCpt = 1;
@@ -181,7 +172,7 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
     $listRestrictedFoldersForItemsKeys = array();
 }
 
-echo '
+echo '<a href="#" onclick="javascript:refreshTree()">refresh</a>
             <div id="jstree" style="overflow:auto;">
                 <ul id="node_'.$folderCpt.'">'; //
 foreach ($folders as $folder) {
@@ -351,7 +342,9 @@ for ($x = 1; $x < $prevLevel; $x++) {
 echo '
                 </li>
             </ul>
-        </div>
+        </div>*/
+		echo '
+		<div id="jstree" style="overflow:auto;"></div>
         </div>
     </div>';
 // Zone top right - items list
@@ -598,9 +591,7 @@ echo '
 // Line for FOLDERS
 echo '
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px">' .
-$selectVisibleFoldersOptions .
-'</select>';
+            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px"></select>';
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
@@ -778,10 +769,7 @@ echo '
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;">' .
-$selectVisibleFoldersOptions .
-'
-            </select>
+            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;"></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -954,8 +942,7 @@ echo '
             <td>'.$LANG['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe">
                 ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
-                '<option value="0">---</option>' : '', '' .
-                $selectVisibleFoldersOptions .'
+                '<option value="0">---</option>' : '', '' .'
             </select></td>
         </tr>
         <tr>
@@ -967,19 +954,6 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
             </select>
         </tr>';
-/*
-        if (count($_SESSION['arr_roles'])>1) {
-            echo '
-            <tr>
-                <td>'.$LANG['associated_role'].'</td>
-                <td><select id="new_rep_role">';
-                foreach ($_SESSION['arr_roles'] as $role)
-                    echo '<option value="'.$role['id'].'">'.$role['title'].'</option>';
-                echo '
-                </select>
-            </tr>';
-        }
-       */
 echo '
     </table>
     <div id="add_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -998,10 +972,7 @@ echo '
         <tr>
             <td>'.$LANG['group_select'].' : </td>
             <td><select id="edit_folder_folder">
-                <option value="0">-choisir-</option>' .
-$selectVisibleFoldersOptions .
-'
-            </select></td>
+                <option value="0">-choisir-</option></select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
@@ -1025,8 +996,8 @@ echo '
     <div style="text-align:center;margin-top:20px;">
         The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
         <select id="move_folder_id">
-            <option value="0">-choisir-</option>'.$selectVisibleFoldersOptions.'
-        </select>
+            <option value="0">-choisir-</option>
+		</select>
     </div>
     <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
@@ -1035,14 +1006,13 @@ echo '
 // Formulaire SUPPRIMER REPERTORIE
 echo '
 <div id="div_supprimer_rep" style="display:none;">
+    <div id="del_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
             <td><select id="delete_rep_groupe">
-                <option value="0">-choisir-</option>' .
-$selectVisibleFoldersOptions .
-'
-            </select></td>
+                <option value="0">-choisir-</option>
+			</select></td>
         </tr>
     </table>
     <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -1070,8 +1040,7 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$selectVisibleActiveFoldersOptions .
-'</select>
+		'</select>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';

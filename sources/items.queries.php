@@ -1690,6 +1690,12 @@ if (isset($_POST['type'])) {
             } else {
                 $start = $_POST['start'];
             }
+			setcookie(
+				"jstree_select",
+				$_POST['id'],
+				time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                '/'
+			);
             // Prepare tree
             $arbo = $tree->getPath($_POST['id'], true);
             foreach ($arbo as $elem) {
@@ -2960,6 +2966,133 @@ if (isset($_POST['type'])) {
                 echo '[{"duplicate" : "'.$duplicate.'" , "error" : ""}]';
             }
             break;
+
+        /*
+        * CASE
+        * Get list of users that have access to the folder
+        */
+        case "refresh_visible_folders":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+			
+			// Build list of visible folders
+			$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
+			
+			if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
+				&& $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
+				$_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+				$_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
+			}
+			
+			if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
+				$listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
+			} else {
+				$listFoldersLimitedKeys = array();
+			}
+			// list of items accessible but not in an allowed folder
+			if (isset($_SESSION['list_restricted_folders_for_items'])
+				&& count($_SESSION['list_restricted_folders_for_items']) > 0) {
+				$listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
+			} else {
+				$listRestrictedFoldersForItemsKeys = array();
+			}
+			
+			
+			//Build tree
+			$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+			$tree->register();
+			$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+			$tree->rebuild();
+			$folders = $tree->getDescendants();
+			
+			foreach ($folders as $folder) {
+				// Be sure that user can only see folders he/she is allowed to
+				if (
+					!in_array($folder->id, $_SESSION['forbiden_pfs'])
+					|| in_array($folder->id, $_SESSION['groupes_visibles'])
+					|| in_array($folder->id, $listFoldersLimitedKeys)
+					|| in_array($folder->id, $listRestrictedFoldersForItemsKeys)
+				) {
+					$displayThisNode = false;
+					$hide_node = false;
+					$nbChildrenItems = 0;
+					// Check if any allowed folder is part of the descendants of this node
+					$nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
+					foreach ($nodeDescendants as $node) {
+						// manage tree counters
+						if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+							DB::query(
+								"SELECT * FROM ".prefix_table("items")."
+								WHERE inactif=%i AND id_tree = %i",
+								0,
+								$node
+							);
+							$nbChildrenItems += DB::count();
+						}
+						if (
+							in_array(
+								$node,
+								array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+							)
+							|| in_array($node, $listFoldersLimitedKeys)
+							|| in_array($node, $listRestrictedFoldersForItemsKeys)
+						) {
+							$displayThisNode = true;
+							//break;
+						}
+					}
+
+					if ($displayThisNode == true) {
+						$ident = "";
+						for ($x = 1; $x < $folder->nlevel; $x++) {
+							$ident .= "&nbsp;&nbsp;";
+						}
+						
+						// resize title if necessary
+						$fldTitle = str_replace("&", "&amp;", $folder->title);
+						
+						// build select for all visible folders
+						if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+							if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
+								if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
+									$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+								} else {
+									$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+								}
+							} else {
+								$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+							}
+						} else {
+							$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+						}
+						// build select for non personal visible folders
+						if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
+							$selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+						} else {
+							$selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+						}
+						// build select for active folders (where user can do something)
+						if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
+							$selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+						} else {
+							$selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+						}
+					}
+				}
+			}
+			
+			// send data
+            echo '[{'.
+				'"error" : "",'.
+				'"selectVisibleFoldersOptions" : "'.addslashes($selectVisibleFoldersOptions).'",'.
+				'"selectVisibleNonPersonalFoldersOptions" : "'.addslashes($selectVisibleNonPersonalFoldersOptions).'",'.
+				'"selectVisibleActiveFoldersOptions" : "'.addslashes($selectVisibleActiveFoldersOptions).'"'.
+			'}]';
+			
+			break;
     }
 }
 // Build the QUERY in case of GET
