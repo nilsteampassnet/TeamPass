@@ -301,7 +301,7 @@ if (isset($_POST['newtitle'])) {
 
         //CASE where ADDING a new group
         case "add_folder":
-            $error = "";
+            $error = $newId = "";
 
             //decrypt and retreive data in JSON format
         	$dataReceived = prepareExchangedData($_POST['data'], "decode");
@@ -416,8 +416,11 @@ if (isset($_POST['newtitle'])) {
                         );
                     }
                 }
+				else{
+					$error = $LANG['error_not_allowed_to'];
+				}
             }
-            echo '[ { "error" : "'.$error.'" , "newid" : "'.$newId.'" } ]';
+            echo '[ { "error" : "'.addslashes($error).'" , "newid" : "'.$newId.'" } ]';
 
             break;
 
