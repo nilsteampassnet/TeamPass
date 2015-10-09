@@ -2209,12 +2209,35 @@ if (isset($_POST['type'])) {
                 } else {
                     $returnValues = array(
                         "error" => "no_edition_possible",
-                        "error_msg" => $LANG['error_no_edition_possible_locked']
+                        "error_msg" => addslashes($LANG['error_no_edition_possible_locked'])
                     );
                     echo prepareExchangedData($returnValues, "encode");
                     break;
                 }
             }
+			
+			// check if user can perform this action
+            if (isset($_POST['context']) && !empty($_POST['context'])) {
+				if ($_POST['context'] == "create_folder" || $_POST['context'] == "edit_folder" || $_POST['context'] == "delete_folder") {
+					if (
+						$_SESSION['is_admin'] == 1
+						|| ($_SESSION['user_manager'] == 1)
+						|| (
+							isset($_SESSION['settings']['subfolder_rights_as_parent'])
+							&& $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+						)
+					) {
+						// allow
+					} else {
+						$returnValues = array(
+							"error" => "no_folder_creation_possible",
+							"error_msg" => addslashes($LANG['error_not_allowed_to'])
+						);
+						echo prepareExchangedData($returnValues, "encode");
+						break;
+					}
+				}
+			}
 
             // Get required Complexity for this Folder
             $data = DB::queryFirstRow(

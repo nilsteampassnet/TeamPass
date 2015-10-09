@@ -137,13 +137,15 @@ function recursiveTree($nodeId)
 			if ($completTree[$nodeId]->parent_id==0) $parent = "#";
 			else $parent = "li_".$completTree[$nodeId]->parent_id;
 			if (!empty($ret_json)) $ret_json .= ", ";
-			$text = str_replace("&", "&amp;", $completTree[$nodeId]->title);
+			if ($_SESSION['user_read_only'] == true) $text = "<i class='fa fa-eye'></i>&nbsp;";
+			else $text = "";
+			$text .= str_replace("&", "&amp;", $completTree[$nodeId]->title);
 			$restricted = "0";
 			$folderClass = "folder";
 			
 			if (in_array($completTree[$nodeId]->id, $_SESSION['groupes_visibles'])) {
                 if (in_array($completTree[$nodeId]->id, $_SESSION['read_only_folders'])) {
-                    $fldTitle = '<i class="fa fa-eye"></i>&nbsp;'.$fldTitle.'';
+                    $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
                     $restricted = 1;
                     $folderClass = "folder_not_droppable";
                 }

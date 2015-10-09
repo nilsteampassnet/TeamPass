@@ -105,7 +105,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once @$_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     if (isset($_GET['page']) && $_GET['page'] == "kb") {
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
     }
