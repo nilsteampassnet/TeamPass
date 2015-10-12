@@ -269,14 +269,25 @@ function rest_get () {
         if ($GLOBALS['request'][0] == "read") {
             if($GLOBALS['request'][1] == "category") {
                 // get ids
-                if (strpos($GLOBALS['request'][2],",") > 0) {
+                if (strpos($GLOBALS['request'][2],";") > 0) {
                     $condition = "id_tree IN %ls";
-                    $condition_value = explode(',', $GLOBALS['request'][2]);
+                    $condition_value = explode(';', $GLOBALS['request'][2]);
                 } else {
                     $condition = "id_tree = %s";
                     $condition_value = $GLOBALS['request'][2];
                 }
                 DB::debugMode(false);
+				
+				// get items in this module
+				$response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
+				foreach ($response as $data)
+				{
+					// prepare output
+					$id = $data['id'];
+					$json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+					$json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+					$json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+				}
                 
 
                 /* load folders */
@@ -287,55 +298,34 @@ function rest_get () {
                 $rows = array();
                 $i = 0;
                 foreach ($response as $row)
-                {
-                    /*$json['folders'][$i]['id'] = $row['id'];
-                    $json['folders'][$i]['parent_id'] = $row['parent_id'];
-                    $json['folders'][$i]['title'] = $row['title'];
-                    $json['folders'][$i]['nleft'] = $row['nleft'];
-                    $json['folders'][$i]['nright'] = $row['nright'];
-                    $json['folders'][$i]['nlevel'] = $row['nlevel'];*/
-                    $i++;
-                    
-                    $response = DB::query("SELECT id,label,login,pw FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
+                {                    
+                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
-                        // get ITEM random key
-                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-
                         // prepare output
                         $id = $data['id'];
                         $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                         $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                        $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                        $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     }
                 }
             }
             elseif($GLOBALS['request'][1] == "items") {
+                $array_items = explode(';',$GLOBALS['request'][2]);
+				
+				// check if not empty
+				if (count($array_items) == 0) {
+                    rest_error ('NO_ITEM');
+                }
+				
                 // only accepts numeric
-                $array_items = explode(',',$GLOBALS['request'][2]);
-
-                $items_list = "";
-
                 foreach($array_items as $item) {
                     if(!is_numeric($item)) {
                         rest_error('ITEM_MALFORMED');
                     }
                 }
 
-                if(count($array_items) > 1 && count($array_items) < 5) {
-                    foreach($array_items as $item) {
-                        if (empty($items_list)) {
-                            $items_list = $item;
-                        } else {
-                            $items_list .= ",".$item;
-                        }
-                    }
-                } elseif (count($array_items) == 1) {
-                    $items_list = $item;
-                } else {
-                    rest_error ('NO_ITEM');
-                }
-                $response = DB::query("select id,label,login,pw,id_tree from ".prefix_table("items")." where id IN %ls", $items_list);
+                $response = DB::query("select id,label,login,pw, pw_iv, id_tree from ".prefix_table("items")." where id IN %ls", $array_items);
                 foreach ($response as $data)
                 {
                     // get ITEM random key
@@ -345,7 +335,7 @@ function rest_get () {
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                 }
             }
 
@@ -388,7 +378,7 @@ function rest_get () {
 
                 DB::debugMode(false);
                 $response = DB::query(
-                    "select id,label,login,pw,id_tree
+                    "select id, label, login, pw, pw_iv, id_tree
                     from ".prefix_table("items")."
                     where id_tree = (%s)
                     and label LIKE %ss",
@@ -397,14 +387,11 @@ function rest_get () {
                 );
                 foreach ($response as $data)
                 {
-                    // get ITEM random key
-                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-
                     // prepare output
                     $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
                     $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json['folder_id'] = $data['id_tree'];
                     $json['status'] = utf8_encode("OK");
                 }
@@ -418,9 +405,9 @@ function rest_get () {
             if($GLOBALS['request'][1] == "item") {
 
                 // get item definition
-                $array_item = explode(';', $GLOBALS['request'][2]);
+                $array_item = explode(';', urldecode($GLOBALS['request'][2]));
                 if (count($array_item) != 9) {
-                    rest_error ('BADDEFINITION');
+                    rest_error ('ITEMBADDEFINITION');
                 }
 
                 $item_label = $array_item[0];
@@ -432,7 +419,7 @@ function rest_get () {
                 $item_url = $array_item[6];
                 $item_tags = $array_item[7];
                 $item_anyonecanmodify = $array_item[8];
-
+				
                 // added so one can sent data including the http or https !
                 // anyway we have to urlencode this data
                 $item_url = urldecode($item_url);
@@ -443,14 +430,14 @@ function rest_get () {
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
                     if (strlen($item_pwd) > 50) {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('PASSWORDTOOLONG');
                     }
 
                     // Check Folder ID
                     DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
-                        rest_error ('ITEMBADDEFINITION');
+                        rest_error ('NOSUCHFOLDER');
                     }
 
                     // check if element doesn't already exist
@@ -465,12 +452,9 @@ function rest_get () {
                         $itemExists = 0;
                     }
                     if ($itemExists == 0) {
-                        // prepare password and generate random key
-                        $randomKey = substr(md5(rand().rand()), 0, 15);
-                        $item_pwd = $randomKey.$item_pwd;
-                        $item_pwd = encrypt($item_pwd);
-                        if (empty($item_pwd)) {
-                            rest_error ('BADDEFINITION');
+						$encrypt = cryption($item_pwd, SALT, "", "encrypt");
+                        if (empty($encrypt['string'])) {
+                            rest_error ('PASSWORDEMPTY');
                         }
 
                         // ADD item
@@ -480,7 +464,8 @@ function rest_get () {
                                 array(
                                     "label" => $item_label,
                                     "description" => $item_desc,
-                                    "pw" => $item_pwd,
+                                    'pw' => $encrypt['string'],
+									'pw_iv' => $encrypt['iv'],
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
@@ -492,16 +477,6 @@ function rest_get () {
                                 )
                             );
                             $newID = DB::InsertId();
-
-                            // Store generated key
-                            DB::insert(
-                                prefix_table("keys"),
-                                array(
-                                    "sql_table" => "items",
-                                    "id" => $newID,
-                                    "rand_key" => $randomKey
-                                )
-                            );
 
                             // log
                             DB::insert(
@@ -550,10 +525,10 @@ function rest_get () {
                             echo '<br />' . $ex->getMessage();
                         }
                     } else {
-                        rest_error ('ITEMBADDEFINITION');
+                        rest_error ('ITEMEXISTS');
                     }
                 } else {
-                    rest_error ('ITEMBADDEFINITION');
+                    rest_error ('ITEMMISSINGDATA');
                 }
             }
             /*
@@ -858,6 +833,21 @@ function rest_error ($type,$detail = 'N/A') {
         case 'AUTH_NO_DATA':
             $message = Array('err' => 'Data not allowed for the user');
             break;
+        case 'PASSWORDTOOLONG':
+            $message = Array('err' => 'Password is too long');
+            break;
+        case 'NOSUCHFOLDER':
+            $message = Array('err' => 'Folder ID does not exist');
+            break;
+        case 'PASSWORDEMPTY':
+            $message = Array('err' => 'Password is empty');
+            break;
+        case 'ITEMEXISTS':
+            $message = Array('err' => 'Label already exists');
+            break;
+        case 'ITEMMISSINGDATA':
+            $message = Array('err' => 'Label or Password or Folder ID is missing');
+            break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
             header('HTTP/1.1 500 Internal Server Error');
@@ -894,24 +884,3 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
     return substr($dk, $st, $kl);
 }
 
-function teampass_decrypt_pw($encrypted, $salt, $rand_key, $itcount = 2072)
-{
-    require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
-    $encrypted = base64_decode($encrypted);
-    $pass_salt = substr($encrypted, -64);
-    $encrypted = substr($encrypted, 0, -64);
-    //$key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
-    $key = substr(pbkdf2('sha256', $salt, $pass_salt, $itcount, 16+32, true), 32, 16);
-    $iv        = base64_decode(substr($encrypted, 0, 43) . '==');
-    $encrypted = substr($encrypted, 43);
-    $mac       = substr($encrypted, -64);
-    $encrypted = substr($encrypted, 0, -64);
-    if ($mac !== hash_hmac('sha256', $encrypted, $salt)) return null;
-    //return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
-    $result = substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
-    if ($result) {
-        return $result;
-    } else {
-        return "";
-    }
-}

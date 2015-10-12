@@ -1435,11 +1435,11 @@ function ActionOnQuickIcon(id, action)
 
     //Send query
     $.post("sources/items.queries.php",
-        {
-            type    : 'action_on_quick_icon',
-            id      : id,
-            action  : action
-        }
+	{
+		type    : 'action_on_quick_icon',
+		id      : id,
+		action  : action
+	}
    );
 }
 
