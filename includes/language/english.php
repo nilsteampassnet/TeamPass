@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'loading' => 'Loading',
 	'refresh' => 'Refresh',
     'settings_ldap_domain_posix' => 'LDAP account suffix for your domain',
     'user_not_exists' => 'This user do not exist!',
