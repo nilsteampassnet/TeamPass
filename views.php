@@ -37,7 +37,7 @@ echo '
     <ul>
         <li><a href="#tabs-1">'.$LANG['logs_passwords'].'</a></li>
         <li><a href="#tabs-2">'.$LANG['deletion'].'</a></li>
-        <li><a href="views_logs.php">'.$LANG['logs'].'</a></li>
+        <li><a href="views_logs.php"><i id="loader_1" style="display:none;" class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['logs'].'</a></li>
         <li><a href="#tabs-4">'.$LANG['renewal_menu'].'</a></li>
         <li><a href="views_database.php">'.$LANG['database_menu'].'</a></li>
     </ul>';

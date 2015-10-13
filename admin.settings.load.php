@@ -302,8 +302,15 @@ $(function() {
 			complete: function() {
 				$("#div_loading").hide();
 			}
+		},
+		beforeLoad: function( event, ui ) {
+			ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+		},
+		load: function( event, ui ) {
+			$("#loader_tab").remove();
 		}
-	});
+	});	
+	
 	$('#tabs').click(function(e){
 		var current_index = $("#tabs").tabs("option","active");
 		if (current_index == 9 || current_index == 10) {

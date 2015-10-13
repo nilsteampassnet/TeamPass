@@ -219,7 +219,14 @@ function generate_renewal_pdf()
 }
 
 $(function() {
-    $("#tabs").tabs();
+    $("#tabs").tabs({
+		beforeLoad: function( event, ui ) {
+			ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+		},
+		load: function( event, ui ) {
+			$("#loader_tab").remove();
+		}
+	});
     $("#log_jours").datepicker({
         regional: 'fr',
         dateFormat : 'dd/mm/yy'

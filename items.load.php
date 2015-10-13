@@ -2118,6 +2118,9 @@ $(function() {
 				"url" : "./sources/tree.php",
 				"dataType" : "json",
                 "async" : true
+			},
+			"strings" : {
+				"Loading ..." : "<?php echo $LANG['loading'];?>..."
 			}
 		},
 		"plugins" : [
