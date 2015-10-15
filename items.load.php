@@ -163,7 +163,7 @@ function ListerItems(groupe_id, restricted, start)
         $("#items_list_loader").show();
         if (start == 0) {
             //clean form
-            $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info').html("");
+            $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
             $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
         }
         $("#items_list").css("display", "");
@@ -195,7 +195,7 @@ function ListerItems(groupe_id, restricted, start)
                 // display path of folders
                 var path_maxlength = 420;
                 if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
-				$("#items_path_var").html(data.arborescence);
+				$("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;'+data.arborescence);
                 var path_levels = data.arborescence.split(" » ").length-1;    
                 if ($("#items_path_var").width() > path_maxlength) {
                     $("#path_fontsize").val($("#items_path_var").css('font-size'));
@@ -1104,6 +1104,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
+					
+					// reset password shown info
+					$("#pw_shown").val("0");
+					$("#item_viewed_x_times").html("<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
 
                     // Show timestamp
                     $("#timestamp_item_displayed").val(data.timestamp);
@@ -1165,7 +1169,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_restricted_to").html(data.id_restricted_to+data.id_restricted_to_roles);
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
-                        $("#id_tags").html(data.tags).html();
+                        $("#id_tags").html(data.tags);
                         $("#hid_tags").val($("#id_tags").html());
                         $("#hid_anyone_can_modify").val(data.anyone_can_modify);
                         $("#id_categorie").val(data.folder);
@@ -1240,7 +1244,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
-                            $('#item_extra_info').html("<id class='fa fa-bell-o mi-red'></i>&nbsp;<i><?php echo addslashes($LANG['automatic_deletion_activated']);?></i>");
+                            $('#item_extra_info').html("<i class='fa fa-bell-o mi-red'></i>&nbsp;<i><?php echo addslashes($LANG['automatic_deletion_activated']);?></i>");
                         } else {
                             $('#item_extra_info').html("");
                         }
@@ -1270,12 +1274,14 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 var clipboard = event.clipboardData;
                                 clipboard.setData("text/plain", unsanitizeString(data.pw));
                                 $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+								itemLog("item_password_copied");
                             });
                             var client = new ZeroClipboard($("#button_quick_pw_copy"));
                             client.on('copy', function(event) {
                                 var clipboard = event.clipboardData;
                                 clipboard.setData("text/plain", unsanitizeString(data.pw));
                                 $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+								itemLog("item_password_copied");
                             });
                             $("#button_quick_pw_copy").show();
                         }
@@ -1797,7 +1803,7 @@ function open_copy_item_to_folder_div()
         $('#copy_in_folder').val($("#hid_cat").val());
         $('#div_copy_item_to_folder').dialog('open');
     } else {
-		("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['none_selected_text']);?>");
+		displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['none_selected_text']);?>");
 	}
 }
 
@@ -2004,8 +2010,10 @@ function refreshVisibleFolders()
 			key        : "<?php echo $_SESSION['key'];?>"
 		},
 		function(data) {
+			data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            console.log(data.selectVisibleFoldersOptions);
 			//check if format error
-			if (data[0].error == "") {
+			if (data.error == "") {
 				// clear list (except the entries with value = 0)
 				$('#new_rep_groupe option[value!="0"]').remove();
 				$('#edit_folder_folder option[value!="0"]').remove();
@@ -2014,13 +2022,13 @@ function refreshVisibleFolders()
 				$('#copy_in_folder option[value!="0"]').remove();
 				
 				// append new list
-				$("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").append(data[0].selectVisibleFoldersOptions);
-				$("#copy_in_folder").append(data[0].selectVisibleActiveFoldersOptions);
+				$("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").append(data.selectVisibleFoldersOptions);
+				$("#copy_in_folder").append(data.selectVisibleActiveFoldersOptions);
 			}
-		},
-		"json"
+		}
    );
 }
+
 
 //###########
 //## EXECUTE WHEN PAGE IS LOADED
@@ -3084,10 +3092,30 @@ var showPwdContinuous = function(){
     if(mouseStillDown){
         $('#id_pw').text($('#hid_pw').val());
         setTimeout("showPwdContinuous()", 50);
+		// log password is shown
+		if ($("#pw_shown").val() == "0") {
+			itemLog("item_password_shown");
+			$("#pw_shown").val("1");
+		}
     } else {
         $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         $('.tip').tooltipster();
     }
+}
+
+/*
+* permits to save 
+*/
+function itemLog(log_case)
+{
+	$.post(
+		"sources/items.logs.php",
+		{
+			type        : log_case,
+			id_item     : $('#id_item').val(),
+			key         : "<?php echo $_SESSION['key'];?>"
+		}
+	);
 }
 
 function htmlspecialchars_decode (string, quote_style)
@@ -3189,7 +3217,7 @@ function proceed_list_update()
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-                console.log(data.selOptionsUsers);
+                //console.log(data.selOptionsUsers);
                 // *** restricted_to_list ***
                 $("#restricted_to_list").empty();
                 //Add list of roles if option is set
@@ -3371,11 +3399,13 @@ function globalItemsSearch()
     if ($("#search_item").val() != "") {
         // wait
         $("#items_list_loader").show();
+		$("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching'];?>');
 
         // clean
         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
         $("#full_items_list").html("");
+		$("#selected_items").val("");
 
         // send query
         $.get(
@@ -3388,6 +3418,7 @@ function globalItemsSearch()
             function(data) {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
+				$("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
                 $("#full_items_list").html(data.items_html);
                 $("#items_list_loader").hide();
             }
@@ -3395,73 +3426,109 @@ function globalItemsSearch()
     }
 }
 
-    function loadOfflineDialog()
-    {
-        $("#dialog_offline_mode").dialog({
-            open: function(event, ui) {
-                $("#div_offline_mode").load(
-                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.offline.php?key=<?php echo $_SESSION['key'];?>", function(){}
-                );
-            }
-        }).dialog("open");
-    }
+/*
+*
+*/
+function searchItemsWithTags(tag)
+{
+	console.log(">"+tag);
+	if (tag == "") return false
+	
+	// wait
+	$("#items_list_loader").show();
+	$("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching_tag'];?>&nbsp;<b>'+tag+'</b> ...');
 
-    function loadExportDialog()
-    {
-        $("#dialog_export_file").dialog({
-            open: function(event, ui) {
-                $("#div_export_file").load(
-                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.export.php?key=<?php echo $_SESSION['key'];?>", function(){}
-                );
-            }
-        }).dialog("open");
-    }
+	// clean
+	$("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+	$("#button_quick_login_copy, #button_quick_pw_copy").hide();
+	$("#full_items_list").html("");
+	$("#selected_items").val("");
 
-    function loadImportDialog()
-    {
-        $("#dialog_import_file").dialog({
-            open: function(event, ui) {
-                $("#div_import_file").load(
-                    "<?php echo $_SESSION['settings']['cpassman_url'];?>/items.import.php?key=<?php echo $_SESSION['key'];?>&folder_id="+$("#hid_cat").val(), function(){}
-                );
-            }
-        }).dialog("open");
-    }
+	// send query
+	$.get(
+		"sources/find.queries.php",
+		{
+			type        : "search_for_items_with_tags",
+			tagSearch   : tag,
+			key         : "<?php echo $_SESSION['key'];?>"
+		},
+		function(data) {
+			data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+			displayMessage(data.message);
+			$("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>&nbsp;<b>'+tag+'</b>');
+			$("#full_items_list").html(data.items_html);
+			$("#items_list_loader").hide();
+		}
+	);
+}
 
-    function reEncryptPersonalPwds(remainingIds, currentId, nb)
-    {
-        //console.log(remainingIds+";"+currentId+";"+nb);
-        $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
+function loadOfflineDialog()
+{
+	$("#dialog_offline_mode").dialog({
+		open: function(event, ui) {
+			$("#div_offline_mode").load(
+				"<?php echo $_SESSION['settings']['cpassman_url'];?>/items.offline.php?key=<?php echo $_SESSION['key'];?>", function(){}
+			);
+		}
+	}).dialog("open");
+}
 
-        $.ajax({
-            url: "sources/utils.queries.php",
-            type : 'POST',
-            dataType : "json",
-            data : {
-                type        : "reencrypt_personal_pwd",
-                currentId   : currentId,
-                user_id     : "<?php echo $_SESSION['user_id'];?>",
-                key         : "<?php echo $_SESSION['key'];?>"
-            },
-            complete : function(data, statut){
-                var aIds = remainingIds.split(",");
-                var currentID = aIds[0];
-                aIds.shift();
-                var nb2 = aIds.length;
-                aIds = aIds.toString();
-                if (nb == 0) 
-                    $("#reencryption_progress").html("100%");
-                else 
-                    $("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-                
-                if (nb2 != "0" || (nb2 == "" && currentID != "")) {
-                    reEncryptPersonalPwds(aIds, currentID, nb);
-                } else {
-                    $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
-                    // disable button
-                    $("#dialog_upgrade_personal_passwords ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['admin_action_db_backup_start_tip'];?>')").prop("disabled", false);
-                }
-            }
-        })
-    }
+function loadExportDialog()
+{
+	$("#dialog_export_file").dialog({
+		open: function(event, ui) {
+			$("#div_export_file").load(
+				"<?php echo $_SESSION['settings']['cpassman_url'];?>/items.export.php?key=<?php echo $_SESSION['key'];?>", function(){}
+			);
+		}
+	}).dialog("open");
+}
+
+function loadImportDialog()
+{
+	$("#dialog_import_file").dialog({
+		open: function(event, ui) {
+			$("#div_import_file").load(
+				"<?php echo $_SESSION['settings']['cpassman_url'];?>/items.import.php?key=<?php echo $_SESSION['key'];?>&folder_id="+$("#hid_cat").val(), function(){}
+			);
+		}
+	}).dialog("open");
+}
+
+function reEncryptPersonalPwds(remainingIds, currentId, nb)
+{
+	//console.log(remainingIds+";"+currentId+";"+nb);
+	$("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="reencryption_progress">0%</span>').attr("class","").show();
+
+	$.ajax({
+		url: "sources/utils.queries.php",
+		type : 'POST',
+		dataType : "json",
+		data : {
+			type        : "reencrypt_personal_pwd",
+			currentId   : currentId,
+			user_id     : "<?php echo $_SESSION['user_id'];?>",
+			key         : "<?php echo $_SESSION['key'];?>"
+		},
+		complete : function(data, statut){
+			var aIds = remainingIds.split(",");
+			var currentID = aIds[0];
+			aIds.shift();
+			var nb2 = aIds.length;
+			aIds = aIds.toString();
+			if (nb == 0) 
+				$("#reencryption_progress").html("100%");
+			else 
+				$("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
+			
+			if (nb2 != "0" || (nb2 == "" && currentID != "")) {
+				reEncryptPersonalPwds(aIds, currentID, nb);
+			} else {
+				$("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
+				// disable button
+				$("#dialog_upgrade_personal_passwords ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['admin_action_db_backup_start_tip'];?>')").prop("disabled", false);
+			}
+		}
+	})
+}
 </script>

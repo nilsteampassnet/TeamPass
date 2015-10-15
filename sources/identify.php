@@ -14,7 +14,7 @@
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
-$debugDuo = 1; //Can be used in order to debug LDAP authentication
+$debugDuo = 0; //Can be used in order to debug LDAP authentication
 
 require_once 'sessions.php';
 session_start();
@@ -45,6 +45,7 @@ if ($_POST['type'] === "identify_duo_user") {
         );
     }
 
+	// return result
 	echo '[{"sig_request" : "'.$sig_request.'"}]';
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
@@ -65,14 +66,17 @@ if ($_POST['type'] === "identify_duo_user") {
         );
     }
 
+	// return the response (which should be the user name)
 	if ($resp === $_POST['login']) {
 		echo '[{"resp" : "'.$resp.'"}]';
 	} else {
 		echo '[{"resp" : "'.$resp.'"}]';
 	}
 } elseif ($_POST['type'] == "identify_user") {
+	// identify the user through Teampass process
 	identifyUser($_POST['data']);
 } elseif ($_POST['type'] == "store_data_in_cookie") {
+	// not used any more (only development purpose)
 	if ($_POST['key'] != $_SESSION['key']) {
 		echo '[{"error" : "something_wrong"}]';
 		break;
@@ -86,12 +90,12 @@ if ($_POST['type'] === "identify_duo_user") {
 	);
 }
 
-
-
+/*
+* Complete authentication of user through Teampass
+*/
 function identifyUser($sentData)
 {
-    global $debugLdap, $debugDuo;
-    global $k;
+    global $debugLdap, $debugDuo, $k;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     header("Content-type: text/html; charset=utf-8");
     error_reporting(E_ERROR);
@@ -102,10 +106,12 @@ function identifyUser($sentData)
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
     }
 	
+	/*
 	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
 		$sentData = $_COOKIE['TeamPassC'];
 		setcookie('TeamPassC', "", time()-3600);
 	}
+	*/
 	
 	if ($debugDuo == 1) {
         fputs(
@@ -191,7 +197,7 @@ function identifyUser($sentData)
     }
 
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-            && $username != "admin"
+		&& $username != "admin"
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') == true) {

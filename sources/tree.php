@@ -1,29 +1,41 @@
 <?php
+/**
+ * @file          tree.php
+ * @author        Nils Laumaillé
+ * @version       2.1.24
+ * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link          http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+ 
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
+// includes
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 
+// header
+header("Content-type: text/html; charset=utf-8");
+header("Cache-Control: no-cache, must-revalidate");
+header("Pragma: no-cache");
 
-/**
- * Define Timezone
- */
+// Define Timezone
 if (isset($_SESSION['settings']['timezone'])) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
 } else {
     date_default_timezone_set('UTC');
 }
-
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-header("Content-type: text/html; charset=utf-8");
-header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");
 
 // Connect to mysql server
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -44,13 +56,14 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $tree->rebuild();
 $folders = $tree->getDescendants();
 
+// define temporary sessions
 if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
 
-$ret_json = '';
+// prepare some variables
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
 } else {
@@ -68,9 +81,11 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
 } else {
     $listRestrictedFoldersForItemsKeys = array();
 }
+
+$ret_json = '';
 $parent = "#";
 
-
+// build the tree to be displayed
 $completTree = $tree->getTreeWithChildren();
 foreach ($completTree[0]->children as $child) {
 	$data = recursiveTree($child);

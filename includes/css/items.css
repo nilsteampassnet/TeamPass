@@ -31,12 +31,11 @@ button{
 }
 
 .liste_items a.file_search, .liste_items a.fileselected_search {
-    padding: 2px 1px 1px 16px;
+    padding: 2px 1px 1px 2px;
     display: inline;
     font-family:verdana;
     font-size:11px;
     color:#242D35;
-    background: url(../images/key.png) 0 0 no-repeat;
 }
 
 .liste_items a.fileselected {

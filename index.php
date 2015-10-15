@@ -244,7 +244,7 @@ if (isset($_SESSION['login'])) {
         echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
-                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-tags fa-fw"></i>&nbsp;&nbsp;
+                        <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-map fa-fw"></i>&nbsp;&nbsp;
                             <ul class="menu_200" id="last_seen_items_list" style="text-align:left;">
                                 <li>'.$LANG['please_wait'].'</li>
                             </ul>

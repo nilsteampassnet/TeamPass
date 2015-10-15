@@ -554,7 +554,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '] }';
 } elseif (isset($_GET['action']) && $_GET['action'] == "items") {
     //Columns name
-    $aColumns = array('l.date', 'u.login', 'i.label', 'i.perso');
+    $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso');
 
     //init SQL variables
     $sOrder = $sLimit = "";
@@ -580,7 +580,9 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOrder = substr_replace($sOrder, "", -2);
         if ($sOrder == "ORDER BY") {
             $sOrder = "";
-        }
+        } else {
+			$sOrder .= ", l.date ASC";
+		}
     }
 
     /*
@@ -589,7 +591,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = "";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " WHERE (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i=1; $i<count($aColumns)-1; $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
@@ -604,11 +606,12 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $iTotal = DB::count();
 
     $rows = DB::query(
-        "SELECT l.date as date, u.login as login, i.label as label,
-            i.perso as perso
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+        "SELECT l.date AS date, u.login AS login, i.label AS label,
+            i.perso AS perso, l.action AS action, t.title AS folder
+            FROM ".$pre."log_items AS l
+            INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+            INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+            INNER JOIN ".$pre."nested_tree AS t ON (i.id_tree=t.id)
         $sWhere
         $sOrder
         $sLimit",
@@ -619,6 +622,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
+	//DB::debugMode(true);
     $iFilteredTotal = DB::count();
 
     /*
@@ -637,13 +641,16 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         //col1
         $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
+        //col3
+        $sOutput_item .= '"'.(stripslashes("<b>".$record['label']."</b>&nbsp;<span style='font-size:10px;font-style:italic;'><i class='fa fa-folder-o'></i>&nbsp;".$record['folder']."</span>")).'", ';
+
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
 
-        //col3
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
-
         //col4
+        $sOutput_item .= '"'.htmlspecialchars(stripslashes($LANG[$record['action']]), ENT_QUOTES).'", ';
+
+        //col5
         if ($record['perso'] == 1) {
             $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['yes']), ENT_QUOTES). '"';
         } else {
