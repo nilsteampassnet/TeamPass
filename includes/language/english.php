@@ -14,6 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+    'list_items_with_tag' => 'List items with this tag',
+    'searching_tag' => 'Searching for tag',
+    'search_tag_results' => 'Search results for tag',
+    'searching' => 'Searching ...',
+    'search_results' => 'Search results',
+    'at_password_copied' => 'Password copied',
+    'at_password_shown' => 'Password shown',
 	'loading' => 'Loading',
 	'refresh' => 'Refresh',
     'settings_ldap_domain_posix' => 'LDAP account suffix for your domain',

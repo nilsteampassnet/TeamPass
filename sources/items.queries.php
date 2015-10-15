@@ -339,7 +339,7 @@ if (isset($_POST['type'])) {
                 // Prepare make Favorite small icon
                 $html .= '&nbsp;<span id="quick_icon_fav_'.$newID.'" title="Manage Favorite" class="cursor">';
                 if (in_array($newID, $_SESSION['favourites'])) {
-                    $html .= '<i class="fa fa-sm fa-star mi-black" onclick="ActionOnQuickIcon('.$newID.',0)" class="tip"></i>';
+                    $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$newID.',0)" class="tip"></i>';
                 } else {
                     $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$newID.',1)" class="tip"></i>';
                 }
@@ -1076,12 +1076,15 @@ if (isset($_POST['type'])) {
             $arrData['author_email'] = $dataTmp['email'];
             $arrData['id_user'] = $dataItem['id_user'];
             */
+			
             // Get all tags for this item
             $tags = "";
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
             foreach ($rows as $record) {
-                $tags .= $record['tag']." ";
+				if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;".$record['tag'];
+                else $tags .= "&nbsp;&nbsp;<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;".$record['tag'];
             }
+			
             // TODO -> improve this check
             // check that actual user can access this item
             $restrictionActive = true;
@@ -1207,6 +1210,7 @@ if (isset($_POST['type'])) {
                 $arrData['pw'] = $pw;
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = $dataItem['url'];
+                $arrData['folder'] = $dataItem['id_tree'];
                 if (!empty($dataItem['url'])) {
                     $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'>&nbsp;<i class='fa fa-link tip' title='".$LANG['open_url_link']."'></i></a>";
                 }
@@ -1233,6 +1237,7 @@ if (isset($_POST['type'])) {
                     "id = %i",
                     $_POST['id']
                 );
+				$arrData['viewed_no'] = $dataItem['viewed_no']+1;				
 
                 // get fields
                 $fieldsTmp = $arrCatList = "";
@@ -1488,12 +1493,12 @@ if (isset($_POST['type'])) {
         	// Add the fact that item has been viewed in logs
         	if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
         		DB::insert(
-        		prefix_table("log_items"),
-        		array(
-        		    'id_item' => $_POST['id'],
-        		    'date' => time(),
-        		    'id_user' => $_SESSION['user_id'],
-        		    'action' => 'at_shown'
+					prefix_table("log_items"),
+					array(
+						'id_item' => $_POST['id'],
+						'date' => time(),
+						'id_user' => $_SESSION['user_id'],
+						'action' => 'at_shown'
         		   )
         		);
         	}
@@ -3107,13 +3112,14 @@ if (isset($_POST['type'])) {
 				}
 			}
 			
+			$data = array(
+                'error' => "",
+                'selectVisibleFoldersOptions' => addslashes($selectVisibleFoldersOptions),
+                'selectVisibleNonPersonalFoldersOptions' => addslashes($selectVisibleNonPersonalFoldersOptions),
+                'selectVisibleActiveFoldersOptions' => addslashes($selectVisibleActiveFoldersOptions)
+            );
 			// send data
-            echo '[{'.
-				'"error" : "",'.
-				'"selectVisibleFoldersOptions" : "'.addslashes($selectVisibleFoldersOptions).'",'.
-				'"selectVisibleNonPersonalFoldersOptions" : "'.addslashes($selectVisibleNonPersonalFoldersOptions).'",'.
-				'"selectVisibleActiveFoldersOptions" : "'.addslashes($selectVisibleActiveFoldersOptions).'"'.
-			'}]';
+            echo prepareExchangedData($data, "encode");
 			
 			break;
     }

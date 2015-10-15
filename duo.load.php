@@ -21,12 +21,14 @@ if (
     die('Hacking attempt...');
 }
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+
+
+/* 
+** This page contains the javascript call for DUOSecurity api
+** It loads the expected iFrame where user gives his DUO credentials
+** It sends the request to the DUO server
+*/
 ?>
-
-// this page contains the javascript call for DUOSecurity api
-// It loads the expected iFrame where user gives his DUO credentials
-// It sends the request to the DUO server
-
 <script type="text/javascript">
 $(function() {
 	$.getScript("./includes/libraries/Authentication/DuoSecurity/Duo-Web-v2.min.js");

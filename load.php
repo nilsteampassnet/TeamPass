@@ -472,6 +472,7 @@ $htmlHeaders .= '
     // DUO box - identification
     function loadDuoDialog()
     {
+		/*
 		// save data connection
 		$.post(
             "sources/identify.php",
@@ -487,6 +488,7 @@ $htmlHeaders .= '
 			},
 			"json"
         );
+		*/
 		
 		// show dialog
         $("#dialog_duo").dialog({
@@ -567,7 +569,7 @@ $htmlHeaders .= '
                             "sources/identify.php",
                             {
                                 type :     "identify_user",
-                                data :     $("#duo_data").val()
+                                data :     prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION["key"].'")
                             },
                             function(data) {
                                 $("#connection_error").hide();

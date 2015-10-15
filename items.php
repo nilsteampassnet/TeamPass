@@ -172,7 +172,7 @@ echo '
 
                 <div style="margin-top: 3px;">
                     <div id="txt1"  style="float:left;">
-                        <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                        <span id="items_path_var"></span>
                     </div>
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
@@ -226,6 +226,7 @@ echo '
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
+						<div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -244,6 +245,7 @@ echo '
                         &nbsp;
                         <div id="id_pw" style="float:left; cursor:pointer; width:300px;" onClick=""></div>
                         <input type="hidden" id="hid_pw" value="" />
+                        <input type="hidden" id="pw_shown" value="0" />
                     </td>
                 </tr>';
 // Line for LOGIN
