@@ -177,6 +177,8 @@ function ListerItems(groupe_id, restricted, start)
         
         // clear existing clips
         //ZeroClipboard.destroy();
+		
+		$("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?>');
 
         //ajax query
         request = $.post("sources/items.queries.php",
@@ -217,8 +219,10 @@ function ListerItems(groupe_id, restricted, start)
                         });
                     }
                 }
-                
-                
+				
+				if (data.array_items == "") {
+					$("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
+				}
 
                 // store the categories to be displayed
                 $("#display_categories").val(data.displayCategories);

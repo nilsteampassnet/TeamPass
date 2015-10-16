@@ -147,10 +147,10 @@ if (
     session_destroy();
 
     // REDIRECTION PAGE ERREUR
-    echo '
+		echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php?session_over=true"}, 10);
+    setTimeout(function(){document.location.href="index.php?page=items&session_over=true"}, 10);
     -->
     </script>';
     exit;
