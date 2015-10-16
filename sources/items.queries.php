@@ -1716,7 +1716,7 @@ if (isset($_POST['type'])) {
                 if (empty($arboHtml)) {
                     $arboHtml = $arboHtml_tmp;
                 } else {
-                    $arboHtml .= ' » '.$arboHtml_tmp;
+                    $arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
                 }
             }
             // adapt the length of arbo versus the width #511
