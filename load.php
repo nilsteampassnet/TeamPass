@@ -569,7 +569,7 @@ $htmlHeaders .= '
                             "sources/identify.php",
                             {
                                 type :     "identify_user",
-                                data :     prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION["key"].'")
+                                data :     prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION['key'].'")
                             },
                             function(data) {
                                 $("#connection_error").hide();

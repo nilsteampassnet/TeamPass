@@ -108,7 +108,7 @@ function identifyUser($sentData)
 	
 	/*
 	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
-		$sentData = $_COOKIE['TeamPassC'];
+		$sentData = prepareExchangedData($_COOKIE['TeamPassC'], "encode");
 		setcookie('TeamPassC', "", time()-3600);
 	}
 	*/

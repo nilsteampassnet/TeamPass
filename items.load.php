@@ -203,7 +203,11 @@ function ListerItems(groupe_id, restricted, start)
                     $("#path_fontsize").val($("#items_path_var").css('font-size'));
                     // start reducing size of font
                     $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
-                    if ($("#items_path_var").width() > path_maxlength) $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
+                    if ($("#items_path_var").width() > path_maxlength && path_levels < 2) {
+                        while ($("#items_path_var").width() > path_maxlength) {
+                            $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
+                        }
+                    }
                     if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
                         var nb = 1;
                         $(".path_element").each(function () {
