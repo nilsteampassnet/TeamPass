@@ -14,7 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'opening_folder' => 'Opening folder ...',
+    'opening_folder' => 'Reading folder ...',
     'no_item_to_display' => 'No items to display',
     'list_items_with_tag' => 'List items with this tag',
     'searching_tag' => 'Searching for tag',

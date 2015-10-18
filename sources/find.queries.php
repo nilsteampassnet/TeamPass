@@ -401,7 +401,7 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li name="" ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
+        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
 
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
