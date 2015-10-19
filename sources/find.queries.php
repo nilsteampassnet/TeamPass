@@ -53,7 +53,7 @@ $row = DB::query(
 );
 
 //get list of personal folders
-$arrayPf = array();
+$arrayPf = $crit = array();
 $listPf = "";
 if (!empty($row['id'])) {
 	$rows = DB::query(
@@ -144,6 +144,20 @@ if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
 	$crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
+        'pf' => $arrayPf
+    );
+}
+
+if (count($crit) == 0) {
+	$crit = array(
+        'idtree' => $_SESSION['groupes_visibles'],
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
     );
 }
