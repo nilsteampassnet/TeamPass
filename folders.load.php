@@ -20,11 +20,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 
 $(function() {
-    //Prepare creation dialogbox
-    $("#open_add_group_div").click(function() {
-        $("#div_add_group").dialog("open");
-    });
-
 	$("#div_add_group").dialog({
         bgiframe: true,
         modal: true,
@@ -259,6 +254,6 @@ function delete_multiple_folders()
             },
             "json"
        );
-   }
+    }
 }
 </script>
