@@ -74,7 +74,7 @@ foreach ($tst as $t) {
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
     $LANG['admin_groups'].'&nbsp;&nbsp;
-    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'add_new_role\')" class="button">
+    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'div_add_group\')" class="button">
         <img src="includes/images/folder--plus.png" alt="" />
     </button>
     <button title="'.$LANG['item_menu_del_rep'].'" onclick="delete_multiple_folders()" class="button">
