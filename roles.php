@@ -128,6 +128,9 @@ echo '
         <input type="radio" name="right_types_radio" id="right_read" /><label for="right_read">'.$LANG['read'].'</label>&nbsp;
         <input type="radio" name="right_types_radio" id="right_noaccess" /><label for="right_noaccess">'.$LANG['no_access'].'</label>
     </div>
+	<div style="margin-top:10px; text-align:center;display:none;" id="div_delete_option">
+		<input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'
+	</div>
 </div>';
 
 //call to roles.load.php

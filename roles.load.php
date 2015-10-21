@@ -18,7 +18,17 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 <script type="text/javascript">
 $(function() {
-$("#add_new_role").dialog({
+	// manage delete
+	$("input[name=right_types_radio]").click(function(event) {
+		if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+			$("#div_delete_option").show();
+		} else {
+			$("#div_delete_option").hide();
+		}
+	});
+	
+	
+	$("#add_new_role").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
@@ -148,16 +158,26 @@ $("#add_new_role").dialog({
         modal: false,
         autoOpen: false,
         width: 300,
-        height: 190,
+        height: 230,
         title: "<?php echo $LANG["change_right_access"];?>",
         buttons: {
             "<?php echo $LANG["save_button"];?>": function() {
             	$("#edit_role_error").hide().html("");
+				
+				// get write option
+				var accessoption = "";
+				if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+					if ($("#right_nodelete").prop("checked") == true) {
+						accessoption = "nodelete";
+					}
+				}
+				
                 $.post(
                     "sources/roles.queries.php",
                     {
                         type    : "change_role_via_tm",
                         access  : $("input[name=right_types_radio]:checked").attr("id").substring(6),
+						accessoption : accessoption,
                         folder  : $("#change_folder").val(),
                         role    : $('#change_role').val(),
                         line    : $("#change_line").val()
@@ -301,10 +321,17 @@ function openRightsDialog(role, folder, line, right)
 {
     if (right == "W") {
         $("#right_write").prop("checked", true);
+        $("#right_nodelete").prop("checked", false);
+    } else if (right == "ND") {
+        $("#right_write").prop("checked", true);
+        $("#right_nodelete").prop("checked", true);
+		$("#div_delete_option").show();
     } else if (right == "R") {
         $("#right_read").prop("checked", true);
+		$("#div_delete_option").hide();
     } else {
         $("#right_noaccess").prop("checked", true);
+		$("#div_delete_option").hide();
     }
     $("#change_role").val(role);
     $("#change_folder").val(folder);

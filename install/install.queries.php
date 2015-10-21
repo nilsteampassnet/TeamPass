@@ -529,7 +529,7 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
-                            `type` varchar(1) NOT NULL DEFAULT 'R',
+                            `type` varchar(5) NOT NULL DEFAULT 'R',
                             KEY `role_id_idx` (`role_id`)
                             ) CHARSET=utf8;"
                         );
@@ -609,7 +609,8 @@ if (isset($_POST['type'])) {
                                 ('chinese', 'Chinese' , 'cn', 'cn.png'),
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),
-                                ('catalan', 'Catalan' , 'ct', 'ct.png');"
+                                ('catalan', 'Catalan' , 'ct', 'ct.png'),
+                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
                             );
                         }
                     } else if ($task == "emails") {
