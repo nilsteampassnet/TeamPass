@@ -230,6 +230,9 @@ function ListerItems(groupe_id, restricted, start)
 
                 // store the categories to be displayed
                 $("#display_categories").val(data.displayCategories);
+				
+				// store type of access on folder
+				$("#access_level").val(data.access_level);
 
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
@@ -663,7 +666,11 @@ function AjouterItem()
                         //Increment counter
                         $("#itcount_"+$("#hid_cat").val()).text(Math.floor($("#itcount_"+$("#hid_cat").val()).text())+1);
 
+						// prepare the display of the new item
                         AfficherDetailsItem(data.new_id);
+						
+						// refresh list of items
+						ListerItems($('#hid_cat').val(), "", 0)
 
                         //empty form
                         $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
@@ -1538,7 +1545,7 @@ function open_del_group_div()
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "delete_folder") == 0) return false;
-
+	
     $('#delete_rep_groupe').val($('#hid_cat').val());
     $('#div_supprimer_rep').dialog('open');
     $("#div_loading").hide();
@@ -1776,12 +1783,13 @@ function open_edit_item_div(restricted_to_roles)
 function open_del_item_div()
 {
 	// is user read only
-	if ($("#user_is_read_only").val() == "1") {
+	if ($("#user_is_read_only").val() == "1" || $("#access_level").val() == "ND") {
 		displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
 		return false;
 	}
 	
     if ($("#selected_items").val() != "") {
+		$("#div_loading").show();
         //Get the associated complexity level
         var compReturn = RecupComplexite($('#hid_cat').val(), 0);
 
@@ -1789,7 +1797,8 @@ function open_del_item_div()
         if (compReturn == 0) {
             return false;
         }
-
+		
+		$("#div_loading").hide();
         $('#div_del_item').dialog('open');
     } else {
 		displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['none_selected_text']);?>");
@@ -2019,7 +2028,7 @@ function refreshVisibleFolders()
 		},
 		function(data) {
 			data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            console.log(data.selectVisibleFoldersOptions);
+            //console.log(data.selectVisibleFoldersOptions);
 			//check if format error
 			if (data.error == "") {
 				// clear list (except the entries with value = 0)
@@ -2374,8 +2383,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 600,
-        height: 200,
+        width: 700,
+        height: 250,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
             "<?php echo $LANG['delete'];?>": function() {
@@ -2508,8 +2517,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
-        height: 150,
+        width: 400,
+        height: 200,
         title: "<?php echo $LANG['item_menu_del_elem'];?>",
         buttons: {
             "<?php echo $LANG['del_button'];?>": function() {
@@ -2518,11 +2527,24 @@ $(function() {
                     {
                         type    : "del_item",
                         id      : $("#id_item").val(),
-                        key        : "<?php echo $_SESSION['key'];?>"
+                        key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
-                        NProgress.start();
-                        window.location.href = "index.php?page=items&group="+$("#hid_cat").val();
+						$("#div_loading").show();
+						
+						// refresh list of items
+						$("#full_items_list").html("");
+						ListerItems($('#hid_cat').val(), "", 0)
+						
+						// reload tree
+						refreshTree($('#hid_cat').val());
+						
+						// clean fields
+						$("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+						$("#button_quick_login_copy, #button_quick_pw_copy").hide();
+						$("#selected_items").val("");
+						
+						$("#div_loading").hide();
                     }
                );
                 $(this).dialog('close');
@@ -3439,7 +3461,7 @@ function globalItemsSearch()
 */
 function searchItemsWithTags(tag)
 {
-	console.log(">"+tag);
+	//console.log(">"+tag);
 	if (tag == "") return false
 	
 	// wait

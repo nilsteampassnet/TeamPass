@@ -542,16 +542,17 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
             // get list of readonly folders when pf is disabled.
-            // rule - if one folder is set as W in one of the Role, then User has access as W
+            // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
                 if ((!in_array($folderId, $listReadOnlyFolders)) && $folderId != $pf['id']) {   //
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        WHERE folder_id = %i AND role_id IN %li AND (type = %s OR type = %s)",
                         $folderId,
                         $fonctionsAssociees,
-                        "W"
+                        "W",
+						"ND"
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -569,7 +570,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         WHERE folder_id = %i AND role_id IN %li AND type = %s",
                         $folderId,
                         $fonctionsAssociees,
-                        "W"
+                        "W",
+						"ND"
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);

@@ -661,7 +661,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."roles_values",
                 "type",
-                "VARCHAR(1) NOT NULL DEFAULT 'R'"
+                "VARCHAR(5) NOT NULL DEFAULT 'R'"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
@@ -753,9 +753,12 @@ if (isset($_POST['type'])) {
             );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
-            );
+            
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items CHANGE `raison` `raison` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."roles_values CHANGE `type` `type` VARCHAR( 5 ) NOT NULL DEFAULT 'R'"
             );
 
             ## Alter USERS table
@@ -1365,7 +1368,8 @@ if (isset($_POST['type'])) {
                 ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
                 ('', 'swedish', 'Swedish' , 'se', 'se.png'),
                 ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
-                ('', 'catalan', 'Catalan' , 'ct', 'ct.png');"
+                ('', 'catalan', 'Catalan' , 'ct', 'ct.png'),
+                ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_16").innerHTML = '.

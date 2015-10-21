@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+	'no_delete' => 'Write but no delete',
+	'role_cannot_delete_item' => 'Cannot delete Items',
     'opening_folder' => 'Reading folder ...',
     'no_item_to_display' => 'No items to display',
     'list_items_with_tag' => 'List items with this tag',

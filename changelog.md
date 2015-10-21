@@ -1,7 +1,14 @@
 Last changes
 2.1.24
+ #1058 - Fix API issue while adding an item
+ #1055 - Personal item cannot be deleted
+ #1048 - Encryption error flag is visible for no reason
+ #1045 - Missing fields in table (pw_iv and data_iv)
+ #1042 - Added pagination in Users page
  #1042 - Pagination on Users Page
+ #1060 - Added new logging events (password copied, password shown)
  #1041 - "Forgot your password?" not working
+ #1027 - User right more refined with "No deletion" possible right
  #953 - Make sure to rebuild the tree when creating an user with a personal folder
  #1035 - added php-xml install check
  #950 - #1005 - can not create Admin account
@@ -11,8 +18,11 @@ Last changes
  #955 - Fix LDAP Settings UI
  Fix passwords are empty when importing from Keepass
  Fix empty URL column in off-line html
- New: implemented DUOSecurity feature
+ A lot of small fixes
+ New: implemented 2factor authentication DUOSecurity feature
  New: create User via API
+ New: Vietnamese language added
+ New: Tree structure is loaded dynamically
  
  2.1.23
  #727 - #729 - Encoding problem
