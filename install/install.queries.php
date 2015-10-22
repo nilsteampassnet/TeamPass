@@ -93,10 +93,10 @@ if (isset($_POST['type'])) {
             }
            
             if (isset($data['activity']) && $data['activity'] == "version") {
-                if (version_compare(phpversion(), '5.3.0', '>=')) {
+                if (version_compare(phpversion(), '5.4.0', '>=')) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 } else {
-                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.3.0)", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.4.0)", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
                 break;
             }

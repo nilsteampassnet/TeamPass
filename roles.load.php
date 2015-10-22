@@ -167,8 +167,12 @@ $(function() {
 				// get write option
 				var accessoption = "";
 				if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-					if ($("#right_nodelete").prop("checked") == true) {
+					if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
+						accessoption = "nodelete_noedit";
+					} else if ($("#right_nodelete").prop("checked") == true) {
 						accessoption = "nodelete";
+					} else if ($("#right_noedit").prop("checked") == true) {
+						accessoption = "noedit";
 					}
 				}
 				
@@ -321,10 +325,20 @@ function openRightsDialog(role, folder, line, right)
 {
     if (right == "W") {
         $("#right_write").prop("checked", true);
-        $("#right_nodelete").prop("checked", false);
+        $("#right_nodelete, #right_noedit").prop("checked", false);
     } else if (right == "ND") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", true);
+        $("#right_noedit").prop("checked", false);
+		$("#div_delete_option").show();
+    } else if (right == "NE") {
+        $("#right_write").prop("checked", true);
+        $("#right_nodelete").prop("checked", false);
+        $("#right_noedit").prop("checked", true);
+		$("#div_delete_option").show();
+    } else if (right == "NDNE") {
+        $("#right_write").prop("checked", true);
+        $("#right_noedit, #right_nodelete").prop("checked", true);
 		$("#div_delete_option").show();
     } else if (right == "R") {
         $("#right_read").prop("checked", true);

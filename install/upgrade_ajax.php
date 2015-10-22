@@ -151,10 +151,10 @@ if (isset($_POST['type'])) {
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
-            if (version_compare(phpversion(), '5.3.0', '<')) {
+            if (version_compare(phpversion(), '5.4.0', '<')) {
                 $okVersion = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.
-                    phpversion().' is not OK (minimum is 5.3.0) &nbsp;&nbsp;'.
+                    phpversion().' is not OK (minimum is 5.4.0) &nbsp;&nbsp;'.
                     '<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.

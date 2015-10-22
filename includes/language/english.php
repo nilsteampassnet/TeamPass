@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+	'error_unknown' => 'An unexpected error occurred!',
+	'no_edit_no_delete' => 'Write but no edition and no deletion',
+	'no_edit' => 'Write but no edition',
+	'role_cannot_edit_item' => 'Cannot edit Items',
 	'no_delete' => 'Write but no delete',
 	'role_cannot_delete_item' => 'Cannot delete Items',
     'opening_folder' => 'Reading folder ...',

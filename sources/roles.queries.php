@@ -173,6 +173,10 @@ if (!empty($_POST['type'])) {
 						$access = "W";
 					} elseif ($_POST['accessoption'] == "nodelete") {
 						$access = "ND";
+					} elseif ($_POST['accessoption'] == "noedit") {
+						$access = "NE";
+					} elseif ($_POST['accessoption'] == "nodelete_noedit") {
+						$access = "NDNE";
 					}
 				} else $access = "";
 				
@@ -293,13 +297,13 @@ if (!empty($_POST['type'])) {
 								$label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>';
                             } elseif ($role_detail['type'] == "NE") {
                                 $couleur = '#4E45F7';
-                                $allowed = "ND";
-                                $title = $LANG['no_delete'];
+                                $allowed = "NE";
+                                $title = $LANG['no_edit'];
 								$label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-eraser"></i>';
                             } elseif ($role_detail['type'] == "NDNE") {
                                 $couleur = '#4E45F7';
-                                $allowed = "ND";
-                                $title = $LANG['no_delete'];
+                                $allowed = "NDNE";
+                                $title = $LANG['no_edit_no_delete'];
 								$label = '<i class="fa fa-indent"></i>';
 							} else {
                                 $couleur = '#FEBC11';
