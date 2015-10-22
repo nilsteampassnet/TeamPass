@@ -548,11 +548,11 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND (type = %s OR type = %s)",
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        "W",
-						"ND"
+                        array("W","ND","NE","NDNE")
+						
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -567,11 +567,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        "W",
-						"ND"
+                        array("W","ND","NE","NDNE")
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);

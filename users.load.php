@@ -361,7 +361,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 430,
-        height: 260,
+        height: 300,
         title: "<?php echo $LANG['admin_action'];?>",
         buttons: {
             "<?php echo $LANG['pw_generate'];?>": function() {
@@ -370,9 +370,9 @@ $(function() {
                         "sources/main.queries.php",
                         {
                             type       : "generate_a_password",
-                            length     : 8,
+                            length     : 12,
                             secure     : true,
-                            symbols    : false,
+                            symbols    : true,
                             capitalize : true,
                             numerals   : true
                         },
@@ -579,6 +579,7 @@ $(function() {
         title: "<?php echo $LANG['dialog_admin_user_edit_title'];?>",
         open:  function() {
             $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
+			$(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
             $.post(
                 "sources/users.queries.php",
                 {
@@ -587,28 +588,34 @@ $(function() {
                     key  : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
-                    if (data[0].error == "no") {
-                        $("#user_edit_login").val(data[0].log);
-                        $("#user_edit_name").val(data[0].name);
-                        $("#user_edit_lastname").val(data[0].lastname);
-                        $("#user_edit_email").val(data[0].email);
-                        $("#user_edit_info").html(data[0].info);
+                    if (data.error == "no") {
+						$(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+						
+                        $("#user_edit_login").val(data.log);
+                        $("#user_edit_name").val(data.name);
+                        $("#user_edit_lastname").val(data.lastname);
+                        $("#user_edit_email").val(data.email);
+                        $("#user_edit_info").html(data.info);
 
-                        $("#user_edit_functions_list").append(data[0].function);
+                        $("#user_edit_functions_list").append(data.function);
                         $("#user_edit_functions_list").multiselect('refresh');
 
-                        $("#user_edit_managedby").append(data[0].managedby);
+                        $("#user_edit_managedby").append(data.managedby);
                         $("#user_edit_managedby").multiselect('refresh');
 
-                        $("#user_edit_auth").append(data[0].foldersAllow);
+                        $("#user_edit_auth").append(data.foldersAllow);
                         $("#user_edit_auth").multiselect('refresh');
 
-                        $("#user_edit_forbid").append(data[0].foldersForbid);
+                        $("#user_edit_forbid").append(data.foldersForbid);
                         $("#user_edit_forbid").multiselect('refresh');
 
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
-                    }
+                    } else {
+						$("#user_edit_error").html("<?php echo $LANG['error_unknown'];?>")
+                        $("#user_edit_wait").hide();
+						$("#user_edit_div").show();
+					}
                 },
                 "json"
             );

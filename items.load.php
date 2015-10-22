@@ -1613,7 +1613,7 @@ function open_add_item_div()
 function open_edit_item_div(restricted_to_roles)
 {
 	// is user read only
-	if ($("#user_is_read_only").val() == "1") {		
+	if ($("#user_is_read_only").val() == "1" || $("#access_level").val() == "NE" || $("#access_level").val() == "NDNE") {		
 		displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
 		return false;
 	}
@@ -1783,7 +1783,7 @@ function open_edit_item_div(restricted_to_roles)
 function open_del_item_div()
 {
 	// is user read only
-	if ($("#user_is_read_only").val() == "1" || $("#access_level").val() == "ND") {
+	if ($("#user_is_read_only").val() == "1" || $("#access_level").val() == "ND" || $("#access_level").val() == "NDNE") {
 		displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
 		return false;
 	}
