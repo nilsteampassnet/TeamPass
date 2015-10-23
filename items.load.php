@@ -507,7 +507,7 @@ function CheckIfItemChanged()
 
 function AjouterItem()
 {
-    $("#div_formulaire_saisi_info").show().html("<?php echo addslashes($LANG['please_wait']);?>");
+    $("#div_formulaire_saisi_info").show().html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>");
     LoadingPage();
     $("#error_detected").val('');   //Refresh error foolowup
     var erreur = "";
@@ -701,7 +701,7 @@ function AjouterItem()
 
 function EditerItem()
 {
-    $("#div_formulaire_edition_item_info").html("<?php echo addslashes($LANG['please_wait']).' <i class=\"fa fa-cog fa-spin fa-2x\"></i>';?>").show();
+    $("#div_formulaire_edition_item_info").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
     $("#item_detail_zone_loader").hide();
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
@@ -1186,7 +1186,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
                         $("#id_tags").html(data.tags);
-                        $("#hid_tags").val($("#id_tags").html());
+						// extract real tags list
+						var item_tag = "";
+						$("span.item_tag").each(function(){
+							if (item_tag == "") item_tag = $(this).text();
+							else item_tag += " "+$(this).text();
+						});
+                        $("#hid_tags").val(item_tag);
                         $("#hid_anyone_can_modify").val(data.anyone_can_modify);
                         $("#id_categorie").val(data.folder);
                         $("#id_item").val(data.id);

@@ -542,7 +542,7 @@ echo '
     </div>';
 echo '
     </form>
-    <div style="display:none;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 
 /***************************
@@ -730,7 +730,7 @@ echo '
     </div>';
 }
 echo '    
-    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
 </div>';

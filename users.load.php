@@ -304,7 +304,6 @@ $(function() {
                         },
                         function(data) {
                             if (data[0].error == "no") {
-                                reloadUsersList();
                                 // clear form fields
                                 $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
                                 $("#new_admin, #new_manager, #new_read_only, #new_personal_folder").prop("checked", false);

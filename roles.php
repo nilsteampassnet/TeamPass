@@ -49,7 +49,6 @@ echo '
     <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button">
         <img src="includes/images/arrow_refresh.png" alt="" />
     </button>
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_roles\')" /></span>
 </div>
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
@@ -83,6 +82,9 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
     </p>
+	<div id="add_role_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 
 // DIV FOR DELETING A ROLE
@@ -91,6 +93,9 @@ echo '
     <div>'.$LANG['confirm_del_role'].'</div>
     <div style="font-weight:bold;text-align:center;color:#FF8000;text-align:center;font-size:13pt;" id="delete_role_show"></div>
     <input type="hidden" id="delete_role_id" />
+	<div id="delete_role_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 
 // DIV FOR EDITING A ROLE
@@ -111,12 +116,9 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
     </p>
-</div>';
-
-// DIV FOR HELP
-echo '
-<div id="help_on_roles">
-    <div>'.$LANG['help_on_roles'].'</div>
+	<div id="edit_role_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 
 // DIV FOR TYPE OF RIGHTS
@@ -132,6 +134,9 @@ echo '
 		<input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'<br />
 		<input type="checkbox" id="right_noedit" />&nbsp;'.$LANG['role_cannot_edit_item'].'
 	</div>
+	<div id="role_rights_loader" style="display:none;text-align:center;margin-top:20px;">
+        <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
+    </div>
 </div>';
 
 //call to roles.load.php
