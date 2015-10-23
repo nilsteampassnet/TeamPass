@@ -510,7 +510,7 @@ if (isset($_POST['type'])) {
                             `login` varchar(200) DEFAULT NULL,
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
-                            `renewal_period` tinyint(4) NOT NULL
+                            `renewal_period` tinyint(4) NOT NULL DEFAULT '0'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "roles_title") {

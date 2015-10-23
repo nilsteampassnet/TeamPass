@@ -541,7 +541,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
     </table></div>
     <input type="button" value="Hide all" onclick="hideAll()" />
     <div id="footer" style="text-align:center;">
-        <a href="http://www.teampass.net/about/" target="_blank" style="">'.$k['tool_name'].'&nbsp;'.$k['version'].$k['copyright'].'</a>
+        <a href="http://teampass.net/about/" target="_blank" style="">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;'.$k['copyright'].'</a>
     </div>
     </body>
 </html>

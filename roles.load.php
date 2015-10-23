@@ -33,12 +33,13 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 240,
+        height: 280,
         title: "<?php echo $LANG["give_function_title"];?>",
         buttons: {
             "<?php echo $LANG["save_button"];?>": function() {
             	$("#new_role_error").hide().html("");
             	if ($("#new_role_complexity").val() != "") {
+					$("#add_role_loader").show();
                     $.post(
                         "sources/roles.queries.php",
                         {
@@ -54,6 +55,7 @@ $(function() {
                             } else {
                             	$("#new_role_error").show().html(data[0].message);
                             }
+							$("#add_role_loader").hide();
                         },
                         "json"
                    );
@@ -72,10 +74,11 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 150,
+        height: 190,
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
+				$("#delete_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -87,6 +90,7 @@ $(function() {
                             $("#delete_role").dialog("close");
                             refresh_roles_matrix("reload");
                         }
+						$("#delete_role_loader").hide();
                     },
                     "json"
                );
@@ -102,11 +106,12 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 260,
+        height: 300,
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
             	$("#edit_role_error").hide().html("");
+				$("#edit_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -125,6 +130,7 @@ $(function() {
                             $("#div_loading").show();
                             refresh_roles_matrix("reload");
                         }
+						$("#edit_role_loader").hide();
                     },
                     "json"
                );
@@ -136,33 +142,17 @@ $(function() {
         }
     });
 
-    $("#help_on_roles").dialog({
-        bgiframe: false,
-        modal: false,
-        autoOpen: false,
-        width: 850,
-        height: 500,
-        title: "<?php echo $LANG["admin_help"];?>",
-        buttons: {
-            "<?php echo $LANG["close"];?>": function() {
-                $(this).dialog("close");
-            }
-        },
-        open: function() {
-            $("#accordion").accordion({ autoHeight: false, navigation: true, collapsible: true, active: false });
-        }
-    });
-
     $("#type_of_rights").dialog({
         bgiframe: false,
         modal: false,
         autoOpen: false,
         width: 300,
-        height: 230,
+        height: 270,
         title: "<?php echo $LANG["change_right_access"];?>",
         buttons: {
             "<?php echo $LANG["save_button"];?>": function() {
             	$("#edit_role_error").hide().html("");
+				$("#role_rights_loader").show();
 				
 				// get write option
 				var accessoption = "";
@@ -190,6 +180,7 @@ $(function() {
                         $("#div_loading").show();
                         refresh_roles_matrix("reload");
                         $("#type_of_rights").dialog("close");
+						$("#role_rights_loader").hide();
                     },
                     "json"
                );

@@ -753,7 +753,7 @@ if (isset($_POST['type'])) {
             );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
-            
+            );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items CHANGE `raison` `raison` text NULL"
             );
@@ -889,7 +889,11 @@ if (isset($_POST['type'])) {
                 "TINYINT(4) NOT null DEFAULT '0'"
             );
 
-            addIndexIfNotExist($_SESSION['tbl_prefix'].'nested_tree', 'personal_folder_idx', 'ADD INDEX `personal_folder_idx` (`personal_folder`)');
+            addIndexIfNotExist(
+				$_SESSION['tbl_prefix'].'nested_tree',
+				'personal_folder_idx',
+				'ADD INDEX `personal_folder_idx` (`personal_folder`)'
+			);
 
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
@@ -994,7 +998,8 @@ if (isset($_POST['type'])) {
                 `restricted_to` varchar(200) NOT NULL,
                 `login` varchar(200) NOT NULL,
                 `folder` varchar(300) NOT NULL,
-                `author` varchar(50) NOT NULL
+                `author` varchar(50) NOT NULL,
+				`renewal_period` TINYINT(4) NOT null DEFAULT '0'
                 );"
             );
             if ($res8) {
@@ -1040,7 +1045,8 @@ if (isset($_POST['type'])) {
                         '".$reccord['restricted_to']."',
                         '".$reccord['login']."',
                         '".$folder."',
-                        '".$reccord['id_user']."'
+                        '".$reccord['id_user']."',
+						0
                         )"
                     );
                 }

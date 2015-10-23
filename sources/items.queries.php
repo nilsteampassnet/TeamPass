@@ -950,6 +950,8 @@ if (isset($_POST['type'])) {
                 foreach ($originalRecord as $key => $value) {
                     if ($key == "id_tree") {
                         array_push($aSet, array("id_tree" => $_POST['folder_id']));
+                    } elseif ($key == "viewed_no") {
+                        array_push($aSet, array("viewed_no" => "0"));
                     } elseif ($key == "pw" && !empty($pw)) {
                         //$encrypt = cryption($pw, SALT, "", "encrypt");
                         array_push($aSet, array("pw" => $originalRecord['pw']));
@@ -1081,8 +1083,8 @@ if (isset($_POST['type'])) {
             $tags = "";
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
             foreach ($rows as $record) {
-				if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;".$record['tag'];
-                else $tags .= "&nbsp;&nbsp;<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;".$record['tag'];
+				if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
+                else $tags .= "&nbsp;&nbsp;<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
             }
 			
             // TODO -> improve this check
@@ -1219,7 +1221,7 @@ if (isset($_POST['type'])) {
                 $arrData['login'] = str_replace(array('"'), array('&quot;'), $dataItem['login']);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
-                $arrData['tags'] = str_replace('"', '&quot;', $tags);
+                $arrData['tags'] = $tags;	//str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
                 if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
                     && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1) {
