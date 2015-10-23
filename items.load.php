@@ -1020,6 +1020,7 @@ function SupprimerFolder()
 		$("#del_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>").show();
     } else if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
 		$("#del_folder_loader").show();
+		
         $.post(
             "sources/folders.queries.php",
             {
@@ -1480,7 +1481,7 @@ function open_add_group_div()
     if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
 
     //Select the actual folder in the dialogbox
-    $('#new_rep_groupe').val($('#hid_cat').val());
+	$('#new_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
     $('#div_ajout_rep').dialog('open');
     $("#div_loading").hide();
 }
@@ -1501,7 +1502,7 @@ function open_edit_group_div()
     if (RecupComplexite($('#hid_cat').val(), 0, "edit_folder") == 0) return false;
 
     //Select the actual forlder in the dialogbox
-    $('#edit_folder_folder').val($('#hid_cat').val());
+	$('#edit_folder_folder option[value='+$('#hid_cat').val()+']').prop('selected', true);
     $('#edit_folder_title').val($.trim($('#edit_folder_folder :selected').text()));
     $('#edit_folder_complexity').val($('#complexite_groupe').val());
     $('#div_editer_rep').dialog('open');
@@ -1524,7 +1525,7 @@ function open_move_group_div()
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
 
     //Select the actual forlder in the dialogbox
-    $('#move_folder_id').val($('#hid_cat').val());
+	$('#move_folder_id option[value='+$('#hid_cat').val()+']').prop('selected', true);
     $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+"[id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
@@ -1542,13 +1543,16 @@ function open_del_group_div()
         return false;
     }
     $("#div_loading").show();
+	
 
     // check if read only or forbidden
-    if (RecupComplexite($('#hid_cat').val(), 0, "delete_folder") == 0) return false;
-	
-    $('#delete_rep_groupe').val($('#hid_cat').val());
-    $('#div_supprimer_rep').dialog('open');
-    $("#div_loading").hide();
+    if (RecupComplexite($('#hid_cat').val(), 0, "delete_folder") == 0) {
+		return false;
+	} else {
+		$('#div_supprimer_rep').dialog('open');		
+		$('#delete_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);		
+		$("#div_loading").hide();
+	}
 }
 
 //###########

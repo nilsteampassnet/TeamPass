@@ -3114,9 +3114,9 @@ if (isset($_POST['type'])) {
 			
 			$data = array(
                 'error' => "",
-                'selectVisibleFoldersOptions' => addslashes($selectVisibleFoldersOptions),
-                'selectVisibleNonPersonalFoldersOptions' => addslashes($selectVisibleNonPersonalFoldersOptions),
-                'selectVisibleActiveFoldersOptions' => addslashes($selectVisibleActiveFoldersOptions)
+                'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
+                'selectVisibleNonPersonalFoldersOptions' => ($selectVisibleNonPersonalFoldersOptions),
+                'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions)
             );
 			// send data
             echo prepareExchangedData($data, "encode");
