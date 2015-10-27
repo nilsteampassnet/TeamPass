@@ -23,6 +23,7 @@ Last changes
  New: create User via API
  New: Vietnamese language added
  New: Tree structure is loaded dynamically
+ New: Notification to Managers for awaiting suggestions
  
  2.1.23
  #727 - #729 - Encoding problem

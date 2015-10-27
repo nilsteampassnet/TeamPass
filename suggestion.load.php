@@ -56,7 +56,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
     }
 
     //Function validating
-    function validateSuggestion(id)
+    function validateSuggestion(id, suggestion_text)
     {
         $("#div_loading").show();
         $("#suggestion_id").val(id);
@@ -75,6 +75,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 } else if (data[0].status = "duplicate") {
                     $("#suggestion_is_duplicate").show().addClass("ui-state-error");
                 }
+				$("#suggestion_add_label").html(suggestion_text);
                 $("#div_loading").hide();
                 // show dialog
                 $("#div_suggestion_validate").dialog("open");
@@ -164,8 +165,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             width: 400,
             height: 240,
             title: "<?php echo $LANG['suggestion_validate_confirm'];?>",
+			open: function( event, ui ) {
+				$("#suggestion_edit_wait").hide();
+			},
             buttons: {
-                "<?php echo $LANG['add_button'];?>": function() {
+                "<?php echo $LANG['confirm'];?>": function() {
+					$("#suggestion_edit_wait").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {

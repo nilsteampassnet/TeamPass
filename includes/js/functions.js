@@ -261,3 +261,21 @@ function displayMessage(textToDisplay)
     });
     setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
 }
+
+	
+function blink(elem, times, speed, klass)
+{
+	if (times > 0 || times < 0) { 
+	  if ($(elem).hasClass(klass))
+		 $(elem).removeClass(klass);
+	  else
+		 $(elem).addClass(klass);
+	 }
+
+	 clearTimeout(function() { blink(elem, times, speed, klass); });
+
+	 if (times > 0 || times < 0) {
+	   setTimeout(function() { blink(elem, times, speed, klass); }, speed);
+	   times-= .5;
+	 }
+}

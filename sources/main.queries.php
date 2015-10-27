@@ -532,7 +532,7 @@ switch ($_POST['type']) {
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
-                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
             );
         }
@@ -849,6 +849,8 @@ switch ($_POST['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
+		
+		// get list of last items seen
         $x = 1;
         $arrTmp = array();
         $rows = DB::query(
@@ -871,8 +873,18 @@ switch ($_POST['type']) {
                 }
             }
         }
+		
+		// get wainting suggestions
+		$nb_suggestions_waiting = 0;
+		if (
+			isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+			&& ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
+		) {
+			$rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
+			$nb_suggestions_waiting = DB::count();
+		}
 
-        echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
+        echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : "'.$nb_suggestions_waiting.'"}]';
         break;
     /**
      * Generates a KEY with CRYPT
