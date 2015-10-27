@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+	'suggestion_notify_subject' => '[Teampass] A new suggestion has been done.',
+	'suggestion_notify_body' => 'Hello,<br><br>A new suggestion has been done. You need to validate it before it can be used by other users.<br>Some information about it:<br>- Label: #tp_label#<br>- Folder: #tp_folder#<br>- User: #tp_user#<br><br>Notice that this email has been sent to all Managers.<br><br>Best regards.',
 	'error_unknown' => 'An unexpected error occurred!',
 	'no_edit_no_delete' => 'Write but no edition and no deletion',
 	'no_edit' => 'Write but no edition',

@@ -107,6 +107,32 @@ if (!empty($_POST['type'])) {
                         'folder_id' => $folder
                     )
                 );
+				
+				// get some info to add to the notification email
+				$resp_user = DB::queryfirstrow(
+					"SELECT login FROM ".prefix_table("users")." WHERE id = %i",
+					$_SESSION['user_id']
+				);
+				$resp_folder = DB::queryfirstrow(
+					"SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
+					$folder
+				);
+				
+				// notify Managers
+				$rows = DB::query(
+					"SELECT email 
+					FROM ".prefix_table("users")."
+					WHERE `gestionnaire` = %i AND `email` IS NOT NULL",
+					1
+				);
+				foreach ($rows as $record) {
+					sendEmail(
+						$LANG['suggestion_notify_subject'],
+						str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $LANG['suggestion_notify_body']),
+						$record['email']
+					);
+				}
+				
                 echo '[ { "status" : "done" } ]';
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';

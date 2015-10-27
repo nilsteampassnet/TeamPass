@@ -187,7 +187,7 @@ if (isset($_SESSION['login'])) {
         && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
     ) {
         echo '
-                    <button style="margin-right:10px;" title="'.$LANG['suggestion_menu'].'" onclick="MenuAction(\'suggestion\');">
+                    <button style="margin-right:10px;" title="'.$LANG['suggestion_menu'].'" id="menu_button_suggestion" onclick="MenuAction(\'suggestion\');">
                         <img src="includes/images/envelope.png" alt="" />
                     </button>';
     }

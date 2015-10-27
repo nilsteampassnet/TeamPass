@@ -1978,6 +1978,52 @@ require_once \"".$skFile."\";
                         //data is lost ... unknown encryption
                     }
                 }
+				
+				// decrypt passwords in History table
+                $resData = mysqli_query($dbTmp,
+                    "SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv, l.id_item AS id_item
+					FROM ".$_SESSION['tbl_prefix']."log_items AS l
+					LEFT JOIN ".$_SESSION['tbl_prefix']."items AS i ON (l.id_item=i.id)
+					WHERE l.action = `at_modification` AND i.perso = `0`"
+                ) or die(mysqli_error($dbTmp));
+                while ($record = mysqli_fetch_array($resData)) {
+					// only at_modif and at_pw
+					$reason = explode(':', $record['raison']);
+					if ($reason[0] == "at_pw") {
+						
+						// check if pw encrypted with protocol #2
+                        $pw = decrypt($reason[1]);
+                        if (empty($pw)) {
+                            // used protocol is #1
+                            $pw = decryptOld($reason[1]);  // decrypt using protocol #1
+                        } else {
+                            // used protocol is #2
+                            // get key for this pw
+                            $resData = mysqli_query($dbTmp,
+                                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+                                WHERE `sql_table` = 'items' AND id = ".$record['id_item']
+                            ) or die(mysqli_error($dbTmp));
+                            $dataTemp = mysqli_fetch_row($resData);
+                            if (!empty($dataTemp[0])) {
+                                // remove key from pw
+                                $pw = substr($pw, strlen($dataTemp[0]));
+								
+								if (isUTF8($pw ) && !empty($pw )) {
+									$encrypt = cryption($pw , SALT, "", "encrypt");
+
+									// store Password
+									mysqli_query($dbTmp,
+										"UPDATE ".$_SESSION['tbl_prefix']."suggestion
+										SET pw = '".$encrypt['string']."', pw_iv = '".$encrypt['iv']."'
+										WHERE id =".$record['id']
+									) or die(mysqli_error($dbTmp));
+								} else {
+									//data is lost ... unknown encryption
+								}
+                            }
+                        }
+					}
+                }
                 $finish = true;
             }
 

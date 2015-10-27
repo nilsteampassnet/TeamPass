@@ -187,6 +187,10 @@ echo '
 //CONFIRM DIALOG
 echo '
 <div id="div_suggestion_validate" style="display:none;">
+	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="suggestion_edit_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+	<div style="margin:5px 0 5px 0; text-align:center; font-size:15px; font-weight:bold;" id="suggestion_add_label"></div>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['suggestion_validate'].'</p>
     <div style="display:none;margin-top:10px;" id="suggestion_is_duplicate">'.$LANG['suggestion_is_duplicate'].'</div>
 </div>';

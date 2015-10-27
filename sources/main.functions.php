@@ -913,9 +913,9 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     //load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    require $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
     // load PHPMailer
-    $mail = new PHPMailer();
+    if (!isset($mail)) $mail = new PHPMailer();
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
