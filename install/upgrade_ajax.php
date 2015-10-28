@@ -1851,6 +1851,7 @@ require_once \"".$skFile."\";
             break;
 
         case "new_encryption_of_pw":
+			$dbgDuo = fopen("upgrade.log", "a");
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
 
@@ -1863,11 +1864,14 @@ require_once \"".$skFile."\";
             );
 
             if ($_POST['suggestion'] != "1") {
-                $res = mysqli_query($dbTmp,
-                    "SELECT * FROM ".$_SESSION['tbl_prefix']."items
+				fputs($dbgDuo, "\n\nSELECT id, pw FROM ".$_SESSION['tbl_prefix']."items
+                    WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."");
+                $rows = mysqli_query($dbTmp,
+                    "SELECT id, pw FROM ".$_SESSION['tbl_prefix']."items
                     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
                 ) or die(mysqli_error($dbTmp));
-                while ($data = mysqli_fetch_array($res)) {
+                while ($data = mysqli_fetch_array($rows)) {
+					fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
                     // check if pw encrypted with protocol #3
                     if (!empty($data['pw_iv'])) {
                         //$pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
@@ -1912,20 +1916,46 @@ require_once \"".$skFile."\";
                         WHERE l.id_item = ".$data['id']." AND l.raison LIKE 'at_pw :%' AND k.sql_table='items'"
                     );
                     while ($record = mysqli_fetch_array($resData)) {
-                        $pw = substr(decrypt(trim(substr($record['raison'], 7))), strlen($record['rndKey']));
-                        if (isUTF8($pw) && !empty($pw)) {
-                            $encrypt = cryption($pw, SALT, "", "encrypt");
-
-                            // store Password
-                            mysqli_query($dbTmp,
-                                "UPDATE ".$_SESSION['tbl_prefix']."log_items
-                                    SET raison = 'at_pw :".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
-                                    WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
-                                    AND id_user=".$record['id_user']." AND action ='".$record['action']."'"
-                            ) or die(mysqli_error($dbTmp));
-                        } else {
-                            //data is lost ... unknown encryption
-                        }
+						
+						// only at_modif and at_pw
+						$reason = explode(' : ', $record['raison']);
+						if (trim($reason[0]) == "at_pw") {
+							
+							// check if pw encrypted with protocol #2
+							$pw = decrypt(trim($reason[1]));
+							fputs($dbgDuo, " / step1 : ".$pw);
+							if (empty($pw)) {
+								// used protocol is #1
+								$pw = decryptOld(trim($reason[1]));  // decrypt using protocol #1
+								fputs($dbgDuo, " / step2 : ".$pw);
+							} else {
+								// used protocol is #2
+								// get key for this pw
+								$resData = mysqli_query($dbTmp,
+									"SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+									WHERE `sql_table` = 'items' AND id = ".$record['id_item']
+								) or die(mysqli_error($dbTmp));
+								$dataTemp = mysqli_fetch_row($resData);
+								if (!empty($dataTemp[0])) {
+									// remove key from pw
+									$pw = substr($pw, strlen($dataTemp[0]));
+								}
+								fputs($dbgDuo, " / step3 : ".$pw);
+							}
+							// store new encryption
+							if (isUTF8($pw) && !empty($pw)) {
+								$encrypt = cryption($pw , SALT, "", "encrypt");
+								fputs($dbgDuo, " / Final : ".$encrypt['string']);
+								mysqli_query($dbTmp,
+									"UPDATE ".$_SESSION['tbl_prefix']."log_items
+									SET raison = 'at_pw : ".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
+									WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
+									AND id_user=".$record['id_user']." AND action ='".$record['action']."'"
+								) or die(mysqli_error($dbTmp));
+							} else {
+								//data is lost ... unknown encryption
+							}
+						}
                     }
 
 
@@ -1951,8 +1981,6 @@ require_once \"".$skFile."\";
                             //data is lost ... unknown encryption
                         }
                     }
-
-                    break;
                 }
                 if ($next >= $_POST['total']) {
                     $finish = "suggestion";
@@ -1977,52 +2005,6 @@ require_once \"".$skFile."\";
                     } else {
                         //data is lost ... unknown encryption
                     }
-                }
-				
-				// decrypt passwords in History table
-                $resData = mysqli_query($dbTmp,
-                    "SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv, l.id_item AS id_item
-					FROM ".$_SESSION['tbl_prefix']."log_items AS l
-					LEFT JOIN ".$_SESSION['tbl_prefix']."items AS i ON (l.id_item=i.id)
-					WHERE l.action = `at_modification` AND i.perso = `0`"
-                ) or die(mysqli_error($dbTmp));
-                while ($record = mysqli_fetch_array($resData)) {
-					// only at_modif and at_pw
-					$reason = explode(':', $record['raison']);
-					if ($reason[0] == "at_pw") {
-						
-						// check if pw encrypted with protocol #2
-                        $pw = decrypt($reason[1]);
-                        if (empty($pw)) {
-                            // used protocol is #1
-                            $pw = decryptOld($reason[1]);  // decrypt using protocol #1
-                        } else {
-                            // used protocol is #2
-                            // get key for this pw
-                            $resData = mysqli_query($dbTmp,
-                                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
-                                WHERE `sql_table` = 'items' AND id = ".$record['id_item']
-                            ) or die(mysqli_error($dbTmp));
-                            $dataTemp = mysqli_fetch_row($resData);
-                            if (!empty($dataTemp[0])) {
-                                // remove key from pw
-                                $pw = substr($pw, strlen($dataTemp[0]));
-								
-								if (isUTF8($pw ) && !empty($pw )) {
-									$encrypt = cryption($pw , SALT, "", "encrypt");
-
-									// store Password
-									mysqli_query($dbTmp,
-										"UPDATE ".$_SESSION['tbl_prefix']."suggestion
-										SET pw = '".$encrypt['string']."', pw_iv = '".$encrypt['iv']."'
-										WHERE id =".$record['id']
-									) or die(mysqli_error($dbTmp));
-								} else {
-									//data is lost ... unknown encryption
-								}
-                            }
-                        }
-					}
                 }
                 $finish = true;
             }

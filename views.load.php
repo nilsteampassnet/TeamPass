@@ -21,6 +21,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 function GenererLog()
 {
+	if ($("#log_jours").val() == "") return false;
+	
     LoadingPage();
     $.post(
         "sources/views.queries.php",
@@ -55,67 +57,11 @@ function ListerElemDel()
                     }
                 }
            );
-            $("#div_loading").hide();
+		   $(".button").button();
+           $("#div_loading").hide();
         },
         "json"
    );
-}
-
-function restoreDeletedItems()
-{
-    if (confirm("<?php echo $LANG['views_confirm_restoration'];?>")) {
-        var list_i = "";
-        $(".cb_deleted_item:checked").each(function() {
-            if (list_i == "") list_i = $(this).val();
-            else list_i = list_i+';'+$(this).val();
-        });
-        var list_f = "";
-        $(".cb_deleted_folder:checked").each(function() {
-            if (list_f == "") list_f = $(this).val();
-            else list_f = list_f+';'+$(this).val();
-        });
-
-        $.post(
-            "sources/views.queries.php",
-            {
-                type    : "restore_deleted__items",
-                list_i    : list_i,
-                list_f    : list_f
-            },
-            function(data) {
-                window.location.href = "index.php?page=manage_views";
-            }
-       );
-    }
-}
-
-function reallyDeleteItems()
-{
-    if (confirm("<?php echo $LANG['views_confirm_items_deletion'];?>")) {
-        var list_items = "";
-        $(".cb_deleted_item:checked").each(function() {
-            if (list_items == "") list_items = $(this).val();
-            else list_items = list_items+';'+$(this).val();
-        });
-
-        var list_folders = "";
-        $(".cb_deleted_folder:checked").each(function() {
-            if (list_folders == "") list_folders = $(this).val();
-            else list_folders = list_folders+';'+$(this).val();
-        });
-
-        $.post(
-            "sources/views.queries.php",
-            {
-                type    : "really_delete_items",
-                items    : list_items,
-                folders    : list_folders
-            },
-            function(data) {
-                window.location.href = "index.php?page=manage_views";
-            }
-       );
-    }
 }
 
 function displayLogs(type, page, order)
@@ -227,6 +173,9 @@ $(function() {
 			$("#loader_tab").remove();
 		}
 	});
+
+    ListerElemDel();
+	
     $("#log_jours").datepicker({
         regional: 'fr',
         dateFormat : 'dd/mm/yy'
@@ -275,7 +224,86 @@ $(function() {
     	}
 	});
 
-    ListerElemDel();
+    $("#tab2_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 150,
+        title: "<?php echo $LANG['please_confirm'];?>",
+		open : function() {
+			// check if one is ticked
+			var list_i = "";
+			$(".cb_deleted_item:checked").each(function() {
+				if (list_i == "") list_i = $(this).val();
+				else list_i = list_i+';'+$(this).val();
+			});
+			var list_f = "";
+			$(".cb_deleted_folder:checked").each(function() {
+				if (list_f == "") list_f = $(this).val();
+				else list_f = list_f+';'+$(this).val();
+			});
+			if (list_f == "" || list_i == "") {
+				$("#tab2_dialog").dialog("close");
+				return false;
+			}
+			
+			// confirm?
+			if ($("#tab2_action").val() == "restoration") {
+				$("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration'];?>");
+			} else if ($("#tab2_action").val() == "deletion") {
+				$("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion'];?>");
+			}
+		},
+        buttons: {
+            "<?php echo $LANG['confirm'];?>": function() {
+				LoadingPage();
+                var list_i = "";
+				$(".cb_deleted_item:checked").each(function() {
+					if (list_i == "") list_i = $(this).val();
+					else list_i = list_i+';'+$(this).val();
+				});
+				var list_f = "";
+				$(".cb_deleted_folder:checked").each(function() {
+					if (list_f == "") list_f = $(this).val();
+					else list_f = list_f+';'+$(this).val();
+				});
+
+				if ($("#tab2_action").val() == "restoration") {
+					$.post(
+						"sources/views.queries.php",
+						{
+							type    : "restore_deleted__items",
+							list_i    : list_i,
+							list_f    : list_f
+						},
+						function(data) {
+							ListerElemDel();
+							LoadingPage();
+							$("#tab2_dialog").dialog("close");
+						}
+					);
+				} else if ($("#tab2_action").val() == "deletion") {
+					$.post(
+						"sources/views.queries.php",
+						{
+							type    : "really_delete_items",
+							items    : list_i,
+							folders    : list_f
+						},
+						function(data) {
+							ListerElemDel();
+							LoadingPage();
+							$("#tab2_dialog").dialog("close");
+						}
+					);
+				}
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
 });
 
 </script>
