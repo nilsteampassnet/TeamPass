@@ -46,7 +46,10 @@ echo '
     echo '
     <div id="tabs-1">
         <p>
-        '.$LANG['logs_1'].' : <input type="text" id="log_jours" /> <img src="includes/images/asterisk.png" onClick="GenererLog()" style="cursor:pointer;" />
+        '.$LANG['logs_1'].' : <input type="text" id="log_jours" />&nbsp;
+		<a class="button btn-danger" onClick="GenererLog()">
+			<i class="fa fa-cogs fa-lg"></i>
+		</a>
         </p>
         <div id="lien_pdf" style="text-align:center; width:100%; margin-top:15px;"></div>
     </div>';
@@ -76,4 +79,12 @@ echo '
 
     echo '
 </div>
+<input type="hidden" id="tab2_action" />
 ';
+
+// Deletion / Restoration dialogbox
+echo '
+<div id="tab2_dialog" style="display:none;">
+    <div style="display:none;text-align:center;padding:2px;" class="ui-state-error ui-corner-all" id="tab2_dialog_error"></div>
+    <div style="text-align:center;padding:2px;" id="tab2_dialog_html"></div>
+</div>';

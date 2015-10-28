@@ -70,7 +70,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_users") {
+} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
@@ -705,7 +705,7 @@ $htmlHeaders .= '
             buttons: {
                 "'.$LANG['save_button'].'": function() {
                     LoadingPage();
-                    var data = "{\'psk\':\'"+sanitizeString($("#input_personal_saltkey").val())+"\'}";
+                    var data = "{\"psk\":\""+sanitizeString($("#input_personal_saltkey").val())+"\"}";
                     //Send query
                     $.post(
                         "sources/main.queries.php",

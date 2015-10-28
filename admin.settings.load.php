@@ -198,6 +198,8 @@ function loadFieldsList() {
 function changeSettingStatus(id, val) {
     if (val == 1) {
         $("#flag_"+id).html("<img src='includes/images/status.png' />");
+		$("#"+id+"_radio2").addClass("ui-button.redButton");
+		console.log(("#"+id+"_radio2"));
     } else {
         $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
     }

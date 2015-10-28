@@ -332,3 +332,12 @@ input.watermark {
     padding:2px;
     margin-bottom:5px;
 }
+
+.ui-button.redButton {
+    background-color: red;
+}
+.ui-button.greenButton {
+    background-color: green;
+}
+
+div.dataTables_processing { z-index: 1; }

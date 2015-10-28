@@ -156,7 +156,7 @@ if (
         }
 
         function newEncryptPw(suggestion){
-            var nb = 1;
+            var nb = 10;
             var start = 0;
 
             if ($("#change_pw_encryption_start").val() != "") {
