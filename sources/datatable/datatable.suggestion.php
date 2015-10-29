@@ -103,14 +103,11 @@ $rows = DB::query(
 );
 $iFilteredTotal = DB::count();
 
-/*
-   * Output
-*/
+// output
 $sOutput = '{';
-$sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
-$sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
-$sOutput .= '"aaData": ';
+$sOutput .= '"recordsTotal": '.$iTotal.', ';
+$sOutput .= '"recordsFiltered": '.$iTotal.', ';
+$sOutput .= '"data": ';
 
 if ($iFilteredTotal > 0) {
     $sOutput .= '[';

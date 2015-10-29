@@ -126,12 +126,10 @@ $rows = DB::query(
 );
 $iFilteredTotal = DB::count();
 
-/*
-   * Output
-*/
+// output
 $sOutput = '{';
 $sOutput .= '"recordsTotal": '.$iTotal.', ';
-$sOutput .= '"recordsFiltered": '.$iFilteredTotal.', ';
+$sOutput .= '"recordsFiltered": '.$iTotal.', ';
 $sOutput .= '"data": ';
 
 if ($iFilteredTotal > 0) {
