@@ -63,7 +63,7 @@ echo '
 echo '
 <div style="margin:10px auto 25px auto;min-height:250px;" id="users_page">
 <div id="t_users_alphabet" style="margin-top:25px;"></div>
-<table id="t_users" cellspacing="0" cellpadding="5" width="100%">
+<table id="t_users" class="hover" width="100%">
     <thead><tr>
         <th style="width:40px;"></th>
         <th>'.$LANG['user_login'].'</th>
