@@ -176,7 +176,7 @@ switch ($_POST['type']) {
 			
 			// do a check on old PSK
 			if (empty($_SESSION['my_sk']) || empty($dataReceived['old_sk'])) {
-				echo '[{"error" : "No personnal saltkey provided1"}]';
+				echo '[{"error" : "No personnal saltkey provided"}]';
 				break;
 			}
 
