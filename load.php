@@ -700,7 +700,8 @@ $htmlHeaders .= '
             height: 150,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
-                $("#input_personal_saltkey").val("'.addslashes($_SESSION['my_sk']).'");
+                $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+				console.log("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
@@ -973,6 +974,21 @@ $htmlHeaders .= '
         // get list of last items
         refreshListLastSeenItems();
 
+		// prevent usage of symbols in Personal saltkey
+		$("#input_personal_saltkey, #new_personal_saltkey").keypress(function (e) {
+			var allowedChars = new RegExp("^[a-zA-Z0-9\-]+$");
+			var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+			if (allowedChars.test(str)) {
+				return true;
+			}
+			e.preventDefault();
+			return false;
+		}).keyup(function() {
+			var forbiddenChars = new RegExp("[^a-zA-Z0-9\-]", "g");
+			if (forbiddenChars.test($(this).val())) {
+				$(this).val($(this).val().replace(forbiddenChars, ""));
+			}
+		});
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
