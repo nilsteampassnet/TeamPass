@@ -159,6 +159,7 @@ if (isset($_POST['type'])) {
                     echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
                     break;
                 }
+				
                 // ADD item
                 DB::insert(
                     prefix_table("items"),
@@ -1107,7 +1108,7 @@ if (isset($_POST['type'])) {
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = cryption(
                     $dataItem['pw'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                    $_SESSION['my_sk'],
                     $dataItem['pw_iv'],
                     "decrypt"
                 );
@@ -2124,7 +2125,8 @@ if (isset($_POST['type'])) {
                 'folder_complexity' => $folderComplexity['valeur'],
                 // "items" => $returnedData
                 'displayCategories' => $displayCategories,
-                'access_level' => $accessLevel
+                'access_level' => $accessLevel,
+				'IsPersonalFolder' => $folderIsPf
             );
             // Check if $rights is not null
             if (count($rights) > 0) {

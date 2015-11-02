@@ -193,6 +193,8 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+				
+				$("#pf_selected").val(data.IsPersonalFolder);
 
                 // display path of folders
                 var path_maxlength = 420;
@@ -2448,6 +2450,13 @@ $(function() {
 		    	if ($("#form_tab_fields") != undefined && $("#display_categories").val() != 1)
                     $("#item_tabs").tabs("option", "show", 3);
 		    }
+			
+			// hide complexity if PF
+			if ($("#pf_selected").val() == 1) {
+				$("#expected_complexity").hide();
+			} else {
+				$("#expected_complexity").show();
+			}
         },
         close: function(event,ui) {
             if (CKEDITOR.instances["desc"]) {
@@ -2519,6 +2528,13 @@ $(function() {
                     $("#edit_item_more").show();
 		    }
             $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+			
+			// hide complexity if PF
+			if ($("#pf_selected").val() == 1) {
+				$("#edit_expected_complexity").hide();
+			} else {
+				$("#edit_expected_complexity").show();
+			}
 		}
     });
     //<=

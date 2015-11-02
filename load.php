@@ -453,7 +453,7 @@ $htmlHeaders .= '
             "sources/utils.queries.php",
             {
                 type            : "reencrypt_personal_pwd",
-                data_to_share   : credentials,
+                data_to_share   : prepareExchangedData(credentials, "encode", "'.$_SESSION["key"].'"),
                 currentId       : currentID,
                 key             : "'.$_SESSION['key'].'"
             },
@@ -700,7 +700,7 @@ $htmlHeaders .= '
             height: 150,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
-                $("#input_personal_saltkey").val("'.$_SESSION['my_sk'].'");
+                $("#input_personal_saltkey").val("'.addslashes($_SESSION['my_sk']).'");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
@@ -746,12 +746,15 @@ $htmlHeaders .= '
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             open: function() {
                 $("#new_personal_saltkey").val("");
-                $("#old_personal_saltkey").val("'.$_SESSION['my_sk'].'");
+                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
             },
             buttons: {
                 "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
-                    var data_to_share = "{\'sk\':\'"+$("#new_personal_saltkey").val() + "\', \'old_sk\':\'"+$("#old_personal_saltkey").val() + "\'}";
+                    var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
+					
+					$("#div_change_personal_saltkey_wait_progress").html("  0%");
+					
                     //Send query
                     $.post(
                         "sources/main.queries.php",
