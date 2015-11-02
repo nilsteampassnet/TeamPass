@@ -526,8 +526,7 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = prepareExchangedData($_POST['data'], "decode");	// remove str_replace("'", '"', 
-		$dataReceived['psk'] = str_replace("'", '"', $dataReceived['psk']);
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
         if ($dataReceived['psk'] != "") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
@@ -547,7 +546,7 @@ switch ($_POST['type']) {
             break;
         }
         //decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
+		$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);

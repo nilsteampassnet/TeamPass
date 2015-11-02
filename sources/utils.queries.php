@@ -168,15 +168,17 @@ switch ($_POST['type']) {
             echo '[{"error" : "No ID provided"}]';
             break;
         }
-        if (empty($_SESSION['my_sk'])) {
-            echo '[{"error" : "No personnal saltkey provided"}]';
-            break;
-        }
         if (isset($_POST['data_to_share'])) {
             // ON DEMAND
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
+			$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+			
+			// do a check on old PSK
+			if (empty($_SESSION['my_sk']) || empty($dataReceived['old_sk'])) {
+				echo '[{"error" : "No personnal saltkey provided1"}]';
+				break;
+			}
 
             //Prepare variables
             $personal_sk = htmlspecialchars_decode($dataReceived['sk']);
@@ -223,6 +225,7 @@ switch ($_POST['type']) {
                     }
                 }
             }
+
             // encrypt it
             if (!empty($pw) && isUTF8($pw)) {
                 $encrypt = cryption($pw, $personal_sk, "", "encrypt");

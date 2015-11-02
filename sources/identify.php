@@ -497,20 +497,20 @@ function identifyUser($sentData)
         // This in order to allow admin by default to connect even if LDAP is activated
         if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                        && $userPasswordVerified == true && $data['disabled'] == 0
+                && $userPasswordVerified == true && $data['disabled'] == 0
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                        && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
-                        && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
-                                )
-                                ||
-                                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
-                                )
+                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                )
+                ||
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
+                )
         ) {
             $_SESSION['autoriser'] = true;
 

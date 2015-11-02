@@ -418,7 +418,7 @@ echo '
         <div id="tabs-02">';
 // Line for folder complexity
 echo'
-            <div style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;" id="expected_complexity">
                 <label for="" class="form_label_180">'.$LANG['complex_asked'].'</label>
                 <span id="complex_attendue" style="color:#D04806; margin-left:40px;"></span>
             </div>';
@@ -595,7 +595,7 @@ echo '
         <div id="tabs-2">';
 // Line for folder complexity
 echo'
-            <div style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;" id="edit_expected_complexity">
                 <label for="" class="cpm_label">'.$LANG['complex_asked'].'</label>
                 <span id="edit_complex_attendue" style="color:#D04806;"></span>
             </div>';
