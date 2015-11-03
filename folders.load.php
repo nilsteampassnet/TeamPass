@@ -56,8 +56,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 280,
-        height: 390,
+        width: 350,
+        height: 470,
         title: "<?php echo $LANG['add_new_group'];?>",
         open: function(event, ui) {
 			$("#new_folder_wait").hide();
@@ -65,6 +65,7 @@ $(function() {
 			//empty dialogbox
 			$("#div_add_group input, #div_add_group select").val("");
 			$("#add_node_renewal_period").val("0");
+			$("#folder_block_modif, #folder_block_creation").val("0");
 		},
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -81,7 +82,7 @@ $(function() {
 						$("#addgroup_show_error").hide();
 						//prepare data
 						var data = '{"title":"'+$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#new_rep_complexite').val().replace(/"/g,'&quot;')+'", '+
-						'"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'"}';
+						'"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#folder_block_creation").val()+'" , "block_modif":"'+$("#folder_block_modif").val()+'"}';console.log(data);
 						//send query
 						$.post(
 							"sources/folders.queries.php",
@@ -123,8 +124,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 250,
-        height: 380,
+        width: 350,
+        height: 470,
         title: "<?php echo $LANG['at_category'];?>",
         open: function(event, ui) {
             var id = $("#folder_id_to_edit").val();
@@ -135,6 +136,8 @@ $(function() {
             $("#edit_folder_renewal_period").val($("#renewal_"+id).text());
             $("#edit_folder_complexite").val($("#renewal_id_"+id).val());
             $("#edit_parent_id").val($("#parent_id_"+id).val());
+            $("#edit_folder_block_creation").val($("#block_creation_"+id).val());
+            $("#edit_folder_block_modif").val($("#block_modif_"+id).val());
         },
         buttons: {
             "<?php echo $LANG['delete'];?>": function() {
@@ -167,7 +170,7 @@ $(function() {
 				$("#edit_folder_wait").show();
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
-                '"parent_id":"'+$('#edit_parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#edit_folder_renewal_period').val().replace(/"/g,'&quot;')+'"}';
+                '"parent_id":"'+$('#edit_parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#edit_folder_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#edit_folder_block_creation").val()+'" , "block_modif":"'+$("#edit_folder_block_modif").val()+'"}';
 
                 //send query
                 $.post(
