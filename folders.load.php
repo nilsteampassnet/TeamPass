@@ -64,10 +64,10 @@ $(function() {
 			
 			//empty dialogbox
 			$("#div_add_group input, #div_add_group select").val("");
+			$("#add_node_renewal_period").val("0");
 		},
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
-				$("#new_folder_wait").show();
                 //Check if renewal_period is an integer
 				if (isInteger(document.getElementById("add_node_renewal_period").value) == false) {
 					document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_renawal_period_not_integer'];?>";
@@ -77,6 +77,7 @@ $(function() {
 					$("#addgroup_show_error").show();
 				} else {
 					if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
+						$("#new_folder_wait").show();
 						$("#addgroup_show_error").hide();
 						//prepare data
 						var data = '{"title":"'+$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#new_rep_complexite').val().replace(/"/g,'&quot;')+'", '+
@@ -99,7 +100,8 @@ $(function() {
 									$("#addgroup_show_error").html("<?php echo $LANG['error_html_codes'];?>");
 									$("#addgroup_show_error").show();
 								} else {
-									tableFolders.api().ajax.reload();									
+									tableFolders.api().ajax.reload();
+									$("#parent_id, #edit_parent_id").empty().append(data[0].droplist);
 									$("#div_add_group").dialog("close");
 								}
 							},
@@ -155,7 +157,6 @@ $(function() {
                 $("#div_edit_folder").dialog("close");
             },
             "<?php echo $LANG['save_button'];?>": function() {
-				$("#edit_folder_wait").show();
                 if ($('#edit_folder_complexite').val() == "") {
                 	 $("#edit_folder_show_error").html("<?php echo $LANG['error_group_complex'];?>").show();
                 	 return;
@@ -163,6 +164,7 @@ $(function() {
                 	 $("#edit_folder_show_error").html("<?php echo $LANG['error_group_label'];?>").show();
                 	 return;
                 }
+				$("#edit_folder_wait").show();
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
                 '"parent_id":"'+$('#edit_parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#edit_folder_renewal_period').val().replace(/"/g,'&quot;')+'"}';
