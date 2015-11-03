@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'text_without_symbols' => 'Only numbers,letters and hyphens are allowed. No symbol characters can be entered.',
 	'my_profile' => 'My profile',
 	'please_confirm' => 'Please confirm',
 	'suggestion_notify_subject' => '[Teampass] A new suggestion has been done.',

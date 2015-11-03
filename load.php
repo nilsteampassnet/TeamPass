@@ -634,7 +634,7 @@ $htmlHeaders .= '
             },
             close: function() {
                 $("#dialog_user_profil").dialog("option", "height", 400);
-                $("#div_user_profil").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>");
+                $("#div_user_profil").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b>'.$LANG['please_wait'].'</b>");
             }
         });
 
@@ -894,8 +894,8 @@ $htmlHeaders .= '
         });
         $("#new_pw").bind({
             "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
+				$("#pw_strength_value").val(score);
+			}
         }).change({
             "score.simplePassMeter" : function(jQEvent, score) {
         $("#pw_strength_value").val(score);
@@ -906,7 +906,7 @@ $htmlHeaders .= '
         refreshListLastSeenItems();
 
 		// prevent usage of symbols in Personal saltkey
-		$("#input_personal_saltkey, #new_personal_saltkey").keypress(function (e) {
+		$(".text_without_symbols").keypress(function (e) {
 			var allowedChars = new RegExp("^[a-zA-Z0-9\-]+$");
 			var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
 			if (allowedChars.test(str)) {

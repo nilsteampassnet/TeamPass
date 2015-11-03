@@ -225,8 +225,8 @@ if (isset($_SESSION['login'])) {
                             <ul class="menu_200" style="text-align:left;">',
                                 $_SESSION['user_admin'] == 1 ? '' :
                                 isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
-                                <li>
-									<i class="fa fa-key fa-fw" onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
+                                <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
+									<i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
                                 <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\')">
 									<i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'
@@ -663,7 +663,7 @@ if (
     echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
+            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
         </div>';
 }
 
@@ -671,9 +671,8 @@ if (
     echo '
     <div id="dialog_user_profil" style="display:none;padding:4px;">
         <div id="div_user_profil">
-            <i class="fa fa-cog fa-spin fa-2x"></i>
+            <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
         </div>
-
     </div>';
 
     // DUO box
