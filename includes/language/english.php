@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'my_profile' => 'My profile',
 	'please_confirm' => 'Please confirm',
 	'suggestion_notify_subject' => '[Teampass] A new suggestion has been done.',
 	'suggestion_notify_body' => 'Hello,<br><br>A new suggestion has been done. You need to validate it before it can be used by other users.<br>Some information about it:<br>- Label: #tp_label#<br>- Folder: #tp_folder#<br>- User: #tp_user#<br><br>Notice that this email has been sent to all Managers.<br><br>Best regards.',
@@ -287,7 +288,7 @@ $LANG = array (
     'email_new_user_mail' => 'Hello,<br><br>An administrator has created your account for Teampass.<br>You can use the next credentials for being logged:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br>Click the <a href=\'#tp_link#\'>LINK</a> to access.<br><br>Best regards.',
     'error_empty_data' => 'No data to proceed!',
     'error_not_allowed_to' => 'You are not allowed to do that!',
-    'personal_saltkey_lost' => 'I\'ve lost it',
+    'personal_saltkey_lost' => 'Reset my Personal Saltkey',
     'new_saltkey_warning_lost' => 'You have lost your saltkey? What a pitty, this one can\'t be recovered, so please be sure before continuing.<br>By reseting your saltkey, all your previous personal items will be deleted!',
     'previous_pw' => 'Previous passwords used:',
     'no_previous_pw' => 'No previous password',
@@ -565,7 +566,7 @@ $LANG = array (
     'index_add_one_hour' => 'Extend session by 1 hour',
     'index_alarm' => 'ALARM!!!',
     'index_bas_pw' => 'Bad password for this account!',
-    'index_change_pw' => 'Change your password',
+    'index_change_pw' => 'Change my password',
     'index_change_pw_button' => 'Change',
     'index_change_pw_confirmation' => 'Confirm',
     'index_expiration_in' => 'session expiration in',
@@ -630,7 +631,7 @@ $LANG = array (
     'maj' => 'Uppercase letters',
     'mask_pw' => 'Mask/Display the password',
     'max_last_items' => 'Maximum number of last items seen by user (default is 10)',
-    'menu_title_new_personal_saltkey' => 'Changing your Personal Saltkey',
+    'menu_title_new_personal_saltkey' => 'Change my Personal Saltkey',
     'minutes' => 'minutes',
     'modify_button' => 'Modify',
     'my_favourites' => 'My favourites',

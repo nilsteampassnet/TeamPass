@@ -600,7 +600,17 @@ switch ($_POST['type']) {
      * Reset the personal saltkey
      */
     case "reset_personal_saltkey":
-        if (!empty($_SESSION['user_id']) && !empty($_POST['sk'])) {
+		if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+        //decrypt and retreive data in JSON format
+		$dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        //Prepare variables
+        $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
+        		
+        if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
             // delete all previous items of this user
             $rows = DB::query(
                 "SELECT i.id as id
@@ -618,7 +628,7 @@ switch ($_POST['type']) {
                 DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
             }
             // change salt
-            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
+            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),

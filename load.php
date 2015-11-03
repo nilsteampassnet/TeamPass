@@ -435,44 +435,6 @@ $htmlHeaders .= '
         );
     }
 
-    function changePersonalSaltKey(credentials, ids, nb_total)
-    {
-        // extract current id and adapt list
-        var aIds = ids.split(",");
-        var currentID = aIds[0];
-        aIds.shift();
-        var nb = aIds.length;
-        aIds = aIds.toString();
-        
-        if (nb == 0)
-            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+"100%");
-        else
-            $("#div_change_personal_saltkey_wait_progress").html("&nbsp;...&nbsp;"+Math.floor(((nb_total-nb) / nb_total) * 100)+"%");
-
-        $.post(
-            "sources/utils.queries.php",
-            {
-                type            : "reencrypt_personal_pwd",
-                data_to_share   : prepareExchangedData(credentials, "encode", "'.$_SESSION["key"].'"),
-                currentId       : currentID,
-                key             : "'.$_SESSION['key'].'"
-            },
-            function(data){
-                if (currentID == "") {
-                    $("#div_change_personal_saltkey_wait").html("'.$LANG['alert_message_done'].'");
-                    location.reload();
-                } else {
-                    if (data[0].error == "") {
-                        changePersonalSaltKey(credentials, aIds, nb_total);
-                    } else {
-                        $("#div_change_personal_saltkey_wait").html(data[0].error);
-                    }
-                }
-            },
-            "json"
-        );
-    }
-
     // DUO box - identification
     function loadDuoDialog()
     {
@@ -784,37 +746,6 @@ $htmlHeaders .= '
             },
             close: function() {
                 $("#div_change_personal_saltkey_wait").hide();
-            }
-        });
-
-        // DIALOG BOX FOR DELETING PERSONAL SALTKEY
-        $("#div_reset_personal_sk").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 400,
-            height: 200,
-            title: "'.$LANG['menu_title_new_personal_saltkey'].'",
-            buttons: {
-                "'.$LANG['ok'].'": function() {
-                    $("#div_loading").show();
-
-                    //Send query
-                    $.post(
-                        "sources/main.queries.php",
-                        {
-                           type    : "reset_personal_saltkey",
-                           sk    : encodeURIComponent($("#reset_personal_saltkey").val())
-                        },
-                        function(data) {
-                            $("#div_loading").hide();
-                            $("#div_reset_personal_sk").dialog("close");
-                        }
-                   );
-                },
-                "'.$LANG['cancel_button'].'": function() {
-                    $(this).dialog("close");
-                }
             }
         });
 

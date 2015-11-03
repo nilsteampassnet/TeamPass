@@ -225,16 +225,18 @@ if (isset($_SESSION['login'])) {
                             <ul class="menu_200" style="text-align:left;">',
                                 $_SESSION['user_admin'] == 1 ? '' :
                                 isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
-                                <li><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey'].'
-                                    <ul>
-                                        <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">'.$LANG['home_personal_saltkey_button'].'</li>
-                                        <li onclick="$(\'#div_change_personal_saltkey\').dialog(\'open\')">'.$LANG['personal_saltkey_change_button'].'</li>
-                                        <li onclick="$(\'#div_reset_personal_sk\').dialog(\'open\')">'.$LANG['personal_saltkey_lost'].'</li>
-                                    </ul>
+                                <li>
+									<i class="fa fa-key fa-fw" onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
-                                <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\')"><i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'</li>
-                                <li onclick="loadProfileDialog()"><i class="fa fa-user fa-fw"></i> &nbsp;Your profile</li>
-                                <li onclick="MenuAction(\'deconnexion\')"><i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'</li>
+                                <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\')">
+									<i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'
+								</li>
+                                <li onclick="loadProfileDialog()">
+									<i class="fa fa-user fa-fw"></i> &nbsp;'.$LANG['my_profile'].'
+								</li>
+                                <li onclick="MenuAction(\'deconnexion\')">
+									<i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'
+								</li>
                             </ul>
                         </li>
                     </ul>
@@ -663,35 +665,6 @@ if (
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
             <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="'.$LANG['home_personal_saltkey_info'].'" />
         </div>';
-
-    //change the saltkey dialogbox
-    echo '
-        <div id="div_change_personal_saltkey" style="display:none;padding:4px;">
-            <label for="new_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-            <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
-            <div style="margin-top:5px;font-style:italic;">
-                <span class="ui-icon ui-icon-signal-diag" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <a id="ask_for_an_old_sk" href="#" onclick="showHideDiv(\'ask_for_an_old_sk_div\')">'.$LANG['define_old_saltkey'].'</a>
-            </div>
-            <div style="margin-top:5px;display:none;" id="ask_for_an_old_sk_div">
-               <label for="old_personal_saltkey" class="form_label_180">'.$LANG['old_saltkey'].' :</label>
-               <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
-            </div>
-            <div style="margin-top:20px;" class="ui-state-highlight">
-               '.$LANG['new_saltkey_warning'].'
-            </div>
-            <div id="div_change_personal_saltkey_wait" style="display:none;width:80%;margin:5px auto 5px auto;padding:3px;" class="ui-state-error"><b>'.$LANG['please_wait'].'</b><span id="div_change_personal_saltkey_wait_progress"></span></div>
-        </div>';
-
-    //saltkey LOST dialogbox
-    echo '
-       <div id="div_reset_personal_sk" style="display:none;padding:4px;">
-           <div style="margin-bottom:20px;" class="ui-state-highlight">
-               '.$LANG['new_saltkey_warning_lost'].'
-           </div>
-           <label for="reset_personal_saltkey" class="form_label_180">'.$LANG['new_saltkey'].' :</label>
-           <input type="text" size="30" name="reset_personal_saltkey" id="reset_personal_saltkey" />
-       </div>';
 }
 
 // user profile
