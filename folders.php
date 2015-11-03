@@ -129,6 +129,20 @@ echo '
     <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 	
+	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
+		<option value="0">'.$LANG['no'].'</option>
+		<option value="1">'.$LANG['yes'].'</option>
+	</select>
+	
+	<div style="margin-top:10px;">
+		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
+			<option value="0">'.$LANG['no'].'</option>
+			<option value="1">'.$LANG['yes'].'</option>
+		</select>
+	</div>
+	
 	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
@@ -157,6 +171,20 @@ echo '
 
     <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
+	
+	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
+		<option value="0">'.$LANG['no'].'</option>
+		<option value="1">'.$LANG['yes'].'</option>
+	</select>
+	
+	<div style="margin-top:10px;">
+		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
+			<option value="0">'.$LANG['no'].'</option>
+			<option value="1">'.$LANG['yes'].'</option>
+		</select>
+	</div>
 	
 	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'

@@ -352,8 +352,8 @@ if (isset($_POST['newtitle'])) {
                             'title' => $title,
                             'personal_folder' => $isPersonal,
                             'renewal_period' => $renewalPeriod,
-                            'bloquer_creation' => '0',
-                            'bloquer_modification' => '0'
+							'bloquer_creation' => $dataReceived['block_creation'] == 1 ? '1' : '0',
+							'bloquer_modification' => $dataReceived['block_modif'] == 1 ? '1' : '0'
                        )
                     );
                     $newId = DB::insertId();
@@ -484,8 +484,8 @@ if (isset($_POST['newtitle'])) {
                     'title' => $title,
                     'personal_folder' => 0,
                     'renewal_period' => $renewalPeriod,
-                    'bloquer_creation' => '0',
-                    'bloquer_modification' => '0'
+                    'bloquer_creation' => $dataReceived['block_creation'] == 1 ? '1' : '0',
+                    'bloquer_modification' => $dataReceived['block_modif'] == 1 ? '1' : '0'
                 ),
                 "id=%i",
                 $dataReceived['id']

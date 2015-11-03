@@ -80,9 +80,10 @@ foreach ($treeDesc as $t) {
         }
         // Get some elements from DB concerning this node
         $node_data = DB::queryFirstRow(
-            "SELECT m.valeur as valeur, n.renewal_period as renewal_period
-            FROM ".$pre."misc as m,
-            ".$pre."nested_tree as n
+            "SELECT m.valeur AS valeur, n.renewal_period AS renewal_period,
+			n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification
+            FROM ".$pre."misc AS m,
+            ".$pre."nested_tree AS n
             WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i",
             "complex",
             $t->id
@@ -116,7 +117,7 @@ foreach ($treeDesc as $t) {
         $sOutput .= ',';
         
         //col4
-        $sOutput .= '"<span id=\"parent_'.$t->id.'\">'.$node_data['valeur'].'</span>"';
+        $sOutput .= '"<span id=\"parent_'.$t->id.'\">'.$t->parent_id.'</span>"';
         $sOutput .= ',';
         
         //col5
@@ -146,7 +147,7 @@ foreach ($treeDesc as $t) {
 			$sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
 		else
 			$sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
-		$sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" />"';
+		$sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" /><input type=\"hidden\"  id=\"block_creation_'.$t->id.'\" value=\"'.$node_data['bloquer_creation'].'\" /><input type=\"hidden\"  id=\"block_modif_'.$t->id.'\" value=\"'.$node_data['bloquer_modification'].'\" />"';
 		
 		//Finish the line
         $sOutput .= '],';
