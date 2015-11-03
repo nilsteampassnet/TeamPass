@@ -6,7 +6,7 @@
  * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -277,18 +277,17 @@ function rest_get () {
                     $condition_value = $GLOBALS['request'][2];
                 }
                 DB::debugMode(false);
-				
-				// get items in this module
-				$response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
-				foreach ($response as $data)
-				{
-					// prepare output
-					$id = $data['id'];
-					$json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-					$json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-					$json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-				}
                 
+                // get items in this module
+                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                }
 
                 /* load folders */
                 $response = DB::query(
@@ -312,12 +311,12 @@ function rest_get () {
             }
             elseif($GLOBALS['request'][1] == "items") {
                 $array_items = explode(';',$GLOBALS['request'][2]);
-				
-				// check if not empty
-				if (count($array_items) == 0) {
+                
+                // check if not empty
+                if (count($array_items) == 0) {
                     rest_error ('NO_ITEM');
                 }
-				
+                
                 // only accepts numeric
                 foreach($array_items as $item) {
                     if(!is_numeric($item)) {
@@ -419,7 +418,7 @@ function rest_get () {
                 $item_url = $array_item[6];
                 $item_tags = $array_item[7];
                 $item_anyonecanmodify = $array_item[8];
-				
+                
                 // added so one can sent data including the http or https !
                 // anyway we have to urlencode this data
                 $item_url = urldecode($item_url);
@@ -452,7 +451,7 @@ function rest_get () {
                         $itemExists = 0;
                     }
                     if ($itemExists == 0) {
-						$encrypt = cryption($item_pwd, SALT, "", "encrypt");
+                        $encrypt = cryption($item_pwd, SALT, "", "encrypt");
                         if (empty($encrypt['string'])) {
                             rest_error ('PASSWORDEMPTY');
                         }
@@ -465,7 +464,7 @@ function rest_get () {
                                     "label" => $item_label,
                                     "description" => $item_desc,
                                     'pw' => $encrypt['string'],
-									'pw_iv' => $encrypt['iv'],
+                                    'pw_iv' => $encrypt['iv'],
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
@@ -537,128 +536,128 @@ function rest_get () {
              * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1|ROLE2|...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
              * with:
              * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
-			 * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
-			 *
-			 * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers|Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
-			 *
+             * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
+             *
+             * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers|Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
+             *
              */
             elseif($GLOBALS['request'][1] == "user") {
-            	
-            	// get user definition
-            	$array_user = explode(';', $GLOBALS['request'][2]);
-            	if (count($array_user) != 11) {
-            		rest_error ('USERBADDEFINITION');
-            	}
-            	
-            	$login = $array_user[0];
-            	$name = $array_user[1];
-            	$lastname = $array_user[2];
-            	$password = $array_user[3];
-            	$email = $array_user[4];
-            	$adminby = $array_user[5];
-            	$isreadonly = $array_user[6];
-            	$roles = $array_user[7];
-            	$isadmin = $array_user[8];
-            	$ismanager = $array_user[9];
-            	$haspf = $array_user[10];
-            	
-            	// Empty user
-            	if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
-            		rest_error ('USERLOGINEMPTY');
-            	}
-            	// Check if user already exists
-            	$data = DB::query(
-            			"SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
-                WHERE login LIKE %ss",
-            			mysqli_escape_string($link, stripslashes($login))
-            	);
-            	
-            	if (DB::count() == 0) {
-            		try {
-	            		// find AdminRole code in DB
-            			$resRole = DB::queryFirstRow(
-            					"SELECT id
-            					FROM ".prefix_table("roles_title")."
-                				WHERE title LIKE %ss",
-            					mysqli_escape_string($link, stripslashes($adminby))
-            			);
-						
-						// get default language
-						$lang = DB::queryFirstRow(
-							"SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
-							"admin",
-							"default_language"
-						);
-						
-						// prepare roles list
-						$rolesList = "";
-						foreach (explode('|', $roles) as $role) {echo $role."-";
-							$tmp = DB::queryFirstRow(
-								"SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
-								$role
-							);
-							if (empty($rolesList)) $rolesList = $tmp['id'];
-							else $rolesList .= ";" . $tmp['id'];
-						}
-	            		
-	            		// Add user in DB
-	            		DB::insert(
-	            				prefix_table("users"),
-	            				array(
-	            						'login' => $login,
-	            						'name' => $name,
-	            						'lastname' => $lastname,
-	            						'pw' => bCrypt(stringUtf8Decode($password), COST),
-	            						'email' => $email,
-	            						'admin' => intval($isadmin),
-	            						'gestionnaire' => intval($ismanager),
-	            						'read_only' => intval($isreadonly),
-	            						'personal_folder' => intval($haspf),
-	            						'user_language' => $lang['valeur'],
-	            						'fonction_id' => $rolesList,
-	            						'groupes_interdits' => '0',
-	            						'groupes_visibles' => '0',
-	            						'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
-	            				)
-	            		);
-	            		$new_user_id = DB::insertId();
-	            		// Create personnal folder
-	            		if (intval($haspf) == 1) {
-	            			DB::insert(
-	            					prefix_table("nested_tree"),
-	            					array(
-	            							'parent_id' => '0',
-	            							'title' => $new_user_id,
-	            							'bloquer_creation' => '0',
-	            							'bloquer_modification' => '0',
-	            							'personal_folder' => '1'
-	            					)
-	            			);
-	            		}
-	            		// Send email to new user
-	            		@sendEmail(
-	            				$LANG['email_subject_new_user'],
-	            				str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
-	            				$email
-	            		);
-	            		// update LOG
-	            		DB::insert(
-	            				prefix_table("log_system"),
-	            				array(
-	            						'type' => 'user_mngt',
-	            						'date' => time(),
-	            						'label' => 'at_user_added',
-	            						'qui' => 'api - '.$GLOBALS['apikey'],
-	            						'field_1' => $new_user_id
-	            				)
-	            		);
-	            		echo '{"status":"user added"}';
+                
+                // get user definition
+                $array_user = explode(';', $GLOBALS['request'][2]);
+                if (count($array_user) != 11) {
+                    rest_error ('USERBADDEFINITION');
+                }
+                
+                $login = $array_user[0];
+                $name = $array_user[1];
+                $lastname = $array_user[2];
+                $password = $array_user[3];
+                $email = $array_user[4];
+                $adminby = $array_user[5];
+                $isreadonly = $array_user[6];
+                $roles = $array_user[7];
+                $isadmin = $array_user[8];
+                $ismanager = $array_user[9];
+                $haspf = $array_user[10];
+                
+                // Empty user
+                if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
+                    rest_error ('USERLOGINEMPTY');
+                }
+                // Check if user already exists
+                $data = DB::query(
+                    "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
+            WHERE login LIKE %ss",
+                    mysqli_escape_string($link, stripslashes($login))
+                );
+                
+                if (DB::count() == 0) {
+                    try {
+                        // find AdminRole code in DB
+                        $resRole = DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("roles_title")."
+                            WHERE title LIKE %ss",
+                            mysqli_escape_string($link, stripslashes($adminby))
+                        );
+                        
+                        // get default language
+                        $lang = DB::queryFirstRow(
+                            "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+                            "admin",
+                            "default_language"
+                        );
+                        
+                        // prepare roles list
+                        $rolesList = "";
+                        foreach (explode('|', $roles) as $role) {echo $role."-";
+                            $tmp = DB::queryFirstRow(
+                                "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
+                                $role
+                            );
+                            if (empty($rolesList)) $rolesList = $tmp['id'];
+                            else $rolesList .= ";" . $tmp['id'];
+                        }
+                        
+                        // Add user in DB
+                        DB::insert(
+                            prefix_table("users"),
+                            array(
+                                'login' => $login,
+                                'name' => $name,
+                                'lastname' => $lastname,
+                                'pw' => bCrypt(stringUtf8Decode($password), COST),
+                                'email' => $email,
+                                'admin' => intval($isadmin),
+                                'gestionnaire' => intval($ismanager),
+                                'read_only' => intval($isreadonly),
+                                'personal_folder' => intval($haspf),
+                                'user_language' => $lang['valeur'],
+                                'fonction_id' => $rolesList,
+                                'groupes_interdits' => '0',
+                                'groupes_visibles' => '0',
+                                'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
+                            )
+                        );
+                        $new_user_id = DB::insertId();
+                        // Create personnal folder
+                        if (intval($haspf) == 1) {
+                            DB::insert(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => '0',
+                                    'title' => $new_user_id,
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0',
+                                    'personal_folder' => '1'
+                                )
+                            );
+                        }
+                        // Send email to new user
+                        @sendEmail(
+                            $LANG['email_subject_new_user'],
+                            str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                            $email
+                        );
+                        // update LOG
+                        DB::insert(
+                            prefix_table("log_system"),
+                            array(
+                                'type' => 'user_mngt',
+                                'date' => time(),
+                                'label' => 'at_user_added',
+                                'qui' => 'api - '.$GLOBALS['apikey'],
+                                'field_1' => $new_user_id
+                            )
+                        );
+                        echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
                     }
-            	} else {
-            		rest_error ('USERALREADYEXISTS');
-            	}
+                } else {
+                    rest_error ('USERALREADYEXISTS');
+                }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
             /*
