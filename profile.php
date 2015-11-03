@@ -83,7 +83,7 @@ echo '
 
 <div style="float:left; margin-left:10px;">
 	<ul class="menu" style="">
-		<li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
+		<li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
 			<ul class="menu_250" style="text-align:left;">
 				<li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>
 				<li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>
@@ -125,10 +125,10 @@ echo '
 		   <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning'].'
 		</div>
         <label for="new_personal_saltkey" class="form_label">'.$LANG['new_saltkey'].' :</label>
-		<input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" />
+		<input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
 		<br />
 		<label for="old_personal_saltkey" class="form_label">'.$LANG['old_saltkey'].' :</label>
-		<input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" />
+		<input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" class="text_without_symbols" />
 		<div style="margin-top:4px;">
 			<span class="button" id="button_change_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
 			<span id="psk_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_change_wait_info">'.$LANG['please_wait'].'</span></span>
@@ -143,7 +143,7 @@ echo '
 			<i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning_lost'].'
 		</div>
 		<label for="new_reset_psk" class="form_label">'.$LANG['new_saltkey'].' :</label>
-		<input type="text" size="30" name="new_reset_psk" id="new_reset_psk" />
+		<input type="text" size="30" name="new_reset_psk" id="new_reset_psk" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
 		<div style="margin-top:4px;">
 			<span class="button" id="button_reset_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
 			<span id="psk_reset_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_reset_wait_info">'.$LANG['please_wait'].'</span></span>
@@ -419,6 +419,22 @@ $(function() {
 	$(".menu").menu({
 		icon: {},
 		position: { my: "left top", at: "right top" }
+	});
+	
+	// prevent usage of symbols in Personal saltkey
+	$(".text_without_symbols").keypress(function (e) {
+		var allowedChars = new RegExp("^[a-zA-Z0-9\-]+$");
+		var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
+		if (allowedChars.test(str)) {
+			return true;
+		}
+		e.preventDefault();
+		return false;
+	}).keyup(function() {
+		var forbiddenChars = new RegExp("[^a-zA-Z0-9\-]", "g");
+		if (forbiddenChars.test($(this).val())) {
+			$(this).val($(this).val().replace(forbiddenChars, ""));
+		}
 	});
 });
 
