@@ -167,7 +167,8 @@ if (isset($_SESSION['login'])) {
     if (
         isset($_SESSION['settings']['enable_favourites'])
         && $_SESSION['settings']['enable_favourites'] == 1
-        && $_SESSION['user_admin'] == 0
+        && 
+		($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false))
     ) {
         echo '
                 <button title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favourites\');">
@@ -223,7 +224,7 @@ if (isset($_SESSION['login'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                $_SESSION['user_admin'] == 1 ? '' :
+                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == true) ? '' :
                                 isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
 									<i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
@@ -242,7 +243,7 @@ if (isset($_SESSION['login'])) {
                     </ul>
                 </div>';
 
-    if ($_SESSION['user_admin'] != 1) {
+    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)) {
         echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
@@ -422,11 +423,15 @@ if (
         include $_SESSION['initial_url'];
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
-        if ($_SESSION['user_admin'] == 1) {
+        if (
+			($_SESSION['user_admin'] != 1)
+			||
+			($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)
+		) {
+            include 'items.php';
+        } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
-        } else {
-            include 'items.php';
         }
     } elseif ($_GET['page'] == "find") {
         // Show page for items findind
@@ -664,6 +669,8 @@ if (
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
             <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
+			<span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
+			<div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';
 }
 

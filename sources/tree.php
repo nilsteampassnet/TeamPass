@@ -124,8 +124,8 @@ function recursiveTree($nodeId)
                     $node,
                     array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
                 )
-                || in_array($node, $listFoldersLimitedKeys)
-                || in_array($node, $listRestrictedFoldersForItemsKeys)
+                || @in_array($node, $listFoldersLimitedKeys)
+                || @in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
                 //break;
