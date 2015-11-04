@@ -159,7 +159,7 @@ if (isset($_POST['type'])) {
                     echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
                     break;
                 }
-				
+                
                 // ADD item
                 DB::insert(
                     prefix_table("items"),
@@ -1079,15 +1079,15 @@ if (isset($_POST['type'])) {
             $arrData['author_email'] = $dataTmp['email'];
             $arrData['id_user'] = $dataItem['id_user'];
             */
-			
+            
             // Get all tags for this item
             $tags = "";
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
             foreach ($rows as $record) {
-				if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
+                if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
                 else $tags .= "&nbsp;&nbsp;<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
             }
-			
+            
             // TODO -> improve this check
             // check that actual user can access this item
             $restrictionActive = true;
@@ -1222,7 +1222,7 @@ if (isset($_POST['type'])) {
                 $arrData['login'] = str_replace(array('"'), array('&quot;'), $dataItem['login']);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
-                $arrData['tags'] = $tags;	//str_replace('"', '&quot;', $tags);
+                $arrData['tags'] = $tags;    //str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
                 if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
                     && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1) {
@@ -1240,16 +1240,16 @@ if (isset($_POST['type'])) {
                     "id = %i",
                     $_POST['id']
                 );
-				$arrData['viewed_no'] = $dataItem['viewed_no']+1;				
+                $arrData['viewed_no'] = $dataItem['viewed_no']+1;                
 
                 // get fields
                 $fieldsTmp = $arrCatList = "";
                 if (
-                	isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1
-                	&& isset($_POST['page']) && $_POST['page'] == "items"
+                    isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1
+                    && isset($_POST['page']) && $_POST['page'] == "items"
                 ) {
                     // get list of associated Categories
-                	$arrCatList = array();
+                    $arrCatList = array();
                     $rows_tmp = DB::query(
                         "SELECT id_category
                         FROM ".prefix_table("categories_folders")."
@@ -1389,151 +1389,151 @@ if (isset($_POST['type'])) {
             echo prepareExchangedData($arrData, "encode");
             break;
 
-        	/*
-        	   * CASE
-        	   * Display History of the selected Item
-        	*/
+            /*
+               * CASE
+               * Display History of the selected Item
+            */
         case "showDetailsStep2":
-        	// get Item info
-        	$dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['id']);
+            // get Item info
+            $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['id']);
 
-        	// GET Audit trail
-        	$history = "";
-        	$historyOfPws = "";
-        	$rows = DB::query(
-        	"SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
+            // GET Audit trail
+            $history = "";
+            $historyOfPws = "";
+            $rows = DB::query(
+            "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
                 FROM ".prefix_table("log_items")." as l
                 LEFT JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                 WHERE id_item=%i AND action <> %s
                 ORDER BY date ASC",
                 $_POST['id'],
                 "at_shown"
-        	);
-        	foreach ($rows as $record) {
-        		$reason = explode(':', $record['raison']);
-        		if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
-        			// don't do if item is PF
-        			if ($dataItem['perso'] != 1) {
+            );
+            foreach ($rows as $record) {
+                $reason = explode(':', $record['raison']);
+                if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
+                    // don't do if item is PF
+                    if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
-        			}
-        			// if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-        			if (!isUTF8($reason[1])) {
-        				$reason[1] = "";
-        			}
-        		}
+                    }
+                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+                    if (!isUTF8($reason[1])) {
+                        $reason[1] = "";
+                    }
+                }
                 // imported via API
                 if ($record['login'] == "") {
                     $record['login'] = $LANG['imported_via_api'];
                 }
 
-        		if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual"|| $record['action'] == "at_modification") {
-        			if (empty($history)) {
-        				$history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-        			} else {
-        				$history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-        			}
-        			if (trim($reason[0]) == "at_pw") {
-        				if (empty($historyOfPws)) {
-        					$historyOfPws = $LANG['previous_pw']." | ".$reason[1];
-        				} else {
-        					$historyOfPws .= $reason[1];
-        				}
-        			}
-        		}
-        	}
+                if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual"|| $record['action'] == "at_modification") {
+                    if (empty($history)) {
+                        $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
+                    } else {
+                        $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
+                    }
+                    if (trim($reason[0]) == "at_pw") {
+                        if (empty($historyOfPws)) {
+                            $historyOfPws = $LANG['previous_pw']." | ".$reason[1];
+                        } else {
+                            $historyOfPws .= $reason[1];
+                        }
+                    }
+                }
+            }
 
-        	// generate 2d key
-        	$pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-        	$pwgen->register();
-        	$pwgen = new Encryption\PwGen\pwgen();
-        	$pwgen->setLength(20);
-        	$pwgen->setSecure(true);
-        	$pwgen->setSymbols(false);
-        	$pwgen->setCapitalize(true);
-        	$pwgen->setNumerals(true);
-        	$_SESSION['key_tmp'] = $pwgen->generate();
-        	// Prepare files listing
-        	$files = $filesEdit = "";
-        	// launch query
-        	$rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['id']);
-        	foreach ($rows as $record) {
-        		// get icon image depending on file format
-        		$iconImage = fileFormatImage($record['extension']);
-        		// If file is an image, then prepare lightbox. If not image, then prepare donwload
-        		if (in_array($record['extension'], $k['image_file_ext'])) {
-        			$files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
-        		} else {
-        			$files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
-        		}
-        		// Prepare list of files for edit dialogbox
-        		$filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
-        	}
-        	// display lists
-        	$filesEdit = str_replace('"', '&quot;', $filesEdit);
-        	$files_id = $files;
-        	// Refresh last seen items
-        	$text = $LANG['last_items_title'].": ";
-        	$_SESSION['latest_items_tab'] = "";
-        	foreach ($_SESSION['latest_items'] as $item) {
-        		if (!empty($item)) {
-        			$data = DB::queryfirstrow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id = %i", $item);
-        			$_SESSION['latest_items_tab'][$item] = array(
-        			    'id' => $item,
-        			    'label' => addslashes($data['label']),
-        			    'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
-        			);
-        			$text .= '<span class="last_seen_item" onclick="javascript:nprogress.start();window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
-        		}
-        	}
-        	$div_last_items = str_replace('"', '&quot;', $text);
-        	// disable add bookmark if alread bookmarked
-        	if (in_array($_POST['id'], $_SESSION['favourites'])) {
-        		$favourite = 1;
-        	} else {
-        		$favourite = 0;
-        	}
+            // generate 2d key
+            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+            $pwgen->register();
+            $pwgen = new Encryption\PwGen\pwgen();
+            $pwgen->setLength(20);
+            $pwgen->setSecure(true);
+            $pwgen->setSymbols(false);
+            $pwgen->setCapitalize(true);
+            $pwgen->setNumerals(true);
+            $_SESSION['key_tmp'] = $pwgen->generate();
+            // Prepare files listing
+            $files = $filesEdit = "";
+            // launch query
+            $rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['id']);
+            foreach ($rows as $record) {
+                // get icon image depending on file format
+                $iconImage = fileFormatImage($record['extension']);
+                // If file is an image, then prepare lightbox. If not image, then prepare donwload
+                if (in_array($record['extension'], $k['image_file_ext'])) {
+                    $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
+                } else {
+                    $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
+                }
+                // Prepare list of files for edit dialogbox
+                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
+            }
+            // display lists
+            $filesEdit = str_replace('"', '&quot;', $filesEdit);
+            $files_id = $files;
+            // Refresh last seen items
+            $text = $LANG['last_items_title'].": ";
+            $_SESSION['latest_items_tab'] = "";
+            foreach ($_SESSION['latest_items'] as $item) {
+                if (!empty($item)) {
+                    $data = DB::queryfirstrow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id = %i", $item);
+                    $_SESSION['latest_items_tab'][$item] = array(
+                        'id' => $item,
+                        'label' => addslashes($data['label']),
+                        'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
+                    );
+                    $text .= '<span class="last_seen_item" onclick="javascript:nprogress.start();window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
+                }
+            }
+            $div_last_items = str_replace('"', '&quot;', $text);
+            // disable add bookmark if alread bookmarked
+            if (in_array($_POST['id'], $_SESSION['favourites'])) {
+                $favourite = 1;
+            } else {
+                $favourite = 0;
+            }
 
-        	// Add the fact that item has been viewed in logs
-        	if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
-        		DB::insert(
-					prefix_table("log_items"),
-					array(
-						'id_item' => $_POST['id'],
-						'date' => time(),
-						'id_user' => $_SESSION['user_id'],
-						'action' => 'at_shown'
-        		   )
-        		);
-        	}
+            // Add the fact that item has been viewed in logs
+            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+                DB::insert(
+                    prefix_table("log_items"),
+                    array(
+                        'id_item' => $_POST['id'],
+                        'date' => time(),
+                        'id_user' => $_SESSION['user_id'],
+                        'action' => 'at_shown'
+                   )
+                );
+            }
 
-        	// Add this item to the latests list
-        	if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
-        		if (count($_SESSION['latest_items']) >= $_SESSION['settings']['max_latest_items']) {
-        			array_pop($_SESSION['latest_items']); //delete last items
-        		}
-        		array_unshift($_SESSION['latest_items'], $dataItem['id']);
-        		// update DB
-        		DB::update(
+            // Add this item to the latests list
+            if (isset($_SESSION['latest_items']) && isset($_SESSION['settings']['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
+                if (count($_SESSION['latest_items']) >= $_SESSION['settings']['max_latest_items']) {
+                    array_pop($_SESSION['latest_items']); //delete last items
+                }
+                array_unshift($_SESSION['latest_items'], $dataItem['id']);
+                // update DB
+                DB::update(
                     prefix_table("users"),
-            		array(
-            		    'latest_items' => implode(';', $_SESSION['latest_items'])
-            		   ),
-            		"id=".$_SESSION['user_id']
-        		);
-        	}
+                    array(
+                        'latest_items' => implode(';', $_SESSION['latest_items'])
+                       ),
+                    "id=".$_SESSION['user_id']
+                );
+            }
 
-        	echo prepareExchangedData(
-	        	array(
-	        		"history" => str_replace('"', '&quot;', $history),
-	        		"history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
-		        	"favourite" => $favourite,
-		        	"div_last_items" => $div_last_items,
-		        	"files_edit" => $filesEdit,
-		        	"files_id" => $files_id
-	        	),
-	        	"encode"
-        	);
-        	break;
+            echo prepareExchangedData(
+                array(
+                    "history" => str_replace('"', '&quot;', $history),
+                    "history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
+                    "favourite" => $favourite,
+                    "div_last_items" => $div_last_items,
+                    "files_edit" => $filesEdit,
+                    "files_id" => $files_id
+                ),
+                "encode"
+            );
+            break;
 
         /*
          * CASE
@@ -1579,7 +1579,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
@@ -1638,7 +1638,7 @@ if (isset($_POST['type'])) {
                 break;
             }
             // decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             $tmp_source = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
@@ -1698,12 +1698,12 @@ if (isset($_POST['type'])) {
             } else {
                 $start = $_POST['start'];
             }
-			setcookie(
-				"jstree_select",
-				$_POST['id'],
-				time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+            setcookie(
+                "jstree_select",
+                $_POST['id'],
+                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
-			);
+            );
             // Prepare tree
             $arbo = $tree->getPath($_POST['id'], true);
             foreach ($arbo as $elem) {
@@ -1715,7 +1715,7 @@ if (isset($_POST['type'])) {
                 if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
                     $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
                 }
-            	$arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
+                $arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
                 if (empty($arboHtml)) {
                     $arboHtml = $arboHtml_tmp;
                 } else {
@@ -1747,7 +1747,7 @@ if (isset($_POST['type'])) {
                 $_POST['id'],
                 array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items']))
             )) {
-            	echo prepareExchangedData(array("error" => "not_authorized"), "encode");
+                echo prepareExchangedData(array("error" => "not_authorized"), "encode");
                 break;
             } else {
                 DB::query("SELECT * FROM ".prefix_table("items")." WHERE inactif = %i", 0);
@@ -1979,12 +1979,12 @@ if (isset($_POST['type'])) {
                         }
                         $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                        	$tempo = explode("<br />", $record['description']);
-                        	if (count($tempo) == 1) {
-                        		$html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
-                        	} else {
-                        		$html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
-                        	}
+                            $tempo = explode("<br />", $record['description']);
+                            if (count($tempo) == 1) {
+                                $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
+                            } else {
+                                $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
+                            }
                         }
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -2062,7 +2062,7 @@ if (isset($_POST['type'])) {
                 $where
             );
             $counter = DB::count();
-        	// DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
+            // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // Check list to be continued status
             if (($items_to_display_once + $start) < $counter && $items_to_display_once != "max") {
                 $listToBeContinued = "yes";
@@ -2126,7 +2126,7 @@ if (isset($_POST['type'])) {
                 // "items" => $returnedData
                 'displayCategories' => $displayCategories,
                 'access_level' => $accessLevel,
-				'IsPersonalFolder' => $folderIsPf
+                'IsPersonalFolder' => $folderIsPf
             );
             // Check if $rights is not null
             if (count($rights) > 0) {
@@ -2224,29 +2224,29 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
-			
-			// check if user can perform this action
+            
+            // check if user can perform this action
             if (isset($_POST['context']) && !empty($_POST['context'])) {
-				if ($_POST['context'] == "create_folder" || $_POST['context'] == "edit_folder" || $_POST['context'] == "delete_folder") {
-					if (
-						$_SESSION['is_admin'] == 1
-						|| ($_SESSION['user_manager'] == 1)
-						|| (
-							isset($_SESSION['settings']['subfolder_rights_as_parent'])
-							&& $_SESSION['settings']['subfolder_rights_as_parent'] == 1
-						)
-					) {
-						// allow
-					} else {
-						$returnValues = array(
-							"error" => "no_folder_creation_possible",
-							"error_msg" => addslashes($LANG['error_not_allowed_to'])
-						);
-						echo prepareExchangedData($returnValues, "encode");
-						break;
-					}
-				}
-			}
+                if ($_POST['context'] == "create_folder" || $_POST['context'] == "edit_folder" || $_POST['context'] == "delete_folder") {
+                    if (
+                        $_SESSION['is_admin'] == 1
+                        || ($_SESSION['user_manager'] == 1)
+                        || (
+                            isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                            && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                        )
+                    ) {
+                        // allow
+                    } else {
+                        $returnValues = array(
+                            "error" => "no_folder_creation_possible",
+                            "error_msg" => addslashes($LANG['error_not_allowed_to'])
+                        );
+                        echo prepareExchangedData($returnValues, "encode");
+                        break;
+                    }
+                }
+            }
 
             // Get required Complexity for this Folder
             $data = DB::queryFirstRow(
@@ -2753,7 +2753,7 @@ if (isset($_POST['type'])) {
             DB::insert(
                 prefix_table("otv"),
                 array(
-                	'id' => null,
+                    'id' => null,
                     'item_id' => intval($_POST['id']),
                     'timestamp' => time(),
                     'originator' => intval($_SESSION['user_id']),
@@ -2773,7 +2773,7 @@ if (isset($_POST['type'])) {
                 $_SESSION['settings']['otv_expiration_period'] = 7;
             }
             $url = $_SESSION['settings']['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
-        	$exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + (intval($_SESSION['settings']['otv_expiration_period'])*86400));
+            $exp_date = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time() + (intval($_SESSION['settings']['otv_expiration_period'])*86400));
 
             echo json_encode(
                 array(
@@ -2935,7 +2935,7 @@ if (isset($_POST['type'])) {
             $duplicate = 0;
 
             // decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $idFolder = $dataReceived['idFolder'];
@@ -3009,123 +3009,123 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-			
-			// Build list of visible folders
-			$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
-			
-			if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
-				&& $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
-				$_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
-				$_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
-			}
-			
-			if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-				$listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
-			} else {
-				$listFoldersLimitedKeys = array();
-			}
-			// list of items accessible but not in an allowed folder
-			if (isset($_SESSION['list_restricted_folders_for_items'])
-				&& count($_SESSION['list_restricted_folders_for_items']) > 0) {
-				$listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
-			} else {
-				$listRestrictedFoldersForItemsKeys = array();
-			}
-			
-			
-			//Build tree
-			$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
-			$tree->register();
-			$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-			$tree->rebuild();
-			$folders = $tree->getDescendants();
-			
-			foreach ($folders as $folder) {
-				// Be sure that user can only see folders he/she is allowed to
-				if (
-					!in_array($folder->id, $_SESSION['forbiden_pfs'])
-					|| in_array($folder->id, $_SESSION['groupes_visibles'])
-					|| in_array($folder->id, $listFoldersLimitedKeys)
-					|| in_array($folder->id, $listRestrictedFoldersForItemsKeys)
-				) {
-					$displayThisNode = false;
-					$hide_node = false;
-					$nbChildrenItems = 0;
-					// Check if any allowed folder is part of the descendants of this node
-					$nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
-					foreach ($nodeDescendants as $node) {
-						// manage tree counters
-						if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-							DB::query(
-								"SELECT * FROM ".prefix_table("items")."
-								WHERE inactif=%i AND id_tree = %i",
-								0,
-								$node
-							);
-							$nbChildrenItems += DB::count();
-						}
-						if (
-							in_array(
-								$node,
-								array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
-							)
-							|| @in_array($node, $listFoldersLimitedKeys)
-							|| @in_array($node, $listRestrictedFoldersForItemsKeys)
-						) {
-							$displayThisNode = true;
-							//break;
-						}
-					}
+            
+            // Build list of visible folders
+            $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
+            
+            if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
+                && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
+                $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
+                $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
+            }
+            
+            if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
+                $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
+            } else {
+                $listFoldersLimitedKeys = array();
+            }
+            // list of items accessible but not in an allowed folder
+            if (isset($_SESSION['list_restricted_folders_for_items'])
+                && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+                $listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
+            } else {
+                $listRestrictedFoldersForItemsKeys = array();
+            }
+            
+            
+            //Build tree
+            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+            $tree->rebuild();
+            $folders = $tree->getDescendants();
+            
+            foreach ($folders as $folder) {
+                // Be sure that user can only see folders he/she is allowed to
+                if (
+                    !in_array($folder->id, $_SESSION['forbiden_pfs'])
+                    || in_array($folder->id, $_SESSION['groupes_visibles'])
+                    || in_array($folder->id, $listFoldersLimitedKeys)
+                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
+                ) {
+                    $displayThisNode = false;
+                    $hide_node = false;
+                    $nbChildrenItems = 0;
+                    // Check if any allowed folder is part of the descendants of this node
+                    $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
+                    foreach ($nodeDescendants as $node) {
+                        // manage tree counters
+                        if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                            DB::query(
+                                "SELECT * FROM ".prefix_table("items")."
+                                WHERE inactif=%i AND id_tree = %i",
+                                0,
+                                $node
+                            );
+                            $nbChildrenItems += DB::count();
+                        }
+                        if (
+                            in_array(
+                                $node,
+                                array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+                            )
+                            || @in_array($node, $listFoldersLimitedKeys)
+                            || @in_array($node, $listRestrictedFoldersForItemsKeys)
+                        ) {
+                            $displayThisNode = true;
+                            //break;
+                        }
+                    }
 
-					if ($displayThisNode == true) {
-						$ident = "";
-						for ($x = 1; $x < $folder->nlevel; $x++) {
-							$ident .= "&nbsp;&nbsp;";
-						}
-						
-						// resize title if necessary
-						$fldTitle = str_replace("&", "&amp;", $folder->title);
-						
-						// build select for all visible folders
-						if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
-							if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-								if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
-									$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-								} else {
-									$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-								}
-							} else {
-								$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-							}
-						} else {
-							$selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-						}
-						// build select for non personal visible folders
-						if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-							$selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-						} else {
-							$selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-						}
-						// build select for active folders (where user can do something)
-						if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-							$selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-						} else {
-							$selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-						}
-					}
-				}
-			}
-			
-			$data = array(
+                    if ($displayThisNode == true) {
+                        $ident = "";
+                        for ($x = 1; $x < $folder->nlevel; $x++) {
+                            $ident .= "&nbsp;&nbsp;";
+                        }
+                        
+                        // resize title if necessary
+                        $fldTitle = str_replace("&", "&amp;", $folder->title);
+                        
+                        // build select for all visible folders
+                        if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+                            if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
+                                if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
+                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                                } else {
+                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+                                }
+                            } else {
+                                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                            }
+                        } else {
+                            $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        }
+                        // build select for non personal visible folders
+                        if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
+                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+                        } else {
+                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        }
+                        // build select for active folders (where user can do something)
+                        if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
+                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
+                        } else {
+                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        }
+                    }
+                }
+            }
+            
+            $data = array(
                 'error' => "",
                 'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
                 'selectVisibleNonPersonalFoldersOptions' => ($selectVisibleNonPersonalFoldersOptions),
                 'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions)
             );
-			// send data
+            // send data
             echo prepareExchangedData($data, "encode");
-			
-			break;
+            
+            break;
     }
 }
 // Build the QUERY in case of GET
