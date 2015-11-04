@@ -317,6 +317,7 @@ function openRightsDialog(role, folder, line, right)
     if (right == "W") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete, #right_noedit").prop("checked", false);
+		$("#div_delete_option").show();
     } else if (right == "ND") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", true);
