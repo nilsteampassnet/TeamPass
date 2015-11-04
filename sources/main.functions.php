@@ -717,7 +717,7 @@ function updateCacheTable($action, $id = "")
                     'id_tree' => $record['id_tree'],
                     'perso' => $record['perso'],
                     'restricted_to' => $record['restricted_to'],
-                    'login' => $record['login']==null ? "" : $record['login'],
+                    //'login' => $record['login'],
                     'folder' => $folder,
                     'author' => $record['id_user'],
                     'renewal_period' => $resNT['renewal_period']

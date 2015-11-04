@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'at_suggestion' => 'Suggestion accepted',
 	'character_not_allowed' => 'Character is not allowed!',
 	'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
 	'my_profile' => 'My profile',
