@@ -197,34 +197,38 @@ function ListerItems(groupe_id, restricted, start)
                 $("#pf_selected").val(data.IsPersonalFolder);
 
                 // display path of folders
-                var path_maxlength = 420;
-                if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
-                $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;'+data.arborescence);
-                var path_levels = data.arborescence.split(" » ").length-1;    
-                if ($("#items_path_var").width() > path_maxlength) {
-                    $("#path_fontsize").val($("#items_path_var").css('font-size'));
-                    // start reducing size of font
-                    $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
-                    if ($("#items_path_var").width() > path_maxlength && path_levels < 2) {
-                        while ($("#items_path_var").width() > path_maxlength) {
-                            $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
-                        }
-                    }
-                    if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
-                        var nb = 1;
-                        $(".path_element").each(function () {
-                            // replace name of folder by ...
-                            if (nb > 1 && nb <= path_levels && $(this).html().length > 8 && $("#items_path_var").width() > path_maxlength) {
-                                $(this).html("<span title='"+$(this).html()+"'>...</span>");
-                            }
-                            // last folder name is still too long
-                            if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
-                                
-                            }
-                            nb++;
-                        });
-                    }
-                }
+				if (data.arborescence != undefined) {
+					var path_maxlength = 420;
+					if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
+					$("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;'+data.arborescence);
+					var path_levels = data.arborescence.split('<i class="fa fa-folder-open-o"></i>&nbsp;').length-1;
+					if ($("#items_path_var").width() > path_maxlength) {
+						$("#path_fontsize").val($("#items_path_var").css('font-size'));
+						// start reducing size of font
+						$("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
+						if ($("#items_path_var").width() > path_maxlength && path_levels < 2) {
+							while ($("#items_path_var").width() > path_maxlength) {
+								$("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
+							}
+						}
+						if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
+							var nb = 1;
+							$(".path_element").each(function () {
+								// replace name of folder by ...
+								if (nb > 1 && nb <= path_levels && $(this).html().length > 8 && $("#items_path_var").width() > path_maxlength) {
+									$(this).html("<span title='"+$(this).html()+"'>...</span>");
+								}
+								// last folder name is still too long
+								if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
+									
+								}
+								nb++;
+							});
+						}
+					}
+				} else {
+					$("#items_path_var").html('');
+				}
                 
                 if (data.array_items == "") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
@@ -2208,7 +2212,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 350,
         height: 280,
         title: "<?php echo $LANG['item_menu_add_rep'];?>",
         buttons: {
@@ -2231,7 +2235,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 350,
         height: 280,
         title: "<?php echo $LANG['item_menu_edi_rep'];?>",
         buttons: {
@@ -2355,7 +2359,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 350,
         height: 250,
         title: "<?php echo $LANG['item_menu_mov_rep'];?>",
         buttons: {
@@ -2413,7 +2417,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 350,
         height: 250,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
