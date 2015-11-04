@@ -659,7 +659,7 @@ $htmlHeaders .= '
             modal: true,
             autoOpen: false,
             width: 500,
-            height: 150,
+            height: 190,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
                 $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
@@ -906,19 +906,30 @@ $htmlHeaders .= '
         refreshListLastSeenItems();
 
 		// prevent usage of symbols in Personal saltkey
-		$(".text_without_symbols").keypress(function (e) {
-			var allowedChars = new RegExp("^[a-zA-Z0-9\-]+$");
-			var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
-			if (allowedChars.test(str)) {
-				return true;
+		$(".text_without_symbols").bind("keydown", function (event) {
+			switch (event.keyCode) {
+				case 8:  // Backspace
+				case 9:  // Tab
+				case 13: // Enter
+				case 37: // Left
+				case 38: // Up
+				case 39: // Right
+				case 40: // Down
+				break;
+				default:
+				var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
+				var key = event.key;
+				if (!regex.test(key)) {
+					$("#set_personal_saltkey_warning").html("'.addslashes($LANG['character_not_allowed']).'").stop(true,true).show().fadeOut(1000);
+					event.preventDefault();
+					return false;
+				}
+				if (key !== "Alt" && key !== "Control" && key !== "Shift") $("#set_personal_saltkey_last_letter").html(key).stop(true,true).show().fadeOut(1400);
+				break;
 			}
+		}).bind("paste",function(e){
+			$("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
 			e.preventDefault();
-			return false;
-		}).keyup(function() {
-			var forbiddenChars = new RegExp("[^a-zA-Z0-9\-]", "g");
-			if (forbiddenChars.test($(this).val())) {
-				$(this).val($(this).val().replace(forbiddenChars, ""));
-			}
 		});
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);

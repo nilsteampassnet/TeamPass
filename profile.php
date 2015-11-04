@@ -129,6 +129,7 @@ echo '
 		<br />
 		<label for="old_personal_saltkey" class="form_label">'.$LANG['old_saltkey'].' :</label>
 		<input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" class="text_without_symbols" />
+				
 		<div style="margin-top:4px;">
 			<span class="button" id="button_change_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
 			<span id="psk_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_change_wait_info">'.$LANG['please_wait'].'</span></span>
@@ -142,14 +143,21 @@ echo '
 		<div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
 			<i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning_lost'].'
 		</div>
-		<label for="new_reset_psk" class="form_label">'.$LANG['new_saltkey'].' :</label>
-		<input type="text" size="30" name="new_reset_psk" id="new_reset_psk" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
+		
+		<div style="margin-top:5px;">
+			<label for="new_reset_psk" class="form_label">'.$LANG['new_saltkey'].' :</label>
+			<input type="text" size="30" name="new_reset_psk" id="new_reset_psk" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
+		</div>
+		
 		<div style="margin-top:4px;">
 			<span class="button" id="button_reset_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
 			<span id="psk_reset_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_reset_wait_info">'.$LANG['please_wait'].'</span></span>
 		</div>
+		
    </div>';
 echo '
+	
+	<div style="display:none;margin:5px 0 10px 0;text-align:center;padding:4px;" id="field_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';
 ?>
 <script type="text/javascript">
@@ -355,7 +363,7 @@ $(function() {
 		$("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk']));?>");
 		
 		$("#div_change_psk").show();
-		$("#dialog_user_profil").dialog("option", "height", 500);
+		$("#dialog_user_profil").dialog("option", "height", 530);
     });
 	$("#button_change_psk").click(function() {
 		$("#psk_change_wait").show();
@@ -393,7 +401,7 @@ $(function() {
 		$("#new_reset_psk").val("");
 		
 		$("#div_reset_psk").show();
-		$("#dialog_user_profil").dialog("option", "height", 500);
+		$("#dialog_user_profil").dialog("option", "height", 520);
     });
 	$("#button_reset_psk").click(function() {
 		$("#psk_reset_wait").show();
@@ -422,19 +430,29 @@ $(function() {
 	});
 	
 	// prevent usage of symbols in Personal saltkey
-	$(".text_without_symbols").keypress(function (e) {
-		var allowedChars = new RegExp("^[a-zA-Z0-9\-]+$");
-		var str = String.fromCharCode(!e.charCode ? e.which : e.charCode);
-		if (allowedChars.test(str)) {
-			return true;
+	$(".text_without_symbols").bind("keydown", function (event) {
+		switch (event.keyCode) {
+			case 8:  // Backspace
+			case 9:  // Tab
+			case 13: // Enter
+			case 37: // Left
+			case 38: // Up
+			case 39: // Right
+			case 40: // Down
+			break;
+			default:
+			var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
+			var key = event.key;
+			if (!regex.test(key)) {
+				$("#field_warning").html("<?php echo addslashes($LANG['character_not_allowed']);?>").stop(true,true).show().fadeOut(1000);
+				event.preventDefault();
+				return false;
+			}
+			break;
 		}
+	}).bind("paste",function(e){
+		$("#field_warning").html("<?php echo addslashes($LANG['error_not_allowed_to']);?>").stop(true,true).show().fadeOut(1000);
 		e.preventDefault();
-		return false;
-	}).keyup(function() {
-		var forbiddenChars = new RegExp("[^a-zA-Z0-9\-]", "g");
-		if (forbiddenChars.test($(this).val())) {
-			$(this).val($(this).val().replace(forbiddenChars, ""));
-		}
 	});
 });
 
