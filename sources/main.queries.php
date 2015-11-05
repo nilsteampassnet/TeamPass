@@ -894,7 +894,7 @@ switch ($_POST['type']) {
 			$nb_suggestions_waiting = DB::count();
 		}
 
-        echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : "'.$nb_suggestions_waiting.'"}]';
+        //echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : "'.$nb_suggestions_waiting.'"}]';
         break;
     /**
      * Generates a KEY with CRYPT
