@@ -1020,6 +1020,13 @@ if (isset($_POST['type'])) {
           * Display informations of selected item
         */
         case "show_details_item":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key']) {
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+			
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
@@ -1542,7 +1549,8 @@ if (isset($_POST['type'])) {
         case "del_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                // error
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
                 break;
             }
             // delete item consists in disabling it
@@ -1575,7 +1583,8 @@ if (isset($_POST['type'])) {
         case "update_rep":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                // error
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
                 break;
             }
             // decrypt and retreive data in JSON format
@@ -1634,7 +1643,8 @@ if (isset($_POST['type'])) {
         case "move_folder":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                // error
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
                 break;
             }
             // decrypt and retreive data in JSON format
@@ -1689,6 +1699,13 @@ if (isset($_POST['type'])) {
         * List items of a group
         */
         case 'lister_items_groupe':
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+			
             $arboHtml = $html = "";
             $folderIsPf = $showError = 0;
             $itemsIDList = $rights = $returnedData = array();
