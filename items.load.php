@@ -3506,7 +3506,7 @@ function loadItemHistory()
         },
         "json"
    );
-
+}
 
 function globalItemsSearch()
 {
@@ -3643,6 +3643,6 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
                 $("#dialog_upgrade_personal_passwords ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['admin_action_db_backup_start_tip'];?>')").prop("disabled", false);
             }
         }
-    })
+    });
 }
 </script>
