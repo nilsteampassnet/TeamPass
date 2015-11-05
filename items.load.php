@@ -1890,7 +1890,8 @@ function delete_attached_file(file_id)
         "sources/items.queries.php",
         {
             type    : "delete_attached_file",
-            file_id  : file_id
+            file_id : file_id,
+            key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
             $("#span_edit_file_"+file_id).css("textDecoration", "line-through");
@@ -3464,7 +3465,7 @@ function prepareOneTimeView()
         function(data) {
             //check if format error
             if (data.error == "") {
-                $("#div_dialog_message").dialog({height:200,minWidth:750});
+                $("#div_dialog_message").dialog({height:300,minWidth:750});
                 $("#div_dialog_message").dialog('open');
                 $("#div_dialog_message_text").html(data.url);
             } else {
@@ -3475,6 +3476,37 @@ function prepareOneTimeView()
         "json"
    );
 }
+
+/*
+* Launch show History of Item
+*/
+function loadItemHistory()
+{
+    if ($("#selected_items").val() == "") return false;
+    $("#div_loading").show();
+
+    //Send query
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "load_item_history",
+            id      : $("#id_item").val(),
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            //check if format error
+            if (data.error == "") {
+                $("#div_dialog_message").dialog({height:600,minWidth:550});
+                $("#div_dialog_message").dialog('open');
+                $("#div_dialog_message_text").html(data.history);
+            } else {
+                $("#item_history_log_error").html(data.error).show();
+            }
+            $("#div_loading").hide();
+        },
+        "json"
+   );
+
 
 function globalItemsSearch()
 {

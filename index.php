@@ -145,9 +145,13 @@ echo '
         <div id="logo"><img src="includes/images/canevas/logo.png" alt="" /></div>';
 // Display menu
 if (isset($_SESSION['login'])) {
+	// welcome message
+	echo '
+		<div style="float:right; margin:-10px 50px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b></div>';
+	
     echo '
         <div id="menu_top">
-            <div style="margin-left:20px; margin-top:5px;width:660px;" id="main_menu">';
+            <div style="margin-left:20px; margin-top:2px;width:660px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
@@ -163,6 +167,7 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/binocular.png" alt="" />
                 </button>';
     }
+	
     // Favourites menu
     if (
         isset($_SESSION['settings']['enable_favourites'])
@@ -256,7 +261,9 @@ if (isset($_SESSION['login'])) {
                 </div>';
     }
     echo '
-            </div>
+            </div>';
+	
+	echo '
         </div>';
 }
 // Display language menu
@@ -273,6 +280,7 @@ if (!isset($_GET['otv'])) {
             </dl>
         </div>';
 }
+	
 echo '
     </div>';
 
