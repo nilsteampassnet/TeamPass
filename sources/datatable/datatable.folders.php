@@ -47,13 +47,9 @@ $treeDesc = $tree->getDescendants();
 /*
    * Output
 */
-$sOutput = '{';
-$sOutput .= '"recordsTotal": '.count($treeDesc).', ';
-$sOutput .= '"recordsFiltered": '.count($treeDesc).', ';
-$sOutput .= '"data": ';
 
 if (count($treeDesc) > 0) {
-    $sOutput .= '[';
+    $sOutput = '[';
 }
 
 $x = 0;
@@ -159,9 +155,10 @@ foreach ($treeDesc as $t) {
 
 if (count($treeDesc) > 0) {
     if (strrchr($sOutput, "[") != '[') $sOutput = substr_replace($sOutput, "", -1);
-    $sOutput .= '] , "test" : "coucou" }';
+    $sOutput .= ']}';
 } else {
     $sOutput .= '[] }';
 }
 
-echo $sOutput;
+// finalize output
+echo '{"recordsTotal": '.count($treeDesc).', "recordsFiltered": '.$x.', "data": '.$sOutput;

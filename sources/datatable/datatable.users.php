@@ -124,16 +124,15 @@ $rows = DB::query(
     $sLimit",
     $criteria
 );
-$iFilteredTotal = DB::count();
+//$iFilteredTotal = DB::count();
+$iFilteredTotal = 0;
 
 // output
-$sOutput = '{';
-$sOutput .= '"recordsTotal": '.$iTotal.', ';
-$sOutput .= '"recordsFiltered": '.$iTotal.', ';
-$sOutput .= '"data": ';
 
-if ($iFilteredTotal > 0) {
-    $sOutput .= '[';
+if (DB::count() > 0) {
+    $sOutput = '[';
+} else {
+	$sOutput = '';
 }
 
 foreach ($rows as $record) {
@@ -283,6 +282,8 @@ foreach ($rows as $record) {
 
         //Finish the line
         $sOutput .= '],';
+		
+		$iFilteredTotal ++;
     }
 }
 
@@ -293,4 +294,6 @@ if (count($rows) > 0) {
     $sOutput .= '[] }';
 }
 
-echo $sOutput;
+// prepare complete output
+
+echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iFilteredTotal.', "data": '.$sOutput;

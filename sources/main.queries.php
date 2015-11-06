@@ -876,7 +876,7 @@ switch ($_POST['type']) {
         if (DB::count() > 0) {
             foreach ($rows as $record) {
                 if (!in_array($record['id'], $arrTmp)) {
-                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right fa-fw"></i>&nbsp;'.addslashes($record['label']).'</li>';
                     $x++;
                     array_push($arrTmp, $record['id']);
                     if ($x >= 10) break;
@@ -894,7 +894,7 @@ switch ($_POST['type']) {
 			$nb_suggestions_waiting = DB::count();
 		}
 
-        //echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : "'.$nb_suggestions_waiting.'"}]';
+        echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : '.$nb_suggestions_waiting.'}]';
         break;
     /**
      * Generates a KEY with CRYPT

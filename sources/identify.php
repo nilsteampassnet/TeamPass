@@ -14,7 +14,7 @@
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
-$debugDuo = 0; //Can be used in order to debug LDAP authentication
+$debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'sessions.php';
 session_start();

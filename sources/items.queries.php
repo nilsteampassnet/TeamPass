@@ -187,18 +187,6 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            /*// generate Key for fields
-                            $randomKeyFields = generateKey();
-                            // Store generated key for Field
-                            DB::insert(
-                                prefix_table('keys'),
-                                array(
-                                    'sql_table' => 'categories_items',
-                                    'id' => $newID,
-                                    'rand_key' => $randomKeyFields
-                                )
-                            );*/
-
                             $encrypt = cryption($field_data[1], SALT, "", "encrypt");
                             DB::insert(
                                 prefix_table('categories_items'),
@@ -485,7 +473,7 @@ if (isset($_POST['type'])) {
                             'email' => $dataReceived['email'],
                             'login' => $login,
                             'url' => $url,
-                            'id_tree' => $dataReceived['categorie'],
+                            'id_tree' => (!isset($dataReceived['categorie']) || $dataReceived['categorie'] == "undefined") ? $dataItem['id_tree'] : $dataReceived['categorie'],
                             'restricted_to' => $dataReceived['restricted_to'],
                             'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] == "on") ? '1' : '0',
                             'complexity_level' => $dataReceived['complexity_level']
@@ -859,15 +847,8 @@ if (isset($_POST['type'])) {
 
                     $pw = cleanString($encrypt['string']);
                     // generate 2d key
-                    $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-                    $pwgen->register();
-                    $pwgen = new Encryption\PwGen\pwgen();
-                    $pwgen->setLength(20);
-                    $pwgen->setSecure(true);
-                    $pwgen->setSymbols(false);
-                    $pwgen->setCapitalize(true);
-                    $pwgen->setNumerals(true);
-                    $_SESSION['key_tmp'] = $pwgen->generate();
+                    $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));	
+					
                     // Prepare files listing
                     $files = $filesEdit = "";
                     // launch query
@@ -1396,10 +1377,10 @@ if (isset($_POST['type'])) {
             echo prepareExchangedData($arrData, "encode");
             break;
 
-            /*
-               * CASE
-               * Display History of the selected Item
-            */
+		/*
+		   * CASE
+		   * Display History of the selected Item
+		*/
         case "showDetailsStep2":
             // get Item info
             $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['id']);
@@ -1450,15 +1431,8 @@ if (isset($_POST['type'])) {
             }
 
             // generate 2d key
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-            $pwgen->setLength(20);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $_SESSION['key_tmp'] = $pwgen->generate();
+			$_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));	
+			
             // Prepare files listing
             $files = $filesEdit = "";
             // launch query
@@ -1466,11 +1440,19 @@ if (isset($_POST['type'])) {
             foreach ($rows as $record) {
                 // get icon image depending on file format
                 $iconImage = fileFormatImage($record['extension']);
+				
+				// prepare text to display
+				if (strlen($record['name']) > 60 && strrpos($record['name'], ".") >= 56) {
+					$filename = substr($record['name'], 0, 50)."(truncated)".substr($record['name'], strrpos($record['name'], "."));
+				} else {
+					$filename = $record['name'];
+				}
+				
                 // If file is an image, then prepare lightbox. If not image, then prepare donwload
                 if (in_array($record['extension'], $k['image_file_ext'])) {
-                    $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$record['name'].'</a><br />';
+                    $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a><br />';
                 } else {
-                    $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$record['name'].'</a><br />';
+                    $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$filename.'</a><br />';
                 }
                 // Prepare list of files for edit dialogbox
                 $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
@@ -1478,21 +1460,7 @@ if (isset($_POST['type'])) {
             // display lists
             $filesEdit = str_replace('"', '&quot;', $filesEdit);
             $files_id = $files;
-            // Refresh last seen items
-            $text = $LANG['last_items_title'].": ";
-            $_SESSION['latest_items_tab'] = "";
-            foreach ($_SESSION['latest_items'] as $item) {
-                if (!empty($item)) {
-                    $data = DB::queryfirstrow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id = %i", $item);
-                    $_SESSION['latest_items_tab'][$item] = array(
-                        'id' => $item,
-                        'label' => addslashes($data['label']),
-                        'url' => 'index.php?page=items&group='.$data['id_tree'].'&id='.$item
-                    );
-                    $text .= '<span class="last_seen_item" onclick="javascript:nprogress.start();window.location.href = \''.$_SESSION['latest_items_tab'][$item]['url'].'\'"><img src="includes/images/tag-small.png" /><span id="last_items_'.$_SESSION['latest_items_tab'][$item]['id'].'">'.stripslashes($_SESSION['latest_items_tab'][$item]['label']).'</span></span>';
-                }
-            }
-            $div_last_items = str_replace('"', '&quot;', $text);
+			
             // disable add bookmark if alread bookmarked
             if (in_array($_POST['id'], $_SESSION['favourites'])) {
                 $favourite = 1;
@@ -1509,7 +1477,7 @@ if (isset($_POST['type'])) {
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_shown'
-                   )
+                    )
                 );
             }
 
@@ -1531,10 +1499,9 @@ if (isset($_POST['type'])) {
 
             echo prepareExchangedData(
                 array(
-                    "history" => str_replace('"', '&quot;', $history),
-                    "history_of_pwds" => str_replace('"', '&quot;', $historyOfPws),
+                    "history" => htmlspecialchars($history, ENT_QUOTES, 'UTF-8'),
+                    "history_of_pwds" => htmlspecialchars($historyOfPws, ENT_QUOTES, 'UTF-8'),
                     "favourite" => $favourite,
-                    "div_last_items" => $div_last_items,
                     "files_edit" => $filesEdit,
                     "files_id" => $files_id
                 ),
@@ -2391,7 +2358,6 @@ if (isset($_POST['type'])) {
                 "SELECT description FROM ".prefix_table("items")." WHERE id=%i", $_POST['id_item']
             );
             // Clean up the string
-            // echo '$("#edit_desc").val("'.stripslashes(str_replace('\n','\\\n',mysqli_escape_string($link, strip_tags($dataItem['description'])))).'");';
             echo json_encode(array("description" => strip_tags($dataItem['description'])), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             break;
 
@@ -2437,12 +2403,14 @@ if (isset($_POST['type'])) {
                     $_SESSION['user_id']
                 );
                 // refresh session fav list
-                foreach ($_SESSION['favourites_tab'] as $key => $value) {
-                    if ($key == $_POST['id']) {
-                        unset($_SESSION['favourites_tab'][$key]);
-                        break;
-                    }
-                }
+				if (isset($_SESSION['favourites_tab'])) {
+					foreach ($_SESSION['favourites_tab'] as $key => $value) {
+						if ($key == $_POST['id']) {
+							unset($_SESSION['favourites_tab'][$key]);
+							break;
+						}
+					}
+				}                
             }
             break;
 
@@ -2760,12 +2728,7 @@ if (isset($_POST['type'])) {
             }
 
             // generate session
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-            $pwgen->setLength(20);
-            $pwgen->setSecure(true);
-            $otv_code = $pwgen->generate();
+			$otv_code = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));	
 
             DB::insert(
                 prefix_table("otv"),
