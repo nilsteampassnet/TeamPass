@@ -717,10 +717,10 @@ function updateCacheTable($action, $id = "")
                     'id_tree' => $record['id_tree'],
                     'perso' => $record['perso'],
                     'restricted_to' => $record['restricted_to'],
-                    //'login' => $record['login'],
+                    'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
                     'author' => $record['id_user'],
-                    'renewal_period' => $resNT['renewal_period']
+                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0"
                    )
             );
         }
@@ -762,7 +762,7 @@ function updateCacheTable($action, $id = "")
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
-                'login' => $data['login'],
+                'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                ),
@@ -812,7 +812,7 @@ function updateCacheTable($action, $id = "")
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
-                'login' => $data['login'],
+                'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                )

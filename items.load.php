@@ -726,6 +726,7 @@ function EditerItem()
     else if ($("#edit_pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
     else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo $LANG['error_tags'];?>";
+	else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo $LANG['error_no_selected_folder'];?>";
     else{
         //Check pw complexity level
         if ((
@@ -1429,7 +1430,7 @@ function showDetailsStep2(id, param)
             $("#hid_files").val(data.files_id);
             $("#item_edit_list_files").html(data.files_edit);
 
-            $("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
+            //$("#div_last_items").html(htmlspecialchars_decode(data.div_last_items));
 
             // function calling image lightbox when clicking on link
             $("a.image_dialog").click(function(event) {
@@ -1472,12 +1473,17 @@ function ActionOnQuickIcon(id, action)
     }
 
     //Send query
+	LoadingPage();
     $.post("sources/items.queries.php",
-    {
-        type    : 'action_on_quick_icon',
-        id      : id,
-        action  : action
-    }
+		{
+			type    : 'action_on_quick_icon',
+			id      : id,
+			action  : action
+		},
+		function(data) {
+			LoadingPage();
+			displayMessage("<?php echo $LANG['alert_message_done'];?>");
+		}
    );
 }
 

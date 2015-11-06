@@ -419,11 +419,11 @@ $htmlHeaders .= '
             function(data) {
                 //check if format error
                 if (data[0].error == "") {
-                    $("#last_seen_items_list").html((data[0].text));
+                    $("#last_seen_items_list").html(data[0].text);
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
 					// show notification
-					if (data[0].existing_suggestions != "0") {
+					if (data[0].existing_suggestions != 0) {
 						blink("#menu_button_suggestion", -1, 500, "ui-state-error");
 					}
                 } else {
