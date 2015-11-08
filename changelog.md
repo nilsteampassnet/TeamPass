@@ -1,5 +1,11 @@
 Last changes
 2.1.24
+ #1073 - User can create folder on root without permission
+ #1074 - Read only user can create folders + wipe out all items on remove folder
+ #1069 - Knowledge Base can not change page
+ #1068 - personal saltkey not saved
+ #1067 - Suggestion feature not working
+ #1064 - Record in db are not deleted when you delete in GUI
  #1058 - Fix API issue while adding an item
  #1055 - Personal item cannot be deleted
  #1048 - Encryption error flag is visible for no reason
