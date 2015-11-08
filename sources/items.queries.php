@@ -1672,7 +1672,7 @@ if (isset($_POST['type'])) {
                 echo $returnValues;
                 break;
             }
-			
+
             $arboHtml = $html = "";
             $folderIsPf = $showError = 0;
             $itemsIDList = $rights = $returnedData = array();
@@ -2004,7 +2004,7 @@ if (isset($_POST['type'])) {
                                     $html .= '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>&nbsp;';
+                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>&nbsp;';
                                 }
                             }
                             $html .= '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
