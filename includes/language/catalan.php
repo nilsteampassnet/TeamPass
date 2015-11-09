@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'character_not_allowed' => 'Character is not allowed!',
     'user_ga_code' => 'Enviar GoogleAuthenticator per email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'character_not_allowed' => 'Character is not allowed!',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',

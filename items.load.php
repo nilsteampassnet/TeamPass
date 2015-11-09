@@ -362,16 +362,17 @@ function ListerItems(groupe_id, restricted, start)
                                 //move item
                                 $.post(
                                     "sources/items.queries.php",
-                                      {
-                                          type     : "move_item",
-                                          item_id : ui.draggable.attr("id"),
-                                          folder_id : $(this).attr("id").substring(4),
-                                        key        : "<?php echo $_SESSION['key'];?>"
-                                      },
+									{
+										type     : "move_item",
+										item_id : ui.draggable.attr("id"),
+										folder_id : $(this).attr("id").substring(4),
+										key        : "<?php echo $_SESSION['key'];?>"
+									},
                                     function(data) {
                                         //increment / decrement number of items in folders
                                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
+										$("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
                                         LoadingPage();
                                         displayMessage("<?php echo $LANG['alert_message_done'];?>");
                                     },
@@ -1176,7 +1177,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_files").html("");
 
                         //Display details
-                        $("#id_label").html(data.label).html();
+                        $("#id_label").html(data.label);
                         $("#hid_label").val(data.label);
                         $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
@@ -2084,8 +2085,8 @@ function refreshVisibleFolders()
                 $('#copy_in_folder option[value!="0"]').remove();
                 
                 // append new list
-                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").append(data.selectVisibleFoldersOptions);
-                $("#copy_in_folder").append(data.selectVisibleActiveFoldersOptions);
+                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+                $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
             }
         }
    );
@@ -2317,7 +2318,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 300,
-        height: 200,
+        height: 220,
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         open: function( event, ui ) {
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
@@ -2343,12 +2344,15 @@ $(function() {
                             $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
                         } else if (data[0].error == "not_allowed") {
                             $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                        } else if (data[0].error == "no_psk") {
+                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
                         }
                         //if OK
                         if (data[0].status == "ok") {
                             //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
                             ListerItems($('#copy_in_folder').val(),'', 0);
                             AfficherDetailsItem(data[1].new_id);
+							refreshTree($('#copy_in_folder').val());
                             $("#copy_in_folder").val("");
                             $("#div_copy_item_to_folder").dialog('close');
                         }
