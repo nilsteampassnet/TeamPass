@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'character_not_allowed' => 'Character is not allowed!',
     'user_ga_code' => 'Відправити електронною поштою GoogleAuthenticator користувачу',
     'send_ga_code' => 'Google Authenticator для користувача',
     'error_no_email' => 'У цього користувача не вказано електронну пошту!',

@@ -913,11 +913,62 @@ if (isset($_POST['type'])) {
                 echo $returnValues;
                 break;
             }
+			
             $returnValues = $pw = "";
 
             if (isset($_POST['item_id']) && !empty($_POST['item_id']) && !empty($_POST['folder_id'])) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['item_id']);
+                $dataDestination = DB::queryfirstrow("SELECT personal_folder FROM ".prefix_table("nested_tree")." WHERE id=%i", $_POST['folder_id']);
+				
+				// previous is personal folder and public one
+				if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 0) {
+					// decrypt and re-encrypt password
+					$decrypt = cryption(
+						$originalRecord['pw'],
+						mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+						$originalRecord['pw_iv'],
+						"decrypt"
+					);
+					$encrypt = cryption(
+						$decrypt,
+						SALT,
+						"",
+						"encrypt"
+					);
+					
+					// reaffect pw
+					$originalRecord['pw'] = $encrypt['string'];
+					$originalRecord['pw_iv'] = $encrypt['iv'];
+				} 
+				// previous is public folder and personal one
+				else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
+					// check if PSK is set
+					if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+						$returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
+						echo $returnValues;
+						break;
+					}
+					
+					// decrypt and re-encrypt password
+					$decrypt = cryption(
+						$originalRecord['pw'],
+						SALT,
+						$originalRecord['pw_iv'],
+						"decrypt"
+					);
+					$encrypt = cryption(
+						$decrypt,
+						mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+						"",
+						"encrypt"
+					);
+					
+					// reaffect pw
+					$originalRecord['pw'] = $encrypt['string'];
+					$originalRecord['pw_iv'] = $encrypt['iv'];					
+				}
+				
                 // insert the new record and get the new auto_increment id
                 DB::insert(
                     prefix_table("items"),
@@ -926,7 +977,6 @@ if (isset($_POST['type'])) {
                     )
                 );
                 $newID = DB::insertId();
-                //$pw = cryption($originalRecord['pw'], SALT, $originalRecord['pw_iv'], "decrypt");
                 // generate the query to update the new record with the previous values
                 $aSet = array();
                 foreach ($originalRecord as $key => $value) {
@@ -935,11 +985,10 @@ if (isset($_POST['type'])) {
                     } elseif ($key == "viewed_no") {
                         array_push($aSet, array("viewed_no" => "0"));
                     } elseif ($key == "pw" && !empty($pw)) {
-                        //$encrypt = cryption($pw, SALT, "", "encrypt");
                         array_push($aSet, array("pw" => $originalRecord['pw']));
                         array_push($aSet, array("pw_iv" => $originalRecord['pw_iv']));
                     } elseif ($key != "id" && $key != "key") {
-                        array_push($aSet, array($key => str_replace('"', '\"', $value)));
+                        array_push($aSet, array($key => $value));
                     }
                 }
                 DB::update(
@@ -1682,12 +1731,6 @@ if (isset($_POST['type'])) {
             } else {
                 $start = $_POST['start'];
             }
-            setcookie(
-                "jstree_select",
-                $_POST['id'],
-                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                '/'
-            );
             // Prepare tree
             $arbo = $tree->getPath($_POST['id'], true);
             foreach ($arbo as $elem) {
@@ -1706,16 +1749,7 @@ if (isset($_POST['type'])) {
                     $arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
                 }
             }
-            // adapt the length of arbo versus the width #511
-            // TODO
 
-            // Check if ID folder send is valid
-            if (
-                !in_array($_POST['id'], $_SESSION['groupes_visibles'])
-                && !in_array($_POST['id'], array_keys($_SESSION['list_folders_limited']))
-            ) {
-                $_POST['id'] = 1;
-            }
             // check if this folder is a PF. If yes check if saltket is set
             if ((!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])) && $folderIsPf == 1) {
                 $showError = "is_pf_but_no_saltkey";
@@ -1729,7 +1763,11 @@ if (isset($_POST['type'])) {
             // check if this folder is visible
             elseif (!in_array(
                 $_POST['id'],
-                array_merge($_SESSION['groupes_visibles'], @array_keys($_SESSION['list_restricted_folders_for_items']))
+                array_merge(
+					$_SESSION['groupes_visibles'], 
+					@array_keys($_SESSION['list_restricted_folders_for_items']), 
+					@array_keys($_SESSION['list_folders_limited'])
+				)
             )) {
                 echo prepareExchangedData(array("error" => "not_authorized"), "encode");
                 break;
@@ -1738,6 +1776,14 @@ if (isset($_POST['type'])) {
                 $counter = DB::count();
                 $where->add('i.id_tree=%i', $_POST['id']);
             }
+			
+			// store last folder accessed in cookie
+            setcookie(
+                "jstree_select",
+                $_POST['id'],
+                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                '/'
+            );
 
             $items_to_display_once = $_POST['nb_items_to_display_once'];
 
@@ -2437,22 +2483,22 @@ if (isset($_POST['type'])) {
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $_POST['folder_id']
             );
-            // update item
-            DB::update(
-                prefix_table("items"),
-                array(
-                    'id_tree' => $_POST['folder_id']
-                   ),
-                "id=%i",
-                $_POST['item_id']
-            );
+            
             // previous is non personal folder and new too
             if ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 0) {
                 // just update is needed. Item key is the same
+				DB::update(
+					prefix_table("items"),
+					array(
+						'id_tree' => $_POST['folder_id']
+					   ),
+					"id=%i",
+					$_POST['item_id']
+				);
             } elseif ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 1) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+					SALT,
                     $dataSource['pw_iv'],
                     "decrypt"
                 );
@@ -2466,23 +2512,32 @@ if (isset($_POST['type'])) {
                 DB::update(
                     prefix_table("items"),
                     array(
+						'id_tree' => $_POST['folder_id'],
                         'pw' => $encrypt['string'],
                         'pw_iv' => $encrypt['iv'],
                         'perso' => 1
-                       ),
+					),
                     "id=%i",
                     $_POST['item_id']
                 );
             }
             // If previous is personal folder and new is personal folder too => no key exist on item
             elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 1) {
-                // NOTHING TO DO => just update is needed. Item key is the same
+                // just update is needed. Item key is the same
+				DB::update(
+					prefix_table("items"),
+					array(
+						'id_tree' => $_POST['folder_id']
+					),
+					"id=%i",
+					$_POST['item_id']
+				);
             }
             // If previous is personal folder and new is not personal folder => no key exist on item => add new
             elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 0) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    SALT,
+                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
                     $dataSource['pw_iv'],
                     "decrypt"
                 );
@@ -2497,10 +2552,11 @@ if (isset($_POST['type'])) {
                 DB::update(
                     prefix_table("items"),
                     array(
+						'id_tree' => $_POST['folder_id'],
                         'pw' => $encrypt['string'],
                         'pw_iv' => $encrypt['iv'],
                         'perso' => 0
-                       ),
+					),
                     "id=%i",
                     $_POST['item_id']
                 );
@@ -2514,7 +2570,7 @@ if (isset($_POST['type'])) {
                     'id_user' => $_SESSION['user_id'],
                     'action' => 'at_modification',
                     'raison' => 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
-                   )
+				)
             );
 
             echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$_POST['folder_id'].'"}]';
@@ -3065,11 +3121,16 @@ if (isset($_POST['type'])) {
                         
                         // resize title if necessary
                         $fldTitle = str_replace("&", "&amp;", $folder->title);
-                        
+						
+						// rename personal folder with user login
+						if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1 ) {
+							$fldTitle = $_SESSION['login'];
+						}
+						
                         // build select for all visible folders
-                        if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
+                        if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
                             if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
+                                if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1 ) {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                                 } else {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
@@ -3095,7 +3156,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            
+			
             $data = array(
                 'error' => "",
                 'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),

@@ -93,7 +93,7 @@ foreach ($completTree[0]->children as $child) {
 
 function recursiveTree($nodeId)
 {
-	global $completTree, $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree;
+	global $completTree, $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG;
 	
 	// Be sure that user can only see folders he/she is allowed to
     if (
@@ -133,7 +133,7 @@ function recursiveTree($nodeId)
         }
 
         if ($displayThisNode == true) {
-			$hide_node = false;
+			$hide_node = $show_but_block = false;
 			
 			DB::query(
                 "SELECT * FROM ".prefix_table("items")."
@@ -152,8 +152,12 @@ function recursiveTree($nodeId)
 			if ($completTree[$nodeId]->parent_id==0) $parent = "#";
 			else $parent = "li_".$completTree[$nodeId]->parent_id;
 			if (!empty($ret_json)) $ret_json .= ", ";
-			if ($_SESSION['user_read_only'] == true) $text = "<i class='fa fa-eye'></i>&nbsp;";
-			else $text = "";
+			if ($_SESSION['user_read_only'] == true) {
+				$text = "<i class='fa fa-eye'></i>&nbsp;";
+				$title = $LANG['read_only_account'];
+			} else {
+				$text = $title = "";
+			}
 			$text .= str_replace("&", "&amp;", $completTree[$nodeId]->title);
 			$restricted = "0";
 			$folderClass = "folder";
@@ -161,6 +165,7 @@ function recursiveTree($nodeId)
 			if (in_array($completTree[$nodeId]->id, $_SESSION['groupes_visibles'])) {
                 if (in_array($completTree[$nodeId]->id, $_SESSION['read_only_folders'])) {
                     $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
+					$title = $LANG['read_only_account'];
                     $restricted = 1;
                     $folderClass = "folder_not_droppable";
                 }
@@ -180,21 +185,31 @@ function recursiveTree($nodeId)
 				$restricted = "1";
 				$folderClass = "folder_not_droppable";
                 if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1) {
+					// folder is not visible
                     $hide_node = true;
-                }
+                } else {
+					// folder is visible but not accessible by user
+					$show_but_block = true;
+				}
             }
-				
+			
 			// json
-			if ($hide_node == false) {
+			if ($hide_node == false && $show_but_block == false) {
 				$ret_json .= '{'.
 					'"id":"li_'.$completTree[$nodeId]->id.'"'.
 					', "parent":"'.$parent.'"'.
 					', "text":"'.$text.'"'.
-					', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.']"}'.
+					', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
 					', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0)"}'.
 				'}';
-			}
-			
+			} else if ($show_but_block == true) {
+				$ret_json .= '{'.
+					'"id":"li_'.$completTree[$nodeId]->id.'"'.
+					', "parent":"'.$parent.'"'.
+					', "text":"<i class=\'fa fa-close mi-red\'></i>&nbsp;'.$text.'"'.
+					', "li_attr":{"class":"", "title":"ID ['.$completTree[$nodeId]->id.'] '.$LANG['no_access'].'"}'.
+				'}';
+			} 			
 			
 			foreach ($completTree[$nodeId]->children as $child) {
 				recursiveTree($child);
