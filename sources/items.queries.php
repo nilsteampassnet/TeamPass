@@ -940,6 +940,9 @@ if (isset($_POST['type'])) {
 					// reaffect pw
 					$originalRecord['pw'] = $encrypt['string'];
 					$originalRecord['pw_iv'] = $encrypt['iv'];
+					
+					// this item is now public
+					$is_perso = 0;
 				} 
 				// previous is public folder and personal one
 				else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
@@ -966,7 +969,10 @@ if (isset($_POST['type'])) {
 					
 					// reaffect pw
 					$originalRecord['pw'] = $encrypt['string'];
-					$originalRecord['pw_iv'] = $encrypt['iv'];					
+					$originalRecord['pw_iv'] = $encrypt['iv'];	
+					
+					// this item is now private
+					$is_perso = 1;				
 				}
 				
                 // insert the new record and get the new auto_increment id
@@ -987,6 +993,8 @@ if (isset($_POST['type'])) {
                     } elseif ($key == "pw" && !empty($pw)) {
                         array_push($aSet, array("pw" => $originalRecord['pw']));
                         array_push($aSet, array("pw_iv" => $originalRecord['pw_iv']));
+					} elseif ($key == "perso") {
+                        array_push($aSet, array("perso" => $is_perso));
                     } elseif ($key != "id" && $key != "key") {
                         array_push($aSet, array($key => $value));
                     }
@@ -1968,7 +1976,7 @@ if (isset($_POST['type'])) {
                                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
                                 $displayItem = $need_sk = $canMove = 0;
                             } else {
-                                $perso = '<i class="fa fa-tag tag-yellow fa-sm"></i>&nbsp';
+                                $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
                                 $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                                 // reinit in case of not personal group
@@ -2047,13 +2055,12 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<span id="iconlogin_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>&nbsp;';
+                                    $html .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<span id="iconpw_'.$record['id'].'" class="copy_clipboard item_clipboard tip" title="'.$LANG['item_menu_copy_pw'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>&nbsp;';
+                                    $html .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
                                 }
                             }
-                            $html .= '<input type="hidden" id="item_pw_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $pw).'"><input type="hidden" id="item_login_in_list_'.$record['id'].'" value="'.str_replace('"', "&quot;", $record['login']).'">';
                         }
                         // Prepare make Favorite small icon
                         $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
