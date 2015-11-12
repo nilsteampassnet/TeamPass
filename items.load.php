@@ -22,7 +22,6 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
 
 <script type="text/javascript">
     var query_in_progress = 0;
-    ZeroClipboard.config( { swfPath: "<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/js/zeroclipboard/ZeroClipboard.swf" } );
 
     $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
 
@@ -153,9 +152,8 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
-    //if ($("#hid_cat").val() == groupe_id && $("#open_item_by_get").val() == "" ) return false;
     $("#request_lastItem, #selected_items").val("");
-    ZeroClipboard.destroy();
+	
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
         query_in_progress = groupe_id;
@@ -174,10 +172,7 @@ function ListerItems(groupe_id, restricted, start)
         //Disable menu buttons
         //$('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share,#menu_button_otv').prop('disabled', 'true');
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
-        
-        // clear existing clips
-        //ZeroClipboard.destroy();
-        
+                
         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?>');
 
         //ajax query
@@ -723,11 +718,11 @@ function EditerItem()
         url = "http://"+url;
     }
 
-    if ($('#edit_label').val() == "") erreur = "<?php echo $LANG['error_label'];?>";
-    else if ($("#edit_pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
-    else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
-    else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo $LANG['error_tags'];?>";
-	else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo $LANG['error_no_selected_folder'];?>";
+    if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']);?>";
+    else if ($("#edit_pw1").val() == "") erreur = "<?php echo addslashes($LANG['error_pw']);?>";
+    else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
+    else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']);?>";
+	else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
     else{
         //Check pw complexity level
         if ((
@@ -937,6 +932,26 @@ function EditerItem()
                             $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
+						
+
+                        //Prepare clipboard copies
+                        if ($('#edit_pw1').val() != "") {
+							new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+								text: function() {
+									return unsanitizeString($('#edit_pw1').val());
+								}
+							});
+							
+                            $("#button_quick_pw_copy").show();
+                        }
+                        if ($('#edit_item_login').val() != "") {
+							var clipboard_elogin = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
+								text: function() {
+									return unsanitizeString($('#edit_item_login').val());
+								}
+							});
+                            $("#button_quick_login_copy").show();
+                        }
 
 
                         $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
@@ -971,6 +986,7 @@ function EditerItem()
     if (erreur != "") {
         $('#edit_show_error').html(erreur).show();
         $("#div_formulaire_edition_item_info").hide().html("");
+		$("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
     }
 }
 
@@ -1303,54 +1319,59 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Prepare clipboard copies
                         if (data.pw != "") {
-                            var client = new ZeroClipboard($("#menu_button_copy_pw"));
-                            client.on('copy', function(event) {
-                                var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", unsanitizeString(data.pw));
-                                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+							var clipboard_pw = new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+								text: function() {
+									return unsanitizeString(data.pw);
+								}
+							});
+							clipboard_pw.on('success', function(e) {
+								$("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                                 itemLog("item_password_copied");
-                            });
-                            var client = new ZeroClipboard($("#button_quick_pw_copy"));
-                            client.on('copy', function(event) {
-                                var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", unsanitizeString(data.pw));
-                                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
-                                itemLog("item_password_copied");
-                            });
+
+								e.clearSelection();
+							});
+							
                             $("#button_quick_pw_copy").show();
                         }
                         if (data.login != "") {
-                            var clip = new ZeroClipboard($("#menu_button_copy_login"));
-                            clip.on('copy', function(event) {
-                                var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", (data.login));
-                                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-                            });
-                            var client = new ZeroClipboard($("#button_quick_login_copy"));
-                            client.on('copy', function(event) {
-                                var clipboard = event.clipboardData;
-                                clipboard.setData("text/plain", (data.login));
-                                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-                            });
+							var clipboard_login = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
+								text: function() {
+									return unsanitizeString(data.login);
+								}
+							});
+							clipboard_login.on('success', function(e) {
+								$("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+
+								e.clearSelection();
+							});
                             $("#button_quick_login_copy").show();
                         }
                         // #525
                         if (data.url != "") {
-                            var clip = new ZeroClipboard($("#menu_button_copy_url"));
-                            clip.on('copy', function(event) {
-                                    var clipboard = event.clipboardData;
-                                    clipboard.setData("text/plain", unsanitizeString(data.url));
-                                    $("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
-                            });
+							var clipboard_url = new Clipboard("#menu_button_copy_url", {
+								text: function() {
+									return unsanitizeString(data.url);
+								}
+							});
+							clipboard_url.on('success', function(e) {
+								$("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
+
+								e.clearSelection();
+							});
                         }
-                        //prepare link to clipboard
-                        var clip = new ZeroClipboard($("#menu_button_copy_link"));
-                        // "<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&group="+data.folder+"&id="+data.id 
-                        clip.on('copy', function(event) {
-                                var clipboard = event.clipboardData; //$_SESSION['settings']['cpassman_url'].
-                                clipboard.setData("text/plain", "<?php echo $_SESSION['settings']['cpassman_url'];?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id );
-                                $("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
-                        });
+							
+						//prepare link to clipboard
+						var clipboard_link = new Clipboard("#menu_button_copy_link", {
+							text: function() {
+								return "<?php echo $_SESSION['settings']['cpassman_url'];?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
+							}
+						});
+						clipboard_link.on('success', function(e) {
+							$("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
+
+							e.clearSelection();
+						});
+						
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -2419,6 +2440,7 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#edit_rep_show_error").html("").hide();
+				$("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                 $(this).dialog('close');
             }
         },
@@ -2520,7 +2542,6 @@ $(function() {
             "<?php echo $LANG['save_button'];?>": function() {
                 $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
                 EditerItem();
-                //$("#div_formulaire_edition_item_info").hide().html("");
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 //Clear upload queue
@@ -3272,31 +3293,21 @@ function proceed_list_update()
         $("#items_list_loader").hide();
 
         // prepare clipboard items
-        var client = new ZeroClipboard( $('.item_clipboard') );
-        $('.item_clipboard').each(function() {
-            // get id of elem
-            var tmp = $(this).prop('id').split("_");
-            var elem = tmp[0];
-            var id = tmp[1];
-
-            // Create the clip, and glue it to the element
-            var client = new ZeroClipboard( $("#"+elem+"_"+id) );
-            client.on( 'copy', function(event) {
-                var clipboard = event.clipboardData;
-                if (elem.indexOf('login') >= 0) {
-                    clipboard.setData("text/plain", $("#item_login_in_list_"+id).val().replace("\\'", "'").replace("&quot;", '"'));
-                    $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-                    $(this).css('cursor','pointer');
-                } else {
-                    clipboard.setData("text/plain", $("#item_pw_in_list_"+id).val().replace("\\'", "'").replace("&quot;", '"'));
-                    $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
-                    $(this).css('cursor','pointer');
-                }
-            });
-        })    
+		var clipboard = new Clipboard('.mini_login');
+		clipboard.on('success', function(e) {
+			$("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+			e.clearSelection();
+		});
+		
+		var clipboard = new Clipboard('.mini_pw');
+		clipboard.on('success', function(e) {
+			$("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+            itemLog("item_password_copied");
+			e.clearSelection();
+		});
 
         $(".tip").tooltipster();
-        $(".item_clipboard").css("cursor", "pointer");
+        $(".mini_login, .mini_pw").css("cursor", "pointer");
 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
     
