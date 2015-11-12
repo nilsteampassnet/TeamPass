@@ -59,9 +59,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
-
+		
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/zeroclipboard/ZeroClipboard.js"></script>
+        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css">
