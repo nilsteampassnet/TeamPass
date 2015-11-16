@@ -30,10 +30,13 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
 } elseif (
     (isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
-    // continue
+      // continue
 } elseif (
     (isset($_POST['data']) && $_POST['type'] == "ga_generate_qr")) {
-	// continue
+      // continue
+} elseif (
+    (isset($_POST['email']) && $_POST['type'] == "send_pw_by_email")) {
+      // continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';

@@ -2004,8 +2004,10 @@ $(function() {
     if (parseInt($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max") {
         //do nothing ... good value
     } else {
-        //adapt to the screen height
-        $("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+        //adapt to the screen height, but never a negative value
+        var numitems = Math.round((window_height-450)/23);
+        if (numitems < 1) numitems = 1; 
+        $("#nb_items_to_display_once").val(numitems);
     }
 
     // Build buttons
