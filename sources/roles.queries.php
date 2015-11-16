@@ -166,21 +166,21 @@ if (!empty($_POST['type'])) {
             $tree = $tree->getDescendants($_POST['folder'], true);
 
             if ($_POST['access'] == "read" || $_POST['access'] == "write" || $_POST['access'] == "nodelete") {
-				// define code to use
-				if ($_POST['access'] == "read") $access = "R";
-				elseif ($_POST['access'] == "write") {
-					if ($_POST['accessoption'] == "") {
-						$access = "W";
-					} elseif ($_POST['accessoption'] == "nodelete") {
-						$access = "ND";
-					} elseif ($_POST['accessoption'] == "noedit") {
-						$access = "NE";
-					} elseif ($_POST['accessoption'] == "nodelete_noedit") {
-						$access = "NDNE";
-					}
-				} else $access = "";
-				
-				// loop 
+                // define code to use
+                if ($_POST['access'] == "read") $access = "R";
+                elseif ($_POST['access'] == "write") {
+                    if ($_POST['accessoption'] == "") {
+                        $access = "W";
+                    } elseif ($_POST['accessoption'] == "nodelete") {
+                        $access = "ND";
+                    } elseif ($_POST['accessoption'] == "noedit") {
+                        $access = "NE";
+                    } elseif ($_POST['accessoption'] == "nodelete_noedit") {
+                        $access = "NDNE";
+                    }
+                } else $access = "";
+                
+                // loop 
                 foreach ($tree as $node) {
                     // delete
                     DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
@@ -289,33 +289,33 @@ if (!empty($_POST['type'])) {
                                 $couleur = '#008000';
                                 $allowed = "W";
                                 $title = $LANG['write'];
-								$label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>&nbsp;<i class="fa fa-eraser"></i>';
+                                $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>&nbsp;<i class="fa fa-eraser"></i>';
                             } elseif ($role_detail['type'] == "ND") {
                                 $couleur = '#4E45F7';
                                 $allowed = "ND";
                                 $title = $LANG['no_delete'];
-								$label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>';
+                                $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>';
                             } elseif ($role_detail['type'] == "NE") {
                                 $couleur = '#4E45F7';
                                 $allowed = "NE";
                                 $title = $LANG['no_edit'];
-								$label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-eraser"></i>';
+                                $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-eraser"></i>';
                             } elseif ($role_detail['type'] == "NDNE") {
                                 $couleur = '#4E45F7';
                                 $allowed = "NDNE";
                                 $title = $LANG['no_edit_no_delete'];
-								$label = '<i class="fa fa-indent"></i>';
-							} else {
+                                $label = '<i class="fa fa-indent"></i>';
+                            } else {
                                 $couleur = '#FEBC11';
                                 $allowed = "R";
                                 $title = $LANG['read'];
-								$label = '<i class="fa fa-eye"></i>';
+                                $label = '<i class="fa fa-eye"></i>';
                             }
                         } else {
                             $couleur = '#FF0000';
                             $allowed = false;
                             $title = $LANG['no_access'];
-								$label = '<i class="fa fa-hand-stop-o"></i>';
+                                $label = '<i class="fa fa-hand-stop-o"></i>';
                         }
                         //$texte .= '<td align=\'center\' style=\'background-color:'.$couleur.'\' onclick=\'tm_change_role('.$role.','.$node->id.','.$i.','.$allowed.')\' id=\'tm_cell_'.$i.'\'></td>';
                         $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
