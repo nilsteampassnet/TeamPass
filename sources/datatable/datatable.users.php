@@ -266,18 +266,18 @@ foreach ($rows as $record) {
         $sOutput .= ',';
         
         //col15
-        $sOutput .= '"<i class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.$LANG['change_password'].'\"></i>"';
+        $sOutput .= '"<i class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['change_password'], '"\\/').'\"></i>"';
         $sOutput .= ',';
         
         //col16
-        $sOutput .= '"<i class=\"fa fa-newspaper-o tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.$LANG['see_logs'].'\"></i>"';
+        $sOutput .= '"<i class=\"fa fa-newspaper-o tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.addcslashes($LANG['see_logs'], '"\\/').'\"></i>"';
         $sOutput .= ',';
 
         //col15
         if (empty($record['ga']))
-            $sOutput .= '"<i class=\"fa fa-qrcode mi-yellow tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addslashes($LANG['user_ga_code']).'\"></i>"';
+            $sOutput .= '"<i class=\"fa fa-qrcode mi-yellow tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['user_ga_code'], '"\\/').'\"></i>"';
         else
-            $sOutput .= '"<i class=\"fa fa-qrcode mi-green tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addslashes($LANG['user_ga_code']).'\"></i>"';
+            $sOutput .= '"<i class=\"fa fa-qrcode mi-green tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['user_ga_code'], '"\\/').'\"></i>"';
 
 
         //Finish the line

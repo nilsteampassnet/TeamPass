@@ -6,7 +6,7 @@
  * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -131,7 +131,7 @@ echo '
         <div id="quick_menu" style="float:left; margin-right: 5px;">
             <ul class="quick_menu">
                 <li><i class="fa fa-bars"></i>
-                    <ul class="menu_150">
+                    <ul class="menu_250">
                         <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
                         <li onclick="refreshTree()"><i class="fa fa-refresh fa-fw"></i>&nbsp; '.$LANG['refresh'].'</li>
@@ -141,7 +141,7 @@ echo '
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
-						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
+                        (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
             </ul>
         </div>
@@ -150,7 +150,7 @@ echo '
             <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
         </div>
         <div id="sidebar" class="sidebar">
-			<div id="jstree" style="overflow:auto;"></div>
+            <div id="jstree" style="overflow:auto;"></div>
         </div>
     </div>';
 // Zone top right - items list
@@ -161,7 +161,7 @@ echo '
                 <div class="quick_menu1" style="float:left; margin-right: 5px;">
                     <ul class="quick_menu">
                         <li><i class="fa fa-bars"></i>
-                            <ul class="menu_150">
+                            <ul class="menu_250">
                                 <li id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</li>
                                 <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
                                 <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</li>
@@ -227,7 +227,7 @@ echo '
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
-						<div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
+                        <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -425,7 +425,7 @@ echo'
 // Line for PW
 echo '
             <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
-				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
@@ -603,7 +603,7 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-					<span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
@@ -805,7 +805,7 @@ echo '
         The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
         <select id="move_folder_id">
             <option value="0">-choisir-</option>
-		</select>
+        </select>
     </div>
     <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
@@ -820,7 +820,7 @@ echo '
             <td>'.$LANG['group_select'].' : </td>
             <td><select id="delete_rep_groupe">
                 <option value="0">-choisir-</option>
-			</select></td>
+            </select></td>
         </tr>
     </table>
     <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -848,7 +848,7 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-		'</select>
+        '</select>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';
