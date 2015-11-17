@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-	'character_not_allowed' => 'Character is not allowed!',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',
@@ -22,7 +21,7 @@ $LANG = array (
     'email_ga_subject' => 'Ваш код  Google Authenticator для TeamPass',
     'email_ga_text' => 'Здравствуйте,&lt;br&gt;&lt;br&gt;Пожалуйста, перейдите по &lt;a href=\'#link#\'&gt;ссылке&lt;/a&gt; и сфотографируйте страницу при помощи приложения Google Authenticator, чтобы получить учетные данные OTP для TeamPass',
     'settings_attachments_encryption' => 'Включить шифрование вложений к элементам',
-    'settings_attachments_encryption_tip' => 'ЭТА НАСТРОЙКА МОЖЕТ ПОВРЕДИТЬ СУЩЕСТВУЮЩИЕ ВЛОЖЕНИЯ. Если настройка включена, то приложения к элементам хранятся на сервере зашифрованными с использованием ключа шифрования (Salt key) заданного в TeamPass. Это потребует больше ресурсов сервера. ВНИМАНИЕ: после изменения настройки необходимо запустить скрипт для конвертирования для уже созданных вложений. См. вкладку \'Скрипты\'',
+    'settings_attachments_encryption_tip' => 'ЭТА НАСТРОЙКА МОЖЕТ ПОВРЕДИТЬ СУЩЕСТВУЮЩИЕ ВЛОЖЕНИЯ. Если настройка включена, то приложения к элементам хранятся на сервере зашифрованными с использованием ключа шифрования (Salt key) заданного в TeamPass. Это потребует больше ресурсов сервера. ВНИМАНИЕ: после изменения настройки необходимо запустить скрипт для конвертирования для уже созданных вложений. См. вкладку \'Скрипты\'.',
     'admin_action_attachments_cryption' => 'Зашифровать или расшифровать вложения к элементам',
     'admin_action_attachments_cryption_tip' => 'ВНИМАНИЕ: это действие можно выполнять ТОЛЬКО после изменения соответствующей настройки. На всякий случай заранее сделайте копию папки \'upload\' перед какими-либо действиями.',
     'encrypt' => 'Зашифровать',
@@ -855,8 +854,9 @@ $LANG = array (
     'role_cannot_edit_item' => 'Нельзя редактировать элементы',
     'no_delete' => 'Запись, но не удаление',
     'role_cannot_delete_item' => 'Нельзя удалять элементы',
-    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
-    'my_profile' => 'My profile',
-    'at_suggestion' => 'Suggestion accepted',
+    'text_without_symbols' => 'Допускаются только цифры, буквы и символы # & % * $ @ ( ). Другие символы недопустимы!',
+    'my_profile' => 'Моя учетная запись',
+    'at_suggestion' => 'Предложение одобрено',
+    'character_not_allowed' => 'Символ не допустим!',
     '' => ''
 );

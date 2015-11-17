@@ -21,8 +21,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 function GenererLog()
 {
-	if ($("#log_jours").val() == "") return false;
-	
+    if ($("#log_jours").val() == "") return false;
+    
     LoadingPage();
     $.post(
         "sources/views.queries.php",
@@ -57,7 +57,7 @@ function ListerElemDel()
                     }
                 }
            );
-		   $(".button").button();
+           $(".button").button();
            $("#div_loading").hide();
         },
         "json"
@@ -166,16 +166,16 @@ function generate_renewal_pdf()
 
 $(function() {
     $("#tabs").tabs({
-		beforeLoad: function( event, ui ) {
-			ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
-		},
-		load: function( event, ui ) {
-			$("#loader_tab").remove();
-		}
-	});
+        beforeLoad: function( event, ui ) {
+            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+        },
+        load: function( event, ui ) {
+            $("#loader_tab").remove();
+        }
+    });
 
     ListerElemDel();
-	
+    
     $("#log_jours").datepicker({
         regional: 'fr',
         dateFormat : 'dd/mm/yy'
@@ -186,43 +186,43 @@ $(function() {
         $("#div_log_purge").show();
     });
     $("#butPurge").button().click(function(e) {
-    	$.post(
-	        "sources/views.queries.php",
-	        {
-	            type       : "purgeLogs",
-	            purgeTo    : $("#purgeTo").val(),
-	            purgeFrom  : $("#purgeFrom").val(),
-	            logType    : $("#type_log_displayed").val()
-	        },
-	        function(data) {
-	        	if (data[0].status == "ok") {
-	        		$("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
-	        	    $("#div_dialog_message").dialog("open");
-	        	}
-	        	$("#purgeTo, #purgeFrom").val("");
-	        },
-	        "json"
-	   );
+        $.post(
+            "sources/views.queries.php",
+            {
+                type       : "purgeLogs",
+                purgeTo    : $("#purgeTo").val(),
+                purgeFrom  : $("#purgeFrom").val(),
+                logType    : $("#type_log_displayed").val()
+            },
+            function(data) {
+                if (data[0].status == "ok") {
+                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
+                    $("#div_dialog_message").dialog("open");
+                }
+                $("#purgeTo, #purgeFrom").val("");
+            },
+            "json"
+       );
     });
 
     $( "#purgeFrom" ).datepicker({
-    	defaultDate: "today",
-    	changeMonth: true,
-    	changeYear: true,
-    	numberOfMonths: 1,
-    	onClose: function( selectedDate ) {
-    	    $( "#to" ).datepicker( "option", "minDate", selectedDate );
-    	}
-	});
-	$( "#purgeTo" ).datepicker({
-    	defaultDate: "+1w",
-    	changeMonth: true,
-    	changeYear: true,
-    	numberOfMonths: 1,
-    	onClose: function( selectedDate ) {
-    	    $( "#from" ).datepicker( "option", "maxDate", selectedDate );
-    	}
-	});
+        defaultDate: "today",
+        changeMonth: true,
+        changeYear: true,
+        numberOfMonths: 1,
+        onClose: function( selectedDate ) {
+            $( "#to" ).datepicker( "option", "minDate", selectedDate );
+        }
+    });
+    $( "#purgeTo" ).datepicker({
+        defaultDate: "+1w",
+        changeMonth: true,
+        changeYear: true,
+        numberOfMonths: 1,
+        onClose: function( selectedDate ) {
+            $( "#from" ).datepicker( "option", "maxDate", selectedDate );
+        }
+    });
 
     $("#tab2_dialog").dialog({
         bgiframe: true,
@@ -231,73 +231,73 @@ $(function() {
         width: 400,
         height: 150,
         title: "<?php echo $LANG['please_confirm'];?>",
-		open : function() {
-			// check if one is ticked
-			var list_i = "";
-			$(".cb_deleted_item:checked").each(function() {
-				if (list_i == "") list_i = $(this).val();
-				else list_i = list_i+';'+$(this).val();
-			});
-			var list_f = "";
-			$(".cb_deleted_folder:checked").each(function() {
-				if (list_f == "") list_f = $(this).val();
-				else list_f = list_f+';'+$(this).val();
-			});
-			if (list_f == "" || list_i == "") {
-				$("#tab2_dialog").dialog("close");
-				return false;
-			}
-			
-			// confirm?
-			if ($("#tab2_action").val() == "restoration") {
-				$("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration'];?>");
-			} else if ($("#tab2_action").val() == "deletion") {
-				$("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion'];?>");
-			}
-		},
+        open : function() {
+            // check if one is ticked
+            var list_i = "";
+            $(".cb_deleted_item:checked").each(function() {
+                if (list_i == "") list_i = $(this).val();
+                else list_i = list_i+';'+$(this).val();
+            });
+            var list_f = "";
+            $(".cb_deleted_folder:checked").each(function() {
+                if (list_f == "") list_f = $(this).val();
+                else list_f = list_f+';'+$(this).val();
+            });
+            if (list_f == "" && list_i == "") {
+                $("#tab2_dialog").dialog("close");
+                return false;
+            }
+
+            // confirm?
+            if ($("#tab2_action").val() == "restoration") {
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration'];?>");
+            } else if ($("#tab2_action").val() == "deletion") {
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion'];?>");
+            }
+        },
         buttons: {
             "<?php echo $LANG['confirm'];?>": function() {
-				LoadingPage();
+                LoadingPage();
                 var list_i = "";
-				$(".cb_deleted_item:checked").each(function() {
-					if (list_i == "") list_i = $(this).val();
-					else list_i = list_i+';'+$(this).val();
-				});
-				var list_f = "";
-				$(".cb_deleted_folder:checked").each(function() {
-					if (list_f == "") list_f = $(this).val();
-					else list_f = list_f+';'+$(this).val();
-				});
+                $(".cb_deleted_item:checked").each(function() {
+                    if (list_i == "") list_i = $(this).val();
+                    else list_i = list_i+';'+$(this).val();
+                });
+                var list_f = "";
+                $(".cb_deleted_folder:checked").each(function() {
+                    if (list_f == "") list_f = $(this).val();
+                    else list_f = list_f+';'+$(this).val();
+                });
 
-				if ($("#tab2_action").val() == "restoration") {
-					$.post(
-						"sources/views.queries.php",
-						{
-							type    : "restore_deleted__items",
-							list_i    : list_i,
-							list_f    : list_f
-						},
-						function(data) {
-							ListerElemDel();
-							LoadingPage();
-							$("#tab2_dialog").dialog("close");
-						}
-					);
-				} else if ($("#tab2_action").val() == "deletion") {
-					$.post(
-						"sources/views.queries.php",
-						{
-							type    : "really_delete_items",
-							items    : list_i,
-							folders    : list_f
-						},
-						function(data) {
-							ListerElemDel();
-							LoadingPage();
-							$("#tab2_dialog").dialog("close");
-						}
-					);
-				}
+                if ($("#tab2_action").val() == "restoration") {
+                    $.post(
+                        "sources/views.queries.php",
+                        {
+                            type    : "restore_deleted__items",
+                            list_i    : list_i,
+                            list_f    : list_f
+                        },
+                        function(data) {
+                            ListerElemDel();
+                            LoadingPage();
+                            $("#tab2_dialog").dialog("close");
+                        }
+                    );
+                } else if ($("#tab2_action").val() == "deletion") {
+                    $.post(
+                        "sources/views.queries.php",
+                        {
+                            type    : "really_delete_items",
+                            items    : list_i,
+                            folders    : list_f
+                        },
+                        function(data) {
+                            ListerElemDel();
+                            LoadingPage();
+                            $("#tab2_dialog").dialog("close");
+                        }
+                    );
+                }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");

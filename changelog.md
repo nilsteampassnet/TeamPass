@@ -3,6 +3,7 @@ Last changes
  #1090 - Fix for Export to PDF last folder not taken into consideration
  #1088 - #1085 - Password show problem
  #1087 - Managers can edit and delete Items they are allowed to see flag
+ #1085 - Fix for copy to clipboard that sometime fails to work correctly
  #1073 - User can create folder on root without permission
  #1074 - Read only user can create folders + wipe out all items on remove folder
  #1069 - Knowledge Base can not change page
@@ -10,6 +11,9 @@ Last changes
  #1067 - Suggestion feature not working
  #1064 - Record in db are not deleted when you delete in GUI
  #1058 - Fix API issue while adding an item
+ #1063 - Fix for Forgot password not working
+ #1062 - Warning for hex2bin function usage (PHP>5.4)
+ #1061 - for for Can not import password from keepass xml
  #1055 - Personal item cannot be deleted
  #1048 - Encryption error flag is visible for no reason
  #1045 - Missing fields in table (pw_iv and data_iv)

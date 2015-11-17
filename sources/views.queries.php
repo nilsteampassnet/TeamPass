@@ -164,7 +164,7 @@ switch ($_POST['type']) {
             $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\">'.$record['login'].'</td>'.$thisFolder.'</tr>';
         }
 
-        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'restoration\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-undo fa-lg\"></i>&nbsp;'.$LANG['restore'].'</a>&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'deletion\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-trash-o fa-lg\"></i>&nbsp;'.$LANG['delete'].'</a></div>"}]';
+        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'restoration\');OpenDialog(\'tab2_dialog\');console.log(\'coucou\');\"><i class=\"fa fa-undo fa-lg\"></i>&nbsp;'.$LANG['restore'].'</a>&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'deletion\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-trash-o fa-lg\"></i>&nbsp;'.$LANG['delete'].'</a></div>"}]';
         break;
 
     /**
