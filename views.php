@@ -79,7 +79,7 @@ echo '
 
     echo '
 </div>
-<input type="hidden" id="tab2_action" />
+<input type="text" id="tab2_action" />
 ';
 
 // Deletion / Restoration dialogbox

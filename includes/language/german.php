@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-	'character_not_allowed' => 'Character is not allowed!',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
@@ -858,5 +857,6 @@ $LANG = array (
     'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
     'my_profile' => 'My profile',
     'at_suggestion' => 'Suggestion accepted',
+    'character_not_allowed' => 'Character is not allowed!',
     '' => ''
 );
