@@ -3,7 +3,7 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,6 +14,7 @@
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
+$debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'sessions.php';
 session_start();
@@ -25,17 +26,99 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
-identifyUser($_POST['data']);
+// DUO
+if ($_POST['type'] === "identify_duo_user") {
+	// This step creates the DUO request encrypted key
+	
+	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+	// load library
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+	$sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
 
+    if ($debugDuo == 1) {
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "w");
+        fputs(
+            $dbgDuo,
+            "\n\n-----\n\n".
+            "sig request : ".$_POST['login']."\n" .
+            'resp : ' . $sig_request . "\n"
+        );
+    }
+
+	// return result
+	echo '[{"sig_request" : "'.$sig_request.'"}]';
+
+} elseif ($_POST['type'] == "identify_duo_user_check") {
+	// this step is verifying the response received from the server
+	
+	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+	// load library
+	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+	$resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
+
+    if ($debugDuo == 1) {
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
+        fputs(
+            $dbgDuo,
+            "\n\n-----\n\n" .
+            "sig response : " . $_POST['sig_response'] . "\n" .
+            'resp : ' . $resp . "\n"
+        );
+    }
+
+	// return the response (which should be the user name)
+	if ($resp === $_POST['login']) {
+		echo '[{"resp" : "'.$resp.'"}]';
+	} else {
+		echo '[{"resp" : "'.$resp.'"}]';
+	}
+} elseif ($_POST['type'] == "identify_user") {
+	// identify the user through Teampass process
+	identifyUser($_POST['data']);
+} elseif ($_POST['type'] == "store_data_in_cookie") {
+	// not used any more (only development purpose)
+	if ($_POST['key'] != $_SESSION['key']) {
+		echo '[{"error" : "something_wrong"}]';
+		break;
+	}
+	// store some connection data in cookie
+	setcookie(
+		"TeamPassC",
+		$_POST['data'],
+		time() + 60 * 60,
+		'/'
+	);
+}
+
+/*
+* Complete authentication of user through Teampass
+*/
 function identifyUser($sentData)
 {
-    global $debugLdap;
-    global $k;
+    global $debugLdap, $debugDuo, $k;
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     header("Content-type: text/html; charset=utf-8");
     error_reporting(E_ERROR);
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+
+    if ($debugDuo == 1) {
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
+    }
+	
+	/*
+	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
+		$sentData = prepareExchangedData($_COOKIE['TeamPassC'], "encode");
+		setcookie('TeamPassC', "", time()-3600);
+	}
+	*/
+	
+	if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "Content of data sent '" . $sentData . "'\n"
+        );
+    }
 
     // connect to the server
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -70,6 +153,13 @@ function identifyUser($sentData)
     $username = htmlspecialchars_decode($dataReceived['login']);
     $logError = "";
 
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "Starting authentication of '" . $username . "'\n"
+        );
+    }
+
     // GET SALT KEY LENGTH
     if (strlen(SALT) > 32) {
         $_SESSION['error']['salt'] = true;
@@ -99,8 +189,15 @@ function identifyUser($sentData)
         );
     }
 
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "LDAP status: " . $_SESSION['settings']['ldap_mode'] . "\n"
+        );
+    }
+
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-            && $username != "admin"
+		&& $username != "admin"
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') == true) {
@@ -224,6 +321,13 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
 
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "USer exists: " . $counter . "\n"
+        );
+    }
+
     // Check PSK
     if (
             isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
@@ -302,8 +406,15 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
     if ($counter == 0) {
-        echo '[{"value" : "error", "text":"user_not_exists"}]';
+        echo '[{"value" : "user_not_exists", "text":""}]';
         exit;
+    }
+
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "USer exists (confirm): " . $counter . "\n"
+        );
     }
 
     // check GA code
@@ -323,6 +434,13 @@ function identifyUser($sentData)
             $proceedIdentification = false;
             $logError = "ga_code_wrong";
         }
+    }
+
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "Proceed with Ident: " . $proceedIdentification . "\n"
+        );
     }
 
     if ($proceedIdentification === true) {
@@ -365,6 +483,13 @@ function identifyUser($sentData)
             $userPasswordVerified = false;
         }
 
+        if ($debugDuo == 1) {
+            fputs(
+                $dbgDuo,
+                "User's password verified: " . $userPasswordVerified . "\n"
+            );
+        }
+
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -372,25 +497,32 @@ function identifyUser($sentData)
         // This in order to allow admin by default to connect even if LDAP is activated
         if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                        && $userPasswordVerified == true && $data['disabled'] == 0
+                && $userPasswordVerified == true && $data['disabled'] == 0
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                        && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
-                        && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
-                                )
-                                ||
-                                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
-                                )
+                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                )
+                ||
+                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
+                )
         ) {
             $_SESSION['autoriser'] = true;
 
             // Generate a ramdom ID
             $key = $pwdlib->getRandomToken(50);
+
+            if ($debugDuo == 1) {
+                fputs(
+                    $dbgDuo,
+                    "User's token: " . $key . "\n"
+                );
+            }
 
             // Log into DB the user's connection
             if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
@@ -517,6 +649,14 @@ function identifyUser($sentData)
                 "id=%i",
                 $data['id']
             );
+
+            if ($debugDuo == 1) {
+                fputs(
+                    $dbgDuo,
+                    "Preparing to identify the user rights\n"
+                );
+            }
+
             // Get user's rights
             identifyUserRights(
                 $data['groupes_visibles'],
@@ -622,6 +762,15 @@ function identifyUser($sentData)
     } else {
         $return = "false";
     }
+
+    if ($debugDuo == 1) {
+        fputs(
+            $dbgDuo,
+            "\n\n----\n" .
+            "Identified : " . $return . "\n"
+        );
+    }
+
     echo '[{"value" : "'.$return.'", "user_admin":"',
     isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
     '", "initial_url" : "'.@$_SESSION['initial_url'].'",

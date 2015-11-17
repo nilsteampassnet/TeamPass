@@ -2,7 +2,7 @@
 /**
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -198,6 +198,8 @@ function loadFieldsList() {
 function changeSettingStatus(id, val) {
     if (val == 1) {
         $("#flag_"+id).html("<img src='includes/images/status.png' />");
+		$("#"+id+"_radio2").addClass("ui-button.redButton");
+		console.log(("#"+id+"_radio2"));
     } else {
         $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
     }
@@ -302,11 +304,20 @@ $(function() {
 			complete: function() {
 				$("#div_loading").hide();
 			}
+		},
+		beforeLoad: function( event, ui ) {
+			ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+		},
+		load: function( event, ui ) {
+			$("#loader_tab").remove();
 		}
-	});
+	});	
+	
 	$('#tabs').click(function(e){
 		var current_index = $("#tabs").tabs("option","active");
-		if (current_index != 9) {
+		if (current_index == 9 || current_index == 10) {
+			$("#save_button").hide();
+		} else {
 			$("#save_button").show();
 		}
 	});

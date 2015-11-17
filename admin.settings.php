@@ -3,7 +3,7 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -200,8 +200,8 @@ if (isset($_POST['save_button'])) {
         updateSettings('show_only_accessible_folders', $_POST['show_only_accessible_folders']);
     }
     // Update ga_website_name
-    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != $_POST['ga_website_name']) {
-        updateSettings('ga_website_name', $_POST['ga_website_name']);
+    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != @$_POST['ga_website_name']) {
+        updateSettings('ga_website_name', @$_POST['ga_website_name']);
     }
     // Update number_of_used_pw setting
     if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {
@@ -577,6 +577,7 @@ echo '
                 <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
                 <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
+                <li><a href="admin.settings_duo.php">2FA Options</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1
@@ -816,7 +817,7 @@ echo '
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-
+/*
 // 2factors_code
 echo '
             <tr style="margin-bottom:3px">

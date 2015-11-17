@@ -93,10 +93,10 @@ if (isset($_POST['type'])) {
             }
            
             if (isset($data['activity']) && $data['activity'] == "version") {
-                if (version_compare(phpversion(), '5.3.0', '>=')) {
+                if (version_compare(phpversion(), '5.4.0', '>=')) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 } else {
-                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.3.0)", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.4.0)", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
                 break;
             }
@@ -510,7 +510,7 @@ if (isset($_POST['type'])) {
                             `login` varchar(200) DEFAULT NULL,
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
-                            `renewal_period` tinyint(4) NOT NULL
+                            `renewal_period` tinyint(4) NOT NULL DEFAULT '0'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "roles_title") {
@@ -529,7 +529,7 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
-                            `type` varchar(1) NOT NULL DEFAULT 'R',
+                            `type` varchar(5) NOT NULL DEFAULT 'R',
                             KEY `role_id_idx` (`role_id`)
                             ) CHARSET=utf8;"
                         );
@@ -598,7 +598,8 @@ if (isset($_POST['type'])) {
                                 ('chinese', 'Chinese' , 'cn', 'cn.png'),
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),
-                                ('catalan', 'Catalan' , 'ct', 'ct.png');"
+                                ('catalan', 'Catalan' , 'ct', 'ct.png'),
+                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
                             );
                         }
                     } else if ($task == "emails") {

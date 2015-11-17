@@ -3,10 +3,10 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -31,13 +31,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-
-//Build tree
-$tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
-$tree->register();
-$tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-$tree->rebuild();
-$folders = $tree->getDescendants();
 
 if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
     && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
@@ -73,11 +66,9 @@ foreach ($rows as $reccord) {
     }
 }
 
-// Build list of visible folders
-$selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" value="" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
@@ -98,7 +89,8 @@ echo '
 <input type="hidden" id="user_ongoing_action" value="" />
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" id="input_list_roles" value="'.$listRoles.'" />
-<input type="hidden" id="path_fontsize" value="" />';
+<input type="hidden" id="path_fontsize" value="" />
+<input type="hidden" id="access_level" value="" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -131,7 +123,6 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
 
-
 echo '
 <div id="div_items">';
 // MAIN ITEMS TREE
@@ -140,16 +131,17 @@ echo '
         <div id="quick_menu" style="float:left; margin-right: 5px;">
             <ul class="quick_menu">
                 <li><i class="fa fa-bars"></i>
-                    <ul class="menu_150">
+                    <ul class="menu_250">
                         <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
                         <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
+                        <li onclick="refreshTree()"><i class="fa fa-refresh fa-fw"></i>&nbsp; '.$LANG['refresh'].'</li>
                         <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
                         <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
-						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
+                        (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
             </ul>
         </div>
@@ -157,199 +149,8 @@ echo '
             '.$LANG['items_browser_title'].'
             <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
         </div>
-        <div id="sidebar" class="sidebar">';
-
-$tabItems = array();
-$cptTotal = 0;
-$folderCpt = 1;
-$prevLevel = 1;
-if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
-    $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
-} else {
-    $firstGroup = "";
-}
-if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
-    $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
-} else {
-    $listFoldersLimitedKeys = array();
-}
-// list of items accessible but not in an allowed folder
-if (isset($_SESSION['list_restricted_folders_for_items'])
-    && count($_SESSION['list_restricted_folders_for_items']) > 0) {
-    $listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
-} else {
-    $listRestrictedFoldersForItemsKeys = array();
-}
-
-echo '
-            <div id="jstree" style="overflow:auto;">
-                <ul id="node_'.$folderCpt.'">'; //
-foreach ($folders as $folder) {
-    // Be sure that user can only see folders he/she is allowed to
-    if (
-        !in_array($folder->id, $_SESSION['forbiden_pfs'])
-        || in_array($folder->id, $_SESSION['groupes_visibles'])
-        || in_array($folder->id, $listFoldersLimitedKeys)
-        || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
-    ) {
-        $displayThisNode = false;
-        $hide_node = false;
-        $nbChildrenItems = 0;
-        // Check if any allowed folder is part of the descendants of this node
-        $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
-        foreach ($nodeDescendants as $node) {
-            // manage tree counters
-            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                DB::query(
-                    "SELECT * FROM ".prefix_table("items")."
-                    WHERE inactif=%i AND id_tree = %i",
-                    0,
-                    $node
-                );
-                $nbChildrenItems += DB::count();
-            }
-            if (
-                in_array(
-                    $node,
-                    array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
-                )
-                || in_array($node, $listFoldersLimitedKeys)
-                || in_array($node, $listRestrictedFoldersForItemsKeys)
-            ) {
-                $displayThisNode = true;
-                //break;
-            }
-        }
-
-        if ($displayThisNode == true) {
-            $ident = "";
-            for ($x = 1; $x < $folder->nlevel; $x++) {
-                $ident .= "&nbsp;&nbsp;";
-            }
-
-            DB::query(
-                "SELECT * FROM ".prefix_table("items")."
-                WHERE inactif=%i AND id_tree = %i",
-                0,
-                $folder->id
-            );
-            $itemsNb = DB::count();
-
-            // get 1st folder
-            if (empty($firstGroup)) {
-                $firstGroup = $folder->id;
-            }
-            // If personal Folder, convert id into user name
-            if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) {
-                $folder->title = $_SESSION['login'];
-            }
-        	// resize title if necessary
-            $fldTitle = str_replace("&", "&amp;", $folder->title);
-            // Prepare folder
-            $folderTxt = '
-                    <li class="jstreeopen" id="li_'.$folder->id.'" title="ID ['.$folder->id.']">';
-            if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
-                $restricted = "";
-                if (in_array($folder->id, $_SESSION['read_only_folders'])) {
-                    $fldTitle = '<i class="fa fa-eye"></i>&nbsp;'.$fldTitle.'';
-                    $restricted = 1;
-                }
-                $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \''.$restricted.'\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.$itemsNb.'</span>';
-                // display tree counters
-                if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
-                    $folderTxt .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants)-1);
-                }
-                $folderTxt .= ')</a>';
-                // case for restriction_to_roles
-            } elseif (in_array($folder->id, $listFoldersLimitedKeys)) {
-                $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_folders_limited'][$folder->id]).'</span>)</a>';
-            } elseif (in_array($folder->id, $listRestrictedFoldersForItemsKeys)) {
-                $folderTxt .= '
-                            <a id="fld_'.$folder->id.'" class="folder" onclick="ListerItems(\''.$folder->id.'\', \'1\', 0);">'.$fldTitle.' (<span class="items_count" id="itcount_'.$folder->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$folder->id]).'</span>)</a>';
-            } else {
-                $folderTxt .= '
-                            <a id="fld_'.$folder->id.'">'.$fldTitle.'</a>';
-                if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1) {
-                    $hide_node = true;
-                }
-            }
-            // build select for all visible folders
-            if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
-                if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                    if ($folder->title == $_SESSION['login'] && $folder->nlevel == 1 ) {
-                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                    } else {
-                        $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                    }
-                } else {
-                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                }
-            } else {
-                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-            }
-            // build select for non personal visible folders
-            if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-            } else {
-                $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-            }
-            // build select for active folders (where user can do something)
-            if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-            } else {
-                $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-            }
-            // build tree
-            if ($hide_node == false) {
-                if ($cptTotal == 0) {
-                    // Force the name of the personal folder with the login name
-                    if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) {
-                        $folder->title = $_SESSION['login'];
-                    }
-                    echo $folderTxt;
-                    $folderCpt++;
-                } else {
-                    // show tree
-                    if ($prevLevel < $folder->nlevel) {
-                        echo '
-                    <ul  id="node_'.$folderCpt.'">'.$folderTxt;
-                        $folderCpt++;
-                    } elseif ($prevLevel == $folder->nlevel) {
-                        echo '
-                        </li>'.$folderTxt;
-                        $folderCpt++;
-                    } else {
-                        $tmp = '';
-                        // Afficher les items de la derni?eres cat s'ils existent
-                        for ($x = $folder->nlevel; $x < $prevLevel; $x++) {
-                            echo "
-                        </li>
-                    </ul>";
-                        }
-                        echo '
-                        </li>'.$folderTxt;
-                        $folderCpt++;
-                    }
-                }
-            }
-            $prevLevel = $folder->nlevel;
-
-            $cptTotal++;
-        }
-    }
-}
-// clore toutes les balises de l'arbo
-for ($x = 1; $x < $prevLevel; $x++) {
-    echo "
-                </li>
-            </ul>";
-}
-echo '
-                </li>
-            </ul>
-        </div>
+        <div id="sidebar" class="sidebar">
+            <div id="jstree" style="overflow:auto;"></div>
         </div>
     </div>';
 // Zone top right - items list
@@ -360,11 +161,11 @@ echo '
                 <div class="quick_menu1" style="float:left; margin-right: 5px;">
                     <ul class="quick_menu">
                         <li><i class="fa fa-bars"></i>
-                            <ul class="menu_150">
+                            <ul class="menu_250">
                                 <li id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</li>
                                 <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
                                 <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</li>
-                                <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-retweet fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</li>
+                                <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</li>
                             </ul>
                         </li>
                     </ul>
@@ -372,7 +173,7 @@ echo '
 
                 <div style="margin-top: 3px;">
                     <div id="txt1"  style="float:left;">
-                        <i class="fa fa-folder-open-o"></i> <span id="items_path_var"></span>
+                        <span id="items_path_var"></span>
                     </div>
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
@@ -380,7 +181,7 @@ echo '
                         <input class="form-control text ui-widget-content" type="text" placeholder="'.$LANG['item_menu_find'].'" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
                     </div>
 
-                    <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin"></i>
+                    <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
                 </div>
             </div>
             <!--<div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" /></div>-->
@@ -426,6 +227,7 @@ echo '
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
+                        <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -442,8 +244,9 @@ echo '
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td>
                         &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;" onClick=""></div>
+                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;"></div>
                         <input type="hidden" id="hid_pw" value="" />
+                        <input type="hidden" id="pw_shown" value="0" />
                     </td>
                 </tr>';
 // Line for LOGIN
@@ -552,10 +355,6 @@ echo '
         <div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
                 <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
-                <br />
-                <div style="text-align:center;">
-                    <u><a href="index.php">'.$LANG['home'].'</a></u>
-                </div>
             </div>
         </div>';
 
@@ -600,9 +399,7 @@ echo '
 // Line for FOLDERS
 echo '
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px">' .
-$selectVisibleFoldersOptions .
-'</select>';
+            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px"></select>';
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
@@ -621,14 +418,14 @@ echo '
         <div id="tabs-02">';
 // Line for folder complexity
 echo'
-            <div style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;" id="expected_complexity">
                 <label for="" class="form_label_180">'.$LANG['complex_asked'].'</label>
                 <span id="complex_attendue" style="color:#D04806; margin-left:40px;"></span>
             </div>';
 // Line for PW
 echo '
             <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
-				<span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
@@ -651,7 +448,7 @@ echo '
                 <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
                     <img  src="includes/images/paste_plain.png"  />
                 </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_Form()" class="cpm_button tip">
+                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwdContinuous()" class="cpm_button tip">
                     <img  src="includes/images/eye.png"  />
                 </a>
             </div>
@@ -745,7 +542,7 @@ echo '
     </div>';
 echo '
     </form>
-    <div style="display:none;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 
 /***************************
@@ -780,10 +577,7 @@ echo '
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;">' .
-$selectVisibleFoldersOptions .
-'
-            </select>
+            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;"></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -801,7 +595,7 @@ echo '
         <div id="tabs-2">';
 // Line for folder complexity
 echo'
-            <div style="margin-bottom:10px;">
+            <div style="margin-bottom:10px;" id="edit_expected_complexity">
                 <label for="" class="cpm_label">'.$LANG['complex_asked'].'</label>
                 <span id="edit_complex_attendue" style="color:#D04806;"></span>
             </div>';
@@ -809,7 +603,7 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-					<span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
@@ -936,7 +730,7 @@ echo '
     </div>';
 }
 echo '    
-    <div style="display:none;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
 </div>';
@@ -956,8 +750,7 @@ echo '
             <td>'.$LANG['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe">
                 ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
-                '<option value="0">---</option>' : '', '' .
-                $selectVisibleFoldersOptions .'
+                '<option value="0">---</option>' : '', '' .'
             </select></td>
         </tr>
         <tr>
@@ -969,19 +762,6 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
             </select>
         </tr>';
-/*
-        if (count($_SESSION['arr_roles'])>1) {
-            echo '
-            <tr>
-                <td>'.$LANG['associated_role'].'</td>
-                <td><select id="new_rep_role">';
-                foreach ($_SESSION['arr_roles'] as $role)
-                    echo '<option value="'.$role['id'].'">'.$role['title'].'</option>';
-                echo '
-                </select>
-            </tr>';
-        }
-       */
 echo '
     </table>
     <div id="add_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -1000,10 +780,7 @@ echo '
         <tr>
             <td>'.$LANG['group_select'].' : </td>
             <td><select id="edit_folder_folder">
-                <option value="0">-choisir-</option>' .
-$selectVisibleFoldersOptions .
-'
-            </select></td>
+                <option value="0">-choisir-</option></select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
@@ -1027,7 +804,7 @@ echo '
     <div style="text-align:center;margin-top:20px;">
         The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
         <select id="move_folder_id">
-            <option value="0">-choisir-</option>'.$selectVisibleFoldersOptions.'
+            <option value="0">-choisir-</option>
         </select>
     </div>
     <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -1037,13 +814,12 @@ echo '
 // Formulaire SUPPRIMER REPERTORIE
 echo '
 <div id="div_supprimer_rep" style="display:none;">
+    <div id="del_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
             <td><select id="delete_rep_groupe">
-                <option value="0">-choisir-</option>' .
-$selectVisibleFoldersOptions .
-'
+                <option value="0">-choisir-</option>
             </select></td>
         </tr>
     </table>
@@ -1072,8 +848,7 @@ echo '
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-$selectVisibleActiveFoldersOptions .
-'</select>
+        '</select>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';

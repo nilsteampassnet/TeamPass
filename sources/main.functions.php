@@ -3,7 +3,7 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -369,11 +369,14 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
         $groupesVisibles = array();
+		$_SESSION['personal_folders'] = array();
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
+        $_SESSION['read_only_folders'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
+		$_SESSION['list_folders_limited'] = "";
         $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
@@ -420,6 +423,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     } else {
         // init
         $_SESSION['groupes_visibles'] = array();
+		$_SESSION['personal_folders'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
@@ -533,25 +537,28 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
+					array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
                     $ids = $tree->getDescendants($pf['id'], true);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
+						array_push($_SESSION['personal_folders'], $id->id);
                     }
                 }
             }
-            // get list of readonly folders
-            // rule - if one folder is set as W in one of the Role, then User has access as W
+            // get list of readonly folders when pf is disabled.
+            // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, $listReadOnlyFolders) && $folderId != $pf['id']) {   //
+                if ((!in_array($folderId, $listReadOnlyFolders)) && $folderId != $pf['id']) {   //
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        "W"
+                        array("W","ND","NE","NDNE")
+						
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -559,17 +566,17 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         } else {
-            // get list of readonly folders
+            // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
                 if (!in_array($folderId, $listReadOnlyFolders)) {   // || (isset($pf) && $folderId != $pf['id'])
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type = %s",
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        "W"
+                        array("W","ND","NE","NDNE")
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -687,6 +694,9 @@ function updateCacheTable($action, $id = "")
                     $tags .= $itemTag['tag']." ";
                 }
             }
+            // Get renewal period
+            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".$pre."nested_tree WHERE id=%i", $record['id_tree']);
+
             // form id_tree to full foldername
             $folder = "";
             $arbo = $tree->getPath($record['id_tree'], true);
@@ -711,9 +721,10 @@ function updateCacheTable($action, $id = "")
                     'id_tree' => $record['id_tree'],
                     'perso' => $record['perso'],
                     'restricted_to' => $record['restricted_to'],
-                    'login' => $record['login']==null ? "" : $record['login'],
+                    'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
                     'author' => $record['id_user'],
+                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0"
                    )
             );
         }
@@ -755,7 +766,7 @@ function updateCacheTable($action, $id = "")
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
-                'login' => $data['login'],
+                'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                ),
@@ -805,7 +816,7 @@ function updateCacheTable($action, $id = "")
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
-                'login' => $data['login'],
+                'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                )
@@ -908,9 +919,9 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     //load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    require $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
     // load PHPMailer
-    $mail = new PHPMailer();
+    if (!isset($mail)) $mail = new PHPMailer();
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
@@ -1082,4 +1093,12 @@ function prefix_table($table)
         // stop error no table
         return false;
     }
+}
+
+/*
+ * Creates a KEY using Crypt
+ */
+function GenerateCryptKey($size)
+{
+	return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
 }
