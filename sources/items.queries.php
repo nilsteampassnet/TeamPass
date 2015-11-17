@@ -1061,7 +1061,7 @@ if (isset($_POST['type'])) {
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
-                echo $returnValues;
+				echo prepareExchangedData($returnValues, "encode");
                 break;
             }
 			
@@ -1724,9 +1724,9 @@ if (isset($_POST['type'])) {
         */
         case 'lister_items_groupe':
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
-                echo $returnValues;
+            if ($_POST['key'] != $_SESSION['key']) {	// || $_SESSION['user_read_only'] == true
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.str_replace('"', '\"', $LANG['error_not_allowed_to']).'"}]';
+				echo prepareExchangedData($returnValues, "encode");
                 break;
             }
 

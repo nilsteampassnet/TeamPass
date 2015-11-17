@@ -317,8 +317,12 @@ if (!empty($_POST['type'])) {
                             $title = $LANG['no_access'];
                                 $label = '<i class="fa fa-hand-stop-o"></i>';
                         }
-                        //$texte .= '<td align=\'center\' style=\'background-color:'.$couleur.'\' onclick=\'tm_change_role('.$role.','.$node->id.','.$i.','.$allowed.')\' id=\'tm_cell_'.$i.'\'></td>';
-                        $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+                        if (in_array($node->id, $_SESSION['read_only_folders']) || !in_array($node->id, $_SESSION['groupes_visibles'])) {
+							$texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+						} else {
+							$texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+						}
+                        
                         
                         $i++;
                     }
