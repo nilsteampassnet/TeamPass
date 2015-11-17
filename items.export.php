@@ -3,7 +3,7 @@
  *
  * @file          items.export.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -142,7 +142,8 @@ echo '
                 var nb2 = aIds.length;
                 aIds = aIds.toString();
                 $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-                if (aIds != "") {
+				console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+                if (currentID != "") {
                     pollExport(export_format, aIds, currentID, nb);
                 } else {
                     //Send query
@@ -209,7 +210,7 @@ echo '
                     var aIds = ids.split(";");
                     var currentID = aIds[0];
                     aIds.shift();
-                    var nb = aIds.length;
+                    var nb = aIds.length+1;
                     aIds = aIds.toString();
                     pollExport(export_format, aIds, currentID, nb);
                 }

@@ -3,7 +3,7 @@
  *
  * @file          chinese.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -810,5 +810,53 @@ $LANG = array (
     'upgrade_needed' => 'Upgrade needed',
     'item_menu_mov_rep' => 'Move a Folder',
     'settings_default_session_expiration_time' => 'By default delay for session expiration',
+    'duo_message' => 'DUO Security checks are now done. Sending your credentials to Teampass.<br />Please wait ... the page will be reloaded once authentication process will be done.',
+    'duo_loading_iframe' => 'DUOSecurity authentication frame is currently being loaded. Please wait.',
+    'settings_duo' => 'Enable DUO Security as User 2-Factor authentication',
+    'settings_duo_tip' => 'User 2-Factor authentication can be ensured using DUOSecurity.com. This library guarantees a high level of security related to user authentication.',
+    'admin_duo_akey' => 'AKEY',
+    'admin_duo_ikey' => 'IKEY',
+    'admin_duo_skey' => 'SKEY',
+    'admin_duo_host' => 'HOST',
+    'generate_random_key' => 'Generate consistent random key',
+    'duo_save_sk_file' => 'Save data in sk.php file',
+    'settings_duo_explanation' => 'Those credentials are issued from the web application you specially created for Teampass from the DUOSecurity administration page.<br />By clicking the save button they will stored in the sk.php file.',
+    'admin_duo_intro' => 'Fill in the next ields with expected data',
+    'admin_duo_stored' => 'Credentials stored successfully!',
+    'user_not_exists' => 'This user do not exist!',
+    'dialog_admin_user_edit_title' => 'User account edition',
+    'user_info_delete' => 'Please reclick to confirm the DELETION of this account.',
+    'user_info_delete_warning' => 'By clicking the Save button, you will delete this account from Teampass.<br />No return is possible.',
+    'edit' => 'Edit',
+    'user_info_locked' => 'User is currently LOCKED.',
+    'user_info_unlock_question' => 'Unlock account?',
+    'user_info_lock_question' => 'Lock account?',
+    'user_info_delete_question' => 'Delete account?',
+    'user_info_active' => 'User is currently ENABLED.',
+    'settings_ldap_domain_posix' => 'LDAP account suffix for your domain',
+    'refresh' => 'Refresh',
+    'loading' => 'Loading',
+    'at_password_shown' => 'Password shown',
+    'at_password_copied' => 'Password copied',
+    'search_results' => 'Search results',
+    'searching' => 'Searching ...',
+    'search_tag_results' => 'Search results for tag',
+    'searching_tag' => 'Searching for tag',
+    'list_items_with_tag' => 'List items with this tag',
+    'no_item_to_display' => 'No items to display',
+    'opening_folder' => 'Reading folder ...',
+    'please_confirm' => 'Please confirm',
+    'suggestion_notify_subject' => '[Teampass] A new suggestion has been done.',
+    'suggestion_notify_body' => 'Hello,<br><br>A new suggestion has been done. You need to validate it before it can be used by other users.<br>Some information about it:<br>- Label: #tp_label#<br>- Folder: #tp_folder#<br>- User: #tp_user#<br><br>Notice that this email has been sent to all Managers.<br><br>Best regards.',
+    'error_unknown' => 'An unexpected error occurred!',
+    'no_edit_no_delete' => 'Write but no edition and no deletion',
+    'no_edit' => 'Write but no edition',
+    'role_cannot_edit_item' => 'Cannot edit Items',
+    'no_delete' => 'Write but no delete',
+    'role_cannot_delete_item' => 'Cannot delete Items',
+    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
+    'my_profile' => 'My profile',
+    'at_suggestion' => 'Suggestion accepted',
+    'character_not_allowed' => 'Character is not allowed!',
     '' => ''
 );

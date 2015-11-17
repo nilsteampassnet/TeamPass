@@ -2,7 +2,7 @@
 /**
  * @file          find.load.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -143,4 +143,30 @@ $("#div_item_data").dialog({
           }
       }
   });
+
+$(function() {
+    //Launch the datatables pluggin
+    oTable = $("#t_items").dataTable({
+        "aaSorting": [[ 1, "asc" ]],
+        "sPaginationType": "full_numbers",
+        "bProcessing": true,
+        "bServerSide": true,
+        "sAjaxSource": "sources/find.queries.php",
+        "bJQueryUI": true,
+        "oLanguage": {
+            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+        },
+        "fnInitComplete": function() {
+            $("#find_page input").focus();
+        },
+        "columns": [
+            { "width": "10%" },
+            null,
+            null,
+            null,
+            null,
+            null
+        ]
+    });
+});
 </script>

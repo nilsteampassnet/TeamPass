@@ -3,10 +3,10 @@
  *
  * @file          configapi.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -258,7 +258,7 @@ function rest_get () {
         if (count($matches) == 0) {
             rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] =  explode('/',$matches[2], 3);
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
@@ -269,15 +269,25 @@ function rest_get () {
         if ($GLOBALS['request'][0] == "read") {
             if($GLOBALS['request'][1] == "category") {
                 // get ids
-                if (strpos($GLOBALS['request'][2],",") > 0) {
+                if (strpos($GLOBALS['request'][2],";") > 0) {
                     $condition = "id_tree IN %ls";
-                    $condition_value = explode(',', $GLOBALS['request'][2]);
+                    $condition_value = explode(';', $GLOBALS['request'][2]);
                 } else {
                     $condition = "id_tree = %s";
                     $condition_value = $GLOBALS['request'][2];
                 }
                 DB::debugMode(false);
                 
+                // get items in this module
+                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                }
 
                 /* load folders */
                 $response = DB::query(
@@ -287,55 +297,34 @@ function rest_get () {
                 $rows = array();
                 $i = 0;
                 foreach ($response as $row)
-                {
-                    /*$json['folders'][$i]['id'] = $row['id'];
-                    $json['folders'][$i]['parent_id'] = $row['parent_id'];
-                    $json['folders'][$i]['title'] = $row['title'];
-                    $json['folders'][$i]['nleft'] = $row['nleft'];
-                    $json['folders'][$i]['nright'] = $row['nright'];
-                    $json['folders'][$i]['nlevel'] = $row['nlevel'];*/
-                    $i++;
-                    
-                    $response = DB::query("SELECT id,label,login,pw FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
+                {                    
+                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
-                        // get ITEM random key
-                        $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-
                         // prepare output
                         $id = $data['id'];
-                        $json[$id]['label'] = utf8_encode($data['label']);
-                        $json[$id]['login'] = utf8_encode($data['login']);
-                        $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     }
                 }
             }
             elseif($GLOBALS['request'][1] == "items") {
+                $array_items = explode(';',$GLOBALS['request'][2]);
+                
+                // check if not empty
+                if (count($array_items) == 0) {
+                    rest_error ('NO_ITEM');
+                }
+                
                 // only accepts numeric
-                $array_items = explode(',',$GLOBALS['request'][2]);
-
-                $items_list = "";
-
                 foreach($array_items as $item) {
                     if(!is_numeric($item)) {
                         rest_error('ITEM_MALFORMED');
                     }
                 }
 
-                if(count($array_items) > 1 && count($array_items) < 5) {
-                    foreach($array_items as $item) {
-                        if (empty($items_list)) {
-                            $items_list = $item;
-                        } else {
-                            $items_list .= ",".$item;
-                        }
-                    }
-                } elseif (count($array_items) == 1) {
-                    $items_list = $item;
-                } else {
-                    rest_error ('NO_ITEM');
-                }
-                $response = DB::query("select id,label,login,pw,id_tree from ".prefix_table("items")." where id IN %ls", $items_list);
+                $response = DB::query("select id,label,login,pw, pw_iv, id_tree from ".prefix_table("items")." where id IN %ls", $array_items);
                 foreach ($response as $data)
                 {
                     // get ITEM random key
@@ -343,9 +332,9 @@ function rest_get () {
 
                     // prepare output
                     $id = $data['id'];
-                    $json[$id]['label'] = utf8_encode($data['label']);
-                    $json[$id]['login'] = utf8_encode($data['login']);
-                    $json[$id]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                 }
             }
 
@@ -388,7 +377,7 @@ function rest_get () {
 
                 DB::debugMode(false);
                 $response = DB::query(
-                    "select id,label,login,pw,id_tree
+                    "select id, label, login, pw, pw_iv, id_tree
                     from ".prefix_table("items")."
                     where id_tree = (%s)
                     and label LIKE %ss",
@@ -397,14 +386,11 @@ function rest_get () {
                 );
                 foreach ($response as $data)
                 {
-                    // get ITEM random key
-                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-
                     // prepare output
-                    $json['id'] = utf8_encode($data['id']);
-                    $json['label'] = utf8_encode($data['label']);
-                    $json['login'] = utf8_encode($data['login']);
-                    $json['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+                    $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json['folder_id'] = $data['id_tree'];
                     $json['status'] = utf8_encode("OK");
                 }
@@ -418,9 +404,9 @@ function rest_get () {
             if($GLOBALS['request'][1] == "item") {
 
                 // get item definition
-                $array_item = explode(';', $GLOBALS['request'][2]);
+                $array_item = explode(';', urldecode($GLOBALS['request'][2]));
                 if (count($array_item) != 9) {
-                    rest_error ('BADDEFINITION');
+                    rest_error ('ITEMBADDEFINITION');
                 }
 
                 $item_label = $array_item[0];
@@ -432,7 +418,7 @@ function rest_get () {
                 $item_url = $array_item[6];
                 $item_tags = $array_item[7];
                 $item_anyonecanmodify = $array_item[8];
-
+                
                 // added so one can sent data including the http or https !
                 // anyway we have to urlencode this data
                 $item_url = urldecode($item_url);
@@ -443,14 +429,14 @@ function rest_get () {
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
                     if (strlen($item_pwd) > 50) {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('PASSWORDTOOLONG');
                     }
 
                     // Check Folder ID
                     DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('NOSUCHFOLDER');
                     }
 
                     // check if element doesn't already exist
@@ -465,12 +451,9 @@ function rest_get () {
                         $itemExists = 0;
                     }
                     if ($itemExists == 0) {
-                        // prepare password and generate random key
-                        $randomKey = substr(md5(rand().rand()), 0, 15);
-                        $item_pwd = $randomKey.$item_pwd;
-                        $item_pwd = encrypt($item_pwd);
-                        if (empty($item_pwd)) {
-                            rest_error ('BADDEFINITION');
+                        $encrypt = cryption($item_pwd, SALT, "", "encrypt");
+                        if (empty($encrypt['string'])) {
+                            rest_error ('PASSWORDEMPTY');
                         }
 
                         // ADD item
@@ -480,7 +463,8 @@ function rest_get () {
                                 array(
                                     "label" => $item_label,
                                     "description" => $item_desc,
-                                    "pw" => $item_pwd,
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => $encrypt['iv'],
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
@@ -492,16 +476,6 @@ function rest_get () {
                                 )
                             );
                             $newID = DB::InsertId();
-
-                            // Store generated key
-                            DB::insert(
-                                prefix_table("keys"),
-                                array(
-                                    "sql_table" => "items",
-                                    "id" => $newID,
-                                    "rand_key" => $randomKey
-                                )
-                            );
 
                             // log
                             DB::insert(
@@ -550,10 +524,139 @@ function rest_get () {
                             echo '<br />' . $ex->getMessage();
                         }
                     } else {
-                        rest_error ('BADDEFINITION');
+                        rest_error ('ITEMEXISTS');
                     }
                 } else {
-                    rest_error ('BADDEFINITION');
+                    rest_error ('ITEMMISSINGDATA');
+                }
+            }
+            /*
+             * Case where a new user has to be added
+             * 
+             * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1|ROLE2|...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
+             * with:
+             * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
+             * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
+             *
+             * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers|Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
+             *
+             */
+            elseif($GLOBALS['request'][1] == "user") {
+                
+                // get user definition
+                $array_user = explode(';', $GLOBALS['request'][2]);
+                if (count($array_user) != 11) {
+                    rest_error ('USERBADDEFINITION');
+                }
+                
+                $login = $array_user[0];
+                $name = $array_user[1];
+                $lastname = $array_user[2];
+                $password = $array_user[3];
+                $email = $array_user[4];
+                $adminby = $array_user[5];
+                $isreadonly = $array_user[6];
+                $roles = $array_user[7];
+                $isadmin = $array_user[8];
+                $ismanager = $array_user[9];
+                $haspf = $array_user[10];
+                
+                // Empty user
+                if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
+                    rest_error ('USERLOGINEMPTY');
+                }
+                // Check if user already exists
+                $data = DB::query(
+                    "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
+            WHERE login LIKE %ss",
+                    mysqli_escape_string($link, stripslashes($login))
+                );
+                
+                if (DB::count() == 0) {
+                    try {
+                        // find AdminRole code in DB
+                        $resRole = DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("roles_title")."
+                            WHERE title LIKE %ss",
+                            mysqli_escape_string($link, stripslashes($adminby))
+                        );
+                        
+                        // get default language
+                        $lang = DB::queryFirstRow(
+                            "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+                            "admin",
+                            "default_language"
+                        );
+                        
+                        // prepare roles list
+                        $rolesList = "";
+                        foreach (explode('|', $roles) as $role) {echo $role."-";
+                            $tmp = DB::queryFirstRow(
+                                "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
+                                $role
+                            );
+                            if (empty($rolesList)) $rolesList = $tmp['id'];
+                            else $rolesList .= ";" . $tmp['id'];
+                        }
+                        
+                        // Add user in DB
+                        DB::insert(
+                            prefix_table("users"),
+                            array(
+                                'login' => $login,
+                                'name' => $name,
+                                'lastname' => $lastname,
+                                'pw' => bCrypt(stringUtf8Decode($password), COST),
+                                'email' => $email,
+                                'admin' => intval($isadmin),
+                                'gestionnaire' => intval($ismanager),
+                                'read_only' => intval($isreadonly),
+                                'personal_folder' => intval($haspf),
+                                'user_language' => $lang['valeur'],
+                                'fonction_id' => $rolesList,
+                                'groupes_interdits' => '0',
+                                'groupes_visibles' => '0',
+                                'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
+                            )
+                        );
+                        $new_user_id = DB::insertId();
+                        // Create personnal folder
+                        if (intval($haspf) == 1) {
+                            DB::insert(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => '0',
+                                    'title' => $new_user_id,
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0',
+                                    'personal_folder' => '1'
+                                )
+                            );
+                        }
+                        // Send email to new user
+                        @sendEmail(
+                            $LANG['email_subject_new_user'],
+                            str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                            $email
+                        );
+                        // update LOG
+                        DB::insert(
+                            prefix_table("log_system"),
+                            array(
+                                'type' => 'user_mngt',
+                                'date' => time(),
+                                'label' => 'at_user_added',
+                                'qui' => 'api - '.$GLOBALS['apikey'],
+                                'field_1' => $new_user_id
+                            )
+                        );
+                        echo '{"status":"user added"}';
+                    } catch(PDOException $ex) {
+                        echo '<br />' . $ex->getMessage();
+                    }
+                } else {
+                    rest_error ('USERALREADYEXISTS');
                 }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
@@ -622,8 +725,8 @@ function rest_get () {
                                     $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
                                     
                                     // prepare export
-                                    $json[$data['id']]['label'] = utf8_encode($data['label']);
-                                    $json[$data['id']]['login'] = utf8_encode($data['login']);
+                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                                     $json[$data['id']]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
                                 }
                             }
@@ -694,12 +797,24 @@ function rest_error ($type,$detail = 'N/A') {
             $message = Array('err' => 'Method not authorized');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
-        case 'BADDEFINITION':
+        case 'ITEMBADDEFINITION':
             $message = Array('err' => 'Item definition not complete');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'ITEM_MALFORMED':
             $message = Array('err' => 'Item definition not numeric');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERBADDEFINITION':
+            $message = Array('err' => 'User definition not complete');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERLOGINEMPTY':
+            $message = Array('err' => 'Empty Login given');
+            header('HTTP/1.1 405 Method Not Allowed');
+            break;
+        case 'USERALREADYEXISTS':
+            $message = Array('err' => 'User already exists');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'REQUEST_SENT_NOT_UNDERSTANDABLE':
@@ -716,6 +831,21 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'AUTH_NO_DATA':
             $message = Array('err' => 'Data not allowed for the user');
+            break;
+        case 'PASSWORDTOOLONG':
+            $message = Array('err' => 'Password is too long');
+            break;
+        case 'NOSUCHFOLDER':
+            $message = Array('err' => 'Folder ID does not exist');
+            break;
+        case 'PASSWORDEMPTY':
+            $message = Array('err' => 'Password is empty');
+            break;
+        case 'ITEMEXISTS':
+            $message = Array('err' => 'Label already exists');
+            break;
+        case 'ITEMMISSINGDATA':
+            $message = Array('err' => 'Label or Password or Folder ID is missing');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
@@ -753,24 +883,3 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
     return substr($dk, $st, $kl);
 }
 
-function teampass_decrypt_pw($encrypted, $salt, $rand_key, $itcount = 2072)
-{
-    require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
-    $encrypted = base64_decode($encrypted);
-    $pass_salt = substr($encrypted, -64);
-    $encrypted = substr($encrypted, 0, -64);
-    //$key       = teampass_pbkdf2_hash($salt, $pass_salt, $itcount, 16, 32);
-    $key = substr(pbkdf2('sha256', $salt, $pass_salt, $itcount, 16+32, true), 32, 16);
-    $iv        = base64_decode(substr($encrypted, 0, 43) . '==');
-    $encrypted = substr($encrypted, 43);
-    $mac       = substr($encrypted, -64);
-    $encrypted = substr($encrypted, 0, -64);
-    if ($mac !== hash_hmac('sha256', $encrypted, $salt)) return null;
-    //return substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
-    $result = substr(rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4"), strlen($rand_key));
-    if ($result) {
-        return $result;
-    } else {
-        return "";
-    }
-}

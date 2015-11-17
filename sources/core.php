@@ -2,7 +2,7 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -147,10 +147,10 @@ if (
     session_destroy();
 
     // REDIRECTION PAGE ERREUR
-    echo '
+		echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php?session_over=true"}, 10);
+    setTimeout(function(){document.location.href="index.php?page=items&session_over=true"}, 10);
     -->
     </script>';
     exit;

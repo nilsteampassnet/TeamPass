@@ -3,7 +3,7 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -23,7 +23,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+if (isset($_POST['type']) && $_POST['type'] == "send_pw_by_email") {
+    // continue
+} elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
@@ -32,7 +34,7 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
 } elseif (
-    (isset($_POST['data']) && $_POST['type'] == "ga_generate_qr")) {
+    (isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
 	// continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -43,6 +45,8 @@ if (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['k
 global $k;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
+header("Cache-Control: no-cache, must-revalidate");
+header("Pragma: no-cache");
 error_reporting(E_ERROR);
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -522,13 +526,13 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
-        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data']), "decode");
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
         if ($dataReceived['psk'] != "") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
-                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
             );
         }
@@ -542,7 +546,7 @@ switch ($_POST['type']) {
             break;
         }
         //decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData(str_replace("'", '"', $_POST['data_to_share']), "decode");
+		$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
@@ -596,7 +600,17 @@ switch ($_POST['type']) {
      * Reset the personal saltkey
      */
     case "reset_personal_saltkey":
-        if (!empty($_SESSION['user_id']) && !empty($_POST['sk'])) {
+		if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+        //decrypt and retreive data in JSON format
+		$dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        //Prepare variables
+        $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
+        		
+        if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
             // delete all previous items of this user
             $rows = DB::query(
                 "SELECT i.id as id
@@ -614,7 +628,7 @@ switch ($_POST['type']) {
                 DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
             }
             // change salt
-            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($_POST['sk']));
+            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
@@ -845,6 +859,8 @@ switch ($_POST['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
+		
+		// get list of last items seen
         $x = 1;
         $arrTmp = array();
         $rows = DB::query(
@@ -860,14 +876,36 @@ switch ($_POST['type']) {
         if (DB::count() > 0) {
             foreach ($rows as $record) {
                 if (!in_array($record['id'], $arrTmp)) {
-                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-tag fa-fw"></i> &nbsp;'.addslashes($record['label']).'</li>';
+                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right fa-fw"></i>&nbsp;'.addslashes($record['label']).'</li>';
                     $x++;
                     array_push($arrTmp, $record['id']);
                     if ($x >= 10) break;
                 }
             }
         }
+		
+		// get wainting suggestions
+		$nb_suggestions_waiting = 0;
+		if (
+			isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+			&& ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
+		) {
+			$rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
+			$nb_suggestions_waiting = DB::count();
+		}
 
-        echo '[{"error" : "" , "text" : "'.addslashes($return).'"}]';
+        echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : '.$nb_suggestions_waiting.'}]';
         break;
+    /**
+     * Generates a KEY with CRYPT
+     */
+    case "generate_new_key":    	
+    	// load passwordLib library
+        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+        $pwdlib->register();
+        $pwdlib = new PasswordLib\PasswordLib();
+        // generate key
+        $key = $pwdlib->getRandomToken($_POST['size']);
+    	echo '[{"key" : "'.$key.'"}]';
+    	break;
 }

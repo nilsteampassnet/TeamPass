@@ -3,7 +3,7 @@
  *
  * @file          indexapi.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -41,6 +41,9 @@ switch ($method) {
     break;
   case 'HEAD':
     rest_head();
+    break;
+  case 'NEWUSER':
+    rest_newuser();
     break;
   default:
     rest_error('UNKNOWN');

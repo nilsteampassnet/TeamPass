@@ -2,7 +2,7 @@
 /**
  * @file          find.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -24,6 +24,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 global $k, $settings, $link;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -52,7 +53,7 @@ $row = DB::query(
 );
 
 //get list of personal folders
-$arrayPf = array();
+$arrayPf = $crit = array();
 $listPf = "";
 if (!empty($row['id'])) {
 	$rows = DB::query(
@@ -117,12 +118,48 @@ if (isset($_GET['iSortCol_0'])) {
  * word by word on any field. It's possible to do here, but concerned about efficiency
  * on very large tables, and MySQL's regex functionality is very limited
  */
-if ($_GET['sSearch'] != "") {
+if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
     $sWhere .= " AND (";
     for ($i=0; $i<count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
+	
+	$crit = array(
+        'idtree' => $_SESSION['groupes_visibles'],
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        'pf' => $arrayPf
+    );
+}
+
+if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
+    $sWhere .= " AND tags LIKE %ss_0";
+	
+	$crit = array(
+        'idtree' => $_SESSION['groupes_visibles'],
+        '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
+        'pf' => $arrayPf
+    );
+}
+
+if (count($crit) == 0) {
+	$crit = array(
+        'idtree' => $_SESSION['groupes_visibles'],
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        'pf' => $arrayPf
+    );
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
@@ -140,22 +177,12 @@ DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 $rows = DB::query(
-    "SELECT *
+    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period
     FROM ".prefix_table("cache")."
     $sWhere
     $sOrder
     $sLimit",
-    array(
-        'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        'pf' => $arrayPf
-    )
+    $crit
 );
 $iFilteredTotal = DB::count();
 
@@ -176,7 +203,9 @@ if (!isset($_GET['type'])) {
         $sOutputItem = "[";
 
         //col1
-        $sOutputItem .= '"<img src=\"includes/images/key__arrow.png\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;;\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/eye.png\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\" />&nbsp;<img src=\"includes/images/key_copy.png\" onClick=\"javascript:copy_item(' . $record['id'] . ');\" style=\"cursor:pointer;\" />", ';
+        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
+            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\"></i>&nbsp;'.
+            '<i class=\"fa fa-clone tip\" title=\"'.$LANG['item_menu_copy_elem'].'\" onClick=\"javascript:copy_item(' . $record['id'] . ');\" style=\"cursor:pointer;\"></i>&nbsp;", ';
 
         //col2
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '", ';
@@ -214,9 +243,9 @@ if (!isset($_GET['type'])) {
         } else {
             $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', '', ' '), strip_tags($record['description']));
             if (strlen($txt) > 50) {
-                $sOutputItem .= '"' . substr(stripslashes(preg_replace('/<[\/]{0,1}[^>]*>|[ \t]/', '', $txt)), 0, 50) . '", ';
+                $sOutputItem .= '"' . substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50) . '", ';
             } else {
-                $sOutputItem .= '"' . stripslashes(preg_replace('/<[^>]*>|[ \t]/', '', $txt)) . '", ';
+                $sOutputItem .= '"' . stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)) . '", ';
             }
         }
 
@@ -239,7 +268,7 @@ if (!isset($_GET['type'])) {
     $sOutput .= '] }';
 
     echo $sOutput;
-} else if (isset($_GET['type']) && $_GET['type'] == "search_for_items") {
+} else if (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
     require_once 'main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
@@ -249,12 +278,12 @@ if (!isset($_GET['type'])) {
         $expirationFlag = '';
         $expired_item = 0;
         if ($_SESSION['settings']['activate_expiration'] == 1) {
-            $expirationFlag = '<img src="includes/images/flag-green.png">';
+            $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
             if (
                 $record['renewal_period'] > 0 &&
                 ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
             ) {
-                $expirationFlag = '<img src="includes/images/flag-red.png">';
+                $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
                 $expired_item = 1;
             }
         }
@@ -301,7 +330,7 @@ if (!isset($_GET['type'])) {
             && $item_is_restricted_to_role == 1
             && !in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
-            $perso = '<img src="includes/images/tag-small-red.png">';
+            $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
             $findPfGroup = 0;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
@@ -312,7 +341,7 @@ if (!isset($_GET['type'])) {
             in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
-            $perso = '<img src="includes/images/tag-small-alert.png">';
+            $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
             $findPfGroup = 1;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
@@ -326,7 +355,7 @@ if (!isset($_GET['type'])) {
                 && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
             && in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
-            $perso = '<img src="includes/images/tag-small-yellow.png">';
+            $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
             $findPfGroup = 0;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
@@ -354,13 +383,13 @@ if (!isset($_GET['type'])) {
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1
             ) {
-                $perso = '<img src="includes/images/tag-small-red.png">';
+                $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
                 $findPfGroup = 0;
                 $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
                 $displayItem = $need_sk = $canMove = 0;
             } else {
-                $perso = '<img src="includes/images/tag-small-yellow.png">';
+                $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
                 $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                 // reinit in case of not personal group
@@ -374,7 +403,7 @@ if (!isset($_GET['type'])) {
                 }
             }
         } else {
-            $perso = '<img src="includes/images/tag-small-green.png">';
+            $perso = '<i class="fa fa-tag mi-green"></i>&nbsp;';
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
             $displayItem = 1;
@@ -386,7 +415,7 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li name="" ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
+        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
 
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
@@ -398,16 +427,16 @@ if (!isset($_GET['type'])) {
         }
         
         // set folder
-        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i  class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
+        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
         
         // Prepare make Favorite small icon
         $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
         if (in_array($record['id'], $_SESSION['favourites'])) {
-            $sOutput .= '<img src="includes/images/mini_star_enable.png" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" />';
+            $sOutput .= '<i class="fa fa-star mi-yellow fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>&nbsp;';
         } else {
-            $sOutput .= '<img src="includes/images/mini_star_disable.png"" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" />';
+            $sOutput .= '<i class="fa fa-star-o fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>&nbsp;';
         }
         $sOutput .= "</span>";
 

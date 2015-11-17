@@ -2,7 +2,7 @@
 /**
  * @file          views_logs.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -113,10 +113,11 @@ echo '
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_items_page">
                 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
-                        <th style="width-max:38px;">'.$LANG['date'].'</th>
-                        <th style="width:40%;">'.$LANG['user'].'</th>
-                        <th style="width:20%;">'.$LANG['label'].'</th>
-                        <th style="width:20%;">'.$LANG['at_personnel'].'</th>
+                        <th style="width:10%;">'.$LANG['date'].'</th>
+                        <th style="width:40%;">'.$LANG['label'].'</th>
+                        <th style="width:20%;">'.$LANG['user'].'</th>
+                        <th style="width:20%;">'.$LANG['action'].'</th>
+                        <th style="width:10%;">'.$LANG['at_personnel'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

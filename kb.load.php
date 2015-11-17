@@ -2,7 +2,7 @@
 /**
  * @file          kb.load.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -56,8 +56,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
     }
 
     $(function() {
-        //buttons
-        $("#button_new_kb").button();
 
         //Launch the datatables pluggin
         $("#t_kb").dataTable({
