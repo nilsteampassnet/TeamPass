@@ -31,29 +31,30 @@ function RefreshPage(myform){
 /**
 *	Add 1 hour to session duration
 **/
-function IncreaseSessionTime(message){
-	 $.post(
+function IncreaseSessionTime(message_end, message_wait){
+	$("#main_info_box_text").html(message_wait);
+	$("#main_info_box").show().position({
+		my: "center",
+		at: "center top+75",
+		of: "#top"
+	});
+	$.post(
 		"sources/main.queries.php",
 		{
 		type    : "increase_session_time"
 		},
-        function(data){
+		function(data){
 			if (data[0].new_value != "expired") {
-                $("#main_info_box_text").html(message);
-                $("#main_info_box").show().position({
-                    my: "center",
-                    at: "center top+75",
-                    of: "#top"
-                });
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
-	        	$("#temps_restant").val(data[0].new_value);
-	        	$("#date_end_session").val(data[0].new_value);
-	        	$('#countdown').css("color","white");
+				$("#main_info_box_text").html(message_end);
+				setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+				$("#temps_restant").val(data[0].new_value);
+				$("#date_end_session").val(data[0].new_value);
+				$('#countdown').css("color","white");
 			} else {
 				document.location = "index.php?session=expired";
 			}
-        },
-        "json"
+		},
+		"json"
 	);
 }
 

@@ -93,16 +93,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
             $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         }
     }
-
-    //Showh the password in new form
-    function ShowPasswords_Form()
-    {
-        if ($('#visible_pw').is(":visible")) {
-            $('#visible_pw').hide();
-        } else {
-            $('#visible_pw').show();
-        }
-    }
+	
     $("#tabs-02").on(
         "change",
         "#pw1",
@@ -188,6 +179,15 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+				
+				// manage not allowed
+				if (data.error == "not_allowed") {
+                   $("#div_dialog_message_text").html(data.error_text);
+                   $("#div_dialog_message").dialog("open");
+				   $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
+				   $("#items_list_loader").hide();
+				   return false;
+               }
                 
                 $("#pf_selected").val(data.IsPersonalFolder);
 
@@ -289,7 +289,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-                    //$("#items_path_var").html(data.arborescence);
+					
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -382,7 +382,7 @@ function ListerItems(groupe_id, restricted, start)
                 //Delete data
                 delete data;
             }
-       );
+		);
     }
 }
 
@@ -478,6 +478,7 @@ function RecupComplexite(val, edit, context)
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
             }
+			$("#div_loading").hide();
         }
    );
     $.ajaxSetup({async: true});
@@ -1647,7 +1648,7 @@ function open_add_item_div()
 
         // exclude because user is read only
         if (compReturn == 0) {
-            LoadingPage();
+            $("#div_loading").hide();
             return false;
         }
 
@@ -2118,6 +2119,26 @@ function refreshVisibleFolders()
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
+	
+	$.ajaxSetup({
+        error: function(jqXHR, exception) {
+            if (jqXHR.status === 0) {
+                alert('Not connect.n Verify Network.');
+            } else if (jqXHR.status == 404) {
+                alert('Requested page not found. [404]');
+            } else if (jqXHR.status == 500) {
+                alert('Internal Server Error [500].');
+            } else if (exception === 'parsererror') {
+                alert('Requested JSON parse failed.');
+            } else if (exception === 'timeout') {
+                alert('Time out error.');
+            } else if (exception === 'abort') {
+                alert('Ajax request aborted.');
+            } else {
+                alert('Uncaught Error.n' + jqXHR.responseText);
+            }
+        }
+    });
 
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
@@ -3200,6 +3221,8 @@ $("#id_pw").mousedown(function(event) {
      mouseStillDown = true;
      showPwdContinuous();
 }).mouseup(function(event) {
+     mouseStillDown = false;
+}).mousemove(function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(){

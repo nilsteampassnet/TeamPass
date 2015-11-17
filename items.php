@@ -244,7 +244,7 @@ echo '
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td>
                         &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;" onClick=""></div>
+                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;"></div>
                         <input type="hidden" id="hid_pw" value="" />
                         <input type="hidden" id="pw_shown" value="0" />
                     </td>
@@ -448,7 +448,7 @@ echo '
                 <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
                     <img  src="includes/images/paste_plain.png"  />
                 </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_Form()" class="cpm_button tip">
+                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwdContinuous()" class="cpm_button tip">
                     <img  src="includes/images/eye.png"  />
                 </a>
             </div>

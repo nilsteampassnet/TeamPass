@@ -91,6 +91,9 @@ foreach ($completTree[0]->children as $child) {
 	$data = recursiveTree($child);
 }
 
+/*
+* Get through all folders
+*/
 function recursiveTree($nodeId)
 {
 	global $completTree, $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG;
@@ -128,13 +131,14 @@ function recursiveTree($nodeId)
                 || @in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
-                //break;
             }
         }
 
         if ($displayThisNode == true) {
-			$hide_node = $show_but_block = false;
+			$hide_node = $show_but_block = $eye_icon = false;
+			$text = $title = "";
 			
+			// get info about current folder
 			DB::query(
                 "SELECT * FROM ".prefix_table("items")."
                 WHERE inactif=%i AND id_tree = %i",
@@ -148,15 +152,17 @@ function recursiveTree($nodeId)
                 $completTree[$nodeId]->title = $_SESSION['login'];
             }
 			
+			// if required, separate the json answer for each folder
+			if (!empty($ret_json)) $ret_json .= ", ";
+			
 			// prepare json return for current node
 			if ($completTree[$nodeId]->parent_id==0) $parent = "#";
 			else $parent = "li_".$completTree[$nodeId]->parent_id;
-			if (!empty($ret_json)) $ret_json .= ", ";
-			if ($_SESSION['user_read_only'] == true) {
-				$text = "<i class='fa fa-eye'></i>&nbsp;";
+			
+			// special case for READ-ONLY folder
+			if ($_SESSION['user_read_only'] == true && !in_array($completTree[$nodeId]->id, $_SESSION['personal_folders'])) {
+				$eye_icon = true;
 				$title = $LANG['read_only_account'];
-			} else {
-				$text = $title = "";
 			}
 			$text .= str_replace("&", "&amp;", $completTree[$nodeId]->title);
 			$restricted = "0";
@@ -198,7 +204,7 @@ function recursiveTree($nodeId)
 				$ret_json .= '{'.
 					'"id":"li_'.$completTree[$nodeId]->id.'"'.
 					', "parent":"'.$parent.'"'.
-					', "text":"'.$text.'"'.
+					', "text":"'. ($eye_icon == true ? "<i class='fa fa-eye'></i>&nbsp;" : "") . $text.'"'.
 					', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
 					', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0)"}'.
 				'}';

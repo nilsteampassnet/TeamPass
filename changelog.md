@@ -1,5 +1,8 @@
 Last changes
 2.1.24
+ #1090 - Fix for Export to PDF last folder not taken into consideration
+ #1088 - #1085 - Password show problem
+ #1087 - Managers can edit and delete Items they are allowed to see flag
  #1073 - User can create folder on root without permission
  #1074 - Read only user can create folders + wipe out all items on remove folder
  #1069 - Knowledge Base can not change page

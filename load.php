@@ -596,7 +596,7 @@ $htmlHeaders .= '
             title: "'.$LANG['index_alarm'].'",
             buttons: {
                 "'.$LANG['index_add_one_hour'].'": function() {
-                    IncreaseSessionTime();
+                    IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'");
                     $("#div_fin_session").hide();
                     $("#countdown").css("color","white");
                     $(this).dialog("close");

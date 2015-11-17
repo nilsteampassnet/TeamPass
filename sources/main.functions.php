@@ -369,6 +369,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
         $groupesVisibles = array();
+		$_SESSION['personal_folders'] = array();
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
@@ -422,6 +423,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     } else {
         // init
         $_SESSION['groupes_visibles'] = array();
+		$_SESSION['personal_folders'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
@@ -535,11 +537,13 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
+					array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
                     $ids = $tree->getDescendants($pf['id'], true);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
+						array_push($_SESSION['personal_folders'], $id->id);
                     }
                 }
             }
