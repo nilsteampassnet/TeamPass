@@ -368,8 +368,8 @@ if (isset($_POST['newtitle'])) {
                             'title' => $title,
                             'personal_folder' => $isPersonal,
                             'renewal_period' => $renewalPeriod,
-                            'bloquer_creation' => $dataReceived['block_creation'] == 1 ? '1' : '0',
-                            'bloquer_modification' => $dataReceived['block_modif'] == 1 ? '1' : '0'
+                            'bloquer_creation' => isset($dataReceived['block_creation']) && $dataReceived['block_creation'] == 1 ? '1' : '0',
+                            'bloquer_modification' => isset($dataReceived['block_modif']) && $dataReceived['block_modif'] == 1 ? '1' : '0'
                        )
                     );
                     $newId = DB::insertId();
@@ -386,6 +386,9 @@ if (isset($_POST['newtitle'])) {
 
                     // add new folder id in SESSION
                     array_push($_SESSION['groupes_visibles'], $newId);
+					if ($isPersonal == 1) {
+						array_push($_SESSION['personal_folders'], $newId);
+					}
 
                     // rebuild tree
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');

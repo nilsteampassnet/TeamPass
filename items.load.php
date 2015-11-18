@@ -1010,7 +1010,7 @@ function AddNewFolder()
         }
 
         //prepare data
-        var data = '{"title":"'+sanitizeString($('#new_rep_titre').val())+'", "complexity":"'+sanitizeString($('#new_rep_complexite').val())+'", '+
+        var data = '{"title":"'+sanitizeString($('#new_rep_titre').val())+'", "complexity":"'+sanitizeString($('#new_rep_complexite').val())+'", "is_pf":"'+$('#pf_selected').val()+'", '+
         '"parent_id":"'+$("#new_rep_groupe option:selected").val()+'", "renewal_period":"0"}';
 
         //send query
@@ -1514,12 +1514,12 @@ function ActionOnQuickIcon(id, action)
 //## FUNCTION : prepare new folder dialogbox
 //###########
 function open_add_group_div()
-{
+{/*
     // exclude for PF
     if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;

@@ -84,7 +84,7 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
 
 $ret_json = '';
 $parent = "#";
-
+print_r($_SESSION['personal_folders']);
 // build the tree to be displayed
 $completTree = $tree->getTreeWithChildren();
 foreach ($completTree[0]->children as $child) {
