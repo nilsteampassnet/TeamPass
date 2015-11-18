@@ -50,6 +50,8 @@ $treeDesc = $tree->getDescendants();
 
 if (count($treeDesc) > 0) {
     $sOutput = '[';
+} else {
+	$sOutput = "";
 }
 
 $x = 0;
