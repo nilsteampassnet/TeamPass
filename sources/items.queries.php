@@ -1916,6 +1916,7 @@ if (isset($_POST['type'])) {
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role == 1
                             && !in_array($_SESSION['user_id'], $restricted_users_array)
+							&& !in_array($_POST['id'], $_SESSION['personal_folders'])
                         ) {
                             $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -1925,7 +1926,7 @@ if (isset($_POST['type'])) {
                         }
                         // Case where item is in own personal folder
                         elseif (
-                            in_array($_POST['id'], $_SESSION['personal_visible_groups'])
+                            in_array($_POST['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']))
                             && $record['perso'] == 1
                         ) {
                             $perso = '<i class="fa fa-warning mi-yellow fa-sm"></i>&nbsp';
@@ -2032,7 +2033,7 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
-
+							
                             // test charset => may cause a json error if is not utf8
                             if (!isUTF8($pw) || empty($pw)) {
                                 $pw = "";

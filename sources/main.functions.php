@@ -527,7 +527,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
-        // Get ID of personal folder
+        // Get IDs of personal folders
         if (
             isset($_SESSION['settings']['enable_pf_feature']) &&
             $_SESSION['settings']['enable_pf_feature'] == 1 &&
@@ -550,7 +550,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if ((!in_array($folderId, $listReadOnlyFolders)) && $folderId != $pf['id']) {   //
+                if (!in_array($folderId, array_unique (array_merge ($listReadOnlyFolders, $_SESSION['personal_folders'])))) {   //
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
