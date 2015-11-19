@@ -121,7 +121,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<title>Collaborative Passwords Manager</title>
+<title>Teampass</title>
 <script type="text/javascript">
             if (window.location.href.indexOf("page=") == -1 && window.location.href.indexOf("otv=") == -1) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
