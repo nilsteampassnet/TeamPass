@@ -241,8 +241,8 @@ foreach ($rows as $record) {
         $sOutput .= ',';
 
         //col9
-        if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\"></i>"';
+        if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
+        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
         $sOutput .= ',';
         
         //col10
