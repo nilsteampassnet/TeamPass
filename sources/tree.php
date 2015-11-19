@@ -84,7 +84,7 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
 
 $ret_json = '';
 $parent = "#";
-print_r($_SESSION['personal_folders']);
+
 // build the tree to be displayed
 $completTree = $tree->getTreeWithChildren();
 foreach ($completTree[0]->children as $child) {
@@ -158,7 +158,7 @@ function recursiveTree($nodeId)
 			// prepare json return for current node
 			if ($completTree[$nodeId]->parent_id==0) $parent = "#";
 			else $parent = "li_".$completTree[$nodeId]->parent_id;
-			
+
 			// special case for READ-ONLY folder
 			if ($_SESSION['user_read_only'] == true && !in_array($completTree[$nodeId]->id, $_SESSION['personal_folders'])) {
 				$eye_icon = true;
