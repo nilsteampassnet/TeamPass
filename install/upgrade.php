@@ -392,8 +392,6 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "kb_categories"</td><td><span id="tbl_11"></span></td></tr>
                          <tr><td>Add table "kb_items"</td><td><span id="tbl_12"></span></td></tr>
                          <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_13"></span></td></tr>
-                         <tr><td>Add table "keys"</td><td><span id="tbl_14"></span></td></tr>
-                         <tr><td>Populate table "keys"</td><td><span id="tbl_15"></span></td></tr>
                          <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
                          <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
                          <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>

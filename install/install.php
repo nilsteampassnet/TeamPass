@@ -230,7 +230,6 @@ echo '
     <li>Add table "kb_categories"&nbsp;<span id="res5_check14"></span></li>
     <li>Add table "kb_items"&nbsp;<span id="res5_check15"></span></li>
     <li>Add table "restriction_to_roles"&nbsp;<span id="res5_check16"></span></li>
-    <li>Add table "keys"&nbsp;<span id="res5_check17"></span></li>
     <li>Add table "languages"&nbsp;<span id="res5_check18"></span></li>
     <li>Add table "emails"&nbsp;<span id="res5_check19"></span></li>
     <li>Add table "automatic_del"&nbsp;<span id="res5_check20"></span></li>
