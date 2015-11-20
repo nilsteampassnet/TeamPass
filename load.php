@@ -510,6 +510,37 @@ $htmlHeaders .= '
         }
     }
 
+    function ChangeMyPass()
+{
+    if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
+        if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+            var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
+            $.post(
+                "sources/main.queries.php",
+                {
+                    type                : "change_pw",
+                    change_pw_origine    : "first_change",
+                    complexity            :    $("#user_pw_complexity").val(),
+                    data                 :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
+                },
+                function(data) {
+                    if (data[0].error == "complexity_level_not_reached") {
+                        $("#new_pw, #new_pw2").val("");
+                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_complex_not_enought'].'></span>");
+                    } else {
+                        location.reload(true);
+                    }
+                },
+                "json"
+            );
+        } else {
+            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
+        }
+    } else {
+        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
+    }
+}
+
     $(function() {
         // load DUO login
         if ($("#duo_sig_response").val() != "") {
@@ -896,6 +927,52 @@ $htmlHeaders .= '
             "score.simplePassMeter" : function(jQEvent, score) {
 				$("#pw_strength_value").val(score);
 			}
+        }).change({
+            "score.simplePassMeter" : function(jQEvent, score) {
+        $("#pw_strength_value").val(score);
+    }
+        });
+
+        //Password meter for item creation
+        $("#new_pw").simplePassMeter({
+            "requirements": {},
+            "container": "#pw_strength",
+            "defaultText" : "'.$LANG['index_pw_level_txt'].'",
+            "ratings": [
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "'.$LANG['complex_level0'].'"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level1'].'"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level2'].'"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level3'].'"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level4'].'"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level5'].'"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level6'].'"
+                }
+            ]
+        });
+        $("#new_pw").bind({
+            "score.simplePassMeter" : function(jQEvent, score) {
+        $("#pw_strength_value").val(score);
+    }
         }).change({
             "score.simplePassMeter" : function(jQEvent, score) {
         $("#pw_strength_value").val(score);

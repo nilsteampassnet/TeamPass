@@ -408,6 +408,29 @@ if (!empty($_POST['type'])) {
             );
             break;
         /**
+         * UPDATE ADMIN RIGHTS FOR USER
+         */
+        case "admin":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['is_admin'] != 1) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                exit();
+            }
+
+            DB::update(
+                prefix_table("users"),
+                array(
+                    'admin' => $_POST['value'],
+					'gestionnaire' => $_POST['value'] == 1 ? "0" : "1",
+					'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                   ),
+                "id = %i",
+                $_POST['id']
+            );
+			
+			echo prepareExchangedData(array("error" => ""), "encode");
+            break;
+        /**
          * UPDATE MANAGER RIGHTS FOR USER
          */
         case "gestionnaire":
@@ -420,10 +443,13 @@ if (!empty($_POST['type'])) {
             DB::update(
                 prefix_table("users"),
                 array(
-                    'gestionnaire' => $_POST['value']
+                    'gestionnaire' => $_POST['value'],
+					'admin' => $_POST['value'] == 1 ? "0" : "1",
+					'read_only' => $_POST['value'] == 1 ? "0" : "1"
                    ),
                 "id = ".$_POST['id']
             );
+			echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE READ ONLY RIGHTS FOR USER
@@ -438,30 +464,14 @@ if (!empty($_POST['type'])) {
             DB::update(
                 prefix_table("users"),
                 array(
-                    'read_only' => $_POST['value']
+                    'read_only' => $_POST['value'],
+					'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
+					'admin' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = %i",
                 $_POST['id']
             );
-            break;
-        /**
-         * UPDATE ADMIN RIGHTS FOR USER
-         */
-        case "admin":
-            // Check KEY
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['is_admin'] != 1) {
-                // error
-                exit();
-            }
-
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'admin' => $_POST['value']
-                   ),
-                "id = %i",
-                $_POST['id']
-            );
+			echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE PERSONNAL FOLDER FOR USER

@@ -1570,7 +1570,7 @@ function open_edit_group_div()
 function open_move_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
@@ -2451,7 +2451,7 @@ $(function() {
                                 refreshTree();
                                 $("#div_move_folder").dialog("close");
                             } else {
-                                $("#edit_rep_show_error").html(data[0].error).show();
+                                $("#move_rep_show_error").html(data[0].error).show();
                             }
                             $("#move_folder_loader").hide();
                         },

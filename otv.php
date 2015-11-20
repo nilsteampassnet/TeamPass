@@ -21,9 +21,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 $html = "";
 if (
     filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
-    && filter_var($_GET['item_id'], FILTER_VALIDATE_INT) != false
     && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
-    && filter_var($_GET['otv_id'], FILTER_VALIDATE_INT) != false
 ) {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
@@ -45,14 +43,12 @@ if (
 
     // check session validity
     $data = DB::queryfirstrow(
-        "SELECT timestamp, code, item_id FROM ".prefix_table("otv")."
-        WHERE id = %i",
-        intval($_GET['otv_id'])
+        "SELECT id, timestamp, code, item_id FROM ".prefix_table("otv")."
+        WHERE code = %i",
+        intval($_GET['code'])
     );
     if (
         $data['timestamp'] == $_GET['stamp']
-        && $data['code'] == $_GET['code']
-        && $data['item_id'] == $_GET['item_id']
     ) {
         // otv is too old
         if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period'] * 86400) ) {
@@ -63,23 +59,12 @@ if (
                 FROM ".prefix_table("items")." as i
                 INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
                 WHERE i.id = %i AND l.action = %s",
-                intval($_GET['item_id']),
+                intval($data['item_id']),
                 'at_creation'
             );
 
             // get data
             $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
-
-        	// get key for original pw
-        	$originalKey = DB::queryfirstrow(
-                "SELECT rand_key FROM `".prefix_table("keys")."`
-                WHERE `sql_table` = %s AND `id` = %i",
-                'items',
-                intval($_GET['item_id'])
-            );
-        	// unsalt previous pw
-        	$pw = substr($pw, strlen($originalKey['rand_key']));
-
 
             $label = $dataItem['label'];
             $email = $dataItem['email'];
