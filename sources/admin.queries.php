@@ -3,7 +3,7 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -78,8 +78,8 @@ switch ($_POST['type']) {
                 if (!$fp) {
                     $error = "connection";
                 } else {
-                    $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
-                    $out .= "Host: www.teampass.net\r\n";
+                    $out = "GET http://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
+                    $out .= "Host: teampass.net\r\n";
                     $out .= "Connection: Close\r\n\r\n";
                     fwrite($fp, $out);
 
@@ -966,4 +966,166 @@ switch ($_POST['type']) {
 		$_SESSION['settings']['api'] = intval($_POST['status']);
 		break;
 
+	case "save_duo_status":
+		DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "duo");
+        $counter = DB::count();
+		if ($counter == 0) {
+			DB::insert(
+				prefix_table("misc"),
+				array(
+					'type' => "admin",
+					"intitule" => "duo",
+				    'valeur' => intval($_POST['status'])
+				   )
+			);
+		} else {
+			DB::update(
+				prefix_table("misc"),
+				array(
+				    'valeur' => intval($_POST['status'])
+				   ),
+				"type = %s AND intitule = %s",
+                "admin",
+                "duo"
+			);
+		}
+		$_SESSION['settings']['duo'] = intval($_POST['status']);
+		break;
+
+	case "save_duo_in_sk_file":
+		// Check KEY and rights
+		if ($_POST['key'] != $_SESSION['key']) {
+			echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+			break;
+		}
+		// decrypt and retreive data in JSON format
+		$dataReceived = prepareExchangedData($_POST['data'], "decode");
+		
+		// Prepare variables
+		$akey = htmlspecialchars_decode($dataReceived['akey']);
+		$ikey = htmlspecialchars_decode($dataReceived['ikey']);
+		$skey = htmlspecialchars_decode($dataReceived['skey']);
+		$host = htmlspecialchars_decode($dataReceived['host']);
+		
+		//get infos from SETTINGS.PHP file
+		$filename = $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+		if (file_exists($filename)) {
+			// get sk.php file path
+			$settingsFile = file($filename);
+			while (list($key,$val) = each($settingsFile)) {
+				if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+					$tmp_skfile = substr($val, 14, strpos($val, '";')-14);
+				}
+			}
+			
+			// before perform a copy of sk.php file
+			if (file_exists($tmp_skfile)) {
+				//Do a copy of the existing file
+				if (!copy(
+					$tmp_skfile,
+					$tmp_skfile.'.'.date(
+						"Y_m_d",
+						mktime(0, 0, 0, date('m'), date('d'), date('y'))
+					)
+				)) {
+					echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
+					break;
+				} else {
+					unlink($tmp_skfile);
+				}
+			} else {
+				// send back an error
+				echo '[{"result" : "" , "error" : "Could NOT access file: '.$tmp_skfile.'"}]';
+				break;
+			}
+		}
+		
+		// Write back values in sk.php file
+		$fh = fopen($tmp_skfile, 'w');		
+		$result2 = fwrite(
+			$fh,
+			utf8_encode(
+"<?php
+@define('SALT', '".SALT."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
+// DUOSecurity credentials
+@define('AKEY', \"".$akey."\");
+@define('IKEY', \"".$ikey."\");
+@define('SKEY', \"".$skey."\");
+@define('HOST', \"".$host."\");
+?>"
+			)
+		);
+		fclose($fh);
+		
+		
+		
+		// send data
+		echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
+		break;
+
+    case "save_fa_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // 2factors_authentication
+        if (htmlspecialchars_decode($dataReceived['2factors_authentication']) == "false") $tmp = 0;
+        else $tmp = 1;
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "2factors_authentication");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "2factors_authentication",
+                    'valeur' => $tmp
+                )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => $tmp
+                ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "2factors_authentication"
+            );
+        }
+        $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
+
+        // ga_website_name
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "ga_website_name",
+                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "ga_website_name"
+            );
+        }
+        $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
 }

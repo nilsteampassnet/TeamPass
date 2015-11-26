@@ -2,7 +2,7 @@
 /**
  * @file          otv.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -20,16 +20,16 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $html = "";
 if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != ""
-    && filter_var($_GET['item_id'], FILTER_SANITIZE_STRING) >= 0
-    && filter_var($_GET['stamp'], FILTER_SANITIZE_STRING) >= 0
-    && filter_var($_GET['otv_id'], FILTER_SANITIZE_STRING) >= 0
+    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
+    && filter_var($_GET['item_id'], FILTER_VALIDATE_INT) != false
+    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
+    && filter_var($_GET['otv_id'], FILTER_VALIDATE_INT) != false
 ) {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/main.functions.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
     // connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -42,9 +42,6 @@ if (
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
-
-    // Include main functions used by TeamPass
-    require_once 'sources/main.functions.php';
 
     // check session validity
     $data = DB::queryfirstrow(
@@ -105,13 +102,14 @@ if (
             	"</div>";
 
         	// delete entry
-        	DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+        	//DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+			
+			// display
+			echo $html;
         }
     } else {
-        $html = "Not a valid page!";
+        echo "Not a valid page!";
     }
 } else {
-    $html = "Not a valid page!";
+	echo "No valid OTV inputs!";
 }
-
-echo $html;

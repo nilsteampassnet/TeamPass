@@ -109,6 +109,11 @@ if (isset($_POST['type'])) {
                 $abspath."/upload/"
             );
             foreach ($tab as $elem) {
+                // try to create it if not existing
+                if(!is_dir($elem)) {
+                    mkdir($elem);
+                }
+                // check if writable
                 if (is_writable($elem)) {
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">'.
                         $elem.'&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
@@ -146,10 +151,10 @@ if (isset($_POST['type'])) {
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
-            if (version_compare(phpversion(), '5.3.0', '<')) {
+            if (version_compare(phpversion(), '5.4.0', '<')) {
                 $okVersion = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.
-                    phpversion().' is not OK (minimum is 5.3.0) &nbsp;&nbsp;'.
+                    phpversion().' is not OK (minimum is 5.4.0) &nbsp;&nbsp;'.
                     '<img src=\"images/minus-circle.png\"></span><br />';
             } else {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP version '.
@@ -570,7 +575,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'enable_suggestion', '0', 0),
                 array('admin', 'email_server_url', '', 0),
                 array('admin','otv_expiration_period','7', 0),
-                array('admin','default_session_expiration_time','60', 0)
+                array('admin','default_session_expiration_time','60', 0),
+	            array('admin','duo','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -655,7 +661,7 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."roles_values",
                 "type",
-                "VARCHAR(1) NOT NULL DEFAULT 'R'"
+                "VARCHAR(5) NOT NULL DEFAULT 'R'"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
@@ -686,28 +692,70 @@ if (isset($_POST['type'])) {
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY pw VARCHAR(400)"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER NULL"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) NULL"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `key` `suggestion_key` VARCHAR( 50 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
-            );
-            mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."keys CHANGE `table` `sql_table` VARCHAR( 25 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."keys CHANGE `table` `sql_table` VARCHAR( 25 ) NULL"
             );
             mysqli_query($dbTmp,
                 "ALTER TABLE ".$_SESSION['tbl_prefix']."users MODIFY `key_tempo` varchar(100) NULL"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items MODIFY `raison` text NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `type` `type` varchar(50) NULL default ''"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `password` `pw` VARCHAR( 400 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
             );
             mysqli_query($dbTmp,
-                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `suggestion_key` `pw_iv` VARCHAR( 50 ) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL"
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `derniers` `derniers` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_pw` `last_pw` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `favourites` `favourites` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."log_items CHANGE `raison` `raison` text NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."roles_values CHANGE `type` `type` VARCHAR( 5 ) NOT NULL DEFAULT 'R'"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `suggestion_key` `pw_iv` TEXT NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `key` `pw_iv` TEXT NULL"
+            );
+            mysqli_query($dbTmp,
+                "ALTER TABLE ".$_SESSION['tbl_prefix']."suggestion CHANGE `password` `pw` TEXT NULL"
             );
 
             ## Alter USERS table
@@ -789,17 +837,17 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NOT null DEFAULT ''"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar_thumb",
-                "VARCHAR(255) NOT null"
+                "VARCHAR(255) NOT null DEFAULT ''"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
-                "TEXT NOT null"
+                "TEXT null"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."categories_items",
@@ -810,6 +858,21 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "pw_iv",
                 "TEXT NOT null"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "pw_len",
+                "INT(5) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."cache",
+                "renewal_period",
+                "TINYINT(4) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."suggestion",
+                "pw_len",
+                "int(5) NOT null DEFAULT '0'"
             );
             echo 'document.getElementById("tbl_2").innerHTML = "<img src=\"images/tick.png\">";';
 
@@ -828,7 +891,11 @@ if (isset($_POST['type'])) {
                 "TINYINT(4) NOT null DEFAULT '0'"
             );
 
-            addIndexIfNotExist($_SESSION['tbl_prefix'].'nested_tree', 'personal_folder_idx', 'ADD INDEX `personal_folder_idx` (`personal_folder`)');
+            addIndexIfNotExist(
+				$_SESSION['tbl_prefix'].'nested_tree',
+				'personal_folder_idx',
+				'ADD INDEX `personal_folder_idx` (`personal_folder`)'
+			);
 
             echo 'document.getElementById("tbl_5").innerHTML = "<img src=\"images/tick.png\">";';
 
@@ -933,7 +1000,8 @@ if (isset($_POST['type'])) {
                 `restricted_to` varchar(200) NOT NULL,
                 `login` varchar(200) NOT NULL,
                 `folder` varchar(300) NOT NULL,
-                `author` varchar(50) NOT NULL
+                `author` varchar(50) NOT NULL,
+				`renewal_period` TINYINT(4) NOT null DEFAULT '0'
                 );"
             );
             if ($res8) {
@@ -979,7 +1047,8 @@ if (isset($_POST['type'])) {
                         '".$reccord['restricted_to']."',
                         '".$reccord['login']."',
                         '".$folder."',
-                        '".$reccord['id_user']."'
+                        '".$reccord['id_user']."',
+						0
                         )"
                     );
                 }
@@ -1307,7 +1376,8 @@ if (isset($_POST['type'])) {
                 ('', 'chinese', 'Chinese' , 'cn', 'cn.png'),
                 ('', 'swedish', 'Swedish' , 'se', 'se.png'),
                 ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
-                ('', 'catalan', 'Catalan' , 'ct', 'ct.png');"
+                ('', 'catalan', 'Catalan' , 'ct', 'ct.png'),
+                ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
             );
             if ($res) {
                 echo 'document.getElementById("tbl_16").innerHTML = '.
@@ -1508,17 +1578,18 @@ if (isset($_POST['type'])) {
             ## TABLE suggestion
             $res = mysqli_query($dbTmp,
                 "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."suggestion` (
-                `id` tinyint(12) NOT NULL AUTO_INCREMENT,
-                `label` varchar(255) NOT NULL,
-                `password` text NOT NULL,
-                `description` text NOT NULL,
-                `author_id` int(12) NOT NULL,
-                `folder_id` int(12) NOT NULL,
-                `comment` text NOT NULL,
-                `suggestion_key` varchar(50) NOT NULL,
-                PRIMARY KEY (`id`)
-               ) CHARSET=utf8;
-            ");
+				`id` tinyint(12) NOT NULL AUTO_INCREMENT,
+				`label` varchar(255) NOT NULL,
+				`pw` text NOT NULL,
+				`pw_iv` text NOT NULL,
+				`pw_len` int(5) NOT NULL,
+				`description` text NOT NULL,
+				`author_id` int(12) NOT NULL,
+				`folder_id` int(12) NOT NULL,
+				`comment` text NOT NULL,
+				PRIMARY KEY (`id`)
+				) CHARSET=utf8;"
+			);
             if ($res) {
                 echo 'document.getElementById("tbl_25").innerHTML = "<img src=\"images/tick.png\">";';
             } else {
@@ -1744,6 +1815,7 @@ require_once \"".$skFile."\";
                         utf8_encode(
 "<?php
 @define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
                         )
                     );
@@ -1782,6 +1854,7 @@ require_once \"".$skFile."\";
             break;
 
         case "new_encryption_of_pw":
+			$dbgDuo = fopen("upgrade.log", "a");
             $finish = false;
             $next = ($_POST['nb']+$_POST['start']);
 
@@ -1794,14 +1867,17 @@ require_once \"".$skFile."\";
             );
 
             if ($_POST['suggestion'] != "1") {
-                $res = mysqli_query($dbTmp,
-                    "SELECT * FROM ".$_SESSION['tbl_prefix']."items
+				fputs($dbgDuo, "\n\nSELECT id, pw FROM ".$_SESSION['tbl_prefix']."items
+                    WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."");
+                $rows = mysqli_query($dbTmp,
+                    "SELECT id, pw FROM ".$_SESSION['tbl_prefix']."items
                     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
                 ) or die(mysqli_error($dbTmp));
-                while ($data = mysqli_fetch_array($res)) {
+                while ($data = mysqli_fetch_array($rows)) {
+					fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
                     // check if pw encrypted with protocol #3
                     if (!empty($data['pw_iv'])) {
-                        //$pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                        $pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
                         // nothing to do - last encryption protocol (#3) used
                     } else {
                         // check if pw encrypted with protocol #2
@@ -1809,19 +1885,23 @@ require_once \"".$skFile."\";
                         if (empty($pw)) {
                             // used protocol is #1
                             $pw = decryptOld($data['pw']);  // decrypt using protocol #1
-                        } else {
-                            // used protocol is #2
-                            // get key for this pw
-                            $resData = mysqli_query($dbTmp,
-                                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
-                                WHERE `sql_table` = 'items' AND id = ".$data['id']
-                            ) or die(mysqli_error($dbTmp));
-                            $dataTemp = mysqli_fetch_row($resData);
-                            if (!empty($dataTemp[0])) {
-                                // remove key from pw
-                                $pw = substr($pw, strlen($dataTemp[0]));
-                            }
                         }
+						
+						// get key for this pw							
+						$resData = mysqli_query($dbTmp,
+							"SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+							WHERE `sql_table` = 'items' AND id = ".$data['id']
+						) or die(mysqli_error($dbTmp));
+						
+						$resData = mysqli_query($dbTmp,
+							"SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+							WHERE `sql_table` = 'items' AND id = ".$data['id']
+						) or die(mysqli_error($dbTmp));
+						$dataTemp = mysqli_fetch_row($resData);
+						if (!empty($dataTemp[0])) {
+							// remove key from pw
+							$pw = substr($pw, strlen($dataTemp[0]));
+						}
 
                         // crypt pw with new protocol #3
                         // encrypt pw
@@ -1842,23 +1922,55 @@ require_once \"".$skFile."\";
                         LEFT JOIN ".$_SESSION['tbl_prefix']."keys AS k ON (l.id_item = k.id)
                         WHERE l.id_item = ".$data['id']." AND l.raison LIKE 'at_pw :%' AND k.sql_table='items'"
                     );
+					fputs($dbgDuo, "\nNb of entries in log: ".mysqli_num_rows($resData));
                     while ($record = mysqli_fetch_array($resData)) {
-                        $pw = substr(decrypt(trim(substr($record['raison'], 7))), strlen($record['rndKey']));
-                        if (isUTF8($pw) && !empty($pw)) {
-                            $encrypt = cryption($pw, SALT, "", "encrypt");
-
-                            // store Password
-                            mysqli_query($dbTmp,
-                                "UPDATE ".$_SESSION['tbl_prefix']."log_items
-                                    SET raison = 'at_pw :".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
-                                    WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
-                                    AND id_user=".$record['id_user']." AND action ='".$record['action']."'"
-                            ) or die(mysqli_error($dbTmp));
-                        } else {
-                            //data is lost ... unknown encryption
-                        }
+						fputs($dbgDuo, "\n> ".$record['raison']);
+						if (!empty($record['raison_iv']) && $record['raison_iv'] != NULL) {
+							// nothing to do
+						} else {
+							// only at_modif and at_pw
+							$reason = explode(' : ', $record['raison']);
+							if (trim($reason[0]) == "at_pw") {
+								
+								// check if pw encrypted with protocol #2
+								$pw = decrypt(trim($reason[1]));
+								fputs($dbgDuo, "\n/ step1 : ".$pw);
+								if (empty($pw)) {
+									// used protocol is #1
+									$pw = decryptOld(trim($reason[1]));  // decrypt using protocol #1
+									fputs($dbgDuo, " / step2 : ".$pw);
+								}
+								
+								// get key for this pw
+								$resData_tmp = mysqli_query($dbTmp,
+									"SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+									WHERE `sql_table` = 'items' AND id = ".$data['id']
+								) or die(mysqli_error($dbTmp));
+								$dataTemp = mysqli_fetch_row($resData_tmp);
+								if (!empty($dataTemp[0])) {
+									// remove key from pw
+									$pw = substr($pw, strlen($dataTemp[0]));
+								}
+								fputs($dbgDuo, " / step3 : ".$pw);
+								
+								// store new encryption
+								if (isUTF8($pw) && !empty($pw)) {
+									$encrypt = cryption($pw , SALT, "", "encrypt");
+									fputs($dbgDuo, " / Final : ".$encrypt['string']);
+									mysqli_query($dbTmp,
+										"UPDATE ".$_SESSION['tbl_prefix']."log_items
+										SET raison = 'at_pw : ".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
+										WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
+										AND id_user=".$record['id_user']." AND action ='".$record['action']."'"
+									);
+								} else {
+									//data is lost ... unknown encryption
+								}
+								fputs($dbgDuo, " / Done.");
+							}
+						}
                     }
-
+					fputs($dbgDuo, "\nLog treatment done.");
 
                     // change category fields encryption
                     $resData = mysqli_query($dbTmp,
@@ -1882,13 +1994,13 @@ require_once \"".$skFile."\";
                             //data is lost ... unknown encryption
                         }
                     }
-
-                    break;
+					fputs($dbgDuo, "\nCategory treatment done.");
                 }
                 if ($next >= $_POST['total']) {
                     $finish = "suggestion";
                 }
             } else {
+				fputs($dbgDuo, "\nStarting suggestion.");
                 // decrypt passwords in suggestion table
                 $resData = mysqli_query($dbTmp,
                     "SELECT id, pw, pw_iv
@@ -1912,7 +2024,7 @@ require_once \"".$skFile."\";
                 $finish = true;
             }
 
-
+			fputs($dbgDuo, "\nAll finished.");
 
             echo '[{"finish":"'.$finish.'" , "next":"'.$next.'" '.
                 ', "progress":"'.round($next*100/$_POST['total'], 0).'"}]';

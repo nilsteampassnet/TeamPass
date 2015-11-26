@@ -3,7 +3,7 @@
  *
  * @file          admin.settings_api.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -59,8 +59,8 @@ echo '
             &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_tip'].'" />
         </label>
         <span class="div_radio">
-            <input type="radio" id="api_radio1" name="ldap_mode" onclick="saveApiStatus(1)" value="1"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$LANG['yes'].'</label>
-            <input type="radio" id="api_radio2" name="ldap_mode" onclick="saveApiStatus(0)" value="0"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['api']) ? ' checked="checked"':''), ' /><label for="api_radio2">'.$LANG['no'].'</label>
+            <input type="radio" id="api_radio1" name="api" onclick="saveApiStatus(1)" value="1"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$LANG['yes'].'</label>
+            <input type="radio" id="api_radio2" name="api" onclick="saveApiStatus(0)" value="0"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['api']) ? ' checked="checked"':''), ' /><label for="api_radio2">'.$LANG['no'].'</label>
         </span>
     </div>
     <hr>

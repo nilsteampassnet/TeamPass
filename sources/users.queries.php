@@ -3,7 +3,7 @@
  *
  * @file          users.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		http://www.teampass.net
@@ -188,6 +188,7 @@ if (!empty($_POST['type'])) {
                             'personal_folder' => '1'
                            )
                     );
+                    $tree->rebuild();
                 }
                 // Create folder and role for domain
                 if ($dataReceived['new_folder_role_domain'] == "true") {
@@ -886,7 +887,7 @@ if (!empty($_POST['type'])) {
         */
         case "migrate_admin_pf":
             // decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             // Prepare variables
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
@@ -1007,316 +1008,286 @@ if (!empty($_POST['type'])) {
                 );
             }
             break;
-            
         /**
-        * delete the timestamp value for all users
-        */
-        case "load_users_list":
+         * Get user info
+         */
+        case "get_user_info":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
+                // error
+                exit();
             }
+			
+			$arrData = array();
             
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
-            $treeDesc = $tree->getDescendants();
-            // Build FUNCTIONS list
+            // get User info
+            $rowUser = DB::queryFirstRow(
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            // get FUNCTIONS
+            $functionsList = "";
+            $users_functions = explode(';', $rowUser['fonction_id']);
+            // array of roles for actual user
+            $my_functions = explode(';', $_SESSION['fonction_id']);
+
+            $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
+            foreach ($rows as $record) {
+                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                    if (in_array($record['id'], $users_functions)) $tmp = ' selected="selected"';
+                    else $tmp = "";
+                    $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role"'.$tmp.'>'.$record['title'].'</option>';
+                }
+            }
+
+            // get MANAGEDBY
             $rolesList = array();
             $rows = DB::query("SELECT id,title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
             foreach ($rows as $reccord) {
                 $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
             }
-            
-            $listAvailableUsers = $listAdmins = $html = "";
-            $listAlloFcts_position = false;
-            $x = 0;
-            // Get through all users
-            $rows = DB::query("SELECT * FROM ".prefix_table("users")." ORDER BY login ASC LIMIT ".$_POST['from'].", ".$_POST['nb']."");
-            foreach ($rows as $reccord) {
-                // Get list of allowed functions
-                $listAlloFcts = "";
-                if ($reccord['admin'] != 1) {
-                    if (count($rolesList) > 0) {
-                        foreach ($rolesList as $fonction) {
-                            if (in_array($fonction['id'], explode(";", $reccord['fonction_id']))) {
-                                $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
-                            }
-                        }
-                        $listAlloFcts_position = true;
-                    }
-                    if (empty($listAlloFcts)) {
-                        $listAlloFcts = '<i class="fa fa-exclamation fa-lg mi-red tip" title="'.$LANG['user_alarm_no_function'].'"></i>';
-                        $listAlloFcts_position = false;
-                    }
-                }
-                // Get list of allowed groups
-                $listAlloGrps = "";
-                if ($reccord['admin'] != 1) {
-                    if (count($treeDesc) > 0) {
-                        foreach ($treeDesc as $t) {
-                            if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
-                                $ident = "";
-                                if (in_array($t->id, explode(";", $reccord['groupes_visibles']))) {
-                                    $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
-                                }
-                                $prev_level = $t->nlevel;
-                            }
-                        }
-                    }
-                }
-                // Get list of forbidden groups
-                $listForbGrps = "";
-                if ($reccord['admin'] != 1) {
-                    if (count($treeDesc) > 0) {
-                        foreach ($treeDesc as $t) {
-                            $ident = "";
-                            if (in_array($t->id, explode(";", $reccord['groupes_interdits']))) {
-                                $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
-                            }
-                            $prev_level = $t->nlevel;
-                        }
-                    }
-                }
-                // is user locked?
-                if ($reccord['disabled'] == 1) {
-                }
-
-                //Show user only if can be administrated by the adapted Roles manager
-                if (
-                    $_SESSION['is_admin'] ||
-                    ($reccord['isAdministratedByRole'] > 0 &&
-                    in_array($reccord['isAdministratedByRole'], $_SESSION['user_roles']))
-                ) {
-                    $showUserFolders = true;
-                } else {
-                    $showUserFolders = false;
-                }
-                
-                // Build list of available users
-                if ($reccord['admin'] != 1 && $reccord['disabled'] != 1) {
-                    $listAvailableUsers .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
-                }                
-                
-                // Display Grid
-                if ($showUserFolders == true) {
-                    // <-- prepare all possible conditions
-                    // If user is active, then you could lock it
-                    // If user is locked, you could delete it
-                    if ($reccord['disabled'] == 1) {
-                        $userTxt = $LANG['user_del'];
-                        $actionOnUser = '<i class="fa fa-user-times fa-lg tip" style="cursor:pointer;" onclick="action_on_user(\''.$reccord['id'].'\',\'delete\')" title="'.$userTxt.'">';
-                        $userIcon = "user--minus";
-                        $row_style = ' style="background-color:#FF8080;font-size:11px;"';
-                    } else {
-                        $userTxt = $LANG['user_lock'];
-                        $actionOnUser = '<i class="fa fa-lock fa-lg tip" style="cursor:pointer;" onclick="action_on_user(\''.$reccord['id'].'\',\'lock\')" title="'.$userTxt.'">';
-                        $userIcon = "user-locked";
-                        $row_style = ' class="ligne'.($x % 2).' data-row"';     
-                    }
-                    
-                    if ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true)
-                        $show_edit = '<i class="fa fa-pencil fa-lg tip" style="cursor:pointer;" onclick="user_edit_login('.$reccord['id'].')" title="'.$LANG['edit_user'].'">&nbsp;';
-                    else
-                        $show_edit = '';
-                    $td_class = '';
-                    
-                    if ($reccord['admin'] == 1) {
-                        $is_admin = ' style="display:none;"';
-                        $admin_checked = ' checked';
-                        $admin_disabled = ' disabled="disabled"';
-                    } else {
-                        $is_admin = '';
-                        $admin_checked = '';
-                        $admin_disabled = '';
-                    }
-                    
-                    if ($_SESSION['user_manager'] == 1) $is_manager = 'disabled="disabled"';
-                    else $is_manager = '';
-                    
-                    if ($reccord['gestionnaire'] == 1) $is_gest = 'checked';
-                    else $is_gest = '';
-                    
-                    if ($showUserFolders == false) {
-                        $show_folders = 'display:none;';
-                        $show_folders_disabled = 'disabled="disabled"';
-                        $user_action = 'src="includes/images/user--minus_disabled.png"';
-                        $pw_change = 'src="includes/images/lock__pencil_disabled.png"';
-                        $log_report = 'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px; cursor:pointer;" title="'.$LANG['see_logs'].'"';
-                    } else {
-                        $show_folders = '';
-                        $show_folders_disabled = '';
-                        $user_action = '<i class="fa fa-user fa-lg tip" style="cursor:pointer;" onclick="'.$actionOnUser.'" title="'.$userTxt.'">';
-                        $pw_change = '<i class="fa fa-key fa-lg tip" style="cursor:pointer;" onclick="mdp_user(\''.$reccord['id'].'\')" title="'.$LANG['change_password'].'"></i>';
-                        $log_report = '<i class="fa fa-newspaper-o fa-lg tip" onclick="user_action_log_items(\''.$reccord['id'].'\')" style="cursor:pointer;" title="'.$LANG['see_logs'].'"></i>';
-                    }
-                                        
-                    if ($_SESSION['user_manager'] == 1 || $reccord['admin'] == 1) $tmp1 = 'disabled="disabled"';
-                    else $tmp1 = '';
-                    
-                    if ($reccord['read_only'] == 1) $is_ro = 'checked';
-                    else $is_ro = '';            
-
-                    if ($reccord['can_create_root_folder'] == 1) $can_create_root_folder = 'checked';
-                    else $can_create_root_folder = '';
-                    
-                    if ($reccord['personal_folder'] == 1) $personal_folder = 'checked';
-                    else $personal_folder = '';
-                    
-                    if (empty($reccord['email'])) $email_change = 'mail--exclamation.png';
-                    else $email_change = 'mail--pencil.png';
-                    
-                    if (empty($reccord['ga'])) $ga_code = 'phone_add';
-                    else $ga_code = 'phone_sound' ;
-                    // -->
-                    
-                    $html .= '
-                            <tr'.$row_style.'>
-                                <td align="center">'.$show_edit.$reccord['id'].'</td>
-                                <td align="center">';
-                    if ($reccord['disabled'] == 1) $html .= '
-                                    <i class="fa fa-warning fa-lg mi-red tip" style="padding:2px;cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" title="'.$LANG['unlock_user'].'"></i>';
-                    $html .= '
-                                </td>
-                                <td align="center">
-                                    <p '.$td_class.' id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
-                                </td>
-                                <td align="center">
-                                    <p '.$td_class.' id="name_'.$reccord['id'].'">'.@$reccord['name'].'</p>
-                                </td>
-                                <td align="center">
-                                    <p'.$td_class.' id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
-                                </td>
-                                <td align="center">
-                                    <div '.$is_admin.'>
-                                        <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
-                                        </div>
-                                        <div style="text-align:center;">
-                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')"></i>
-                                        </div>'. '
-                                    </div>
-
-                                </td>
-                                <td>
-                                    <div '.$is_admin.'>';
-                                    if ($listAlloFcts_position == false)
-                                        $html .= '
-                                        <div style="text-align:center;'.$show_folders.'">
-                                            '.$listAlloFcts.'&nbsp;&nbsp;<i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'"></i>
-                                        </div>';
-                                    else
-                                        $html .= '
-                                        <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
-                                            '.$listAlloFcts.'
-                                        </div>
-                                        <div style="text-align:center; padding-top:2px;'.$show_folders.'">
-                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'"></i>
-                                        </div>';
-                                $html .= '
-                                    </div>
-                                </td>
-                                <td>
-                                    <div'.$is_admin.'>
-                                        <div id="list_autgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-                    .$listAlloGrps.'
-                                        </div>
-                                        <div style="text-align:center;'.$show_folders.'">
-                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$LANG['change_authorized_groups'].'"></i>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div'.$is_admin.'>
-                                        <div id="list_forgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-                    .$listForbGrps.'
-                                        </div>
-                                        <div style="text-align:center;'.$show_folders.'">
-                                            <i class="fa fa-edit fa-lg tip" style="cursor:pointer;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$LANG['change_forbidden_groups'].'"></i>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td align="center">
-                                    <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"'.$admin_checked.' '.$is_manager.' />
-                                </td>
-                                <td align="center">
-                                    <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"'.$is_gest.' '.$tmp1.' />
-                                </td>';
-                    // Read Only privilege
-                    $html .= '
-                                <td align="center">
-                                    <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"'.$is_ro.' '.$show_folders_disabled.' />
-                                </td>';
-                    // Can create at root
-                    $html .= '
-                                <td align="center">
-                                    <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"'.$can_create_root_folder.''.$admin_disabled.' />
-                                </td>';
-                    if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
-                    $html .= '
-                                <td align="center">
-                                    <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"'.$personal_folder. ''.$admin_disabled.' />
-                                </td>';
-                    }
-
-                    $html .= '
-                                <td align="center">
-                                    '.$actionOnUser.'
-                                </td>
-                                <td align="center">
-                                    '.$pw_change.'
-                                </td>
-                                <td align="center">
-                                    &nbsp;';
-                    if (empty($reccord['email'])) {
-                        $html .= '<i class="fa fa-exclamation fa-lg mi-yellow tip"></i>&nbsp;<i class="fa fa-envelope mi-yellow tip" style="cursor:pointer;" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" title="'.$LANG['email'].'"></i>';
-                    } else {
-                        $html .= '<i class="fa fa-envelope-o fa-lg tip" style="cursor:pointer;" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" title="'.$reccord['email'].'"></i>';
-                    }
-                    $html .= '
-                                </td>';
-                    // Log reports
-                    $html .= '
-                                <td style="text-align:center;">
-                                    '.$log_report.'
-                                </td>';
-                    // GA code
-                    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-                        $html .= '
-                                <td style="text-align:center;">
-                                    <i class="fa fa-qrcode fa-lg tip" style="cursor:pointer;" onclick="user_action_ga_code(\''.$reccord['id'].'\')" title="'.$LANG['user_ga_code'].'"></i>
-                                </td>';
-                    }
-                    // end
-                    $html .= '
-                            </tr>';
-                    $x++;
+            $managedBy = '<option value="0">'.$LANG['administrators_only'].'</option>';
+            foreach ($rolesList as $fonction) {
+                if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
+                    else $tmp = "";
+                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'</option>';
                 }
             }
             
-            // check if end
-            $next_start = intval($_POST['from']) + intval($_POST['nb']);
-            DB::query("SELECT * FROM ".prefix_table("users"));
-            if ($next_start > DB::count()) {
-                $end_is_reached = 1;
+            // get FOLDERS FORBIDDEN
+            $forbiddenFolders = "";
+            $userForbidFolders = explode(';', $rowUser['groupes_interdits']);
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    $tmp = "";
+                    $ident = "";
+                    for ($y = 1;$y < $t->nlevel;$y++) {
+                        $ident .= "&nbsp;&nbsp;";
+                    }
+                    if (in_array($t->id, $userForbidFolders)) {
+                        $tmp = ' selected="selected"';
+                    }                    
+                    $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';                    
+                    $prev_level = $t->nlevel;
+                }
+            }
+            
+            // get FOLDERS ALLOWED
+            $allowedFolders = "";
+            $userAllowFolders = explode(';', $rowUser['groupes_visibles']);
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                    $tmp = "";
+                    $ident = "";
+                    for ($y = 1; $y < $t->nlevel; $y++) {
+                        $ident .= "&nbsp;&nbsp;";
+                    }
+                    if (in_array($t->id, $userAllowFolders)) {
+                        $tmp = ' selected="selected"';
+                    }
+                    $allowedFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+                    $prev_level = $t->nlevel;
+                }
+            }
+            
+            // get USER STATUS
+            if ($rowUser['disabled'] == 1) {
+                $arrData['info'] = $LANG['user_info_locked'].'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.$LANG['user_info_unlock_question'].'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk"  name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.$LANG['user_info_delete_question']."</label>";
             } else {
-                $end_is_reached = 0;
+                $arrData['info'] = $LANG['user_info_active'].'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.$LANG['user_info_lock_question'];
             }
             
-            //echo $html;
+			$arrData['error'] = "no";
+			$arrData['log'] = $rowUser['login'];
+			$arrData['name'] = $rowUser['name'];
+			$arrData['lastname'] = $rowUser['lastname'];
+			$arrData['email'] = $rowUser['email'];
+			$arrData['function'] = $functionsList;
+			$arrData['managedby'] = $managedBy;
+			$arrData['foldersForbid'] = $forbiddenFolders;
+			$arrData['foldersAllow'] = $allowedFolders;
+
+            //echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "email" : "'.addslashes($rowUser['email']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" , "info" : "'.addslashes($info).'" } ]';
+			
+			$return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo $return_values;
+			
+            break;
+
+        /**
+         * EDIT user
+         */
+        case "store_user_changes":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
             
-            echo prepareExchangedData(
-                array(
-                    "html" => $html,
-                    "error" => "",
-                    "from" => $next_start,
-                    "end_reached" => $end_is_reached
-                ),
-                "encode"
-            );
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             
+            // Empty user
+            if (mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])) == "") {
+                echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
+                break;
+            }
+            
+            $account_status_action = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['action_on_user']));
+            
+            // delete account
+            // delete user in database
+            if ($account_status_action == "delete") {
+                DB::delete(
+                    prefix_table("users"),
+                    "id = %i",
+                    $_POST['id']
+                );
+                // delete personal folder and subfolders
+                $data = DB::queryfirstrow(
+                    "SELECT id FROM ".prefix_table("nested_tree")."
+                    WHERE title = %s AND personal_folder = %i",
+                    $_POST['id'],
+                    "1"
+                );
+                // Get through each subfolder
+                if (!empty($data['id'])) {
+                    $folders = $tree->getDescendants($data['id'], true);
+                    foreach ($folders as $folder) {
+                        // delete folder
+                        DB::delete(prefix_table("nested_tree"), "id = %i AND personal_folder = %i", $folder->id, "1");
+                        // delete items & logs
+                        $items = DB::query(
+                            "SELECT id FROM ".prefix_table("items")."
+                            WHERE id_tree=%i AND perso = %i",
+                            $folder->id,
+                            "1"
+                        );
+                        foreach ($items as $item) {
+                            // Delete item
+                            DB::delete(prefix_table("items"), "id = %i", $item['id']);
+                            // log
+                            DB::delete(prefix_table("log_items"), "id_item = %i", $item['id']);
+                        }
+                    }
+                    // rebuild tree
+                    $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+                    $tree->rebuild();
+                }
+                // update LOG
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_deleted',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
+            }
+            else {
+                        
+                // Get old data about user
+                $oldData = DB::queryfirstrow(
+                    "SELECT * FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $_POST['id']
+                );
+                
+                // manage account status
+                $accountDisabled = 0;
+                if ($account_status_action == "unlock") {
+                    $accountDisabled = 0;
+                    $logDisabledText = "at_user_unlocked";
+                } elseif ($account_status_action == "lock") {
+                    $accountDisabled = 1;        
+                    $logDisabledText = "at_user_locked";        
+                }
+                
+                // update user
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
+                        'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
+                        'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
+                        'email' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email'])),
+                        'disabled' => $accountDisabled,
+                        'isAdministratedByRole' => $dataReceived['managedby'],
+                        'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
+                        'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ";"),
+                        'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
+                       ),
+                    "id = %i",
+                    $_POST['id']
+                );
+                
+                
+                // update LOG
+                if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => 'at_user_email_changed:'.$oldData['email'],
+                            'qui' => intval($_SESSION['user_id']),
+                            'field_1' => intval($_POST['id'])
+                           )
+                    );
+                }
+                
+                if ($oldData['disabled'] != $accountDisabled) {
+                    // update LOG
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => $logDisabledText,
+                            'qui' => $_SESSION['user_id'],
+                            'field_1' => $_POST['id']
+                           )
+                    );
+                }
+                
+    /*
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'disabled' => 0,
+                        'no_bad_attempts' => 0
+                       ),
+                    "id = %i",
+                    $_POST['id']
+                );
+                // update LOG
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_unlocked',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
+                */
+            }
+            
+            echo '[ { "error" : "no" } ]';
             break;
 
         /**

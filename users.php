@@ -3,7 +3,7 @@
  *
  * @file          users.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -53,51 +53,43 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <img src="includes/images/refresh.png" title="'.$LANG['reload_table'].'" onclick="reloadUsersList()"class="button" style="padding:2px;" />
-    <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
-<input type="text" name="search" id="search" />
-    <span id="users_list_load" style="display:none; font-size:16px; font-family:arial;">'.$LANG['please_wait'].'&nbsp;<i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;</span>
+    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button">
+        <img src="includes/images/user--plus.png" alt="" />
+    </button>
 </div>';
 
+
+//Show the KB in a table view
 echo '
-<form name="form_utilisateurs" method="post" action="">
-    <div style="line-height:20px;"  align="center">
-        <table cellspacing="0" cellpadding="2">
-            <thead>
-                <tr>
-                    <th width="20px">ID</th>
-                    <th></th>
-                    <th>'.$LANG['user_login'].'</th>
-                    <th>'.$LANG['name'].'</th>
-                    <th>'.$LANG['lastname'].'</th>
-                    <th>'.$LANG['managed_by'].'</th>
-                    <th>'.$LANG['functions'].'</th>
-                    <th>'.$LANG['authorized_groups'].'</th>
-                    <th>'.$LANG['forbidden_groups'].'</th>
-                    <th title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
-                    <th title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-                    <th title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-                    <th title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-                    ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ?
-                    	'<th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : ''
-                    ,'
-                    <th title="'.$LANG['user_action'].'"><img src="includes/images/user-locked.png" /></th>
-                    <th title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-                    <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
-                    <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
-					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
-                	,'
-                </tr>
-            </thead>
-            <tbody id="tbody_users">';
+<div style="margin:10px auto 25px auto;min-height:250px;" id="users_page">
+<div id="t_users_alphabet" style="margin-top:25px;"></div>
+<table id="t_users" class="hover" width="100%">
+    <thead><tr>
+        <th style="width:40px;"></th>
+        <th>'.$LANG['user_login'].'</th>
+        <th>'.$LANG['name'].'</th>
+        <th>'.$LANG['lastname'].'</th>
+        <th>'.$LANG['managed_by'].'</th>
+        <th>'.$LANG['functions'].'</th>
+        <!--<th>'.$LANG['authorized_groups'].'</th>
+        <th>'.$LANG['forbidden_groups'].'</th>-->
+        <th style="width:20px;" title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
+        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
+        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
+        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
+        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
+        <th style="width:20px;" title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
+        <th style="width:20px;" title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
+        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>
+    </tr></thead>
+    <tbody>
+        <tr><td></td></tr>
+    </tbody>
+</table>
+</div>';
+
 
 echo '
-            </tbody>
-        </table>
-    </div>
-</form>
 <input type="hidden" id="selected_user" />
 <input type="hidden" id="log_page" value="1" />';
 // DIV FOR CHANGING FUNCTIONS
@@ -213,7 +205,7 @@ $LANG['give_new_pw'].'
     <div style="margin-top:20px; width:100%;">
         <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
         <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
-        <span id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></span>
+        <div id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></div>
     </div>
     <div style="width:100%;height:20px;">
         <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -231,11 +223,6 @@ $LANG['give_new_email'].'
         <input type="text" size="50" id="change_user_email_newemail" />
     </div>
     <input type="hidden" id="change_user_email_id" />
-</div>';
-// DIV FOR HELP
-echo '
-<div id="help_on_users" style="">
-    <div>'.$LANG['help_on_users'].'</div>
 </div>';
 // USER MANAGER
 echo '
@@ -303,18 +290,46 @@ $LANG['activity'].':
     <div id="log_pages" style="margin-top:10px;"></div>
 </div>';
 
+
 // USER EDIT DIALOG
 echo '
-<div id="user_edit_login_dialog" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_edit_login_dialog_message"></div>
-    <div>
-        <label for="edit_name" class="label_cpm">'.$LANG['name'].'</label>
-        <input type="text" id="edit_name" class="input_text text ui-widget-content ui-corner-all" value="" />
+<div id="user_management_dialog" style="display:none;">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="user_edit_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+    <div id="user_edit_div" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_error"></div>
+
+    <div style="width:100%;">
+        <div style="width:70%; float:left;">
+            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="45" id="user_edit_login" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="45" id="user_edit_name" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="45" id="user_edit_lastname" class="ui-widget-content ui-corner-all form_text" />
+            <br />
+            <label class="form_label_100" for="user_edit_email">'.$LANG['email'].'</label>&nbsp;<input type="text" size="45" id="user_edit_email" class="ui-widget-content ui-corner-all form_text" />
+        </div>
+        <div style="width:30%; float:right;">
+            <input type="hidden" id="confirm_deletion" value="" />
+            <span id="user_edit_info" style="margin:20px 10px 0 0; text-align:center;"></span>
+            <span id="user_edit_delete" style="margin:20px 10px 0 0; text-align:center; display:none;" class="ui-widget ui-corner-all">'.$LANG['user_info_delete'].'</span>
+        </div>
+    </div>
+    <div style="width:100%; margin-top:10px;">
+        <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].' : </label>
+        <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"></select>
         <br />
-        <label for="edit_lastname" class="label_cpm">'.$LANG['lastname'].'</label>
-        <input type="text" id="edit_lastname" class="input_text text ui-widget-content ui-corner-all" value="" />
+        <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
+        <select name="user_edit_managedby" id="user_edit_managedby"></select>
         <br />
-        <label for="edit_login" class="label_cpm">'.$LANG['login'].'</label>
-        <input type="text" id="edit_login" class="input_text text ui-widget-content ui-corner-all" value="" />
+        <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
+        <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].' : </label>
+        <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"></select>
+        <br />
+    </div>
+
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_deletion_warning1">'.$LANG['user_info_delete_warning'].'</div>
+    <input type="hidden" id="user_edit_id" />
     </div>
 </div>';
