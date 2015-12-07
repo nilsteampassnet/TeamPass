@@ -235,7 +235,7 @@ if (isset($_POST['type'])) {
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
                             `pw_iv` text NOT NULL,
-                            `pw_len` int(5) NOT NULL,
+                            `pw_len` int(5) NOT NULL DEFAULT '0',
                             `url` varchar(250) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
