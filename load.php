@@ -482,7 +482,7 @@ $htmlHeaders .= '
     function ChangeMyPass()
     {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
-            if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+            if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
                 var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
                 $.post(
                     "sources/main.queries.php",
@@ -927,52 +927,6 @@ $htmlHeaders .= '
             "score.simplePassMeter" : function(jQEvent, score) {
 				$("#pw_strength_value").val(score);
 			}
-        }).change({
-            "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
-        });
-
-        //Password meter for item creation
-        $("#new_pw").simplePassMeter({
-            "requirements": {},
-            "container": "#pw_strength",
-            "defaultText" : "'.$LANG['index_pw_level_txt'].'",
-            "ratings": [
-                {"minScore": 0,
-                    "className": "meterFail",
-                    "text": "'.$LANG['complex_level0'].'"
-                },
-                {"minScore": 25,
-                    "className": "meterWarn",
-                    "text": "'.$LANG['complex_level1'].'"
-                },
-                {"minScore": 50,
-                    "className": "meterWarn",
-                    "text": "'.$LANG['complex_level2'].'"
-                },
-                {"minScore": 60,
-                    "className": "meterGood",
-                    "text": "'.$LANG['complex_level3'].'"
-                },
-                {"minScore": 70,
-                    "className": "meterGood",
-                    "text": "'.$LANG['complex_level4'].'"
-                },
-                {"minScore": 80,
-                    "className": "meterExcel",
-                    "text": "'.$LANG['complex_level5'].'"
-                },
-                {"minScore": 90,
-                    "className": "meterExcel",
-                    "text": "'.$LANG['complex_level6'].'"
-                }
-            ]
-        });
-        $("#new_pw").bind({
-            "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
         }).change({
             "score.simplePassMeter" : function(jQEvent, score) {
         $("#pw_strength_value").val(score);

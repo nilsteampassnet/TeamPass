@@ -73,7 +73,7 @@ echo '
     <br />';
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     echo '
-    <i class="fa fa-calendar fa-fw"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'];
+    <i class="fa fa-calendar fa-fw"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']).'<br />' : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']).'<br />' : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'<br />';
 }
 echo '
     <i class="fa fa-cloud-upload fa-fw"></i>&nbsp;
@@ -113,7 +113,7 @@ echo '
 if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
 	echo '
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-        <i class="fa fa-cog fa-spin" id="password_change_wait" style="display:none;"></i>&nbsp;'.$LANG['please_wait'];
+        <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>';
 
 echo '
     </div>';
