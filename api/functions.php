@@ -71,14 +71,6 @@ function teampass_get_keys() {
     return $response;
 }
 
-function teampass_get_randkey() {
-    global $server, $user, $pass, $database, $link;
-    teampass_connect();
-    $response = DB::queryOneColumn("rand_key", "select * from ".prefix_table("keys")." limit 0,1");
-
-    return $response;
-}
-
 function rest_head () {
     header('HTTP/1.1 402 Payment Required');
 }
@@ -151,7 +143,6 @@ function rest_delete () {
         global $server, $user, $pass, $database, $pre, $link;
         include "../sources/main.functions.php";
         teampass_connect();
-        $rand_key = teampass_get_randkey();
         $category_query = "";
 
         if ($GLOBALS['request'][0] == "write") {
@@ -258,12 +249,12 @@ function rest_get () {
         if (count($matches) == 0) {
             rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2], 3);
+        $GLOBALS['request'] =  explode('/',$matches[2]);
     }
+	
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
-        $rand_key = teampass_get_randkey();
         $category_query = "";
 
         if ($GLOBALS['request'][0] == "read") {
@@ -327,9 +318,6 @@ function rest_get () {
                 $response = DB::query("select id,label,login,pw, pw_iv, id_tree from ".prefix_table("items")." where id IN %ls", $array_items);
                 foreach ($response as $data)
                 {
-                    // get ITEM random key
-                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-
                     // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
@@ -686,7 +674,15 @@ function rest_get () {
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
-                    if (crypt($GLOBALS['request'][4], $user['pw']) == $user['pw']) {
+					
+					// load passwordLib library
+					$_SESSION['settings']['cpassman_dir'] = "..";
+					require_once '../sources/SplClassLoader.php';
+					$pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+					$pwdlib->register();
+					$pwdlib = new PasswordLib\PasswordLib();
+					
+					if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $user['pw']) === true) {
                         // define the restriction of "id_tree" of this user
                         $userDef = DB::queryOneColumn('folder_id',
                             "SELECT DISTINCT folder_id 
@@ -704,7 +700,7 @@ function rest_get () {
                         
                         // find the item associated to the url
                         $response = DB::query(
-                            "SELECT id, label, login, pw, id_tree, restricted_to
+                            "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to
                             FROM ".prefix_table("items")." 
                             WHERE url LIKE %s
                             AND id_tree IN (".implode(",", $userDef).")
@@ -720,14 +716,11 @@ function rest_get () {
                                 if (
                                     empty($data['restricted_to']) || 
                                     ($data['restricted_to'] != "" && in_array($user['id'], explode(";", $data['restricted_to'])))
-                                ) {                                
-                                    // get ITEM random key
-                                    $data_tmp = DB::queryFirstRow("SELECT rand_key FROM ".prefix_table("keys")." WHERE id = %i", $data['id']);
-                                    
+                                ) {							
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                    $json[$data['id']]['pw'] = teampass_decrypt_pw($data['pw'], SALT, $data_tmp['rand_key']);
+									$json[$data['id']]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
                                 }
                             }
                             // prepare answer. If no access then inform
@@ -766,7 +759,6 @@ function rest_put() {
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
-        $rand_key = teampass_get_randkey();
     }
 }
 
