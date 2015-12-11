@@ -356,12 +356,12 @@ class NestedTree
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
-        $query = sprintf(
-            'select %s from %s order by %s',
-            join(',', $this->getFields()),
-            $this->table,
-            $this->fields['sort']
-        );
+		$query = sprintf(
+			'select %s from %s order by %s',
+			join(',', $this->getFields()),
+			$this->table,
+			$this->fields['sort']
+		);
 
         $result = mysqli_query($link, $query);
 

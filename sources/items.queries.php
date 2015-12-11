@@ -1818,7 +1818,9 @@ if (isset($_POST['type'])) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
 
-                    $query_limit = " LIMIT ".$start.",".$items_to_display_once;
+                    $query_limit = " LIMIT ".
+						mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).",".
+						mysqli_real_escape_string($link, filter_var($items_to_display_once, FILTER_SANITIZE_NUMBER_INT));
 
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,

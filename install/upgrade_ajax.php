@@ -841,6 +841,12 @@ if (isset($_POST['type'])) {
                 "VARCHAR(255) NOT null DEFAULT ''"
             );
             $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "treeloadstrategy",
+                "VARCHAR(0) NOT null DEFAULT 'full'"
+            );
+			
+            $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
                 "TEXT null"

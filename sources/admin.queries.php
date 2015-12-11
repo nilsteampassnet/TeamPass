@@ -492,28 +492,36 @@ switch ($_POST['type']) {
     /*
     * Change SALT Key
     */
-    case "admin_action_change_salt_key":
+    case "admin_action_change_salt_key_start":
         $error = "";
         require_once 'main.functions.php';
         //put tool in maintenance.
-            DB::update(
-                prefix_table("misc"),
-                array(
-                    'valeur' => '1',
-               ),
-                "intitule = %s AND type= %s",
-                "maintenance_mode", "admin"
-            );
-            //log
-            DB::insert(
-                prefix_table("log_system"),
-                array(
-                    'type' => 'system',
-                    'date' => time(),
-                    'label' => 'change_salt_key',
-                    'qui' => $_SESSION['user_id']
-               )
-            );
+		DB::update(
+			prefix_table("misc"),
+			array(
+				'valeur' => '1',
+		   ),
+			"intitule = %s AND type= %s",
+			"maintenance_mode", "admin"
+		);
+		//log
+		DB::insert(
+			prefix_table("log_system"),
+			array(
+				'type' => 'system',
+				'date' => time(),
+				'label' => 'change_salt_key',
+				'qui' => $_SESSION['user_id']
+		   )
+		);
+		
+		// get number of items to change
+		DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
+		
+		echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.DB::count().'"}]';
+        break;
+		
+		
 
         $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
 
@@ -522,24 +530,12 @@ switch ($_POST['type']) {
         foreach ($rows as $record) {
             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
+			$encrypt = cryption($pw, $new_salt_key, "", "encrypt");
             DB::update(
                 prefix_table("items"),
                 array(
-                    'pw' => encrypt($pw, $new_salt_key),
-               ),
-                "id = %i",
-                $record['id']
-            );
-        }
-        //change all users password in DB
-        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("users"));
-        foreach ($rows as $record) {
-            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
-            //encrypt with new SALT
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'pw' => encrypt($pw, $new_salt_key),
+                    'pw' => $encrypt['string'],
+					'pw_iv' => $encrypt['iv'],
                ),
                 "id = %i",
                 $record['id']
