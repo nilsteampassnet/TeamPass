@@ -547,6 +547,9 @@ function identifyUser($sentData)
             $_SESSION['user_avatar'] = $data['avatar'];
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
+			// get personal settings
+			if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) $data['treeloadstrategy'] = "full";
+			$_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
 
             // manage session expiration
             $serverTime = time();

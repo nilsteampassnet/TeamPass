@@ -138,6 +138,14 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
         $("#"+id).dialog("open");
     }
 
+/*
+*
+*/
+function LoadTreeNode(node_id)
+{
+	
+}
+	
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
@@ -2228,9 +2236,12 @@ $(function() {
             "animation" : 0,
             "check_callback" : true,
             'data' : {
-                "url" : "./sources/tree.php",
+				'url' : "./sources/tree.php",
                 "dataType" : "json",
-                "async" : true
+                //"async" : true,
+				'data' : function (node) {
+					return { 'id' : node.id.split('_')[1] };
+				}
             },
             "strings" : {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."

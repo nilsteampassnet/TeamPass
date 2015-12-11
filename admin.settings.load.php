@@ -280,6 +280,66 @@ function LaunchAdminActions(action,option)
    );
 }
 
+/*
+*
+*/
+function changeMainSaltKey(start)
+{
+	var nb = 10;
+	var newSK = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+	
+	// start change
+	if (start == "") {
+		$.post(
+			"sources/admin.queries.php",
+			{
+			   type     : "admin_action_change_salt_key_start",
+			   newSK    : newSK
+			},
+			function(data) {
+				if (data[0].error == "") {
+					changeMainSaltKey(0);
+				} else {
+					// error mngt
+				}
+			},
+			"json"
+		);
+	}
+	elseif (start == "finish") {
+		$.post(
+			"sources/admin.queries.php",
+			{
+			   type     : "admin_action_change_salt_key_start",
+			   newSK    : newSK
+			},
+			function(data) {
+				if (data[0].nextAction == "finishing") {
+					
+				}
+			},
+			"json"
+		);
+	}
+	else {
+		$.post(
+			"sources/admin.queries.php",
+			{
+			   type     : "admin_action_change_salt_key_start",
+			   newSK    : newSK
+			},
+			function(data) {
+				if (data[0].nextAction == "finishing") {
+					
+				} else {
+					
+				}
+			},
+			"json"
+		);
+	}
+}
+
 // Init
 $(function() {
 	$("input[type=button], #save_button, .button").button();

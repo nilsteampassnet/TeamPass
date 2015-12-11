@@ -847,7 +847,7 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i
                     ORDER BY date DESC
-                    LIMIT $start,".$_POST['nb_items_by_page'],
+                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
                     "user_mngt",
                     $_POST['id']
                 );
@@ -1345,6 +1345,10 @@ elseif (!empty($_POST['newValue'])) {
             'field_1' => $_POST['id']
            )
     );
+	// refresh SESSION if requested
+	if ($value[0] == "treeloadstrategy") {
+		$_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
+	}
     // Display info
     echo $_POST['newValue'];
 }

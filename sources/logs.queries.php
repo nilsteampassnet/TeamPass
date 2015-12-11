@@ -76,7 +76,7 @@ foreach ($rows as $reccord) {
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". $_GET['iDisplayStart'] .", ". $_GET['iDisplayLength'] ;
+    $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT));
 }
 
 //Ordering
