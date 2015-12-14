@@ -286,18 +286,35 @@ function LaunchAdminActions(action,option)
 function changeMainSaltKey(start)
 {
 	var nb = 10;
-	var newSK = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+	
+	// check saltkey length
+	if ($("#new_salt_key").val().length != 16) {
+		$("#changeMainSaltKey_message").html("New SaltKey must be a 16 characters string!");
+		return false;
+	}
+	
+	var newSK = prepareExchangedData(
+		'{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}', 
+		"encode", 
+		"<?php echo $_SESSION['key'];?>"
+	);
+	
+	console.log("Start value: "+start);
 	
 	// start change
-	if (start == "") {
+	if (start == "starting") {
+		$("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;Starting ...");
 		$.post(
 			"sources/admin.queries.php",
 			{
-			   type     : "admin_action_change_salt_key_start",
+			   type     : "admin_action_change_salt_key___start",
 			   newSK    : newSK
 			},
 			function(data) {
-				if (data[0].error == "") {
+				console.log("Step start - " + data[0].nextAction);
+				if (data[0].error == "" && data[0].nextAction == "encrypt_items") {
+					$("#changeMainSaltKey_itemsCount").val(data[0].nbOfItems);
+					console.log("Now launch encryption");
 					changeMainSaltKey(0);
 				} else {
 					// error mngt
@@ -306,33 +323,48 @@ function changeMainSaltKey(start)
 			"json"
 		);
 	}
-	elseif (start == "finish") {
+	else if (isFinite(start)) {
+		console.log("Step Encrypt - " + newSK+" ; "+start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
+		
+		$("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;treating items "+start+" to "+(parseInt(start)+parseInt(nb))+" on "+$("#changeMainSaltKey_itemsCount").val());
+					
 		$.post(
 			"sources/admin.queries.php",
 			{
-			   type     : "admin_action_change_salt_key_start",
-			   newSK    : newSK
+			   type     : "admin_action_change_salt_key___encrypt",
+			   newSK    : newSK,
+			   start	: start,
+			   length	: nb,
+			   nbItems	: $("#changeMainSaltKey_itemsCount").val()
 			},
 			function(data) {
-				if (data[0].nextAction == "finishing") {
-					
+				console.log("Next action: "+data[0].nextAction);
+				if (data[0].nextAction == "encrypting") {
+					changeMainSaltKey(data[0].nextStart);
+				} else if (data[0].nextAction == "finishing") {
+					$("#changeMainSaltKey_message").html("Finalizing...");
+					changeMainSaltKey("finishing");
+				} else {
+					// error mngt
 				}
 			},
 			"json"
 		);
 	}
 	else {
+		console.log("finishing");
 		$.post(
 			"sources/admin.queries.php",
 			{
-			   type     : "admin_action_change_salt_key_start",
+			   type     : "admin_action_change_salt_key___end",
 			   newSK    : newSK
 			},
 			function(data) {
-				if (data[0].nextAction == "finishing") {
-					
+				if (data[0].nextAction == "done") {
+					console.log("done");
+					$("#changeMainSaltKey_message").html("Operation is done. "+$("#changeMainSaltKey_itemsCount").val()+" items have been changed.");
 				} else {
-					
+					// error mngt
 				}
 			},
 			"json"
@@ -624,7 +656,7 @@ $(function() {
     //check NEW SALT KEY
     $("#new_salt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
-        if ($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32) {
+        if ($("#new_salt_key").val().length != 16) {
             $("#change_salt_key_image").attr("src", "includes/images/cross.png");
             $("#change_salt_key_but").hide();
         } else {

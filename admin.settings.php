@@ -1196,8 +1196,10 @@ echo '
                     <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_change_salt_key_tip'].'" /></span>
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
-                        <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="LaunchAdminActions(\'admin_action_change_salt_key\')" id="change_salt_key_but" />
+                        <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but" />
+						&nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
+					<input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
 // Correct passwords prefix
 echo '
