@@ -490,9 +490,9 @@ switch ($_POST['type']) {
         break;
 
     /*
-    * Change SALT Key
+    * Change SALT Key START
     */
-    case "admin_action_change_salt_key_start":
+    case "admin_action_change_salt_key___start":
         $error = "";
         require_once 'main.functions.php';
         //put tool in maintenance.
@@ -520,13 +520,25 @@ switch ($_POST['type']) {
 		
 		echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.DB::count().'"}]';
         break;
-		
-		
 
-        $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
+    /*
+    * Change SALT Key - ENCRYPT
+    */
+    case "admin_action_change_salt_key___encrypt":
+        $error = "";
+        require_once 'main.functions.php';
+
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");		
+		$new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+		//echo "> ".$new_salt_key;
 
         //change all passwords in DB
-        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("items")." WHERE perso = %s", "0");
+        $rows = DB::query("
+			SELECT id, pw, pw_iv 
+			FROM ".prefix_table("items")." 
+			WHERE perso = %s 
+			LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+			"0");
         foreach ($rows as $record) {
             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
@@ -541,7 +553,30 @@ switch ($_POST['type']) {
                 $record['id']
             );
         }
+		
+		$nextStart = intval($_POST['start']) + intval($_POST['length']);
+		
+		// check if last item to change has been treated
+		if ($nextStart >= intval($_POST['nbItems'])) {
+			$nextAction = "finishing";
+		} else {
+			$nextAction = "encrypting";
+		}
 
+        echo '[{"nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'", "error":"'.$error.'"}]';
+        break;
+
+    /*
+    * Change SALT Key - END
+    */
+    case "admin_action_change_salt_key___end":
+        $error = "";
+		
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");		
+		$new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+		
+		// write the sk.php file
+		
         // get path to sk.php
         $filename = "../includes/settings.php";
         if (file_exists($filename)) {
@@ -563,12 +598,25 @@ switch ($_POST['type']) {
             utf8_encode(
                 "<?php
 @define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
             )
         );
         fclose($fh);
-
-        echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
+		
+		//put tool in maintenance.
+		DB::update(
+			prefix_table("misc"),
+			array(
+				'valeur' => '0',
+		   ),
+			"intitule = %s AND type= %s",
+			"maintenance_mode", "admin"
+		);
+		
+		@define(SALT, $new_salt_key);
+		
+		echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
         break;
 
     /*
