@@ -14,6 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+	'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
+	'starting' => 'Starting ...',
+	'total_number_of_items' => 'Total number of items',
+	'finalizing' => 'Finalizing',
+	'treating_items' => 'Treating items',
+	'number_of_items_treated' => 'Number of treated items',
+	'error_sent_back' => 'Next error occured',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
