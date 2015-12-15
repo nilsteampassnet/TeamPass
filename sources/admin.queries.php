@@ -495,6 +495,16 @@ switch ($_POST['type']) {
     case "admin_action_change_salt_key___start":
         $error = "";
         require_once 'main.functions.php';
+		
+		// check saltkey		
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");		
+		$new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+		if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+			// SK is not correct
+			echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+			break;
+		}		
+		
         //put tool in maintenance.
 		DB::update(
 			prefix_table("misc"),
@@ -528,9 +538,14 @@ switch ($_POST['type']) {
         $error = "";
         require_once 'main.functions.php';
 
+		// prepare SK
         $dataReceived = prepareExchangedData($_POST['newSK'], "decode");		
 		$new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-		//echo "> ".$new_salt_key;
+		if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+			// SK is not correct
+			echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+			break;
+		}
 
         //change all passwords in DB
         $rows = DB::query("
@@ -574,9 +589,13 @@ switch ($_POST['type']) {
 		
         $dataReceived = prepareExchangedData($_POST['newSK'], "decode");		
 		$new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+		if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+			// SK is not correct
+			echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+			break;
+		}
 		
-		// write the sk.php file
-		
+		// write the sk.php file		
         // get path to sk.php
         $filename = "../includes/settings.php";
         if (file_exists($filename)) {
@@ -604,7 +623,7 @@ switch ($_POST['type']) {
         );
         fclose($fh);
 		
-		//put tool in maintenance.
+		// quit maintenance mode.
 		DB::update(
 			prefix_table("misc"),
 			array(
@@ -614,6 +633,7 @@ switch ($_POST['type']) {
 			"maintenance_mode", "admin"
 		);
 		
+		// redefine SALT
 		@define(SALT, $new_salt_key);
 		
 		echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
