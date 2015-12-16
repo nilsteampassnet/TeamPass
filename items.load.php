@@ -2370,13 +2370,14 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
-        height: 220,
+        width: 400,
+        height: 250,
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         open: function( event, ui ) {
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
             $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
-            $(".ui-tooltip").siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();			
+			$("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
@@ -2634,7 +2635,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 200,
+        height: 220,
         title: "<?php echo $LANG['item_menu_del_elem'];?>",
         buttons: {
             "<?php echo $LANG['del_button'];?>": function() {
@@ -2671,6 +2672,7 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+			$("#div_del_item_selection").html("<center>"+$("#id_label").html()+"</center>");
         }
     });
     //<=

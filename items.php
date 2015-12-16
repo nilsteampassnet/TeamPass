@@ -830,6 +830,7 @@ echo '
 // SUPPRIMER UN ELEMENT
 echo '
 <div id="div_del_item" style="display:none;">
+	<h2 id="div_del_item_selection"></h2>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['confirm_deletion'].'</p>
 </div>';
 // DIALOG INFORM USER THAT LINK IS COPIED
@@ -844,7 +845,8 @@ echo '
 echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$LANG['item_copy_to_folder'].'</div>
+    <h2 id="div_copy_item_to_folder_item"></h2>
+    <div>'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
