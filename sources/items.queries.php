@@ -2281,8 +2281,8 @@ if (isset($_POST['type'])) {
                         $_SESSION['is_admin'] == 1
                         || ($_SESSION['user_manager'] == 1)
                         || (
-                            isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                            && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                            isset($_SESSION['settings']['enable_user_can_create_folders'])
+                            && $_SESSION['settings']['enable_user_can_create_folders'] == 1
                         )
                     ) {
                         // allow
