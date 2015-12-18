@@ -237,7 +237,7 @@ function ListerItems(groupe_id, restricted, start)
                     $("#items_path_var").html('');
                 }
                 
-                if (data.array_items == "") {
+                if (data.array_items == "" && data.items_count == "0") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
                 }
 
