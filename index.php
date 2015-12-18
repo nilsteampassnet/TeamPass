@@ -285,7 +285,7 @@ echo '
     </div>';
 
     echo '
-<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
+<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
     <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
 </div>';
 
