@@ -151,6 +151,14 @@ function LoadTreeNode(node_id)
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
+	// prevent launch of similar query in case of doubleclick
+	var me = $(this);
+    if ( me.data('requestRunning') ) {
+        return false;
+    } else {
+		me.data('requestRunning', true);
+	}
+	
     $("#request_lastItem, #selected_items").val("");
 	
     if (groupe_id != undefined) {
@@ -187,6 +195,9 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+					
+				// reset doubleclick prevention
+				me.data('requestRunning', false);
 				
 				// manage not allowed
 				if (data.error == "not_allowed") {
@@ -3593,6 +3604,7 @@ function globalItemsSearch()
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
+				$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
                 $("#full_items_list").html(data.items_html);
                 $("#items_list_loader").hide();
             }
