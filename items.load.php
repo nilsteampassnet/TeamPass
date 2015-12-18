@@ -2131,7 +2131,7 @@ $(function() {
 	$.ajaxSetup({
         error: function(jqXHR, exception) {
             if (jqXHR.status === 0) {
-                alert('Not connect.n Verify Network.');
+                console.log('Not connect.\nVerify Network.');
             } else if (jqXHR.status == 404) {
                 alert('Requested page not found. [404]');
             } else if (jqXHR.status == 500) {
@@ -2238,14 +2238,17 @@ $(function() {
             'data' : {
 				'url' : "./sources/tree.php",
                 "dataType" : "json",
-                //"async" : true,
+                "async" : true,
 				'data' : function (node) {
 					return { 'id' : node.id.split('_')[1] };
 				}
             },
             "strings" : {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."
-            }
+            },
+			"error" : {
+				
+			}
         },
         "plugins" : [
             "state", "search"
