@@ -2950,7 +2950,8 @@ if (isset($_POST['type'])) {
             foreach ($rows as $record) {
                 $selOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
                 $selEOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
-                $rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
+            }
+            	$rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
                 foreach ($rows2 as $record2) {
                     foreach (explode(";", $record2['fonction_id']) as $role) {
                         if (!in_array($record2['id'], $aList) && $role == $record['role_id']) {
@@ -2960,7 +2961,7 @@ if (isset($_POST['type'])) {
                         }
                     }
                 }
-            }
+            
 
             // export data
             $data = array(
