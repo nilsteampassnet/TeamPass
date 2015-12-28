@@ -235,7 +235,7 @@ if (isset($_POST['type'])) {
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
                             `pw_iv` text NOT NULL,
-                            `pw_len` int(5) NOT NULL,
+                            `pw_len` int(5) NOT NULL DEFAULT '0',
                             `url` varchar(250) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
@@ -458,6 +458,7 @@ if (isset($_POST['type'])) {
                             `avatar` varchar(255) NULL,
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

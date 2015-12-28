@@ -285,7 +285,7 @@ echo '
     </div>';
 
     echo '
-<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
+<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
     <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
 </div>';
 
@@ -404,9 +404,7 @@ if (
         // case where one-shot viewer
         if (
             isset($_GET['code']) && !empty($_GET['code'])
-            && isset($_GET['item_id']) && !empty($_GET['item_id'])
             && isset($_GET['stamp']) && !empty($_GET['stamp'])
-            && isset($_GET['otv_id'])
         ) {
             include 'otv.php';
         } else {

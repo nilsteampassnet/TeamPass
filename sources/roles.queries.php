@@ -240,7 +240,7 @@ if (!empty($_POST['type'])) {
                     $start = intval($_POST['start']);
                     $previous = $start-$display_nb;
                 }
-                $sql_limit = " LIMIT $start, $display_nb";
+                $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
                 $next = $start+$display_nb;
             }
 

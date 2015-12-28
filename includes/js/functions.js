@@ -237,11 +237,24 @@ function aes_decrypt(text, key)
 
 function prepareExchangedData(data, type, key)
 {
+	var jsonResult;
     if (type == "decode") {
         if ($("#encryptClientServer").val() == 0) {
-            return $.parseJSON(data);
+			try {
+				return $.parseJSON(data);
+			}
+				catch (e) {
+				console.log("Error: "+e);
+				jsonErrorHdl(e);
+			};
         } else {
-            return $.parseJSON(aes_decrypt(data, key));
+			try {
+				return $.parseJSON(aes_decrypt(data, key));
+			}
+				catch (e) {
+				console.log("Error: "+e);
+				jsonErrorHdl(e);
+			};
         }
     } else if (type == "encode") {
         if ($("#encryptClientServer").val() == 0) {
@@ -250,6 +263,15 @@ function prepareExchangedData(data, type, key)
             return aes_encrypt(data, key);
         }
     }
+}
+
+function jsonErrorHdl(message)
+{	
+	$("#div_dialog_message_text").html(message);
+	$("#div_dialog_message").dialog("open");
+	$("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
+	$("#items_list_loader").hide();
+	return false;
 }
 
 function displayMessage(textToDisplay)

@@ -1471,7 +1471,7 @@ if (isset($_POST['type'])) {
                     $record['login'] = $LANG['imported_via_api'];
                 }
 
-                if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual"|| $record['action'] == "at_modification") {
+                if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
                     if (empty($history)) {
                         $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
                     } else {
@@ -1667,7 +1667,7 @@ if (isset($_POST['type'])) {
         case "move_folder":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                $returnValues = '[{"error" :  "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
@@ -1678,10 +1678,19 @@ if (isset($_POST['type'])) {
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $dataReceived['source_folder_id']
             );
+			
             $tmp_target = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $dataReceived['target_folder_id']
             );
+			
+			// check if source or target folder is PF. If Yes, then cancel operation
+			if ($tmp_source['personal_folder'] == 1 ||$tmp_target['personal_folder'] == 1) {
+                $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+			
             if ( $tmp_source['parent_id'] != 0 || $tmp_source['title'] != $_SESSION['user_id'] || $tmp_source['personal_folder'] != 1 || $tmp_target['title'] != $_SESSION['user_id'] || $tmp_target['personal_folder'] != 1) {
 
                 // moving SOURCE folder
@@ -1809,7 +1818,9 @@ if (isset($_POST['type'])) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
 
-                    $query_limit = " LIMIT ".$start.",".$items_to_display_once;
+                    $query_limit = " LIMIT ".
+						mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).",".
+						mysqli_real_escape_string($link, filter_var($items_to_display_once, FILTER_SANITIZE_NUMBER_INT));
 
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
@@ -1916,6 +1927,7 @@ if (isset($_POST['type'])) {
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role == 1
                             && !in_array($_SESSION['user_id'], $restricted_users_array)
+							&& !in_array($_POST['id'], $_SESSION['personal_folders'])
                         ) {
                             $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -1925,7 +1937,7 @@ if (isset($_POST['type'])) {
                         }
                         // Case where item is in own personal folder
                         elseif (
-                            in_array($_POST['id'], $_SESSION['personal_visible_groups'])
+                            in_array($_POST['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']))
                             && $record['perso'] == 1
                         ) {
                             $perso = '<i class="fa fa-warning mi-yellow fa-sm"></i>&nbsp';
@@ -2032,7 +2044,7 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
-
+							
                             // test charset => may cause a json error if is not utf8
                             if (!isUTF8($pw) || empty($pw)) {
                                 $pw = "";
@@ -2269,8 +2281,8 @@ if (isset($_POST['type'])) {
                         $_SESSION['is_admin'] == 1
                         || ($_SESSION['user_manager'] == 1)
                         || (
-                            isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                            && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                            isset($_SESSION['settings']['enable_user_can_create_folders'])
+                            && $_SESSION['settings']['enable_user_can_create_folders'] == 1
                         )
                     ) {
                         // allow
@@ -2807,9 +2819,7 @@ if (isset($_POST['type'])) {
 
             $otv_session = array(
                 "code"      => $otv_code,
-                "item_id"   => $_POST['id'],
-                "stamp" => time(),
-                "otv_id"    => $newID
+                "stamp" => time()
             );
 
             if (!isset($_SESSION['settings']['otv_expiration_period'])) {
@@ -2940,7 +2950,7 @@ if (isset($_POST['type'])) {
             foreach ($rows as $record) {
                 $selOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
                 $selEOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
-                $rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
+            	$rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
                 foreach ($rows2 as $record2) {
                     foreach (explode(";", $record2['fonction_id']) as $role) {
                         if (!in_array($record2['id'], $aList) && $role == $record['role_id']) {
@@ -2950,7 +2960,19 @@ if (isset($_POST['type'])) {
                         }
                     }
                 }
+            	
             }
+            	$rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
+                foreach ($rows2 as $record2) {
+                    foreach (explode(";", $record2['fonction_id']) as $role) {
+                        if (!in_array($record2['id'], $aList) && $role == $record['role_id']) {
+                            array_push($aList, $record2['id']);
+                            $selOptionsUsers .= '<option value="'.$record2['id'].'" class="folder_rights_user">'.$record2['login'].'</option>';
+                            $selEOptionsUsers .= '<option value="'.$record2['id'].'" class="folder_rights_user_edit">'.$record2['login'].'</option>';
+                        }
+                    }
+                }
+            
 
             // export data
             $data = array(
@@ -3137,7 +3159,7 @@ if (isset($_POST['type'])) {
                         // build select for all visible folders
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
                             if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1 ) {
+                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) || (in_array($folder->id, $_SESSION['personal_folders']))) {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                                 } else {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';

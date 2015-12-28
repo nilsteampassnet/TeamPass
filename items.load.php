@@ -138,11 +138,27 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
         $("#"+id).dialog("open");
     }
 
+/*
+*
+*/
+function LoadTreeNode(node_id)
+{
+	
+}
+	
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
+	// prevent launch of similar query in case of doubleclick
+	var me = $(this);
+    if ( me.data('requestRunning') ) {
+        return false;
+    } else {
+		me.data('requestRunning', true);
+	}
+	
     $("#request_lastItem, #selected_items").val("");
 	
     if (groupe_id != undefined) {
@@ -179,6 +195,9 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+					
+				// reset doubleclick prevention
+				me.data('requestRunning', false);
 				
 				// manage not allowed
 				if (data.error == "not_allowed") {
@@ -229,7 +248,7 @@ function ListerItems(groupe_id, restricted, start)
                     $("#items_path_var").html('');
                 }
                 
-                if (data.array_items == "") {
+                if (data.array_items == "" && data.items_count == "0") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
                 }
 
@@ -1010,7 +1029,7 @@ function AddNewFolder()
         }
 
         //prepare data
-        var data = '{"title":"'+sanitizeString($('#new_rep_titre').val())+'", "complexity":"'+sanitizeString($('#new_rep_complexite').val())+'", '+
+        var data = '{"title":"'+sanitizeString($('#new_rep_titre').val())+'", "complexity":"'+sanitizeString($('#new_rep_complexite').val())+'", "is_pf":"'+$('#pf_selected').val()+'", '+
         '"parent_id":"'+$("#new_rep_groupe option:selected").val()+'", "renewal_period":"0"}';
 
         //send query
@@ -1514,12 +1533,12 @@ function ActionOnQuickIcon(id, action)
 //## FUNCTION : prepare new folder dialogbox
 //###########
 function open_add_group_div()
-{
+{/*
     // exclude for PF
     if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1570,7 +1589,7 @@ function open_edit_group_div()
 function open_move_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
@@ -2123,7 +2142,7 @@ $(function() {
 	$.ajaxSetup({
         error: function(jqXHR, exception) {
             if (jqXHR.status === 0) {
-                alert('Not connect.n Verify Network.');
+                console.log('Not connect.\nVerify Network.');
             } else if (jqXHR.status == 404) {
                 alert('Requested page not found. [404]');
             } else if (jqXHR.status == 500) {
@@ -2228,13 +2247,19 @@ $(function() {
             "animation" : 0,
             "check_callback" : true,
             'data' : {
-                "url" : "./sources/tree.php",
+				'url' : "./sources/tree.php",
                 "dataType" : "json",
-                "async" : true
+                "async" : true,
+				'data' : function (node) {
+					return { 'id' : node.id.split('_')[1] };
+				}
             },
             "strings" : {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."
-            }
+            },
+			"error" : {
+				
+			}
         },
         "plugins" : [
             "state", "search"
@@ -2359,13 +2384,14 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
-        height: 220,
+        width: 400,
+        height: 250,
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         open: function( event, ui ) {
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
             $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
-            $(".ui-tooltip").siblings(".tooltip").remove();
+            $(".ui-tooltip").siblings(".tooltip").remove();			
+			$("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
@@ -2451,7 +2477,7 @@ $(function() {
                                 refreshTree();
                                 $("#div_move_folder").dialog("close");
                             } else {
-                                $("#edit_rep_show_error").html(data[0].error).show();
+                                $("#move_rep_show_error").html(data[0].error).show();
                             }
                             $("#move_folder_loader").hide();
                         },
@@ -2623,7 +2649,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 200,
+        height: 220,
         title: "<?php echo $LANG['item_menu_del_elem'];?>",
         buttons: {
             "<?php echo $LANG['del_button'];?>": function() {
@@ -2660,6 +2686,7 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+			$("#div_del_item_selection").html("<center>"+$("#id_label").html()+"</center>");
         }
     });
     //<=
@@ -3577,6 +3604,7 @@ function globalItemsSearch()
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
+				$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
                 $("#full_items_list").html(data.items_html);
                 $("#items_list_loader").hide();
             }

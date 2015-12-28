@@ -128,7 +128,16 @@ $(function() {
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
-                    $("#div_loading").hide();
+					data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+					$("#div_loading").hide();
+											
+					// manage not allowed
+					if (data.error == "not_allowed") {
+					   $("#div_dialog_message_text").html(data.error_text);
+					   $("#div_dialog_message").dialog("open");
+					   return false;
+					}
+				   
                     // refresh table content
                     tableUsers.api().ajax.reload();
                 }

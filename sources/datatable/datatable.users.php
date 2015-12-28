@@ -113,17 +113,23 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' ";
 }
 
+// enlarge the query in case of Manager
+if (!$_SESSION['is_admin']) {
+	if (empty($sWhere)) $sWhere = " WHERE ";
+	else $sWhere .= " AND ";
+	$sWhere .= "isAdministratedByRole IN (".implode(",", $_SESSION['user_roles']).")";
+}
 
-db::debugMode(false);
 DB::query("SELECT * FROM ".$pre."users");
 $iTotal = DB::count();
-
+//DB::debugMode(true);
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
     $sWhere
     $sLimit",
     $criteria
 );
+
 //$iFilteredTotal = DB::count();
 $iFilteredTotal = 0;
 

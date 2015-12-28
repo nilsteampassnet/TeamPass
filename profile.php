@@ -67,18 +67,22 @@ echo '
     </tr>
 </table>
 
-<div style="float:left;width:95%;margin:10px;">
+<div style="float:left;width:95%;margin:10px 0 5px 10px;">
     <i class="fa fa-child fa-fw"></i>&nbsp;
     '.$LANG['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
     <br />';
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     echo '
-    <i class="fa fa-calendar fa-fw"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'];
+    <i class="fa fa-calendar fa-fw"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']).'<br />' : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']).'<br />' : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'<br />';
 }
 echo '
     <i class="fa fa-cloud-upload fa-fw"></i>&nbsp;
     <span id="plupload_runtime2" class="ui-state-error ui-corner-all" style="width:350px;">Upload feature: No runtime found.</span>
     <input type="hidden" id="upload_enabled2" value="" />
+</div>
+
+<div style="float:left;width:95%;margin: 0 0 5px 10px;">
+	Tree load strategy:&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
 </div>
 
 <div style="float:left; margin-left:10px;">
@@ -113,7 +117,7 @@ echo '
 if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
 	echo '
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-        <i class="fa fa-cog fa-spin" id="password_change_wait" style="display:none;"></i>&nbsp;'.$LANG['please_wait'];
+        <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>';
 
 echo '
     </div>';
@@ -350,6 +354,16 @@ $(function() {
           submit : "<img src=\'includes/images/disk_black.png\' />",
           cancel : "<img src=\'includes/images/cross.png\' />",
           name : "newValue"
+    });
+    $(".editable_select").editable("sources/users.queries.php", {
+			indicator : "<img src=\'includes/images/loading.gif\' />",
+			data   : " {'full':'Full','sequential':'Sequential', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
+			type   : 'select',
+			select : true,
+			onblur : "cancel",
+			submit : "<img src=\'includes/images/disk_black.png\' />",
+			cancel : "<img src=\'includes/images/cross.png\' />",
+			name : "newValue"
     });
 	
 	
