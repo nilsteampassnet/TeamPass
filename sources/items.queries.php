@@ -2001,7 +2001,7 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Prepare full line
-                        $html .= '<li name="'.strip_tags(stripslashes(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
+                        $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
                         if ($canMove == 1) {
                             $html .= 'item_draggable';
                         } else {
@@ -2015,7 +2015,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(htmlentities($record['label']), 0, 65);
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                             $tempo = explode("<br />", $record['description']);
                             if (count($tempo) == 1) {
