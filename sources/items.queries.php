@@ -2433,7 +2433,7 @@ if (isset($_POST['type'])) {
                     $_SESSION['user_id']
                 );
                 // Update SESSION with this new favourite
-                $data = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id = ".$_POST['id']);
+                $data = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id = ".mysql_real_escape_string($_POST['id']));
                 $_SESSION['favourites_tab'][$_POST['id']] = array(
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$_POST['id']
