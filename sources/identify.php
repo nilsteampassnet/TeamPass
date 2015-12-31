@@ -526,7 +526,7 @@ function identifyUser($sentData)
 
             // Log into DB the user's connection
             if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-                logEvents('user_connection', 'connection', $data['id']);
+                logEvents('user_connection', 'connection', $data['id'], stripslashes($username));
             }
             // Save account in SESSION
             $_SESSION['login'] = stripslashes($username);
@@ -739,7 +739,7 @@ function identifyUser($sentData)
                 if (isset($_SESSION['settings']['log_connections'])
                         && $_SESSION['settings']['log_connections'] == 1
                 ) {
-                    logEvents('user_locked', 'connection', $data['id']);
+                    logEvents('user_locked', 'connection', $data['id'], stripslashes($username));
                 }
             }
             DB::update(
