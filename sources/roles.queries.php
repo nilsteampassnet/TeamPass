@@ -66,7 +66,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => stripslashes($_POST['name']),
+                        'title' => htmlentities($_POST['name']),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )
