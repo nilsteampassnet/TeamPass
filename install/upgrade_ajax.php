@@ -825,11 +825,11 @@ if (isset($_POST['type'])) {
                 "psk",
                 "VARCHAR(400) DEFAULT NULL"
             );
-        	$res2 = addColumnIfNotExist(
-        	    $_SESSION['tbl_prefix']."users",
-        	    "ga",
-        	    "VARCHAR(50) DEFAULT NULL"
-        	);
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."users",
+                "ga",
+                "VARCHAR(50) DEFAULT NULL"
+            );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "avatar",
@@ -843,9 +843,9 @@ if (isset($_POST['type'])) {
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."users",
                 "treeloadstrategy",
-                "VARCHAR(0) NOT null DEFAULT 'full'"
+                "VARCHAR(30) NOT null DEFAULT 'full'"
             );
-			
+
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."log_items",
                 "raison_iv",
