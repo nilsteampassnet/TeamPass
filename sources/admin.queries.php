@@ -315,15 +315,7 @@ switch ($_POST['type']) {
             $_SESSION['key_tmp'] = $pwgen->generate();
 
             //update LOG
-            DB::insert(
-                prefix_table("log_system"),
-                array(
-                    'type' => 'admin_action',
-                    'date' => time(),
-                    'label' => 'dataBase backup',
-                    'qui' => $_SESSION['user_id']
-               )
-            );
+	    logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
 
             echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
         }
@@ -515,15 +507,7 @@ switch ($_POST['type']) {
 			"maintenance_mode", "admin"
 		);
 		//log
-		DB::insert(
-			prefix_table("log_system"),
-			array(
-				'type' => 'system',
-				'date' => time(),
-				'label' => 'change_salt_key',
-				'qui' => $_SESSION['user_id']
-		   )
-		);
+		logEvents('system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
 		
 		// get number of items to change
 		DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
@@ -681,15 +665,7 @@ switch ($_POST['type']) {
         }
 
         //update LOG
-        DB::insert(
-            prefix_table("log_system"),
-            array(
-               'type' => 'admin_action',
-               'date' => time(),
-               'label' => 'Emails backlog',
-               'qui' => $_SESSION['user_id']
-            )
-        );
+	logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
         echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
         break;
