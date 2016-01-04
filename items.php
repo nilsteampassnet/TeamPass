@@ -830,7 +830,7 @@ echo '
 // SUPPRIMER UN ELEMENT
 echo '
 <div id="div_del_item" style="display:none;">
-        <h2 id="div_del_item_selection"></h2>
+	<h2 id="div_del_item_selection"></h2>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['confirm_deletion'].'</p>
 </div>';
 // DIALOG INFORM USER THAT LINK IS COPIED
