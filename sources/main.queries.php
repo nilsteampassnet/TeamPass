@@ -155,8 +155,18 @@ switch ($_POST['type']) {
                     $_SESSION['user_id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-		echo '[ { "error" : "none" } ]';
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_pwd_changed',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_SESSION['user_id']
+                       )
+                );
+
+                echo '[ { "error" : "none" } ]';
                 break;
             }
             // ADMIN has decided to change the USER's PW
@@ -188,7 +198,16 @@ switch ($_POST['type']) {
                 $dataReceived['user_id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            DB::insert(
+                prefix_table("log_system"),
+                array(
+                    'type' => 'user_mngt',
+                    'date' => time(),
+                    'label' => 'at_user_pwd_changed',
+                    'qui' => $_SESSION['user_id'],
+                    'field_1' => $_SESSION['user_id']
+                   )
+            );
             //Send email to user
             $row = DB::queryFirstRow(
                 "SELECT email FROM ".prefix_table("users")."
@@ -221,7 +240,17 @@ switch ($_POST['type']) {
             );
             $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
             // update LOG
-	    logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            DB::insert(
+                prefix_table("log_system"),
+                array(
+                    'type' => 'user_mngt',
+                    'date' => time(),
+                    'label' => 'at_user_initial_pwd_changed',
+                    'qui' => $_SESSION['user_id'],
+                    'field_1' => $_SESSION['user_id']
+                )
+            );
+
             echo '[ { "error" : "none" } ]';
             break;
         } else {
@@ -711,7 +740,15 @@ switch ($_POST['type']) {
     case "store_error":
         if (!empty($_SESSION['user_id'])) {
             // update DB
-	    logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
+            DB::insert(
+                prefix_table("log_system"),
+                array(
+                    'type' => 'error',
+                    'date' => time(),
+                    'label' => urldecode($_POST['error']),
+                    'qui' => $_SESSION['user_id']
+                )
+            );
         }
         break;
     /**

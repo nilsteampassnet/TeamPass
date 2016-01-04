@@ -53,7 +53,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
 
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
     }
 } else {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
