@@ -66,7 +66,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => stripslashes($_POST['name']),
+                        'title' => htmlentities(stripslashes($_POST['name'])),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )
@@ -257,7 +257,7 @@ if (!empty($_POST['type'])) {
                         $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
                     }
 
-                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$record['title'].
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").
                         '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
                         '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.

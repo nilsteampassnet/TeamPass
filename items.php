@@ -88,7 +88,7 @@ echo '
 <input type="hidden" id="pf_selected" value="" />
 <input type="hidden" id="user_ongoing_action" value="" />
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
-<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />
+<input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
 <input type="hidden" id="access_level" value="" />';
 // Hidden objects for Item search

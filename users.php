@@ -125,7 +125,7 @@ echo '
     foreach ($rolesList as $fonction) {
         if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
             echo '
-            <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+            <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
         }
     }
     echo '
@@ -162,7 +162,7 @@ if ($_SESSION['is_admin']) {
 foreach ($rolesList as $fonction) {
     if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
         echo '
-        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
     }
 }
 echo '

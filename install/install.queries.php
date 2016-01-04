@@ -831,6 +831,23 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>")
                     );
                     fclose($fh);
+					
+					// update CSRFP TOKEN
+					$csrfp_config_file = file('includes/libraries/csrfp/libs/csrfp.config.php');
+					$word = 'word';
+					$result = '';
+					foreach($lines as $line) {
+						if(strpos($line, '"CSRFP_TOKEN" => "",') === false) {
+							$result .= $line;
+						} else {
+							//Generate a random string.
+							$token = openssl_random_pseudo_bytes(25);
+							$result .= '	"CSRFP_TOKEN" => "'.bin2hex($token).'",\n';
+						}
+					}
+					file_put_contents('includes/libraries/csrfp/libs/csrfp.config.php', $result);
+					
+					// finalize
                     if ($result === false) {
                         echo '[{"error" : "sk.php file could not be created. Please check the path and the rights.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     } else {
