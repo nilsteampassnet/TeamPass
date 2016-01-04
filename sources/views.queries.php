@@ -317,9 +317,9 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            ORDER BY %s %s
             LIMIT $start, $nbElements",
-            "user_connection"
+            "user_connection",$_POST['order'],$POST['direction']
         );
 
         foreach ($rows as $record) {
@@ -371,9 +371,9 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            ORDER BY %s %s
             LIMIT $start, $nbElements",
-            "error"
+            "error",$_POST['order'],$POST['direction']
         );
         foreach ($rows as $record) {
             $label = explode('@', addslashes(cleanString($record['label'])));
@@ -430,9 +430,9 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            ORDER BY %s %s
             LIMIT $start, $nbElements",
-            $where
+            $where,$_POST['order'],$POST['direction']
         );
         foreach ($rows as $record) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td></tr>';
