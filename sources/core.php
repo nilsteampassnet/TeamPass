@@ -136,7 +136,7 @@ if (
         );
         //Log into DB the user's disconnection
         if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', @$_SESSION['user_id'], $_SESSION['login']);
+            logEvents('user_connection', 'disconnection', @$_SESSION['user_id']);
         }
     }
 
@@ -186,7 +186,7 @@ if (
 
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
     }
 
     // erase session table
@@ -257,7 +257,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 
         //Log into DB the user's disconnection
         if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
+            logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
         }
 
         syslog(

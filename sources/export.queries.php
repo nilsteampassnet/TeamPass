@@ -219,7 +219,7 @@ switch ($_POST['type']) {
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 
             //log
-            logEvents('pdf_export', "", $_SESSION['user_id'], $_SESSION['login']);
+            logEvents('pdf_export', "", $_SESSION['user_id']);
 
             //clean table
             DB::query("TRUNCATE TABLE ".prefix_table("export"));
