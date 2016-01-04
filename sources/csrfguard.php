@@ -112,5 +112,5 @@ function csrfguard_start()
           Notice: Use of undefined constant csrfguard_inject - assumed 'csrfguard_inject' */
 	register_shutdown_function("csrfguard_inject");
 }
-//csrfguard_start();
+csrfguard_start();
 

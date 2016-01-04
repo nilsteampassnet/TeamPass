@@ -1,4 +1,7 @@
 Last changes
+2.1.25
+
+
 2.1.24
  #1090 - Fix for Export to PDF last folder not taken into consideration
  #1088 - #1085 - Password show problem
