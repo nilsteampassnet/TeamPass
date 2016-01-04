@@ -417,21 +417,21 @@ $htmlHeaders .= '
                 key        : "'.$_SESSION["key"].'"
             },
             function(data) {
+				data = $.parseJSON(data);
                 //check if format error
-                if (data[0].error == "") {
-                    $("#last_seen_items_list").html(data[0].text);
+                if (data.error == "") {
+                    $("#last_seen_items_list").html(data.text);
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
 					// show notification
-					if (data[0].existing_suggestions != 0) {
+					if (data.existing_suggestions != 0) {
 						blink("#menu_button_suggestion", -1, 500, "ui-state-error");
 					}
                 } else {
-                    $("#main_info_box_text").html(data[0].error);
+                    $("#main_info_box_text").html(data.error);
                     setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                 }
-            },
-            "json"
+            }
         );
     }
 
@@ -1008,7 +1008,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             modal: true,
             autoOpen: false,
             width: 300,
-            height: 100,
+            height: 160,
             title: "'.$LANG['item_menu_del_from_fav'].'",
             buttons: {
                 "'.$LANG['index_change_pw_confirmation'].'": function() {

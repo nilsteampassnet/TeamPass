@@ -876,7 +876,7 @@ switch ($_POST['type']) {
         if (DB::count() > 0) {
             foreach ($rows as $record) {
                 if (!in_array($record['id'], $arrTmp)) {
-                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right fa-fw"></i>&nbsp;'.addslashes($record['label']).'</li>';
+                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
                     $x++;
                     array_push($arrTmp, $record['id']);
                     if ($x >= 10) break;
@@ -893,8 +893,15 @@ switch ($_POST['type']) {
 			$rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
 			$nb_suggestions_waiting = DB::count();
 		}
-
-        echo '[{"error" : "" , "text" : "'.addslashes($return).'" , "existing_suggestions" : '.$nb_suggestions_waiting.'}]';
+		
+		echo json_encode(
+			array(
+				"error" => "", 
+				"existing_suggestions" => $nb_suggestions_waiting, 
+				"text" => ($return)
+			),
+			JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+		);
         break;
     /**
      * Generates a KEY with CRYPT

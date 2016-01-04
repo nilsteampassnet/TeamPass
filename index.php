@@ -27,6 +27,7 @@ if (!file_exists('includes/settings.php')) {
 }
 
 require_once('sources/sessions.php');
+require_once('sources/csrfguard.php');
 session_start();//session_unset();
 
 ?>
