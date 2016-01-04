@@ -629,16 +629,7 @@ function rest_get () {
                             $email
                         );
                         // update LOG
-                        DB::insert(
-                            prefix_table("log_system"),
-                            array(
-                                'type' => 'user_mngt',
-                                'date' => time(),
-                                'label' => 'at_user_added',
-                                'qui' => 'api - '.$GLOBALS['apikey'],
-                                'field_1' => $new_user_id
-                            )
-                        );
+			logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id);
                         echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
