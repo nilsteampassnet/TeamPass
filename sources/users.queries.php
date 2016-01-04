@@ -253,7 +253,16 @@ if (!empty($_POST['type'])) {
                     $dataReceived['email']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_added',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $new_user_id
+                       )
+                );
                 echo '[ { "error" : "no" } ]';
             } else {
                 echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
@@ -307,7 +316,16 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-		logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_deleted',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
             } else {
                 // lock user in database
                 DB::update(
@@ -320,7 +338,16 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_locked',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
             }
             echo '[ { "error" : "no" } ]';
             break;
@@ -349,7 +376,16 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            DB::insert(
+                prefix_table("log_system"),
+                array(
+                    'type' => 'user_mngt',
+                    'date' => time(),
+                    'label' => 'at_user_email_changed:'.$data['email'],
+                    'qui' => intval($_SESSION['user_id']),
+                    'field_1' => intval($_POST['id'])
+                   )
+            );
         	echo '[{"error" : "no"}]';
             break;
         /**
@@ -705,7 +741,16 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']); 
+            DB::insert(
+                prefix_table("log_system"),
+                array(
+                    'type' => 'user_mngt',
+                    'date' => time(),
+                    'label' => 'at_user_unlocked',
+                    'qui' => $_SESSION['user_id'],
+                    'field_1' => $_POST['id']
+                   )
+            );
             break;
         /*
         * Check the domain
@@ -1151,7 +1196,16 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-		logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_deleted',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
             }
             else {
                         
@@ -1193,12 +1247,30 @@ if (!empty($_POST['type'])) {
                 
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
-		    logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => 'at_user_email_changed:'.$oldData['email'],
+                            'qui' => intval($_SESSION['user_id']),
+                            'field_1' => intval($_POST['id'])
+                           )
+                    );
                 }
                 
                 if ($oldData['disabled'] != $accountDisabled) {
                     // update LOG
-		    logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                    DB::insert(
+                        prefix_table("log_system"),
+                        array(
+                            'type' => 'user_mngt',
+                            'date' => time(),
+                            'label' => $logDisabledText,
+                            'qui' => $_SESSION['user_id'],
+                            'field_1' => $_POST['id']
+                           )
+                    );
                 }
                 
     /*
@@ -1212,7 +1284,16 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                DB::insert(
+                    prefix_table("log_system"),
+                    array(
+                        'type' => 'user_mngt',
+                        'date' => time(),
+                        'label' => 'at_user_unlocked',
+                        'qui' => $_SESSION['user_id'],
+                        'field_1' => $_POST['id']
+                       )
+                );
                 */
             }
             
@@ -1254,7 +1335,16 @@ elseif (!empty($_POST['newValue'])) {
         $value[1]
     );
     // update LOG
-    logEvents('user_mngt', 'at_user_new_'.$value[0].':'.$value[1], $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+    DB::insert(
+        prefix_table("log_system"),
+        array(
+            'type' => 'user_mngt',
+            'date' => time(),
+            'label' => 'at_user_new_'.$value[0].':'.$value[1],
+            'qui' => $_SESSION['user_id'],
+            'field_1' => $_POST['id']
+           )
+    );
 	// refresh SESSION if requested
 	if ($value[0] == "treeloadstrategy") {
 		$_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];

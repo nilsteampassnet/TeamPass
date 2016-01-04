@@ -617,7 +617,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  *
  * permits to log events into DB
  */
-function logEvents($type, $label, $who, $login="", $field_1 = NULL)
+function logEvents($type, $label, $who)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
@@ -638,17 +638,9 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
             'type' => $type,
             'date' => time(),
             'label' => $label,
-            'qui' => $who,
-	    'field_1' => $field_1
+            'qui' => $who
            )
     );
-	if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-		if ($type == "user_mngt"){
-			send_syslog("The User " .$login. " perform the acction off " .$label. " to the user " .$field_1. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-		} else {
-			send_syslog("The User " .$login. " perform the acction off " .$label. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-		}
-	}
 }
 
 /**
@@ -1109,43 +1101,4 @@ function prefix_table($table)
 function GenerateCryptKey($size)
 {
 	return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
-}
-
-function send_syslog($message, $component = "teampass", $program = "php", $host , $port)
-{
-    $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
-	$syslog_message = "<123>" . date('M d H:i:s ') . $component . ": " . $message;
-        socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
-    socket_close($sock);
-}
-
-function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
-{
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
-    // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
-    DB::insert(
-	       prefix_table("log_items"),
-               array(
-                     'id_item' => $id,
-                     'date' => time(),
-                     'id_user' => $id_user,
-                     'action' => $action,
-		     'raison' => $raison,
-		     'raison_iv' => $raison_iv
-                     )
-               );
-        if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-        }
 }
