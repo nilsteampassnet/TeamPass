@@ -317,9 +317,11 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."            
+            ORDER BY %s %s           
 			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
-            "user_connection"
+            "user_connection",
+			$_POST['order'],
+			$POST['direction']
         );
 
         foreach ($rows as $record) {
@@ -371,9 +373,11 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            ORDER BY %s %s
             LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
-            "error"
+            "error",
+			$_POST['order'],
+			$_POST['direction']
         );
         foreach ($rows as $record) {
             $label = explode('@', addslashes(cleanString($record['label'])));
