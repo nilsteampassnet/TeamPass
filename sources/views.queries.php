@@ -317,7 +317,7 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
+            ORDER BY ".mysqli_real_escape_string($_POST['order'])." ".$_POST['direction']."
             LIMIT $start, $nbElements",
             "user_connection"
         );
