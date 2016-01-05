@@ -557,6 +557,18 @@ if (isset($_POST['save_button'])) {
 	if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
 	    updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
 	}
+    // Update syslog_enable
+    if (@$_SESSION['settings']['syslog_enable'] != $_POST['syslog_enable']) {
+        updateSettings('syslog_enable', $_POST['syslog_enable']);
+    }
+    // Update syslog_host
+    if (@$_SESSION['settings']['syslog_host'] != $_POST['syslog_host']) {
+        updateSettings('syslog_host', $_POST['syslog_host']);
+    }
+    // Update syslog_port
+    if (@$_SESSION['settings']['syslog_port'] != $_POST['syslog_port']) {
+        updateSettings('syslog_port', $_POST['syslog_port']);
+    }
 }
 
 echo '
@@ -1677,7 +1689,40 @@ echo '
                         </select>
                     <td>
                 </tr>';
-
+// SYSLOG ENABLE
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$LANG['syslog_enable'].'</label>
+                    </td><td>
+                    <div class="div_radio">
+                        <input type="radio" id="syslog_enable_radio1" name="syslog_enable" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? ' checked="checked"' : '', ' /><label for="syslog_enable_radio1">'.$LANG['yes'].'</label>
+                        <input type="radio" id="syslog_enable_radio2" name="syslog_enable" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['syslog_enable']) ? ' checked="checked"':''), ' /><label for="syslog_enable_radio2">'.$LANG['no'].'</label>
+                        <span class="setting_flag" id="flag_syslog_enable"><img src="includes/images/status', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? '' : '-busy', '.png" /></span>
+                    </div>
+                </td</tr>';
+// SYSLOG Host
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$LANG['syslog_host'].'
+                        </td>
+                        <td>
+                            <input id="syslog_server" name="syslog_host" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_host']) ? 'localhost' : $_SESSION['settings']['syslog_host'], '" />
+                        </td>
+                    </tr>';
+// SYSLOG port
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            '.$LANG['syslog_port'].'
+                        </td>
+                        <td>
+                            <input id="syslog_port" name="syslog_port" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_port']) ? '514' : $_SESSION['settings']['syslog_port'], '" />
+                        </td>
+                    </tr>';
 echo '
             </table>
             </div>';

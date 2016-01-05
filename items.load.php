@@ -2390,8 +2390,8 @@ $(function() {
         open: function( event, ui ) {
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
             $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
-            $(".ui-tooltip").siblings(".tooltip").remove();			
-			$("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
+            $(".ui-tooltip").siblings(".tooltip").remove();
+            $("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
@@ -2658,6 +2658,7 @@ $(function() {
                     {
                         type    : "del_item",
                         id      : $("#id_item").val(),
+			label   : $("#hid_label").val(),
                         key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
@@ -2686,7 +2687,7 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
-			$("#div_del_item_selection").html("<center>"+$("#id_label").html()+"</center>");
+            $("#div_del_item_selection").html("<center>"+$("#id_label").html()+"</center>");
         }
     });
     //<=
@@ -3277,6 +3278,8 @@ function itemLog(log_case)
         {
             type        : log_case,
             id_item     : $('#id_item').val(),
+            folder_id   : $('#hid_cat').val(),
+	    hid_label   : $('#hid_label').val(),
             key         : "<?php echo $_SESSION['key'];?>"
         }
     );
