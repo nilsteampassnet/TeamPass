@@ -140,8 +140,7 @@ $htmlHeaders .= '
         NProgress.start();
         if (val == "deconnexion") {
             sessionStorage.clear();
-            $("#menu_action").val(val);
-            document.main_form.submit();
+            window.location.href = "logout.php"
         } else {
             $("#menu_action").val("action");
             if (val == "") document.location.href="index.php";
@@ -542,6 +541,7 @@ $htmlHeaders .= '
 }
 
     $(function() {
+        countdown();
         // load DUO login
         if ($("#duo_sig_response").val() != "") {
             $("#login").val($("#duo_login").val());
