@@ -134,7 +134,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
                     location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
                 } else {
-                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&session_over=true");
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
                 }
             }
         </script>
@@ -143,7 +143,7 @@ echo $htmlHeaders;
 ?>
     </head>
 
-<body onload="countdown()">
+<body>
     <?php
 
 /* HEADER */

@@ -118,39 +118,15 @@ if (empty($languagesDropmenu)) {
 
 /* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
 if (
-        (isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion")
-        || (isset($_GET['session']) && $_GET['session'] == "expired")
+        (isset($_GET['session']) && $_GET['session'] == "expired")
         || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
-    // Update table by deleting ID
-    if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
-        DB::update(
-            prefix_table("users"),
-            array(
-                'key_tempo' => '',
-                'timestamp' => '',
-                'session_end' => ''
-            ),
-            "id=%i",
-            $_SESSION['user_id']
-        );
-        //Log into DB the user's disconnection
-        if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', @$_SESSION['user_id'], $_SESSION['login']);
-        }
-    }
-
-    // erase session table
-    $_SESSION = array();
-
-    // Kill session
-    session_destroy();
-
     // REDIRECTION PAGE ERREUR
-		echo '
+    echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php?page=items&session_over=true"}, 10);
+        sessionStorage.clear();
+        window.location.href = "logout.php"
     -->
     </script>';
     exit;

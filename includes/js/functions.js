@@ -94,6 +94,7 @@ function countdown()
     if ($('#countdown')){
     	$('#countdown').html(DayTill); //Make the particular form chart become "Daytill"
     }
+
     var counter = setTimeout("countdown()", 1000); //Create the timer "counter" that will automatic restart function countdown() again every second.
 }
 

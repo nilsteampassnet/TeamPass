@@ -12,7 +12,7 @@
  */
 
 var CSRFP = {
-	CSRFP_TOKEN: 'csrfp_token',
+	CSRFP_TOKEN: '55518d2f8fc2b5349303358bd73f2aa000b5882e4a042e1797',
 	/**
 	 * Array of patterns of url, for which csrftoken need to be added
 	 * In case of GET request also, provided from server
