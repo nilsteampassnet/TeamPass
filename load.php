@@ -220,11 +220,11 @@ $htmlHeaders .= '
             },
             function(data) {
                 if (data[0].value == randomstring) {
-                    $("#connection_error").hide();
+                    $("#connection_error").hide();console.log("ici "+data[0].initial_url+" -- ");
                     //redirection for admin is specific
                     if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-                    else window.location.href="index.php";
+                    else window.location.href="index.php?page=items";
                 } else if (data[0].value == "user_is_locked") {
                     $("#connection_error").html("'.$LANG['account_is_locked'].'").show();
                 } else if (data[0].value == "bad_psk") {

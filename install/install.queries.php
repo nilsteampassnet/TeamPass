@@ -828,6 +828,10 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                             "<?php
 @define('SALT', '".$var['encrypt_key']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
+@define('AKEY', '');
+@define('IKEY', '');
+@define('SKEY', '');
+@define('HOST', '');
 ?>")
                     );
                     fclose($fh);

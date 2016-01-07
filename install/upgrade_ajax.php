@@ -1701,6 +1701,10 @@ require_once \"".$skFile."\";
 "<?php
 @define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
+@define('AKEY', '');
+@define('IKEY', '');
+@define('SKEY', '');
+@define('HOST', '');
 ?>"
                         )
                     );

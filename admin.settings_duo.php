@@ -65,6 +65,7 @@ if (file_exists($filename)) {
 }
 
 // read SK.PHP file
+$tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
 $skFile = file($tmp_skfile);
 while (list($key,$val) = each($skFile)) {
 	if (substr_count($val, "@define('AKEY'")>0) {

@@ -12,7 +12,7 @@
  */
 
 var CSRFP = {
-	CSRFP_TOKEN: '55518d2f8fc2b5349303358bd73f2aa000b5882e4a042e1797',
+	CSRFP_TOKEN: '2142d72794a002ea25de714030df7138b9b73b0dd8bd69a815',
 	/**
 	 * Array of patterns of url, for which csrftoken need to be added
 	 * In case of GET request also, provided from server
@@ -283,31 +283,33 @@ function csrfprotector_init() {
 
 	for (var i = 0; i < document.links.length; i++) {
         document.links[i].addEventListener("mousedown", function(event) {
-            var urlDisect = event.target.href.split('#');
-            var url = urlDisect[0];
-            var hash = urlDisect[1];
-			
-            if(CSRFP._getDomain(url).indexOf(document.domain) === -1
-				|| CSRFP._isValidGetRequest(url)) {
-                //cross origin or not to be protected by rules -- ignore 
-				return;
-            }
-            
-            if (url.indexOf('?') !== -1) {
-                if(url.indexOf(CSRFP.CSRFP_TOKEN) === -1) {
-                    url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-                } else {
-                    url = url.replace(new RegExp(CSRFP.CSRFP_TOKEN +"=.*?(&|$)", 'g'),
-						CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey() + "$1");
-                }
-            } else {
-                url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-            }
-            
-            event.target.href = url;
-            if (typeof hash !== 'undefined') {
-                event.target.href += '#' +hash;
-            }
+			if(event.target.href !== undefined) {
+				var urlDisect = event.target.href.split('#');
+				var url = urlDisect[0];
+				var hash = urlDisect[1];
+				
+				if(CSRFP._getDomain(url).indexOf(document.domain) === -1
+					|| CSRFP._isValidGetRequest(url)) {
+					//cross origin or not to be protected by rules -- ignore 
+					return;
+				}
+				
+				if (url.indexOf('?') !== -1) {
+					if(url.indexOf(CSRFP.CSRFP_TOKEN) === -1) {
+						url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
+					} else {
+						url = url.replace(new RegExp(CSRFP.CSRFP_TOKEN +"=.*?(&|$)", 'g'),
+							CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey() + "$1");
+					}
+				} else {
+					url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
+				}
+				
+				event.target.href = url;
+				if (typeof hash !== 'undefined') {
+					event.target.href += '#' +hash;
+				}
+			}
         });
 	}
 

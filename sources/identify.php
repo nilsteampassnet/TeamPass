@@ -106,13 +106,6 @@ function identifyUser($sentData)
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
     }
 	
-	/*
-	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
-		$sentData = prepareExchangedData($_COOKIE['TeamPassC'], "encode");
-		setcookie('TeamPassC', "", time()-3600);
-	}
-	*/
-	
 	if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
@@ -770,7 +763,7 @@ function identifyUser($sentData)
         fputs(
             $dbgDuo,
             "\n\n----\n" .
-            "Identified : " . $return . "\n"
+            "Identified : " . $return . "\n\n"
         );
     }
 

@@ -193,7 +193,6 @@ if (isset($_POST['type'])) {
                                 array(
                                     'item_id' => $newID,
                                     'field_id' => $field_data[0],
-                                    //'data' => encrypt($field_data[1])  //encrypt($randomKeyFields.$field_data[1])
                                     'data' => $encrypt['string'],
                                     'data_iv' => $encrypt['iv']
                                 )

@@ -171,7 +171,7 @@ switch ($_POST['type']) {
                 if ($account == "" && $continue_on_next_line == false) {
                     $account = addslashes($row['Label']);
                     $login = addslashes($row['Login']);
-                    $pw = str_replace('"', "&quote;", $row['Password']);
+                    $pw = str_replace('"', "&quot;", $row['Password']);
                     $url = addslashes($row['url']);
                     $to_find = array ( "\"" , "'" );
                     $to_ins = array ( "&quot" , "&#39;");

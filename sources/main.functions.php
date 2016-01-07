@@ -365,7 +365,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-
+//echo " ici12";
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
         $groupesVisibles = array();
