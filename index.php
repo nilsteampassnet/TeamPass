@@ -63,6 +63,7 @@ DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+
 //load main functions needed
 require_once 'sources/main.functions.php';
 // Load CORE
@@ -419,7 +420,7 @@ if (
             $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
-    } 
+    }
 // ask the user to change his password
     else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid

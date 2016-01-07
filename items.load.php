@@ -85,9 +85,10 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
-        if ($("#selected_items").val() == "") return;
+        if ($("#selected_items").val() == "") return;		
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
+			itemLog("item_password_shown");
             $('#id_pw').text($('#hid_pw').val());
         } else {
             $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
@@ -3266,6 +3267,10 @@ var showPwdContinuous = function(){
         $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         $('.tip').tooltipster();
     }
+}
+
+var showPwd = function(){
+	$("#visible_pw, #edit_visible_pw").toggle();
 }
 
 /*

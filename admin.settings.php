@@ -199,10 +199,6 @@ if (isset($_POST['save_button'])) {
     if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] != $_POST['show_only_accessible_folders']) {
         updateSettings('show_only_accessible_folders', $_POST['show_only_accessible_folders']);
     }
-    // Update ga_website_name
-    if (isset($_SESSION['settings']['ga_website_name']) && $_SESSION['settings']['ga_website_name'] != @$_POST['ga_website_name']) {
-        updateSettings('ga_website_name', @$_POST['ga_website_name']);
-    }
     // Update number_of_used_pw setting
     if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {
         updateSettings('number_of_used_pw', $_POST['number_of_used_pw']);
@@ -829,55 +825,7 @@ echo '
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-/*
-// 2factors_code
-echo '
-            <tr style="margin-bottom:3px">
-                <td>
-                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                  <label>'.$LANG['admin_2factors_authentication_setting'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_2factors_authentication_setting_tip'].'" />
-                  </label>
-            </td>
-            <td>
-                <div class="div_radio">
-                    <input type="radio" id="2factors_authentication_radio1" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="2factors_authentication_radio1">'.$LANG['yes'].'</label>
-                    <input type="radio" id="2factors_authentication_radio2" name="2factors_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['2factors_authentication']) ? ' checked="checked"':''), ' /><label for="2factors_authentication_radio2">'.$LANG['no'].'</label>
-                        <span class="setting_flag" id="flag_2factors_authentication"><img src="includes/images/status', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '' : '-busy', '.png" /></span>
-                </div>
-              <td>
-            </tr>';
-// Google Authenticator website name
-echo '
-            <tr style="margin-bottom:3px">
-                <td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_ga_website_name_tip'].'" />
-                </td>
-                <td>
-                    <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
-                <td>
-            </tr>';
-/*
-// psk_authentication
-echo '
-            <tr style="margin-bottom:3px">
-                <td>
-                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                  <label>'.$LANG['admin_psk_authentication'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_psk_authentication_tip'].'" />
-                  </label>
-            </td>
-            <td>
-                <div class="div_radio">
-                    <input type="radio" id="psk_authentication_radio1" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 1) " value="1"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? ' checked="checked"' : '', ' /><label for="psk_authentication_radio1">'.$LANG['yes'].'</label>
-                    <input type="radio" id="psk_authentication_radio2" name="psk_authentication" onclick="changeSettingStatus($(this).attr(\'name\'), 0) " value="0"', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] != 1 ? ' checked="checked"' : (!isset($_SESSION['settings']['psk_authentication']) ? ' checked="checked"':''), ' /><label for="psk_authentication_radio2">'.$LANG['no'].'</label>
-                        <span class="setting_flag" id="flag_psk_authentication"><img src="includes/images/status', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? '' : '-busy', '.png" /></span>
-                </div>
-              <td>
-            </tr>';
-*/
+			
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones

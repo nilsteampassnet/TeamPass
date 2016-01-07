@@ -134,10 +134,9 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i_id",
-        array(
-            'id' => $_SESSION['user_id']
-        )
+    $dataSession = DB::queryFirstRow(
+		"SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
+        $_SESSION['user_id']
     );
 } else {
     $dataSession['key_tempo'] = "";
@@ -253,7 +252,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        setTimeout(function(){document.location.href="index.php?session=expired"}, 10);
+        setTimeout(function(){document.location.href="logout.php"}, 10);
         -->
         </script>';
         exit;
@@ -285,10 +284,9 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $data = DB::queryfirstrow("SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i_id",
-        array(
-            'id' => $_SESSION['user_id']
-        )
+    $data = DB::queryfirstrow(
+		"SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+		$_SESSION['user_id']
     );
 
     //Check if user has been deleted or unlogged
@@ -329,7 +327,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                 $_SESSION['user_id']
             );
         }
-
+		
         // get access rights
         identifyUserRights(
             $data['groupes_visibles'],
