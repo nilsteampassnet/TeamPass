@@ -3,7 +3,7 @@
  *
  * @file          german.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -854,9 +854,22 @@ $LANG = array (
     'role_cannot_edit_item' => 'Elemente können nicht bearbeitet werden',
     'no_delete' => 'Ohne Löschung gespeichert',
     'role_cannot_delete_item' => 'Elemente können nicht gelöscht werden',
-    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
-    'my_profile' => 'My profile',
-    'at_suggestion' => 'Suggestion accepted',
-    'character_not_allowed' => 'Character is not allowed!',
+    'text_without_symbols' => 'Es sind nur Zahlen, Buchstaben und die Symbole # & % * $ @ ( ) zugelassen. Andere Zeichen sind nicht erlaubt.',
+    'my_profile' => 'Mein Profil',
+    'at_suggestion' => 'Vorschlag akzeptiert',
+    'character_not_allowed' => 'Zeichen ist nicht erlaubt!',
+    'error_saltkey_length' => 'SaltKey muss 16 Zeichen lang sein.',
+    'starting' => 'Starte...',
+    'total_number_of_items' => 'Gesamtanzahl an Objekten',
+    'finalizing' => 'Finalisierung',
+    'treating_items' => 'Betroffene Objekte',
+    'number_of_items_treated' => 'Anzahl der betroffenen Objekte',
+    'error_sent_back' => 'Nächster Fehler aufgetreten',
+    'full' => 'Vollständig',
+    'sequential' => 'Teilweise',
+    'tree_load_strategy' => 'Baum Ladestrategie',
+    'syslog_enable' => 'Enable log with Syslog',
+    'syslog_host' => 'Syslog server',
+    'syslog_port' => 'Syslog port',
     '' => ''
 );

@@ -3,7 +3,7 @@
  *
  * @file          ukrainian.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -26,7 +26,7 @@ $LANG = array (
     'admin_action_attachments_cryption_tip' => 'WARNING: this action has ONLY to be performed after changing the associated option in Teampass settings. Please make a copy of the folder \'upload\' before doing any action, just in case ...',
     'encrypt' => 'Зашифрувати',
     'decrypt' => 'Розшифрувати',
-    'admin_ga_website_name' => 'Name displayed Google Authenticator for Teampass',
+    'admin_ga_website_name' => 'Name displayed in Google Authenticator for Teampass',
     'admin_ga_website_name_tip' => 'This name is used for the identification code account in Google Authenticator.',
     'admin_action_pw_prefix_correct' => 'Correct passwords prefix',
     'admin_action_pw_prefix_correct_tip' => 'Before lauching this script, PLEASE be sure to make a dump of the database. This script will perform an update of passwords prefix. It SHALL only be used if you noticed that passwords are displayed with strange prefix.',
@@ -854,9 +854,22 @@ $LANG = array (
     'role_cannot_edit_item' => 'Cannot edit Items',
     'no_delete' => 'Write but no delete',
     'role_cannot_delete_item' => 'Cannot delete Items',
-    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
+    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. Other characters are not possible.',
     'my_profile' => 'My profile',
     'at_suggestion' => 'Suggestion accepted',
     'character_not_allowed' => 'Character is not allowed!',
+    'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
+    'starting' => 'Starting ...',
+    'total_number_of_items' => 'Total number of items',
+    'finalizing' => 'Finalizing',
+    'treating_items' => 'Treating items',
+    'number_of_items_treated' => 'Number of treated items',
+    'error_sent_back' => 'Next error occured',
+    'full' => 'Full',
+    'sequential' => 'Sequential',
+    'tree_load_strategy' => 'Tree load strategy',
+    'syslog_enable' => 'Enable log with Syslog',
+    'syslog_host' => 'Syslog server',
+    'syslog_port' => 'Syslog port',
     '' => ''
 );
