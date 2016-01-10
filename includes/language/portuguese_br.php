@@ -3,7 +3,7 @@
  *
  * @file          portuguese_br.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -19,11 +19,11 @@ $LANG = array (
     'error_no_email' => 'Este usuário não tem e-mail definido!',
     'error_no_user' => 'Nenhum usuário encontrado!',
     'email_ga_subject' => 'Seu código flash do Google Authenticator para o TeamPass',
-    'email_ga_text' => 'Olá,<br><br>Por favor, clique neste <a href=\'#link#\'>LINK</a> e escaneio-o com o aplitcativo Google Authenticator para obter sua credencial OTP para o Teampass.<br /><br />Felicidades! ',
+    'email_ga_text' => 'Olá,<br><br>Por favor, clique neste <a href=\'#link#\'>LINK</a> e o escaneie com o aplicativo Google Authenticator para obter sua credencial OTP para o Teampass.<br /><br />Saudações! ',
     'settings_attachments_encryption' => 'Ativar a criptografia dos itens anexados',
     'settings_attachments_encryption_tip' => 'ESTA OPÇÃO PODE CORROMPER ANEXOS EXISTENTES, por favor, leia cuidadosamente: Se habilitado, os anexos dos Itens são armazenados criptografados no servidor. Esta criptografia usa a SALT definida para o Teampass. Isso requer mais recursos do servidor. CUIDADO: Uma vez que você mudou a estratégia, é obrigatório executar o script para adaptar os anexos existentes. Veja a aba \'Ações Específicas\'.',
     'admin_action_attachments_cryption' => 'Criptografar ou descriptografar os anexos dos Itens.',
-    'admin_action_attachments_cryption_tip' => 'CUIDADO: Esta ação só deve ser realizada depois de alterar a opção associada nas Configurações do Teampass. Por favor, faça uma cópia da pasta \'uplaod\' antes de fazer qualquer ação, apenas em caso de ...',
+    'admin_action_attachments_cryption_tip' => 'CUIDADO: Esta ação só deve ser realizada depois de alterar a opção associada nas Configurações do Teampass. Por favor, faça uma cópia da pasta \'upload\' antes de fazer qualquer ação, apenas em caso de ...',
     'encrypt' => 'Criptografar',
     'decrypt' => 'Descriptografar',
     'admin_ga_website_name' => 'Nome mostrado no Google Authenticator para o Teampass',
@@ -857,6 +857,19 @@ $LANG = array (
     'text_without_symbols' => 'Apenas números, letras e simbolos # & % * $ @ ( ) são aceitos. Nenhum outro carácter é possível.',
     'my_profile' => 'Meu Perfil',
     'at_suggestion' => 'Sugestão aceita',
-    'character_not_allowed' => 'Character is not allowed!',
+    'character_not_allowed' => 'Caractere não permitido! ',
+    'error_saltkey_length' => 'A SaltKey deve ter 16 caracteres! ',
+    'starting' => 'Iniciando ... ',
+    'total_number_of_items' => 'Número total de itens ',
+    'finalizing' => 'Finalizando ',
+    'treating_items' => 'Processando itens ',
+    'number_of_items_treated' => 'Número de itens processados ',
+    'error_sent_back' => 'Próximo erro ',
+    'full' => 'Cheio ',
+    'sequential' => 'Sequencial ',
+    'tree_load_strategy' => 'Estratégia de carregamento da árvore ',
+    'syslog_enable' => 'Habilitar log com Syslog',
+    'syslog_host' => 'Servidor Syslog',
+    'syslog_port' => 'Porta Syslog',
     '' => ''
 );
