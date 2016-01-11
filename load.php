@@ -238,8 +238,7 @@ $htmlHeaders .= '
                     $("#connection_error").html("' . $LANG['psk_required'] . '");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (data[0].value == "user_not_exists") {
-                    $("#connection_error").html("'.$LANG['user_not_exists'].'").show();
-                    console.log("'.$LANG['user_not_exists'].'");
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                     $("#connection_error").html(data + "'.$LANG['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
@@ -248,11 +247,11 @@ $htmlHeaders .= '
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {
-                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
                     $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
                 } else {
-                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
                 $("#ajax_loader_connexion").hide();
             },

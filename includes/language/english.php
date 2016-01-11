@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+	'error_bad_credentials' => 'Login credentials do not correspond!',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

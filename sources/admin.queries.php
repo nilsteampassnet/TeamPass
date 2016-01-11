@@ -1141,29 +1141,33 @@ switch ($_POST['type']) {
         $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
 
         // ga_website_name
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
-        $counter = DB::count();
-        if ($counter == 0) {
-            DB::insert(
-                prefix_table("misc"),
-                array(
-                    'type' => "admin",
-                    "intitule" => "ga_website_name",
-                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
-                )
-            );
-        } else {
-            DB::update(
-                prefix_table("misc"),
-                array(
-                    'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
-                ),
-                "type = %s AND intitule = %s",
-                "admin",
-                "ga_website_name"
-            );
-        }
-        $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+		if (!is_null($dataReceived['ga_website_name'])) {
+			DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
+			$counter = DB::count();
+			if ($counter == 0) {
+				DB::insert(
+					prefix_table("misc"),
+					array(
+						'type' => "admin",
+						"intitule" => "ga_website_name",
+						'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+					)
+				);
+			} else {
+				DB::update(
+					prefix_table("misc"),
+					array(
+						'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+					),
+					"type = %s AND intitule = %s",
+					"admin",
+					"ga_website_name"
+				);
+			}
+			$_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+		} else {
+			$_SESSION['settings']['ga_website_name'] = "";
+		}
 
         // send data
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
