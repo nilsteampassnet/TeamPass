@@ -14,7 +14,8 @@
  */
 global $LANG;
 $LANG = array (
-	'error_bad_credentials' => 'Login credentials do not correspond!',
+    'reload_page_after_user_account_creation' => 'Your account has been created. This page will be automatically reloaded in 3 seconds ...',
+    'error_bad_credentials' => 'Login credentials do not correspond!',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',

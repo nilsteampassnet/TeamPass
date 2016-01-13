@@ -85,16 +85,16 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
-        if ($("#selected_items").val() == "") return;		
+        if ($("#selected_items").val() == "") return;        
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
-			itemLog("item_password_shown");
+            itemLog("item_password_shown");
             $('#id_pw').text($('#hid_pw').val());
         } else {
             $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         }
     }
-	
+    
     $("#tabs-02").on(
         "change",
         "#pw1",
@@ -144,24 +144,24 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
 */
 function LoadTreeNode(node_id)
 {
-	
+    
 }
-	
+    
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
-	// prevent launch of similar query in case of doubleclick
-	var me = $(this);
+    // prevent launch of similar query in case of doubleclick
+    var me = $(this);
     if ( me.data('requestRunning') ) {
         return false;
     } else {
-		me.data('requestRunning', true);
-	}
-	
+        me.data('requestRunning', true);
+    }
+    
     $("#request_lastItem, #selected_items").val("");
-	
+    
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
         query_in_progress = groupe_id;
@@ -196,17 +196,17 @@ function ListerItems(groupe_id, restricted, start)
             function(data) {
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-					
-				// reset doubleclick prevention
-				me.data('requestRunning', false);
-				
-				// manage not allowed
-				if (data.error == "not_allowed") {
+                    
+                // reset doubleclick prevention
+                me.data('requestRunning', false);
+                
+                // manage not allowed
+                if (data.error == "not_allowed") {
                    $("#div_dialog_message_text").html(data.error_text);
                    $("#div_dialog_message").dialog("open");
-				   $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-				   $("#items_list_loader").hide();
-				   return false;
+                   $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
+                   $("#items_list_loader").hide();
+                   return false;
                }
                 
                 $("#pf_selected").val(data.IsPersonalFolder);
@@ -309,7 +309,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-					
+                    
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -377,17 +377,17 @@ function ListerItems(groupe_id, restricted, start)
                                 //move item
                                 $.post(
                                     "sources/items.queries.php",
-									{
-										type     : "move_item",
-										item_id : ui.draggable.attr("id"),
-										folder_id : $(this).attr("id").substring(4),
-										key        : "<?php echo $_SESSION['key'];?>"
-									},
+                                    {
+                                        type     : "move_item",
+                                        item_id : ui.draggable.attr("id"),
+                                        folder_id : $(this).attr("id").substring(4),
+                                        key        : "<?php echo $_SESSION['key'];?>"
+                                    },
                                     function(data) {
                                         //increment / decrement number of items in folders
                                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-										$("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
+                                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
                                         LoadingPage();
                                         displayMessage("<?php echo $LANG['alert_message_done'];?>");
                                     },
@@ -402,7 +402,7 @@ function ListerItems(groupe_id, restricted, start)
                 //Delete data
                 delete data;
             }
-		);
+        );
     }
 }
 
@@ -498,7 +498,7 @@ function RecupComplexite(val, edit, context)
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
             }
-			$("#div_loading").hide();
+            $("#div_loading").hide();
         }
    );
     $.ajaxSetup({async: true});
@@ -743,7 +743,7 @@ function EditerItem()
     else if ($("#edit_pw1").val() == "") erreur = "<?php echo addslashes($LANG['error_pw']);?>";
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
     else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']);?>";
-	else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
+    else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
     else{
         //Check pw complexity level
         if ((
@@ -953,24 +953,24 @@ function EditerItem()
                             $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
-						
+                        
 
                         //Prepare clipboard copies
                         if ($('#edit_pw1').val() != "") {
-							new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
-								text: function() {
-									return unsanitizeString($('#edit_pw1').val());
-								}
-							});
-							
+                            new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+                                text: function() {
+                                    return unsanitizeString($('#edit_pw1').val());
+                                }
+                            });
+                            
                             $("#button_quick_pw_copy").show();
                         }
                         if ($('#edit_item_login').val() != "") {
-							var clipboard_elogin = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
-								text: function() {
-									return unsanitizeString($('#edit_item_login').val());
-								}
-							});
+                            var clipboard_elogin = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
+                                text: function() {
+                                    return unsanitizeString($('#edit_item_login').val());
+                                }
+                            });
                             $("#button_quick_login_copy").show();
                         }
 
@@ -1007,7 +1007,7 @@ function EditerItem()
     if (erreur != "") {
         $('#edit_show_error').html(erreur).show();
         $("#div_formulaire_edition_item_info").hide().html("");
-		$("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
     }
 }
 
@@ -1340,59 +1340,59 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Prepare clipboard copies
                         if (data.pw != "") {
-							var clipboard_pw = new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
-								text: function() {
-									return unsanitizeString(data.pw);
-								}
-							});
-							clipboard_pw.on('success', function(e) {
-								$("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+                            var clipboard_pw = new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+                                text: function() {
+                                    return unsanitizeString(data.pw);
+                                }
+                            });
+                            clipboard_pw.on('success', function(e) {
+                                $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                                 itemLog("item_password_copied");
 
-								e.clearSelection();
-							});
-							
+                                e.clearSelection();
+                            });
+                            
                             $("#button_quick_pw_copy").show();
                         }
                         if (data.login != "") {
-							var clipboard_login = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
-								text: function() {
-									return unsanitizeString(data.login);
-								}
-							});
-							clipboard_login.on('success', function(e) {
-								$("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+                            var clipboard_login = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
+                                text: function() {
+                                    return unsanitizeString(data.login);
+                                }
+                            });
+                            clipboard_login.on('success', function(e) {
+                                $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
 
-								e.clearSelection();
-							});
+                                e.clearSelection();
+                            });
                             $("#button_quick_login_copy").show();
                         }
                         // #525
                         if (data.url != "") {
-							var clipboard_url = new Clipboard("#menu_button_copy_url", {
-								text: function() {
-									return unsanitizeString(data.url);
-								}
-							});
-							clipboard_url.on('success', function(e) {
-								$("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
+                            var clipboard_url = new Clipboard("#menu_button_copy_url", {
+                                text: function() {
+                                    return unsanitizeString(data.url);
+                                }
+                            });
+                            clipboard_url.on('success', function(e) {
+                                $("#message_box").html("<?php echo addslashes($LANG['url_copied_clipboard']);?>").show().fadeOut(1000);
 
-								e.clearSelection();
-							});
+                                e.clearSelection();
+                            });
                         }
-							
-						//prepare link to clipboard
-						var clipboard_link = new Clipboard("#menu_button_copy_link", {
-							text: function() {
-								return "<?php echo $_SESSION['settings']['cpassman_url'];?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
-							}
-						});
-						clipboard_link.on('success', function(e) {
-							$("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
+                            
+                        //prepare link to clipboard
+                        var clipboard_link = new Clipboard("#menu_button_copy_link", {
+                            text: function() {
+                                return "<?php echo $_SESSION['settings']['cpassman_url'];?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
+                            }
+                        });
+                        clipboard_link.on('success', function(e) {
+                            $("#message_box").html("<?php echo addslashes($LANG['url_copied']);?>").show().fadeOut(1000);
 
-							e.clearSelection();
-						});
-						
+                            e.clearSelection();
+                        });
+                        
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -1516,17 +1516,17 @@ function ActionOnQuickIcon(id, action)
     }
 
     //Send query
-	LoadingPage();
+    LoadingPage();
     $.post("sources/items.queries.php",
-		{
-			type    : 'action_on_quick_icon',
-			id      : id,
-			action  : action
-		},
-		function(data) {
-			LoadingPage();
-			displayMessage("<?php echo $LANG['alert_message_done'];?>");
-		}
+        {
+            type    : 'action_on_quick_icon',
+            id      : id,
+            action  : action
+        },
+        function(data) {
+            LoadingPage();
+            displayMessage("<?php echo $LANG['alert_message_done'];?>");
+        }
    );
 }
 
@@ -2139,8 +2139,8 @@ function refreshVisibleFolders()
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
-	
-	$.ajaxSetup({
+    
+    $.ajaxSetup({
         error: function(jqXHR, exception) {
             if (jqXHR.status === 0) {
                 console.log('Not connect.\nVerify Network.');
@@ -2248,19 +2248,19 @@ $(function() {
             "animation" : 0,
             "check_callback" : true,
             'data' : {
-				'url' : "./sources/tree.php",
+                'url' : "./sources/tree.php",
                 "dataType" : "json",
                 "async" : true,
-				'data' : function (node) {
-					return { 'id' : node.id.split('_')[1] };
-				}
+                'data' : function (node) {
+                    return { 'id' : node.id.split('_')[1] };
+                }
             },
             "strings" : {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."
             },
-			"error" : {
-				
-			}
+            "error" : {
+                
+            }
         },
         "plugins" : [
             "state", "search"
@@ -2421,7 +2421,7 @@ $(function() {
                             //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
                             ListerItems($('#copy_in_folder').val(),'', 0);
                             AfficherDetailsItem(data[1].new_id);
-							refreshTree($('#copy_in_folder').val());
+                            refreshTree($('#copy_in_folder').val());
                             $("#copy_in_folder").val("");
                             $("#div_copy_item_to_folder").dialog('close');
                         }
@@ -2488,7 +2488,7 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#edit_rep_show_error").html("").hide();
-				$("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                 $(this).dialog('close');
             }
         },
@@ -2659,7 +2659,7 @@ $(function() {
                     {
                         type    : "del_item",
                         id      : $("#id_item").val(),
-			label   : $("#hid_label").val(),
+            label   : $("#hid_label").val(),
                         key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
@@ -3270,7 +3270,7 @@ var showPwdContinuous = function(){
 }
 
 var showPwd = function(){
-	$("#visible_pw, #edit_visible_pw").toggle();
+    $("#visible_pw, #edit_visible_pw").toggle();
 }
 
 /*
@@ -3284,7 +3284,7 @@ function itemLog(log_case)
             type        : log_case,
             id_item     : $('#id_item').val(),
             folder_id   : $('#hid_cat').val(),
-	    hid_label   : $('#hid_label').val(),
+        hid_label   : $('#hid_label').val(),
             key         : "<?php echo $_SESSION['key'];?>"
         }
     );
@@ -3351,18 +3351,18 @@ function proceed_list_update()
         $("#items_list_loader").hide();
 
         // prepare clipboard items
-		var clipboard = new Clipboard('.mini_login');
-		clipboard.on('success', function(e) {
-			$("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
-			e.clearSelection();
-		});
-		
-		var clipboard = new Clipboard('.mini_pw');
-		clipboard.on('success', function(e) {
-			$("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
+        var clipboard = new Clipboard('.mini_login');
+        clipboard.on('success', function(e) {
+            $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
+            e.clearSelection();
+        });
+        
+        var clipboard = new Clipboard('.mini_pw');
+        clipboard.on('success', function(e) {
+            $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
             itemLog("item_password_copied");
-			e.clearSelection();
-		});
+            e.clearSelection();
+        });
 
         $(".tip").tooltipster();
         $(".mini_login, .mini_pw").css("cursor", "pointer");
@@ -3612,7 +3612,7 @@ function globalItemsSearch()
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
-				$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
+                $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
                 $("#full_items_list").html(data.items_html);
                 $("#items_list_loader").hide();
             }

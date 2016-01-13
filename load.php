@@ -220,7 +220,7 @@ $htmlHeaders .= '
             },
             function(data) {
                 if (data[0].value == randomstring) {
-                    $("#connection_error").hide();console.log("ici "+data[0].initial_url+" -- ");
+                    $("#connection_error").hide();
                     //redirection for admin is specific
                     if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
@@ -244,6 +244,14 @@ $htmlHeaders .= '
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
+                } else if (data[0].value == "new_ldap_account_created") {
+                    $("#connection_error").html("'.$LANG['reload_page_after_user_account_creation'].'").show().switchClass("ui-state-error", "ui-state-default");
+                    setTimeout(
+                        function (){
+                            window.location.href="index.php"
+                        },
+                        3000
+                    );
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {

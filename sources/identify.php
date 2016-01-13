@@ -79,7 +79,7 @@ if ($_POST['type'] === "identify_duo_user") {
     // not used any more (only development purpose)
     if ($_POST['key'] != $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
-        break;
+        return false;
     }
     // store some connection data in cookie
     setcookie(
@@ -398,6 +398,7 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
     if ($counter == 0) {
+        logEvents('user_not_exists', 'connection', "", stripslashes($username));
         echo '[{"value" : "user_not_exists", "text":""}]';
         exit;
     }
@@ -435,7 +436,7 @@ function identifyUser($sentData)
         );
     }
 
-    if ($proceedIdentification === true) {
+    if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {
         // User exists in the DB
         //$data = $db->fetchArray($row);
 
@@ -473,6 +474,7 @@ function identifyUser($sentData)
             $userPasswordVerified = true;
         } else {
             $userPasswordVerified = false;
+            logEvents('user_password_not_correct', 'connection', "", stripslashes($username));
         }
 
         if ($debugDuo == 1) {
@@ -769,7 +771,11 @@ function identifyUser($sentData)
             }
         }
     } else {
-        $return = "false";
+        if ($user_initial_creation_through_ldap == true) {
+            $return = "new_ldap_account_created";
+        } else {
+            $return = "false";
+        }
     }
 
     if ($debugDuo == 1) {
@@ -780,10 +786,8 @@ function identifyUser($sentData)
         );
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"',
-    isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
-    '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "'.$logError.'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+
     $_SESSION['initial_url'] = "";
     if ($_SESSION['settings']['cpassman_dir'] == "..") {
         $_SESSION['settings']['cpassman_dir'] = ".";
