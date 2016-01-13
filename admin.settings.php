@@ -6,7 +6,7 @@
  * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -295,8 +295,8 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode']) {
         updateSettings('ldap_mode', $_POST['ldap_mode']);
     }
-	// Update LDAP type
-	if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
+    // Update LDAP type
+    if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
         updateSettings('ldap_type', $_POST['ldap_type']);
     }
     // Update LDAP ldap_suffix
@@ -311,10 +311,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['ldap_domain_controler']) && @$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
-	// Update LDAP ldap_user_attribute
-	if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
-	    updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
-	}
+    // Update LDAP ldap_user_attribute
+    if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
+        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
+    }
     // Update LDAP ssl
     if (isset($_POST['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl']) {
         updateSettings('ldap_ssl', $_POST['ldap_ssl']);
@@ -327,10 +327,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
         updateSettings('ldap_elusers', $_POST['ldap_elusers']);
     }
-	// Update LDAP ldap_group
-	if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
-	    updateSettings('ldap_elusers', $_POST['ldap_elusers']);
-	}
+    // Update LDAP ldap_group
+    if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers']) {
+        updateSettings('ldap_elusers', $_POST['ldap_elusers']);
+    }
     // Update LDAP ldap_bind_dn
     if (isset($_POST['ldap_bind_dn']) && @$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
         updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
@@ -434,14 +434,14 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
         updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
     }
-	// Update settings_offline_mode
-	if (@$_SESSION['settings']['settings_offline_mode'] != $_POST['settings_offline_mode']) {
-		updateSettings('settings_offline_mode', $_POST['settings_offline_mode']);
-	}
-	// Update offline_key_level
-	if (@$_SESSION['settings']['offline_key_level'] != $_POST['offline_key_level']) {
-		updateSettings('offline_key_level', $_POST['offline_key_level']);
-	}
+    // Update settings_offline_mode
+    if (@$_SESSION['settings']['settings_offline_mode'] != $_POST['settings_offline_mode']) {
+        updateSettings('settings_offline_mode', $_POST['settings_offline_mode']);
+    }
+    // Update offline_key_level
+    if (@$_SESSION['settings']['offline_key_level'] != $_POST['offline_key_level']) {
+        updateSettings('offline_key_level', $_POST['offline_key_level']);
+    }
     // Update email_smtp_server
     if (@$_SESSION['settings']['email_smtp_server'] != $_POST['email_smtp_server']) {
         updateSettings('email_smtp_server', $_POST['email_smtp_server']);
@@ -549,10 +549,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder']) {
         updateSettings('can_create_root_folder', $_POST['can_create_root_folder']);
     }
-	// Update use_md5_password_as_salt
-	if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
-	    updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
-	}
+    // Update use_md5_password_as_salt
+    if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt']) {
+        updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt']);
+    }
     // Update syslog_enable
     if (@$_SESSION['settings']['syslog_enable'] != $_POST['syslog_enable']) {
         updateSettings('syslog_enable', $_POST['syslog_enable']);
@@ -825,7 +825,7 @@ echo '
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-			
+            
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones
@@ -1157,9 +1157,9 @@ echo '
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
                         <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but" />
-						&nbsp;<span id="changeMainSaltKey_message"></span>
+                        &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
-					<input type="hidden" id="changeMainSaltKey_itemsCount" />
+                    <input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
 // Correct passwords prefix
 echo '
@@ -1631,7 +1631,7 @@ echo '
                     <td>
                         <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
-	echo '<option value="'.$complex[0].'"', isset($_SESSION['settings']['offline_key_level']) && $_SESSION['settings']['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
+    echo '<option value="'.$complex[0].'"', isset($_SESSION['settings']['offline_key_level']) && $_SESSION['settings']['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
 }
 echo '
                         </select>
@@ -1701,9 +1701,9 @@ if (!extension_loaded('ldap')) {
                         <span class="setting_flag" id="flag_ldap_mode"><img src="includes/images/status', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '-busy', '.png" /></span>
                     </span>
                 </div>';
-	// Type
-	$ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
-	echo '
+    // Type
+    $ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
+    echo '
 <div style="margin-bottom:3px;">
     <label for="ldap_type">'.$LANG['settings_ldap_type'].'</label>
     <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
@@ -1738,7 +1738,7 @@ echo '
 
 // Subtree for posix / openldap
 if (isset($ldap_type) && $ldap_type == 'posix') {
-		echo '
+        echo '
                 <tr>
                     <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain_posix'].'</label></td>
                     <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" /></td>
@@ -1747,7 +1747,7 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 
 // LDAP username attribute
 if (isset($ldap_type) && $ldap_type == 'posix-search') {
-		echo '
+        echo '
                 <tr>
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
                         $LANG['settings_ldap_user_attribute_tip'].'" /></label></td>
