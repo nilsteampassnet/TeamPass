@@ -398,7 +398,7 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
     if ($counter == 0) {
-        logEvents('user_connection', 'user_not_exists', "", stripslashes($username));
+        logEvents('failed_auth', 'user_not_exists', "", stripslashes($username));
         echo '[{"value" : "user_not_exists", "text":""}]';
         exit;
     }
@@ -474,7 +474,7 @@ function identifyUser($sentData)
             $userPasswordVerified = true;
         } else {
             $userPasswordVerified = false;
-            logEvents('user_connection', 'user_password_not_correct', "", stripslashes($username));
+            logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
         }
 
         if ($debugDuo == 1) {

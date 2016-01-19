@@ -39,7 +39,7 @@ $link->set_charset($encoding);
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
-	$aSortTypes = array('ASC', 'DESC');
+    $aSortTypes = array('ASC', 'DESC');
 
     //init SQL variables
     $sWhere = $sOrder = $sLimit = "";
@@ -55,15 +55,15 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
     if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-    	for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-    		if (
-    			$_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-    			preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-    		) {
-    			$sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-    			.mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-    		}
-    	}
+        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+            if (
+                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+            ) {
+                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+            }
+        }
 
         $sOrder = substr_replace($sOrder, "", -2);
         if ($sOrder == "ORDER BY") {
@@ -581,8 +581,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         if ($sOrder == "ORDER BY") {
             $sOrder = "";
         } else {
-			$sOrder .= ", l.date ASC";
-		}
+            $sOrder .= ", l.date ASC";
+        }
     }
 
     /*
@@ -622,7 +622,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
-	//DB::debugMode(true);
+    //DB::debugMode(true);
     $iFilteredTotal = DB::count();
 
     /*
@@ -668,6 +668,112 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput = substr_replace($sOutput, "", -2);
     }
     $sOutput .= '] }';
+}
+
+/* FAILED AUTHENTICATIO? */
+
+elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
+    //Columns name
+    $aColumns = array('l.date', 'l.label', 'l.qui');
+
+    //init SQL variables
+    $sWhere = $sOrder = $sLimit = "";
+
+    /* BUILD QUERY */
+    //Paging
+    $sLimit = "";
+    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
+        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
+    }
+
+    //Ordering
+    if (isset($_GET['iSortCol_0'])) {
+        $sOrder = "ORDER BY  ";
+        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
+                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
+                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+            }
+        }
+
+        $sOrder = substr_replace($sOrder, "", -2);
+        if ($sOrder == "ORDER BY") {
+            $sOrder = "";
+        }
+    }
+
+    // Filtering
+    $sWhere = " WHERE l.type = 'failed_auth'";
+    if ($_GET['sSearch'] != "") {
+        $sWhere .= " AND (";
+        for ($i=0; $i<count($aColumns); $i++) {
+            $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
+        }
+        $sWhere = substr_replace($sWhere, "", -3).") ";
+    }
+
+    DB::query(
+        "SELECT l.date as auth_date, l.label as label, l.qui as who
+        FROM ".$pre."log_system as l".
+        $sWhere,
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+    $iTotal = DB::count();
+
+    $rows = DB::query(
+        "SELECT l.date as auth_date, l.label as label, l.qui as who
+        FROM ".$pre."log_system as l
+        $sWhere
+        $sOrder
+        $sLimit",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
+
+    $iFilteredTotal = DB::count();
+
+    // Output
+    if ($iTotal == "") {
+        $iTotal = 0;
+    }
+    $sOutput = '{';
+    $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
+    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
+    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
+    $sOutput .= '"aaData": ';
+
+    if ($iFilteredTotal > 0) {
+        $sOutput .= '[';
+    }
+    foreach ($rows as $record) {
+        $sOutput .= "[";
+
+        //col1
+        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['auth_date']).'", ';
+
+        //col2
+        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+
+        //col3
+        $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'"';
+
+        //Finish the line
+        $sOutput .= '],';
+    }
+
+    if (count($rows) > 0) {
+        $sOutput = substr_replace($sOutput, "", -1);
+        $sOutput .= '] }';
+    } else {
+        $sOutput .= '[] }';
+    }
 }
 
 
