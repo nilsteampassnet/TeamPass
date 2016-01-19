@@ -386,9 +386,9 @@ if (isset($_POST['newtitle'])) {
 
                     // add new folder id in SESSION
                     array_push($_SESSION['groupes_visibles'], $newId);
-					if ($isPersonal == 1) {
-						array_push($_SESSION['personal_folders'], $newId);
-					}
+                    if ($isPersonal == 1) {
+                        array_push($_SESSION['personal_folders'], $newId);
+                    }
 
                     // rebuild tree
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');

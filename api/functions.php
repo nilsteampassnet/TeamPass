@@ -251,7 +251,7 @@ function rest_get () {
         }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
-	
+    
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
@@ -629,7 +629,7 @@ function rest_get () {
                             $email
                         );
                         // update LOG
-			logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id);
+            logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id);
                         echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
@@ -665,15 +665,15 @@ function rest_get () {
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
-					
-					// load passwordLib library
-					$_SESSION['settings']['cpassman_dir'] = "..";
-					require_once '../sources/SplClassLoader.php';
-					$pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-					$pwdlib->register();
-					$pwdlib = new PasswordLib\PasswordLib();
-					
-					if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $user['pw']) === true) {
+                    
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+                    
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $user['pw']) === true) {
                         // define the restriction of "id_tree" of this user
                         $userDef = DB::queryOneColumn('folder_id',
                             "SELECT DISTINCT folder_id 
@@ -707,11 +707,11 @@ function rest_get () {
                                 if (
                                     empty($data['restricted_to']) || 
                                     ($data['restricted_to'] != "" && in_array($user['id'], explode(";", $data['restricted_to'])))
-                                ) {							
+                                ) {                            
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-									$json[$data['id']]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $json[$data['id']]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
                                 }
                             }
                             // prepare answer. If no access then inform
@@ -728,6 +728,127 @@ function rest_get () {
                     }
                 } else {
                     rest_error ('AUTH_NO_URL');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
+        } elseif ($GLOBALS['request'][0] == "set") {
+            /*
+             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>?apikey=<VALID API KEY>
+             * Example: https://127.0.0.1/teampass/api/index.php/auth/myLogin/myPassword/USER1/test/76?apikey=chahthait5Aidood6johh6Avufieb6ohpaixain
+             *
+             * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
+             */
+            // get user credentials
+            if(isset($GLOBALS['request'][4]) && isset($GLOBALS['request'][5])) {
+                // get url
+                if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                    // is user granted?
+                    $user = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
+                        $GLOBALS['request'][4]
+                    );
+
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    // is user identified?
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][5], $user['pw']) === true) {
+                        // does the personal folder of this user exists?
+                        DB::queryFirstRow(
+                            "SELECT `id`
+                            FROM " . $pre . "nested_tree
+                            WHERE title = %s AND personal_folder = 1",
+                            $user['id']
+                        );
+                        if (DB::count() > 0) {
+                            // check if "teampass-connect" folder exists
+                            // if not create it
+                            $folder = DB::queryFirstRow(
+                                "SELECT `id`
+                                FROM " . $pre . "nested_tree
+                                WHERE title = %s",
+                                "teampass-connect"
+                            );
+                            if (DB::count() == 0) {
+                                DB::insert(
+                                    prefix_table("nested_tree"),
+                                    array(
+                                        'parent_id' => '0',
+                                        'title' => "teampass-connect"
+                                    )
+                                );
+                                $tpc_folder_id = DB::insertId();
+
+                                //Add complexity
+                                DB::insert(
+                                    prefix_table("misc"),
+                                    array(
+                                        'type' => 'complex',
+                                        'intitule' => $tpc_folder_id,
+                                        'valeur' => '0'
+                                    )
+                                );
+
+                                // rebuild tree
+                                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                                $tree->rebuild();
+                            } else {
+                                $tpc_folder_id = $folder['id'];
+                            }
+
+                            // encrypt password
+                            $encrypt = cryption($GLOBALS['request'][2], SALT, "", "encrypt");
+
+                            // add new item
+                            DB::insert(
+                                prefix_table("items"),
+                                array(
+                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3].'%'),
+                                    'description' => "Imported with Teampass-Connect",
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => $encrypt['iv'],
+                                    'email' => "",
+                                    'url' => urldecode($GLOBALS['request'][3].'%'),
+                                    'id_tree' => $tpc_folder_id,
+                                    'login' => $GLOBALS['request'][1],
+                                    'inactif' => '0',
+                                    'restricted_to' => $user['id'],
+                                    'perso' => '0',
+                                    'anyone_can_modify' => '0',
+                                    'complexity_level' => '0'
+                                )
+                            );
+                            $newID = DB::insertId();
+
+                            // log
+                            logItems(
+                                $newID,
+                                "Credentials for ".urldecode($GLOBALS['request'][3].'%'),
+                                $user['id'],
+                                'at_creation',
+                                $GLOBALS['request'][1]
+                            );
+
+                            $json['status'] = "ok";
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('NO_PF_EXIST_FOR_USER');
+                        }
+                    } else {
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else {
+                    rest_error ('SET_NO_DATA');
                 }
             } else {
                 rest_error ('AUTH_NO_IDENTIFIER');
@@ -750,6 +871,7 @@ function rest_put() {
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
+
     }
 }
 
@@ -829,6 +951,12 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'ITEMMISSINGDATA':
             $message = Array('err' => 'Label or Password or Folder ID is missing');
+            break;
+        case 'SET_NO_DATA':
+            $message = Array('err' => 'No data to be stored');
+            break;
+        case 'NO_PF_EXIST_FOR_USER':
+            $message = Array('err' => 'No Personal Folder exists for this user');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
