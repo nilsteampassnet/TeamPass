@@ -88,8 +88,10 @@ echo '
    <ul class="menu" style="">
       <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
          <ul class="menu_250" style="text-align:left;">
-            <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>
-            <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>
+            <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
+            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) echo '
+            <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
+            echo '
             <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
             <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
          </ul>
@@ -100,8 +102,11 @@ echo '
     <div style="text-align:center;margin:5px;padding:3px;display:none;" id="profile_info_box" class="ui-widget ui-state-highlight ui-corner-all"></div>
     <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
     <div id="upload_container_photo" style="display:none;"></div>
-    <div id="filelist_photo" style="display:none;"></div>
+    <div id="filelist_photo" style="display:none;"></div>';
 
+// if DUOSecurity enabled then changing PWD is not allowed
+if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
+   echo '
     <div id="div_change_password" style="display:none;">
         <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
         <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
@@ -110,15 +115,9 @@ echo '
         <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
         <input type="password" size="15" name="new_pw2" id="new_pw2" />
         <div id="pw_strength" style="margin:10px 0 10px 120px;text-align:center;"></div>
-        <input type="hidden" id="pw_strength_value" />';
-      
-// if DUOSecurity enabled then changing PWD is not allowed
-if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
-   echo '
+        <input type="hidden" id="pw_strength_value" />
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-        <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>';
-
-echo '
+        <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>
     </div>';
 
 //change the saltkey dialogbox

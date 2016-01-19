@@ -611,45 +611,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 }
 
 /**
- * logEvents()
- *
- * permits to log events into DB
- */
-function logEvents($type, $label, $who, $login="", $field_1 = NULL)
-{
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
-    // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
-
-    DB::insert(
-        prefix_table("log_system"),
-        array(
-            'type' => $type,
-            'date' => time(),
-            'label' => $label,
-            'qui' => $who,
-        'field_1' => $field_1
-           )
-    );
-    if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-        if ($type == "user_mngt"){
-            send_syslog("The User " .$login. " perform the acction off " .$label. " to the user " .$field_1. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-        } else {
-            send_syslog("The User " .$login. " perform the acction off " .$label. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-        }
-    }
-}
-
-/**
  * updateCacheTable()
  *
  * Update the CACHE table
@@ -1118,6 +1079,50 @@ function send_syslog($message, $component = "teampass", $program = "php", $host 
     socket_close($sock);
 }
 
+
+
+/**
+ * logEvents()
+ *
+ * permits to log events into DB
+ */
+function logEvents($type, $label, $who, $login="", $field_1 = NULL)
+{
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+
+    if (empty($who)) $who = get_client_ip_server();
+
+    // include librairies & connect to DB
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    DB::insert(
+        prefix_table("log_system"),
+        array(
+            'type' => $type,
+            'date' => time(),
+            'label' => $label,
+            'qui' => $who,
+            'field_1' => $field_1
+        )
+    );
+    if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+        if ($type == "user_mngt"){
+            send_syslog("The User " .$login. " perform the acction off " .$label. " to the user " .$field_1. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        } else {
+            send_syslog("The User " .$login. " perform the acction off " .$label. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        }
+    }
+}
+
 function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
@@ -1133,17 +1138,41 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
     DB::insert(
-           prefix_table("log_items"),
-               array(
-                     'id_item' => $id,
-                     'date' => time(),
-                     'id_user' => $id_user,
-                     'action' => $action,
-             'raison' => $raison,
-             'raison_iv' => $raison_iv
-                     )
-               );
+        prefix_table(
+            "log_items"),
+            array(
+                'id_item' => $id,
+                'date' => time(),
+                'id_user' => $id_user,
+                'action' => $action,
+                'raison' => $raison,
+                'raison_iv' => $raison_iv
+            )
+        );
         if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
                 send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
         }
+}
+
+/*
+* Function to get the client ip address
+ */
+function get_client_ip_server() {
+    $ipaddress = '';
+    if ($_SERVER['HTTP_CLIENT_IP'])
+        $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+    else if($_SERVER['HTTP_X_FORWARDED_FOR'])
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    else if($_SERVER['HTTP_X_FORWARDED'])
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+    else if($_SERVER['HTTP_FORWARDED_FOR'])
+        $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+    else if($_SERVER['HTTP_FORWARDED'])
+        $ipaddress = $_SERVER['HTTP_FORWARDED'];
+    else if($_SERVER['REMOTE_ADDR'])
+        $ipaddress = $_SERVER['REMOTE_ADDR'];
+    else
+        $ipaddress = 'UNKNOWN';
+
+    return $ipaddress;
 }
