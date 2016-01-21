@@ -115,7 +115,7 @@ $iFilteredTotal = DB::count();
 $sOutput = '{';
 $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
 
 foreach ($rows as $reccord) {

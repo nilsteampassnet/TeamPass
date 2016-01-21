@@ -6,7 +6,7 @@
  * @version       2.1.24
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -253,7 +253,7 @@ if (!empty($_POST['type'])) {
                     $dataReceived['email']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+        logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
                 echo '[ { "error" : "no" } ]';
             } else {
                 echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
@@ -307,7 +307,7 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-		logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+        logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             } else {
                 // lock user in database
                 DB::update(
@@ -320,7 +320,7 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+        logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             }
             echo '[ { "error" : "no" } ]';
             break;
@@ -349,8 +349,8 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
-        	echo '[{"error" : "no"}]';
+        logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            echo '[{"error" : "no"}]';
             break;
         /**
          * UPDATE CAN CREATE ROOT FOLDER RIGHT
@@ -385,14 +385,14 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'admin' => $_POST['value'],
-					'gestionnaire' => $_POST['value'] == 1 ? "0" : "1",
-					'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "1",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
                    ),
                 "id = %i",
                 $_POST['id']
             );
-			
-			echo prepareExchangedData(array("error" => ""), "encode");
+            
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE MANAGER RIGHTS FOR USER
@@ -408,12 +408,12 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'gestionnaire' => $_POST['value'],
-					'admin' => $_POST['value'] == 1 ? "0" : "1",
-					'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'admin' => $_POST['value'] == 1 ? "0" : "1",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
                    ),
                 "id = ".$_POST['id']
             );
-			echo prepareExchangedData(array("error" => ""), "encode");
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE READ ONLY RIGHTS FOR USER
@@ -429,13 +429,13 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'read_only' => $_POST['value'],
-					'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
-					'admin' => $_POST['value'] == 1 ? "0" : "0"
+                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
+                    'admin' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = %i",
                 $_POST['id']
             );
-			echo prepareExchangedData(array("error" => ""), "encode");
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE PERSONNAL FOLDER FOR USER
@@ -705,7 +705,7 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']); 
+        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']); 
             break;
         /*
         * Check the domain
@@ -824,17 +824,17 @@ if (!empty($_POST['type'])) {
                         // extract action done
                         $label = "";
                         if ($tmp[0] == "at_user_initial_pwd_changed") {
-                        	$label = $LANG['log_user_initial_pwd_changed'];
+                            $label = $LANG['log_user_initial_pwd_changed'];
                         } else if ($tmp[0] == "at_user_email_changed") {
-                        	$label = $LANG['log_user_email_changed'].$tmp[1];
+                            $label = $LANG['log_user_email_changed'].$tmp[1];
                         } else if ($tmp[0] == "at_user_added") {
-                        	$label = $LANG['log_user_created'];
+                            $label = $LANG['log_user_created'];
                         } else if ($tmp[0] == "at_user_locked") {
-                        	$label = $LANG['log_user_locked'];
+                            $label = $LANG['log_user_locked'];
                         } else if ($tmp[0] == "at_user_unlocked") {
-                        	$label = $LANG['log_user_unlocked'];
+                            $label = $LANG['log_user_unlocked'];
                         } else if ($tmp[0] == "at_user_pwd_changed") {
-                        	$label = $LANG['log_user_pwd_changed'];
+                            $label = $LANG['log_user_pwd_changed'];
                         }
                         // prepare log
                         $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
@@ -982,8 +982,8 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-			
-			$arrData = array();
+            
+            $arrData = array();
             
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -1068,26 +1068,26 @@ if (!empty($_POST['type'])) {
             
             // get USER STATUS
             if ($rowUser['disabled'] == 1) {
-                $arrData['info'] = $LANG['user_info_locked'].'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.$LANG['user_info_unlock_question'].'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk"  name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.$LANG['user_info_delete_question']."</label>";
+                $arrData['info'] = $LANG['user_info_locked'].'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.$LANG['user_info_unlock_question'].'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk" name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.$LANG['user_info_delete_question']."</label>";
             } else {
                 $arrData['info'] = $LANG['user_info_active'].'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.$LANG['user_info_lock_question'];
             }
             
-			$arrData['error'] = "no";
-			$arrData['log'] = $rowUser['login'];
-			$arrData['name'] = $rowUser['name'];
-			$arrData['lastname'] = $rowUser['lastname'];
-			$arrData['email'] = $rowUser['email'];
-			$arrData['function'] = $functionsList;
-			$arrData['managedby'] = $managedBy;
-			$arrData['foldersForbid'] = $forbiddenFolders;
-			$arrData['foldersAllow'] = $allowedFolders;
+            $arrData['error'] = "no";
+            $arrData['log'] = $rowUser['login'];
+            $arrData['name'] = $rowUser['name'];
+            $arrData['lastname'] = $rowUser['lastname'];
+            $arrData['email'] = $rowUser['email'];
+            $arrData['function'] = $functionsList;
+            $arrData['managedby'] = $managedBy;
+            $arrData['foldersForbid'] = $forbiddenFolders;
+            $arrData['foldersAllow'] = $allowedFolders;
 
             //echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "email" : "'.addslashes($rowUser['email']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" , "info" : "'.addslashes($info).'" } ]';
-			
-			$return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            
+            $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             echo $return_values;
-			
+            
             break;
 
         /**
@@ -1151,7 +1151,7 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-		logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+        logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             }
             else {
                         
@@ -1193,12 +1193,12 @@ if (!empty($_POST['type'])) {
                 
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
-		    logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
                 }
                 
                 if ($oldData['disabled'] != $accountDisabled) {
                     // update LOG
-		    logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+            logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 }
                 
     /*
@@ -1212,7 +1212,7 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 */
             }
             
@@ -1255,10 +1255,10 @@ elseif (!empty($_POST['newValue'])) {
     );
     // update LOG
     logEvents('user_mngt', 'at_user_new_'.$value[0].':'.$value[1], $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-	// refresh SESSION if requested
-	if ($value[0] == "treeloadstrategy") {
-		$_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
-	}
+    // refresh SESSION if requested
+    if ($value[0] == "treeloadstrategy") {
+        $_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
+    }
     // Display info
     echo $_POST['newValue'];
 }

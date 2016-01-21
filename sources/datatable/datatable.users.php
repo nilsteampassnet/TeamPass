@@ -134,7 +134,6 @@ $rows = DB::query(
 $iFilteredTotal = 0;
 
 // output
-
 if (DB::count() > 0) {
     $sOutput = '[';
 } else {
@@ -302,4 +301,4 @@ if (count($rows) > 0) {
 
 // prepare complete output
 
-echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iFilteredTotal.', "data": '.$sOutput;
+echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iTotal.', "data": '.$sOutput;

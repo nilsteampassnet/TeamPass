@@ -69,6 +69,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         -->';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles.css">
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css">
+        <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '

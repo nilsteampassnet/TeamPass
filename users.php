@@ -329,7 +329,7 @@ echo '
         <br />
     </div>
 
-    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_deletion_warning1">'.$LANG['user_info_delete_warning'].'</div>
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;position: absolute; bottom: 0;" class="ui-state-error ui-corner-all" id="user_edit_warning_bottom"></div>
     <input type="hidden" id="user_edit_id" />
     </div>
 </div>';
