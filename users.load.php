@@ -312,6 +312,7 @@ $(function() {
                             key    : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
+                            $("#add_new_user_info").hide().html("");
                             if (data[0].error == "no") {
                                 // clear form fields
                                 $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
@@ -360,6 +361,7 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
+                console.log("coucou");
             }
         }
     });
@@ -628,6 +630,7 @@ $(function() {
                 "json"
             );
 
+            $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -686,7 +689,7 @@ $(function() {
                 );
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
-                $("#user_edit_deletion_warning").hide();
+                $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
                 $(this).dialog("close");
             }
         }
@@ -705,11 +708,11 @@ function confirmDeletion()
             $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete'];?>");
         } else {
             $("#user_edit_error").hide().html("");
-            $(".ui-dialog-buttonpane").append("<span id='user_edit_deletion_warning'><?php echo $LANG['user_info_delete_warning'];?></span>");
+            $("#user_edit_warning_bottom").show().html("<?php echo $LANG['user_info_delete_warning'];?>");
         }
     } else {
         $("#confirm_deletion").val("");
-        $("#user_edit_error").hide().html("");
+        $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
         $("#user_edit_deletion_warning").remove();
     }
 }

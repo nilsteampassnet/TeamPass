@@ -381,6 +381,29 @@ function changeMainSaltKey(start)
 
 // Init
 $(function() {
+    $('.toggle').toggles({
+        drag: true, // allow dragging the toggle between positions
+        click: true, // allow clicking on the toggle
+        text: {
+            on: '<?php echo $LANG['yes'];?>', // text for the ON position
+            off: '<?php echo $LANG['no'];?>' // and off
+        },
+        on: true, // is the toggle ON on init
+        animate: 250, // animation time (ms)
+        easing: 'swing', // animation transition easing function
+        width: 50, // width used if not set in css
+        height: 20, // height if not set in css
+        type: 'compact' // if this is set to 'select' then the select style toggle will be used
+    });
+    $('.toggle').on('toggle', function(e, active) {
+        if (active) {
+            $("#"+e.target.id+"_input").val(1);
+        } else {
+            $("#"+e.target.id+"_input").val(0);
+        }
+    });
+
+
 	$("input[type=button], #save_button, .button").button();
 	// spinner
     $("#upload_imageresize_quality").spinner({
@@ -643,20 +666,20 @@ $(function() {
     // -end
 
     //Enable/disable option
-    $("input[name='restricted_to']").bind("click", function() {
-        if ($(this).val()== 1) {
+    $("#restricted_to").bind("click", function() {
+        if ($("#restricted_to_input").val()== 1) {
             $("#tr_option_restricted_to_roles").show();
         } else {
             $("#tr_option_restricted_to_roles").hide();
-            $("input[name=restricted_to_roles]").val(["0"]).button("refresh");
+            $("#tr_option_restricted_to_roles_input").val("0");
         }
     });
-    $("input[name='anyone_can_modify']").bind("click", function() {
-        if ($(this).val()== 1) {
+    $("#anyone_can_modify").bind("click", function() {
+        if ($("#anyone_can_modify_input").val()== 1) {
             $("#tr_option_anyone_can_modify_bydefault").show();
         } else {
             $("#tr_option_anyone_can_modify_bydefault").hide();
-            $("input[name=anyone_can_modify_bydefault]").val(["0"]).button("refresh");
+            $("#anyone_can_modify_bydefault_input").val("0");
         }
     });
 
