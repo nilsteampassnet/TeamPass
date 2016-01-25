@@ -411,6 +411,18 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             }
         }
 
+        // get complete list of ROLES
+        $tmp = explode(";", $_SESSION['fonction_id']);
+        $rows = DB::query(
+            "SELECT * FROM ".prefix_table("roles_title")."
+            ORDER BY title ASC");
+        foreach ($rows as $record) {
+            if (!in_array($record['id'], $tmp)) {
+                array_push($tmp, $record['id']);
+            }
+        }
+        $_SESSION['fonction_id'] = implode(";", $tmp);
+
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
@@ -901,7 +913,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     }
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == 'true' ? true : false; // turn on SMTP authentication
+    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
     $mail->Username = $_SESSION['settings']['email_auth_username']; // SMTP username
     $mail->Password = $_SESSION['settings']['email_auth_pwd']; // SMTP password
     $mail->From = $_SESSION['settings']['email_from'];
@@ -914,7 +926,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->AltBody = $textMailAlt;
     // send email
     if (!$mail->send()) {
-        return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
+        return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
     } else {
         return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
     }

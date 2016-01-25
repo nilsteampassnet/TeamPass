@@ -1082,8 +1082,6 @@ if (!empty($_POST['type'])) {
             $arrData['managedby'] = $managedBy;
             $arrData['foldersForbid'] = $forbiddenFolders;
             $arrData['foldersAllow'] = $allowedFolders;
-
-            //echo '[ { "error" : "no" , "log" : "'.addslashes($rowUser['login']).'" , "name" : "'.addslashes($rowUser['name']).'" , "lastname" : "'.addslashes($rowUser['lastname']).'" , "email" : "'.addslashes($rowUser['email']).'" , "function" : "'.addslashes($functionsList).'" , "managedby" : "'.addslashes($managedBy).'" , "foldersForbid" : "'.addslashes($forbiddenFolders).'" , "foldersAllow" : "'.addslashes($allowedFolders).'" , "info" : "'.addslashes($info).'" } ]';
             
             $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             echo $return_values;
