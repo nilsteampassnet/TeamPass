@@ -35,7 +35,7 @@ if (isset($_POST['type']) && $_POST['type'] == "send_pw_by_email") {
     // continue
 } elseif (
     (isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
-	// continue
+    // continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -74,7 +74,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSI
 switch ($_POST['type']) {
     case "change_pw":
         // decrypt and retreive data in JSON format
-    	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
         // load passwordLib library
         $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -155,8 +155,8 @@ switch ($_POST['type']) {
                     $_SESSION['user_id']
                 );
                 // update LOG
-		logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-		echo '[ { "error" : "none" } ]';
+        logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+        echo '[ { "error" : "none" } ]';
                 break;
             }
             // ADMIN has decided to change the USER's PW
@@ -188,7 +188,7 @@ switch ($_POST['type']) {
                 $dataReceived['user_id']
             );
             // update LOG
-	    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+        logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
             //Send email to user
             $row = DB::queryFirstRow(
                 "SELECT email FROM ".prefix_table("users")."
@@ -221,7 +221,7 @@ switch ($_POST['type']) {
             );
             $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
             // update LOG
-	    logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+        logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
             echo '[ { "error" : "none" } ]';
             break;
         } else {
@@ -233,68 +233,68 @@ switch ($_POST['type']) {
     * This will generate the QR Google Authenticator
     */
     case "ga_generate_qr":
-    	// Check if user exists
-    	if (!isset($_POST['id']) || empty($_POST['id'])) {
-    		// decrypt and retreive data in JSON format
-    		$dataReceived = prepareExchangedData($_POST['data'], "decode");
-    		// Prepare variables
-    		$login = htmlspecialchars_decode($dataReceived['login']);
+        // Check if user exists
+        if (!isset($_POST['id']) || empty($_POST['id'])) {
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            // Prepare variables
+            $login = htmlspecialchars_decode($dataReceived['login']);
 
-    		$data = DB::queryfirstrow(
-    			"SELECT id, email
-	    		FROM ".prefix_table("users")."
-	    		WHERE login = %s",
-    			$login
-    		);
-    	} else {
-	    	$data = DB::queryfirstrow(
-	    		"SELECT login, email
-	    		FROM ".prefix_table("users")."
-	    		WHERE id = %i",
-	            $_POST['id']
-	    	);
-    	}
-    	$counter = DB::count();
-    	if ($counter == 0) {
-    		// not a registered user !
-    		echo '[{"error" : "no_user"}]';
-    	} else {
-    		if (empty($data['email'])) {
-    			echo '[{"error" : "no_email"}]';
-    		} else {
-    			// generate new GA user code
-    			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-    			include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
-    			$g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
-    			$gaSecretKey = $g->generateSecret();
+            $data = DB::queryfirstrow(
+                "SELECT id, email
+                FROM ".prefix_table("users")."
+                WHERE login = %s",
+                $login
+            );
+        } else {
+            $data = DB::queryfirstrow(
+                "SELECT login, email
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+        }
+        $counter = DB::count();
+        if ($counter == 0) {
+            // not a registered user !
+            echo '[{"error" : "no_user"}]';
+        } else {
+            if (empty($data['email'])) {
+                echo '[{"error" : "no_email"}]';
+            } else {
+                // generate new GA user code
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
+                $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+                $gaSecretKey = $g->generateSecret();
 
-    			// save the code
-    			DB::update(
-	    			prefix_table("users"),
-	    			array(
-	    			    'ga' => $gaSecretKey
-	    			   ),
-	    			"id = %i",
-                    $_POST['id']
-    			);
+                // save the code
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'ga' => $gaSecretKey
+                       ),
+                    "id = %i",
+                    $data['id']
+                );
 
-    			// generate QR url
-    			$gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
+                // generate QR url
+                $gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
 
-    			// send mail?
-    			if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
-    				sendEmail (
-    					$LANG['email_ga_subject'],
-    					str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
-    					$data['email']
-					);
-    			}
+                // send mail?
+                if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
+                    sendEmail (
+                        $LANG['email_ga_subject'],
+                        str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
+                        $data['email']
+                    );
+                }
 
-    			// send back
-    			echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
-    		}
-    	}
-    	break;
+                // send back
+                echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
+            }
+        }
+        break;
     /**
      * Increase the session time of User
      */
@@ -346,12 +346,12 @@ switch ($_POST['type']) {
                 "SELECT login,pw FROM ".prefix_table("users")." WHERE email = %s",
                 mysqli_escape_string($link, stripslashes($_POST['email']))
             );
-        	$textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
-        	    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-        	    "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
-        	    "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
-        	$textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
-        	    $LANG['index_password']." : ".md5($data['pw']);
+            $textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
+                $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+                "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+                "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
+            $textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
+                $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
             $data = DB::query(
@@ -517,7 +517,7 @@ switch ($_POST['type']) {
             break;
         }
         //decrypt and retreive data in JSON format
-		$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+        $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
@@ -559,28 +559,28 @@ switch ($_POST['type']) {
         );
 
         echo prepareExchangedData(
-        	array(
-	        	"list" => $list,
-	        	"error" => "no",
+            array(
+                "list" => $list,
+                "error" => "no",
                 "nb_total" => $nb
-        	),
-        	"encode"
+            ),
+            "encode"
         );
         break;
     /**
      * Reset the personal saltkey
      */
     case "reset_personal_saltkey":
-		if ($_POST['key'] != $_SESSION['key']) {
+        if ($_POST['key'] != $_SESSION['key']) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
         //decrypt and retreive data in JSON format
-		$dataReceived = prepareExchangedData($_POST['data'], "decode");
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
-        		
+                
         if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
             // delete all previous items of this user
             $rows = DB::query(
@@ -627,7 +627,7 @@ switch ($_POST['type']) {
                 $_SESSION['user_id']
             );
             $_SESSION['user_language'] = $language;
-        	echo "done";
+            echo "done";
         } else {
             $_SESSION['user_language'] = $language;
             echo "done";
@@ -711,48 +711,48 @@ switch ($_POST['type']) {
     case "store_error":
         if (!empty($_SESSION['user_id'])) {
             // update DB
-	    logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
+        logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
         }
         break;
     /**
      * Generate a password generic
      */
     case "generate_a_password":
-    	if ($_POST['size'] > $_SESSION['settings']['pwd_maximum_length']) {
-    		echo prepareExchangedData(
-	    		array(
-		    		"error_msg" => "Password length is too long!",
-		    		"error" => "true"
-	    		),
-	    		"encode"
-    		);
-    		break;
-    	}
+        if ($_POST['size'] > $_SESSION['settings']['pwd_maximum_length']) {
+            echo prepareExchangedData(
+                array(
+                    "error_msg" => "Password length is too long!",
+                    "error" => "true"
+                ),
+                "encode"
+            );
+            break;
+        }
 
         //Load PWGEN
         $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
         $pwgen->register();
         $pwgen = new Encryption\PwGen\pwgen();
 
-    	$pwgen->setLength($_POST['size']);
-    	if (isset($_POST['secure']) && $_POST['secure'] == "true") {
-    		$pwgen->setSecure(true);
-    		$pwgen->setSymbols(true);
-    		$pwgen->setCapitalize(true);
-    		$pwgen->setNumerals(true);
-    	} else {
-    		$pwgen->setSecure(($_POST['secure'] == "true")? true : false);
-    		$pwgen->setNumerals(($_POST['numerals'] == "true")? true : false);
-    		$pwgen->setCapitalize(($_POST['capitalize'] == "true")? true : false);
-    		$pwgen->setSymbols(($_POST['symbols'] == "true")? true : false);
-    	}
+        $pwgen->setLength($_POST['size']);
+        if (isset($_POST['secure']) && $_POST['secure'] == "true") {
+            $pwgen->setSecure(true);
+            $pwgen->setSymbols(true);
+            $pwgen->setCapitalize(true);
+            $pwgen->setNumerals(true);
+        } else {
+            $pwgen->setSecure(($_POST['secure'] == "true")? true : false);
+            $pwgen->setNumerals(($_POST['numerals'] == "true")? true : false);
+            $pwgen->setCapitalize(($_POST['capitalize'] == "true")? true : false);
+            $pwgen->setSymbols(($_POST['symbols'] == "true")? true : false);
+        }
 
         echo prepareExchangedData(
-        	array(
-	        	"key" => $pwgen->generate(),
-	        	"error" => ""
-        	),
-        	"encode"
+            array(
+                "key" => $pwgen->generate(),
+                "error" => ""
+            ),
+            "encode"
         );
         break;
     /**
@@ -822,8 +822,8 @@ switch ($_POST['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
-		
-		// get list of last items seen
+        
+        // get list of last items seen
         $x = 1;
         $arrTmp = array();
         $rows = DB::query(
@@ -846,36 +846,36 @@ switch ($_POST['type']) {
                 }
             }
         }
-		
-		// get wainting suggestions
-		$nb_suggestions_waiting = 0;
-		if (
-			isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
-			&& ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
-		) {
-			$rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
-			$nb_suggestions_waiting = DB::count();
-		}
-		
-		echo json_encode(
-			array(
-				"error" => "", 
-				"existing_suggestions" => $nb_suggestions_waiting, 
-				"text" => ($return)
-			),
-			JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
-		);
+        
+        // get wainting suggestions
+        $nb_suggestions_waiting = 0;
+        if (
+            isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+            && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
+        ) {
+            $rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
+            $nb_suggestions_waiting = DB::count();
+        }
+        
+        echo json_encode(
+            array(
+                "error" => "", 
+                "existing_suggestions" => $nb_suggestions_waiting, 
+                "text" => ($return)
+            ),
+            JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+        );
         break;
     /**
      * Generates a KEY with CRYPT
      */
-    case "generate_new_key":    	
-    	// load passwordLib library
+    case "generate_new_key":        
+        // load passwordLib library
         $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
         $pwdlib->register();
         $pwdlib = new PasswordLib\PasswordLib();
         // generate key
         $key = $pwdlib->getRandomToken($_POST['size']);
-    	echo '[{"key" : "'.$key.'"}]';
-    	break;
+        echo '[{"key" : "'.$key.'"}]';
+        break;
 }
