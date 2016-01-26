@@ -1712,6 +1712,18 @@ require_once \"".$skFile."\";
                 }
                 
                 // update CSRFP TOKEN
+                $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
+                $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
+                if (file_exists($csrfp_file)) {
+                    if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        break;
+                    } else {
+                        $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
+                    }
+                }
+                unlink($csrfp_file);    // delete existing csrfp.config file
+                copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
                 $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js"', $newdata);
