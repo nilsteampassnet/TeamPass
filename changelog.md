@@ -1,6 +1,45 @@
 Last changes
 2.1.25
-
+ #1169 sending Google Authenticator code through index page
+ #1160 hiding user password change option if DUOSecurity
+ #1152 Error while saving settings
+ #1149 log failed user authentication
+ #1148 Answer from Server cannot be parsed!
+ #1147 Mask/Display password not logged
+ #1146 Roles on separate pages
+ #1144 Login failure gives odd error
+ #1143 import csv double quotes issue
+ #1141 Syslog
+ #1140 Security fix for Multiple vulnerabilities
+ #1135 DataTables warning : table id=t_users - Invalid JSON Response
+ #1128 Requested Json Parse Failed
+ #1123 No Item to show in a folder after upgrading
+ #1122 When deleting an item, confirmation modal doesn't show the name of the item to be deleted
+ #1120 Not connect.n Verify Network
+ #1114 Cannot Delete Favorites Due to "undefined function prefix_table() "
+ #1108 Table teampass_keys missing!
+ #1103 omplexity Matches new password but still claims otherwise
+ #1102 Users cannot create folders
+ #1096 One time link view problem
+ #1095 Move Personal folder to Group Folder
+ #1086 "Error Encryption of the Password" after update
+ #1078 Send events to syslog
+ Fix for changing SaltKey in admin page
+ Fix for complete list of Roles in Admin Roles page
+ Fix for Users and Items currently edited list that were not proposing "next" button
+ Fix for label “By clicking the save button, you will delete ….” persistent
+ Fix for list loaded twice if double click in Tree folder
+ Fix for search result not displayed if previous folder was empty
+ Fix for possible sql injection via LIMIT parameters
+ Fix on profile dialogbox
+ Implemented Deletion and Restoration events in item's History
+ Implemented better handling of User role selection
+ Implemented multi personal folders
+ Implemented CSRFP library usage for security purpose
+ Implemented new "Yes/No" button in settings page
+ Implemented log view for failed authentication
+ Implemented Tree sequentially load (via ajax)
+ Add new item from API (for teampass-connect) (not yet tested)
 
 2.1.24
  #1090 - Fix for Export to PDF last folder not taken into consideration
