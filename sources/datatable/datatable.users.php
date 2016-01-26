@@ -117,7 +117,7 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
 if (!$_SESSION['is_admin']) {
     if (empty($sWhere)) $sWhere = " WHERE ";
     else $sWhere .= " AND ";
-    $sWhere .= "isAdministratedByRole IN (".implode(",", $_SESSION['user_roles']).")";
+    $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
 }
 
 DB::query("SELECT * FROM ".$pre."users");

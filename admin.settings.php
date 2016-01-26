@@ -292,15 +292,15 @@ if (isset($_POST['save_button'])) {
         updateSettings('item_extra_fields', $_POST['item_extra_fields_input']);
     }
     // Update LDAP mode
-    if (isset($_POST['ldap_mode']) && $_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode_input']) {
+    if (isset($_POST['ldap_mode']) && @$_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode_input']) {
         updateSettings('ldap_mode', $_POST['ldap_mode_input']);
     }
     // Update LDAP type
-    if (isset($_POST['ldap_type']) && $_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
+    if (isset($_POST['ldap_type']) && @$_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
         updateSettings('ldap_type', $_POST['ldap_type']);
     }
     // Update LDAP ldap_suffix
-    if (isset($_POST['ldap_suffix']) && $_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
+    if (isset($_POST['ldap_suffix']) && @$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
         updateSettings('ldap_suffix', $_POST['ldap_suffix']);
     }
     // Update LDAP ldap_domain_dn
@@ -931,7 +931,7 @@ echo '
                 <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['enable_personal_folder_feature_tip'].'" /></span>
             </td><td>
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
-            </td</tr>';
+            </td></tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
 echo '
         <tr><td>
@@ -939,7 +939,7 @@ echo '
             <label>'.$LANG['use_md5_password_as_salt'].'</label>
         </td><td>
             <div class="toggle toggle-modern" id="use_md5_password_as_salt" data-toggle-on="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="use_md5_password_as_salt_input" name="use_md5_password_as_salt_input" value="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '1' : '0', '" />
-        </td</tr>';
+        </td></tr>';
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
@@ -947,7 +947,7 @@ echo '
                 <label>'.$LANG['enable_personal_saltkey_cookie'].'</label>
             </td><td>
                 <div class="toggle toggle-modern" id="enable_personal_saltkey_cookie" data-toggle-on="', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_personal_saltkey_cookie_input" name="enable_personal_saltkey_cookie_input" value="', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? '1' : '0', '" />
-            </td</tr>';
+            </td></tr>';
 // PF cookie for Personal SALTKEY duration
 echo '
             <tr><td>
@@ -957,7 +957,7 @@ echo '
             <div class="div_radio">
                 <input type="text" size="10" id="personal_saltkey_cookie_duration" name="personal_saltkey_cookie_duration" value="', isset($_SESSION['settings']['personal_saltkey_cookie_duration']) ? $_SESSION['settings']['personal_saltkey_cookie_duration'] : '31', '" class="text ui-widget-content" />
             </div>
-            </td</tr>';
+            </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Attachments encryption strategy
@@ -1124,16 +1124,16 @@ echo '
     '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_delay_for_item_edition_tip'].'" /></span>
                     </label>
                     </td><td>
-                    <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                    <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" />
+                </td></tr>';
 // Expired time for OTV - otv_expiration_period
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$LANG['settings_otv_expiration_period'].'</label>
                     </td><td>
-                    <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                    <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" />
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Managers can edit & delete items they are allowed to see
@@ -1143,7 +1143,7 @@ echo '
                     <label>'.$LANG['settings_manager_edit'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="manager_edit" data-toggle-on="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_edit_input" name="manager_edit_input" value="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // max items
@@ -1163,7 +1163,7 @@ echo '
                     <label>'.$LANG['duplicate_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="duplicate_folder" data-toggle-on="', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="duplicate_folder_input" name="duplicate_folder_input" value="', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // Duplicate item name
 echo '
                 <tr><td>
@@ -1171,7 +1171,7 @@ echo '
                     <label>'.$LANG['duplicate_item'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="duplicate_item" data-toggle-on="', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="duplicate_item_input" name="duplicate_item_input" value="', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // Duplicate item name in same folder - item_duplicate_in_same_folder
 echo '
                 <tr><td>
@@ -1179,7 +1179,7 @@ echo '
                     <label>'.$LANG['duplicate_item_in_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="item_duplicate_in_same_folder" data-toggle-on="', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_duplicate_in_same_folder_input" name="item_duplicate_in_same_folder_input" value="', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // Enable show_only_accessible_folders
 echo '
                 <tr><td>
@@ -1222,7 +1222,7 @@ echo '
                     <label>'.$LANG['enable_favourites'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_favourites" data-toggle-on="', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_favourites_input" name="enable_favourites_input" value="', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // enable USER can create folders
 echo '
                 <tr><td>
@@ -1230,15 +1230,15 @@ echo '
                     <label>'.$LANG['enable_user_can_create_folders'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_user_can_create_folders" data-toggle-on="', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_user_can_create_folders_input" name="enable_user_can_create_folders_input" value="', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // enable can_create_root_folder
 echo '
                 <tr><td>
                     <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
                     <label>'.$LANG['setting_can_create_root_folder'].'</label>
                     </td><td>
-                        <div class="toggle toggle-modern" id="can_create_root_folder" data-toggle-on="', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="can_create_root_folder_input" name="can_create_root_folder_input" value="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                        <div class="toggle toggle-modern" id="can_create_root_folder" data-toggle-on="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="can_create_root_folder_input" name="can_create_root_folder_input" value="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '1' : '0', '" />
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable activate_expiration
@@ -1251,7 +1251,7 @@ echo '
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="activate_expiration" data-toggle-on="', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="activate_expiration_input" name="activate_expiration_input" value="', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // Enable enable_delete_after_consultation
 echo '
                 <tr><td>
@@ -1262,7 +1262,7 @@ echo '
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_delete_after_consultation" data-toggle-on="', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_delete_after_consultation_input" name="enable_delete_after_consultation_input" value="', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable Printing
@@ -1338,7 +1338,7 @@ echo '
                     <label>'.$LANG['settings_restricted_to'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="restricted_to" data-toggle-on="', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_input" name="restricted_to_input" value="', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // enable restricted_to_roles
 echo '
                 <tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline':'none', ';"><td>
@@ -1346,7 +1346,7 @@ echo '
                     <label>'.$LANG['restricted_to_roles'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="restricted_to_roles" data-toggle-on="', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_roles_input" name="restricted_to_roles_input" value="', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // enable show copy to clipboard small icons
@@ -1359,7 +1359,7 @@ echo '
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="copy_to_clipboard_small_icons" data-toggle-on="', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="copy_to_clipboard_small_icons_input" name="copy_to_clipboard_small_icons_input" value="', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // Enable Show description in items list
 echo '
                 <tr><td>
@@ -1399,7 +1399,7 @@ echo '
                     <label>'.$LANG['enable_send_email_on_user_login'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_send_email_on_user_login" data-toggle-on="', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_send_email_on_user_login_input" name="enable_send_email_on_user_login_input" value="', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // enable email notification on item shown
 echo '
                 <tr><td>
@@ -1407,7 +1407,7 @@ echo '
                     <label>'.$LANG['enable_email_notification_on_item_shown'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_email_notification_on_item_shown" data-toggle-on="', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_email_notification_on_item_shown_input" name="enable_email_notification_on_item_shown_input" value="', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // enable email notification when user password is changed
 echo '
                 <tr><td>
@@ -1415,7 +1415,7 @@ echo '
                     <label>'.$LANG['enable_email_notification_on_user_pw_change'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_email_notification_on_user_pw_change" data-toggle-on="', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_email_notification_on_user_pw_change_input" name="enable_email_notification_on_user_pw_change_input" value="', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // enable add manual entries in History
@@ -1428,7 +1428,7 @@ echo '
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="insert_manual_entry_item_history" data-toggle-on="', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="insert_manual_entry_item_history_input" name="insert_manual_entry_item_history_input" value="', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
 // OffLine mode options
 echo '
@@ -1440,7 +1440,7 @@ echo '
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="settings_offline_mode" data-toggle-on="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="settings_offline_mode_input" name="settings_offline_mode_input" value="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // OffLne KEy Level
 echo '
                 <tr style="margin-bottom:3px">
@@ -1464,7 +1464,7 @@ echo '
                     <label>'.$LANG['syslog_enable'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="syslog_enable" data-toggle-on="', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="syslog_enable_input" name="syslog_enable_input" value="', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? '1' : '0', '" />
-                </td</tr>';
+                </td></tr>';
 // SYSLOG Host
 echo '
                     <tr style="margin-bottom:3px">
@@ -1507,12 +1507,9 @@ if (!extension_loaded('ldap')) {
     // Enable LDAP mode
     echo '
     <div style="margin-bottom:3px;">
-        <label for="ldap_mode">' .
-    $LANG['settings_ldap_mode'].'
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_mode_tip'].'" />
-                    </label>
-                        <div class="toggle toggle-modern" id="ldap_mode" data-toggle-on="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_mode_input" name="ldap_mode_input" value="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '1' : '0', '" />
-                </div>';
+        <label for="ldap_mode">'.$LANG['settings_ldap_mode'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_mode_tip'].'" /></label>
+		<div class="toggle toggle-modern" id="ldap_mode" data-toggle-on="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_mode_input" name="ldap_mode_input" value="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '1' : '0', '" />
+	</div>';
     // Type
     $ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
     echo '
@@ -1912,7 +1909,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                </td></tr>';
 // Extension for Documents
 echo '
                 <tr><td>
@@ -1922,7 +1919,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                </td></tr>';
 // Extension for Images
 echo '
                 <tr><td>
@@ -1932,7 +1929,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                </td></tr>';
 // Extension for Packages
 echo '
                 <tr><td>
@@ -1942,7 +1939,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                </td></tr>';
 // Extension for Other
 echo '
                 <tr><td>
@@ -1952,7 +1949,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>
-                </td</tr>';
+                </td></tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Image resize width / height / quality
 echo '
@@ -1996,7 +1993,7 @@ echo '
                     <input type="text" size="5" id="upload_imageresize_quality" name="upload_imageresize_quality" value="',
                         isset($_SESSION['settings']['upload_imageresize_quality']) ? $_SESSION['settings']['upload_imageresize_quality'] :
                         '90', '" class="text ui-widget-content upl_img_opt" />
-                </td</tr>';
+                </td></tr>';
 echo '
                 <tr><td colspan="3"><hr></td></tr>';
 echo '
