@@ -675,6 +675,7 @@ function identifyUser($sentData)
                 $_SESSION['list_restricted_folders_for_items'] = array();
                 $_SESSION['nb_folders'] = 1;
                 $_SESSION['nb_roles'] = 0;
+                $_SESSION['fonction_id'] = 0;
             }
             // Get some more elements
             $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
