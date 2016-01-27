@@ -335,6 +335,10 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
         updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
     }
+    if (isset($_POST['ldap_usergroup']) && $_SESSION['settings']['ldap_usergroup'] != $_POST['ldap_usergroup']) {
+        updateSettings('ldap_usergroup', $_POST['ldap_usergroup']);
+    }
+
     // Update LDAP ldap_search_base
     if (isset($_POST['ldap_search_base'])&& @$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
         updateSettings('ldap_search_base', $_POST['ldap_search_base']);
@@ -1563,6 +1567,14 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
                 </tr>';
+               echo '
+                <tr>
+                    <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
+                        $LANG['settings_ldap_usergroup_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
+                        isset($_SESSION['settings']['ldap_usergroup']) ? $_SESSION['settings']['ldap_usergroup'] : '', '" /></td>
+                </tr>';
+
                 // LDAP BIND DN for search
                 echo '
                 <tr>

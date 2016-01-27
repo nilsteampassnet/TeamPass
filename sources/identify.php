@@ -211,6 +211,20 @@ function identifyUser($sentData)
                 if ($ldapbind) {
                     $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=posixAccount))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    if (isset($_SESSION['settings']['ldap_usergroup'])) {
+                       $filter_group = "memberUid=".$username;
+                       $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
+                       if ($debugLdap == 1) {
+                               fputs(
+                                    $dbgLdap,
+                                    'Search filter (group): ' . $filter_group . "\n" .
+                                    'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "\n"
+                               );
+                       }
+                       if (!ldap_count_entries($ldapconn, $result_group)) {
+                               $ldapConnection = false;
+                       }
+                    }
                     if ($debugLdap == 1) {
                         fputs(
                             $dbgLdap,

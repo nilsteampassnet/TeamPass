@@ -793,6 +793,8 @@ $LANG = array (
     'click_to_change' => 'Pro změnění klikněte',
     'settings_ldap_user_attribute' => 'Prohledat uživatelský atribut',
     'settings_ldap_user_attribute_tip' => 'Atribut LDAP k prohledání na jméno uživatele',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'user_ga_code_sent_by_email' => 'Váš nový kód GoogleAuthenticator byl zaslán na Vaší emailopou adresu.',
     'log_user_initial_pwd_changed' => 'Počáteční heslo zadáno',
     'log_user_email_changed' => 'Uživatelův email změněn na ',

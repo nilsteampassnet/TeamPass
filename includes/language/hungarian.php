@@ -793,6 +793,8 @@ $LANG = array (
     'click_to_change' => 'Kattintson ide a módosításhoz',
     'settings_ldap_user_attribute' => 'Felhasználói tulajdonság, amiben keresni kell',
     'settings_ldap_user_attribute_tip' => 'LDAP tulajdonság amiben a felhasználó nevet keresni kell',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'user_ga_code_sent_by_email' => 'Az Ön Google Hitelesítő kódja elküldésre került az Ön email címére.',
     'log_user_initial_pwd_changed' => 'Kezdeti jelszó létrehozva',
     'log_user_email_changed' => 'A felhasználó neve megvátozott: ',

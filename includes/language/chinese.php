@@ -793,6 +793,8 @@ $LANG = array (
     'click_to_change' => '点击更改',
     'settings_ldap_user_attribute' => '要搜索的用户属性',
     'settings_ldap_user_attribute_tip' => 'LDAP attribute to search the username in',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'user_ga_code_sent_by_email' => 'Your new GoogleAuthenticator code was sent to your email address.',
     'log_user_initial_pwd_changed' => 'Initial password defined',
     'log_user_email_changed' => 'User email changed to ',
