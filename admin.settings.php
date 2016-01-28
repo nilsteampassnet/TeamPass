@@ -292,7 +292,7 @@ if (isset($_POST['save_button'])) {
         updateSettings('item_extra_fields', $_POST['item_extra_fields_input']);
     }
     // Update LDAP mode
-    if (isset($_POST['ldap_mode']) && @$_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode_input']) {
+    if (isset($_POST['ldap_mode_input']) && @$_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode_input']) {
         updateSettings('ldap_mode', $_POST['ldap_mode_input']);
     }
     // Update LDAP type
