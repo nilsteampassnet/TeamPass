@@ -103,8 +103,8 @@ if (isset($_GET['id']) && is_numeric(intval($_GET['id'])) && isset($_SESSION['us
 function buildNodeTree($nodeId)
 {
     global $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG;
-
-        
+    
+    
     // Be sure that user can only see folders he/she is allowed to
     if (
         !in_array($nodeId, $_SESSION['forbiden_pfs'])
