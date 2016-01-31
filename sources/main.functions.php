@@ -417,7 +417,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             "SELECT * FROM ".prefix_table("roles_title")."
             ORDER BY title ASC");
         foreach ($rows as $record) {
-            if (!in_array($record['id'], $tmp)) {
+            if (!empty($record['id']) && !in_array($record['id'], $tmp)) {
                 array_push($tmp, $record['id']);
             }
         }
