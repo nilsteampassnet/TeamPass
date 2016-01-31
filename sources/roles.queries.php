@@ -230,8 +230,9 @@ if (!empty($_POST['type'])) {
             $previous = 1;
 
             //count nb of roles
-			if (empty($_SESSION['fonction_id'])) $where = "";
-			else  $where = " WHERE id IN (".str_replace(";", ",", $_SESSION['fonction_id']).")";
+            $arrUserRoles = array_filter($_SESSION['user_roles']);
+            if (count($arrUserRoles) == 0) $where = "";
+            else  $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count =  DB::count();
             if ($roles_count > $display_nb) {
@@ -247,12 +248,12 @@ if (!empty($_POST['type'])) {
             }
 
             // array of roles for actual user
-            $my_functions = explode(';', $_SESSION['fonction_id']);
+            $my_functions = $arrUserRoles;
 
             //Display table header
             $rows = DB::query(
                 "SELECT * FROM ".prefix_table("roles_title").
-				$where."
+                $where."
                 ORDER BY title ASC".$sql_limit);
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
