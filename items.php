@@ -3,7 +3,7 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -88,7 +88,7 @@ echo '
 <input type="hidden" id="pf_selected" value="" />
 <input type="hidden" id="user_ongoing_action" value="" />
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
-<input type="hidden" id="input_list_roles" value="'.$listRoles.'" />
+<input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
 <input type="hidden" id="access_level" value="" />';
 // Hidden objects for Item search
@@ -388,7 +388,7 @@ echo '
 // Line for LABEL
 echo '
             <label for="" class="label_cpm">'.$LANG['label'].' : </label>
-            <input type="text" name="label" id="label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'display_title\')" class="item_field input_text text ui-widget-content ui-corner-all" />';
+            <input type="text" name="label" id="label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'display_title\')" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for DESCRIPTION
 echo '
             <label for="" class="label_cpm">'.$LANG['description'].' : </label>
@@ -403,15 +403,15 @@ echo '
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
-            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all item_field" />';
+            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for EMAIL
 echo '
             <label for="" class="label_cpm">'.$LANG['email'].' : </label>
-            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all item_field" />';
+            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for URL
 echo '
             <label for="" class="label_cpm">'.$LANG['url'].' : </label>
-            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all" />
         </div>';
 // Tabs Items N?2
 echo '
@@ -428,10 +428,10 @@ echo '
                 <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
             </label>
-            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
             <input type="hidden" id="mypassword_complex" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
-            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all item_field" />
+            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
@@ -448,7 +448,7 @@ echo '
                 <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
                     <img  src="includes/images/paste_plain.png"  />
                 </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwdContinuous()" class="cpm_button tip">
+                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwd()" class="cpm_button tip">
                     <img  src="includes/images/eye.png"  />
                 </a>
             </div>
@@ -830,6 +830,7 @@ echo '
 // SUPPRIMER UN ELEMENT
 echo '
 <div id="div_del_item" style="display:none;">
+        <h2 id="div_del_item_selection"></h2>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['confirm_deletion'].'</p>
 </div>';
 // DIALOG INFORM USER THAT LINK IS COPIED
@@ -844,7 +845,8 @@ echo '
 echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$LANG['item_copy_to_folder'].'</div>
+    <h2 id="div_copy_item_to_folder_item"></h2>
+    <div>'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
             ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .

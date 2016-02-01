@@ -2,7 +2,7 @@
 /**
  * @file          views.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -317,9 +317,11 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
-            "user_connection"
+            ORDER BY %s %s           
+			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            "user_connection",
+			$_POST['order'],
+			$POST['direction']
         );
 
         foreach ($rows as $record) {
@@ -371,9 +373,11 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
-            "error"
+            ORDER BY %s %s
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            "error",
+			$_POST['order'],
+			$_POST['direction']
         );
         foreach ($rows as $record) {
             $label = explode('@', addslashes(cleanString($record['label'])));
@@ -431,7 +435,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
         foreach ($rows as $record) {
@@ -490,7 +494,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
         foreach ($rows as $record) {
@@ -551,7 +555,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 
@@ -614,7 +618,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 

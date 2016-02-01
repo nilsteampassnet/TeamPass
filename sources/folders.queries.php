@@ -2,7 +2,7 @@
 /**
  * @file          folders.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -357,8 +357,8 @@ if (isset($_POST['newtitle'])) {
                     $isPersonal == 1
                     || $_SESSION['is_admin'] == 1
                     || ($_SESSION['user_manager'] == 1)
-                    || (isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 1)
+                    || (isset($_SESSION['settings']['enable_user_can_create_folders'])
+                    && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
                 ) {
                     //create folder
                     DB::insert(
@@ -386,6 +386,9 @@ if (isset($_POST['newtitle'])) {
 
                     // add new folder id in SESSION
                     array_push($_SESSION['groupes_visibles'], $newId);
+                    if ($isPersonal == 1) {
+                        array_push($_SESSION['personal_folders'], $newId);
+                    }
 
                     // rebuild tree
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');

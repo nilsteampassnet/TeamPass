@@ -3,7 +3,7 @@
  *
  * @file          load.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -69,6 +69,9 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         -->';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles.css">
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css">
+        <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
@@ -140,8 +143,7 @@ $htmlHeaders .= '
         NProgress.start();
         if (val == "deconnexion") {
             sessionStorage.clear();
-            $("#menu_action").val(val);
-            document.main_form.submit();
+            window.location.href = "logout.php"
         } else {
             $("#menu_action").val("action");
             if (val == "") document.location.href="index.php";
@@ -225,7 +227,7 @@ $htmlHeaders .= '
                     //redirection for admin is specific
                     if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-                    else window.location.href="index.php";
+                    else window.location.href="index.php?page=items";
                 } else if (data[0].value == "user_is_locked") {
                     $("#connection_error").html("'.$LANG['account_is_locked'].'").show();
                 } else if (data[0].value == "bad_psk") {
@@ -239,21 +241,28 @@ $htmlHeaders .= '
                     $("#connection_error").html("' . $LANG['psk_required'] . '");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (data[0].value == "user_not_exists") {
-                    $("#connection_error").html("'.$LANG['user_not_exists'].'").show();
-                    console.log("'.$LANG['user_not_exists'].'");
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                     $("#connection_error").html(data + "'.$LANG['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
+                } else if (data[0].value == "new_ldap_account_created") {
+                    $("#connection_error").html("'.$LANG['reload_page_after_user_account_creation'].'").show().switchClass("ui-state-error", "ui-state-default");
+                    setTimeout(
+                        function (){
+                            window.location.href="index.php"
+                        },
+                        3000
+                    );
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].error == "bad_credentials") {
-                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
                     $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
                 } else {
-                    $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
                 $("#ajax_loader_connexion").hide();
             },
@@ -417,21 +426,21 @@ $htmlHeaders .= '
                 key        : "'.$_SESSION["key"].'"
             },
             function(data) {
+				data = $.parseJSON(data);
                 //check if format error
-                if (data[0].error == "") {
-                    $("#last_seen_items_list").html(data[0].text);
+                if (data.error == "") {
+                    $("#last_seen_items_list").html(data.text);
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
 					// show notification
-					if (data[0].existing_suggestions != 0) {
+					if (data.existing_suggestions != 0) {
 						blink("#menu_button_suggestion", -1, 500, "ui-state-error");
 					}
                 } else {
-                    $("#main_info_box_text").html(data[0].error);
+                    $("#main_info_box_text").html(data.error);
                     setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                 }
-            },
-            "json"
+            }
         );
     }
 
@@ -482,7 +491,7 @@ $htmlHeaders .= '
     function ChangeMyPass()
     {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
-            if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
+            if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
                 var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
                 $.post(
                     "sources/main.queries.php",
@@ -542,6 +551,7 @@ $htmlHeaders .= '
 }
 
     $(function() {
+        countdown();
         // load DUO login
         if ($("#duo_sig_response").val() != "") {
             $("#login").val($("#duo_login").val());
@@ -933,52 +943,6 @@ $htmlHeaders .= '
     }
         });
 
-        //Password meter for item creation
-        $("#new_pw").simplePassMeter({
-            "requirements": {},
-            "container": "#pw_strength",
-            "defaultText" : "'.$LANG['index_pw_level_txt'].'",
-            "ratings": [
-                {"minScore": 0,
-                    "className": "meterFail",
-                    "text": "'.$LANG['complex_level0'].'"
-                },
-                {"minScore": 25,
-                    "className": "meterWarn",
-                    "text": "'.$LANG['complex_level1'].'"
-                },
-                {"minScore": 50,
-                    "className": "meterWarn",
-                    "text": "'.$LANG['complex_level2'].'"
-                },
-                {"minScore": 60,
-                    "className": "meterGood",
-                    "text": "'.$LANG['complex_level3'].'"
-                },
-                {"minScore": 70,
-                    "className": "meterGood",
-                    "text": "'.$LANG['complex_level4'].'"
-                },
-                {"minScore": 80,
-                    "className": "meterExcel",
-                    "text": "'.$LANG['complex_level5'].'"
-                },
-                {"minScore": 90,
-                    "className": "meterExcel",
-                    "text": "'.$LANG['complex_level6'].'"
-                }
-            ]
-        });
-        $("#new_pw").bind({
-            "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
-        }).change({
-            "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
-        });
-
         // get list of last items
         refreshListLastSeenItems();
 
@@ -1054,7 +1018,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             modal: true,
             autoOpen: false,
             width: 300,
-            height: 100,
+            height: 160,
             title: "'.$LANG['item_menu_del_from_fav'].'",
             buttons: {
                 "'.$LANG['index_change_pw_confirmation'].'": function() {

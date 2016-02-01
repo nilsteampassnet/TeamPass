@@ -3,7 +3,7 @@
  *
  * @file          czech.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -858,5 +858,18 @@ $LANG = array (
     'my_profile' => 'Můj profil',
     'at_suggestion' => 'Návrh je přijat',
     'character_not_allowed' => 'Znak je nepřípustný!',
+    'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
+    'starting' => 'Starting ...',
+    'total_number_of_items' => 'Total number of items',
+    'finalizing' => 'Finalizing',
+    'treating_items' => 'Treating items',
+    'number_of_items_treated' => 'Number of treated items',
+    'error_sent_back' => 'Next error occured',
+    'full' => 'Full',
+    'sequential' => 'Sequential',
+    'tree_load_strategy' => 'Tree load strategy',
+    'syslog_enable' => 'Enable log with Syslog',
+    'syslog_host' => 'Syslog server',
+    'syslog_port' => 'Syslog port',
     '' => ''
 );

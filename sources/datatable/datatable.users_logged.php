@@ -2,7 +2,7 @@
 /**
  * @file          datatable.users_logged.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -115,7 +115,7 @@ $iFilteredTotal = DB::count();
 $sOutput = '{';
 $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
 
 foreach ($rows as $reccord) {

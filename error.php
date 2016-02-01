@@ -2,7 +2,7 @@
 /**
  * @file          error.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -17,6 +17,13 @@
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
+fputs($debug,
+	"\n----ERROR-----\nSESSION_LOGIN: ".$_SESSION['login']."\n".
+	"SESSION_USER ID: ".$_SESSION['user_id']."\n".
+	"SESSION fin_session: ".$_SESSION['fin_session']."\n".
+	"SESSION session: ".$_SESSION['session']."\n".
+	"SESSION error code: ".$_SESSION['error']['code']."\n"
+);
 
 if (isset($_POST['session']) && $_POST['session'] == "expired") {
     //Include files
@@ -53,7 +60,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
 
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
+        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';

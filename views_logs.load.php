@@ -3,7 +3,7 @@
 /**
  * @file          views_logs.load.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -26,25 +26,27 @@ var oTable2;
 var oTable3;
 var oTable4;
 var oTable5;
+var oTable6;
 
 /**
  * Manage display of divs
  */
 function manage_div_display(show_id){
-	var all_divs = new Array();
-	all_divs[0] = "tab6_0";
-	all_divs[1] = "tab6_1";
-	all_divs[2] = "tab6_2";
-	all_divs[3] = "tab6_3";
-	all_divs[4] = "tab6_4";
-	all_divs[5] = "tab6_5";
-	for (i=0;i<all_divs.length;i++) {
-	    if (all_divs[i] == show_id) {
-	        $("#"+all_divs[i]).show();
-	    } else {
-	    	$("#"+all_divs[i]).hide();
-	    }
-	}
+    var all_divs = new Array();
+    all_divs[0] = "tab6_0";
+    all_divs[1] = "tab6_1";
+    all_divs[2] = "tab6_2";
+    all_divs[3] = "tab6_3";
+    all_divs[4] = "tab6_4";
+    all_divs[5] = "tab6_5";
+    all_divs[6] = "tab6_6";
+    for (i=0;i<all_divs.length;i++) {
+        if (all_divs[i] == show_id) {
+            $("#"+all_divs[i]).show();
+        } else {
+            $("#"+all_divs[i]).hide();
+        }
+    }
 }
 
 /**
@@ -154,6 +156,23 @@ function loadTable(table_id)
                 $("#t_items_page input").focus();
             }
         });
+    } else if (table_id == "t_failed_auth") {
+        $("#type_log_displayed").val("failed_auth_logs");
+        oTable6 = $("#t_failed_auth").dataTable({
+            "aaSorting": [[ 1, "asc" ]],
+            "sPaginationType": "full_numbers",
+            "bProcessing": true,
+            "bDestroy": true,
+            "bServerSide": true,
+            "sAjaxSource": "sources/datatable/datatable.logs.php?action=failed_auth",
+            "bJQueryUI": true,
+            "oLanguage": {
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+            },
+            "fnInitComplete": function() {
+                $("#t_items_page input").focus();
+            }
+        });
     }
 }
 
@@ -178,7 +197,7 @@ $(function() {
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
-            	$.post(
+                $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
@@ -203,52 +222,52 @@ $(function() {
         // prepare dialogbox
         $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main'];?>");
         $("#div_dialog_message").dialog("option", "buttons", {
-        	"<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok'];?>": function() {
                 $(this).dialog("close");
             }
         });
 
         // send query
-    	$.post(
-	        "sources/views.queries.php",
-	        {
-	            type       : "purgeLogs",
-	            purgeTo    : $("#purgeTo").val(),
-	            purgeFrom  : $("#purgeFrom").val(),
-	            logType    : $("#type_log_displayed").val()
-	        },
-	        function(data) {
-	        	if (data[0].status == "ok") {
-	        		$("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
-	        	    $("#div_dialog_message").dialog("open");
-	        	}
-	        	$("#purgeTo, #purgeFrom").val("");
-	        },
-	        "json"
-	   );
+        $.post(
+            "sources/views.queries.php",
+            {
+                type       : "purgeLogs",
+                purgeTo    : $("#purgeTo").val(),
+                purgeFrom  : $("#purgeFrom").val(),
+                logType    : $("#type_log_displayed").val()
+            },
+            function(data) {
+                if (data[0].status == "ok") {
+                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
+                    $("#div_dialog_message").dialog("open");
+                }
+                $("#purgeTo, #purgeFrom").val("");
+            },
+            "json"
+       );
     });
 
     $( "#purgeFrom" ).datepicker({
-    	defaultDate: "today",
-    	changeMonth: true,
-    	changeYear: true,
-    	numberOfMonths: 1,
-    	onClose: function( selectedDate ) {
-    		var minDate = new Date(Date.parse(selectedDate));
+        defaultDate: "today",
+        changeMonth: true,
+        changeYear: true,
+        numberOfMonths: 1,
+        onClose: function( selectedDate ) {
+            var minDate = new Date(Date.parse(selectedDate));
             minDate.setDate(minDate.getDate() + 1);
-    	    $( "#to" ).datepicker( "option", "minDate", minDate );
-    	}
-	});
-	$( "#purgeTo" ).datepicker({
-    	defaultDate: "+1w",
-    	changeMonth: true,
-    	changeYear: true,
-    	numberOfMonths: 1,
-    	onClose: function( selectedDate ) {
-    		var maxDate = new Date(Date.parse(selectedDate));
-    		maxDate.setDate(maxDate.getDate() + 1);
-    	    $( "#from" ).datepicker( "option", "maxDate", maxDate );
-    	}
-	});
+            $( "#to" ).datepicker( "option", "minDate", minDate );
+        }
+    });
+    $( "#purgeTo" ).datepicker({
+        defaultDate: "+1w",
+        changeMonth: true,
+        changeYear: true,
+        numberOfMonths: 1,
+        onClose: function( selectedDate ) {
+            var maxDate = new Date(Date.parse(selectedDate));
+            maxDate.setDate(maxDate.getDate() + 1);
+            $( "#from" ).datepicker( "option", "maxDate", maxDate );
+        }
+    });
 });
 </script>

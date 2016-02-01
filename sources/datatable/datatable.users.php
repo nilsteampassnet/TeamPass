@@ -2,7 +2,7 @@
 /**
  * @file          users.queries.table.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -76,15 +76,15 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
         .mysqli_escape_string($link, $_GET['order'][0]['column']) .", ";
     }
     /*
-	for ($i=0; $i<intval($_GET['order[0][column]']); $i++) {
-		if (
-			$_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-			preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-		) {
-			$sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-			.mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-		}
-	}
+    for ($i=0; $i<intval($_GET['order[0][column]']); $i++) {
+        if (
+            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+        ) {
+            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+        }
+    }
     */
 
     $sOrder = substr_replace($sOrder, "", -2);
@@ -113,26 +113,31 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' ";
 }
 
+// enlarge the query in case of Manager
+if (!$_SESSION['is_admin']) {
+    if (empty($sWhere)) $sWhere = " WHERE ";
+    else $sWhere .= " AND ";
+    $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
+}
 
-db::debugMode(false);
 DB::query("SELECT * FROM ".$pre."users");
 $iTotal = DB::count();
-
+//DB::debugMode(true);
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
     $sWhere
     $sLimit",
     $criteria
 );
+
 //$iFilteredTotal = DB::count();
 $iFilteredTotal = 0;
 
 // output
-
 if (DB::count() > 0) {
     $sOutput = '[';
 } else {
-	$sOutput = '';
+    $sOutput = '';
 }
 
 foreach ($rows as $record) {
@@ -149,7 +154,7 @@ foreach ($rows as $record) {
             $listAlloFcts_position = true;
         }
         if (empty($listAlloFcts)) {
-            $listAlloFcts = '<i class="fa fa-exclamation mi-red tip" title="'.$LANG['user_alarm_no_function'].'"></i>';
+            $listAlloFcts = '<i class="fa fa-exclamation mi-red tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, "UTF-8").'"></i>';
             $listAlloFcts_position = false;
         }
     }
@@ -282,8 +287,8 @@ foreach ($rows as $record) {
 
         //Finish the line
         $sOutput .= '],';
-		
-		$iFilteredTotal ++;
+        
+        $iFilteredTotal ++;
     }
 }
 
@@ -296,4 +301,4 @@ if (count($rows) > 0) {
 
 // prepare complete output
 
-echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iFilteredTotal.', "data": '.$sOutput;
+echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iTotal.', "data": '.$sOutput;

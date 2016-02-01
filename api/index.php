@@ -3,7 +3,7 @@
  *
  * @file          indexapi.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -19,8 +19,8 @@ require_once('functions.php');
 header('Content-Type: application/json');
 
 if (teampass_api_enabled() != "1") {
-	echo '{"err":"API access not allowed."}';
-	exit;
+    echo '{"err":"API access not allowed."}';
+    exit;
 }
 
 teampass_whitelist();

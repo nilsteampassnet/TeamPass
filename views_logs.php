@@ -2,7 +2,7 @@
 /**
  * @file          views_logs.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -52,6 +52,7 @@ echo '
             <input type="radio" id="radio63" name="radio" onclick="manage_div_display(\'tab6_3\'); loadTable(\'t_copy\');" /><label for="radio63">'.$LANG['at_copy'].'</label>
             <input type="radio" id="radio64" name="radio" onclick="manage_div_display(\'tab6_4\'); loadTable(\'t_admin\');" /><label for="radio64">'.$LANG['admin'].'</label>
             <input type="radio" id="radio65" name="radio" onclick="manage_div_display(\'tab6_5\'); loadTable(\'t_items\');" /><label for="radio65">'.$LANG['items'].'</label>
+            <input type="radio" id="radio66" name="radio" onclick="manage_div_display(\'tab6_6\'); loadTable(\'t_failed_auth\');" /><label for="radio66">Failed authentications</label>
         </div>
         <div id="tab6_0" style="display:none;margin-top:30px;">
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_connections_page">
@@ -118,6 +119,20 @@ echo '
                         <th style="width:20%;">'.$LANG['user'].'</th>
                         <th style="width:20%;">'.$LANG['action'].'</th>
                         <th style="width:10%;">'.$LANG['at_personnel'].'</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="tab6_6" style="display:none;margin-top:30px;">
+            <div style="margin:10px auto 25px auto;min-height:250px;" id="t_failed_auth_page">
+                <table id="t_failed_auth" cellspacing="0" cellpadding="5" width="100%">
+                    <thead><tr>
+                        <th style="width:10%;">'.$LANG['date'].'</th>
+                        <th style="width:40%;">'.$LANG['label'].'</th>
+                        <th style="width:20%;">'.$LANG['user'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

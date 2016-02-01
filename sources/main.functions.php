@@ -3,7 +3,7 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -155,9 +155,9 @@ function encrypt($decrypted, $personalSalt = "")
     }
 
     if (!empty($personalSalt)) {
- 	    $staticSalt = $personalSalt;
+         $staticSalt = $personalSalt;
     } else {
- 	    $staticSalt = SALT;
+         $staticSalt = SALT;
     }
 
     //set our salt to a variable
@@ -196,9 +196,9 @@ function decrypt($encrypted, $personalSalt = "")
     }
 
     if (!empty($personalSalt)) {
-	    $staticSalt = $personalSalt;
+        $staticSalt = $personalSalt;
     } else {
-	    $staticSalt = SALT;
+        $staticSalt = SALT;
     }
     //base64 decode the entire payload
     $encrypted = base64_decode($encrypted);
@@ -369,14 +369,14 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     // Check if user is ADMINISTRATOR
     if ($isAdmin == 1) {
         $groupesVisibles = array();
-		$_SESSION['personal_folders'] = array();
+        $_SESSION['personal_folders'] = array();
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-		$_SESSION['list_folders_limited'] = "";
+        $_SESSION['list_folders_limited'] = "";
         $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
@@ -385,11 +385,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['all_non_personal_folders'] = $groupesVisibles;
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
-        //$sql = "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = 1";
         $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
         $where->add('personal_folder=%i', 1);
         if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
-            //$sql .= " AND title != '".$_SESSION['user_id']."'";
             $where->add('title=%s', $_SESSION['user_id']);
             $where->negateLast();
         }
@@ -413,6 +411,18 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             }
         }
 
+        // get complete list of ROLES
+        $tmp = explode(";", $_SESSION['fonction_id']);
+        $rows = DB::query(
+            "SELECT * FROM ".prefix_table("roles_title")."
+            ORDER BY title ASC");
+        foreach ($rows as $record) {
+            if (!empty($record['id']) && !in_array($record['id'], $tmp)) {
+                array_push($tmp, $record['id']);
+            }
+        }
+        $_SESSION['fonction_id'] = implode(";", $tmp);
+
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
@@ -423,7 +433,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     } else {
         // init
         $_SESSION['groupes_visibles'] = array();
-		$_SESSION['personal_folders'] = array();
+        $_SESSION['personal_folders'] = array();
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
@@ -527,7 +537,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
-        // Get ID of personal folder
+        // Get IDs of personal folders
         if (
             isset($_SESSION['settings']['enable_pf_feature']) &&
             $_SESSION['settings']['enable_pf_feature'] == 1 &&
@@ -537,20 +547,20 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
-					array_push($_SESSION['personal_folders'], $pf['id']);
+                    array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
                     $ids = $tree->getDescendants($pf['id'], true);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
-						array_push($_SESSION['personal_folders'], $id->id);
+                        array_push($_SESSION['personal_folders'], $id->id);
                     }
                 }
             }
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if ((!in_array($folderId, $listReadOnlyFolders)) && $folderId != $pf['id']) {   //
+                if (!in_array($folderId, array_unique (array_merge ($listReadOnlyFolders, $_SESSION['personal_folders'])))) {   //
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -558,7 +568,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $folderId,
                         $fonctionsAssociees,
                         array("W","ND","NE","NDNE")
-						
+                        
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -609,37 +619,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         ),
         "id=%i",
         $_SESSION['user_id']
-    );
-}
-
-/**
- * logEvents()
- *
- * permits to log events into DB
- */
-function logEvents($type, $label, $who)
-{
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
-    // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
-
-    DB::insert(
-        prefix_table("log_system"),
-        array(
-            'type' => $type,
-            'date' => time(),
-            'label' => $label,
-            'qui' => $who
-           )
     );
 }
 
@@ -934,7 +913,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     }
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == 'true' ? true : false; // turn on SMTP authentication
+    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
     $mail->Username = $_SESSION['settings']['email_auth_username']; // SMTP username
     $mail->Password = $_SESSION['settings']['email_auth_pwd']; // SMTP password
     $mail->From = $_SESSION['settings']['email_from'];
@@ -947,7 +926,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->AltBody = $textMailAlt;
     // send email
     if (!$mail->send()) {
-        return '"error":"error_mail_not_send" , "message":"'.$mail->ErrorInfo.'"';
+        return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
     } else {
         return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
     }
@@ -1100,5 +1079,112 @@ function prefix_table($table)
  */
 function GenerateCryptKey($size)
 {
-	return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
+    return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
+}
+
+function send_syslog($message, $component = "teampass", $program = "php", $host , $port)
+{
+    $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
+    $syslog_message = "<123>" . date('M d H:i:s ') . $component . ": " . $message;
+        socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
+    socket_close($sock);
+}
+
+
+
+/**
+ * logEvents()
+ *
+ * permits to log events into DB
+ */
+function logEvents($type, $label, $who, $login="", $field_1 = NULL)
+{
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+
+    if (empty($who)) $who = get_client_ip_server();
+
+    // include librairies & connect to DB
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    DB::insert(
+        prefix_table("log_system"),
+        array(
+            'type' => $type,
+            'date' => time(),
+            'label' => $label,
+            'qui' => $who,
+            'field_1' => $field_1
+        )
+    );
+    if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+        if ($type == "user_mngt"){
+            send_syslog("The User " .$login. " perform the acction off " .$label. " to the user " .$field_1. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        } else {
+            send_syslog("The User " .$login. " perform the acction off " .$label. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        }
+    }
+}
+
+function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
+{
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    // include librairies & connect to DB
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+    DB::insert(
+        prefix_table(
+            "log_items"),
+            array(
+                'id_item' => $id,
+                'date' => time(),
+                'id_user' => $id_user,
+                'action' => $action,
+                'raison' => $raison,
+                'raison_iv' => $raison_iv
+            )
+        );
+        if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        }
+}
+
+/*
+* Function to get the client ip address
+ */
+function get_client_ip_server() {
+    $ipaddress = '';
+    if ($_SERVER['HTTP_CLIENT_IP'])
+        $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+    else if($_SERVER['HTTP_X_FORWARDED_FOR'])
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+    else if($_SERVER['HTTP_X_FORWARDED'])
+        $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+    else if($_SERVER['HTTP_FORWARDED_FOR'])
+        $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+    else if($_SERVER['HTTP_FORWARDED'])
+        $ipaddress = $_SERVER['HTTP_FORWARDED'];
+    else if($_SERVER['REMOTE_ADDR'])
+        $ipaddress = $_SERVER['REMOTE_ADDR'];
+    else
+        $ipaddress = 'UNKNOWN';
+
+    return $ipaddress;
 }

@@ -3,7 +3,7 @@
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -836,7 +836,7 @@ $LANG = array (
     'refresh' => 'Actualizar',
     'loading' => 'Cargando',
     'at_password_shown' => 'Mostrando contraseña',
-    'at_password_copied' => 'Copiar contraseña',
+    'at_password_copied' => 'Contraseña copiada.',
     'search_results' => 'Resultados de búsqueda',
     'searching' => 'Buscando ...',
     'search_tag_results' => 'Resultados de búsqueda por etiqueta',
@@ -853,9 +853,22 @@ $LANG = array (
     'role_cannot_edit_item' => 'No se pueden editar los items',
     'no_delete' => 'Escritura pero no eliminación',
     'role_cannot_delete_item' => 'No se pueden eliminar items',
-    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
-    'my_profile' => 'My profile',
-    'at_suggestion' => 'Suggestion accepted',
-    'character_not_allowed' => 'Character is not allowed!',
+    'text_without_symbols' => 'Sólo números, letras y símbolos #&%*$@() están permitidos. ',
+    'my_profile' => 'Mi perfil.',
+    'at_suggestion' => 'Sugerencia aceptada.',
+    'character_not_allowed' => 'El carácter no está permitido.',
+    'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
+    'starting' => 'Starting ...',
+    'total_number_of_items' => 'Total number of items',
+    'finalizing' => 'Finalizing',
+    'treating_items' => 'Treating items',
+    'number_of_items_treated' => 'Number of treated items',
+    'error_sent_back' => 'Next error occured',
+    'full' => 'Full',
+    'sequential' => 'Sequential',
+    'tree_load_strategy' => 'Tree load strategy',
+    'syslog_enable' => 'Enable log with Syslog',
+    'syslog_host' => 'Syslog server',
+    'syslog_port' => 'Syslog port',
     '' => ''
 );

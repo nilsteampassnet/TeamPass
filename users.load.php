@@ -2,7 +2,7 @@
 /**
  * @file          users.load.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -128,7 +128,16 @@ $(function() {
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
                     $("#div_loading").hide();
+                                            
+                    // manage not allowed
+                    if (data.error == "not_allowed") {
+                       $("#div_dialog_message_text").html(data.error_text);
+                       $("#div_dialog_message").dialog("open");
+                       return false;
+                    }
+                   
                     // refresh table content
                     tableUsers.api().ajax.reload();
                 }
@@ -303,6 +312,7 @@ $(function() {
                             key    : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
+                            $("#add_new_user_info").hide().html("");
                             if (data[0].error == "no") {
                                 // clear form fields
                                 $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
@@ -351,6 +361,7 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
+                console.log("coucou");
             }
         }
     });
@@ -466,19 +477,19 @@ $(function() {
         }
     });
 
-	$("#manager_dialog").dialog({
-		bgiframe: true,
-		modal: true,
-		autoOpen: false,
-		width: 400,
-		height: 200,
-		title: "<?php echo $LANG['admin_action'];?>",
-		buttons: {
-			"<?php echo $LANG['cancel_button'];?>": function() {
-				$(this).dialog("close");
-			}
-		}
-	});
+    $("#manager_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 200,
+        title: "<?php echo $LANG['admin_action'];?>",
+        buttons: {
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
 
     $("#user_edit_login_dialog").dialog({
         bgiframe: true,
@@ -522,38 +533,38 @@ $(function() {
         }
     });
 
-	var watermark = 'Search a user';
+    var watermark = 'Search a user';
 
-	//init, set watermark text and class
-	$('#search').val(watermark).addClass('watermark');
+    //init, set watermark text and class
+    $('#search').val(watermark).addClass('watermark');
 
-	//if blur and no value inside, set watermark text and class again.
-	$('#search').blur(function(){
-		if ($(this).val().length == 0){
-			$(this).val(watermark).addClass('watermark');
-		}
-	});
+    //if blur and no value inside, set watermark text and class again.
+    $('#search').blur(function(){
+        if ($(this).val().length == 0){
+            $(this).val(watermark).addClass('watermark');
+        }
+    });
 
-	//if focus and text is watermrk, set it to empty and remove the watermark class
-	$('#search').focus(function(){
-		if ($(this).val() == watermark){
-			$(this).val('').removeClass('watermark');
-		}
-	});
+    //if focus and text is watermrk, set it to empty and remove the watermark class
+    $('#search').focus(function(){
+        if ($(this).val() == watermark){
+            $(this).val('').removeClass('watermark');
+        }
+    });
 
 
-	$('input[name="search"]').keyup(function(){
-		var searchterm = $(this).val();
-		if(searchterm.length > 1) {
-			var match = $('tr.data-row:containsIN("' + searchterm + '")');
-			var nomatch = $('tr.data-row:not(:containsIN("' + searchterm + '"))');
-			match.addClass('selected');
-			nomatch.css("display", "none");
-		} else {
-			$('tr.data-row').css("display", "");
-			$('tr.data-row').removeClass('selected');
-		}
-	});
+    $('input[name="search"]').keyup(function(){
+        var searchterm = $(this).val();
+        if(searchterm.length > 1) {
+            var match = $('tr.data-row:containsIN("' + searchterm + '")');
+            var nomatch = $('tr.data-row:not(:containsIN("' + searchterm + '"))');
+            match.addClass('selected');
+            nomatch.css("display", "none");
+        } else {
+            $('tr.data-row').css("display", "");
+            $('tr.data-row').removeClass('selected');
+        }
+    });
 
     $("#manager_dialog").dialog({
         bgiframe: true,
@@ -578,7 +589,7 @@ $(function() {
         title: "<?php echo $LANG['dialog_admin_user_edit_title'];?>",
         open:  function() {
             $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
-			$(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
             $.post(
                 "sources/users.queries.php",
                 {
@@ -588,8 +599,8 @@ $(function() {
                 },
                 function(data) {
                     if (data.error == "no") {
-						$(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
-						
+                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+                        
                         $("#user_edit_login").val(data.log);
                         $("#user_edit_name").val(data.name);
                         $("#user_edit_lastname").val(data.lastname);
@@ -611,14 +622,15 @@ $(function() {
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     } else {
-						$("#user_edit_error").html("<?php echo $LANG['error_unknown'];?>")
+                        $("#user_edit_error").html("<?php echo $LANG['error_unknown'];?>")
                         $("#user_edit_wait").hide();
-						$("#user_edit_div").show();
-					}
+                        $("#user_edit_div").show();
+                    }
                 },
                 "json"
             );
 
+            $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -677,7 +689,7 @@ $(function() {
                 );
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
-                $("#user_edit_deletion_warning").hide();
+                $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
                 $(this).dialog("close");
             }
         }
@@ -696,11 +708,11 @@ function confirmDeletion()
             $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete'];?>");
         } else {
             $("#user_edit_error").hide().html("");
-            $(".ui-dialog-buttonpane").append("<span id='user_edit_deletion_warning'><?php echo $LANG['user_info_delete_warning'];?></span>");
+            $("#user_edit_warning_bottom").show().html("<?php echo $LANG['user_info_delete_warning'];?>");
         }
     } else {
         $("#confirm_deletion").val("");
-        $("#user_edit_error").hide().html("");
+        $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
         $("#user_edit_deletion_warning").remove();
     }
 }

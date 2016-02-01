@@ -3,7 +3,7 @@
  *
  * @file          admin.settings_duo.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -65,6 +65,7 @@ if (file_exists($filename)) {
 }
 
 // read SK.PHP file
+$tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
 $skFile = file($tmp_skfile);
 while (list($key,$val) = each($skFile)) {
 	if (substr_count($val, "@define('AKEY'")>0) {

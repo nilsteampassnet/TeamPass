@@ -3,7 +3,7 @@
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -26,8 +26,9 @@ if (!file_exists('includes/settings.php')) {
     exit();
 }
 
-require_once('sources/sessions.php');
-session_start();//session_unset();
+// initialise CSRFGuard library
+require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
+csrfProtector::init();
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -55,6 +56,7 @@ DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
+
 
 //load main functions needed
 require_once 'sources/main.functions.php';
@@ -127,7 +129,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
                     location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
                 } else {
-                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items&session_over=true");
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
                 }
             }
         </script>
@@ -136,7 +138,7 @@ echo $htmlHeaders;
 ?>
     </head>
 
-<body onload="countdown()">
+<body>
     <?php
 
 /* HEADER */
@@ -285,7 +287,7 @@ echo '
     </div>';
 
     echo '
-<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active">
+<div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
     <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
 </div>';
 
@@ -404,9 +406,7 @@ if (
         // case where one-shot viewer
         if (
             isset($_GET['code']) && !empty($_GET['code'])
-            && isset($_GET['item_id']) && !empty($_GET['item_id'])
             && isset($_GET['stamp']) && !empty($_GET['stamp'])
-            && isset($_GET['otv_id'])
         ) {
             include 'otv.php';
         } else {
@@ -414,7 +414,7 @@ if (
             $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
-    } 
+    }
 // ask the user to change his password
     else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid

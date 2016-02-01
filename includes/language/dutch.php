@@ -3,7 +3,7 @@
  *
  * @file          dutch.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     2009 - 2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -28,7 +28,7 @@ $LANG = array (
     'decrypt' => 'Ontsleutelen',
     'admin_ga_website_name' => 'Naam weergegeven Google Authenticator voor Teampass',
     'admin_ga_website_name_tip' => 'Deze naam is gebruikt voor de identificatie code gebruikt in Google Authenticator',
-    'admin_action_pw_prefix_correct' => 'Correct wachtwoord voorvoegsel',
+    'admin_action_pw_prefix_correct' => 'Correct wachtwoord prefix',
     'admin_action_pw_prefix_correct_tip' => 'Alvorens dit bestand uit te voeren, gelieve een kopie van uw database te maken. Dit bestand zal de wachtwoorden updaten. Dit zal alleen gebruikt moeten worden als u opgevallen is dat de wachtwoorden worden weergegeven met een rare voorvoegsel.',
     'items_changed' => 'zijn veranderd.',
     'ga_not_yet_synchronized' => 'Raak geïdentificeerd met Google Authenticator',
@@ -185,8 +185,8 @@ $LANG = array (
     'please_wait' => 'Een moment alst u blieft',
     'admin_url_to_files_folder' => 'URL naar bestanden in mappen',
     'admin_path_to_files_folder' => 'Pad nar bestanden in mappern',
-    'admin_path_to_files_folder_tip' => '<span style=\'font-size:11px;max-width:300px;\',
-    'admin_path_to_upload_folder_tip' => '"<span style=\'font-size:11px;max-width:300px;\',
+    'admin_path_to_files_folder_tip' => '<span style=\'font-size:11px;max-width:300px;\'>De bestanden map is gebruikt om alle gegenereerde bestanden door Teampass en andere geuploade bestanden op te slaan.<br />BELANGRIJK: Voor veiligheid`s redenen moet deze map niet in uw websites WWW map zitten. Deze zou u het beste in een beveiligde omgeving kunnen opslaan met een omleiding`s regel in uw server configuratie.<br />BELANGRIJK 2:Het kan handig zijn om deze folder regelmatig te laten legen met een CRON taak.</span>',
+    'admin_path_to_upload_folder_tip' => '"<span style=\\\'font-size:11px;max-width:300px;\\\'>De bestanden map is gebruikt om alle geuploade bestanden voor items op te slaan<br />BELANGRIJK: Voor veiligheid`s redenen moet deze map niet in uw websites WWW map zitten. Deze zou u het beste in een beveiligde omgeving kunnen opslaan met een omleiding`s regel in uw server configuratie.<br />BELANGRIJK 2:Deze map moet nooit worden leeg gemaakt! deze bestanden zijn gekoppeld aan items.</span>"',
     'pdf_export' => 'PDF exports',
     'pdf_password' => 'PDF versleutel sleutel ',
     'pdf_password_warning' => 'U moet een encryptie sleutel opgeven',
@@ -229,9 +229,9 @@ $LANG = array (
     'migrate_pf_user_salt' => 'Voer een SALT sleutel in voor de geselecteerde gebruiker',
     'migrate_pf_no_sk' => 'U heeft nog geen SALT sleutel ingevoerd',
     'migrate_pf_no_sk_user' => 'U moet een geruiker SALT sleutel opgeven',
-    'migrate_pf_no_user_id' => 'U moet een gebruiker selecteren";',
+    'migrate_pf_no_user_id' => 'U moet een gebruiker selecteren',
     'email_subject_new_user' => '[Teampass] Uw account creatie',
-    'email_new_user_mail' => 'Hallo,<br><br>Een administrator heeft een account voor u gemaakt op Teampass.<b',
+    'email_new_user_mail' => 'Hallo,<br><br>Een administrator heeft een account voor u gemaakt op Teampass.<br>U kunde de volgende gegevens gebruiken om in te loggen:<br>- Login: #tp_login#<br>- wachtwoord: #tp_pw#<br><br>Klik de <a href=\'#tp_link#\'>LINK</a> om naar de site te gaan.<br><br>Vriendelijke groet.',
     'error_empty_data' => 'Geen data om verder te kunnen!',
     'error_not_allowed_to' => 'U mag dit niet doen! ',
     'personal_saltkey_lost' => 'Ik ben hem kwijt',
@@ -240,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => 'Geen vorige wachtwoorden',
     'request_access_ot_item' => 'Vraag toegang om te mogen bewerken',
     'email_request_access_subject' => '[Teampass] Vraag toestemming om een item te kunnen zien',
-    'email_request_access_mail' => 'Hallo #tp_item_author#,<br><br>Gebruiker #tp_user# vraagt om toegang tot \'#tp_item#\'.<br><b',
+    'email_request_access_mail' => 'Hallo #tp_item_author#,<br><br>Gebruiker #tp_user# vraagt om toegang tot \'#tp_item#\'.<br><br>Wees er zeker van dat u deze rechten wil verlenen aan de gebruiker voor dat u de rechten van het bestand veranderd.<br>br>vriendelijke groet.',
     'admin_action_change_salt_key' => 'Verander de hoofd SALT key',
     'admin_action_change_salt_key_tip' => 'Voordat u de SALT key verandert moet Teampass eerst in onderhoudsmodus gezet worden. Het is raadzaam eerst een volledige backup te maken.',
     'block_admin_info' => 'Beheerders informatie',
@@ -854,9 +854,22 @@ $LANG = array (
     'role_cannot_edit_item' => 'Kan geen items bewerken',
     'no_delete' => 'Schrijven maar niet verwijderen',
     'role_cannot_delete_item' => 'Kan geen items verwijderen',
-    'text_without_symbols' => 'Only numbers, letters and symbols # & % * $ @ ( ) are allowed. No other character is possible.',
-    'my_profile' => 'My profile',
-    'at_suggestion' => 'Suggestion accepted',
-    'character_not_allowed' => 'Character is not allowed!',
+    'text_without_symbols' => 'Alleen nummers, letters en symbolen # & % * $ @ ( ) zijn toegestaan. Geen andere tekens mogelijk.',
+    'my_profile' => 'Mijn profiel',
+    'at_suggestion' => 'Suggestie geaccepteerd',
+    'character_not_allowed' => 'Teken is niet toegestaan!',
+    'error_saltkey_length' => 'SaltKey moet een string zijn van 16 tekens!',
+    'starting' => 'Starten ...',
+    'total_number_of_items' => 'Totaal aantal items',
+    'finalizing' => 'Afronden',
+    'treating_items' => 'Behandel items',
+    'number_of_items_treated' => 'Aantal behandelde items',
+    'error_sent_back' => 'Volgende error',
+    'full' => 'Vol',
+    'sequential' => 'Opvolgend',
+    'tree_load_strategy' => 'Tree laad strategie',
+    'syslog_enable' => 'Enable log with Syslog',
+    'syslog_host' => 'Syslog server',
+    'syslog_port' => 'Syslog port',
     '' => ''
 );

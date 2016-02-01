@@ -3,7 +3,7 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -28,12 +28,12 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 
 // DUO
 if ($_POST['type'] === "identify_duo_user") {
-	// This step creates the DUO request encrypted key
-	
-	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-	// load library
-	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-	$sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
+    // This step creates the DUO request encrypted key
+    
+    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    // load library
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "w");
@@ -45,16 +45,16 @@ if ($_POST['type'] === "identify_duo_user") {
         );
     }
 
-	// return result
-	echo '[{"sig_request" : "'.$sig_request.'"}]';
+    // return result
+    echo '[{"sig_request" : "'.$sig_request.'"}]';
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
-	// this step is verifying the response received from the server
-	
-	include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-	// load library
-	require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-	$resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
+    // this step is verifying the response received from the server
+    
+    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    // load library
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
@@ -66,28 +66,28 @@ if ($_POST['type'] === "identify_duo_user") {
         );
     }
 
-	// return the response (which should be the user name)
-	if ($resp === $_POST['login']) {
-		echo '[{"resp" : "'.$resp.'"}]';
-	} else {
-		echo '[{"resp" : "'.$resp.'"}]';
-	}
+    // return the response (which should be the user name)
+    if ($resp === $_POST['login']) {
+        echo '[{"resp" : "'.$resp.'"}]';
+    } else {
+        echo '[{"resp" : "'.$resp.'"}]';
+    }
 } elseif ($_POST['type'] == "identify_user") {
-	// identify the user through Teampass process
-	identifyUser($_POST['data']);
+    // identify the user through Teampass process
+    identifyUser($_POST['data']);
 } elseif ($_POST['type'] == "store_data_in_cookie") {
-	// not used any more (only development purpose)
-	if ($_POST['key'] != $_SESSION['key']) {
-		echo '[{"error" : "something_wrong"}]';
-		break;
-	}
-	// store some connection data in cookie
-	setcookie(
-		"TeamPassC",
-		$_POST['data'],
-		time() + 60 * 60,
-		'/'
-	);
+    // not used any more (only development purpose)
+    if ($_POST['key'] != $_SESSION['key']) {
+        echo '[{"error" : "something_wrong"}]';
+        return false;
+    }
+    // store some connection data in cookie
+    setcookie(
+        "TeamPassC",
+        $_POST['data'],
+        time() + 60 * 60,
+        '/'
+    );
 }
 
 /*
@@ -105,15 +105,8 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
     }
-	
-	/*
-	if (empty($sentData) && isset($_COOKIE['TeamPassC'])) {
-		$sentData = prepareExchangedData($_COOKIE['TeamPassC'], "encode");
-		setcookie('TeamPassC', "", time()-3600);
-	}
-	*/
-	
-	if ($debugDuo == 1) {
+    
+    if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
             "Content of data sent '" . $sentData . "'\n"
@@ -197,7 +190,7 @@ function identifyUser($sentData)
     }
 
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-		&& $username != "admin"
+        && $username != "admin"
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') == true) {
@@ -351,6 +344,7 @@ function identifyUser($sentData)
         }
     }
 
+    $user_initial_creation_through_ldap = false;
     $proceedIdentification = false;
     if ($counter > 0) {
         $proceedIdentification = true;
@@ -391,10 +385,8 @@ function identifyUser($sentData)
                 )
             );
         }
-        // Get info for user
-        //$sql = "SELECT * FROM ".prefix_table("users")." WHERE login = '".addslashes($username)."'";
-        //$row = $db->query($sql);
         $proceedIdentification = true;
+        $user_initial_creation_through_ldap = true;
     }
 
     // Check if user exists (and has been created in case of new LDAP user)
@@ -406,6 +398,7 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
     if ($counter == 0) {
+        logEvents('failed_auth', 'user_not_exists', "", stripslashes($username));
         echo '[{"value" : "user_not_exists", "text":""}]';
         exit;
     }
@@ -443,7 +436,7 @@ function identifyUser($sentData)
         );
     }
 
-    if ($proceedIdentification === true) {
+    if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {
         // User exists in the DB
         //$data = $db->fetchArray($row);
 
@@ -481,6 +474,7 @@ function identifyUser($sentData)
             $userPasswordVerified = true;
         } else {
             $userPasswordVerified = false;
+            logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
         }
 
         if ($debugDuo == 1) {
@@ -526,7 +520,7 @@ function identifyUser($sentData)
 
             // Log into DB the user's connection
             if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-                logEvents('user_connection', 'connection', $data['id']);
+                logEvents('user_connection', 'connection', $data['id'], stripslashes($username));
             }
             // Save account in SESSION
             $_SESSION['login'] = stripslashes($username);
@@ -547,6 +541,9 @@ function identifyUser($sentData)
             $_SESSION['user_avatar'] = $data['avatar'];
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
+            // get personal settings
+            if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) $data['treeloadstrategy'] = "full";
+            $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
 
             // manage session expiration
             $serverTime = time();
@@ -571,12 +568,6 @@ function identifyUser($sentData)
                     '/'
                 );
             }
-
-            @syslog(
-                LOG_WARNING,
-                "User logged in - ".$_SESSION['user_id']." - ".date("Y/m/d H:i:s").
-                " {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
-            );
 
             if (empty($data['last_connexion'])) {
                 $_SESSION['derniere_connexion'] = time();
@@ -658,13 +649,33 @@ function identifyUser($sentData)
             }
 
             // Get user's rights
-            identifyUserRights(
-                $data['groupes_visibles'],
-                $_SESSION['groupes_interdits'],
-                $data['admin'],
-                $data['fonction_id'],
-                false
-            );
+            if ($user_initial_creation_through_ldap != true) {
+                identifyUserRights(
+                    $data['groupes_visibles'],
+                    $_SESSION['groupes_interdits'],
+                    $data['admin'],
+                    $data['fonction_id'],
+                    false
+                );
+            } else {
+                // is new LDAP user. Show only his personal folder
+                if ($_SESSION['settings']['enable_pf_feature'] == "1") {
+                    $_SESSION['personal_visible_groups'] = array($data['id']);
+                    $_SESSION['personal_folders'] = array($data['id']);
+                } else {
+                    $_SESSION['personal_visible_groups'] = array();
+                    $_SESSION['personal_folders'] = array();
+                }
+                $_SESSION['all_non_personal_folders'] = array();
+                $_SESSION['groupes_visibles'] = array();
+                $_SESSION['groupes_visibles_list'] = "";
+                $_SESSION['read_only_folders'] = array();
+                $_SESSION['list_folders_limited'] = "";
+                $_SESSION['list_folders_editable_by_role'] = array();
+                $_SESSION['list_restricted_folders_for_items'] = array();
+                $_SESSION['nb_folders'] = 1;
+                $_SESSION['nb_roles'] = 0;
+            }
             // Get some more elements
             $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
             // Get last seen items
@@ -736,7 +747,7 @@ function identifyUser($sentData)
                 if (isset($_SESSION['settings']['log_connections'])
                         && $_SESSION['settings']['log_connections'] == 1
                 ) {
-                    logEvents('user_locked', 'connection', $data['id']);
+                    logEvents('user_locked', 'connection', $data['id'], stripslashes($username));
                 }
             }
             DB::update(
@@ -760,21 +771,23 @@ function identifyUser($sentData)
             }
         }
     } else {
-        $return = "false";
+        if ($user_initial_creation_through_ldap == true) {
+            $return = "new_ldap_account_created";
+        } else {
+            $return = "false";
+        }
     }
 
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
             "\n\n----\n" .
-            "Identified : " . $return . "\n"
+            "Identified : " . $return . "\n\n"
         );
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"',
-    isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
-    '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "'.$logError.'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+
     $_SESSION['initial_url'] = "";
     if ($_SESSION['settings']['cpassman_dir'] == "..") {
         $_SESSION['settings']['cpassman_dir'] = ".";

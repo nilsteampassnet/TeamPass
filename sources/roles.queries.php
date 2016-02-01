@@ -2,7 +2,7 @@
 /**
  * @file          roles.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -66,7 +66,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => stripslashes($_POST['name']),
+                        'title' => htmlentities(stripslashes($_POST['name'])),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )
@@ -230,7 +230,10 @@ if (!empty($_POST['type'])) {
             $previous = 1;
 
             //count nb of roles
-            DB::query("SELECT * FROM ".prefix_table("roles_title")."");
+            $arrUserRoles = array_filter($_SESSION['user_roles']);
+            if (count($arrUserRoles) == 0) $where = "";
+            else  $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
+            DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count =  DB::count();
             if ($roles_count > $display_nb) {
                 if (!isset($_POST['start']) || $_POST['start'] == 0) {
@@ -240,15 +243,18 @@ if (!empty($_POST['type'])) {
                     $start = intval($_POST['start']);
                     $previous = $start-$display_nb;
                 }
-                $sql_limit = " LIMIT $start, $display_nb";
+                $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
                 $next = $start+$display_nb;
             }
 
             // array of roles for actual user
-            $my_functions = explode(';', $_SESSION['fonction_id']);
+            $my_functions = $arrUserRoles;
 
             //Display table header
-            $rows = DB::query("SELECT * FROM ".prefix_table("roles_title")." ORDER BY title ASC".$sql_limit);
+            $rows = DB::query(
+                "SELECT * FROM ".prefix_table("roles_title").
+                $where."
+                ORDER BY title ASC".$sql_limit);
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if ($record['allow_pw_change'] == 1) {
@@ -257,7 +263,7 @@ if (!empty($_POST['type'])) {
                         $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
                     }
 
-                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.$record['title'].
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").
                         '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
                         '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
                         $allow_pw_change.
@@ -318,10 +324,10 @@ if (!empty($_POST['type'])) {
                                 $label = '<i class="fa fa-hand-stop-o"></i>';
                         }
                         if (in_array($node->id, $_SESSION['read_only_folders']) || !in_array($node->id, $_SESSION['groupes_visibles'])) {
-							$texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
-						} else {
-							$texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
-						}
+                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+                        } else {
+                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+                        }
                         
                         
                         $i++;

@@ -2,7 +2,7 @@
 /**
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
- * @version       2.1.24
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -22,14 +22,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 * Add a new field to a category
 */
 function fieldAdd(id) {
-	$("#post_id").val(id);
-	$("#add_new_field").dialog("open");
+    $("#post_id").val(id);
+    $("#add_new_field").dialog("open");
 }
 /*
 * Edit category's folders
 */
 function catInFolders(id) {
-	$("#post_id").val(id);
+    $("#post_id").val(id);
     $("#catInFolder_title").html($("#item_"+id).html());    // display title
     // pre-select folders
     var folder = $("#catFoldersList_"+id).val().split(";");
@@ -37,18 +37,18 @@ function catInFolders(id) {
         $("#cat_folders_selection option[value="+folder[0]+"]").attr('selected', true);
     };
     // open
-	$("#category_in_folder").dialog("open");
+    $("#category_in_folder").dialog("open");
 }
 
 /*
 * Add a new category
 */
 function categoryAdd() {
-	if ($("#new_category_label").val() == "") {
-		return false;
-	}
+    if ($("#new_category_label").val() == "") {
+        return false;
+    }
     $("#div_loading").show();
-	//send query
+    //send query
     $.post(
         "sources/categories.queries.php",
         {
@@ -69,10 +69,10 @@ function categoryAdd() {
                 '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
                 '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
-        	$("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
-        	// clean
+            $("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
+            // clean
             $("#new_category_label, #new_item_title").val("");
-        	//loadFieldsList();
+            //loadFieldsList();
             $("#div_loading,#no_category").hide();
         },
         "json"
@@ -84,10 +84,10 @@ function categoryAdd() {
 */
 function renameItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
-	$("#post_id").val(data[1]);
-	$("#post_type").val("renameItem");
-	$("#category_confirm_text").html("<?php echo $LANG['confirm_rename'];?>");
-	$("#category_confirm").dialog("open");
+    $("#post_id").val(data[1]);
+    $("#post_type").val("renameItem");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_rename'];?>");
+    $("#category_confirm").dialog("open");
 }
 
 /*
@@ -95,10 +95,10 @@ function renameItem() {
 */
 function deleteItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
-	$("#post_id").val(data[1]);
-	$("#post_type").val("deleteCategory");
-	$("#category_confirm_text").html("<?php echo $LANG['confirm_deletion'];?>");
-	$("#category_confirm").dialog("open");
+    $("#post_id").val(data[1]);
+    $("#post_type").val("deleteCategory");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_deletion'];?>");
+    $("#category_confirm").dialog("open");
 }
 
 /*
@@ -106,10 +106,10 @@ function deleteItem() {
 */
 function moveItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
-	$("#post_id").val(data[1]);
-	$("#post_type").val("moveItem");
-	$("#category_confirm_text").html("<?php echo $LANG['confirm_moveto'];?>");
-	$("#category_confirm").dialog("open");
+    $("#post_id").val(data[1]);
+    $("#post_type").val("moveItem");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_moveto'];?>");
+    $("#category_confirm").dialog("open");
 }
 
 /*
@@ -154,7 +154,7 @@ function storePosition() {
 */
 function loadFieldsList() {
     $("#div_loading").show();
-	//send query
+    //send query
     $.post(
         "sources/categories.queries.php",
         {
@@ -188,7 +188,7 @@ function loadFieldsList() {
 
             // display
             newList += '</table>';
-        	$("#new_item_title").val("");
+            $("#new_item_title").val("");
             $("#categories_list").html(newList);
             $("#div_loading").hide();
         }
@@ -198,8 +198,8 @@ function loadFieldsList() {
 function changeSettingStatus(id, val) {
     if (val == 1) {
         $("#flag_"+id).html("<img src='includes/images/status.png' />");
-		$("#"+id+"_radio2").addClass("ui-button.redButton");
-		console.log(("#"+id+"_radio2"));
+        $("#"+id+"_radio2").addClass("ui-button.redButton");
+        console.log(("#"+id+"_radio2"));
     } else {
         $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
     }
@@ -267,11 +267,11 @@ function LaunchAdminActions(action,option)
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret);
                 } else if (data[0].result == "attachments_cryption") {
                     if (data[0].continu == true) {
-                    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+                        manageEncryptionOfAttachments(data[0].list, data[0].cpt);
                     } else if (data[0].error == "file_not_encrypted") {
-                    	$("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
+                        $("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
                     } else if (data[0].error == "file_not_clear") {
-                    	$("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
+                        $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
                     }
                 }
             }
@@ -280,10 +280,132 @@ function LaunchAdminActions(action,option)
    );
 }
 
+/*
+*
+*/
+function changeMainSaltKey(start)
+{
+    var nb = 10;    // can be changed - number of items treated in each loop
+    
+    // check saltkey length
+    if ($("#new_salt_key").val().length != 16) {
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_saltkey_length'];?>");
+        return false;
+    }
+    
+    // prepare excahnge
+    var newSK = prepareExchangedData(
+        '{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}', 
+        "encode", 
+        "<?php echo $_SESSION['key'];?>"
+    );
+    
+    //console.log("Start value: "+start);
+    
+    // start change
+    if (start == "starting") {
+        // inform
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['starting'];?>");
+        
+        // launch query
+        $.post(
+            "sources/admin.queries.php",
+            {
+               type     : "admin_action_change_salt_key___start",
+               newSK    : newSK
+            },
+            function(data) {
+                //console.log("Step start - " + data[0].nextAction);
+                if (data[0].error == "" && data[0].nextAction == "encrypt_items") {
+                    $("#changeMainSaltKey_itemsCount").val(data[0].nbOfItems);
+                    //console.log("Now launch encryption");
+                    // start encrypting items with new saltkey
+                    changeMainSaltKey(0);
+                } else {
+                    // error mngt
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
+                }
+            },
+            "json"
+        );
+    }
+    else if (isFinite(start)) {
+        //console.log("Step Encrypt - " + newSK+" ; "+start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
+        
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+                    
+        $.post(
+            "sources/admin.queries.php",
+            {
+               type     : "admin_action_change_salt_key___encrypt",
+               newSK    : newSK,
+               start    : start,
+               length    : nb,
+               nbItems    : $("#changeMainSaltKey_itemsCount").val()
+            },
+            function(data) {
+                console.log("Next action: "+data[0].nextAction);
+                if (data[0].nextAction == "encrypting") {
+                    changeMainSaltKey(data[0].nextStart);
+                } else if (data[0].nextAction == "finishing") {
+                    $("#changeMainSaltKey_message").html("<?php echo $LANG['finalizing'];?>...");
+                    changeMainSaltKey("finishing");
+                } else {
+                    // error mngt
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
+                }
+            },
+            "json"
+        );
+    }
+    else {
+        console.log("finishing");
+        $.post(
+            "sources/admin.queries.php",
+            {
+               type     : "admin_action_change_salt_key___end",
+               newSK    : newSK
+            },
+            function(data) {
+                if (data[0].nextAction == "done") {
+                    console.log("done");
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-spin fa\"></i>&nbsp;<?php echo $LANG['finalizing'];?> <?php echo $LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
+                } else {
+                    // error mngt
+                }
+            },
+            "json"
+        );
+    }
+}
+
 // Init
 $(function() {
-	$("input[type=button], #save_button, .button").button();
-	// spinner
+    $('.toggle').toggles({
+        drag: true, // allow dragging the toggle between positions
+        click: true, // allow clicking on the toggle
+        text: {
+            on: '<?php echo $LANG['yes'];?>', // text for the ON position
+            off: '<?php echo $LANG['no'];?>' // and off
+        },
+        on: true, // is the toggle ON on init
+        animate: 250, // animation time (ms)
+        easing: 'swing', // animation transition easing function
+        width: 50, // width used if not set in css
+        height: 20, // height if not set in css
+        type: 'compact' // if this is set to 'select' then the select style toggle will be used
+    });
+    $('.toggle').on('toggle', function(e, active) {
+        if (active) {
+            $("#"+e.target.id+"_input").val(1);
+        } else {
+            $("#"+e.target.id+"_input").val(0);
+        }
+    });
+
+
+    $("input[type=button], #save_button, .button").button();
+    // spinner
     $("#upload_imageresize_quality").spinner({
         min: 0,
         max: 100,
@@ -293,41 +415,41 @@ $(function() {
     $(".div_radio").buttonset();
 
     // Build Tabs
-	$("#tabs").tabs({
-		ajaxOptions: {
-			error: function(xhr, status, index, anchor) {
-				$(anchor.hash).html();
-			},
-			beforeSend: function() {
-				$("#div_loading").show();
-			},
-			complete: function() {
-				$("#div_loading").hide();
-			}
-		},
-		beforeLoad: function( event, ui ) {
-			ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
-		},
-		load: function( event, ui ) {
-			$("#loader_tab").remove();
-		}
-	});	
-	
-	$('#tabs').click(function(e){
-		var current_index = $("#tabs").tabs("option","active");
-		if (current_index == 9 || current_index == 10) {
-			$("#save_button").hide();
-		} else {
-			$("#save_button").show();
-		}
-	});
+    $("#tabs").tabs({
+        ajaxOptions: {
+            error: function(xhr, status, index, anchor) {
+                $(anchor.hash).html();
+            },
+            beforeSend: function() {
+                $("#div_loading").show();
+            },
+            complete: function() {
+                $("#div_loading").hide();
+            }
+        },
+        beforeLoad: function( event, ui ) {
+            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+        },
+        load: function( event, ui ) {
+            $("#loader_tab").remove();
+        }
+    });    
+    
+    $('#tabs').click(function(e){
+        var current_index = $("#tabs").tabs("option","active");
+        if (current_index == 9 || current_index == 10) {
+            $("#save_button").hide();
+        } else {
+            $("#save_button").show();
+        }
+    });
 
     $('#tbl_categories tr').click(function (event) {
         $("#selected_row").val($(this).attr("id"));
     });
 
     // display text of selected item
-	$(document).on("click","input[name=sel_item]",function(){
+    $(document).on("click","input[name=sel_item]",function(){
         var data = $("input[name=sel_item]:checked").attr("id").split('_');
         $("#new_item_title").val($("#item_"+data[1]).html());
     });
@@ -351,7 +473,7 @@ $(function() {
                 } else if ($("#post_type").val() == "moveItem") {
                     data = $("#moveItemTo").val();
                 }
-            	// send query
+                // send query
                 $.post(
                     "sources/categories.queries.php",
                     {
@@ -395,7 +517,7 @@ $(function() {
                 if ($("#new_field_title").val() != "" && $("#post_id").val() != "") {
                     $("#div_loading").show();
                     var $this = $(this);
-                	//send query
+                    //send query
                     $.post(
                         "sources/categories.queries.php",
                         {
@@ -404,8 +526,8 @@ $(function() {
                             id      : $("#post_id").val()
                         },
                         function(data) {
-                        	$("#new_field_title").val("");
-                        	// reload table
+                            $("#new_field_title").val("");
+                            // reload table
                             loadFieldsList();
                             $this.dialog("close");
                         },
@@ -438,7 +560,7 @@ $(function() {
                 if (ids != "") {
                     $("#div_loading, #catInFolder_wait").show();
                     var $this = $(this);
-                	//send query
+                    //send query
                     $.post(
                         "sources/categories.queries.php",
                         {
@@ -447,8 +569,8 @@ $(function() {
                             id          : $("#post_id").val()
                         },
                         function(data) {
-                        	$("#new_field_title").val("");
-                        	// display new list
+                            $("#new_field_title").val("");
+                            // display new list
                             $("#catFolders_"+$("#post_id").val()).html(data[0].list);
                             // close
                             $("#div_loading, #catInFolder_wait").hide();
@@ -484,24 +606,24 @@ $(function() {
 
     // SQL IMPORT FOR RESTORING
     var uploader_restoreDB = new plupload.Uploader({
-		runtimes : "gears,html5,flash,silverlight,browserplus",
-		browse_button : "pickfiles_restoreDB",
-		container : "upload_container_restoreDB",
-		max_file_size : "10mb",
+        runtimes : "gears,html5,flash,silverlight,browserplus",
+        browse_button : "pickfiles_restoreDB",
+        container : "upload_container_restoreDB",
+        max_file_size : "10mb",
         chunk_size : "1mb",
-		unique_names : true,
+        unique_names : true,
         dragdrop : true,
         multiple_queues : false,
         multi_selection : false,
         max_file_count : 1,
-		url : "sources/upload/upload.files.php",
-		flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
-		silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
-		filters : [
-			{title : "SQL files", extensions : "sql"}
-		],
-		init: {
-		    FilesAdded: function(up, files) {
+        url : "sources/upload/upload.files.php",
+        flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
+        silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+        filters : [
+            {title : "SQL files", extensions : "sql"}
+        ],
+        init: {
+            FilesAdded: function(up, files) {
                 up.start();
             },
             BeforeUpload: function (up, file) {
@@ -518,53 +640,53 @@ $(function() {
                     $("#restore_bck_encryption_key_dialog").dialog("open");
                 });
             }
-		}
-	});
+        }
+    });
     // Uploader options
-	uploader_restoreDB.bind("UploadProgress", function(up, file) {
-		$("#" + file.id + " b").html(file.percent + "%");
-	});
-	uploader_restoreDB.bind("Error", function(up, err) {
-		$("#filelist_restoreDB").html("<div class='ui-state-error ui-corner-all'>Error: " + err.code +
-			", Message: " + err.message +
-			(err.file ? ", File: " + err.file.name : "") +
-			"</div>"
-		);
-		up.refresh(); // Reposition Flash/Silverlight
-	});
-	uploader_restoreDB.bind("+", function(up, file) {
-		$("#" + file.id + " b").html("100%");
-	});
-	// Load CSV click
-	$("#uploadfiles_restoreDB").click(function(e) {
-		uploader_restoreDB.start();
-		e.preventDefault();
-	});
-	uploader_restoreDB.init();
+    uploader_restoreDB.bind("UploadProgress", function(up, file) {
+        $("#" + file.id + " b").html(file.percent + "%");
+    });
+    uploader_restoreDB.bind("Error", function(up, err) {
+        $("#filelist_restoreDB").html("<div class='ui-state-error ui-corner-all'>Error: " + err.code +
+            ", Message: " + err.message +
+            (err.file ? ", File: " + err.file.name : "") +
+            "</div>"
+        );
+        up.refresh(); // Reposition Flash/Silverlight
+    });
+    uploader_restoreDB.bind("+", function(up, file) {
+        $("#" + file.id + " b").html("100%");
+    });
+    // Load CSV click
+    $("#uploadfiles_restoreDB").click(function(e) {
+        uploader_restoreDB.start();
+        e.preventDefault();
+    });
+    uploader_restoreDB.init();
     // -end
 
     //Enable/disable option
-    $("input[name='restricted_to']").bind("click", function() {
-        if ($(this).val()== 1) {
+    $("#restricted_to").bind("click", function() {
+        if ($("#restricted_to_input").val()== 1) {
             $("#tr_option_restricted_to_roles").show();
         } else {
             $("#tr_option_restricted_to_roles").hide();
-            $("input[name=restricted_to_roles]").val(["0"]).button("refresh");
+            $("#tr_option_restricted_to_roles_input").val("0");
         }
     });
-    $("input[name='anyone_can_modify']").bind("click", function() {
-        if ($(this).val()== 1) {
+    $("#anyone_can_modify").bind("click", function() {
+        if ($("#anyone_can_modify_input").val()== 1) {
             $("#tr_option_anyone_can_modify_bydefault").show();
         } else {
             $("#tr_option_anyone_can_modify_bydefault").hide();
-            $("input[name=anyone_can_modify_bydefault]").val(["0"]).button("refresh");
+            $("#anyone_can_modify_bydefault_input").val("0");
         }
     });
 
     //check NEW SALT KEY
     $("#new_salt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
-        if ($("#new_salt_key").val().length <= 15 || $("#new_salt_key").val().length >= 32) {
+        if ($("#new_salt_key").val().length != 16) {
             $("#change_salt_key_image").attr("src", "includes/images/cross.png");
             $("#change_salt_key_but").hide();
         } else {
@@ -583,23 +705,23 @@ $(function() {
 
 function manageEncryptionOfAttachments(list, cpt) {
 
-	$.post(
-		"sources/admin.queries.php",
-		{
-			type    : "admin_action_attachments_cryption_continu",
-			option  : $("input[name=attachments_cryption]:checked").val(),
-			cpt     : cpt,
-			list    : list
-		},
-		function(data) {
-		    if (data[0].continu == true ) {
-		    	manageEncryptionOfAttachments(data[0].list, data[0].cpt);
-		    } else {
-		        $("#result_admin_action_attachments_cryption").html("<img src='includes/images/tick.png' alt='' /> "+data[0].cpt+" files changed");
-		    }
-		},
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type    : "admin_action_attachments_cryption_continu",
+            option  : $("input[name=attachments_cryption]:checked").val(),
+            cpt     : cpt,
+            list    : list
+        },
+        function(data) {
+            if (data[0].continu == true ) {
+                manageEncryptionOfAttachments(data[0].list, data[0].cpt);
+            } else {
+                $("#result_admin_action_attachments_cryption").html("<img src='includes/images/tick.png' alt='' /> "+data[0].cpt+" files changed");
+            }
+        },
         "json"
-	);
+    );
 }
 
 function refreshInput()
