@@ -793,6 +793,8 @@ $LANG = array (
     'click_to_change' => 'Нажмите для изменения',
     'settings_ldap_user_attribute' => 'Пользовательское поле поиска',
     'settings_ldap_user_attribute_tip' => 'LDAP-поле для поиска имени пользователя',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'user_ga_code_sent_by_email' => 'Новый код Google Authenticator был отправлен на ваш email.',
     'log_user_initial_pwd_changed' => 'Первоначальный пароль задан',
     'log_user_email_changed' => 'Email пользователя изменен на ',

@@ -793,6 +793,8 @@ $LANG = array (
     'click_to_change' => 'Zum Anpassen klicken',
     'settings_ldap_user_attribute' => 'Benutzerattribut durchsuchen ',
     'settings_ldap_user_attribute_tip' => 'LDAP-Attribut nach Benutzernamen durchsuchen',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'user_ga_code_sent_by_email' => 'Ihr neuer Google Authenticator Code wurde an Ihre E-Mail Adresse geschickt.',
     'log_user_initial_pwd_changed' => 'Initiales Passwort wurde gesetzt',
     'log_user_email_changed' => 'Benutzer E-Mail geändert in ',
