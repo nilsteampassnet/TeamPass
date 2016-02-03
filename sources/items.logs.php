@@ -40,7 +40,7 @@ $link->set_charset($encoding);
 // Check KEY and rights
 if (!isset($_POST['key']) || $_POST['key'] != $_SESSION['key']) {
 	echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
-	break;
+	//break; // This 'break;' results in an PHP Fatal
 }
 
 // Do asked action
