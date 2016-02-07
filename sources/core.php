@@ -101,7 +101,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 if (empty($languagesDropmenu)) {
     $languagesDropmenu = "";
     $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name ORDER BY name ASC");
+    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." ORDER BY name ASC");
     foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
             $record['flag'].'" alt="'.$record['label'].'" title="'.
@@ -268,6 +268,7 @@ if (
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
     $server_cert=openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
     $cert_name=$server_cert['name'];
+    $cert_issuer = '';
     foreach ($server_cert['issuer'] as $key => $value) {
         $cert_issuer .= "/$key=$value";
     }

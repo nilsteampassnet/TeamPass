@@ -29,6 +29,18 @@ function getSettingValue($val)
     return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
 }
 
+function mysqli_result($res,$row=0,$col=0){ 
+    $numrows = mysqli_num_rows($res); 
+    if ($numrows && $row <= ($numrows-1) && $row >=0){
+        mysqli_data_seek($res,$row);
+        $resrow = (is_numeric($col)) ? mysqli_fetch_row($res) : mysqli_fetch_assoc($res);
+        if (isset($resrow[$col])){
+            return $resrow[$col];
+        }
+    }
+    return false;
+}
+
 ################
 ## Function permits to check if a column exists, and if not to add it
 ################
@@ -67,7 +79,7 @@ function tableExists($tablename, $database = false)
     global $dbTmp;
     if (!$database) {
         $res = mysqli_query($dbTmp, "SELECT DATABASE()");
-        $database = mysql_result($res, 0);
+        $database = mysqli_result($res, 0);
     }
 
     $res = mysqli_query($dbTmp,
@@ -77,7 +89,7 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    return mysql_result($res, 0) == 1;
+    return mysqli_result($res, 0) == 1;
 }
 
 //define pbkdf2 iteration count
@@ -1829,7 +1841,7 @@ require_once \"".$skFile."\";
                     }
                     
                     // does tables KEYS exists
-                    if(mysql_num_rows(mysql_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
+                    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
                         $table_keys_exists = 1;
                     } else {
                         $table_keys_exists = 0;
