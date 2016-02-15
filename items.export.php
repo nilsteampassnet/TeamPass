@@ -3,7 +3,7 @@
  *
  * @file          items.export.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -124,9 +124,48 @@ echo '
         })
     });
 
+    function pollExport(export_format, remainingIds, currentID, nb)
+    {
+        $.ajax({
+            url: "sources/export.queries.php",
+            type : 'POST',
+            dataType : "json",
+            data : {
+                type    : export_format,
+                id     : currentID,
+                ids     : remainingIds
+            },
+            complete : function(data, statut){
+                var aIds = remainingIds.split(",");
+                var currentID = aIds[0];
+                aIds.shift();
+                var nb2 = aIds.length;
+                aIds = aIds.toString();
+                $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
+				console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+                if (currentID != "") {
+                    pollExport(export_format, aIds, currentID, nb);
+                } else {
+                    //Send query
+                    $.post(
+                        "sources/export.queries.php",
+                        {
+                            type    : "finalize_export_pdf",
+                            pdf_password : $("#export_pdf_password").val()
+                        },
+                        function(data) {
+                            $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
+                        },
+                        "json"
+                    );
+                }
+            }
+        })
+    };
+
     function exportItemsToFile()
     {
-        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="export_progress">0%</span>').attr("class","").show();
 
         //Get list of selected folders
         var ids = "";
@@ -169,35 +208,11 @@ echo '
                 function(data) {
                     // launch export by building content of export table
                     var aIds = ids.split(";");
-                    var ajaxReqs = [];
-                    for (index = 0; index < aIds.length; ++index) {
-                        ajaxReqs.push($.ajax({
-                            url: "sources/export.queries.php",
-                            type : 'POST',
-                            dataType : "json",
-                            data : {
-                                type    : export_format,
-                                id     : aIds[index]
-                            },
-                            complete : function(data, statut){
-                                // nothing done here
-                            }
-                        }));
-                    }
-                    $.when.apply($, ajaxReqs).done(function() {
-                        //Send query
-                        $.post(
-                            "sources/export.queries.php",
-                            {
-                                type    : "finalize_export_pdf",
-                                pdf_password : $("#export_pdf_password").val()
-                            },
-                            function(data) {
-                                $("#export_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
-                            },
-                            "json"
-                        );
-                    });
+                    var currentID = aIds[0];
+                    aIds.shift();
+                    var nb = aIds.length+1;
+                    aIds = aIds.toString();
+                    pollExport(export_format, aIds, currentID, nb);
                 }
             );
 

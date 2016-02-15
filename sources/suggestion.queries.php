@@ -2,7 +2,7 @@
 /**
  * @file          suggestion.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -91,8 +91,8 @@ if (!empty($_POST['type'])) {
             DB::query("SELECT * FROM ".prefix_table("suggestion")." WHERE label = %s AND folder_id = %i", $label, $folder);
             $counter = DB::count();
             if ($counter == 0) {
-                // generate random key
-                $randomKey = generateKey();
+                // encrypt
+                $encrypt = cryption($pwd, SALT, "", "encrypt");
 
                 // query
                 DB::insert(
@@ -101,13 +101,38 @@ if (!empty($_POST['type'])) {
                         'label' => $label,
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
-                        'password' => encrypt($randomKey.$pwd),
+                        'pw' => $encrypt['string'],
+                        'pw_iv' => $encrypt['iv'],
                         'comment' => $comment,
-                        'folder_id' => $folder,
-                        'suggestion_key' => $randomKey
+                        'folder_id' => $folder
                     )
                 );
-
+				
+				// get some info to add to the notification email
+				$resp_user = DB::queryfirstrow(
+					"SELECT login FROM ".prefix_table("users")." WHERE id = %i",
+					$_SESSION['user_id']
+				);
+				$resp_folder = DB::queryfirstrow(
+					"SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
+					$folder
+				);
+				
+				// notify Managers
+				$rows = DB::query(
+					"SELECT email 
+					FROM ".prefix_table("users")."
+					WHERE `gestionnaire` = %i AND `email` IS NOT NULL",
+					1
+				);
+				foreach ($rows as $record) {
+					sendEmail(
+						$LANG['suggestion_notify_subject'],
+						str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $LANG['suggestion_notify_body']),
+						$record['email']
+					);
+				}
+				
                 echo '[ { "status" : "done" } ]';
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';
@@ -159,7 +184,7 @@ if (!empty($_POST['type'])) {
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
-                "SELECT label, description, password, suggestion_key, folder_id, author_id, comment 
+                "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")." 
                 WHERE id = %i",
                 $_POST['id']
@@ -182,23 +207,13 @@ if (!empty($_POST['type'])) {
                     prefix_table("items"),
                     array(
                         'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
-                        'pw' => $suggestion['password']
+                        'pw' => $suggestion['pw'],
+                        'pw_iv' => $suggestion['pw_iv']
                     ),
                     "id=%i",
                     $existing_item_id['id']
                 );
                 if ($updStatus) {
-                    // update KEY
-                    $updStatus = DB::update(
-                        prefix_table("keys"),
-                        array(
-                            'rand_key' => $suggestion['suggestion_key']
-                        ),
-                        "sql_table = %s AND id = %i",
-                        "items",
-                        $existing_item_id['id']
-                    );
-
                     // update LOG
                     DB::insert(
                         prefix_table("log_items"),
@@ -229,26 +244,17 @@ if (!empty($_POST['type'])) {
                     array(
                         'label' => $suggestion['label'],
                         'description' => $suggestion['description'],
-                        'pw' => $suggestion['password'],
+                        'pw' => $suggestion['pw'],
                         'id_tree' => $suggestion['folder_id'],
                         'inactif' => '0',
                         'perso' => '0',
-                        'anyone_can_modify' => '0'
+                        'anyone_can_modify' => '0',
+                        'pw_iv' => $suggestion['pw_iv']
                     )
                 );
                 $newID = DB::insertId();
 
                 if (is_numeric($newID)) {
-                    // add Key
-                    DB::insert(
-                        prefix_table("keys"),
-                        array(
-                            'sql_table' => 'items',
-                            'id' => $newID,
-                            'rand_key' => $suggestion['suggestion_key']
-                        )
-                    );
-
                     // update log
                     DB::insert(
                         prefix_table("log_items"),

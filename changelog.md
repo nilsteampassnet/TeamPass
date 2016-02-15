@@ -1,4 +1,86 @@
-2.1.23
+Last changes
+2.1.25
+ #1169 sending Google Authenticator code through index page
+ #1160 hiding user password change option if DUOSecurity
+ #1152 Error while saving settings
+ #1149 log failed user authentication
+ #1148 Answer from Server cannot be parsed!
+ #1147 Mask/Display password not logged
+ #1146 Roles on separate pages
+ #1144 Login failure gives odd error
+ #1143 import csv double quotes issue
+ #1141 Syslog
+ #1140 Security fix for Multiple vulnerabilities
+ #1135 DataTables warning : table id=t_users - Invalid JSON Response
+ #1128 Requested Json Parse Failed
+ #1123 No Item to show in a folder after upgrading
+ #1122 When deleting an item, confirmation modal doesn't show the name of the item to be deleted
+ #1120 Not connect.n Verify Network
+ #1114 Cannot Delete Favorites Due to "undefined function prefix_table() "
+ #1108 Table teampass_keys missing!
+ #1103 omplexity Matches new password but still claims otherwise
+ #1102 Users cannot create folders
+ #1096 One time link view problem
+ #1095 Move Personal folder to Group Folder
+ #1086 "Error Encryption of the Password" after update
+ #1078 Send events to syslog
+ Fix for changing SaltKey in admin page
+ Fix for complete list of Roles in Admin Roles page
+ Fix for Users and Items currently edited list that were not proposing "next" button
+ Fix for label “By clicking the save button, you will delete ….” persistent
+ Fix for list loaded twice if double click in Tree folder
+ Fix for search result not displayed if previous folder was empty
+ Fix for possible sql injection via LIMIT parameters
+ Fix on profile dialogbox
+ Implemented Deletion and Restoration events in item's History
+ Implemented better handling of User role selection
+ Implemented multi personal folders
+ Implemented CSRFP library usage for security purpose
+ Implemented new "Yes/No" button in settings page
+ Implemented log view for failed authentication
+ Implemented Tree sequentially load (via ajax)
+ Add new item from API (for teampass-connect) (not yet tested)
+
+2.1.24
+ #1090 - Fix for Export to PDF last folder not taken into consideration
+ #1088 - #1085 - Password show problem
+ #1087 - Managers can edit and delete Items they are allowed to see flag
+ #1085 - Fix for copy to clipboard that sometime fails to work correctly
+ #1073 - User can create folder on root without permission
+ #1074 - Read only user can create folders + wipe out all items on remove folder
+ #1069 - Knowledge Base can not change page
+ #1068 - personal saltkey not saved
+ #1067 - Suggestion feature not working
+ #1064 - Record in db are not deleted when you delete in GUI
+ #1058 - Fix API issue while adding an item
+ #1063 - Fix for Forgot password not working
+ #1062 - Warning for hex2bin function usage (PHP>5.4)
+ #1061 - for for Can not import password from keepass xml
+ #1055 - Personal item cannot be deleted
+ #1048 - Encryption error flag is visible for no reason
+ #1045 - Missing fields in table (pw_iv and data_iv)
+ #1042 - Added pagination in Users page
+ #1042 - Pagination on Users Page
+ #1060 - Added new logging events (password copied, password shown)
+ #1041 - "Forgot your password?" not working
+ #1027 - User right more refined with "No deletion" possible right
+ #953 - Make sure to rebuild the tree when creating an user with a personal folder
+ #1035 - added php-xml install check
+ #950 - #1005 - can not create Admin account
+ #936 - #937 - Session file_exists not allowed while running through open_basedir restriction
+ #970 - API special char fix
+ #962 - Error message when using the Find-function
+ #955 - Fix LDAP Settings UI
+ Fix passwords are empty when importing from Keepass
+ Fix empty URL column in off-line html
+ A lot of small fixes
+ New: implemented 2factor authentication DUOSecurity feature
+ New: create User via API
+ New: Vietnamese language added
+ New: Tree structure is loaded dynamically
+ New: Notification to Managers for awaiting suggestions
+ 
+ 2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
  #830 - Fix documentation syntax
@@ -14,8 +96,35 @@
  #853 - New setting for default session expiration delay
  #851 - Multiple fixes for LDAP integration
  #814 - #857
+ #880 - Fix for View logs error redeclared function getBits
+ #881 - Fix for "Forgot your password?" not working
+ #900 - Fix for New folder incorrect permissions (read-only)
+ #890 - Fix for Personal Folder only read permission
+ #910 - Fix for Backslashes in accounts are not copied to clipboard
+ #913 - Fix for 'Announce this item by email' fails
+ #915 - Export to PDF corrected
+ #907 - Move folder feature
+ #917 - Fix on API
+ #941 - Fix for user_not_exists message (LDAP)
+ #988 - Error on copy item
+ #992 - Added to Log User Created By
+ PR : #871 - #887
  API: add FIND feature
  Fix: copy not possible in RO folders
+ Fix: If GA activated, Users can ask for a new code from the login page
+ Fix: Off-line file url was not correct in download button
+ Removal of Keys table
+ Implementation of PhpCrypt library as encryption library (AES-128 with CBC mode)
+ Implementation of Awesomefont in Items page
+ Clean up of old comments
+ Added "long press" to show password
+ Fix of bug in Offline export
+ List of Users is now loaded through Ajax to prevent timeout in case of long list of users
+ Personal saltkey change is now performed through Ajax to prevent timeout in case of long list of passwords
+ Fix for users with "Allowed folders" that can't write inside them.
+ Removed extra files from Yubico folder
+ Update process: suggestions passwords are reencrypted
+ Suggestion migrated to new encryption
 
 2.1.22
  #700 - Errors related to "includes/js/jstree/themes/default"

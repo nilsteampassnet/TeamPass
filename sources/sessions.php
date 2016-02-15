@@ -106,10 +106,11 @@ class CryptSession {
     public function read($id)
     {
         $sess_file = $this->_path.$this->_name."_$id";
-        if (!file_exists($sess_file)) {
+        if (@!file_exists($sess_file)) {
             return false;
         }
 	  	$data      = file_get_contents($sess_file);
+	  	if (empty($data)) {return false;}
         list($hmac, $iv, $encrypted)= explode(':',$data);
         $iv        = base64_decode($iv);
         $encrypted = base64_decode($encrypted);

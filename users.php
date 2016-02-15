@@ -3,7 +3,7 @@
  *
  * @file          users.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -53,266 +53,43 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <img src="includes/images/user--plus.png" title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')"class="button" style="padding:2px;" />
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
-<input type="text" name="search" id="search" />
+    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button">
+        <img src="includes/images/user--plus.png" alt="" />
+    </button>
 </div>';
 
+
+//Show the KB in a table view
 echo '
-<form name="form_utilisateurs" method="post" action="">
-    <div style="line-height:20px;"  align="center">
-        <table cellspacing="0" cellpadding="2">
-            <thead>
-                <tr>
-                    <th width="20px">ID</th>
-                    <th></th>
-                    <th>'.$LANG['user_login'].'</th>
-                    <th>'.$LANG['name'].'</th>
-                    <th>'.$LANG['lastname'].'</th>
-                    <th>'.$LANG['managed_by'].'</th>
-                    <th>'.$LANG['functions'].'</th>
-                    <th>'.$LANG['authorized_groups'].'</th>
-                    <th>'.$LANG['forbidden_groups'].'</th>
-                    <th title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
-                    <th title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-                    <th title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-                    <th title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-                    ', (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) ?
-                    	'<th title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>' : ''
-                    ,'
-                    <th title="'.$LANG['user_action'].'"><img src="includes/images/user-locked.png" /></th>
-                    <th title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-                    <th title="'.$LANG['email_change'].'"><img src="includes/images/mail.png" /></th>
-                    <th title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
-					', (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) ?
-                    	'<th title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>':''
-                	,'
-                </tr>
-            </thead>
-            <tbody>';
+<div style="margin:10px auto 25px auto;min-height:250px;" id="users_page">
+<div id="t_users_alphabet" style="margin-top:25px;"></div>
+<table id="t_users" class="hover" width="100%">
+    <thead><tr>
+        <th style="width:40px;"></th>
+        <th>'.$LANG['user_login'].'</th>
+        <th>'.$LANG['name'].'</th>
+        <th>'.$LANG['lastname'].'</th>
+        <th>'.$LANG['managed_by'].'</th>
+        <th>'.$LANG['functions'].'</th>
+        <!--<th>'.$LANG['authorized_groups'].'</th>
+        <th>'.$LANG['forbidden_groups'].'</th>-->
+        <th style="width:20px;" title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
+        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
+        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
+        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
+        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
+        <th style="width:20px;" title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
+        <th style="width:20px;" title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
+        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>
+    </tr></thead>
+    <tbody>
+        <tr><td></td></tr>
+    </tbody>
+</table>
+</div>';
 
-$listAvailableUsers = $listAdmins = "";
-$x = 0;
-// Get through all users
-$rows = DB::query("SELECT * FROM ".prefix_table("users")." ORDER BY login ASC");
-foreach ($rows as $reccord) {
-    // Get list of allowed functions
-    $listAlloFcts = "";
-    if ($reccord['admin'] != 1) {
-        if (count($rolesList) > 0) {
-            foreach ($rolesList as $fonction) {
-                if (in_array($fonction['id'], explode(";", $reccord['fonction_id']))) {
-                    $listAlloFcts .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
-                }
-            }
-        }
-        if (empty($listAlloFcts)) {
-            $listAlloFcts = '<img src="includes/images/error.png" title="'.$LANG['user_alarm_no_function'].'" />';
-        }
-    }
-    // Get list of allowed groups
-    $listAlloGrps = "";
-    if ($reccord['admin'] != 1) {
-        if (count($treeDesc) > 0) {
-            foreach ($treeDesc as $t) {
-                if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
-                    $ident = "";
-                    if (in_array($t->id, explode(";", $reccord['groupes_visibles']))) {
-                        $listAlloGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
-                    }
-                    $prev_level = $t->nlevel;
-                }
-            }
-        }
-    }
-    // Get list of forbidden groups
-    $listForbGrps = "";
-    if ($reccord['admin'] != 1) {
-        if (count($treeDesc) > 0) {
-            foreach ($treeDesc as $t) {
-                $ident = "";
-                if (in_array($t->id, explode(";", $reccord['groupes_interdits']))) {
-                    $listForbGrps .= '<img src="includes/images/arrow-000-small.png" />'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
-                }
-                $prev_level = $t->nlevel;
-            }
-        }
-    }
-    // is user locked?
-    if ($reccord['disabled'] == 1) {
-    }
 
-    //Show user only if can be administrated by the adapted Roles manager
-    if (
-        $_SESSION['is_admin'] ||
-        ($reccord['isAdministratedByRole'] > 0 &&
-        in_array($reccord['isAdministratedByRole'], $_SESSION['user_roles']))
-    ) {
-        $showUserFolders = true;
-    } else {
-        $showUserFolders = false;
-    }
-
-    /*// Check if user has the same roles accessible as the manager
-    if ($_SESSION['user_manager']) {
-        $showUserFolders = false;
-        // Check if the user is a manager. If yes, not allowed to modifier
-        if (($_SESSION['user_manager'] == 1 && $reccord['gestionnaire'] == 1) || $reccord['admin'] == 1) {
-            $showUserFolders = false;
-        } else {
-            // Check if the user has at least a same role as the manager
-            foreach ($_SESSION['user_roles'] as $role_id) {
-                if (in_array($role_id, explode(";", $reccord['fonction_id']))) {
-                    $showUserFolders = true;
-                    break;
-                }
-            }
-            // if user has no role, Manager could add
-            if (empty($reccord['fonction_id'])) {
-                $showUserFolders = true;
-            }
-        }
-    } else {
-        $showUserFolders = true;
-    }*/
-    // Build list of available users
-    if ($reccord['admin'] != 1 && $reccord['disabled'] != 1) {
-        $listAvailableUsers .= '<option value="'.$reccord['id'].'">'.$reccord['login'].'</option>';
-    }
-    // Display Grid
-    if ($showUserFolders == true) {
-        echo '<tr', $reccord['disabled'] == 1 ? ' style="background-color:#FF8080;font-size:11px;"' : ' class="ligne'.($x % 2).' data-row"', '>
-                    <td align="center">'.$reccord['id'].'</td>
-                    <td align="center">', $reccord['disabled'] == 1 ?'
-                        <img src="includes/images/error.png" style="cursor:pointer;" onclick="unlock_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['unlock_user'].'" />' :
-                    '', '
-                    </td>
-                    <td align="center">
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="login_'.$reccord['id'].'">'.$reccord['login'].'</p>
-                    </td>
-                    <td align="center">
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="name_'.$reccord['id'].'">'.@$reccord['name'].'</p>
-                    </td>
-                    <td align="center">
-                        <p ', ($_SESSION['user_admin'] == 1 || ($_SESSION['user_manager'] == 1 && $reccord['admin'] == 0 && $reccord['gestionnaire'] == 0) && $showUserFolders == true) ? 'class="editable_textarea"' : '', 'id="lastname_'.$reccord['id'].'">'.@$reccord['lastname'].'</p>
-                    </td>
-                    <td align="center">
-                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
-                            <div id="list_adminby_'.$reccord['id'].'" style="text-align:center;">
-                                ', isset($reccord['isAdministratedByRole']) && $reccord['isAdministratedByRole'] > 0 ?
-                                $rolesList[$reccord['isAdministratedByRole']]['title']
-                                :
-                                '<span title="'.$LANG['administrators_only'].'">'.$LANG['admin_small'].'</span>', '
-                            </div>
-                            <div style="text-align:center;">
-                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="ChangeUSerAdminBy(\''.$reccord['id'].'\')" />
-                            </div>', '
-                        </div>
-
-                    </td>
-                    <td>
-                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
-                            <div id="list_function_user_'.$reccord['id'].'" style="text-align:center;">
-                                '.$listAlloFcts.'
-                            </div>
-                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'functions\')" title="'.$LANG['change_function'].'" />
-                            </div>', '
-                        </div>
-                    </td>
-                    <td>
-                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
-                            <div id="list_autgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-        .$listAlloGrps.'
-                            </div>
-                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png"  class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'autgroups\')" title="'.$LANG['change_authorized_groups'].'" />
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div', ($reccord['admin'] == 1) ? ' style="display:none;"':'', '>
-                            <div id="list_forgroups_user_'.$reccord['id'].'" style="text-align:center;">'
-        .$listForbGrps.'
-                            </div>
-                            <div style="text-align:center;', $showUserFolders == false ? 'display:none;':'', '">
-                                <img src="includes/images/cog_edit.png" class="button" style="padding:2px;" onclick="Open_Div_Change(\''.$reccord['id'].'\',\'forgroups\')" title="'.$LANG['change_forbidden_groups'].'" />
-                            </div>
-                        </div>
-                    </td>
-                    <td align="center">
-                        <input type="checkbox" id="admin_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'admin\')"', $reccord['admin'] == 1 ? 'checked' : '', ' ', $_SESSION['user_manager'] == 1 ? 'disabled="disabled"':'' , ' />
-                    </td>
-                    <td align="center">
-                        <input type="checkbox" id="gestionnaire_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'gestionnaire\')"', $reccord['gestionnaire'] == 1 ? 'checked' : '', ' ', ($_SESSION['user_manager'] == 1 || $reccord['admin'] == 1) ? 'disabled="disabled"':'', ' />
-                    </td>';
-        // Read Only privilege
-        echo '
-                    <td align="center">
-                        <input type="checkbox" id="read_only_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'read_only\')"', $reccord['read_only'] == 1 ? 'checked' : '', ' ', ($showUserFolders != true) ? 'disabled="disabled"':'', ' />
-                    </td>';
-        // Can create at root
-            echo '
-                    <td align="center">
-                        <input type="checkbox" id="can_create_root_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'can_create_root_folder\')"', $reccord['can_create_root_folder'] == 1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
-                    </td>';
-        if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
-        echo '
-                    <td align="center">
-                        <input type="checkbox" id="personal_folder_'.$reccord['id'].'" onchange="ChangeUserParm(\''.$reccord['id'].'\',\'personal_folder\')"', $reccord['personal_folder'] == 1 ? 'checked' : '', '', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
-                    </td>';
-        }
-        // If user is active, then you could lock it
-        // If user is locked, you could delete it
-        if ($reccord['disabled'] == 1) {
-            $actionOnUser = "action_on_user('".$reccord['id']."','delete')";
-            $userIcon = "user--minus";
-            $userTxt = $LANG['user_del'];
-        } else {
-            $actionOnUser = "action_on_user('".$reccord['id']."','lock')";
-            $userIcon = "user-locked";
-            $userTxt = $LANG['user_lock'];
-        }
-
-        echo '
-                    <td align="center">
-                        <img ', ($showUserFolders == true) ? 'src="includes/images/'.$userIcon.'.png" onclick="'.$actionOnUser.'" class="button" style="padding:2px;" title="'.$userTxt.'"':'src="includes/images/user--minus_disabled.png"', ' />
-                    </td>
-                    <td align="center">
-                        &nbsp;<img ', ($showUserFolders == true) ? 'src="includes/images/lock__pencil.png" onclick="mdp_user(\''.$reccord['id'].'\')" class="button" style="padding:2px;"':'src="includes/images/lock__pencil_disabled.png"', ' />
-                    </td>
-                    <td align="center">
-                        &nbsp;';
-        if ($showUserFolders != true) {
-            echo '<img src="includes/images/mail--pencil_disabled.png" />';
-        } else {
-            echo '<img id="useremail_'.$reccord['id'].'" src="includes/images/', empty($reccord['email']) ? 'mail--exclamation.png':'mail--pencil.png', '" onclick="mail_user(\''.$reccord['id'].'\',\''.addslashes($reccord['email']).'\')" class="button" style="padding:2px;" title="'.$reccord['email'].'"', ' />';
-        }
-    	echo '
-                    </td>';
-    	// Log reports
-        echo '
-                    <td align="center">
-                        &nbsp;<img ', ($showUserFolders != true) ? 'src="includes/images/report_disabled.png"':'src="includes/images/report.png" onclick="user_action_log_items(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['see_logs'].'"', ' />
-                    </td>';
-    	// GA code
-    	if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
-    		echo '
-					<td>
-						&nbsp;<img src="includes/images/', empty($reccord['ga']) ? 'phone_add' : 'phone_sound' ,'.png" onclick="user_action_ga_code(\''.$reccord['id'].'\')" class="button" style="padding:2px;" title="'.$LANG['user_ga_code'].'" />
-					</td>';
-    	}
-    	// end
-    	echo '
-                </tr>';
-        $x++;
-    }
-}
 echo '
-            </tbody>
-        </table>
-    </div>
-</form>
 <input type="hidden" id="selected_user" />
 <input type="hidden" id="log_page" value="1" />';
 // DIV FOR CHANGING FUNCTIONS
@@ -348,7 +125,7 @@ echo '
     foreach ($rolesList as $fonction) {
         if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
             echo '
-            <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+            <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
         }
     }
     echo '
@@ -385,7 +162,7 @@ if ($_SESSION['is_admin']) {
 foreach ($rolesList as $fonction) {
     if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
         echo '
-        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.$fonction['title'].'"</option>';
+        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
     }
 }
 echo '
@@ -428,7 +205,7 @@ $LANG['give_new_pw'].'
     <div style="margin-top:20px; width:100%;">
         <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
         <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
-        <span id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></span>
+        <div id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></div>
     </div>
     <div style="width:100%;height:20px;">
         <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -446,11 +223,6 @@ $LANG['give_new_email'].'
         <input type="text" size="50" id="change_user_email_newemail" />
     </div>
     <input type="hidden" id="change_user_email_id" />
-</div>';
-// DIV FOR HELP
-echo '
-<div id="help_on_users" style="">
-    <div>'.$LANG['help_on_users'].'</div>
 </div>';
 // USER MANAGER
 echo '
@@ -516,4 +288,48 @@ $LANG['activity'].':
         </tbody>
     </table>
     <div id="log_pages" style="margin-top:10px;"></div>
+</div>';
+
+
+// USER EDIT DIALOG
+echo '
+<div id="user_management_dialog" style="display:none;">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="user_edit_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+    <div id="user_edit_div" style="display:none;">
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;" class="ui-state-error ui-corner-all" id="user_edit_error"></div>
+
+    <div style="width:100%;">
+        <div style="width:70%; float:left;">
+            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="45" id="user_edit_login" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="45" id="user_edit_name" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="45" id="user_edit_lastname" class="ui-widget-content ui-corner-all form_text" />
+            <br />
+            <label class="form_label_100" for="user_edit_email">'.$LANG['email'].'</label>&nbsp;<input type="text" size="45" id="user_edit_email" class="ui-widget-content ui-corner-all form_text" />
+        </div>
+        <div style="width:30%; float:right;">
+            <input type="hidden" id="confirm_deletion" value="" />
+            <span id="user_edit_info" style="margin:20px 10px 0 0; text-align:center;"></span>
+            <span id="user_edit_delete" style="margin:20px 10px 0 0; text-align:center; display:none;" class="ui-widget ui-corner-all">'.$LANG['user_info_delete'].'</span>
+        </div>
+    </div>
+    <div style="width:100%; margin-top:10px;">
+        <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].' : </label>
+        <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
+        <select name="user_edit_managedby" id="user_edit_managedby"></select>
+        <br />
+        <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
+        <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"></select>
+        <br />
+        <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].' : </label>
+        <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"></select>
+        <br />
+    </div>
+
+    <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;position: absolute; bottom: 0;" class="ui-state-error ui-corner-all" id="user_edit_warning_bottom"></div>
+    <input type="hidden" id="user_edit_id" />
+    </div>
 </div>';

@@ -2,7 +2,7 @@
 /**
  * @file          kb.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -52,7 +52,7 @@ if ($counter>0) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['kb'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" id="button_new_kb">
+    <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button">
         <img src="includes/images/direction_plus.png" alt="" />
     </button>
     <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>

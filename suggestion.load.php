@@ -2,7 +2,7 @@
 /**
  * @file          suggestion.load.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -56,7 +56,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
     }
 
     //Function validating
-    function validateSuggestion(id)
+    function validateSuggestion(id, suggestion_text)
     {
         $("#div_loading").show();
         $("#suggestion_id").val(id);
@@ -75,6 +75,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 } else if (data[0].status = "duplicate") {
                     $("#suggestion_is_duplicate").show().addClass("ui-state-error");
                 }
+				$("#suggestion_add_label").html(suggestion_text);
                 $("#div_loading").hide();
                 // show dialog
                 $("#div_suggestion_validate").dialog("open");
@@ -101,7 +102,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             function(data) {
                 if (data[0].status == "ok") {
                     $("#complexity_required").val(data[0].complexity);
-                    $("#complexity_required_text").html("<b>"+data[0].complexity_text+"</b>");
+                    $("#complexity_required_text").html("[<?php echo $LANG['complex_asked'];?>&nbsp;&nbsp;<span style=\"color:#D04806; font-weight:bold;\">"+data[0].complexity_text+"</span>]");
                 }
                 $("#pw_wait").hide();
             },
@@ -112,8 +113,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
     }
 
     $(function() {
-        //buttons
-        $("#button_new_suggestion").button();
 
         //Launch the datatables pluggin
         $("#t_suggestion").dataTable({
@@ -166,8 +165,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             width: 400,
             height: 240,
             title: "<?php echo $LANG['suggestion_validate_confirm'];?>",
+			open: function( event, ui ) {
+				$("#suggestion_edit_wait").hide();
+			},
             buttons: {
-                "<?php echo $LANG['add_button'];?>": function() {
+                "<?php echo $LANG['confirm'];?>": function() {
+					$("#suggestion_edit_wait").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {
@@ -198,8 +201,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 600,
-            height: 500,
+            width: 450,
+            height: 550,
             title: "<?php echo $LANG['suggestion_add'];?>",
             buttons: {
                 "<?php echo $LANG['save_button'];?>": function() {
@@ -213,6 +216,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                     } else if (parseInt($("#password_complexity").val()) < parseInt($("#complexity_required").val())) {
                         $("#suggestion_error").show().html("<?php echo $LANG['error_complex_not_enought'];?>").addClass("ui-state-error");
                     } else {
+						$("#add_suggestion_wait").show();
                         var data = '{"label":"'+sanitizeString($("#suggestion_label").val())+
                             '","password":"'+sanitizeString($("#suggestion_pwd").val())+
                             '", "description":"'+sanitizeString($("#suggestion_description").val()).replace(/\n/g, '<br />')+
@@ -233,6 +237,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                 } else if (data[0].status = "duplicate_suggestion") {
                                     $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_duplicate'];?>").addClass("ui-state-error");
                                 }
+								$("#add_suggestion_wait").hide();
                             },
                             "json"
                         );
@@ -244,9 +249,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             },
             open:function(event, ui) {
                 $("#suggestion_email, #suggestion_pwd, #suggestion_email").removeClass("ui-state-error");
-            },
-            close: function(event,ui) {
-                $("#suggestion_email, #suggestion_description, #suggestion_label, #suggestion_password, #suggestion_comment").val("");
+				$("#add_suggestion_wait").hide();
+				//empty dialogbox
+				$("#suggestion_form input, #suggestion_form select, #suggestion_form textarea").val("");
+				$("#password_complexity").val("0");
+				$("#complexity_required_text").html("");
+				$("#suggestion_pwd").focus();
+				$("#suggestion_label").focus();
             }
         });
 

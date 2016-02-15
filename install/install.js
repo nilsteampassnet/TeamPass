@@ -18,7 +18,7 @@ $(function() {
     //SALT KEY non accepted characters management
     $("#encrypt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
-        if ($("#encrypt_key").val().length < 15)
+        if ($("#encrypt_key").val().length != 16 || ("#encrypt_key").val().length != 24 || ("#encrypt_key").val().length != 32)
             $("#res4_check1").html("<img src='../includes/images/cross.png' />");
         else
             $("#res4_check1").html("<img src='../includes/images/tick.png' />");
@@ -55,8 +55,10 @@ function CheckPage()
             error = "Fields need to be filled in!";
         } else {
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
-            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars"];
+            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml"];
             multiple = true;
+            $("#hid_abspath").val($("#root_path").val());
+            $("#hid_url_path").val($("#url_path").val());
         }
     }
 
@@ -65,15 +67,22 @@ function CheckPage()
         if ($("#db_host").val() == "" || $("#db_db").val() == "" || $("#db_login").val() == "" || $("#db_port").val() == "") {
             error = "Paths need to be filled in!";
         } else {
-            data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'"}';
+            data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'", "abspath":"'+$("#hid_abspath").val()+'", "url_path":"'+$("#hid_url_path").val()+'"}';
             tasks = ["connection*test"];
             multiple = "";
+            $("#hid_db_host").val($("#db_host").val());
+            $("#hid_db_bdd").val($("#db_bdd").val());
+            $("#hid_db_login").val($("#db_login").val());
+            $("#hid_db_pwd").val($("#db_pw").val());
+            $("#hid_db_port").val($("#db_port").val());
         }
     }
 
     // STEP 4
     if (step == "4") {
         if ($("#encrypt_key").val() == "") {
+            error = "You must define a SALTkey!";
+        } else if ($("#encrypt_key").val().length != 16 && $("#encrypt_key").val().length != 24 && $("#encrypt_key").val().length != 32) {
             error = "You must define a SALTkey!";
         } else if ($("#admin_pwd").val() == "") {
             error = "You must define a password for Admin account!";
@@ -87,7 +96,7 @@ function CheckPage()
     // STEP 5
     if (step == "5") {
         data = '';
-        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "entry*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*keys", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion"];
+        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "entry*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion"];
         multiple = true;
     }
 
@@ -112,7 +121,7 @@ function CheckPage()
         $("#step_res").val("true");
         var ajaxReqs = [];
         for (index = 0; index < tasks.length; ++index) {
-            var tsk = tasks[index].split("*");
+            var tsk = tasks[index].split("*");//console.log(tsk[1]);
             ajaxReqs.push($.ajax({
                 url: "install.queries.php",
                 type : 'POST',
@@ -122,34 +131,41 @@ function CheckPage()
                     data:       aes_encrypt(data), //
                     activity:   aes_encrypt(tsk[0]),
                     task:       aes_encrypt(tsk[1]),
+                    db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
                     index:      index,
                     multiple:   multiple
                 },
                 complete : function(data, statut){
-                    data = $.parseJSON(data.responseText);
-                    if (data[0].error == "") {
-                        $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
-                        if (data[0].result != undefined && data[0].result != "" ) {
-                            $("#step_result").html(data[0].result);
-                        }
+                    if (data.responseText == "") {
+                        // stop error occured, PHP5.5 installed?
+                        $("#step_result").html("[ERROR] Answer from server is empty. This may occur if PHP version is not at least 5.5. Please check this this fit your server configuration!");
                     } else {
-                    	// ignore setting error if regarding setting permissions (step 6, index 2)
-                    	if (step+data[0].index != "62") {
-                    		$("#step_res").val("false");
-                    	}
-                        $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
-                        if (data[0].result != undefined && data[0].result != "" ) {
-                            $("#step_result").html(data[0].result);
+                        data = $.parseJSON(data.responseText);
+                        if (data[0].error == "") {
+                            $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
+                            if (data[0].result != undefined && data[0].result != "" ) {
+                                $("#step_result").html(data[0].result);
+                            }
+                        } else {
+                        	// ignore setting error if regarding setting permissions (step 6, index 2)
+                        	if (step+data[0].index != "62") {
+                        		$("#step_res").val("false");
+                        	}
+                            $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
+                            if (data[0].result != undefined && data[0].result != "" ) {
+                                $("#step_result").html(data[0].result);
+                            }
                         }
                     }
                 }
             }));
         }
-        $.when.apply($, ajaxReqs).done(function() {
+        $.when.apply($, ajaxReqs).done(function(data, statut) {
             setTimeout(function(){
                 // all requests are complete
                 if ($("#step_res").val() == "false") {
-                    $("#step_error").show().html("At least one task has failed! Please correct and relaunch.");
+                	data = $.parseJSON(data.responseText);
+                    $("#step_error").show().html("At least one task has failed! Please correct and relaunch. ");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
                     $("#but_launch").prop("disabled", true);
@@ -177,6 +193,7 @@ function CheckPage()
                 data:       aes_encrypt(data),
                 activity:   aes_encrypt(tsk[0]),
                 task:       aes_encrypt(tsk[1]),
+                db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
                 index:      index,
                 multiple:   multiple
             },
@@ -267,7 +284,7 @@ function suggestKey() {
     // "editors and viewers regard the password as multiple words and
     // things like double click no longer work"
     var pwchars = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
-    var passwordlength = 28;    // length of the salt
+    var passwordlength = 16;    // length of the salt
     var passwd = "";
 
     for ( i = 0; i < passwordlength; i++ ) {

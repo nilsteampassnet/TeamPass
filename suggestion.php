@@ -2,7 +2,7 @@
 /**
  * @file          suggestion.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -113,7 +113,7 @@ foreach ($folders as $folder) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" id="button_new_suggestion">
+    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" class="button">
         <img src="includes/images/direction_plus.png" alt="" />
     </button>
 </div>';
@@ -121,7 +121,7 @@ echo '
 //Show the SUGGESTION in a table view
 echo '
 <div style="margin:10px auto 25px auto;min-height:250px;" id="kb_page">
-<table id="t_suggestion" cellspacing="0" cellpadding="5" width="100%">
+<table id="t_suggestion" class="hover" width="100%">
     <thead><tr>
         <th style="width:30px;"></th>
         <th style="width:20%;">'.$LANG['label'].'</th>
@@ -142,39 +142,35 @@ echo '
     <div id="suggestion_error" class="ui-widget-content ui-corner-all" style="display:none;padding:3px;"></div>
 
     <label for="suggestion_label" class="label_cpm">'.$LANG['label'].'</label>
-    <input type="text" id="suggestion_label" class="input text ui-widget-content ui-corner-all" />
+    <input type="text" id="suggestion_label" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
+
+	<label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
+	<textarea rows="2" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
     <br />
+	
+	<label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
+	<select name="suggestion_folder" id="suggestion_folder" onChange="GetRequiredComplexity()" style="width:100%;">
+		'.$selectVisibleFoldersOptions.'
+	</select>
+	<br /><br />
 
-    <div style="float:left;width:100%;">
-        <label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
-        <textarea rows="2" name="suggestion_description" id="suggestion_description" class="input"></textarea>
-    </div>
+	<label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].
+	'&nbsp;
+	<span id="pw_wait" style="display:none;"><img src="includes/images/ajax-loader.gif" /></span>
+	<span id="complexity_required_text"></span>
+	</label>
+	<input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
+	<div style="width:100%;">
+		<input type="hidden" id="complexity_required" />		
+		<div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+		<input type="hidden" id="password_complexity" />
+	</div>
 
-    <div style="float:left;width:100%;">
-        <label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
-        <select  name="suggestion_folder" id="suggestion_folder" onChange="GetRequiredComplexity()">
-            '.$selectVisibleFoldersOptions.'
-        </select>
-        <div style="margin-bottom:10px;">
-            <label for="" class="form_label_180">'.$LANG['complex_asked'].'</label>
-            <span id="complexity_required_text" style="color:#D04806; margin-left:40px;"></span>
-            <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
-            <input type="hidden" id="complexity_required" />
-        </div>
-    </div>
+	<label for="suggestion_comment" class="label_cpm">'.$LANG['comment'].'</label>
+	<textarea rows="2" name="suggestion_comment" id="suggestion_comment" class="input" style="width:100%;"></textarea>
 
-    <div style="float:left;width:100%;">
-        <label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].'</label>
-        <input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" />
-        <input type="hidden" id="password_complexity" />
-        <div style="width:100%;">
-            <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
-        </div>
-    </div>
-
-    <div style="float:left;width:100%;">
-        <label for="suggestion_comment" class="label_cpm">'.$LANG['comment'].'</label>
-        <textarea rows="2" name="suggestion_comment" id="suggestion_comment" class="input"></textarea>
+	<div style="padding:5px; z-index:9999999; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="add_suggestion_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';
 
@@ -187,6 +183,10 @@ echo '
 //CONFIRM DIALOG
 echo '
 <div id="div_suggestion_validate" style="display:none;">
+	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="suggestion_edit_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+	<div style="margin:5px 0 5px 0; text-align:center; font-size:15px; font-weight:bold;" id="suggestion_add_label"></div>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['suggestion_validate'].'</p>
     <div style="display:none;margin-top:10px;" id="suggestion_is_duplicate">'.$LANG['suggestion_is_duplicate'].'</div>
 </div>';

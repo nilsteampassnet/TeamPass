@@ -2,7 +2,7 @@
 /**
  * @file          views_logs.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -16,9 +16,9 @@ require_once('sources/sessions.php');
 session_start();
 
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -35,7 +35,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['u
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 header("Content-type: text/html; charset=utf-8");
-include $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -49,10 +49,10 @@ echo '
         <div id="radio_log">
             <input type="radio" id="radio60" name="radio" onclick="manage_div_display(\'tab6_0\'); loadTable(\'t_connections\');" /><label for="radio60">'.$LANG['connections'].'</label>
             <input type="radio" id="radio61" name="radio" onclick="manage_div_display(\'tab6_1\'); loadTable(\'t_errors\');" /><label for="radio61">'.$LANG['errors'].'</label>
-            <input type="radio" id="radio62" name="radio" onclick="manage_div_display(\'tab6_2\'); loadTable(\'t_access\');" /><label for="radio62">'.$LANG['at_shown'].'</label>
             <input type="radio" id="radio63" name="radio" onclick="manage_div_display(\'tab6_3\'); loadTable(\'t_copy\');" /><label for="radio63">'.$LANG['at_copy'].'</label>
             <input type="radio" id="radio64" name="radio" onclick="manage_div_display(\'tab6_4\'); loadTable(\'t_admin\');" /><label for="radio64">'.$LANG['admin'].'</label>
             <input type="radio" id="radio65" name="radio" onclick="manage_div_display(\'tab6_5\'); loadTable(\'t_items\');" /><label for="radio65">'.$LANG['items'].'</label>
+            <input type="radio" id="radio66" name="radio" onclick="manage_div_display(\'tab6_6\'); loadTable(\'t_failed_auth\');" /><label for="radio66">Failed authentications</label>
         </div>
         <div id="tab6_0" style="display:none;margin-top:30px;">
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_connections_page">
@@ -74,20 +74,6 @@ echo '
                     <thead><tr>
                         <th style="width-max:38px;">'.$LANG['date'].'</th>
                         <th style="width:60%;">'.$LANG['label'].'</th>
-                        <th style="width:20%;">'.$LANG['user'].'</th>
-                    </tr></thead>
-                    <tbody>
-                        <tr><td></td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div id="tab6_2" style="display:none;margin-top:30px;">
-            <div style="margin:10px auto 25px auto;min-height:250px;" id="t_access_page">
-                <table id="t_access" cellspacing="0" cellpadding="5" width="100%">
-                    <thead><tr>
-                        <th style="width-max:38px;">'.$LANG['date'].'</th>
-                        <th style="width:40%;">'.$LANG['label'].'</th>
                         <th style="width:20%;">'.$LANG['user'].'</th>
                     </tr></thead>
                     <tbody>
@@ -128,10 +114,25 @@ echo '
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_items_page">
                 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
                     <thead><tr>
-                        <th style="width-max:38px;">'.$LANG['date'].'</th>
-                        <th style="width:40%;">'.$LANG['user'].'</th>
-                        <th style="width:20%;">'.$LANG['label'].'</th>
-                        <th style="width:20%;">'.$LANG['at_personnel'].'</th>
+                        <th style="width:10%;">'.$LANG['date'].'</th>
+                        <th style="width:40%;">'.$LANG['label'].'</th>
+                        <th style="width:20%;">'.$LANG['user'].'</th>
+                        <th style="width:20%;">'.$LANG['action'].'</th>
+                        <th style="width:10%;">'.$LANG['at_personnel'].'</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="tab6_6" style="display:none;margin-top:30px;">
+            <div style="margin:10px auto 25px auto;min-height:250px;" id="t_failed_auth_page">
+                <table id="t_failed_auth" cellspacing="0" cellpadding="5" width="100%">
+                    <thead><tr>
+                        <th style="width:10%;">'.$LANG['date'].'</th>
+                        <th style="width:40%;">'.$LANG['label'].'</th>
+                        <th style="width:20%;">'.$LANG['user'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

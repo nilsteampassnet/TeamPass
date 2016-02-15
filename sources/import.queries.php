@@ -2,7 +2,7 @@
 /**
  * @file          import.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -15,7 +15,7 @@ use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -171,7 +171,7 @@ switch ($_POST['type']) {
                 if ($account == "" && $continue_on_next_line == false) {
                     $account = addslashes($row['Label']);
                     $login = addslashes($row['Login']);
-                    $pw = str_replace('"', "&quote;", $row['Password']);
+                    $pw = str_replace('"', "&quot;", $row['Password']);
                     $url = addslashes($row['url']);
                     $to_find = array ( "\"" , "'" );
                     $to_ins = array ( "&quot" , "&#39;");
@@ -246,8 +246,11 @@ switch ($_POST['type']) {
             $item = explode('@|@', $item);   //explode item to get all fields
 
             //Encryption key
-            $randomKey = generateKey();
-            $pw = $randomKey.$item[2];
+			if ($personalFolder == 1) {
+				$encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
+			} else {
+				$encrypt = cryption($item[2], SALT, "", "encrypt");
+			}
 
             // Insert new item in table ITEMS
             DB::insert(
@@ -255,7 +258,8 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-                    'pw' => encrypt(str_replace('&quote;', '"', $pw)),
+					'pw' => $encrypt['string'],
+					'pw_iv' => $encrypt['iv'],
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
@@ -263,16 +267,6 @@ switch ($_POST['type']) {
                )
             );
             $newId = DB::insertId();
-
-                //Store generated key
-            DB::insert(
-                prefix_table("keys"),
-                array(
-                    'sql_table' => 'items',
-                    'id' => $newId,
-                    'rand_key' => $randomKey
-               )
-            );
 
             //if asked, anyone in role can modify
             if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
@@ -821,18 +815,15 @@ switch ($_POST['type']) {
                     //$count++;
                     //check if not exists
                     $results .= str_replace($foldersSeparator,"\\",$item[KP_PATH]).'\\'.$item[KP_TITLE];
-                    $randomKey = substr($item[KP_UUID],0, 15);		// use partial UUID from XML
                     DB::query(
-                        "SELECT ".prefix_table("items").".id FROM ".prefix_table("items").",".prefix_table("keys")."
-                        WHERE ".prefix_table("items").".id=".prefix_table("keys").".id AND id_tree =%i AND label = %s AND rand_key = %s LIMIT 1",
+                        "SELECT id FROM ".prefix_table("items")."
+                        WHERE id_tree =%i AND label = %s LIMIT 1",
                         intval($foldersArray[$item[KP_PATH]]['id']),
-                        stripslashes($item[KP_TITLE]),
-                        $randomKey
+                        stripslashes($item[KP_TITLE])
                     );
                     $counter = DB::count();
                     if ($counter == 0) {
-                        //Encryption key
-                        $pw = $randomKey.$item[KP_PASSWORD];
+                        $pw = $item[KP_PASSWORD];
 
                         //Get folder label
                         if (count($foldersArray)==0 || empty($item[KP_PATH])) {
@@ -846,13 +837,22 @@ switch ($_POST['type']) {
                         );
 
                         $results .= " - Inserting\n";
+						
+						// prepare PW
+						if ($import_perso == true) {
+							$encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+						} else {
+							$encrypt = cryption($pw, SALT, "", "encrypt");
+						}
+						
                         //ADD item
                         DB::insert(
                             prefix_table("items"),
                             array(
                                 'label' => stripslashes($item[KP_TITLE]),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'pw' => $import_perso == true ? encrypt($pw, $_SESSION['my_sk']) : encrypt($pw),
+                                'pw' => $encrypt['string'],
+								'pw_iv' => $encrypt['iv'],
                                 'url' => stripslashes($item[KP_URL]),
                                 'id_tree' => $folderId,
                                 'login' => stripslashes($item[KP_USERNAME]),
@@ -860,16 +860,6 @@ switch ($_POST['type']) {
                            )
                         );
                         $newId = DB::insertId();
-
-                        //Store generated key
-                        DB::insert(
-                            prefix_table("keys"),
-                            array(
-                                'sql_table' => 'items',
-                                'id' => $newId,
-                                'rand_key' => $randomKey
-                           )
-                        );
 
                         //if asked, anyone in role can modify
                         if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {

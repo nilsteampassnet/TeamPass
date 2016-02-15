@@ -1,0 +1,20 @@
+app:
+  build: .
+  restart: always
+  ports:
+    - "80:80"
+  links:
+    - db:db
+  volumes:
+    - /srv/teampass:/teampass
+
+db:
+  restart: always
+  image: mysql/mysql-server:5.5
+  environment:
+    - MYSQL_ROOT_PASSWORD=mypass
+    - MYSQL_DATABASE=teampass
+    - MYSQL_PASSWORD=teampass
+    - MYSQL_USER=teampass
+  volumes:
+    - /srv/dbteampass:/var/lib/mysql

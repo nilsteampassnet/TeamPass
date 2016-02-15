@@ -2,7 +2,7 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -118,39 +118,15 @@ if (empty($languagesDropmenu)) {
 
 /* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
 if (
-        (isset($_POST['menu_action']) && $_POST['menu_action'] == "deconnexion")
-        || (isset($_GET['session']) && $_GET['session'] == "expired")
+        (isset($_GET['session']) && $_GET['session'] == "expired")
         || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
-    // Update table by deleting ID
-    if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
-        DB::update(
-            prefix_table("users"),
-            array(
-                'key_tempo' => '',
-                'timestamp' => '',
-                'session_end' => ''
-            ),
-            "id=%i",
-            $_SESSION['user_id']
-        );
-        //Log into DB the user's disconnection
-        if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', @$_SESSION['user_id']);
-        }
-    }
-
-    // erase session table
-    $_SESSION = array();
-
-    // Kill session
-    session_destroy();
-
     // REDIRECTION PAGE ERREUR
     echo '
     <script language="javascript" type="text/javascript">
     <!--
-    setTimeout(function(){document.location.href="index.php?session_over=true"}, 10);
+        sessionStorage.clear();
+        window.location.href = "logout.php"
     -->
     </script>';
     exit;
@@ -158,10 +134,9 @@ if (
 
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
-    $dataSession = DB::queryFirstRow("SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i_id",
-        array(
-            'id' => $_SESSION['user_id']
-        )
+    $dataSession = DB::queryFirstRow(
+		"SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
+        $_SESSION['user_id']
     );
 } else {
     $dataSession['key_tempo'] = "";
@@ -186,7 +161,7 @@ if (
 
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
+        logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 
     // erase session table
@@ -257,7 +232,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 
         //Log into DB the user's disconnection
         if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-            logEvents('user_connection', 'disconnection', $_SESSION['user_id']);
+            logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
         }
 
         syslog(
@@ -277,7 +252,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
         echo '
         <script language="javascript" type="text/javascript">
         <!--
-        setTimeout(function(){document.location.href="index.php?session=expired"}, 10);
+        setTimeout(function(){document.location.href="logout.php"}, 10);
         -->
         </script>';
         exit;
@@ -309,10 +284,9 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
-    $data = DB::queryfirstrow("SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i_id",
-        array(
-            'id' => $_SESSION['user_id']
-        )
+    $data = DB::queryfirstrow(
+		"SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+		$_SESSION['user_id']
     );
 
     //Check if user has been deleted or unlogged
@@ -353,7 +327,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                 $_SESSION['user_id']
             );
         }
-
+		
         // get access rights
         identifyUserRights(
             $data['groupes_visibles'],

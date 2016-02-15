@@ -3,17 +3,17 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link    	  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -78,8 +78,8 @@ switch ($_POST['type']) {
                 if (!$fp) {
                     $error = "connection";
                 } else {
-                    $out = "GET http://www.teampass.net/TP/cpm2_config.txt HTTP/1.0\r\n";
-                    $out .= "Host: www.teampass.net\r\n";
+                    $out = "GET http://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
+                    $out .= "Host: teampass.net\r\n";
                     $out .= "Connection: Close\r\n\r\n";
                     fwrite($fp, $out);
 
@@ -192,7 +192,7 @@ switch ($_POST['type']) {
                 array_push($foldersIds, $folder->id);
             }
         }
-        
+
         $items = DB::query("SELECT id,label FROM ".prefix_table("items")." WHERE id_tree NOT IN %li", $foldersIds);
         foreach ($items as $item) {
             $text .= $item['label']."[".$item['id']."] - ";
@@ -315,15 +315,7 @@ switch ($_POST['type']) {
             $_SESSION['key_tmp'] = $pwgen->generate();
 
             //update LOG
-            DB::insert(
-                prefix_table("log_system"),
-                array(
-                    'type' => 'admin_action',
-                    'date' => time(),
-                    'label' => 'dataBase backup',
-                    'qui' => $_SESSION['user_id']
-               )
-            );
+        logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
 
             echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
         }
@@ -490,62 +482,104 @@ switch ($_POST['type']) {
         break;
 
     /*
-    * Change SALT Key
+    * Change SALT Key START
     */
-    case "admin_action_change_salt_key":
+    case "admin_action_change_salt_key___start":
         $error = "";
         require_once 'main.functions.php';
+        
+        // check saltkey        
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+            // SK is not correct
+            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+            break;
+        }        
+        
         //put tool in maintenance.
-            DB::update(
-                prefix_table("misc"),
-                array(
-                    'valeur' => '1',
-               ),
-                "intitule = %s AND type= %s",
-                "maintenance_mode", "admin"
-            );
-            //log
-            DB::insert(
-                prefix_table("log_system"),
-                array(
-                    'type' => 'system',
-                    'date' => time(),
-                    'label' => 'change_salt_key',
-                    'qui' => $_SESSION['user_id']
-               )
-            );
+        DB::update(
+            prefix_table("misc"),
+            array(
+                'valeur' => '1',
+           ),
+            "intitule = %s AND type= %s",
+            "maintenance_mode", "admin"
+        );
+        //log
+        logEvents('system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
+        
+        // get number of items to change
+        DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
+        
+        echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.DB::count().'"}]';
+        break;
 
-        $new_salt_key = htmlspecialchars_decode(Encryption\Crypt\aesctr::decrypt($_POST['option'], SALT, 256));
+    /*
+    * Change SALT Key - ENCRYPT
+    */
+    case "admin_action_change_salt_key___encrypt":
+        $error = "";
+        require_once 'main.functions.php';
+
+        // prepare SK
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+            // SK is not correct
+            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+            break;
+        }
 
         //change all passwords in DB
-        $rows = DB::query("SELECT id,pw FROM ".prefix_table("items")." WHERE perso = %s", "0");
+        $rows = DB::query("
+            SELECT id, pw, pw_iv 
+            FROM ".prefix_table("items")." 
+            WHERE perso = %s 
+            LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+            "0");
         foreach ($rows as $record) {
-            $pw = decrypt($record['pw']);
+            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
+            $encrypt = cryption($pw, $new_salt_key, "", "encrypt");
             DB::update(
                 prefix_table("items"),
                 array(
-                    'pw' => encrypt($pw, $new_salt_key),
+                    'pw' => $encrypt['string'],
+                    'pw_iv' => $encrypt['iv'],
                ),
                 "id = %i",
                 $record['id']
             );
         }
-        //change all users password in DB
-        $rows = DB::query("SELECT id,pw FROM ".prefix_table("users"));
-        foreach ($rows as $record) {
-            $pw = decrypt($record['pw']);
-            //encrypt with new SALT
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'pw' => encrypt($pw, $new_salt_key),
-               ),
-                "id = %i",
-                $record['id']
-            );
+        
+        $nextStart = intval($_POST['start']) + intval($_POST['length']);
+        
+        // check if last item to change has been treated
+        if ($nextStart >= intval($_POST['nbItems'])) {
+            $nextAction = "finishing";
+        } else {
+            $nextAction = "encrypting";
         }
 
+        echo '[{"nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'", "error":"'.$error.'"}]';
+        break;
+
+    /*
+    * Change SALT Key - END
+    */
+    case "admin_action_change_salt_key___end":
+        $error = "";
+        
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
+        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+            // SK is not correct
+            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+            break;
+        }
+        
+        // write the sk.php file        
         // get path to sk.php
         $filename = "../includes/settings.php";
         if (file_exists($filename)) {
@@ -567,12 +601,26 @@ switch ($_POST['type']) {
             utf8_encode(
                 "<?php
 @define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
 ?>"
             )
         );
         fclose($fh);
-
-        echo '[{"result":"changed_salt_key", "error":"'.$error.'"}]';
+        
+        // quit maintenance mode.
+        DB::update(
+            prefix_table("misc"),
+            array(
+                'valeur' => '0',
+           ),
+            "intitule = %s AND type= %s",
+            "maintenance_mode", "admin"
+        );
+        
+        // redefine SALT
+        @define(SALT, $new_salt_key);
+        
+        echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
         break;
 
     /*
@@ -617,15 +665,7 @@ switch ($_POST['type']) {
         }
 
         //update LOG
-        DB::insert(
-            prefix_table("log_system"),
-            array(
-               'type' => 'admin_action',
-               'date' => time(),
-               'label' => 'Emails backlog',
-               'qui' => $_SESSION['user_id']
-            )
-        );
+    logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
         echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
         break;
@@ -659,7 +699,7 @@ switch ($_POST['type']) {
         require_once 'main.functions.php';
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
-        $rows = DB::query("SELECT id, pw FROM ".prefix_table("items")." WHERE perso = %s", "0");
+        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("items")." WHERE perso = %s", "0");
         foreach ($rows as $record) {
             // check if key exists for this item
             DB::query("SELECT * FROM ".prefix_table("keys")." WHERE `id` = %i AND `sql_table` = %s", $record['id'], "items");
@@ -667,7 +707,7 @@ switch ($_POST['type']) {
             if ($counter == 0) {
                 $storePrefix = false;
                 // decrypt pw
-                $pw = decrypt($record['pw']);
+                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                 if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
                     // Pw seems to have a prefix
                     // get old prefix
@@ -871,7 +911,7 @@ switch ($_POST['type']) {
                 DB::insert(
                     prefix_table("api"),
                     array(
-                    	'id'		=> null,
+                        'id'        => null,
                         'type'      => 'key',
                         'label'     => $_POST['label'],
                         'value'       => $_POST['key'],
@@ -895,33 +935,33 @@ switch ($_POST['type']) {
             else
             // delete existing key
             if (isset($_POST['action']) && $_POST['action'] == "delete") {
-				DB::query("DELETE FROM ".prefix_table("api")." WHERE id = %i", $_POST['id']);
+                DB::query("DELETE FROM ".prefix_table("api")." WHERE id = %i", $_POST['id']);
             }
             echo '[{"error":"'.$error.'"}]';
             break;
 
-	/*
-	   * API save key
-	*/
-	case "admin_action_api_save_ip":
-		$error = "";
-		// add new key
-		if (isset($_POST['action']) && $_POST['action'] == "add") {
-			DB::insert(
+    /*
+       * API save key
+    */
+    case "admin_action_api_save_ip":
+        $error = "";
+        // add new key
+        if (isset($_POST['action']) && $_POST['action'] == "add") {
+            DB::insert(
                 prefix_table("api"),
                 array(
-                    'id'		=> null,
+                    'id'        => null,
                     'type'      => 'ip',
                     'label'     => $_POST['label'],
                     'value'       => $_POST['key'],
                     'timestamp' => time()
                 )
-			);
-		}
-		else
-			// update existing key
-			if (isset($_POST['action']) && $_POST['action'] == "update") {
-				DB::update(
+            );
+        }
+        else
+            // update existing key
+            if (isset($_POST['action']) && $_POST['action'] == "update") {
+                DB::update(
                     prefix_table("api"),
                     array(
                         'label'     => $_POST['label'],
@@ -930,40 +970,206 @@ switch ($_POST['type']) {
                     ),
                     "id=%i",
                     $_POST['id']
-				);
-			}
-		else
-			// delete existing key
-			if (isset($_POST['action']) && $_POST['action'] == "delete") {
-				DB::query("DELETE FROM ".prefix_table("api")." WHERE id=%i", $_POST['id']);
-			}
-		echo '[{"error":"'.$error.'"}]';
-		break;
+                );
+            }
+        else
+            // delete existing key
+            if (isset($_POST['action']) && $_POST['action'] == "delete") {
+                DB::query("DELETE FROM ".prefix_table("api")." WHERE id=%i", $_POST['id']);
+            }
+        echo '[{"error":"'.$error.'"}]';
+        break;
 
-	case "save_api_status":
-		DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "api");
+    case "save_api_status":
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "api");
         $counter = DB::count();
-		if ($counter == 0) {
-			DB::insert(
-				prefix_table("misc"),
-				array(
-					'type' => "admin",
-					"intitule" => "api",
-				    'valeur' => intval($_POST['status'])
-				   )
-			);
-		} else {
-			DB::update(
-				prefix_table("misc"),
-				array(
-				    'valeur' => intval($_POST['status'])
-				   ),
-				"type = %s AND intitule = %s",
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "api",
+                    'valeur' => intval($_POST['status'])
+                   )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => intval($_POST['status'])
+                   ),
+                "type = %s AND intitule = %s",
                 "admin",
                 "api"
-			);
-		}
-		$_SESSION['settings']['api'] = intval($_POST['status']);
-		break;
+            );
+        }
+        $_SESSION['settings']['api'] = intval($_POST['status']);
+        break;
 
+    case "save_duo_status":
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "duo");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "duo",
+                    'valeur' => intval($_POST['status'])
+                   )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => intval($_POST['status'])
+                   ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "duo"
+            );
+        }
+        $_SESSION['settings']['duo'] = intval($_POST['status']);
+        break;
+
+    case "save_duo_in_sk_file":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+        
+        // Prepare variables
+        $akey = htmlspecialchars_decode($dataReceived['akey']);
+        $ikey = htmlspecialchars_decode($dataReceived['ikey']);
+        $skey = htmlspecialchars_decode($dataReceived['skey']);
+        $host = htmlspecialchars_decode($dataReceived['host']);
+        
+        //get infos from SETTINGS.PHP file
+        $filename = $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+        if (file_exists($filename)) {
+            // get sk.php file path
+            $settingsFile = file($filename);
+            while (list($key,$val) = each($settingsFile)) {
+                if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+                    $tmp_skfile = substr($val, 14, strpos($val, '";')-14);
+                }
+            }
+            
+            // before perform a copy of sk.php file
+            if (file_exists($tmp_skfile)) {
+                //Do a copy of the existing file
+                if (!copy(
+                    $tmp_skfile,
+                    $tmp_skfile.'.'.date(
+                        "Y_m_d",
+                        mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                    )
+                )) {
+                    echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
+                    break;
+                } else {
+                    unlink($tmp_skfile);
+                }
+            } else {
+                // send back an error
+                echo '[{"result" : "" , "error" : "Could NOT access file: '.$tmp_skfile.'"}]';
+                break;
+            }
+        }
+        
+        // Write back values in sk.php file
+        $fh = fopen($tmp_skfile, 'w');        
+        $result2 = fwrite(
+            $fh,
+            utf8_encode(
+"<?php
+@define('SALT', '".SALT."'); //Never Change it once it has been used !!!!!
+@define('COST', '13'); // Don't change this.
+// DUOSecurity credentials
+@define('AKEY', \"".$akey."\");
+@define('IKEY', \"".$ikey."\");
+@define('SKEY', \"".$skey."\");
+@define('HOST', \"".$host."\");
+?>"
+            )
+        );
+        fclose($fh);
+        
+        
+        
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
+        break;
+
+    case "save_fa_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // 2factors_authentication
+        if (htmlspecialchars_decode($dataReceived['2factors_authentication']) == "false") $tmp = 0;
+        else $tmp = 1;
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "2factors_authentication");
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'type' => "admin",
+                    "intitule" => "2factors_authentication",
+                    'valeur' => $tmp
+                )
+            );
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => $tmp
+                ),
+                "type = %s AND intitule = %s",
+                "admin",
+                "2factors_authentication"
+            );
+        }
+        $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
+
+        // ga_website_name
+        if (!is_null($dataReceived['ga_website_name'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "ga_website_name",
+                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "ga_website_name"
+                );
+            }
+            $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+        } else {
+            $_SESSION['settings']['ga_website_name'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
 }

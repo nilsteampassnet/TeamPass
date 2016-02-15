@@ -2,7 +2,7 @@
 /**
  * @file          suggestion.queries.table.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -103,14 +103,11 @@ $rows = DB::query(
 );
 $iFilteredTotal = DB::count();
 
-/*
-   * Output
-*/
+// output
 $sOutput = '{';
-$sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
-$sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iFilteredTotal.', ';
-$sOutput .= '"aaData": ';
+$sOutput .= '"recordsTotal": '.$iTotal.', ';
+$sOutput .= '"recordsFiltered": '.$iTotal.', ';
+$sOutput .= '"data": ';
 
 if ($iFilteredTotal > 0) {
     $sOutput .= '[';
@@ -120,10 +117,10 @@ foreach ($rows as $record) {
 
     //col1
     if ((isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) || (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] == 1)) {
-        $sOutput .= '<img src=\"includes/images/envelope--plus.png\" onclick=\"validateSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />&nbsp;&nbsp;<img src=\"includes/images/envelope--minus.png\" onclick=\"deleteSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
+        $sOutput .= '<i class=\"fa fa-thumbs-up mi-green fa-lg\" onclick=\"validateSuggestion(\''.$record['id'].'\', \''.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'\')\" style=\"cursor:pointer;\"></i>&nbsp;&nbsp;<i class=\"fa fa-thumbs-down mi-red fa-lg\" onclick=\"deleteSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\"></i>';
     }
     if ($record['author_id'] == $_SESSION['user_id'] && (isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1)) {
-        $sOutput .= '<img src=\"includes/images/envelope--minus.png\" onclick=\"deleteSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\" />';
+        $sOutput .= '<i class=\"fa fa-thumbs-down mi-red\" onclick=\"deleteSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\"></i>';
     }
     $sOutput .= '",';
     

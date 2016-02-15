@@ -2,7 +2,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright (c) 2009-2014, [Nils Laumaillé] (Nils@TeamPass.net)
+> Copyright (c) 2009-2015, [Nils Laumaillé] (Nils@TeamPass.net)
 
 ## Licence Agreement
 
@@ -33,8 +33,37 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 
 ## Installation
 
-* Read [installation related pages] (http://www.teampass.net/installation/)
+* Read [installation related pages] (http://www.teampass.net/2011-09-19-installation/)
 * Once uploaded, launch install/install.php and follow instructions.
+
+### Docker Installation/Use
+*Currently SSL is not provided in this setup, it is advised to use something like HAproxy to add SSL support*
+
+Two ways to provide Docker install 
+In both cases, the Teampass will be persistent IF you keep the data volume intact between runs and the database content (of course)
+
+#### Docker Compose
+* using the provided docker compose file, that you will edit to match your setup (ports/volumes/mysql passwords etc), then build the Taempass image :
+```docker-compose build```
+* and run the compose app
+```docker-compose up -d```
+* the first time Teampass is launched, you will be prompted to configured it :
+ * for the ''Absolute path to saltkey'', please use ```/teampass/sk```
+ * for the database setup :
+  * the host is ''db''
+  * the other credentials are the ones you provided in your docker-compose file
+
+#### Simple Docker container
+* In this scenario, it is assumed you have a mysql database ready to be used. 
+* First build the Teampass container :
+```docker build -t teampass .```
+* Then simply run the Teampass container with a volume to store the data :
+```docker run -d -p 80:80 -v /srv/teampass:/teampass --name teampass teampass```
+* The first launch, you will be prompted to configure Teampass :
+ * for the ''Absolute path to saltkey'', please use ```/teampass/sk```
+ * for the database, please provide your own database parameters
+
+
 
 ## Update
 
@@ -43,16 +72,22 @@ Once uploaded, launch install/upgrade.php and follow instructions.
 ## Languages
 
 Teampass is translated in next languages:
-
-* ENGLISH 		by Nils and Petr
-* FRENCH 		by Nils
-* CZECH 		by Petr and Philipp
-* GERMAN 		by Philipp
-* RUSSIAN 		by Anton
-* TURKISH 		by Ahmet
-* NORWEGIAN 	by Kai
-* JAPANESE		by Shinji
-* PORTUGUESE 	by Luiz LeFort
-* ITALIAN		by Federico
+* CATALAN
+* CHINESE
+* CZECH 
+* DUTCH
+* ENGLISH
+* FRENCH 
+* GERMAN 
+* ITALIAN
+* JAPANESE
+* NORWEGIAN 
+* PORTUGUESE
+* PORTUGUESE (BR)
+* ROMANIAN
+* RUSSIAN 
+* SPANISH
+* TURKISH
+* UKRAINIAN
 
 Languages strings are managed at [POEditor.com] (https://poeditor.com/projects/view?id=16418).

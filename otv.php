@@ -2,7 +2,7 @@
 /**
  * @file          otv.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -20,16 +20,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $html = "";
 if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != ""
-    && filter_var($_GET['item_id'], FILTER_SANITIZE_STRING) >= 0
-    && filter_var($_GET['stamp'], FILTER_SANITIZE_STRING) >= 0
-    && filter_var($_GET['otv_id'], FILTER_SANITIZE_STRING) >= 0
+    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
+    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
 ) {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/main.functions.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
     // connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -43,19 +41,14 @@ if (
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    // Include main functions used by TeamPass
-    require_once 'sources/main.functions.php';
-
     // check session validity
     $data = DB::queryfirstrow(
-        "SELECT timestamp, code, item_id FROM ".prefix_table("otv")."
-        WHERE id = %i",
-        intval($_GET['otv_id'])
+        "SELECT id, timestamp, code, item_id FROM ".prefix_table("otv")."
+        WHERE code = %i",
+        intval($_GET['code'])
     );
     if (
         $data['timestamp'] == $_GET['stamp']
-        && $data['code'] == $_GET['code']
-        && $data['item_id'] == $_GET['item_id']
     ) {
         // otv is too old
         if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period'] * 86400) ) {
@@ -66,23 +59,12 @@ if (
                 FROM ".prefix_table("items")." as i
                 INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
                 WHERE i.id = %i AND l.action = %s",
-                intval($_GET['item_id']),
+                intval($data['item_id']),
                 'at_creation'
             );
 
             // get data
-            $pw = decrypt($dataItem['pw']);
-
-        	// get key for original pw
-        	$originalKey = DB::queryfirstrow(
-                "SELECT rand_key FROM `".prefix_table("keys")."`
-                WHERE `sql_table` = %s AND `id` = %i",
-                'items',
-                intval($_GET['item_id'])
-            );
-        	// unsalt previous pw
-        	$pw = substr($pw, strlen($originalKey['rand_key']));
-
+            $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
 
             $label = $dataItem['label'];
             $email = $dataItem['email'];
@@ -105,13 +87,14 @@ if (
             	"</div>";
 
         	// delete entry
-        	DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+        	//DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+			
+			// display
+			echo $html;
         }
     } else {
-        $html = "Not a valid page!";
+        echo "Not a valid page!";
     }
 } else {
-    $html = "Not a valid page!";
+	echo "No valid OTV inputs!";
 }
-
-echo $html;

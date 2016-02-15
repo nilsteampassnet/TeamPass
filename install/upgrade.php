@@ -115,7 +115,8 @@ if (
             if (step != "") {
                 if (step == "step1") {
                     var data = "type="+step+
-                    "&abspath="+escape(document.getElementById("root_path").value);
+                    "&abspath="+escape(document.getElementById("root_path").value)+
+                        "&fullurl="+escape(document.getElementById("root_url").value);
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step2") {
@@ -155,9 +156,10 @@ if (
             }
         }
 
-        function newEncryptPw(){
-            var nb = 1;
-            var start = 1;
+        function newEncryptPw(suggestion){
+            var nb = 10;
+            var start = 0;
+
             if ($("#change_pw_encryption_start").val() != "") {
                 start = $("#change_pw_encryption_start").val();
             } else {
@@ -165,19 +167,25 @@ if (
             }
             request = $.post("upgrade_ajax.php",
                 {
-                    type     : "new_encryption_of_pw",
-                    start         : start,
-                    total         : $("#change_pw_encryption_total").val(),
-                    nb : nb
+                    type        : "new_encryption_of_pw",
+                    start       : start,
+                    total       : $("#change_pw_encryption_total").val(),
+                    suggestion  : suggestion,
+                    nb          : nb
                 },
                 function(data) {
-                    if (data[0].finish != 1) {
+                    if (data[0].finish != 1 && data[0].finish != "suggestion") {
+                        // handle re-encryption of passwords in Items table
                     	$("#change_pw_encryption_start").val(data[0].next);
                     	$("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
                     	if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
-                    	    newEncryptPw();
+                    	    newEncryptPw("0");
                     	}
+                    } else if (data[0].finish == "suggestion") {
+                        // handle the re-encryption of passwords in suggestion table
+                        newEncryptPw("1");
                     } else {
+                        // handle finishing
                     	$("#change_pw_encryption_progress").html("Done");
                     	$("#but_encrypt_continu").hide();
                     	/* Unlock this step */
@@ -211,6 +219,9 @@ if (isset($_POST['db_host'])) {
     } else {
         $_SESSION['send_stats'] = "";
     }
+}
+if (isset($_POST['root_url'])) {
+    $_SESSION['fullurl'] = $_POST['root_url'];
 }
 
 // LOADER
@@ -282,12 +293,18 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         $abs_path = $_SERVER['DOCUMENT_ROOT'];
     }
     $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
+    if( isset($_SERVER['HTTPS'] ) ) {
+        $protocol = 'https://';
+    } else {
+        $protocol = 'http://';
+    }
     //ETAPE 1
     echo '
                      <h3>Step 1 - Check server</h3>
 
                      <fieldset><legend>Please give me</legend>
-                     <label for="root_path" style="width:300px;">Absolute path to TeamPass folder :</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="'.$abs_path.'" /><br />
+                     <label for="root_path" style="width:300px;">Absolute path to TeamPass folder:</label><input type="text" id="root_path" name="root_path" class="step" style="width:560px;" value="'.$abs_path.'" /><br />
+                     <label for="root_url" style="width:300px;">Full URL to TeamPass:</label><input type="text" id="root_url" name="root_url" class="step" style="width:560px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><br />
                      </fieldset>
 
                      <h4>Next elements will be checked.</h4>
@@ -300,7 +317,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
-                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.3.0</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.4.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
@@ -385,8 +402,6 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <tr><td>Add table "kb_categories"</td><td><span id="tbl_11"></span></td></tr>
                          <tr><td>Add table "kb_items"</td><td><span id="tbl_12"></span></td></tr>
                          <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_13"></span></td></tr>
-                         <tr><td>Add table "keys"</td><td><span id="tbl_14"></span></td></tr>
-                         <tr><td>Populate table "keys"</td><td><span id="tbl_15"></span></td></tr>
                          <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
                          <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
                          <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
@@ -404,7 +419,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                          <p>
                              <div style="display:none;" id="change_pw_encryption_progress"></div>
                          </p>
-                         <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(1);" />
+                         <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(0);" />
                          <input type="hidden" id="change_pw_encryption_start" value="" />
                          <input type="hidden" id="change_pw_encryption_total" value="" />
                      </div>
@@ -501,7 +516,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px;">
-            '.$k['tool_name'].' '.$k['version'].' &#169; copyright 2009-2013
+            '.$k['tool_name'].' '.$k['version'].' &#169; copyright 2009-2016
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>

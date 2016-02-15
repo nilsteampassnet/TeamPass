@@ -310,3 +310,36 @@ input.watermark {
 .no-icon { display:none !important;}
 
 .ui-menu li {font-size:10pt !important;}
+
+
+.mi-green {
+	color: #388952;
+}
+.mi-yellow {
+	color: #FC9300;
+}
+.mi-red {
+	color: #CC0000;
+}
+.mi-black {
+	color: #222222;
+}
+.mi-grey-1 {
+	color: #9B9B9B;
+}
+
+.form_text {
+    padding:2px;
+    margin-bottom:5px;
+}
+
+.ui-button.redButton {
+    background-color: red;
+}
+.ui-button.greenButton {
+    background-color: green;
+}
+
+div.dataTables_processing { z-index: 1; }
+
+.ui-color {background:#F59829 !important}​

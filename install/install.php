@@ -36,7 +36,14 @@ if( isset($_SERVER['HTTPS'] ) ) {
 
     echo '
     <input type="hidden" id="page_id" value="1" />
-    <input type="hidden" id="step_res" value="" />';
+    <input type="hidden" id="step_res" value="" />
+    <input type="hidden" id="hid_db_host" value="" />
+    <input type="hidden" id="hid_db_login" value="" />
+    <input type="hidden" id="hid_db_pwd" value="" />
+    <input type="hidden" id="hid_db_port" value="" />
+    <input type="hidden" id="hid_db_bdd" value="" />
+    <input type="hidden" id="hid_abspath" value="" />
+    <input type="hidden" id="hid_url_path" value="" />';
     // # LOADER
     echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>';
@@ -115,8 +122,9 @@ echo '
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
     <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
+    <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
     <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
-    <li>PHP version is greater or equal to 5.3.0&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP version is greater or equal to 5.4.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
     </ul>
 </div>';
@@ -149,7 +157,7 @@ echo '
     <label for="tbl_prefix" class="label_block_big">Table prefix :</label><input type="text" id="tbl_prefix" value="teampass_" style="width:250px;" />&nbsp;<span id="res4_check0"></span>
     </div>
     <div class="line_entry">
-    <label for="encrypt_key" class="label_block_big">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="For security reasons, salt key must be more than 15 characters and less than 32, should contains upper and lower case letters, special characters and numbers, and MUST NOT CONTAINS single quotes!!!" />
+    <label for="encrypt_key" class="label_block_big">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="The saltkey must be of size 16, and should contains upper and lower case letters, special characters and numbers, and MUST NOT CONTAINS single quotes!!!" />
     </label>
     <input type="text" id="encrypt_key" style="width:300px;" />&nbsp;<input type="text" class="button" value="Generate" onclick="suggestKey()" style="width:70px;margin-left:10px;" />&nbsp;<span id="res4_check1"></span>
     </div>
@@ -222,7 +230,6 @@ echo '
     <li>Add table "kb_categories"&nbsp;<span id="res5_check14"></span></li>
     <li>Add table "kb_items"&nbsp;<span id="res5_check15"></span></li>
     <li>Add table "restriction_to_roles"&nbsp;<span id="res5_check16"></span></li>
-    <li>Add table "keys"&nbsp;<span id="res5_check17"></span></li>
     <li>Add table "languages"&nbsp;<span id="res5_check18"></span></li>
     <li>Add table "emails"&nbsp;<span id="res5_check19"></span></li>
     <li>Add table "automatic_del"&nbsp;<span id="res5_check20"></span></li>

@@ -2,7 +2,7 @@
 /**
  * @file          views.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -12,12 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -91,10 +91,10 @@ switch ($_POST['type']) {
             "Modification",
             "Mot de passe changé"
         );
-        foreach ($rows as $reccord) {
-            if (date($_SESSION['settings']['date_format'], $reccord['date']) == $_POST['date']) {
+        foreach ($rows as $record) {
+            if (date($_SESSION['settings']['date_format'], $record['date']) == $_POST['date']) {
                 //get the tree grid
-                $arbo = $tree->getPath($reccord['id_tree'], true);
+                $arbo = $tree->getPath($record['id_tree'], true);
                 $arboTxt = "";
                 foreach ($arbo as $elem) {
                     if (empty($arboTxt)) {
@@ -103,10 +103,10 @@ switch ($_POST['type']) {
                         $arboTxt .= " > ".$elem->title;
                     }
                 }
-                $pdf->cell(80, 6, $reccord['label'], 1, 0, "L");
+                $pdf->cell(80, 6, $record['label'], 1, 0, "L");
                 $pdf->cell(75, 6, $arboTxt, 1, 0, "L");
                 $pdf->cell(21, 6, $_POST['date'], 1, 0, "C");
-                $pdf->cell(15, 6, $reccord['login'], 1, 1, "C");
+                $pdf->cell(15, 6, $record['login'], 1, 1, "C");
             }
         }
         list($d, $m, $y) = explode('/', $_POST['date']);
@@ -130,11 +130,11 @@ switch ($_POST['type']) {
             WHERE type  = %s",
             "folder_deleted"
         );
-        foreach ($rows as $reccord) {
-            $tmp = explode(', ', $reccord['valeur']);
-            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$reccord['intitule'].'\' id=\'folder_deleted_'.$reccord['intitule'].'\' />&nbsp;<b>'.
-                $tmp[2].'</b></td><td><input type=\"hidden\" value=\"'.$reccord['valeur'].'\"></td></tr>';
-            $arrFolders[substr($reccord['intitule'], 1)] = $tmp[2];
+        foreach ($rows as $record) {
+            $tmp = explode(', ', $record['valeur']);
+            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$record['intitule'].'\' id=\'folder_deleted_'.$record['intitule'].'\' />&nbsp;<b>'.
+                $tmp[2].'</b></td><td><input type=\"hidden\" value=\"'.$record['valeur'].'\"></td></tr>';
+            $arrFolders[substr($record['intitule'], 1)] = $tmp[2];
         }
 
         //ITEMS deleted
@@ -150,10 +150,10 @@ switch ($_POST['type']) {
             1,
             "at_delete"
         );
-        foreach ($rows as $reccord) {
-            if (in_array($reccord['id_tree'], $arrFolders)) {
-                if (count($arrFolders[$reccord['id_tree']])>0) {
-                    $thisFolder = '<td>'.$arrFolders[$reccord['id_tree']].'</td>';
+        foreach ($rows as $record) {
+            if (in_array($record['id_tree'], $arrFolders)) {
+                if (count($arrFolders[$record['id_tree']])>0) {
+                    $thisFolder = '<td>'.$arrFolders[$record['id_tree']].'</td>';
                 } else {
                     $thisFolder = "";
                 }
@@ -161,10 +161,10 @@ switch ($_POST['type']) {
                 $thisFolder = "";
             }
 
-            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$reccord['id'].'\' id=\'item_deleted_'.$reccord['id'].'\' />&nbsp;<b>'.$reccord['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $reccord['date']).'</td><td width=\"70px\" align=\"center\">'.$reccord['login'].'</td>'.$thisFolder.'</tr>';
+            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\">'.$record['login'].'</td>'.$thisFolder.'</tr>';
         }
 
-        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;<img src=\"includes/images/arrow-repeat.png\" title=\"'.$LANG['restore'].'\" style=\"cursor:pointer;\" onclick=\"restoreDeletedItems()\">&nbsp;<img src=\"includes/images/bin_empty.png\" title=\"'.$LANG['delete'].'\" style=\"cursor:pointer;\" onclick=\"reallyDeleteItems()\"></div>"}]';
+        echo '[{"text":"'.$texte.'</table><div style=\'margin-left:5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'restoration\');OpenDialog(\'tab2_dialog\');console.log(\'coucou\');\"><i class=\"fa fa-undo fa-lg\"></i>&nbsp;'.$LANG['restore'].'</a>&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'deletion\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-trash-o fa-lg\"></i>&nbsp;'.$LANG['delete'].'</a></div>"}]';
         break;
 
     /**
@@ -246,9 +246,9 @@ switch ($_POST['type']) {
                     folder_deleted,
                     $fId
                 );
-                foreach ($rows as $reccord) {
+                foreach ($rows as $record) {
                     //get folder id
-                    $val = explode(", ", $reccord['valeur']);
+                    $val = explode(", ", $record['valeur']);
                     //delete items & logs
                     $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $val[0]);
                     foreach ($items as $item) {
@@ -317,16 +317,18 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
-            "user_connection"
+            ORDER BY %s %s           
+			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            "user_connection",
+			$_POST['order'],
+			$POST['direction']
         );
 
-        foreach ($rows as $reccord) {
+        foreach ($rows as $record) {
             $logs .= '<tr><td>'.date(
-                $_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']
-            ).'</td><td align=\"center\">'.$LANG[$reccord['label']].'</td><td align=\"center\">'.
-            $reccord['login'].'</td></tr>';
+                $_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']
+            ).'</td><td align=\"center\">'.$LANG[$record['label']].'</td><td align=\"center\">'.
+            $record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -342,9 +344,9 @@ switch ($_POST['type']) {
 
         //get number of pages
         DB::query(
-            "SELECT * 
-            FROM ".prefix_table("log_system")." as l 
-            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id) 
+            "SELECT *
+            FROM ".prefix_table("log_system")." as l
+            INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s",
             "error"
         );
@@ -371,13 +373,15 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
-            "error"
+            ORDER BY %s %s
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            "error",
+			$_POST['order'],
+			$_POST['direction']
         );
-        foreach ($rows as $reccord) {
-            $label = explode('@', addslashes(cleanString($reccord['label'])));
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"center\">'.@$label[1].'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        foreach ($rows as $record) {
+            $label = explode('@', addslashes(cleanString($record['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.@$label[1].'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -431,11 +435,11 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
-        foreach ($rows as $reccord) {
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $reccord['label']).'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        foreach ($rows as $record) {
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -490,12 +494,12 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
-        foreach ($rows as $reccord) {
-            $label = explode('@', addslashes(cleanString($reccord['label'])));
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        foreach ($rows as $record) {
+            $label = explode('@', addslashes(cleanString($record['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -551,17 +555,17 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 
-        foreach ($rows as $reccord) {
-            if ($reccord['perso'] == 1) {
+        foreach ($rows as $record) {
+            if ($record['perso'] == 1) {
                 $label[0] = "** ".$LANG['at_personnel']." **";
             } else {
-                $label = explode('@', addslashes(cleanString($reccord['label'])));
+                $label = explode('@', addslashes(cleanString($record['label'])));
             }
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -614,13 +618,13 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT $start, $nbElements",
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 
-        foreach ($rows as $reccord) {
-            $label = explode('@', addslashes(cleanString($reccord['label'])));
-            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $reccord['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$reccord['login'].'</td></tr>';
+        foreach ($rows as $record) {
+            $label = explode('@', addslashes(cleanString($record['label'])));
+            $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
         echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
@@ -662,24 +666,24 @@ switch ($_POST['type']) {
             0
         );
         $idManaged = '';
-        foreach ($rows as $reccord) {
-            if (empty($idManaged) || $idManaged != $reccord['id']) {
+        foreach ($rows as $record) {
+            if (empty($idManaged) || $idManaged != $record['id']) {
                 //manage the date limit
-                $itemDate = $reccord['date'] + ($reccord['renewal_period'] * $k['one_month_seconds']);
+                $itemDate = $record['date'] + ($record['renewal_period'] * $k['one_month_seconds']);
 
                 if ($itemDate <= $date) {
                     //Save data found
-                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"javascript:window.location.href = \'index.php?page=items&amp;group='.$reccord['id_tree'].'&amp;id='.$reccord['id'].'\'\">&nbsp;</span>'.$reccord['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $reccord['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$reccord['title'].'</td><td width=\"100px\" align=\"center\">'.$reccord['login'].'</td></tr>';
+                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"javascript:window.location.href = \'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\'\">&nbsp;</span>'.$record['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$record['title'].'</td><td width=\"100px\" align=\"center\">'.$record['login'].'</td></tr>';
 
                     //save data for PDF
                     if (empty($textPdf)) {
-                        $textPdf = $reccord['label'].'@;@'.date($_SESSION['settings']['date_format'], $reccord['date']).'@;@'.date($_SESSION['settings']['date_format'], $itemDate).'@;@'.$reccord['title'].'@;@'.$reccord['login'];
+                        $textPdf = $record['label'].'@;@'.date($_SESSION['settings']['date_format'], $record['date']).'@;@'.date($_SESSION['settings']['date_format'], $itemDate).'@;@'.$record['title'].'@;@'.$record['login'];
                     } else {
-                        $textPdf .= '@|@'.$reccord['label'].'@;@'.date($_SESSION['settings']['date_format'], $reccord['date']).'@;@'.date($_SESSION['settings']['date_format'], $itemDate).'@;@'.$reccord['title'].'@;@'.$reccord['login'];
+                        $textPdf .= '@|@'.$record['label'].'@;@'.date($_SESSION['settings']['date_format'], $record['date']).'@;@'.date($_SESSION['settings']['date_format'], $itemDate).'@;@'.$record['title'].'@;@'.$record['login'];
                     }
                 }
             }
-            $idManaged = $reccord['id'];
+            $idManaged = $record['id'];
         }
 
         echo '[{"text" : "'.$texte.'</table>" , "pdf" : "'.$textPdf.'"}]';
@@ -733,27 +737,28 @@ switch ($_POST['type']) {
      * CASE purging logs
      */
     case "purgeLogs":
+    	db::debugMode(true);
         if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "at_shown",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
                 $nbElements = DB::count();
                     // Delete
-                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
-                    "at_shown",
-                    intval(strtotime($_POST['purgeFrom'])),
-                    intval(strtotime($_POST['purgeTo']))
-                );
+//                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+//                     "at_shown",
+//                     intval(strtotime($_POST['purgeFrom'])),
+//                     intval(strtotime($_POST['purgeTo']))
+//                 );
             } elseif ($_POST['logType'] == "connections_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -768,7 +773,7 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "errors_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -783,7 +788,7 @@ switch ($_POST['type']) {
             } elseif ($_POST['logType'] == "copy_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
-                    "AND date BETWEEN %i AND %i'",
+                    "AND date BETWEEN %i AND %i",
                     "at_copy",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -797,7 +802,7 @@ switch ($_POST['type']) {
                 );
             }
 
-            echo '[{"status" : "ok", "nb":"'.$nbElements[0].'"}]';
+            echo '[{"status" : "ok", "nb":"'.$nbElements.'"}]';
         } else {
             echo '[{"status" : "nok"}]';
         }

@@ -2,7 +2,7 @@
 /**
  * @file          folders.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -12,12 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sessions.php');
+require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -165,6 +165,11 @@ if (isset($_POST['newtitle'])) {
     switch ($_POST['type']) {
         // CASE where DELETING a group
         case "delete_folder":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
             $foldersDeleted = "";
             // this will delete all sub folders and items associated
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -214,6 +219,11 @@ if (isset($_POST['newtitle'])) {
                     $_SESSION['nb_folders'] --;
                 }
             }
+            
+            // delete folder from SESSION
+            if(($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
+                unset($messages[$key]);
+            }
 
             //rebuild tree
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -222,15 +232,20 @@ if (isset($_POST['newtitle'])) {
             //Update CACHE table
             updateCacheTable("delete_value", $_POST['id']);
             break;
-           
-          
+
+
         // CASE where DELETING multiple groups
         case "delete_multiple_folders":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
             //decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-            
+
             foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
                 $foldersDeleted = "";
                 // Get through each subfolder
@@ -271,7 +286,13 @@ if (isset($_POST['newtitle'])) {
                                     'action' => 'at_delete'
                                 )
                             );
+            
+                            // delete folder from SESSION
+                            if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
+                                unset($messages[$key]);
+                            }
                         }
+                        
                         //Actualize the variable
                         $_SESSION['nb_folders'] --;
                     }
@@ -283,17 +304,23 @@ if (isset($_POST['newtitle'])) {
             //rebuild tree
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
             $tree->rebuild();
-            
+
             echo '[ { "error" : "'.$error.'" } ]';
-            
+
             break;
 
         //CASE where ADDING a new group
         case "add_folder":
-            $error = "";
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+            
+            $error = $newId = $droplist = "";
 
             //decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -330,8 +357,8 @@ if (isset($_POST['newtitle'])) {
                     $isPersonal == 1
                     || $_SESSION['is_admin'] == 1
                     || ($_SESSION['user_manager'] == 1)
-                    || (isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 1)
+                    || (isset($_SESSION['settings']['enable_user_can_create_folders'])
+                    && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
                 ) {
                     //create folder
                     DB::insert(
@@ -341,8 +368,8 @@ if (isset($_POST['newtitle'])) {
                             'title' => $title,
                             'personal_folder' => $isPersonal,
                             'renewal_period' => $renewalPeriod,
-                            'bloquer_creation' => '0',
-                            'bloquer_modification' => '0'
+                            'bloquer_creation' => isset($dataReceived['block_creation']) && $dataReceived['block_creation'] == 1 ? '1' : '0',
+                            'bloquer_modification' => isset($dataReceived['block_modif']) && $dataReceived['block_modif'] == 1 ? '1' : '0'
                        )
                     );
                     $newId = DB::insertId();
@@ -357,13 +384,20 @@ if (isset($_POST['newtitle'])) {
                         )
                     );
 
+                    // add new folder id in SESSION
+                    array_push($_SESSION['groupes_visibles'], $newId);
+                    if ($isPersonal == 1) {
+                        array_push($_SESSION['personal_folders'], $newId);
+                    }
+
+                    // rebuild tree
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
 
                     if (
                         $isPersonal != 1
                         && isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 0
+                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                     ){
                         //Get user's rights
                         @identifyUserRights(
@@ -395,22 +429,55 @@ if (isset($_POST['newtitle'])) {
                             prefix_table("roles_values"),
                             array(
                                 'role_id' => $record['role_id'],
-                                'folder_id' => $newId
+                                'folder_id' => $newId,
+                                'type' => $record['type']
                            )
                         );
                     }
+                    
+                    // rebuild the droplist
+                    $prev_level = 0;
+                    $tst = $tree->getDescendants();
+                    $droplist .= '<option value=\"na\">---'.addslashes($LANG['select']).'---</option>';
+                    if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+                        $droplist .= '<option value=\"0\">'.addslashes($LANG['root']).'</option>';
+                    }
+                    foreach ($tst as $t) {
+                        if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+                            $ident = "";
+                            for ($x = 1; $x < $t->nlevel; $x++) {
+                                $ident .= "&nbsp;&nbsp;";
+                            }
+                            if ($prev_level < $t->nlevel) {
+                                $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                            } elseif ($prev_level == $t->nlevel) {
+                                $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                            } else {
+                                $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                            }
+                            $prev_level = $t->nlevel;
+                        }
+                    }
+                }
+                else{
+                    $error = $LANG['error_not_allowed_to'];
                 }
             }
-            echo '[ { "error" : "'.$error.'" } ]';
+            echo '[ { "error" : "'.addslashes($error).'" , "newid" : "'.$newId.'" , "droplist" : "'.$droplist.'" } ]';
 
             break;
 
         //CASE where UPDATING a new group
         case "update_folder":
-            $error = "";
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+            $error = $droplist = "";
 
             //decrypt and retreive data in JSON format
-        	$dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -441,10 +508,10 @@ if (isset($_POST['newtitle'])) {
                     'title' => $title,
                     'personal_folder' => 0,
                     'renewal_period' => $renewalPeriod,
-                    'bloquer_creation' => '0',
-                    'bloquer_modification' => '0'
+                    'bloquer_creation' => $dataReceived['block_creation'] == 1 ? '1' : '0',
+                    'bloquer_modification' => $dataReceived['block_modif'] == 1 ? '1' : '0'
                 ),
-                "id=%i", 
+                "id=%i",
                 $dataReceived['id']
             );
 
@@ -464,8 +531,33 @@ if (isset($_POST['newtitle'])) {
 
             //Get user's rights
             identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+            
+                    
+            // rebuild the droplist
+            $prev_level = 0;
+            $tst = $tree->getDescendants();
+            $droplist .= '<option value=\"na\">---'.addslashes($LANG['select']).'---</option>';
+            if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+                $droplist .= '<option value=\"0\">'.addslashes($LANG['root']).'</option>';
+            }
+            foreach ($tst as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups']) && $t->personal_folder == 0) {
+                    $ident = "";
+                    for ($x = 1; $x < $t->nlevel; $x++) {
+                        $ident .= "&nbsp;&nbsp;";
+                    }
+                    if ($prev_level < $t->nlevel) {
+                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                    } elseif ($prev_level == $t->nlevel) {
+                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                    } else {
+                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                    }
+                    $prev_level = $t->nlevel;
+                }
+            }
 
-            echo '[ { "error" : "'.$error.'" } ]';
+            echo '[ { "error" : "'.$error.'" , "droplist" : "'.$droplist.'" } ]';
             break;
 
         //CASE where to update the associated Function
@@ -527,11 +619,18 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
+            
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+            
             // send query
             DB::update(
                 prefix_table("nested_tree"),
                 array(
-                    'bloquer_creation' => $_POST['droit']
+                    'bloquer_creation' => $_POST['value']
                 ),
                 "id = %i",
                 $_POST['id']
@@ -547,12 +646,18 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
+            
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
 
             // send query
             DB::update(
                 prefix_table("nested_tree"),
                 array(
-                    'bloquer_modification' => $_POST['droit']
+                    'bloquer_modification' => $_POST['value']
                 ),
                 "id = %i",
                 $_POST['id']

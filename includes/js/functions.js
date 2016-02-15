@@ -31,29 +31,30 @@ function RefreshPage(myform){
 /**
 *	Add 1 hour to session duration
 **/
-function IncreaseSessionTime(message){
-	 $.post(
+function IncreaseSessionTime(message_end, message_wait){
+	$("#main_info_box_text").html(message_wait);
+	$("#main_info_box").show().position({
+		my: "center",
+		at: "center top+75",
+		of: "#top"
+	});
+	$.post(
 		"sources/main.queries.php",
 		{
 		type    : "increase_session_time"
 		},
-        function(data){
+		function(data){
 			if (data[0].new_value != "expired") {
-                $("#main_info_box_text").html(message);
-                $("#main_info_box").show().position({
-                    my: "center",
-                    at: "center top+75",
-                    of: "#top"
-                });
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
-	        	$("#temps_restant").val(data[0].new_value);
-	        	$("#date_end_session").val(data[0].new_value);
-	        	$('#countdown').css("color","white");
+				$("#main_info_box_text").html(message_end);
+				setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+				$("#temps_restant").val(data[0].new_value);
+				$("#date_end_session").val(data[0].new_value);
+				$('#countdown').css("color","white");
 			} else {
 				document.location = "index.php?session=expired";
 			}
-        },
-        "json"
+		},
+		"json"
 	);
 }
 
@@ -93,6 +94,7 @@ function countdown()
     if ($('#countdown')){
     	$('#countdown').html(DayTill); //Make the particular form chart become "Daytill"
     }
+
     var counter = setTimeout("countdown()", 1000); //Create the timer "counter" that will automatic restart function countdown() again every second.
 }
 
@@ -236,11 +238,24 @@ function aes_decrypt(text, key)
 
 function prepareExchangedData(data, type, key)
 {
+	var jsonResult;
     if (type == "decode") {
         if ($("#encryptClientServer").val() == 0) {
-            return $.parseJSON(data);
+			try {
+				return $.parseJSON(data);
+			}
+				catch (e) {
+				console.log("Error: "+e);
+				jsonErrorHdl(e);
+			};
         } else {
-            return $.parseJSON(aes_decrypt(data, key));
+			try {
+				return $.parseJSON(aes_decrypt(data, key));
+			}
+				catch (e) {
+				console.log("Error: "+e);
+				jsonErrorHdl(e);
+			};
         }
     } else if (type == "encode") {
         if ($("#encryptClientServer").val() == 0) {
@@ -249,6 +264,15 @@ function prepareExchangedData(data, type, key)
             return aes_encrypt(data, key);
         }
     }
+}
+
+function jsonErrorHdl(message)
+{	
+	$("#div_dialog_message_text").html(message);
+	$("#div_dialog_message").dialog("open");
+	$("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
+	$("#items_list_loader").hide();
+	return false;
 }
 
 function displayMessage(textToDisplay)
@@ -260,4 +284,22 @@ function displayMessage(textToDisplay)
         of: "#main_simple"
     });
     setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
+}
+
+	
+function blink(elem, times, speed, klass)
+{
+	if (times > 0 || times < 0) { 
+	  if ($(elem).hasClass(klass))
+		 $(elem).removeClass(klass);
+	  else
+		 $(elem).addClass(klass);
+	 }
+
+	 clearTimeout(function() { blink(elem, times, speed, klass); });
+
+	 if (times > 0 || times < 0) {
+	   setTimeout(function() { blink(elem, times, speed, klass); }, speed);
+	   times-= .5;
+	 }
 }

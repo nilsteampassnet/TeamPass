@@ -3,7 +3,7 @@
  *
  * @file          folders.php
  * @author        Nils Laumaillé
- * @version       2.1.23
+ * @version       2.1.25
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link	      http://www.teampass.net
@@ -42,151 +42,67 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 /* Get full tree structure */
 $tst = $tree->getDescendants();
 
-/* Build list of all folders */
-if ($_SESSION['is_admin'] == 1 || $_SESSION['settings']['can_create_root_folder'] == 1) {
-    $folders_list = "\'0\':\'".$LANG['root']."\'";
-} else {
-    $folders_list = "";
+// prepare options list
+$prev_level = 0;
+$droplist = '<option value="na">---'.$LANG['select'].'---</option>';
+if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+    $droplist .= '<option value="0">'.$LANG['root'].'</option>';
 }
-$ident = "";
 foreach ($tst as $t) {
     if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-        if ($t->nlevel == 1) {
-            $ident = ">";
+        $ident = "";
+        for ($x = 1; $x < $t->nlevel; $x++) {
+            $ident .= "&nbsp;&nbsp;";
         }
-        if ($t->nlevel == 2) {
-            $ident = "->";
+        if ($prev_level < $t->nlevel) {
+            $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes($t->title).'</option>';
+        } elseif ($prev_level == $t->nlevel) {
+            $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes($t->title).'</option>';
+        } else {
+            $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes($t->title).'</option>';
         }
-        if ($t->nlevel == 3) {
-            $ident = "-->";
-        }
-        if ($t->nlevel == 4) {
-            $ident = "--->";
-        }
-        if ($t->nlevel == 5) {
-            $ident = "---->";
-        }
-        $folders_list .= ','."\'".$t->id.'\':\''.$ident." ".addslashes(addslashes($t->title))."\'";
+        $prev_level = $t->nlevel;
     }
 }
 
 /* Display header */
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
-$LANG['admin_groups'].'&nbsp;&nbsp;&nbsp;<img src="includes/images/folder--plus.png" id="open_add_group_div" title="'.$LANG['item_menu_add_rep'].'" style="cursor:pointer;" />&nbsp;
-<img src="includes/images/folder--minus.png" onclick="delete_multiple_folders()" style="cursor:pointer;" title="'.$LANG['item_menu_del_rep'].'" />
-    <span style="float:right;margin-right:5px;">
-    <img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_folders\')" />
-    </span>
+    $LANG['admin_groups'].'&nbsp;&nbsp;
+    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'div_add_group\')" class="button">
+        <img src="includes/images/folder--plus.png" alt="" />
+    </button>
+    <button title="'.$LANG['item_menu_del_rep'].'" id="click_delete_multiple_folders" class="button">
+        <img src="includes/images/folder--minus.png" alt="" />
+    </button>
+    <button title="'.$LANG['refresh'].'" id="click_refresh_folders_list" class="button">
+        <img src="includes/images/arrow-repeat.png" alt="" />
+    </button>
 </div>';
 // Hidden things
 echo '
-<input type="hidden" id="folder_id_to_edit" value="" />';
+<input type="hidden" id="folder_id_to_edit" value="" />
+<input type="hidden" id="action_on_going" value="" />';
 
-echo '
-<form name="form_groupes" method="post" action="">
-    <div style="width:700px;margin:auto; line-height:20px;">
-    <table cellspacing="0" style="margin-top:10px;">
-        <thead><tr>
-            <th></th>
-            <th>ID</th>
-            <th>'.$LANG['group'].'</th>
-            <th>'.$LANG['complexity'].'</th>
-            <th>'.$LANG['group_parent'].'</th>
-            <th>'.$LANG['level'].'</th>
-            <th title="'.$LANG['group_pw_duration_tip'].'">'.$LANG['group_pw_duration'].'</th>
-            <th title="'.$LANG['del_group'].'"><img src="includes/images/folder--minus.png" /></th>
-            <th title="'.$LANG['auth_creation_without_complexity'].'"><img src="includes/images/auction-hammer.png" /></th>
-            <th title="'.$LANG['auth_modification_without_complexity'].'"><img src="includes/images/alarm-clock.png" /></th>
-        </tr></thead>
-        <tbody>';
-$x = 0;
-$arr_ids = array();
-foreach ($tst as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-        // r?cup $t->parent_id
-        $data = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $t->parent_id);
-        if ($t->nlevel == 1) {
-            $data['title'] = $LANG['root'];
-        }
-        // r?cup les droits associ?s ? ce groupe
-        $tab_droits = array();
-        $rows = DB::query("SELECT fonction_id  FROM ".prefix_table("rights")." WHERE authorized=%i AND tree_id = %i", 1, $t->id);
-        foreach ($rows as $record) {
-            array_push($tab_droits, $record['fonction_id']);
-        }
-        // g?rer l'identation en fonction du niveau
-        $ident = "";
-        for ($l = 1; $l < $t->nlevel; $l++) {
-            $ident .= "&nbsp;&nbsp;";
-        }
-        // Get some elements from DB concerning this node
-        $node_data = DB::queryFirstRow(
-            "SELECT m.valeur as valeur, n.renewal_period as renewal_period
-            FROM ".prefix_table("misc")." as m,
-            ".prefix_table("nested_tree")." as n
-            WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i",
-            "complex",
-            $t->id
-        );
 
-        echo '
-                <tr class="ligne0" id="row_'.$t->id.'">
-                    <td align="center""><input type="checkbox" class="cb_selected_folder" id="cb_selected-'.$t->id.'" /></td>
-                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">'.$t->id.'</td>
-                    <td width="50%" onclick="open_edit_folder_dialog('.$t->id.')">
-                        '.$ident.'<span id="title_'.$t->id.'">'.$t->title.'</span>
-                    </td>
-                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="complexite_'.$t->id.'">'.@$_SESSION['settings']['pwComplexity'][$node_data['valeur']][1].'</span>
-                    </td>
-                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="parent_'.$t->id.'">'.$node_data['valeur'].'</span>
-                    </td>
-                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        '.$t->nlevel.'
-                    </td>
-                    <td align="center" onclick="open_edit_folder_dialog('.$t->id.')">
-                        <span id="renewal_'.$t->id.'">'.$node_data['renewal_period'].'</span>
-                    </td>
-                    <td align="center">
-                        <img src="includes/images/folder--minus.png" onclick="supprimer_groupe(\''.$t->id.'\')" style="cursor:pointer;" />
-                    </td>';
-
-        $data3 = DB::queryFirstRow(
-            "SELECT bloquer_creation,bloquer_modification 
-            FROM ".prefix_table("nested_tree")." 
-            WHERE id = %i", 
-            intval($t->id)
-        );
-        echo '
-                    <td align="center">
-                        <input type="checkbox" id="cb_droit_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'creation\')"', isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1 ? 'checked' : '', ' />
-                    </td>
-                    <td align="center">
-                        <input type="checkbox" id="cb_droit_modif_'.$t->id.'" onchange="Changer_Droit_Complexite(\''.$t->id.'\',\'modification\')"', isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1 ? 'checked' : '', ' />
-                    </td>
-                    <td>
-                        <input type="hidden"  id="parent_id_'.$t->id.'" value="'.$t->parent_id.'" />
-                        <input type="hidden"  id="renewal_id_'.$t->id.'" value="'.$node_data['valeur'].'" />
-                    </td>
-                </tr>';
-        array_push($arr_ids, $t->id);
-        $x++;
-    }
-}
+//Show the KB in a table view
 echo '
-        </tbody>
-    </table>
-    <div style="font-size:11px;font-style:italic;margin-top:5px;">
-        <img src="includes/images/information-white.png" alt="" />&nbsp;'.$LANG['info_click_to_edit'].'
-    </div>
-    </div>
-</form>';
-// DIV FOR HELP
-echo '
-<div id="help_on_folders" style="">
-    <div>'.$LANG['help_on_folders'].'</div>
+<div style="margin:10px auto 25px auto;min-height:250px;" id="folders_page">
+<table id="t_folders" class="hover" width="100%">
+    <thead><tr>
+        <th></th>
+        <th>ID</th>
+        <th>'.$LANG['group'].'</th>
+        <th>'.$LANG['complexity'].'</th>
+        <th>'.$LANG['group_parent'].'</th>
+        <th>'.$LANG['level'].'</th>
+        <th style="width:20px;" title="'.$LANG['group_pw_duration_tip'].'">'.$LANG['group_pw_duration'].'</th>
+        <th style="width:20px;" title="'.$LANG['auth_creation_without_complexity'].'"><img src="includes/images/auction-hammer.png" /></th>
+        <th style="width:20px;" title="'.$LANG['auth_modification_without_complexity'].'"><img src="includes/images/alarm-clock.png" /></th>
+    </tr></thead>
+    <tbody>
+    </tbody>
+</table>
 </div>';
 
 /* Form Add a folder */
@@ -198,30 +114,9 @@ echo '
     <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
 
     <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
-    <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">';
-echo '<option value="na">---'.$LANG['select'].'---</option>';
-if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-    echo '<option value="0">'.$LANG['root'].'</option>';
-}
-$prev_level = 0;
-foreach ($tst as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-        $ident = "";
-        for ($x = 1; $x < $t->nlevel; $x++) {
-            $ident .= "&nbsp;&nbsp;";
-        }
-        if ($prev_level < $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } elseif ($prev_level == $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } else {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        }
-        $prev_level = $t->nlevel;
-    }
-}
-echo '
-    </select>
+    <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">
+		'.$droplist.'
+	</select>
 
     <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
     <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
@@ -233,6 +128,24 @@ echo '
 
     <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
+	
+	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
+		<option value="0">'.$LANG['no'].'</option>
+		<option value="1">'.$LANG['yes'].'</option>
+	</select>
+	
+	<div style="margin-top:10px;">
+		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
+			<option value="0">'.$LANG['no'].'</option>
+			<option value="1">'.$LANG['yes'].'</option>
+		</select>
+	</div>
+	
+	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
 </div>';
 
 /* Form EDIT a folder */
@@ -244,29 +157,8 @@ echo '
     <input type="text" id="edit_folder_title" class="input_text text ui-widget-content ui-corner-all" />
 
     <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
-    <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">';
-echo '<option value="na">---'.$LANG['select'].'---</option>';
-if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-    echo '<option value="0">'.$LANG['root'].'</option>';
-}
-$prev_level = 0;
-foreach ($tst as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-        $ident = "";
-        for ($x = 1; $x < $t->nlevel; $x++) {
-            $ident .= "&nbsp;&nbsp;";
-        }
-        if ($prev_level < $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } elseif ($prev_level == $t->nlevel) {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        } else {
-            echo '<option value="'.$t->id.'">'.$ident.$t->title.'</option>';
-        }
-        $prev_level = $t->nlevel;
-    }
-}
-echo '
+    <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">'.
+		$droplist.'
     </select>
 
     <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
@@ -279,6 +171,24 @@ echo '
 
     <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
+	
+	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
+		<option value="0">'.$LANG['no'].'</option>
+		<option value="1">'.$LANG['yes'].'</option>
+	</select>
+	
+	<div style="margin-top:10px;">
+		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
+			<option value="0">'.$LANG['no'].'</option>
+			<option value="1">'.$LANG['yes'].'</option>
+		</select>
+	</div>
+	
+	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
 </div>';
 
 require_once 'folders.load.php';
