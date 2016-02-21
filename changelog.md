@@ -1,4 +1,12 @@
 Last changes
+2.1.26
+ #1211 No FA code sent from home page
+ #1203 Needed PHP extensions check during install & update process
+ #1193 When I login with user admin " loading ... " and it does not finish
+ #1186 open/highlight folder tree of displayed item
+ #1183 Syntax Error on personal folders option
+ #1181 403 Access Forbidden by CSRFProtector! at config save
+
 2.1.25
  #1169 sending Google Authenticator code through index page
  #1160 hiding user password change option if DUOSecurity

@@ -102,7 +102,7 @@ switch ($_POST['type']) {
                                 if ($tmp[0] == "version") {
                                     $text .= '<li><u>'.$LANG['your_version']."</u> : ".$k['version'];
                                     if (floatval($k['version']) < floatval($tmp[1])) {
-                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b><br />';
+                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
                                     }
                                     $text .= '</li>';
                                 }
@@ -116,8 +116,9 @@ switch ($_POST['type']) {
         } else {
             $error = "conf_block";
         }
+        $text .= "</ul>";
 
-        echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';
+        echo '[{"error":"'.$error.'" , "output":"'. str_replace(array("\n", "\t", "\r"), '', $text).'"}]';
         break;
 
     ###########################################################

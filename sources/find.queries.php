@@ -332,8 +332,8 @@ if (!isset($_GET['type'])) {
         ) {
             $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
             $findPfGroup = 0;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
+            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\', \''.$record['id_tree'].'\')';
+            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 0;
         }
         // Case where item is in own personal folder
@@ -343,8 +343,8 @@ if (!isset($_GET['type'])) {
         ) {
             $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
             $findPfGroup = 1;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
+            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 1;
         }
         // CAse where item is restricted to a group of users included user
@@ -357,8 +357,8 @@ if (!isset($_GET['type'])) {
         ) {
             $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
             $findPfGroup = 0;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
+            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
         }
         // CAse where item is restricted to a group of users not including user
@@ -385,13 +385,13 @@ if (!isset($_GET['type'])) {
             ) {
                 $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
                 $findPfGroup = 0;
-                $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
-                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
+                $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\', \''.$record['id_tree'].'\')';
+                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
                 $displayItem = $need_sk = $canMove = 0;
             } else {
                 $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
-                $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+                $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
+                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
                 // reinit in case of not personal group
                 if ($init_personal_folder == false) {
                     $findPfGroup = "";
@@ -404,8 +404,8 @@ if (!isset($_GET['type'])) {
             }
         } else {
             $perso = '<i class="fa fa-tag mi-green"></i>&nbsp;';
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
+            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
             // reinit in case of not personal group
             if ($init_personal_folder == false) {

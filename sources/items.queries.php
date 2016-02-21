@@ -1527,7 +1527,10 @@ if (isset($_POST['type'])) {
             );
             
             // check if source or target folder is PF. If Yes, then cancel operation
-            if ($tmp_source['personal_folder'] == 1 ||$tmp_target['personal_folder'] == 1) {
+            if (
+                !($tmp_source['personal_folder'] == 1 && $tmp_target['personal_folder'] == 1)
+                && !($tmp_source['personal_folder'] == 0 && $tmp_target['personal_folder'] == 0)
+            ) {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
@@ -2962,7 +2965,7 @@ if (isset($_POST['type'])) {
                         // build select for all visible folders
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
                             if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1) || (in_array($folder->id, $_SESSION['personal_folders']))) {
+                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1)) { // || (in_array($folder->id, $_SESSION['personal_folders']))
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
                                 } else {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
@@ -2993,7 +2996,8 @@ if (isset($_POST['type'])) {
                 'error' => "",
                 'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
                 'selectVisibleNonPersonalFoldersOptions' => ($selectVisibleNonPersonalFoldersOptions),
-                'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions)
+                'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions),
+                'selectFullVisibleFoldersOptions' => str_replace('disabled="disabled"', "", $selectVisibleFoldersOptions)
             );
             // send data
             echo prepareExchangedData($data, "encode");

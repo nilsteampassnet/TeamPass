@@ -90,7 +90,8 @@ echo '
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
-<input type="hidden" id="access_level" value="" />';
+<input type="hidden" id="access_level" value="" />
+<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '

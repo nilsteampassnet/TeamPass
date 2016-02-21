@@ -123,6 +123,7 @@ echo '
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
     <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
+    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check14"></span></li>
     <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
     <li>PHP version is greater or equal to 5.4.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
@@ -211,8 +212,9 @@ echo '
 
 echo '
 <div id="text_step5" style="display:none;">
-    <h5>Populate database:</h5>
-    <ul>
+    <h5>Now populating database</h5>
+    <ul id="pop_db"></ul>
+    <!--<ul>
     <li>Add table "items"&nbsp;<span id="res5_check0"></span></li>
     <li>Add table "log_items"&nbsp;<span id="res5_check1"></span></li>
     <li>Add table "misc"&nbsp;<span id="res5_check2"></span></li>
@@ -240,7 +242,7 @@ echo '
     <li>Add table "api"&nbsp;<span id="res5_check25"></span></li>
     <li>Add table "otv"&nbsp;<span id="res5_check26"></span></li>
     <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
-    </ul>
+    </ul>-->
 </div>';
 
 

@@ -726,9 +726,9 @@ if (isset($_POST['type'])) {
                 }
                 // answer back
                 if ($mysqli_result) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
                 } else {
-                    echo '[{"error" : "true", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "true", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
                 }
             } else {
                 echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
@@ -762,7 +762,11 @@ if (isset($_POST['type'])) {
                 $securePath = $var['abspath'];
             } else {
                 $skFile = $var['sk_path'].'/sk.php';
-                $securePath = $var['sk_path'];
+                if(substr($var['sk_path'], -1) == '/') {
+                    $string = substr($var['sk_path'], 0, -1);
+                } else {
+                    $securePath = $var['sk_path'];
+                }
             }
             $events = "";
 
@@ -851,7 +855,8 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
                     $data = file_get_contents($csrfp_file);
                     $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$_SESSION['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js"', $newdata);
+                    $jsUrl = str_replace("//", "/", $_SESSION['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js"');
+                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                     file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
                     
                     // finalize

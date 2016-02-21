@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
     'reload_page_after_user_account_creation' => 'Your account has been created. This page will be automatically reloaded in 3 seconds ...',
     'error_bad_credentials' => 'Login credentials do not correspond!',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',

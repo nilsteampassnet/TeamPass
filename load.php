@@ -993,6 +993,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                type    : "cpm_status"
             },
             function(data) {
+                console.log(">> "+data[0].output);
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
                 } else if (data[0].error == "conf_block") {
@@ -1000,12 +1001,13 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");
                 }
+                console.log("ending");
             },
             "json"
        );
     }
     //Load function on page load
-    $(function() {
+    $(function() {console.log("starting");
         LoadCPMInfo();
     });';
 } else if (isset($_GET['page']) && $_GET['page'] == "favourites") {

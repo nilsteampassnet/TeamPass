@@ -142,6 +142,46 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('gd')) {
+                //$okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gd\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"gd\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('mbstring')) {
+                //$okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mbstring\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mbstring\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('bcmath')) {
+                //$okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"bcmath\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"bcmath\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('iconv')) {
+                //$okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"iconv\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"iconv\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
+            if (!extension_loaded('xml')) {
+                //$okExtensions = false;
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"xml\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"xml\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (ini_get('max_execution_time')<60) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.
@@ -1726,7 +1766,8 @@ require_once \"".$skFile."\";
                 copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
                 $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-                $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js"', $newdata);
+                $jsUrl = str_replace("//", "/", $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js"');
+                $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                 file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
                 
