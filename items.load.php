@@ -1086,13 +1086,14 @@ function SupprimerFolder()
     }
 }
 
-function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload)
+function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
     // If a request is already launched, then kill new.
     if ($("#request_ongoing").val() != "") {
         request.abort();
         return;
     }
+    id_tree = id_tree || ""
 
     // Store status query running
     $("#request_ongoing").val("1");
@@ -1431,6 +1432,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#request_ongoing").val("");
                 }
            );
+
+            if (id_tree != "" && id_tree != $("#hid_cat").val()) {
+                refreshTree(id_tree, "0");
+            }
            
            // statistic
            /*$.post(
@@ -1562,10 +1567,10 @@ function open_add_group_div()
 function open_edit_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1590,12 +1595,21 @@ function open_edit_group_div()
 function open_move_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
+        return false;
+    }*/
+    if ($.inArray($("#hid_cat").val(), $("#personal_visible_groups_list").val().split(',')) != -1 && $("#personal_sk_set").val() == "0") {
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_personal_sk_expected'];?>");
+        return false;
+    }
+    
+    if ($("#hid_cat").val() == "<?php echo $_SESSION['personal_folders'][0];?>") {
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
     $("#div_loading").show();
@@ -1603,9 +1617,9 @@ function open_move_group_div()
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
 
-    //Select the actual forlder in the dialogbox
-    $('#move_folder_id option[value='+$('#hid_cat').val()+']').prop('selected', true);
-    $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+"[id"+$('#hid_cat').val()+"]");
+    //Select the actual folder in the dialogbox
+    //$('#move_folder_id option[value='+$('#hid_cat').val()+']').prop('selected', true);
+    $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+" [id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
     $("#div_loading").hide();
@@ -1617,10 +1631,10 @@ function open_move_group_div()
 function open_del_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -2095,11 +2109,17 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 /*
 * builds the folders tree
 */
-function refreshTree(node_to_select)
+function refreshTree(node_to_select, do_refresh)
 {
+    do_refresh = do_refresh || ""
     node_to_select = node_to_select || "";
-    $('#jstree').jstree(true).refresh();
-    if (node_to_select != "") $("#jstree").jstree("select_node", "#li_"+node_to_select);
+
+    if (do_refresh != "0") $('#jstree').jstree(true).refresh();
+    if (node_to_select != "") {
+        $("#hid_cat").val(node_to_select);
+        $("#jstree").jstree("deselect_all");
+        $("#jstree").jstree("select_node", "#li_"+node_to_select);
+    }
     refreshVisibleFolders();
 }
 
@@ -2127,7 +2147,8 @@ function refreshVisibleFolders()
                 $('#copy_in_folder option[value!="0"]').remove();
                 
                 // append new list
-                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+                $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
                 $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
             }
         }
@@ -2489,6 +2510,7 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#edit_rep_show_error").html("").hide();
                 $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                $("#move_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
         },

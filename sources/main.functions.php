@@ -599,6 +599,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
+        $_SESSION['personal_visible_groups_list'] = implode(',', $_SESSION['personal_visible_groups']);
         $_SESSION['read_only_folders'] = $listReadOnlyFolders;
 
         $_SESSION['list_folders_limited'] = $listFoldersLimited;

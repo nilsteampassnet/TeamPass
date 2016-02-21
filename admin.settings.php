@@ -214,6 +214,15 @@ if (isset($_POST['save_button'])) {
     // Update cpassman_url
     if (isset($_SESSION['settings']['cpassman_url']) && $_SESSION['settings']['cpassman_url'] != $_POST['cpassman_url']) {
         updateSettings('cpassman_url', $_POST['cpassman_url']);
+        // update also jsUrl for CSFP protection
+        $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
+        $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+        $data = file_get_contents($csrfp_file);
+        $posJsUrl = strpos($data, '"jsUrl" => "');
+        $posEndLine = strpos($data, '",', $posJsUrl);
+        $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
+        $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
+        file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
     }
     // Update path_to_upload_folder
     if ((isset($_SESSION['settings']['path_to_upload_folder']) && $_SESSION['settings']['path_to_upload_folder'] != $_POST['path_to_upload_folder']) || (!isset($_SESSION['settings']['path_to_upload_folder']))) {

@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_personal_sk_expected' => 'Vous devez avant tout saisir votre clé personnelle !',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',

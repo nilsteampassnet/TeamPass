@@ -95,6 +95,7 @@ $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $folders = $tree->getDescendants();
+$prevLevel = 0;
 
 // show list of all folders
 foreach ($folders as $t) {
