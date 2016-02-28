@@ -421,6 +421,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
         }
 
         $full_listing = array();
+        $items_id_list = array();
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
 
