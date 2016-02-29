@@ -6,6 +6,7 @@ Last changes
  #1186 open/highlight folder tree of displayed item
  #1183 Syntax Error on personal folders option
  #1181 403 Access Forbidden by CSRFProtector! at config save
+ NEW: Server user password change through SSH connection
 
 2.1.25
  #1169 sending Google Authenticator code through index page

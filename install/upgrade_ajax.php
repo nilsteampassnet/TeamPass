@@ -617,7 +617,8 @@ if (isset($_POST['type'])) {
                 array('admin', 'email_server_url', '', 0),
                 array('admin','otv_expiration_period','7', 0),
                 array('admin','default_session_expiration_time','60', 0),
-                array('admin','duo','0', 0)
+                array('admin','duo','0', 0),
+                array('admin','enable_server_password_change','0', 0)
             );
             $res1 = "na";
             foreach ($val as $elem) {
@@ -909,6 +910,16 @@ if (isset($_POST['type'])) {
                 $_SESSION['tbl_prefix']."items",
                 "pw_len",
                 "INT(5) NOT null DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "auto_update_pwd_frequency",
+                "TINYINT(2) NOT NULL DEFAULT '0'"
+            );
+            $res2 = addColumnIfNotExist(
+                $_SESSION['tbl_prefix']."items",
+                "auto_update_pwd_next_date",
+                "INT(15) DEFAULT NULL"
             );
             $res2 = addColumnIfNotExist(
                 $_SESSION['tbl_prefix']."cache",

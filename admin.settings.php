@@ -566,6 +566,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['syslog_port'] != $_POST['syslog_port']) {
         updateSettings('syslog_port', $_POST['syslog_port']);
     }
+    // Update enable_server_password_change
+    if (@$_SESSION['settings']['enable_server_password_change'] != $_POST['enable_server_password_change_input']) {
+        updateSettings('enable_server_password_change', $_POST['enable_server_password_change_input']);
+    }
 }
 
 echo '
@@ -1466,6 +1470,7 @@ echo '
                         </select>
                     <td>
                 </tr>';
+echo '<tr><td colspan="3"><hr></td></tr>';
 // SYSLOG ENABLE
 echo '
                 <tr><td>
@@ -1496,6 +1501,20 @@ echo '
                             <input id="syslog_port" name="syslog_port" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_port']) ? '514' : $_SESSION['settings']['syslog_port'], '" />
                         </td>
                     </tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
+
+// Automatic server password change
+echo '
+                <tr><td>
+                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <label>'.$LANG['server_password_change_enable'].'
+                        <span style="margin-left:0px;"><i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i>&nbsp;</span>
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="enable_server_password_change" data-toggle-on="', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_server_password_change_input" name="enable_server_password_change_input" value="', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
 echo '
             </table>
             </div>';

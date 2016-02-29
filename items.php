@@ -202,7 +202,7 @@ echo '
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
                     <div class="ui-state-error ui-corner-all" style="padding:2px;">
-                        <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                        <i class="fa fa-warning"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
                 <table width="100%">';
@@ -223,6 +223,8 @@ echo '
                                         <li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>
                                         ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
                                         <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['link_copy'].'</li>' : '', '
+                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '
+                                        <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
                                     </ul>
                             </ul>
                         </div>
@@ -730,7 +732,7 @@ echo '
         </div>
     </div>';
 }
-echo '    
+echo '
     <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
@@ -925,5 +927,13 @@ if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['
         </div>
     </div>';
 }
+
+// SSH dialogbox
+echo '
+<div id="dialog_ssh" style="display:none;padding:4px;">
+    <div id="div_ssh">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
+</div>';
 
 require_once 'items.load.php';
