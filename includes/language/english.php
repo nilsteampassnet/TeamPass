@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -14,6 +14,28 @@
  */
 global $LANG;
 $LANG = array (
+    'server_password_change_enable' => 'Enable changing server user password change (using ssh connection)',
+    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
+    'month' => 'month',
+    'ssh_one_shot_change' => 'One shot change',
+    'ssh_scheduled_change' => 'Scheduled change',
+    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_answer_from_server' => 'Answer from server',
+    'ssh_action_performed' => 'Password updated for this Item.<br /><br />You can now close this popup.',
+    'ssh_action_performed_with_error' => 'Action was performed with error.<br>Check answer from server and made correction.',
+    'ssh_user' => 'SSH user',
+    'ssh_pwd' => 'SSH password',
+    'error_new_pwd_missing' => 'New password is missing!',
+    'click_to_generate' => 'Click to generate',
+    'update_server_password' => 'Update server\'s password',
+    'error_login_missing' => 'Login is missing!',
+    'error_pwd_missing' => 'Password is missing!',
+    'error_url_missing' => 'URL is missing!',
+    'error_ssh_credentials_missing' => 'SSH credentials are missing!',
+    'error_url_must_be_ssh' => 'URL must start with SSH protocol!',
+    'auto_update_server_password_info' => 'Clicking START button will automatically perform next steps:<ul><li>Connect through SSH to Linux server using login credentials and field `URL`,</li><li>Change user password on Linux server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has root privileges on the server (if not, indicate the root login and password) before starting.</b>',
     'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
     'reload_page_after_user_account_creation' => 'Your account has been created. This page will be automatically reloaded in 3 seconds ...',
     'error_bad_credentials' => 'Login credentials do not correspond!',

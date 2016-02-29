@@ -1173,7 +1173,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     
                     // reset password shown info
                     $("#pw_shown").val("0");
-                    $("#item_viewed_x_times").html("<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
+
+                    // show some info on top
+                    if (data.auto_update_pwd_frequency != "0") var auto_update_pwd = "<i class='fa fa-shield tip' title='<?php echo $LANG['server_auto_update_password_enabled_tip'];?>'></i>&nbsp;<b>"+data.auto_update_pwd_frequency+"</b>&nbsp;|&nbsp;";
+                    else var auto_update_pwd = "";
+                    $("#item_viewed_x_times").html(auto_update_pwd+"&nbsp;<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
 
                     // Show timestamp
                     $("#timestamp_item_displayed").val(data.timestamp);
@@ -3246,6 +3250,24 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         }
     });
+
+    //DIALOG FOR SSH
+    $("#dialog_ssh").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 620,
+        height: 500,
+        title: "<?php echo $LANG['update_server_password'];?>",
+        buttons: {
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        close: function() {
+            $("#div_ssh").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b><?php echo $LANG['please_wait'];?></b>");
+        }
+    });
     
     // open personal pwds re-encryption dialogbox
     if ($("#personal_upgrade_needed").val() == "1") {        
@@ -3746,5 +3768,17 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
             }
         }
     });
+}
+
+ function serverAutoChangePwd()
+ {
+     console.log("opening");
+    $("#dialog_ssh").dialog({
+        open: function(event, ui) {
+            $("#div_ssh").load(
+                "<?php echo $_SESSION['settings']['cpassman_url'].'/ssh.php?key='.$_SESSION['key'];?>&id="+$("#selected_items").val(), function(){}
+            );
+        }
+    }).dialog("open");
 }
 </script>

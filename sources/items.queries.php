@@ -1136,6 +1136,14 @@ if (isset($_POST['type'])) {
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = $tags;    //str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
+                
+                if (isset($_SESSION['settings']['enable_server_password_change'])
+                    && $_SESSION['settings']['enable_server_password_change'] == 1) {
+                    $arrData['auto_update_pwd_frequency'] = $dataItem['auto_update_pwd_frequency'];
+                } else {
+                    $arrData['auto_update_pwd_frequency'] = "0";
+                }
+
                 if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
                     && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1) {
                     $arrData['anyone_can_modify'] = 1;

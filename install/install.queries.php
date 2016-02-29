@@ -247,6 +247,8 @@ if (isset($_POST['type'])) {
                             `notification` varchar(250) DEFAULT NULL,
                             `viewed_no` int(12) NOT null DEFAULT '0',
                             `complexity_level` varchar(2) NOT null DEFAULT '-1',
+                            `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
+                            `auto_update_pwd_next_date` int(15) DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
@@ -370,7 +372,8 @@ if (isset($_POST['type'])) {
                             array('admin','enable_suggestion','0'),
                             array('admin','otv_expiration_period','7'),
                             array('admin','default_session_expiration_time','60'),
-                            array('admin','duo','0')
+                            array('admin','duo','0'),
+                            array('admin','enable_server_password_change','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
