@@ -91,6 +91,7 @@ echo '
 <input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
 <input type="hidden" id="access_level" value="" />
+<input type="hidden" id="empty_clipboard" value="" />
 <input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
@@ -700,7 +701,7 @@ echo '
                 <div id="item_edit_upload_list"></div><br />
                 <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
-                <a id="item_edit_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
+                <a id="item_edit_attach_uploadfiles" href="#sd" class="button">'.$LANG['start_upload'].'</a>
             </div>
         </div>';
 // Tabs EDIT N°4 -> Categories

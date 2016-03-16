@@ -60,7 +60,7 @@ class csrfProtector
 	 *
 	 * @return void
 	 *
-	 * @throw configFileNotFoundException			
+	 * @throw configFileNotFoundException
 	 */
 	public static function init($length = null, $action = null)
 	{
@@ -69,7 +69,7 @@ class csrfProtector
 		 * Already done by mod_csrfp
 		 */
 		if (getenv('mod_csrfp_enabled')) {
-			return;			
+			return;
 		}
 
 		//start session in case its not
@@ -79,7 +79,7 @@ class csrfProtector
 		}
 
 		if (!file_exists(__DIR__ ."/../csrfp.config.php")) {
-			throw new configFileNotFoundException("configuration file not found for CSRFProtector!");	
+			throw new configFileNotFoundException("configuration file not found for CSRFProtector!");
 		}
 
 		//load configuration file and properties
@@ -89,14 +89,14 @@ class csrfProtector
 		if ($length !== null) {
 			self::$config['tokenLength'] = intval($length);
 		}
-		
+
 		//action that is needed to be taken in case of failed authorisation
 		if ($action !== null) {
 			self::$config['failedAuthAction'] = $action;
 		}
 
 		if (self::$config['CSRFP_TOKEN'] == '')
-			self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;	
+			self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
 
 		//authorise the incoming request
 		self::authorisePost();
@@ -122,7 +122,7 @@ class csrfProtector
 	{
 		$configLastModified = filemtime(__DIR__ ."/../csrfp.config.php");
 		if (file_exists(__DIR__ ."/../" .self::$config['jsPath'])) {
-			$jsFileLastModified = filemtime(__DIR__ ."/../" 
+			$jsFileLastModified = filemtime(__DIR__ ."/../"
 				.self::$config['jsPath']);
 			if ($jsFileLastModified < $configLastModified) {
 				// -- config is more recent than js file
@@ -132,7 +132,7 @@ class csrfProtector
 		} else {
 			return false;
 		}
-		
+
 	}
 
 	/**
@@ -172,7 +172,7 @@ class csrfProtector
 	 */
 	public static function authorisePost()
 	{
-		//#todo this method is valid for same origin request only, 
+		//#todo this method is valid for same origin request only,
 		//enable it for cross origin also sometime
 		//for cross origin the functionality is different
 		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -181,30 +181,30 @@ class csrfProtector
 			self::$requestType = "POST";
 
 			//currently for same origin only
-			if (!(isset($_POST[self::$config['CSRFP_TOKEN']]) 
+			if (!(isset($_POST[self::$config['CSRFP_TOKEN']])
 				&& isset($_SESSION[self::$config['CSRFP_TOKEN']])
 				&& ($_POST[self::$config['CSRFP_TOKEN']] === $_SESSION[self::$config['CSRFP_TOKEN']])
 				)) {
 
 				//action in case of failed validation
-				self::failedValidationAction();			
+				self::failedValidationAction();
 			} else {
 				self::refreshToken();	//refresh token for successfull validation
 			}
 		} else if (!static::isURLallowed()) {
-			
+
 			//currently for same origin only
-			if (!(isset($_GET[self::$config['CSRFP_TOKEN']]) 
+			if (!(isset($_GET[self::$config['CSRFP_TOKEN']])
 				&& isset($_SESSION[self::$config['CSRFP_TOKEN']])
 				&& ($_GET[self::$config['CSRFP_TOKEN']] === $_SESSION[self::$config['CSRFP_TOKEN']])
 				)) {
 
 				//action in case of failed validation
-				self::failedValidationAction();			
+				self::failedValidationAction();
 			} else {
 				self::refreshToken();	//refresh token for successfull validation
 			}
-		}	
+		}
 	}
 
 	/**
@@ -216,9 +216,9 @@ class csrfProtector
 	private static function failedValidationAction()
 	{
 		if (!file_exists(__DIR__ ."/../" .self::$config['logDirectory'])) {
-			throw new logDirectoryNotFoundException("Log Directory Not Found!");		
+			throw new logDirectoryNotFoundException("Log Directory Not Found!");
 		}
-	
+
 		//call the logging function
 		static::logCSRFattack();
 
@@ -259,11 +259,11 @@ class csrfProtector
 					$_POST = array();
 				}
 				break;
-		}		
+		}
 	}
 
 	/**
-	 * function to set auth cookie 
+	 * function to set auth cookie
 	 * @param: void
 	 * @return void
 	 */
@@ -275,8 +275,8 @@ class csrfProtector
 		$_SESSION[self::$config['CSRFP_TOKEN']] = $token;
 
 		//set token to cookie for client side processing
-		setcookie(self::$config['CSRFP_TOKEN'], 
-			$token, 
+		setcookie(self::$config['CSRFP_TOKEN'],
+			$token,
 			time() + self::$cookieExpiryTime);
 	}
 
@@ -293,7 +293,7 @@ class csrfProtector
 			self::$config['tokenLength'] = 32;	//set as default
 		}
 
-		//if $length > 128 throw exception #todo 
+		//if $length > 128 throw exception #todo
 
 		if (function_exists("hash_algos") && in_array("sha512", hash_algos())) {
 			$token = hash("sha512", mt_rand(0, mt_getrandmax()));
@@ -303,7 +303,7 @@ class csrfProtector
 				$r = mt_rand(0, 35);
 				if ($r < 26) {
 					$c = chr(ord('a') + $r);
-				} else { 
+				} else {
 					$c = chr(ord('0') + $r - 26);
 				}
 				$token .= $c;
@@ -332,7 +332,7 @@ class csrfProtector
 	            return $buffer;
 	        }
 	    }
-	    
+
 	    //add a <noscript> message to outgoing HTML output,
 	    //informing the user to enable js for CSRFProtector to work
 	    //best section to add, after <body> tag
@@ -385,10 +385,10 @@ class csrfProtector
 		//if file doesnot exist for, create it
 		$logFile = fopen(__DIR__ ."/../" .self::$config['logDirectory']
 		."/" .date("m-20y") .".log", "a+");
-		
+
 		//throw exception if above fopen fails
 		if (!$logFile) {
-			throw new logFileWriteError("Unable to write to the log file");	
+			throw new logFileWriteError("Unable to write to the log file");
 		}
 
 		//miniature version of the log
@@ -432,7 +432,7 @@ class csrfProtector
 	 * Listed in config file
 	 * @param: void
 	 * @return: boolean, true is url need no validation, false if validation needed
-	 */ 
+	 */
 	public static function isURLallowed() {
 		foreach (self::$config['verifyGetFor'] as $key => $value) {
 			$value = str_replace(array('/','*'), array('\/','(.*)'), $value);

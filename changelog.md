@@ -6,6 +6,8 @@ Last changes
  #1186 open/highlight folder tree of displayed item
  #1183 Syntax Error on personal folders option
  #1181 403 Access Forbidden by CSRFProtector! at config save
+ #1158 Can't Change admin Password
+ #xxxx Cannot save "enable attachments encryption"
  NEW: Server user password change through SSH connection
 
 2.1.25
@@ -88,7 +90,7 @@ Last changes
  New: Vietnamese language added
  New: Tree structure is loaded dynamically
  New: Notification to Managers for awaiting suggestions
- 
+
  2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
@@ -142,8 +144,8 @@ Last changes
  #697 - Default language setting, not being applied to automatically created ldap users.
  #698 - Default language setting, not being applied to newly created users.
  #707 - httpRequest is missing in upgrade process
- #725 - Disable button after item creation or edition 
- #720 - cannot sign up to 2factor 
+ #725 - Disable button after item creation or edition
+ #720 - cannot sign up to 2factor
  #690 - limit password export via PDF/CSV to user/group
  #745 - Enable again save_button after error on Add/Edit Item
  #739 - OTV correction

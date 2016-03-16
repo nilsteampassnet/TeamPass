@@ -1,11 +1,11 @@
 <?php
 /**
- * @file 		upload.attachments.php
- * @author		Nils Laumaillé
- * @version 	2.1.21
- * @copyright 	(c) 2009-2015 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file        upload.attachments.php
+ * @author      Nils Laumaillé
+ * @version     2.1.21
+ * @copyright   (c) 2009-2015 Nils Laumaillé
+ * @licensing   GNU AFFERO GPL 3.0
+ * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,9 +15,9 @@
 require_once('../sessions.php');
 session_start();
 if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
 }
@@ -50,9 +50,9 @@ $targetDir = $_SESSION['settings']['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9';	//accept only those characters
+$valid_chars_regex = 'A-Za-z0-9';   //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
-$max_file_size_in_bytes = 2147483647;	//2Go
+$max_file_size_in_bytes = 2147483647;   //2Go
 
 @date_default_timezone_set($_POST['timezone']);
 
