@@ -251,7 +251,7 @@ function rest_get () {
         }
         $GLOBALS['request'] =  explode('/',$matches[2]);
     }
-    
+
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
@@ -268,7 +268,7 @@ function rest_get () {
                     $condition_value = $GLOBALS['request'][2];
                 }
                 DB::debugMode(false);
-                
+
                 // get items in this module
                 $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
                 foreach ($response as $data)
@@ -288,7 +288,7 @@ function rest_get () {
                 $rows = array();
                 $i = 0;
                 foreach ($response as $row)
-                {                    
+                {
                     $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
                     foreach ($response as $data)
                     {
@@ -302,12 +302,12 @@ function rest_get () {
             }
             elseif($GLOBALS['request'][1] == "items") {
                 $array_items = explode(';',$GLOBALS['request'][2]);
-                
+
                 // check if not empty
                 if (count($array_items) == 0) {
                     rest_error ('NO_ITEM');
                 }
-                
+
                 // only accepts numeric
                 foreach($array_items as $item) {
                     if(!is_numeric($item)) {
@@ -406,7 +406,7 @@ function rest_get () {
                 $item_url = $array_item[6];
                 $item_tags = $array_item[7];
                 $item_anyonecanmodify = $array_item[8];
-                
+
                 // added so one can sent data including the http or https !
                 // anyway we have to urlencode this data
                 $item_url = urldecode($item_url);
@@ -520,7 +520,7 @@ function rest_get () {
             }
             /*
              * Case where a new user has to be added
-             * 
+             *
              * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1|ROLE2|...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
              * with:
              * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
@@ -530,13 +530,13 @@ function rest_get () {
              *
              */
             elseif($GLOBALS['request'][1] == "user") {
-                
+
                 // get user definition
                 $array_user = explode(';', $GLOBALS['request'][2]);
                 if (count($array_user) != 11) {
                     rest_error ('USERBADDEFINITION');
                 }
-                
+
                 $login = $array_user[0];
                 $name = $array_user[1];
                 $lastname = $array_user[2];
@@ -548,7 +548,7 @@ function rest_get () {
                 $isadmin = $array_user[8];
                 $ismanager = $array_user[9];
                 $haspf = $array_user[10];
-                
+
                 // Empty user
                 if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
                     rest_error ('USERLOGINEMPTY');
@@ -559,7 +559,7 @@ function rest_get () {
             WHERE login LIKE %ss",
                     mysqli_escape_string($link, stripslashes($login))
                 );
-                
+
                 if (DB::count() == 0) {
                     try {
                         // find AdminRole code in DB
@@ -569,14 +569,14 @@ function rest_get () {
                             WHERE title LIKE %ss",
                             mysqli_escape_string($link, stripslashes($adminby))
                         );
-                        
+
                         // get default language
                         $lang = DB::queryFirstRow(
                             "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
                             "admin",
                             "default_language"
                         );
-                        
+
                         // prepare roles list
                         $rolesList = "";
                         foreach (explode('|', $roles) as $role) {echo $role."-";
@@ -587,7 +587,7 @@ function rest_get () {
                             if (empty($rolesList)) $rolesList = $tmp['id'];
                             else $rolesList .= ";" . $tmp['id'];
                         }
-                        
+
                         // Add user in DB
                         DB::insert(
                             prefix_table("users"),
@@ -661,53 +661,53 @@ function rest_get () {
                 // get url
                 if(isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2])) {
                     // is user granted?
-                    $user = DB::queryFirstRow(
+                    $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
-                    
+
                     // load passwordLib library
                     $_SESSION['settings']['cpassman_dir'] = "..";
                     require_once '../sources/SplClassLoader.php';
                     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
-                    
-                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $user['pw']) === true) {
+
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $userData['pw']) === true) {
                         // define the restriction of "id_tree" of this user
                         $userDef = DB::queryOneColumn('folder_id',
-                            "SELECT DISTINCT folder_id 
+                            "SELECT DISTINCT folder_id
                             FROM ".prefix_table("roles_values")."
-                            WHERE type IN ('R', 'W') ", empty($user['groupes_interdits']) ? "" : "
-                            AND folder_id NOT IN (".str_replace(";", ",", $user['groupes_interdits']).")", " 
-                            AND role_id IN %ls 
+                            WHERE type IN ('R', 'W') ", empty($userData['groupes_interdits']) ? "" : "
+                            AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")", "
+                            AND role_id IN %ls
                             GROUP BY folder_id",
-                            explode(";", $user['groupes_interdits'])
+                            explode(";", $userData['groupes_interdits'])
                         );
                         // complete with "groupes_visibles"
-                        foreach (explode(";", $user['groupes_visibles']) as $v) {
+                        foreach (explode(";", $userData['groupes_visibles']) as $v) {
                             array_push($userDef, $v);
                         }
-                        
+
                         // find the item associated to the url
                         $response = DB::query(
                             "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to
-                            FROM ".prefix_table("items")." 
+                            FROM ".prefix_table("items")."
                             WHERE url LIKE %s
                             AND id_tree IN (".implode(",", $userDef).")
                             ORDER BY id DESC",
                             $GLOBALS['request'][1]."://".urldecode($GLOBALS['request'][2].'%')
-                        );                        
+                        );
                         $counter = DB::count();
-                        
+
                         if ($counter > 0) {
                             $json = "";
                             foreach ($response as $data) {
                                 // check if item visible
                                 if (
-                                    empty($data['restricted_to']) || 
-                                    ($data['restricted_to'] != "" && in_array($user['id'], explode(";", $data['restricted_to'])))
-                                ) {                            
+                                    empty($data['restricted_to']) ||
+                                    ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
+                                ) {
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
@@ -744,7 +744,7 @@ function rest_get () {
                 // get url
                 if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
                     // is user granted?
-                    $user = DB::queryFirstRow(
+                    $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
@@ -757,13 +757,13 @@ function rest_get () {
                     $pwdlib = new PasswordLib\PasswordLib();
 
                     // is user identified?
-                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][5], $user['pw']) === true) {
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][5], $userData['pw']) === true) {
                         // does the personal folder of this user exists?
                         DB::queryFirstRow(
                             "SELECT `id`
                             FROM " . $pre . "nested_tree
                             WHERE title = %s AND personal_folder = 1",
-                            $user['id']
+                            $userData['id']
                         );
                         if (DB::count() > 0) {
                             // check if "teampass-connect" folder exists
@@ -795,6 +795,8 @@ function rest_get () {
                                 );
 
                                 // rebuild tree
+                                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                                $tree->register();
                                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                                 $tree->rebuild();
                             } else {
@@ -808,7 +810,7 @@ function rest_get () {
                             DB::insert(
                                 prefix_table("items"),
                                 array(
-                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3].'%'),
+                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3].''),
                                     'description' => "Imported with Teampass-Connect",
                                     'pw' => $encrypt['string'],
                                     'pw_iv' => $encrypt['iv'],
@@ -817,7 +819,7 @@ function rest_get () {
                                     'id_tree' => $tpc_folder_id,
                                     'login' => $GLOBALS['request'][1],
                                     'inactif' => '0',
-                                    'restricted_to' => $user['id'],
+                                    'restricted_to' => $userData['id'],
                                     'perso' => '0',
                                     'anyone_can_modify' => '0',
                                     'complexity_level' => '0'
@@ -829,7 +831,7 @@ function rest_get () {
                             logItems(
                                 $newID,
                                 "Credentials for ".urldecode($GLOBALS['request'][3].'%'),
-                                $user['id'],
+                                $userData['id'],
                                 'at_creation',
                                 $GLOBALS['request'][1]
                             );

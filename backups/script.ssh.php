@@ -28,7 +28,7 @@ $link= mysqli_connect($server, $user, $pass, $database, $port);
 
 // ssh libraries
 stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
-include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php'); 
+include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -49,7 +49,7 @@ foreach ($rows as $record) {
 if (!empty($settings['enable_server_password_change']) && $settings['enable_server_password_change'] == 1) {
     $log = "Start date ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time())."\n";
 
-    // loop on items 
+    // loop on items
     $rows = DB::query(
         "SELECT label, login, pw, pw_iv, url, auto_update_pwd_next_date, auto_update_pwd_frequency
         FROM ".prefix_table("items")."
@@ -71,9 +71,9 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
 
         // encrypt new password
         $encrypt = cryption(
-            $new_pwd, 
-            SALT, 
-            "", 
+            $new_pwd,
+            SALT,
+            "",
             "encrypt"
         );
 
@@ -81,7 +81,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         $ssh = new Net_SSH2($parse['host'], $parse['port']);
         if (!$ssh->login($record['login'], $oldPwClear)) {
            $log .= "   ERR - Login failed.\n   Error description:".$_SESSION['sshError']."\n\n";
-        }else{ 
+        }else{
             // send ssh script for user change
             $ret_server = $ssh->exec('echo -e "'.$new_pwd.'\n'.$new_pwd.'" | passwd '.$record['login']);
             if (strpos($ret_server, "updated successfully") !== false) {
@@ -90,7 +90,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
                 $err = true;
             }
             $log .= "   Answer: ".$ret_server."\n\n";
-        } 
+        }
 
         if ($err == false) {
             // store new password
@@ -106,13 +106,13 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
             );
             // update log
             logItems($record['id'], $record['label'], "script", 'at_modification', $_SESSION['login'], 'at_pw :'.$record['pw'], $record['pw_iv']);
-            $log .= "   done.\n\n";
+            //$log .= "   done.\n\n";
         } else {
             $log .= "   An error occured with password change.\n\n";
         }
     }
 
-    $log .= "End task\n---------------\n\n";
+    $log .= "End of task\n---------------\n\n";
 
     //save a log
     $handle = fopen($_SESSION['settings']['cpassman_dir'].'/files/script.ssh.log', 'w+');

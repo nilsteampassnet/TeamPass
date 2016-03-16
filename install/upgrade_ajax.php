@@ -67,7 +67,7 @@ function tableExists($tablename, $database = false)
     global $dbTmp;
     if (!$database) {
         $res = mysqli_query($dbTmp, "SELECT DATABASE()");
-        $database = mysql_result($res, 0);
+        $database = mysqli_result($res, 0);
     }
 
     $res = mysqli_query($dbTmp,
@@ -77,7 +77,7 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    return mysql_result($res, 0) == 1;
+    return mysqli_result($res, 0) == 1;
 }
 
 //define pbkdf2 iteration count
@@ -1761,7 +1761,7 @@ require_once \"".$skFile."\";
                     );
                     fclose($fh);
                 }
-                
+
                 // update CSRFP TOKEN
                 $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                 $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
@@ -1781,7 +1781,7 @@ require_once \"".$skFile."\";
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                 file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
-                
+
                 // finalize
                 if (isset($result2) && $result2 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = '.
@@ -1849,13 +1849,13 @@ require_once \"".$skFile."\";
                             // used protocol is #1
                             $pw = decryptOld($data['pw']);  // decrypt using protocol #1
                         }
-                        
-                        // get key for this pw                            
+
+                        // get key for this pw
                         $resData = mysqli_query($dbTmp,
                             "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
                             WHERE `sql_table` = 'items' AND id = ".$data['id']
                         ) or die(mysqli_error($dbTmp));
-                        
+
                         $resData = mysqli_query($dbTmp,
                             "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
                             WHERE `sql_table` = 'items' AND id = ".$data['id']
@@ -1876,10 +1876,10 @@ require_once \"".$skFile."\";
                             SET pw = '".$encrypt['string']."',pw_iv = '".$encrypt['iv']."'
                             WHERE id=".$data['id']
                         );
-                        
+
                         fputs($dbgDuo, "\nItem has been re-encrypted");
                     }
-                    
+
                     // does tables KEYS exists
                     if(mysql_num_rows(mysql_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
                         $table_keys_exists = 1;
@@ -1906,7 +1906,7 @@ require_once \"".$skFile."\";
                                 // only at_modif and at_pw
                                 $reason = explode(' : ', $record['raison']);
                                 if (trim($reason[0]) == "at_pw") {
-                                    
+
                                     // check if pw encrypted with protocol #2
                                     $pw = decrypt(trim($reason[1]));
                                     fputs($dbgDuo, "\n/ step1 : ".$pw);
@@ -1915,7 +1915,7 @@ require_once \"".$skFile."\";
                                         $pw = decryptOld(trim($reason[1]));  // decrypt using protocol #1
                                         fputs($dbgDuo, " / step2 : ".$pw);
                                     }
-                                    
+
                                     // get key for this pw
                                     $resData_tmp = mysqli_query($dbTmp,
                                         "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
@@ -1927,7 +1927,7 @@ require_once \"".$skFile."\";
                                         $pw = substr($pw, strlen($dataTemp[0]));
                                     }
                                     fputs($dbgDuo, " / step3 : ".$pw);
-                                    
+
                                     // store new encryption
                                     if (isUTF8($pw) && !empty($pw)) {
                                         $encrypt = cryption($pw , SALT, "", "encrypt");
@@ -1945,7 +1945,7 @@ require_once \"".$skFile."\";
                                 }
                             }
                         }
-                        
+
                         fputs($dbgDuo, "\nLog treatment done.");
 
                         // change category fields encryption
@@ -1972,7 +1972,7 @@ require_once \"".$skFile."\";
                         }
                         fputs($dbgDuo, "\nCategory treatment done.");
                     }
-                    
+
                 }
                 if ($next >= $_POST['total']) {
                     $finish = "suggestion";

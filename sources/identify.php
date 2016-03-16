@@ -29,7 +29,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 // DUO
 if ($_POST['type'] === "identify_duo_user") {
     // This step creates the DUO request encrypted key
-    
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -50,7 +50,7 @@ if ($_POST['type'] === "identify_duo_user") {
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
-    
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -105,7 +105,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
     }
-    
+
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,

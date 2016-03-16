@@ -26,6 +26,9 @@ if (!file_exists('includes/settings.php')) {
     exit();
 }
 
+//require_once('sources/sessions.php');
+//session_start();//session_unset();
+
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
@@ -150,7 +153,7 @@ if (isset($_SESSION['login'])) {
     // welcome message
     echo '
         <div style="float:right; margin:-10px 50px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b>&nbsp;-&nbsp;', $_SESSION['user_admin'] == 1 ? $LANG['god'] : ($_SESSION['user_manager'] == 1 ? $LANG['gestionnaire'] : ($_SESSION['user_read_only'] == 1 ? $LANG['read_only_account'] : $LANG['user'])), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
-    
+
     echo '
         <div id="menu_top">
             <div style="margin-left:20px; margin-top:2px;width:660px;" id="main_menu">';
@@ -169,12 +172,12 @@ if (isset($_SESSION['login'])) {
                     <img src="includes/images/binocular.png" alt="" />
                 </button>';
     }
-    
+
     // Favourites menu
     if (
         isset($_SESSION['settings']['enable_favourites'])
         && $_SESSION['settings']['enable_favourites'] == 1
-        && 
+        &&
         ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false))
     ) {
         echo '
@@ -264,7 +267,7 @@ if (isset($_SESSION['login'])) {
     }
     echo '
             </div>';
-    
+
     echo '
         </div>';
 }
@@ -282,7 +285,7 @@ if (!isset($_GET['otv'])) {
             </dl>
         </div>';
 }
-    
+
 echo '
     </div>';
 

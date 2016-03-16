@@ -85,7 +85,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
-        if ($("#selected_items").val() == "") return;        
+        if ($("#selected_items").val() == "") return;
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
             itemLog("item_password_shown");
@@ -94,7 +94,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
             $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         }
     }
-    
+
     $("#tabs-02").on(
         "change",
         "#pw1",
@@ -144,9 +144,9 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
 */
 function LoadTreeNode(node_id)
 {
-    
+
 }
-    
+
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
@@ -159,9 +159,9 @@ function ListerItems(groupe_id, restricted, start)
     } else {
         me.data('requestRunning', true);
     }
-    
+
     $("#request_lastItem, #selected_items").val("");
-    
+
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
         query_in_progress = groupe_id;
@@ -180,7 +180,7 @@ function ListerItems(groupe_id, restricted, start)
         //Disable menu buttons
         //$('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share,#menu_button_otv').prop('disabled', 'true');
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
-                
+
         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?>');
 
         //ajax query
@@ -194,12 +194,16 @@ function ListerItems(groupe_id, restricted, start)
                 nb_items_to_display_once : $("#nb_items_to_display_once").val()
             },
             function(data) {
+                if (data == "Hacking attempt...") {
+                    alert("Hacking attempt...");
+                    return false;
+                }
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-                    
+
                 // reset doubleclick prevention
                 me.data('requestRunning', false);
-                
+
                 // manage not allowed
                 if (data.error == "not_allowed") {
                    $("#div_dialog_message_text").html(data.error_text);
@@ -208,7 +212,7 @@ function ListerItems(groupe_id, restricted, start)
                    $("#items_list_loader").hide();
                    return false;
                }
-                
+
                 $("#pf_selected").val(data.IsPersonalFolder);
 
                 // display path of folders
@@ -239,7 +243,7 @@ function ListerItems(groupe_id, restricted, start)
                                 }
                                 // last folder name is still too long
                                 if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
-                                    
+
                                 }
                                 nb++;
                             });
@@ -248,14 +252,14 @@ function ListerItems(groupe_id, restricted, start)
                 } else {
                     $("#items_path_var").html('');
                 }
-                
+
                 if (data.array_items == "" && data.items_count == "0") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
                 }
 
                 // store the categories to be displayed
                 $("#display_categories").val(data.displayCategories);
-                
+
                 // store type of access on folder
                 $("#access_level").val(data.access_level);
 
@@ -309,7 +313,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-                    
+
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -459,7 +463,7 @@ function catSelected(val)
 function RecupComplexite(val, edit, context)
 {
     context = context || "";    // make context optional
-    
+
     var funcReturned = null;
     $.ajaxSetup({async: false});
     $.post(
@@ -695,7 +699,7 @@ function AjouterItem()
 
                         // prepare the display of the new item
                         AfficherDetailsItem(data.new_id);
-                        
+
                         // refresh list of items
                         ListerItems($('#hid_cat').val(), "", 0)
 
@@ -762,14 +766,14 @@ function EditerItem()
 
 
             //Manage restriction
-            var restriction = restriction_role = "";        
+            var restriction = restriction_role = "";
             $("#edit_restricted_to_list option:selected").each(function () {
                 if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val() + ";";
                 } else {
                     restriction += $(this).val() + ";";
                 }
-            });            
+            });
             if (restriction != "" && restriction.indexOf($('#form_user_id').val()) == "-1")
                 restriction = $('#form_user_id').val()+";"+restriction
             if (restriction == ";") restriction = "";
@@ -953,7 +957,7 @@ function EditerItem()
                             $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
-                        
+
 
                         //Prepare clipboard copies
                         if ($('#edit_pw1').val() != "") {
@@ -962,7 +966,7 @@ function EditerItem()
                                     return unsanitizeString($('#edit_pw1').val());
                                 }
                             });
-                            
+
                             $("#button_quick_pw_copy").show();
                         }
                         if ($('#edit_item_login').val() != "") {
@@ -984,7 +988,7 @@ function EditerItem()
                     }
                 }
            );
-           
+
            // statistic
            /*$.post(
                 "sources/main.queries.php",
@@ -994,7 +998,7 @@ function EditerItem()
                     stat_action                : "item"
                 },
                 function(data) {
-                
+
                 }
             );*/
 
@@ -1069,7 +1073,7 @@ function SupprimerFolder()
         $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>").show();
     } else if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
         $("#del_folder_loader").show();
-        
+
         $.post(
             "sources/folders.queries.php",
             {
@@ -1170,7 +1174,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    
+
                     // reset password shown info
                     $("#pw_shown").val("0");
 
@@ -1194,7 +1198,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         $("#edit_item_salt_key").hide();
                     }
-                                        
+
                     // clean some not used fields
                     //$("#item_history_log, #edit_past_pwds, #hid_files, #item_edit_list_files").html("");
 
@@ -1215,7 +1219,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if (data.show_details == "1" && data.show_detail_option != "2") {
                         //unprotect data
                         data.login = unsanitizeString(data.login);
-                        
+
                         $("#id_files").html("");
 
                         //Display details
@@ -1255,7 +1259,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             maxWidth: 400,
                             contentAsHTML: true
                         });
-                        
+
                         // show Field values
                         $(".fields").val("");
                         $(".fields_div").html("");
@@ -1354,9 +1358,22 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                                 itemLog("item_password_copied");
 
+                                setTimeout(function(){
+document.getElementById("empty_clipboard").select();
+  try {
+    var successful = document.execCommand('copy');
+    var msg = successful ? 'successful' : 'unsuccessful';
+    console.log('>> Copying text command was ' + msg);
+  } catch(err) {
+    console.log('Oops, unable to cut');
+  }
+                                }, 2000);
+
+
+
                                 e.clearSelection();
                             });
-                            
+
                             $("#button_quick_pw_copy").show();
                         }
                         if (data.login != "") {
@@ -1385,7 +1402,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 e.clearSelection();
                             });
                         }
-                            
+
                         //prepare link to clipboard
                         var clipboard_link = new Clipboard("#menu_button_copy_link", {
                             text: function() {
@@ -1397,7 +1414,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                             e.clearSelection();
                         });
-                        
+
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -1440,7 +1457,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
             if (id_tree != "" && id_tree != $("#hid_cat").val()) {
                 refreshTree(id_tree, "0");
             }
-           
+
            // statistic
            /*$.post(
                 "sources/main.queries.php",
@@ -1450,7 +1467,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     scope                : "item"
                 },
                 function(data) {
-                
+
                 }
             );*/
        }
@@ -1502,7 +1519,7 @@ function showDetailsStep2(id, param)
             $(param).prop("disabled", false);
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
             $("#div_loading").hide();
-            
+
             // refresh
             refreshListLastSeenItems();
          }
@@ -1553,7 +1570,7 @@ function open_add_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     $("#div_loading").show();
 
     // check if read only or forbidden
@@ -1579,7 +1596,7 @@ function open_edit_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     $("#div_loading").show();
 
     // check if read only or forbidden
@@ -1607,7 +1624,7 @@ function open_move_group_div()
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_personal_sk_expected'];?>");
         return false;
     }
-    
+
     if ($("#hid_cat").val() == "<?php echo $_SESSION['personal_folders'][0];?>") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1644,14 +1661,14 @@ function open_del_group_div()
         return false;
     }
     $("#div_loading").show();
-    
+
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "delete_folder") == 0) {
         return false;
     } else {
-        $('#div_supprimer_rep').dialog('open');        
-        $('#delete_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);        
+        $('#div_supprimer_rep').dialog('open');
+        $('#delete_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
         $("#div_loading").hide();
     }
 }
@@ -1666,7 +1683,7 @@ function open_add_item_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     LoadingPage();
 
     //Check if personal SK is needed and set
@@ -1722,7 +1739,7 @@ function open_edit_item_div(restricted_to_roles)
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     // If no Item selected, no edition possible
     if ($("#selected_items").val() == "") {
         displayMessage("<?php echo $LANG['none_selected_text'];?>");
@@ -1814,7 +1831,7 @@ function open_edit_item_div(restricted_to_roles)
                 }
             }
         }
-        
+
         if ($('#edit_restricted_to').val() != undefined) {
             $('#edit_restricted_to_list').empty();
             if (restricted_to_roles == 1) {
@@ -1867,7 +1884,7 @@ function open_edit_item_div(restricted_to_roles)
             noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
         $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
-        
+
     }
 
     // disable folder selection if PF
@@ -1892,7 +1909,7 @@ function open_del_item_div()
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;
     }
-    
+
     if ($("#selected_items").val() != "") {
         $("#div_loading").show();
         //Get the associated complexity level
@@ -1902,7 +1919,7 @@ function open_del_item_div()
         if (compReturn == 0) {
             return false;
         }
-        
+
         $("#div_loading").hide();
         $('#div_del_item').dialog('open');
     } else {
@@ -1916,11 +1933,11 @@ function open_del_item_div()
 function open_copy_item_to_folder_div()
 {
     // is user read only
-    if ($("#user_is_read_only").val() == "1") {    
+    if ($("#user_is_read_only").val() == "1") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;
     }
-    
+
     if ($("#selected_items").val() != "") {
         $('#copy_in_folder').val($("#hid_cat").val());
         $('#div_copy_item_to_folder').dialog('open');
@@ -1981,7 +1998,7 @@ PreviewImage = function(uri,title) {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            
+
             $("#dialog_files").html('<img id="image_files" src="" />');
             //Get the HTML Elements
             imageDialog = $("#dialog_files");
@@ -2149,7 +2166,7 @@ function refreshVisibleFolders()
                 $('#move_folder_id option[value!="0"]').remove();
                 $('#delete_rep_groupe option[value!="0"]').remove();
                 $('#copy_in_folder option[value!="0"]').remove();
-                
+
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
                 $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
@@ -2164,7 +2181,18 @@ function refreshVisibleFolders()
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
-    
+
+    var clear_tp_clipboard = new Clipboard("#but_empty_clipboard", {
+        text: function() {
+            return "cleared";
+        }
+    });
+    clear_tp_clipboard.on('success', function(e) {
+        $("#message_box").html("super").show().fadeOut(1000);
+
+        e.clearSelection();
+    });
+
     $.ajaxSetup({
         error: function(jqXHR, exception) {
             if (jqXHR.status === 0) {
@@ -2256,7 +2284,7 @@ $(function() {
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
-    
+
     //Build multiselect box
     $("#restricted_to_list").multiselect({
         selectedList: 7,
@@ -2284,7 +2312,7 @@ $(function() {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."
             },
             "error" : {
-                
+
             }
         },
         "plugins" : [
@@ -2298,7 +2326,7 @@ $(function() {
             ListerItems($("#jstree li>a.jstree-search").attr('id').split('_')[1], '', 0);
         }
     });
-    
+
     // load list of visible folders for current user
     refreshVisibleFolders();
 
@@ -2404,7 +2432,7 @@ $(function() {
         }
     });
     //<=
-    
+
     // =>
     $("#div_copy_item_to_folder").dialog({
         bgiframe: true,
@@ -2462,7 +2490,7 @@ $(function() {
         }
     });
     // <=
-    
+
     //=> MOVE A GROUP
     $("#div_move_folder").dialog({
         bgiframe: true,
@@ -2583,7 +2611,7 @@ $(function() {
                 if ($("#form_tab_fields") != undefined && $("#display_categories").val() != 1)
                     $("#item_tabs").tabs("option", "show", 3);
             }
-            
+
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
                 $("#expected_complexity").hide();
@@ -2660,7 +2688,7 @@ $(function() {
                     $("#edit_item_more").show();
             }
             $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
-            
+
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
                 $("#edit_expected_complexity").hide();
@@ -2690,19 +2718,19 @@ $(function() {
                     },
                     function(data) {
                         $("#div_loading").show();
-                        
+
                         // refresh list of items
                         $("#full_items_list").html("");
                         ListerItems($('#hid_cat').val(), "", 0)
-                        
+
                         // reload tree
                         refreshTree($('#hid_cat').val());
-                        
+
                         // clean fields
                         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
                         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
                         $("#selected_items").val("");
-                        
+
                         $("#div_loading").hide();
                     }
                );
@@ -2820,7 +2848,7 @@ $(function() {
 
     // => ATTACHMENTS INIT
     var uploader_attachments = new plupload.Uploader({
-        runtimes : "gears,html5,flash,silverlight,browserplus",
+        runtimes : "html5,flash,silverlight,html4",
         browse_button : "item_attach_pickfiles",
         container : "item_upload",
         max_file_size : "<?php
@@ -2833,8 +2861,8 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         chunk_size : "1mb",
         dragdrop : true,
         url : "sources/upload/upload.attachments.php",
-        flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+        flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
+        silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
             {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
             {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
@@ -2851,6 +2879,16 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         <?php
 }
 ?>
+        preinit : {
+            UploadFile: function(up, file) {
+                up.setOption('multipart_params', {
+                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
+                    itemId : $("#random_id").val(),
+                    type_upload : "item_attachments",
+                    edit_item : false
+                });
+            }
+        },
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_upload_wait").show();
@@ -2858,12 +2896,6 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                     var post_id = CreateRandomString(9,"num_no_0");
                     $("#random_id").val(post_id);
                 }
-                up.settings.multipart_params = {
-                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":$("#random_id").val(),
-                    "type_upload":"item_attachments",
-                    "edit_item":false
-                };
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
@@ -2906,7 +2938,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     // Prepare uplupload object for attachments upload
     var edit_uploader_attachments = new plupload.Uploader({
-        runtimes : "gears,html5,flash,silverlight,browserplus",
+        runtimes : "html5,flash,silverlight,html4",
         browse_button : "item_edit_attach_pickfiles",
         container : "item_edit_upload",
         max_file_size : "<?php
@@ -2919,8 +2951,8 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         chunk_size : "1mb",
         dragdrop : true,
         url : "sources/upload/upload.attachments.php",
-        flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+        flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
+        silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
             {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
             {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
@@ -2936,15 +2968,19 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         },<?php
 }
 ?>
+        preinit : {
+            UploadFile: function(up, file) {
+                up.setOption('multipart_params', {
+                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
+                    itemId : $('#selected_items').val(),
+                    type_upload : "item_attachments",
+                    edit_item : true
+                });
+            }
+        },
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_edit_upload_wait").show();
-                up.settings.multipart_params = {
-                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":$('#selected_items').val(),
-                    "type_upload":"item_attachments",
-                    "edit_item":true
-                };
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
@@ -2999,14 +3035,14 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     //load items
     if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
     else start = 0;
-    
+
     ListerItems(first_group,'', start);
     //Load item if needed and display items list
     if ($("#open_id").val() != "") {
         AfficherDetailsItem($("#open_id").val());
         $("#open_item_by_get").val("");
     }
-        
+
     //Password meter for item creation
     $("#pw1").simplePassMeter({
         "requirements": {},
@@ -3268,9 +3304,9 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             $("#div_ssh").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b><?php echo $LANG['please_wait'];?></b>");
         }
     });
-    
+
     // open personal pwds re-encryption dialogbox
-    if ($("#personal_upgrade_needed").val() == "1") {        
+    if ($("#personal_upgrade_needed").val() == "1") {
         $("#dialog_upgrade_personal_passwords").dialog("open");
     }
 
@@ -3318,7 +3354,7 @@ var showPwd = function(){
 }
 
 /*
-* permits to save 
+* permits to save
 */
 function itemLog(log_case)
 {
@@ -3400,7 +3436,7 @@ function proceed_list_update()
             $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
             e.clearSelection();
         });
-        
+
         var clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
@@ -3412,7 +3448,7 @@ function proceed_list_update()
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
-    
+
         // refine users list to the related roles
         $.post(
             "sources/items.queries.php",
@@ -3454,7 +3490,7 @@ function proceed_list_update()
                     noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
                 });
                 $("#restricted_to_list").multiselect('refresh').multiselectfilter();
-                
+
                 // *** edit_restricted_to_list ***
                 $("#edit_restricted_to_list").empty();
                 if ($('#edit_restricted_to').val() != undefined) {
@@ -3671,7 +3707,7 @@ function searchItemsWithTags(tag)
 {
     //console.log(">"+tag);
     if (tag == "") return false
-    
+
     // wait
     $("#items_list_loader").show();
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching_tag'];?>&nbsp;<b>'+tag+'</b> ...');
@@ -3754,11 +3790,11 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
             aIds.shift();
             var nb2 = aIds.length;
             aIds = aIds.toString();
-            if (nb == 0) 
+            if (nb == 0)
                 $("#reencryption_progress").html("100%");
-            else 
+            else
                 $("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-            
+
             if (nb2 != "0" || (nb2 == "" && currentID != "")) {
                 reEncryptPersonalPwds(aIds, currentID, nb);
             } else {
@@ -3781,4 +3817,61 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
         }
     }).dialog("open");
 }
+
+$.fn.simulateClick = function() {
+    return this.each(function() {
+        if('createEvent' in document) {console.log("coucou");
+            var doc = this.ownerDocument,
+                evt = doc.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, doc.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+            this.dispatchEvent(evt);
+        } else {
+            this.click(); // IE Boss!
+        }
+    });
+}
+
+function clearClipboard()
+{
+
+     /*document.getElementById("empty_clipboard").select();
+    //document.execCommand('copy');
+
+  try {
+    var successful = document.execCommand('copy');
+    var msg = successful ? 'successful' : 'unsuccessful';
+    console.log('Copying text command was ' + msg);
+  } catch(err) {
+    console.log('Oops, unable to cut');
+  }*/
+
+
+
+    /*try {
+      success = document.execCommand ("copy", false, null);
+    }
+    catch (e) {
+      copyToClipboardFF($("#empty_clipboard").val());
+    }
+
+    if (success) {
+      alert ("The text is on the clipboard, try to paste it!");
+      // remove temp element.
+    }*/
+    //$("#clear_tp_clipboard");
+    //$( "#but_empty_clipboard" ).trigger( "click" );
+    //$('#but_empty_clipboard').simulateClick( "click" );
+    //$('#but_empty_clipboard').click();
+    //document.getElementById("but_empty_clipboard").click();
+//window.clipboardData.setData('Text', "clipText");
+
+    console.log("ici");
+
+    /*var emptyField = document.querySelector('#empty_clipboard');
+    emptyField.select();
+    document.execCommand('copy');*/
+
+}
+
+
 </script>

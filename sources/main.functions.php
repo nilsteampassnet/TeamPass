@@ -568,7 +568,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $folderId,
                         $fonctionsAssociees,
                         array("W","ND","NE","NDNE")
-                        
+
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -594,8 +594,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
-        
-        
+
+
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
@@ -611,7 +611,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
-    
+
     // update user's timestamp
     DB::update(
         prefix_table('users'),

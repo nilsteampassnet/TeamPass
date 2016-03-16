@@ -799,7 +799,7 @@ echo '
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-            
+
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones
@@ -982,7 +982,7 @@ echo '
                             <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_attachments_encryption_tip'].'" /></span>
                         </label>
                         </td><td>
-                            <div class="toggle toggle-modern" id="log_accessed" data-toggle-on="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_attachment_encryption_input" name="enable_attachment_encryption_input" value="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '1' : '0', '" />
+                            <div class="toggle toggle-modern" id="enable_attachment_encryption" data-toggle-on="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_attachment_encryption_input" name="enable_attachment_encryption_input" value="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '1' : '0', '" />
                     </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -1289,7 +1289,7 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="allow_print" data-toggle-on="', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="allow_print_input" name="allow_print_input" value="', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? '1' : '0', '" />
                 </td></tr>';
-                
+
 // Enable Printing Groups - roles_allowed_to_print
 echo '
                 <tr><td>
