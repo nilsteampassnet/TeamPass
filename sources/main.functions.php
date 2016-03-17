@@ -1124,7 +1124,7 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
             'date' => time(),
             'label' => $label,
             'qui' => $who,
-            'field_1' => $field_1
+            'field_1' => $field_1 == null ? "" : $field_1
         )
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {

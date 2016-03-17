@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
     'server_password_change_enable' => 'Enable changing server user password change (using ssh connection)',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',

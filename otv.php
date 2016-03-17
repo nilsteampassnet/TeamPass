@@ -51,7 +51,7 @@ if (
         $data['timestamp'] == $_GET['stamp']
     ) {
         // otv is too old
-        if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period'] * 86400) ) {
+        if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400) ) {
             $html = "Link is too old!";
         } else {
             $dataItem = DB::queryfirstrow(
@@ -74,27 +74,27 @@ if (
 
             // display data
             $html = "<div style='margin:30px;'>".
-            	"<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
-            	"<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
-            	"<div style='margin-top:10px;'><table>".
-				"<tr><td>Label:</td><td>" . $label . "</td</tr>".
-            	"<tr><td>Password:</td><td>" . $pw . "</td</tr>".
-            	"<tr><td>Description:</td><td>" . $description . "</td</tr>".
-            	"<tr><td>login:</td><td>" . $login . "</td</tr>".
-            	"<tr><td>URL:</td><td>" . $url ."</td</tr>".
-            	"</table></div>".
-            	"<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
-            	"</div>";
+                "<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
+                "<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
+                "<div style='margin-top:10px;'><table>".
+                "<tr><td>Label:</td><td>" . $label . "</td</tr>".
+                "<tr><td>Password:</td><td>" . $pw . "</td</tr>".
+                "<tr><td>Description:</td><td>" . $description . "</td</tr>".
+                "<tr><td>login:</td><td>" . $login . "</td</tr>".
+                "<tr><td>URL:</td><td>" . $url ."</td</tr>".
+                "</table></div>".
+                "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
+                "</div>";
 
-        	// delete entry
-        	//DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
-			
-			// display
-			echo $html;
+            // delete entry
+            DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+
+            // display
+            echo $html;
         }
     } else {
         echo "Not a valid page!";
     }
 } else {
-	echo "No valid OTV inputs!";
+    echo "No valid OTV inputs!";
 }

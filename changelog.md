@@ -1,13 +1,19 @@
 Last changes
 2.1.26
+ #1241 OTV visible more than one time
+ #1238 Fix for upgrade.php where mysql_result() command were still not replaced
+ #1224 Fixed errors in export_to_html_format
  #1211 No FA code sent from home page
+ #1210 Fix for main.queries.php
  #1203 Needed PHP extensions check during install & update process
+ #1197 Awesome Font 4.5.0
  #1193 When I login with user admin " loading ... " and it does not finish
+ #1192 Cannot save "enable attachments encryption"
  #1186 open/highlight folder tree of displayed item
  #1183 Syntax Error on personal folders option
  #1181 403 Access Forbidden by CSRFProtector! at config save
+ #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
- #xxxx Cannot save "enable attachments encryption"
  NEW: Server user password change through SSH connection
 
 2.1.25
