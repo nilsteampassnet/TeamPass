@@ -2870,13 +2870,13 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
             {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"}
         ],<?php
 if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
-        ?>
+?>
         resize : {
             width : <?php echo $_SESSION['settings']['upload_imageresize_width'];?>,
             height : <?php echo $_SESSION['settings']['upload_imageresize_height'];?>,
             quality : <?php echo $_SESSION['settings']['upload_imageresize_quality'];?>
         },
-        <?php
+<?php
 }
 ?>
         preinit : {

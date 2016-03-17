@@ -248,7 +248,7 @@ switch ($_POST['type']) {
             );
         } else {
             $data = DB::queryfirstrow(
-                "SELECT login, email
+                "SELECT id, login, email
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']

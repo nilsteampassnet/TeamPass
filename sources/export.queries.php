@@ -317,7 +317,7 @@ switch ($_POST['type']) {
         // - prepare export file
         // - get full list of objects id to export
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
         $idsList = array();
         $objNumber = 0;
 
@@ -421,8 +421,9 @@ Enter the decryption key : <input type="password" id="saltkey" />
         }
 
         $full_listing = array();
+        $items_id_list = array();
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
         $rows = DB::query(
             "SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
