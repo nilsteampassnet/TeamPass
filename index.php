@@ -159,18 +159,19 @@ if (isset($_SESSION['login'])) {
             <div style="margin-left:20px; margin-top:2px;width:660px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
-                <button style="margin-left:10px;" title="'.$LANG['pw'].'" onclick="MenuAction(\'items\');"',
+                <a class="btn btn-default" href="#"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
-                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
+                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? '' : ' onclick="MenuAction(\'items\')"',
                 '>
-                    <img src="includes/images/menu_key.png" alt="" />
-                </button>
-                <button title="'.$LANG['find'].'" onclick="MenuAction(\'find\');"',
+                    <i class="fa fa-key fa-2x tip" title="'.$LANG['pw'].'"></i>
+                </a>
+
+                <a class="btn btn-default" href="#"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
-                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? ' disabled="disabled"' : '',
+                || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? '' : ' onclick="MenuAction(\'find\')"',
                 '>
-                    <img src="includes/images/binocular.png" alt="" />
-                </button>';
+                    <i class="fa fa-binoculars fa-2x tip" title="'.$LANG['find'].'"></i>
+                </a>';
     }
 
     // Favourites menu
@@ -181,16 +182,16 @@ if (isset($_SESSION['login'])) {
         ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false))
     ) {
         echo '
-                <button title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favourites\');">
-                    <img src="includes/images/favourite.png" alt="" />
-                </button>';
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
+                    <i class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'"></i>
+                </a>';
     }
     // KB menu
     if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
         echo '
-                    <button style="margin-left:10px;" title="'.$LANG['kb_menu'].'" onclick="MenuAction(\'kb\');">
-                        <img src="includes/images/direction.png" alt="" />
-                    </button>';
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'kb\')">
+                    <i class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'"></i>
+                </a>';
     }
     // SUGGESTION menu
     if (
@@ -198,35 +199,37 @@ if (isset($_SESSION['login'])) {
         && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
     ) {
         echo '
-                    <button style="margin-right:10px;" title="'.$LANG['suggestion_menu'].'" id="menu_button_suggestion" onclick="MenuAction(\'suggestion\');">
-                        <img src="includes/images/envelope.png" alt="" />
-                    </button>';
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'suggestion\')">
+                    <i class="fa fa-lightbulb-o fa-2x tip" title="'.$LANG['suggestion_menu'].'"></i>
+                </a>';
     }
     // Admin menu
     if ($_SESSION['user_admin'] == 1) {
         echo '
-                <button style="margin-left:10px;" title="'.$LANG['admin_main'].'" onclick="MenuAction(\'manage_main\');">
-                    <img src="includes/images/menu_informations.png" alt="" />
-                </button>
-                <button title="'.$LANG['admin_settings'].'" onclick="MenuAction(\'manage_settings\');">
-                    <img src="includes/images/menu_settings.png" alt="" />
-                </button>';
+                &nbsp;
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_main\')">
+                    <i class="fa fa-info fa-2x tip" title="'.$LANG['admin_main'].'"></i>
+                </a>
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_settings\')">
+                    <i class="fa fa-wrench fa-2x tip" title="'.$LANG['admin_settings'].'"></i>
+                </a>';
     }
 
     if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
         echo '
-                <button title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'manage_folders\');">
-                    <img src="includes/images/menu_groups.png" alt="" />
-                </button>
-                <button title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'manage_roles\');">
-                    <img src="includes/images/menu_functions.png" alt="" />
-                </button>
-                <button title="'.$LANG['admin_users'].'" onclick="MenuAction(\'manage_users\');">
-                    <img src="includes/images/menu_user.png" alt="" />
-                </button>
-                <button title="'.$LANG['admin_views'].'" onclick="MenuAction(\'manage_views\');">
-                    <img src="includes/images/menu_views.png" alt="" />
-                </button>';
+                &nbsp;
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_folders\')">
+                    <i class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'"></i>
+                </a>
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_roles\')">
+                    <i class="fa fa-graduation-cap fa-2x tip" title="'.$LANG['admin_functions'].'"></i>
+                </a>
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_users\')">
+                    <i class="fa fa-users fa-2x tip" title="'.$LANG['admin_users'].'"></i>
+                </a>
+                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_views\')">
+                    <i class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'"></i>
+                </a>';
     }
 
     echo '

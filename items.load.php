@@ -1358,19 +1358,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
                                 itemLog("item_password_copied");
 
-                                setTimeout(function(){
-document.getElementById("empty_clipboard").select();
-  try {
-    var successful = document.execCommand('copy');
-    var msg = successful ? 'successful' : 'unsuccessful';
-    console.log('>> Copying text command was ' + msg);
-  } catch(err) {
-    console.log('Oops, unable to cut');
-  }
-                                }, 2000);
-
-
-
                                 e.clearSelection();
                             });
 
@@ -2713,7 +2700,7 @@ $(function() {
                     {
                         type    : "del_item",
                         id      : $("#id_item").val(),
-            label   : $("#hid_label").val(),
+                        label   : $("#hid_label").val(),
                         key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
@@ -3830,48 +3817,5 @@ $.fn.simulateClick = function() {
         }
     });
 }
-
-function clearClipboard()
-{
-
-     /*document.getElementById("empty_clipboard").select();
-    //document.execCommand('copy');
-
-  try {
-    var successful = document.execCommand('copy');
-    var msg = successful ? 'successful' : 'unsuccessful';
-    console.log('Copying text command was ' + msg);
-  } catch(err) {
-    console.log('Oops, unable to cut');
-  }*/
-
-
-
-    /*try {
-      success = document.execCommand ("copy", false, null);
-    }
-    catch (e) {
-      copyToClipboardFF($("#empty_clipboard").val());
-    }
-
-    if (success) {
-      alert ("The text is on the clipboard, try to paste it!");
-      // remove temp element.
-    }*/
-    //$("#clear_tp_clipboard");
-    //$( "#but_empty_clipboard" ).trigger( "click" );
-    //$('#but_empty_clipboard').simulateClick( "click" );
-    //$('#but_empty_clipboard').click();
-    //document.getElementById("but_empty_clipboard").click();
-//window.clipboardData.setData('Text', "clipText");
-
-    console.log("ici");
-
-    /*var emptyField = document.querySelector('#empty_clipboard');
-    emptyField.select();
-    document.execCommand('copy');*/
-
-}
-
 
 </script>
