@@ -2,6 +2,7 @@ Last changes
 2.1.26
  #1241 OTV visible more than one time
  #1238 Fix for upgrade.php where mysql_result() command were still not replaced
+ #1235 Import from Keepass: missing items with the same title
  #1224 Fixed errors in export_to_html_format
  #1211 No FA code sent from home page
  #1210 Fix for main.queries.php
