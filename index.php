@@ -26,9 +26,6 @@ if (!file_exists('includes/settings.php')) {
     exit();
 }
 
-//require_once('sources/sessions.php');
-//session_start();//session_unset();
-
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();

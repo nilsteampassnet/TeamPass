@@ -75,17 +75,6 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
         $sOrder .= "".$aColumns[ filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT) ]." "
         .mysqli_escape_string($link, $_GET['order'][0]['column']) .", ";
     }
-    /*
-    for ($i=0; $i<intval($_GET['order[0][column]']); $i++) {
-        if (
-            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-        ) {
-            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-        }
-    }
-    */
 
     $sOrder = substr_replace($sOrder, "", -2);
     if ($sOrder == "ORDER BY") {
@@ -105,8 +94,8 @@ if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None"
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
-} 
-elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") { 
+}
+elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
     if (empty($sWhere)) $sWhere = " WHERE ";
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
@@ -197,12 +186,12 @@ foreach ($rows as $record) {
     } else {
         $showUserFolders = false;
     }
-    
+
     // Build list of available users
     if ($record['admin'] != 1 && $record['disabled'] != 1) {
         $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
-    }                
-    
+    }
+
     // Display Grid
     if ($showUserFolders == true) {
         $sOutput .= "[";
@@ -215,19 +204,19 @@ foreach ($rows as $record) {
         }
         $sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>"';
         $sOutput .= ',';
-        
+
         //col2
         $sOutput .= '"'.$record['login'].'"';
         $sOutput .= ',';
-        
+
         //col3
         $sOutput .= '"'.$record['name'].'"';
         $sOutput .= ',';
-        
+
         //col4
         $sOutput .= '"'.$record['lastname'].'"';
         $sOutput .= ',';
-        
+
         //col5 - MANAGED BY
         $txt = "";
         $rows2 = DB::query("SELECT title FROM ".$pre."roles_title"." WHERE id = '".$record['isAdministratedByRole']."' ORDER BY title ASC");
@@ -240,7 +229,7 @@ foreach ($rows as $record) {
         }
         $sOutput .= '"'.$txt.'"';
         $sOutput .= ',';
-        
+
         //col6
         $sOutput .= '"'.addslashes($listAlloFcts).'"';
         $sOutput .= ',';
@@ -249,31 +238,31 @@ foreach ($rows as $record) {
         if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col10
         if ($record['gestionnaire'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col11
         if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col12
         if ($record['can_create_root_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col13
         if ($record['personal_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col15
         $sOutput .= '"<i class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['change_password'], '"\\/').'\"></i>"';
         $sOutput .= ',';
-        
+
         //col16
         $sOutput .= '"<i class=\"fa fa-newspaper-o tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.addcslashes($LANG['see_logs'], '"\\/').'\"></i>"';
         $sOutput .= ',';
@@ -287,7 +276,7 @@ foreach ($rows as $record) {
 
         //Finish the line
         $sOutput .= '],';
-        
+
         $iFilteredTotal ++;
     }
 }

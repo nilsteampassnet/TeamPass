@@ -15,9 +15,9 @@
 require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -66,7 +66,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => htmlentities(stripslashes($_POST['name'])),
+                        'title' => noHTML($_POST['name']),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )
@@ -106,7 +106,7 @@ if (!empty($_POST['type'])) {
                 DB::update(
                     prefix_table("roles_title"),
                     array(
-                        'title' => $_POST['title'],
+                        'title' => noHTML($_POST['title']),
                         'complexity' => $_POST['complexity']
                    ),
                     'id = %i',
@@ -179,12 +179,12 @@ if (!empty($_POST['type'])) {
                         $access = "NDNE";
                     }
                 } else $access = "";
-                
-                // loop 
+
+                // loop
                 foreach ($tree as $node) {
                     // delete
                     DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
-                    
+
                     //Store in DB
                     DB::insert(
                         prefix_table("roles_values"),
@@ -328,8 +328,8 @@ if (!empty($_POST['type'])) {
                         } else {
                             $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
                         }
-                        
-                        
+
+
                         $i++;
                     }
                     $texte .= '</tr>';
@@ -356,17 +356,4 @@ if (!empty($_POST['type'])) {
 
             break;
     }
-} elseif (!empty($_POST['edit_fonction'])) {
-    $id = explode('_', $_POST['id']);
-    //Update DB
-    DB::update(
-        prefix_table("roles_title"),
-        array(
-            'title' => mysqli_escape_string($link, stripslashes(utf8_decode($_POST['edit_fonction'])))
-       ),
-        "id = %i",
-        $id[1]
-    );
-    //Show value
-    echo $_POST['edit_fonction'];
 }

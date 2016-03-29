@@ -28,6 +28,15 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
 
+// load PhpEncryption library
+if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+    require_once '../includes/libraries/PhpEncryption/Crypto.php';
+} else {
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/PhpEncryption/Crypto.php';
+}
+use \Crypto\Crypto as Crypto;
+use \Crypto\Exception as Ex;
+
 //Generate N# of random bits for use as salt
 function getBits($n)
 {
@@ -291,6 +300,57 @@ function cryption($string, $key, $iv, $type)
         $decrypt = $crypt->decrypt($string);
         // return
         return str_replace(chr(0), "", $decrypt);
+    }
+}
+
+function cryptonik($message, $key, $type)
+{
+    $err = '';
+    // manage key origin
+    if (empty($key)) {
+        try {
+            $key = Crypto::createNewRandomKey();
+            // WARNING: Do NOT encode $key with bin2hex() or base64_encode(),
+            // they may leak the key to the attacker through side channels.
+        } catch (Ex\CryptoTestFailedException $ex) {
+            die('Cannot safely create a key');
+        } catch (Ex\CannotPerformOperationException $ex) {
+            die('Cannot safely create a key');
+        }
+    }
+
+    if ($type == "encrypt") {
+        try {
+            $ciphertext = Crypto::encrypt($message, $key);
+        } catch (Ex\CryptoTestFailedException $ex) {
+            $err = ('Cannot safely perform encryption');
+        } catch (Ex\CannotPerformOperationException $ex) {
+            $err = ('Cannot safely perform encryption');
+        }
+        return array(
+            'string' => $ciphertext,
+            'error' => $err
+        );
+
+    } else if ($type == "decrypt") {
+        try {
+            $decrypted = Crypto::decrypt($message, $key);
+        } catch (Ex\InvalidCiphertextException $ex) { // VERY IMPORTANT
+            // Either:
+            //   1. The ciphertext was modified by the attacker,
+            //   2. The key is wrong, or
+            //   3. $ciphertext is not a valid ciphertext or was corrupted.
+            // Assume the worst.
+            $err = ('DANGER! DANGER! The ciphertext has been tampered with!');
+        } catch (Ex\CryptoTestFailedException $ex) {
+            $err = ('Cannot safely perform decryption');
+        } catch (Ex\CannotPerformOperationException $ex) {
+            $err = ('Cannot safely perform decryption');
+        }
+        return array(
+            'string' => $decrypted,
+            'error' => $err
+        );
     }
 }
 
@@ -1188,4 +1248,16 @@ function get_client_ip_server() {
         $ipaddress = 'UNKNOWN';
 
     return $ipaddress;
+}
+
+/**
+ * Escape all HTML, JavaScript, and CSS
+ *
+ * @param string $input The input string
+ * @param string $encoding Which character encoding are we using?
+ * @return string
+ */
+function noHTML($input, $encoding = 'UTF-8')
+{
+    return htmlentities($input, ENT_QUOTES | ENT_HTML5, $encoding);
 }

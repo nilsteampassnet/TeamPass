@@ -283,13 +283,13 @@ $(function() {
         multi_selection : false,
         max_file_count : 1,
         filters : [
-         {title : "PNG files", extensions : "png"}
+            {title : "PNG files", extensions : "png"}
         ],
         resize : {
-         width : "90",
-         height : "90",
-         quality : "90"
-      },
+            width : "90",
+            height : "90",
+            quality : "90"
+        },
         url : "sources/upload/upload.files.php",
         flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
         silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
