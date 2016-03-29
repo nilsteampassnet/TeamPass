@@ -215,7 +215,7 @@ function buildNodeTree($nodeId)
                         '"id":"li_'.$node->id.'"'.
                         ', "parent":"'.$parent.'"'.
                         ', "children":'. ($childrenNb == 0 ? "false" : "true").
-                        ', "text":"'. ($eye_icon == true ? "<i class='fa fa-eye'></i>&nbsp;" : "") . $text.'"'.
+                        ', "text":"'.$text.'"'.
                         ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$node->id.'] '.$title.'"}'.
                         ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0)"}'.
                     '}';
@@ -346,7 +346,7 @@ function recursiveTree($nodeId)
                 $ret_json .= '{'.
                     '"id":"li_'.$completTree[$nodeId]->id.'"'.
                     ', "parent":"'.$parent.'"'.
-                    ', "text":"'. ($eye_icon == true ? "<i class='fa fa-eye'></i>&nbsp;" : "") . $text.'"'.
+                    ', "text":"'.$text.'"'.
                     ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
                     ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
                 '}';

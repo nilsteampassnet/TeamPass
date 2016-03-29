@@ -99,7 +99,7 @@ if (isset($_POST['type'])) {
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             // Prepare variables
-            $label = htmlspecialchars_decode($dataReceived['label']);
+            $label = noHTML(htmlspecialchars_decode($dataReceived['label']));
             $url = htmlspecialchars_decode($dataReceived['url']);
             $pw = htmlspecialchars_decode($dataReceived['pw']);
             $login = htmlspecialchars_decode($dataReceived['login']);
@@ -159,7 +159,7 @@ if (isset($_POST['type'])) {
                     echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
                     break;
                 }
-                
+
                 // ADD item
                 DB::insert(
                     prefix_table("items"),
@@ -168,10 +168,10 @@ if (isset($_POST['type'])) {
                         'description' => $dataReceived['description'],
                         'pw' => $encrypt['string'],
                         'pw_iv' => $encrypt['iv'],
-                        'email' => $dataReceived['email'],
-                        'url' => $url,
+                        'email' => noHTML($dataReceived['email']),
+                        'url' => noHTML($url),
                         'id_tree' => $dataReceived['categorie'],
-                        'login' => $login,
+                        'login' => noHTML($login),
                         'inactif' => '0',
                         'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '',
                         'perso' => ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) ? '1' : '0',
@@ -729,8 +729,8 @@ if (isset($_POST['type'])) {
 
                     $pw = cleanString($encrypt['string']);
                     // generate 2d key
-                    $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));    
-                    
+                    $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+
                     // Prepare files listing
                     $files = $filesEdit = "";
                     // launch query
@@ -738,11 +738,12 @@ if (isset($_POST['type'])) {
                     foreach ($rows as $record) {
                         // get icon image depending on file format
                         $iconImage = fileFormatImage($record['extension']);
+
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
                         if (in_array($record['extension'], $k['image_file_ext'])) {
-                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a class="image_dialog" href="#'.$record['id'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
+                            $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class="image_dialog" href="#'.$record['id'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
                         } else {
-                            $files .= '<img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
+                            $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
                         }
                         // Prepare list of files for edit dialogbox
                         $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" />&nbsp;'.$record['name']."</span><br />";
@@ -795,7 +796,7 @@ if (isset($_POST['type'])) {
                 echo $returnValues;
                 break;
             }
-            
+
             $returnValues = $pw = "";
             $is_perso = 0;
 
@@ -803,7 +804,7 @@ if (isset($_POST['type'])) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['item_id']);
                 $dataDestination = DB::queryfirstrow("SELECT personal_folder FROM ".prefix_table("nested_tree")." WHERE id=%i", $_POST['folder_id']);
-                
+
                 // previous is personal folder and public one
                 if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 0) {
                     // decrypt and re-encrypt password
@@ -819,14 +820,14 @@ if (isset($_POST['type'])) {
                         "",
                         "encrypt"
                     );
-                    
+
                     // reaffect pw
                     $originalRecord['pw'] = $encrypt['string'];
                     $originalRecord['pw_iv'] = $encrypt['iv'];
-                    
+
                     // this item is now public
                     $is_perso = 0;
-                } 
+                }
                 // previous is public folder and personal one
                 else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
                     // check if PSK is set
@@ -835,7 +836,7 @@ if (isset($_POST['type'])) {
                         echo $returnValues;
                         break;
                     }
-                    
+
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
@@ -849,15 +850,15 @@ if (isset($_POST['type'])) {
                         "",
                         "encrypt"
                     );
-                    
+
                     // reaffect pw
                     $originalRecord['pw'] = $encrypt['string'];
-                    $originalRecord['pw_iv'] = $encrypt['iv'];    
-                    
+                    $originalRecord['pw_iv'] = $encrypt['iv'];
+
                     // this item is now private
-                    $is_perso = 1;                
+                    $is_perso = 1;
                 }
-                
+
                 // insert the new record and get the new auto_increment id
                 DB::insert(
                     prefix_table("items"),
@@ -931,7 +932,7 @@ if (isset($_POST['type'])) {
                 echo prepareExchangedData($returnValues, "encode");
                 break;
             }
-            
+
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
@@ -991,7 +992,7 @@ if (isset($_POST['type'])) {
             $arrData['author_email'] = $dataTmp['email'];
             $arrData['id_user'] = $dataItem['id_user'];
             */
-            
+
             // Get all tags for this item
             $tags = "";
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
@@ -999,7 +1000,7 @@ if (isset($_POST['type'])) {
                 if (empty($tags)) $tags = "<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
                 else $tags .= "&nbsp;&nbsp;<i class='fa fa-tag fa-sm pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span>";
             }
-            
+
             // TODO -> improve this check
             // check that actual user can access this item
             $restrictionActive = true;
@@ -1136,7 +1137,7 @@ if (isset($_POST['type'])) {
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = $tags;    //str_replace('"', '&quot;', $tags);
                 $arrData['folder'] = $dataItem['id_tree'];
-                
+
                 if (isset($_SESSION['settings']['enable_server_password_change'])
                     && $_SESSION['settings']['enable_server_password_change'] == 1) {
                     $arrData['auto_update_pwd_frequency'] = $dataItem['auto_update_pwd_frequency'];
@@ -1160,7 +1161,7 @@ if (isset($_POST['type'])) {
                     "id = %i",
                     $_POST['id']
                 );
-                $arrData['viewed_no'] = $dataItem['viewed_no']+1;                
+                $arrData['viewed_no'] = $dataItem['viewed_no']+1;
 
                 // get fields
                 $fieldsTmp = $arrCatList = "";
@@ -1354,8 +1355,8 @@ if (isset($_POST['type'])) {
             }
 
             // generate 2d key
-            $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));    
-            
+            $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+
             // Prepare files listing
             $files = $filesEdit = "";
             // launch query
@@ -1363,14 +1364,14 @@ if (isset($_POST['type'])) {
             foreach ($rows as $record) {
                 // get icon image depending on file format
                 $iconImage = fileFormatImage($record['extension']);
-                
+
                 // prepare text to display
                 if (strlen($record['name']) > 60 && strrpos($record['name'], ".") >= 56) {
                     $filename = substr($record['name'], 0, 50)."(truncated)".substr($record['name'], strrpos($record['name'], "."));
                 } else {
                     $filename = $record['name'];
                 }
-                
+
                 // If file is an image, then prepare lightbox. If not image, then prepare donwload
                 if (in_array($record['extension'], $k['image_file_ext'])) {
                     $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a><br />';
@@ -1383,7 +1384,7 @@ if (isset($_POST['type'])) {
             // display lists
             $filesEdit = str_replace('"', '&quot;', $filesEdit);
             $files_id = $files;
-            
+
             // disable add bookmark if alread bookmarked
             if (in_array($_POST['id'], $_SESSION['favourites'])) {
                 $favourite = 1;
@@ -1528,12 +1529,12 @@ if (isset($_POST['type'])) {
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $dataReceived['source_folder_id']
             );
-            
+
             $tmp_target = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $dataReceived['target_folder_id']
             );
-            
+
             // check if source or target folder is PF. If Yes, then cancel operation
             if (
                 !($tmp_source['personal_folder'] == 1 && $tmp_target['personal_folder'] == 1)
@@ -1543,7 +1544,7 @@ if (isset($_POST['type'])) {
                 echo $returnValues;
                 break;
             }
-            
+
             if ( $tmp_source['parent_id'] != 0 || $tmp_source['title'] != $_SESSION['user_id'] || $tmp_source['personal_folder'] != 1 || $tmp_target['title'] != $_SESSION['user_id'] || $tmp_target['personal_folder'] != 1) {
 
                 // moving SOURCE folder
@@ -1634,8 +1635,8 @@ if (isset($_POST['type'])) {
             elseif (!in_array(
                 $_POST['id'],
                 array_merge(
-                    $_SESSION['groupes_visibles'], 
-                    @array_keys($_SESSION['list_restricted_folders_for_items']), 
+                    $_SESSION['groupes_visibles'],
+                    @array_keys($_SESSION['list_restricted_folders_for_items']),
                     @array_keys($_SESSION['list_folders_limited'])
                 )
             )) {
@@ -1646,7 +1647,7 @@ if (isset($_POST['type'])) {
                 $counter = DB::count();
                 $where->add('i.id_tree=%i', $_POST['id']);
             }
-            
+
             // store last folder accessed in cookie
             setcookie(
                 "jstree_select",
@@ -1897,7 +1898,7 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                             }
-                            
+
                             // test charset => may cause a json error if is not utf8
                             if (!isUTF8($pw) || empty($pw)) {
                                 $pw = "";
@@ -2126,7 +2127,7 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
-            
+
             // check if user can perform this action
             if (isset($_POST['context']) && !empty($_POST['context'])) {
                 if ($_POST['context'] == "create_folder" || $_POST['context'] == "edit_folder" || $_POST['context'] == "delete_folder") {
@@ -2319,7 +2320,7 @@ if (isset($_POST['type'])) {
                             break;
                         }
                     }
-                }                
+                }
             }
             break;
 
@@ -2346,7 +2347,7 @@ if (isset($_POST['type'])) {
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $_POST['folder_id']
             );
-            
+
             // previous is non personal folder and new too
             if ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 0) {
                 // just update is needed. Item key is the same
@@ -2629,7 +2630,7 @@ if (isset($_POST['type'])) {
             }
 
             // generate session
-            $otv_code = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));    
+            $otv_code = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
 
             DB::insert(
                 prefix_table("otv"),
@@ -2888,16 +2889,16 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            
+
             // Build list of visible folders
             $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
-            
+
             if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
                 && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
                 $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
             }
-            
+
             if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
                 $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
             } else {
@@ -2910,15 +2911,15 @@ if (isset($_POST['type'])) {
             } else {
                 $listRestrictedFoldersForItemsKeys = array();
             }
-            
-            
+
+
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
             $tree->rebuild();
             $folders = $tree->getDescendants();
-            
+
             foreach ($folders as $folder) {
                 // Be sure that user can only see folders he/she is allowed to
                 if (
@@ -2961,15 +2962,15 @@ if (isset($_POST['type'])) {
                         for ($x = 1; $x < $folder->nlevel; $x++) {
                             $ident .= "&nbsp;&nbsp;";
                         }
-                        
+
                         // resize title if necessary
                         $fldTitle = str_replace("&", "&amp;", $folder->title);
-                        
+
                         // rename personal folder with user login
                         if ($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1 ) {
                             $fldTitle = $_SESSION['login'];
                         }
-                        
+
                         // build select for all visible folders
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
                             if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
@@ -2999,7 +3000,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            
+
             $data = array(
                 'error' => "",
                 'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
@@ -3009,7 +3010,7 @@ if (isset($_POST['type'])) {
             );
             // send data
             echo prepareExchangedData($data, "encode");
-            
+
             break;
     }
 }

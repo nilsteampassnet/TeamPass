@@ -1,11 +1,11 @@
 <?php
 /**
- * @file        upload.attachments.php
- * @author      Nils Laumaillé
- * @version     2.1.21
- * @copyright   (c) 2009-2015 Nils Laumaillé
- * @licensing   GNU AFFERO GPL 3.0
- * @link        http://www.teampass.net
+ * @file          upload.attachments.php
+ * @author        Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of

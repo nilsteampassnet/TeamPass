@@ -116,7 +116,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
     if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
         $htmlHeaders .= '
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>';
+        <!--<script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>-->';
     }
 }
 // Get Favicon
@@ -429,7 +429,11 @@ $htmlHeaders .= '
 				data = $.parseJSON(data);
                 //check if format error
                 if (data.error == "") {
-                    $("#last_seen_items_list").html(data.text);
+                    if (data.text == null) {
+                        $("#last_seen_items_list").html("<li>'.$LANG['none'].'</li>");
+                    } else {
+                        $("#last_seen_items_list").html(data.text);
+                    }
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
 					// show notification

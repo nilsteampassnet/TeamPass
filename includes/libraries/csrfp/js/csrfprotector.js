@@ -246,7 +246,8 @@ function csrfprotector_init() {
 	 * @return: object returned by default, XHR send method
 	 */
 	function new_send(data) {
-		if (this.method.toLowerCase() === 'post') {
+		var type = Function.prototype.call.bind( Object.prototype.toString ); 		// Teampass change
+		if (this.method.toLowerCase() === 'post' && type( data ) === '[object String]') {
 
 			if (data !== "") {
 				data += "&";
