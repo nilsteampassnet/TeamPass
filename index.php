@@ -598,10 +598,10 @@ if (
                             <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
                             <!--<div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
                                 '.$LANG['user_ga_code_sent_by_email'].'
-                            </div>-->
+                            </div>
                             <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
                                 <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
-                            </div>
+                            </div>-->
                         </div>';
         }
         echo '

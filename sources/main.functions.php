@@ -28,14 +28,10 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
 
-// load PhpEncryption library
-if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
-    require_once '../includes/libraries/PhpEncryption/Crypto.php';
-} else {
-    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/PhpEncryption/Crypto.php';
-}
-use \Crypto\Crypto as Crypto;
-use \Crypto\Exception as Ex;
+
+// prepare Encryption class calls
+use \Defuse\Crypto\Crypto;
+use \Defuse\Crypto\Exception as Ex;
 
 //Generate N# of random bits for use as salt
 function getBits($n)
@@ -303,9 +299,18 @@ function cryption($string, $key, $iv, $type)
     }
 }
 
-function cryptonik($message, $key, $type)
+function crypto($message, $key, $type)
 {
+    // load PhpEncryption library
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        require_once '../includes/libraries/PhpEncryption/Crypto.php';
+    } else {
+        require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/PhpEncryption/Crypto.php';
+    }
+
+    // init
     $err = '';
+
     // manage key origin
     if (empty($key)) {
         try {
@@ -329,6 +334,7 @@ function cryptonik($message, $key, $type)
         }
         return array(
             'string' => $ciphertext,
+            'key' => $key,
             'error' => $err
         );
 
