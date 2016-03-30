@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+$change_encryption = false;
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -81,6 +81,11 @@ $aes->register();
 require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/phpcrypt/phpCrypt.php';
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
+
+// prepare Encryption class calls
+use \Defuse\Crypto\Crypto;
+use \Defuse\Crypto\Exception as Ex;
+
 
 // Do asked action
 if (isset($_POST['type'])) {
@@ -356,6 +361,13 @@ if (isset($_POST['type'])) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
+
+            if (isset($change_encryption) && $change_encryption == true) {
+                // load Encryption library
+                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+            }
+
             // init
             $reloadPage = false;
             $returnValues = array();
@@ -428,14 +440,25 @@ if (isset($_POST['type'])) {
                         $encypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
                         $restictedTo = $_SESSION['user_id'];
                     } else {
-                        //$pw = encrypt($pw);
-                        $encypt = cryption($pw, SALT, "", "encrypt");
+                        if (isset($change_encryption) && $change_encryption == true) {
+                            $passwd = crypto($pw, "", "encrypt");
+                        } else {
+                            $passwd = cryption($pw, SALT, "", "encrypt");
+                        }
                     }
 
-                    if (empty($encypt["string"])) {
-                        echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
-                        break;
+                    if (isset($change_encryption) && $change_encryption == true) {
+                        if (!empty($passwd["error"])) {
+                            echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
+                            break;
+                        }
+                    } else {
+                        if (empty($passwd["string"])) {
+                            echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
+                            break;
+                        }
                     }
+
                     // ---Manage tags
                     // deleting existing tags for this item
                     DB::delete($pre."tags", "item_id = %i", $dataReceived['id']);
@@ -459,8 +482,8 @@ if (isset($_POST['type'])) {
                         array(
                             'label' => $label,
                             'description' => $dataReceived['description'],
-                            'pw' => $encypt["string"],
-                            'pw_iv' => $encypt["iv"],
+                            'pw' => $passwd['string'],
+                            'pw_iv' => $passwd['iv'],
                             'email' => $dataReceived['email'],
                             'login' => $login,
                             'url' => $url,
@@ -1306,6 +1329,10 @@ if (isset($_POST['type'])) {
            * Display History of the selected Item
         */
         case "showDetailsStep2":
+
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+
             // get Item info
             $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['id']);
 
@@ -2622,6 +2649,9 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
 
             // delete all existing old otv codes
             $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
