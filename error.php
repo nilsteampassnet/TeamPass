@@ -18,16 +18,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
-if (isset($_SESSION['login'])) {
-    fputs($debug,
-        "\n----ERROR-----\nSESSION_LOGIN: ".$_SESSION['login']."\n".
-        "SESSION_USER ID: ".$_SESSION['user_id']."\n".
-        "SESSION fin_session: ".$_SESSION['fin_session']."\n".
-        "SESSION session: ".$_SESSION['session']."\n".
-        "SESSION error code: ".$_SESSION['error']['code']."\n"
-    );
-}
-
 if (isset($_POST['session']) && $_POST['session'] == "expired") {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
