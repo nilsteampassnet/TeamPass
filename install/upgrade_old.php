@@ -75,7 +75,6 @@ if (
     <head>
         <title>TeamPass Installation</title>
         <link rel="stylesheet" href="install.css" type="text/css" />
-        <link rel="stylesheet" href="../includes/font-awesome/css/font-awesome.min.css">
         <script type="text/javascript" src="../includes/js/functions.js"></script>
         <script type="text/javascript" src="upgrade.js"></script>
         <script type="text/javascript" src="js/jquery.min.js"></script>
@@ -83,12 +82,18 @@ if (
         <script type="text/javascript" src="js/aes.min.js"></script>
 
         <script type="text/javascript">
-        $(function(){
-            $("#but_next").click(function(event) {
-                console.log("> "+$(this).attr("target_id"));
-                $("#step").val($(this).attr("target_id"));
-                document.install.submit();
-            });
+        //if (typeof $=='undefined') {function $(v) {return(document.getElementById(v));}}
+        $(function() {
+            /*
+            if (document.getElementById("progressbar")) {
+                gauge.add($("progressbar"), { width:600, height:30, name: 'pbar', limit: true, gradient: true, scale: 10, colors:['#ff0000','#00ff00']});
+                if (document.getElementById("step").value == "1") gauge.modify($('pbar'),{values:[0.20,1]});
+                else if (document.getElementById("step").value == "2") gauge.modify($('pbar'),{values:[0.35,1]});
+                else if (document.getElementById("step").value == "3") gauge.modify($('pbar'),{values:[0.55,1]});
+                else if (document.getElementById("step").value == "4") gauge.modify($('pbar'),{values:[0.70,1]});
+                else if (document.getElementById("step").value == "5") gauge.modify($('pbar'),{values:[0.85,1]});
+            }
+            */
         });
 
         function aes_encrypt(text)
@@ -108,7 +113,6 @@ if (
         function Check(step)
         {
             if (step != "") {
-                var upgrade_file = "upgrade_ajax.php";
                 if (step == "step1") {
                     var data = "type="+step+
                     "&abspath="+escape(document.getElementById("root_path").value)+
@@ -117,18 +121,18 @@ if (
                 } else
                 if (step == "step2") {
                     document.getElementById("loader").style.display = "";
-                    var maintenance = 1;
-                    if (document.getElementById("no_maintenance_mode").checked==true) {
-                        maintenance = 0;
-                    }
+                	var maintenance = 1;
+                	if (document.getElementById("no_maintenance_mode").checked==true) {
+                		maintenance = 0;
+                	}
                     var data = "type="+step+
                     "&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_port="+(document.getElementById("db_port").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value+
-                    "&no_maintenance_mode="+maintenance;
+	            	"&db_bdd="+document.getElementById("db_bdd").value+
+	            	"&no_maintenance_mode="+maintenance;
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -137,94 +141,19 @@ if (
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step4") {
-                    //$("#loader").show();
-                    upgrade_file = "";
+                    $("#loader").show();
                     var data = "type="+step;
-                    //document.getElementById("loader").style.display = "";
-
-                    manageUpgradeScripts("0");
-
+                    document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step5") {
-                    document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
+                	document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
                     if (document.getElementById("sk_path") == null)
-                        var data = "type="+step;
+                    	var data = "type="+step;
                     else
-                        var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
+                    	var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
                 }
-                if (upgrade_file != "") httpRequest(upgrade_file, data);
+                httpRequest("upgrade_ajax_old.php",data);
             }
-        }
-
-        function manageUpgradeScripts(file_number)
-        {
-            var start_at = 0;
-            var noitems_by_loop = 10;
-            var loop_number = 0;
-
-            if (file_number == 0) $("#step4_progress").html("");
-
-            request = $.post("upgrade_scripts_manager.php",
-                {
-                    file_number : parseInt(file_number)
-                },
-                function(data) {
-                    // work not finished
-                    if (data[0].finish != 1) {
-                        // loop
-                        runUpdate(data[0].scriptname, data[0].parameter, start_at, noitems_by_loop, loop_number, file_number);
-                    }
-                    // work finished
-                    else {
-                        $("#step4_progress").html("<div>All done.</div>"+ $("#step4_progress").html());
-                        /* Unlock this step */
-                        document.getElementById("but_next").disabled = "";
-                        document.getElementById("but_launch").disabled = "disabled";
-                        document.getElementById("loader").style.display = "none";
-                    }
-                },
-                "json"
-            );
-        }
-
-        function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop_number, file_number)
-        {
-            var d = new Date();
-            loop_number ++;
-            var rand_number = CreateRandomString(5);
-
-            $("#step4_progress").html("<div>"+("0" + d.getHours()).slice(-2)+":"+("0" + d.getMinutes()).slice(-2)+":"+("0" + d.getSeconds()).slice(-2)+" - <i>"+script_file+"</i> - Loop #"+loop_number+" <span id='span_"+rand_number+"'>is now running ... <i class=\"fa fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
-
-            request = $.post(script_file,
-                {
-                    type        : type_parameter,
-                    start       : start_at,
-                    total       : start_at,
-                    nb          : noitems_by_loop
-                },
-                function(data) {
-                    // work not finished
-                    if (data[0].finish != 1) {
-                        $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-up\" style=\"color:green\"></i>")
-                        // loop
-                        runUpdate(script_file, type_parameter, data[0].next, noitems_by_loop, loop_number, file_number);
-                    }
-                    // is there an error
-                    else if (data[0].finish == 1 && data[0].error != "") {
-                        $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-down\" style=\"color:red\"></i>");
-                        $("#step4_progress").html("<div style=\"margin:15px 0 15px 0; font-style:italic;\">"+d.getHours()+":"+d.getMinutes()+":"+d.getSeconds()+" - <b>ERROR</b>: "+data[0].error+"</div>"+ $("#step4_progress").html());
-                        $("#step4_progress").html("<div>An error occurred. Please check and relaunch.</div>"+ $("#step4_progress").html());
-                    }
-                    // work finished
-                    else {
-                        $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-up\" style=\"color:green\"></i>")
-                        // continue with next script file
-                        file_number ++;
-                        manageUpgradeScripts(file_number);
-                    }
-                },
-                "json"
-            );
         }
 
         function newEncryptPw(suggestion){
@@ -236,7 +165,7 @@ if (
             } else {
                 $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"../includes/images/76.gif\" />");
             }
-            request = $.post("upgrade_ajax.php",
+            request = $.post("upgrade_ajax_old.php",
                 {
                     type        : "new_encryption_of_pw",
                     start       : start,
@@ -247,19 +176,19 @@ if (
                 function(data) {
                     if (data[0].finish != 1 && data[0].finish != "suggestion") {
                         // handle re-encryption of passwords in Items table
-                        $("#change_pw_encryption_start").val(data[0].next);
-                        $("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
-                        if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
-                            newEncryptPw("0");
-                        }
+                    	$("#change_pw_encryption_start").val(data[0].next);
+                    	$("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
+                    	if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
+                    	    newEncryptPw("0");
+                    	}
                     } else if (data[0].finish == "suggestion") {
                         // handle the re-encryption of passwords in suggestion table
                         newEncryptPw("1");
                     } else {
                         // handle finishing
-                        $("#change_pw_encryption_progress").html("Done");
-                        $("#but_encrypt_continu").hide();
-                        /* Unlock this step */
+                    	$("#change_pw_encryption_progress").html("Done");
+                    	$("#but_encrypt_continu").hide();
+                    	/* Unlock this step */
                         document.getElementById("but_next").disabled = "";
                         document.getElementById("but_launch").disabled = "disabled";
                         document.getElementById("res_step4").innerHTML = "dataBase has been populated";
@@ -284,7 +213,7 @@ if (isset($_POST['db_host'])) {
     $_SESSION['db_pw'] = $_POST['db_pw'];
     $_SESSION['db_port'] = $_POST['db_port'];
     $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
-    //$_SESSION['session_start'] = $_POST['session_start'];
+	//$_SESSION['session_start'] = $_POST['session_start'];
     if (isset($_POST['send_stats'])) {
         $_SESSION['send_stats'] = $_POST['send_stats'];
     } else {
@@ -413,11 +342,11 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 
                      <fieldset><legend>Maintenance Mode</legend>
                      <p>
-                        <input type="checkbox" name="no_maintenance_mode" id="no_maintenance_mode"  />&nbsp;Don\'t activate the Maintenance mode
-                     </p>
-                     <i>By default, the maintenance mode is enabled when an Update is performed. This prevents the use of TeamPass while the scripts are running.<br />
-                     However, some administrators may prefer to warn the users in another way. Nevertheless, keep in mind that the update process may fail or even be corrupted due to parallel queries.</i>
-                     </fieldset>
+                     	<input type="checkbox" name="no_maintenance_mode" id="no_maintenance_mode"  />&nbsp;Don\'t activate the Maintenance mode
+					 </p>
+					 <i>By default, the maintenance mode is enabled when an Update is performed. This prevents the use of TeamPass while the scripts are running.<br />
+					 However, some administrators may prefer to warn the users in another way. Nevertheless, keep in mind that the update process may fail or even be corrupted due to parallel queries.</i>
+					 </fieldset>
 
                      <fieldset><legend>Anonymous statistics</legend>
                      <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
@@ -460,8 +389,31 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     echo '
                      <h3>Step 4</h3>
 
-                     The upgrader will now update the database by running several upgrade scripts.
-                     <div id="step4_progress" style="margin-top:20px;"></div>
+                     The upgrader will now update your database.
+                     <table>
+                         <tr><td>Misc table will be populated with new values</td><td><span id="tbl_1"></span></td></tr>
+                         <tr><td>Users table will be altered with news fields</td><td><span id="tbl_2"></span></td></tr>
+                         <tr><td>Nested_Tree table will be altered with news fields</td><td><span id="tbl_5"></span></td></tr>
+                         <tr><td>Table "tags" will be created</td><td><span id="tbl_3"></span></td></tr>
+                         <tr><td>Table "log_system" will be created</td><td><span id="tbl_4"></span></td></tr>
+                         <tr><td>Table "files" will be created</td><td><span id="tbl_6"></span></td></tr>
+                         <tr><td>Table "cache" will be created</td><td><span id="tbl_7"></span></td></tr>
+                         <tr><td>Change table "functions" to "roles"</td><td><span id="tbl_9"></span></td></tr>
+                         <tr><td>Add table "kb"</td><td><span id="tbl_10"></span></td></tr>
+                         <tr><td>Add table "kb_categories"</td><td><span id="tbl_11"></span></td></tr>
+                         <tr><td>Add table "kb_items"</td><td><span id="tbl_12"></span></td></tr>
+                         <tr><td>Add table "restriction_to_roles"</td><td><span id="tbl_13"></span></td></tr>
+                         <tr><td>Add table "Languages"</td><td><span id="tbl_16"></span></td></tr>
+                         <tr><td>Add table "Emails"</td><td><span id="tbl_17"></span></td></tr>
+                         <tr><td>Add table "Automatic_del"</td><td><span id="tbl_18"></span></td></tr>
+                         <tr><td>Add table "items_edition"</td><td><span id="tbl_19"></span></td></tr>
+                         <tr><td>Add table "categories"</td><td><span id="tbl_20"></span></td></tr>
+                         <tr><td>Add table "categories_items"</td><td><span id="tbl_21"></span></td></tr>
+                         <tr><td>Add table "categories_folders"</td><td><span id="tbl_22"></span></td></tr>
+                         <tr><td>Add table "api"</td><td><span id="tbl_23"></span></td></tr>
+                         <tr><td>Add table "otv"</td><td><span id="tbl_24"></span></td></tr>
+                         <tr><td>Add table "suggestion"</td><td><span id="tbl_25"></span></td></tr>
+                     </table>
                      <div style="display:none;" id="change_pw_encryption">
                          <br />
                          <p><b>Encryption protocol of existing passwords now has to be started. It may take several minutes.</b></p>
@@ -521,7 +473,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 if (!isset($_POST['step'])) {
     echo '
                  <div id="buttons_bottom">
-                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="CONTINUE" />
+                     <input type="button" id="but_next" onclick="goto_next_page(\'1\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                  </div>';
 } elseif ($_POST['step'] == 3 && $conversion_utf8 == false) {
     echo '

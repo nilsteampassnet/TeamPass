@@ -1,9 +1,11 @@
 Last changes
 2.1.26
+ #1251 Improving CSRFP configuration
  #1240 Security fixes on some missed queries and on non-protected text fields
  #1241 OTV visible more than one time
  #1238 Fix for upgrade.php where mysql_result() command were still not replaced
  #1235 Import from Keepass: missing items with the same title
+ #1225 Unable to Access OTV Link
  #1224 Fixed errors in export_to_html_format
  #1211 No FA code sent from home page
  #1210 Fix for main.queries.php

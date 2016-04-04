@@ -223,7 +223,7 @@ function ListerItems(groupe_id, restricted, start)
                     } else {
                         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['personal_folder'];?>&nbsp;:&nbsp;'+data.arborescence);
                     }
-                    var path_levels = data.arborescence.split('<i class="fa fa-folder-open-o"></i>&nbsp;').length-1;
+                    var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
                     if ($("#items_path_var").width() > path_maxlength) {
                         $("#path_fontsize").val($("#items_path_var").css('font-size'));
                         // start reducing size of font
@@ -234,16 +234,24 @@ function ListerItems(groupe_id, restricted, start)
                             }
                         }
                         if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
+                            // only take first and last
                             var nb = 1;
+                            var totalPathLength = occupedWidth = 0;
                             $(".path_element").each(function () {
-                                // replace name of folder by ...
-                                if (nb > 1 && nb <= path_levels && $(this).html().length > 8 && $("#items_path_var").width() > path_maxlength) {
-                                    $(this).html("<span title='"+$(this).html()+"'>...</span>");
+                                totalPathLength += $(this).width();
+                                if (nb != 1 && nb != (path_levels-1) && nb != path_levels) {
+                                    $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
+                                } else if (nb == path_levels) {
+                                    // next condition occurs if lasst folder name is too long
+                                    if (totalPathLength > $("#items_path_var").width()) {
+                                        var lastTxt = $(this).html();
+                                        while ($(this).width() > (path_maxlength - occupedWidth)) {
+                                            lastTxt = lastTxt.slice(0, -1);
+                                            $(this).html(lastTxt);
+                                        }
+                                    }
                                 }
-                                // last folder name is still too long
-                                if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
-
-                                }
+                                occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
                                 nb++;
                             });
                         }
@@ -685,6 +693,11 @@ function AjouterItem()
                     } else if (data.error == "ERR_PWD_EMPTY") {
                         $("#div_formulaire_saisi").dialog("open");
                         $("#new_show_error").html('Item password is empty!');
+                        $("#new_show_error").show();
+                        LoadingPage();
+                    } else if (data.error == "ERR_ENCRYPTION") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html(data.msg);
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.new_id != "") {
@@ -2331,7 +2344,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
+        width: 500,
         height: 280,
         title: "<?php echo $LANG['item_menu_add_rep'];?>",
         buttons: {

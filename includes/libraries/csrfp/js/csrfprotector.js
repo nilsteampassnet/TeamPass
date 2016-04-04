@@ -247,15 +247,18 @@ function csrfprotector_init() {
 	 */
 	function new_send(data) {
 		var type = Function.prototype.call.bind( Object.prototype.toString ); 		// Teampass change
-		if (this.method.toLowerCase() === 'post' && type( data ) === '[object String]') {
-
-			if (data !== "") {
-				data += "&";
+		if (this.method.toLowerCase() === 'post') {
+			if ( type( data ) != '[object FormData]' || type( data ) != '[object ArrayBuffer]') {
+				if (data !== "") {
+					data += "&";
+				} else {
+					data = "";
+				}
+				data += CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
 			} else {
-				data = "";
+				//data.append(CSRFP.CSRFP_TOKEN, CSRFP._getAuthKey());
+				// don't add CSRF token in those 2 cases as it brakes upload on some brower versions
 			}
-
-			data += CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
 		}
 		return this.old_send(data);
 	}
