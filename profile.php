@@ -79,7 +79,7 @@ if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     </div>';
 }
 echo '
-    <div style="margin-bottom:6px;">
+    <div style="margin-bottom:6px;margin-top:6px;">
         <i class="fa fa-cloud-upload fa-fw fa-lg"></i>&nbsp;
         <span id="plupload_runtime2" class="ui-state-error ui-corner-all" style="width:350px;">Upload feature: No runtime found.</span>
         <input type="hidden" id="upload_enabled2" value="" />

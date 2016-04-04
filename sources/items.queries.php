@@ -11,7 +11,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-$change_encryption = false;
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -100,6 +99,13 @@ if (isset($_POST['type'])) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
+
+            if (DEFUSE_ENCRYPTION === TRUE) {
+                // load Encryption library
+                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+            }
+
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
@@ -155,14 +161,30 @@ if (isset($_POST['type'])) {
             ) {
                 // encrypt PW
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                    if (DEFUSE_ENCRYPTION === TRUE) {
+                        $passwd = crypto($pw, $_SESSION['my_sk'], "encrypt");
+                    } else {
+                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                    }
                     $restictedTo = $_SESSION['user_id'];
                 } else {
-                    $encrypt = cryption($pw, SALT, "", "encrypt");
+                    if (DEFUSE_ENCRYPTION === TRUE) {
+                        $passwd = crypto($pw, "", "encrypt");
+                    } else {
+                        $passwd = cryption($pw, SALT, "", "encrypt");
+                    }
                 }
-                if (empty($encrypt['string'])) {
-                    echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
-                    break;
+
+                if (DEFUSE_ENCRYPTION === TRUE) {
+                    if (!empty($passwd["error"])) {
+                        echo prepareExchangedData(array("error" => "ERR_ENCRYPTION", "msg" => $passwd["error"]), "encode");
+                        break;
+                    }
+                } else {
+                    if (empty($passwd["string"])) {
+                        echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
+                        break;
+                    }
                 }
 
                 // ADD item
@@ -171,8 +193,8 @@ if (isset($_POST['type'])) {
                     array(
                         'label' => $label,
                         'description' => $dataReceived['description'],
-                        'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv'],
+                        'pw' => $passwd['string'],
+                        'pw_iv' => $passwd['iv'],
                         'email' => noHTML($dataReceived['email']),
                         'url' => noHTML($url),
                         'id_tree' => $dataReceived['categorie'],
@@ -185,14 +207,14 @@ if (isset($_POST['type'])) {
                        )
                 );
                 $newID = DB::insertId();
-                $pw = $encrypt['string'];
+                $pw = $passwd['string'];
 
                 // update fields
                 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            $encrypt = cryption($field_data[1], SALT, "", "encrypt");
+                            $encrypt = crypto($field_data[1], "", "encrypt");
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -362,12 +384,6 @@ if (isset($_POST['type'])) {
                 break;
             }
 
-            if (isset($change_encryption) && $change_encryption == true) {
-                // load Encryption library
-                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
-            }
-
             // init
             $reloadPage = false;
             $returnValues = array();
@@ -436,27 +452,15 @@ if (isset($_POST['type'])) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $sentPw = $pw;
-                        //$pw = encrypt($pw, mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])));
-                        $encypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
                         $restictedTo = $_SESSION['user_id'];
                     } else {
-                        if (isset($change_encryption) && $change_encryption == true) {
-                            $passwd = crypto($pw, "", "encrypt");
-                        } else {
-                            $passwd = cryption($pw, SALT, "", "encrypt");
-                        }
+                        $passwd = cryption($pw, SALT, "", "encrypt");
                     }
 
-                    if (isset($change_encryption) && $change_encryption == true) {
-                        if (!empty($passwd["error"])) {
-                            echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
-                            break;
-                        }
-                    } else {
-                        if (empty($passwd["string"])) {
-                            echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
-                            break;
-                        }
+                    if (!empty($passwd["error"])) {
+                        echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
+                        break;
                     }
 
                     // ---Manage tags
@@ -1058,6 +1062,7 @@ if (isset($_POST['type'])) {
                 );
                 $arrData['edit_item_salt_key'] = 0;
             }
+            $pw = @$pw['string'];
             if (!isUTF8($pw)) {
                 $pw = '';
             }
@@ -1329,10 +1334,6 @@ if (isset($_POST['type'])) {
            * Display History of the selected Item
         */
         case "showDetailsStep2":
-
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
-
             // get Item info
             $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['id']);
 
@@ -1354,9 +1355,10 @@ if (isset($_POST['type'])) {
                     // don't do if item is PF
                     if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                        $reason[1] = @$reason[1]['string'];
                     }
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                    if (!isUTF8($reason[1])) {
+                    if (!isUTF8($reason[1]) || is_array($reason[1])) {
                         $reason[1] = "";
                     }
                 }
@@ -1401,9 +1403,9 @@ if (isset($_POST['type'])) {
 
                 // If file is an image, then prepare lightbox. If not image, then prepare donwload
                 if (in_array($record['extension'], $k['image_file_ext'])) {
-                    $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a><br />';
+                    $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a></div>';
                 } else {
-                    $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\'>'.$filename.'</a><br />';
+                    $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
                 }
                 // Prepare list of files for edit dialogbox
                 $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";

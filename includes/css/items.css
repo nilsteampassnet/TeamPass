@@ -149,3 +149,7 @@ button{
 
 }
 /*.ui-icon { display: none !important; }*/
+
+.small_spacing {
+    margin:2px 0 2px 0;
+}
