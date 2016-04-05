@@ -55,7 +55,7 @@ function CheckPage()
             error = "Fields need to be filled in!";
         } else {
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
-            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml"];
+            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml", "folder*includes/libraries/csrfp/libs"];
             multiple = true;
             $("#hid_abspath").val($("#root_path").val());
             $("#hid_url_path").val($("#url_path").val());
@@ -113,7 +113,7 @@ function CheckPage()
         tasks = ["file*deleteInstall"];
         multiple = true;
     }
-    
+
     // launch query
     if (error == "" && multiple == true) {
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
@@ -147,7 +147,7 @@ function CheckPage()
                             } else {
                                 $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
                             }
-                            
+
                             if (data[0].result != undefined && data[0].result != "" ) {
                                 $("#step_result").html(data[0].result);
                             }
@@ -214,8 +214,8 @@ function CheckPage()
                     }
                     $("#but_launch").prop("disabled", true);
                     $("#but_launch").hide();
-                    $("#but_next").prop("disabled", false);  
-                    $("#but_next").show();     
+                    $("#but_next").prop("disabled", false);
+                    $("#but_next").show();
                 }
             },
             error : function(resultat, statut, erreur){

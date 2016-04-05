@@ -101,7 +101,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 if (empty($languagesDropmenu)) {
     $languagesDropmenu = "";
     $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name ORDER BY name ASC");
+    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." ORDER BY name ASC");
     foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
             $record['flag'].'" alt="'.$record['label'].'" title="'.
@@ -327,7 +327,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                 $_SESSION['user_id']
             );
         }
-		
+
         // get access rights
         identifyUserRights(
             $data['groupes_visibles'],

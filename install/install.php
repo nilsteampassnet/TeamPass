@@ -17,7 +17,7 @@
 
         </script>
     </head>
-    
+
     <body>
 <?php
 // define root path
@@ -117,6 +117,7 @@ echo '
     <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check12"></span></li>
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
+    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check15"></span></li>
     <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check4"></span></li>
     <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check5"></span></li>
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
@@ -125,7 +126,7 @@ echo '
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
     <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check14"></span></li>
     <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
-    <li>PHP version is greater or equal to 5.4.0&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
     </ul>
 </div>';
