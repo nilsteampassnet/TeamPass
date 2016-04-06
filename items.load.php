@@ -1430,6 +1430,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 }?>);
                         }
 
+                        // tags
+                        $(".round-grey").addClass("ui-state-highlight ui-corner-all");
+
                         // continue loading data
                         showDetailsStep2(id, param);
 

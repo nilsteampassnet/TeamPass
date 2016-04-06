@@ -311,9 +311,26 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
         );
     } else if ($type == "decrypt") {
-        if (empty($iv)) return "";
-        $string = hex2bin(trim($string));
-        $iv = hex2bin($iv);
+        // case if IV is empty
+        if (empty($iv))
+            return array(
+                'string' => "",
+                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+            );
+
+        // convert
+        try {
+            $string = testHex2Bin(trim($string));
+            $iv = testHex2Bin($iv);
+        }
+        catch (Exception $e) {
+            // error - $e->getMessage();
+            return array(
+                'string' => "",
+                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+            );
+        }
+
         // load IV
         $crypt->IV($iv);
         // decrypt
@@ -325,6 +342,14 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             'error' => ""
         );
     }
+}
+
+function testHex2Bin ($val)
+{
+    if (!@hex2bin($val)) {
+        throw new Exception("ERROR");
+    }
+    return hex2bin($val);
 }
 
 function defuse_crypto($message, $key, $type)
