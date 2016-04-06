@@ -370,6 +370,7 @@ if (!empty($_POST['type'])) {
                 "id = %i",
                 $_POST['id']
             );
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE ADMIN RIGHTS FOR USER
