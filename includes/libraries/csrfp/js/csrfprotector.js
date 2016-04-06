@@ -248,7 +248,6 @@ function csrfprotector_init() {
 	function new_send(data) {
 		var type = Function.prototype.call.bind( Object.prototype.toString ); 		// Teampass change
 		if (this.method.toLowerCase() === 'post') {
-			console.log( type( data ));
 			if ( type( data ) != '[object FormData]' && type( data ) != '[object ArrayBuffer]') {
 				if (data !== "") {
 					data += "&";
@@ -260,7 +259,6 @@ function csrfprotector_init() {
 				//data.append(CSRFP.CSRFP_TOKEN, CSRFP._getAuthKey());
 				// don't add CSRF token in those 2 cases as it brakes upload on some brower versions
 			}
-			console.log( data);
 		}
 		return this.old_send(data);
 	}

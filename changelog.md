@@ -13,6 +13,7 @@ Last changes
  #1197 Awesome Font 4.5.0
  #1193 When I login with user admin " loading ... " and it does not finish
  #1192 Cannot save "enable attachments encryption"
+ #1188 Implemented proposals for source code improvement
  #1186 open/highlight folder tree of displayed item
  #1183 Syntax Error on personal folders option
  #1181 403 Access Forbidden by CSRFProtector! at config save
