@@ -68,12 +68,15 @@ foreach ($folders as $folder) {
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             if (
-                in_array(
-                    $node,
-                    array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+                $listFoldersLimitedKeys != null &&
+                (
+                    in_array(
+                        $node,
+                        array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+                    )
+                    || in_array($node, $listFoldersLimitedKeys)
+                    || in_array($node, $listRestrictedFoldersForItemsKeys)
                 )
-                || in_array($node, $listFoldersLimitedKeys)
-                || in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {
                 $displayThisNode = true;
             }
@@ -147,7 +150,7 @@ echo '
 	<label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
 	<textarea rows="2" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
     <br />
-	
+
 	<label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
 	<select name="suggestion_folder" id="suggestion_folder" onChange="GetRequiredComplexity()" style="width:100%;">
 		'.$selectVisibleFoldersOptions.'
@@ -161,7 +164,7 @@ echo '
 	</label>
 	<input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
 	<div style="width:100%;">
-		<input type="hidden" id="complexity_required" />		
+		<input type="hidden" id="complexity_required" />
 		<div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
 		<input type="hidden" id="password_complexity" />
 	</div>

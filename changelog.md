@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1263 Error at line 75 in suggestion page
  #1251 Improving CSRFP configuration
  #1240 Security fixes on some missed queries and on non-protected text fields
  #1241 OTV visible more than one time
@@ -9,6 +10,7 @@ Last changes
  #1224 Fixed errors in export_to_html_format
  #1211 No FA code sent from home page
  #1210 Fix for main.queries.php
+ #1206 Fix for importing files
  #1203 Needed PHP extensions check during install & update process
  #1197 Awesome Font 4.5.0
  #1193 When I login with user admin " loading ... " and it does not finish
@@ -20,6 +22,7 @@ Last changes
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
  NEW: Server user password change through SSH connection
+ FIX: If expiration engaged and password is changed, the warning is still present.
 
 2.1.25
  #1169 sending Google Authenticator code through index page

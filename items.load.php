@@ -914,7 +914,7 @@ function EditerItem()
                         $("#id_desc").html(description);
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
-                        $("#id_tags").html($('#edit_tags').val());
+                        $("#id_tags").html(data.tags);
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
                         $("#id_info").html(unsanitizeString(data.history));
@@ -970,6 +970,8 @@ function EditerItem()
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
 
+                        // tags
+                        $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
                         //Prepare clipboard copies
                         if ($('#edit_pw1').val() != "") {
@@ -3677,7 +3679,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching'];?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
         $("#full_items_list").html("");
         $("#selected_items").val("");
