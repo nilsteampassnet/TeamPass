@@ -100,12 +100,6 @@ if (isset($_POST['type'])) {
                 break;
             }
 
-            if (DEFUSE_ENCRYPTION === TRUE) {
-                // load Encryption library
-                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-                require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
-            }
-
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
@@ -214,7 +208,7 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            $encrypt = crypto($field_data[1], "", "encrypt");
+                            $encrypt = cryption($field_data[1], , SALT, "", "encrypt");
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -227,7 +221,6 @@ if (isset($_POST['type'])) {
                         }
                     }
                 }
-
 
                 // If automatic deletion asked
                 if ($dataReceived['to_be_deleted'] != 0 && !empty($dataReceived['to_be_deleted'])) {
@@ -468,9 +461,11 @@ if (isset($_POST['type'])) {
                     DB::delete($pre."tags", "item_id = %i", $dataReceived['id']);
 
                     // Add new tags
+                    $return_tags = "";
                     $tags = explode(' ', $tags);
                     foreach ($tags as $tag) {
                         if (!empty($tag)) {
+                            // save in DB
                             DB::insert(
                                 prefix_table('tags'),
                                 array(
@@ -478,8 +473,12 @@ if (isset($_POST['type'])) {
                                     'tag' => strtolower($tag)
                                 )
                             );
+                            // prepare display
+                            if (empty($tags)) $return_tags = "<span class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
+                            else $return_tags .= "&nbsp;&nbsp;<span class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
                         }
                     }
+
                     // update item
                     DB::update(
                         prefix_table("items"),
@@ -798,6 +797,7 @@ if (isset($_POST['type'])) {
                         "reload_page" => $reloadPage,
                         "restriction_to" => $dataReceived['restricted_to'].$dataReceived['restricted_to_roles'],
                         "list_of_restricted" => $listOfRestricted,
+                        "tags" => $return_tags,
                         "error" => ""
                        );
                 } else {
@@ -1025,7 +1025,7 @@ if (isset($_POST['type'])) {
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
             foreach ($rows as $record) {
                 if (empty($tags)) $tags = "<span style='' class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
-                else $tags .= "&nbsp;&nbsp;<span style='' class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></sapn>";
+                else $tags .= "&nbsp;&nbsp;<span style='' class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
             }
 
             // TODO -> improve this check
@@ -1221,6 +1221,7 @@ if (isset($_POST['type'])) {
                         );
                         foreach ($rows_tmp as $row) {
                             $fieldText = cryption($row['data'], SALT, $row['data_iv'], "decrypt");
+                            $fieldText = $fieldText['string'];
                             // build returned list of Fields text
                             if (empty($fieldsTmp)) {
                                 $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $fieldText);
@@ -1685,6 +1686,15 @@ if (isset($_POST['type'])) {
                 '/'
             );
 
+            // if expiration is enable then catch lost recent password change
+            /*if ($_SESSION['settings']['activate_expiration'] == 1) {
+                $tmp_query = DB::query(
+                    "SELECT `date`
+                    FROM ".prefix_table("log_items")."
+                    WHERE `action` IN ('at_creation, 'at_modification') AND `id_item`=2 ORDER BY `date` DESC LIMIT 1"
+                );
+            }*/
+
             $items_to_display_once = $_POST['nb_items_to_display_once'];
 
             if ($counter > 0 && empty($showError)) {
@@ -1696,7 +1706,7 @@ if (isset($_POST['type'])) {
                 // List all ITEMS
                 if ($folderIsPf == 0) {
                     $where->add('i.inactif=%i', 0);
-                    $where->add('l.action=%s', "at_creation");
+                    $where->add('l.date=%l', "(SELECT date FROM ".prefix_table("log_items")." WHERE action IN ('at_creation', 'at_modification') AND id_item=i.id ORDER BY date DESC LIMIT 1)");
                     if (!empty($limited_to_items)) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
@@ -1706,15 +1716,15 @@ if (isset($_POST['type'])) {
                         mysqli_real_escape_string($link, filter_var($items_to_display_once, FILTER_SANITIZE_NUMBER_INT));
 
                     $rows = DB::query(
-                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
-                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
+                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
                         i.pw_iv AS pw_iv,
-                        i.anyone_can_modify as anyone_can_modify, l.date as date,
-                        n.renewal_period as renewal_period,
-                        l.action as log_action, l.id_user as log_user
-                        FROM ".prefix_table("items")." as i
-                        INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
-                        INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                        i.anyone_can_modify AS anyone_can_modify, l.date AS date,
+                        n.renewal_period AS renewal_period,
+                        l.action AS log_action, l.id_user AS log_user
+                        FROM ".prefix_table("items")." AS i
+                        INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
+                        INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id, l.date, l.id_user
                         ORDER BY i.label ASC, l.date DESC".$query_limit,//
@@ -1725,15 +1735,15 @@ if (isset($_POST['type'])) {
                     $where->add('i.inactif=%i',0);
 
                     $rows = DB::query(
-                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
-                        i.label as label, i.description as description, i.pw as pw, i.login as login,
+                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
+                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
                         i.pw_iv AS pw_iv,
-                        i.anyone_can_modify as anyone_can_modify,l.date as date,
-                        n.renewal_period as renewal_period,
-                        l.action as log_action, l.id_user as log_user
-                        FROM ".prefix_table("items")." as i
-                        INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
-                        INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                        i.anyone_can_modify AS anyone_can_modify,l.date AS date,
+                        n.renewal_period AS renewal_period,
+                        l.action AS log_action, l.id_user AS log_user
+                        FROM ".prefix_table("items")." AS i
+                        INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
+                        INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id
                         ORDER BY i.label ASC, l.date DESC",
@@ -1758,6 +1768,7 @@ if (isset($_POST['type'])) {
                             ) {
                                 $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
                                 $expired_item = 1;
+                                //echo $record['renewal_period']." ,, ";
                             } else {
                                 $expirationFlag = '<i class="fa fa-flag mi-green fa-sm"></i>&nbsp;';
                             }
