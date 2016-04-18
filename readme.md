@@ -43,7 +43,7 @@ Two ways to provide Docker install
 In both cases, the Teampass will be persistent IF you keep the data volume intact between runs and the database content (of course)
 
 #### Docker Compose
-* using the provided docker compose file, that you will edit to match your setup (ports/volumes/mysql passwords etc), then build the Taempass image :
+* using the provided docker compose file, that you will edit to match your setup (ports/volumes/mysql passwords etc), then build the Teampass image :
 ```docker-compose build```
 * and run the compose app
 ```docker-compose up -d```
