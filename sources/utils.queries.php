@@ -96,7 +96,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => htmlentities(str_replace(";", ".", $record['description']), ENT_QUOTES, "UTF-8"),
-                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'pw' => substr(addslashes($pw['string']), strlen($record['rand_key'])),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -203,6 +203,7 @@ switch ($_POST['type']) {
             if (!empty($data['pw_iv']) && !empty($data['pw'])) {
                 // decrypt it
                 $pw = cryption($data['pw'], $oldPersonalSaltkey, $data['pw_iv'], "decrypt");
+                $pw = $pw['string'];
             } else {
                 // check if pw encrypted with protocol #2
                 $pw = decrypt($data['pw'], $oldPersonalSaltkey);

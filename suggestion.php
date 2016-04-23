@@ -68,7 +68,7 @@ foreach ($folders as $folder) {
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             if (
-                $listFoldersLimitedKeys != null &&
+                ($listFoldersLimitedKeys != null || is_array($listFoldersLimitedKeys)) &&
                 (
                     in_array(
                         $node,
@@ -85,7 +85,8 @@ foreach ($folders as $folder) {
         if ($displayThisNode == true) {
             $ident = "";
             for ($x = 1; $x < $folder->nlevel; $x++) {
-                $ident .= "&nbsp;&nbsp;";
+                //$ident .= "&nbsp;&nbsp;";
+                $ident .= '<i class="fa fa-angle-right"></i>&nbsp;';
             }
             // get 1st folder
             if (empty($firstGroup)) {
@@ -94,11 +95,12 @@ foreach ($folders as $folder) {
             // If personal Folder, convert id into user name
             if (!($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1)) {
                 // resize title if necessary
-                if (strlen($folder->title) > 20) {
-                    $fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 17)."...";
+                /*if (strlen($folder->title) > 40) {
+                    $fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 37)."...";
                 } else {
                     $fldTitle = str_replace("&", "&amp;", $folder->title);
-                }
+                }*/
+                $fldTitle = str_replace("&", "&amp;", $folder->title);
 
                 // build select for all visible folders
                 if (in_array($folder->id, $_SESSION['groupes_visibles'])) {
@@ -116,8 +118,8 @@ foreach ($folders as $folder) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" class="button">
-        <img src="includes/images/direction_plus.png" alt="" />
+    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
 </div>';
 

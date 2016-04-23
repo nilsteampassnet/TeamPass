@@ -13,8 +13,8 @@
  */
 
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
 ){
     die('Hacking attempt...');
@@ -43,11 +43,11 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button">
-        <img src="includes/images/user--plus.png" alt="" />
+    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
-    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button">
-        <img src="includes/images/arrow_refresh.png" alt="" />
+    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
+        <i class="fa fa-refresh"></i>
     </button>
 </div>
 <div style="line-height:20px;" align="center">

@@ -124,7 +124,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'description' => addslashes($record['description']),
                                 'label' => addslashes($record['label']),
-                                'pw' => stripslashes($pw),
+                                'pw' => stripslashes($pw['string']),
                                 'login' => $record['login'],
                                 'path' => $path
                             )
@@ -285,7 +285,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                                'pw' => addslashes($pw),
+                                'pw' => addslashes($pw['string']),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -457,7 +457,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
                     'id' => $record['id'],
                     'label' => $record['label'],
                     'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                    'pw' => $pw,
+                    'pw' => $pw['string'],
                     'login' => $record['login'],
                     'url' => $record['url'],
                     'perso' => $record['perso']

@@ -53,8 +53,8 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button">
-        <img src="includes/images/user--plus.png" alt="" />
+    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
 </div>';
 
@@ -73,14 +73,14 @@ echo '
         <th>'.$LANG['functions'].'</th>
         <!--<th>'.$LANG['authorized_groups'].'</th>
         <th>'.$LANG['forbidden_groups'].'</th>-->
-        <th style="width:20px;" title="'.$LANG['god'].'"><img src="includes/images/user-black.png" /></th>
-        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><img src="includes/images/user-worker.png" /></th>
-        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><img src="includes/images/user_read_only.png" /></th>
-        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><img src="includes/images/folder-network.png" /></th>
-        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><img src="includes/images/folder-open-document-text.png" /></th>
-        <th style="width:20px;" title="'.$LANG['pw_change'].'"><img src="includes/images/lock__pencil.png" /></th>
-        <th style="width:20px;" title="'.$LANG['logs'].'"><img src="includes/images/log.png" /></th>
-        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><img src="includes/images/telephone.png" /></th>
+        <th style="width:20px;" title="'.$LANG['god'].'"><i class="fa fa-user-secret" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><i class="fa fa-child" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><i class="fa fa-eye" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><i class="fa fa-code-fork" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><i class="fa fa-book" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['pw_change'].'"><i class="fa fa-lock" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['logs'].'"><i class="fa fa-newspaper-o" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><i class="fa fa-qrcode" style="font-size:14px;"></i></th>
     </tr></thead>
     <tbody>
         <tr><td></td></tr>

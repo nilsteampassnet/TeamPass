@@ -49,9 +49,9 @@ if (empty($_SESSION['favourites'])) {
                 echo '
                     <tr class="ligne'.($cpt%2).'">
                         <td>
-                            <img src="includes/images/key__arrow.png" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer;" />
+                            <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;
-                            <img src="includes/images/favourite_delete.png" onClick="prepare_delete_fav(\''.$data['id'].'\');" style="cursor:pointer;" title="'.$LANG['item_menu_del_from_fav'].'" />
+                            <i class="fa fa-trash mi-red tip" onClick="prepare_delete_fav(\''.$data['id'].'\');" style="cursor:pointer; font-size:18px;" title="'.$LANG['item_menu_del_from_fav'].'"></i>
                         </td>
                         <td align="left">'.stripslashes($data['label']).'</td>
                         <td align="center">'.stripslashes($data['description']).'</td>

@@ -79,7 +79,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
 
         $parse = parse_url($record['url']);
         $ssh = new Net_SSH2($parse['host'], $parse['port']);
-        if (!$ssh->login($record['login'], $oldPwClear)) {
+        if (!$ssh->login($record['login'], $oldPwClear['string'])) {
            $log .= "   ERR - Login failed.\n   Error description:".$_SESSION['sshError']."\n\n";
         }else{
             // send ssh script for user change

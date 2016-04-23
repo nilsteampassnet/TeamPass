@@ -447,13 +447,13 @@ echo '
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
                 <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" class="cpm_button tip">
-                    <img  src="includes/images/arrow_refresh.png"  />
+                    <span class="fa fa-refresh fa-2x"></span>
                 </a>
                 <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
-                    <img  src="includes/images/paste_plain.png"  />
+                    <span class="fa fa-copy fa-2x"></span>
                 </a>
                 <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwd()" class="cpm_button tip">
-                    <img  src="includes/images/eye.png"  />
+                    <span class="fa fa-eye fa-2x"></span>
                 </a>
             </div>
             <div style="width:100%;">
@@ -573,7 +573,7 @@ echo '
             <label for="" class="cpm_label">'.$LANG['label'].' : </label>
             <input type="text" size="60" id="edit_label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'edit_display_title\')" class="input_text text ui-widget-content ui-corner-all" />
 
-            <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<img src="includes/images/broom.png" style="cursor:pointer;" onclick="clear_html_tags()" /> </label>
+            <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<span class="fa fa-eraser" style="cursor:pointer;" onclick="clear_html_tags()"></span>&nbsp;</label>
             <span id="edit_desc_span">
                 <textarea rows="5" id="edit_desc" name="edit_desc" class="input_text"></textarea>
             </span>';
@@ -627,13 +627,13 @@ echo '
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
                 <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" class="cpm_button tip">
-                    <img  src="includes/images/arrow_refresh.png"  />
+                    <span class="fa fa-refresh fa-2x"></span>
                 </a>
                 <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" class="cpm_button tip">
-                    <img  src="includes/images/paste_plain.png"  />
+                    <span class="fa fa-copy fa-2x"></span>
                 </a>
                 <a href="#" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" class="cpm_button tip">
-                    <img  src="includes/images/eye.png"  />
+                    <span class="fa fa-eye fa-2x"></span>
                 </a>
             </div>
             <div style="width:100%;">

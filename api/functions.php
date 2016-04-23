@@ -14,6 +14,7 @@
  */
 
 $_SESSION['CPM'] = 1;
+require_once "../includes/include.php";
 require_once "../sources/main.functions.php";
 
 function teampass_api_enabled() {
@@ -277,7 +278,8 @@ function rest_get () {
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$id]['pw'] = $crypt_pw['string'];
                 }
 
                 /* load folders */
@@ -296,7 +298,8 @@ function rest_get () {
                         $id = $data['id'];
                         $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                         $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                        $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                        $json[$id]['pw'] = $crypt_pw['string'];
                     }
                 }
             }
@@ -322,7 +325,8 @@ function rest_get () {
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$id]['pw'] = $crypt_pw['string'];
                 }
             }
 
@@ -378,7 +382,8 @@ function rest_get () {
                     $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
                     $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json['pw'] = $crypt_pw['string'];
                     $json['folder_id'] = $data['id_tree'];
                     $json['status'] = utf8_encode("OK");
                 }
@@ -579,7 +584,7 @@ function rest_get () {
 
                         // prepare roles list
                         $rolesList = "";
-                        foreach (explode('|', $roles) as $role) {echo $role."-";
+                        foreach (explode('|', $roles) as $role) {//echo $role."-";
                             $tmp = DB::queryFirstRow(
                                 "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
                                 $role
@@ -711,7 +716,8 @@ function rest_get () {
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                    $json[$data['id']]['pw'] = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $json[$data['id']]['pw'] = $crypt_pw['string'];
                                 }
                             }
                             // prepare answer. If no access then inform
