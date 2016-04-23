@@ -488,10 +488,10 @@ function RecupComplexite(val, edit, context)
                 $("#complexite_groupe").val(data.val);
                 if (edit == 1) {
                     $("#edit_complex_attendue").html("<b>"+data.complexity+"</b>");
-                    $("#edit_afficher_visibilite").html("<img src='includes/images/users.png'>&nbsp;<b>"+data.visibility+"</b>");
+                    $("#edit_afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 } else {
                     $("#complex_attendue").html("<b>"+data.complexity+"</b>");
-                    $("#afficher_visibilite").html("<img src='includes/images/users.png'>&nbsp;<b>"+data.visibility+"</b>");
+                    $("#afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 }
             } else if (data.error == "no_edition_possible") {
                 $("#div_dialog_message_text").html(data.error_msg);
@@ -1494,7 +1494,18 @@ function showDetailsStep2(id, param)
         id         : id
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            } catch (e) {
+                // error
+                $("#div_loading").hide();
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                return;
+            }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
             $("#edit_past_pwds").attr('title', data.history_of_pwds);

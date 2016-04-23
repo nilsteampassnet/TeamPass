@@ -74,7 +74,7 @@ echo '
         </div>
         <div>
             <label for="ausp_ssh_pwd">'.$LANG['ssh_pwd'].':</label>&nbsp;
-            <input type="password" id="ausp_ssh_pwd" class="menu_250 text ui-widget-content ui-corner-all" style="padding:3px;" value="'.$oldPwClear.'" />
+            <input type="password" id="ausp_ssh_pwd" class="menu_250 text ui-widget-content ui-corner-all" style="padding:3px;" value="'.$oldPwClear['string'].'" />
         </div>
         <div>
             <label for="ausp_pwd">'.$LANG['index_new_pw'].':</label>&nbsp;

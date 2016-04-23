@@ -208,7 +208,7 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            $encrypt = cryption($field_data[1], , SALT, "", "encrypt");
+                            $encrypt = cryption($field_data[1], SALT, "", "encrypt");
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -1133,11 +1133,8 @@ if (isset($_POST['type'])) {
                         $_POST['id']
                     );
                     foreach ($rows as $record) {
-                        if (empty($tmp)) {
-                            $tmp = "<a href='".$_SESSION['settings']['cpassman_url']."/index.php?page=kb&id=".$record['id']."'>".$record['label']."</a>";
-                        } else {
-                            $tmp .= "&nbsp;-&nbsp;<a href='".$_SESSION['settings']['cpassman_url']."/index.php?page=kb&id=".$record['id']."'>".$record['label']."</a>";
-                        }
+                        if (empty($tmp)) $tmp = "<a class='round-grey' href='".$_SESSION['settings']['cpassman_url']."/index.php?page=kb&id=".$record['id']."'><i class='fa fa-map-pin fa-sm'></i>&nbsp;".$record['label']."</a>";
+                        else $tmp .= "&nbsp;<a class='round-grey' href='".$_SESSION['settings']['cpassman_url']."/index.php?page=kb&id=".$record['id']."'><i class='fa fa-map-pin fa-sm'></i>&nbsp;".$record['label']."</a>";
                     }
                     $arrData['links_to_kbs'] = $tmp;
                 }
@@ -1163,7 +1160,7 @@ if (isset($_POST['type'])) {
                 $arrData['login'] = str_replace(array('"'), array('&quot;'), $dataItem['login']);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
-                $arrData['tags'] = $tags;    //str_replace('"', '&quot;', $tags);
+                $arrData['tags'] = $tags;
                 $arrData['folder'] = $dataItem['id_tree'];
 
                 if (isset($_SESSION['settings']['enable_server_password_change'])

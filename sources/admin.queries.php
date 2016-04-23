@@ -542,7 +542,7 @@ switch ($_POST['type']) {
         foreach ($rows as $record) {
             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
-            $encrypt = cryption($pw, $new_salt_key, "", "encrypt");
+            $encrypt = cryption($pw['string'], $new_salt_key, "", "encrypt");
             DB::update(
                 prefix_table("items"),
                 array(
@@ -696,7 +696,7 @@ switch ($_POST['type']) {
     /*
     * Correct passwords prefix
     */
-    case "admin_action_pw_prefix_correct":
+    /*case "admin_action_pw_prefix_correct":
         require_once 'main.functions.php';
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
@@ -709,7 +709,7 @@ switch ($_POST['type']) {
                 $storePrefix = false;
                 // decrypt pw
                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
-                if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
+                if (!empty($pw['string']) && strlen($pw['string']) > 15 && isutf8($pw['string'])) {
                     // Pw seems to have a prefix
                     // get old prefix
                     $randomKey = substr($pw, 0, 15);
@@ -753,7 +753,7 @@ switch ($_POST['type']) {
             }
         }
         echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$LANG['alert_message_done'].' '.$numOfItemsChanged.' '.$LANG['items_changed'].'"}]';
-        break;
+        break;*/
 
     /*
     * Attachments encryption

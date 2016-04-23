@@ -119,7 +119,7 @@ foreach ($rows as $record) {
     $sOutput_item = "[";
 
     //col1
-    $sOutput_item .= '"<img src=\"includes/images/delete.png\" onClick=\"killEntry(\'items_edited\', '.$record['item_id'].')\" style=\"cursor:pointer;\" />", ';
+    $sOutput_item .= '"<span onClick=\"killEntry(\'items_edited\', '.$record['item_id'].')\" style=\"cursor:pointer; font-size:16px;\" /><i class=\"fa fa-trash mi-red\"></i>", ';
 
     //col2
     $time_diff = intval(time() - $record['timestamp']);

@@ -123,7 +123,7 @@ foreach ($rows as $reccord) {
     $sOutput_item = "[";
 
     //col1
-    $sOutput_item .= '"<img src=\"includes/images/delete.png\" onClick=\"killEntry(\'disconnect_user\', '.$reccord['id'].')\" style=\"cursor:pointer;\" />", ';
+    $sOutput_item .= '"<span onClick=\"killEntry(\'disconnect_user\', '.$reccord['id'].')\" style=\"cursor:pointer; font-size:16px;\" /><i class=\"fa fa-trash mi-red\"></i>", ';
 
     //col2
     $sOutput_item .= '"'.htmlspecialchars(stripslashes($reccord['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($reccord['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($reccord['login']), ENT_QUOTES).']", ';

@@ -22,7 +22,9 @@ Last changes
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
  NEW: Server user password change through SSH connection
+ NEW: Upgrade database handler improved for better upgrades management
  FIX: If expiration engaged and password is changed, the warning is still present.
+ FIX: New suggestion folder could remain empty in some specific cases.
 
 2.1.25
  #1169 sending Google Authenticator code through index page
