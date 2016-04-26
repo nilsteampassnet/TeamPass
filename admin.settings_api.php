@@ -56,7 +56,7 @@ echo '
 	<div style="margin-bottom:3px;">
         <label for="api" style="width:350px;">' .
             $LANG['settings_api'].'
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_tip'].'" />
+            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_tip'].'"></i>
         </label>
         <span class="div_radio">
             <input type="radio" id="api_radio1" name="api" onclick="saveApiStatus(1)" value="1"', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$LANG['yes'].'</label>
@@ -66,7 +66,7 @@ echo '
     <hr>
     <div style="margin-bottom:3px;">
         <label for="api" style="width:350px;"><b>' .$LANG['settings_api_keys_list'].'</b>
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_keys_list_tip'].'" />
+            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_keys_list_tip'].'"></i>
             &nbsp;<input type="button" id="but_add_new_key" value="'.$LANG['settings_api_add_key'].'" onclick="newKeyDB()" class="ui-state-default ui-corner-all" />
         </label>
         <div id="api_keys_list">
@@ -86,7 +86,7 @@ echo '
                     <tr id="'.$record['id'].'">
 						<td onclick="key_update($(this).closest(\'tr\').attr(\'id\'), $(this).text(), $(this).next(\'td\').text())" style="cursor:pointer;">'.$record['label'].'</td>
 						<td>'.$record['value'].'</td>
-						<td><img src="./includes/images/cross.png" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;" /></td>
+						<td>&nbsp;<span class="fa fa-trash mi-red" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;"></span></td>
 					</tr>';
                 }
                 echo '
@@ -96,7 +96,7 @@ echo '
     <hr>
     <div style="margin-bottom:3px;">
         <label for="api" style="width:350px;"><b>'.$LANG['settings_api_ip_whitelist'].'</b>
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_api_ip_whitelist_tip'].'" />
+            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_ip_whitelist_tip'].'"></i>
             &nbsp;<input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
         </label>
         <div id="api_ips_list">';
@@ -124,7 +124,7 @@ echo '
 						<tr id="'.$record['id'].'">
 						<td onclick="ip_update($(this).closest(\'tr\').attr(\'id\'), $(this).text(), $(this).next(\'td\').text())" style="cursor:pointer;">'.$record['label'].'</td>
 						<td>'.$record['value'].'</td>
-						<td><img src="./includes/images/cross.png" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;" /></td>
+						<td>&nbsp;<span class="fa fa-trash mi-red" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;"></span></td>
 					</tr>';
 }
 echo '

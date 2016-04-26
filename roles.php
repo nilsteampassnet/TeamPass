@@ -53,8 +53,8 @@ echo '
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
-        <img src="includes/images/arrow-180.png" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')">
-        <img src="includes/images/arrow-0.png" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')">
+        <span class="fa fa-arrow-left" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')"></span>&nbsp;
+		<span class="fa fa-arrow-right" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')"></span>
     </div>
 </div>
 <input type="hidden" id="selected_function" />

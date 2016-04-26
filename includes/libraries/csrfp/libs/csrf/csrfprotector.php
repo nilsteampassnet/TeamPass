@@ -352,7 +352,7 @@ class csrfProtector
 				}
 	    	}
 	    }
-
+        
 	    $script = '<script type="text/javascript" src="' .self::$config['jsUrl']
 	    	.'"></script>' .PHP_EOL;
 

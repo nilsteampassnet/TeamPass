@@ -524,13 +524,12 @@ echo '
                     echo '
                     <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
                         <div style="font-weight:bold;font-size:12px;">
-                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$elem[1].'
+                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                         </div>';
                     foreach ($elem[2] as $field) {
                         echo '
                         <div style="margin:2px 0 2px 15px;">
-                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</span>
                             <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
@@ -612,7 +611,7 @@ echo '
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
                 <input type="hidden" id="edit_mypassword_complex" />
-                <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
+                <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>
                 <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />
@@ -689,13 +688,11 @@ echo '
 echo '
         <div id="tabs-3">
             <div style="font-weight:bold;font-size:12px;">
-                <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$LANG['uploaded_files'].'
+                <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['uploaded_files'].'
             </div>
             <div id="item_edit_list_files" style="margin-left:25px;"></div>
             <div style="margin-top:10px;font-weight:bold;font-size:12px;">
-                <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$LANG['upload_files'].'
+                <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['upload_files'].'
             </div>
             <div id="item_edit_upload">
                 <div id="item_edit_upload_list"></div><br />
@@ -714,13 +711,12 @@ echo '
                     echo '
                     <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
                         <div style="font-weight:bold;font-size:12px;">
-                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$elem[1].'
+                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                         </div>';
                     foreach ($elem[2] as $field) {
                         echo '
                         <div style="margin:2px 0 2px 15px;">
-                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</label>
                             <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
@@ -835,14 +831,16 @@ echo '
 echo '
 <div id="div_del_item" style="display:none;">
         <h2 id="div_del_item_selection"></h2>
-    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['confirm_deletion'].'</p>
+        <div style="text-align:center;padding:8px;" class="ui-state-error ui-corner-all">
+            <span class="fa fa-warning fa-2x"></span>&nbsp;'.$LANG['confirm_deletion'].'
+        </div>
 </div>';
 // DIALOG INFORM USER THAT LINK IS COPIED
 echo '
 <div id="div_item_copied" style="display:none;">
-    <p>
-        <span class="ui-icon ui-icon-info" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['link_is_copied'].'
-    </p>
+    <div style="text-align:center;padding:8px;" class="ui-state-focus ui-corner-all">
+        <span class="fa fa-info fa-2x"></span>&nbsp;'.$LANG['link_is_copied'].'
+    </div>
     <div id="div_display_link"></div>
 </div>';
 // DIALOG TO WHAT FOLDER COPYING ITEM

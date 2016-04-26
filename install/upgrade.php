@@ -159,7 +159,7 @@ if (
         function manageUpgradeScripts(file_number)
         {
             var start_at = 0;
-            var noitems_by_loop = 10;
+            var noitems_by_loop = 20;
             var loop_number = 0;
 
             if (file_number == 0) $("#step4_progress").html("");
@@ -228,7 +228,7 @@ if (
         }
 
         function newEncryptPw(suggestion){
-            var nb = 10;
+            var nb = 20;
             var start = 0;
 
             if ($("#change_pw_encryption_start").val() != "") {

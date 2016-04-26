@@ -147,7 +147,7 @@ echo '
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" />
     <br />
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-'<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<img src="includes/images/refresh.png" onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;" /></label>
+'<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" />', '
     <label for="new_email" class="label_cpm">'.$LANG['email'].'</label>
     <input type="text" id="new_email" class="input_text text ui-widget-content ui-corner-all" onchange="check_domain(this.value)" />

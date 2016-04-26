@@ -603,7 +603,8 @@ $htmlHeaders .= '
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
             maxWidth: 400,
-            contentAsHTML: true
+            contentAsHTML: true,
+			multiple: true
         });
         $("#user_session").val(sessionStorage.password);
 

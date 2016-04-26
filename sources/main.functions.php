@@ -815,7 +815,8 @@ function updateCacheTable($action, $id = "")
                     'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
                     'author' => $record['id_user'],
-                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0"
+                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
+					'timestamp' => $record['date']
                    )
             );
         }

@@ -313,7 +313,7 @@ echo '
 // MESSAGE BOX
 echo '
         <div style="" class="div_center">
-            <div id="message_box" style="display:none;width:200px;min-height:25px;background-color:#FFC0C0;border:2px solid #FF0000;padding:5px;text-align:center;"></div>
+            <div id="message_box" style="display:none;width:200px;min-height:25px;background-color:#FFC0C0;border:2px solid #FF0000;padding:5px;text-align:center; z-index:999999;"></div>
         </div>';
 // Main page
 if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true) {
