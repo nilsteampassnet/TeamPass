@@ -85,7 +85,7 @@ $(function() {
         ]
     })
     .on('xhr.dt', function ( e, settings, json, xhr ) {
-        $(".tip").tooltipster();
+        $(".tip").tooltipster({multiple: true});
     } );
 
     // manage the Alphabet

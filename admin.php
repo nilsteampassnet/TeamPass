@@ -34,7 +34,7 @@ echo '
 
     // Div for tool info
     echo '
-        <div id="CPM_infos" style="float:left;margin-top:10px;margin-left:15px;width:500px;">'.$LANG['admin_info_loading'].'&nbsp;<img src="includes/images/ajax-loader.gif" alt="" /></div>';
+        <div id="CPM_infos" style="float:left;margin-top:10px;margin-left:15px;width:500px;">'.$LANG['admin_info_loading'].'&nbsp;<span class="fa fa-cog fa-spin"></span></div>';
 
      //div for information
      echo '

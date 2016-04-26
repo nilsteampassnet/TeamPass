@@ -177,7 +177,7 @@ DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 $rows = DB::query(
-    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period
+    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, timestamp
     FROM ".prefix_table("cache")."
     $sWhere
     $sOrder
@@ -281,7 +281,7 @@ if (!isset($_GET['type'])) {
             $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
             if (
                 $record['renewal_period'] > 0 &&
-                ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
+                ($record['timestamp'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
             ) {
                 $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
                 $expired_item = 1;

@@ -1271,7 +1271,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_kbs").html(data.links_to_kbs);
                         $(".tip").tooltipster({
                             maxWidth: 400,
-                            contentAsHTML: true
+                            contentAsHTML: true,
+							multiple: true
                         });
 
                         // show Field values
@@ -3360,7 +3361,7 @@ var showPwdContinuous = function(){
         }
     } else {
         $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
-        $('.tip').tooltipster();
+        $('.tip').tooltipster({multiple: true});
     }
 }
 
@@ -3459,7 +3460,7 @@ function proceed_list_update()
             e.clearSelection();
         });
 
-        $(".tip").tooltipster();
+        $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
@@ -3641,7 +3642,23 @@ function prepareOneTimeView()
             if (data.error == "") {
                 $("#div_dialog_message").dialog({height:300,minWidth:750});
                 $("#div_dialog_message").dialog('open');
-                $("#div_dialog_message_text").html(data.url);
+                $("#div_dialog_message_text").html(data.url+
+					'<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
+				);
+				
+				// prepare clipboard
+				var clipboard = new Clipboard("#button_copy_otv_link", {
+					text: function() {
+						return unsanitizeString($('#otv_link').text());
+					}
+				});
+				clipboard.on('success', function(e) {
+					$("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']);?>").show().fadeOut(2000);
+					
+					e.clearSelection();
+				});
+				
+				$(".tip").tooltipster({multiple: true});
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }

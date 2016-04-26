@@ -6,9 +6,11 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 $scripts_list = array(
-    'upgrade_run_db_original.php',
-    'upgrade_run_encryption_pwd.php',
-    'upgrade_run_encryption_suggestions.php'
+    array('upgrade_run_db_original.php', ""),
+	array('upgrade_run_2.1.26.php', ""),
+    array('upgrade_run_encryption_pwd.php', ""),
+    array('upgrade_run_encryption_suggestions.php', ""),
+	array('upgrade_run_final.php', "")
 );
 $param = "";
 
@@ -18,4 +20,4 @@ if (intval($_POST['file_number']) >= count($scripts_list)) {
 } else {
     $finished = 0;
 }
-echo '[{"finish":"'.$finished.'", "scriptname":"'.$scripts_list[$_POST['file_number']].'", "parameter":"'.$param.'"}]';
+echo '[{"finish":"'.$finished.'", "scriptname":"'.$scripts_list[$_POST['file_number']][0].'", "parameter":"'.$scripts_list[$_POST['file_number']][1].'"}]';

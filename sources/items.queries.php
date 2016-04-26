@@ -529,7 +529,7 @@ if (isset($_POST['type'])) {
                                 } else {
                                     // compare the old and new value
                                     $oldVal = cryption($dataTmp['data'], SALT, $dataTmp['data_iv'], "decrypt");
-                                    if ($field_data[1] != $oldVal) {
+                                    if ($field_data[1] != $oldVal['string']) {
                                         $encrypt = cryption($field_data[1], SALT, "", "encrypt");
                                         // update value
                                         DB::update(
@@ -544,7 +544,7 @@ if (isset($_POST['type'])) {
                                         );
 
                                         // update LOG
-                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp[0].' => '.$oldVal);
+                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp[0].' => '.$oldVal['string']);
                                     }
                                 }
                             } else {
@@ -709,7 +709,7 @@ if (isset($_POST['type'])) {
                         $oldPwClear = cryption($oldPw, SALT, $oldPwIV, "decrypt");
                     }
                     //$oldPw = $encrypt['string'];
-                    if ($sentPw != $oldPwClear) {
+                    if ($sentPw != $oldPwClear['string']) {
                         logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
                     }
                     /*RESTRICTIONS */
@@ -772,7 +772,7 @@ if (isset($_POST['type'])) {
                             $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
                         }
                         // Prepare list of files for edit dialogbox
-                        $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><img src="'.$_SESSION['settings']['cpassman_url'].'/includes/images/'.$iconImage.'" /><img src="includes/images/document--minus.png" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" />&nbsp;'.$record['name']."</span><br />";
+                        $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><span class="fa fa-'.$iconImage.'"></span>&nbsp;<span class="fa fa-eraser tip" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" title="'.$LANG['at_delete'].'"></span>&nbsp;'.$record['name']."</span><br />";
                     }
                     // Send email
                     if (!empty($dataReceived['diffusion'])) {
@@ -1373,9 +1373,9 @@ if (isset($_POST['type'])) {
                     }
                     if (trim($reason[0]) == "at_pw") {
                         if (empty($historyOfPws)) {
-                            $historyOfPws = $LANG['previous_pw']." | ".$reason[1];
+                            $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
                         } else {
-                            $historyOfPws .= $reason[1];
+                            $historyOfPws .= "\n".$reason[1];
                         }
                     }
                 }
@@ -1406,7 +1406,7 @@ if (isset($_POST['type'])) {
                     $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
                 }
                 // Prepare list of files for edit dialogbox
-                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><img src=\'includes/images/'.$iconImage.'\' /><img src=\'includes/images/document--minus.png\' style=\'cursor:pointer;\'  onclick=\'delete_attached_file("'.$record['id'].'")\' />&nbsp;'.$record['name']."</span><br />";
+                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$record['name']."</span><br />";
             }
             // display lists
             $filesEdit = str_replace('"', '&quot;', $filesEdit);
@@ -2701,7 +2701,7 @@ if (isset($_POST['type'])) {
                     "error" => "",
                     "url" => str_replace(
                         array("#URL#", "#DAY#"),
-                        array($url, $exp_date),
+                        array('<span id=\'otv_link\'>'.$url.'</span>&nbsp;<span class=\'fa-stack tip" title=\''.addslashes($LANG['copy']).'\' style=\'cursor:pointer;\' id=\'button_copy_otv_link\'><span class=\'fa fa-square fa-stack-2x\'></span><span class=\'fa fa-clipboard fa-stack-1x fa-inverse\'></span></span>', $exp_date),
                         $LANG['one_time_view_item_url_box']
                     )
                 )
@@ -3106,15 +3106,15 @@ function fileFormatImage($ext)
 {
     global $k;
     if (in_array($ext, $k['office_file_ext'])) {
-        $image = "document-office.png";
+        $image = "file-word-o";
     } elseif ($ext == "pdf") {
-        $image = "document-pdf.png";
+        $image = "file-pdf-o";
     } elseif (in_array($ext, $k['image_file_ext'])) {
-        $image = "document-image.png";
+        $image = "file-image-o";
     } elseif ($ext == "txt") {
-        $image = "document-txt.png";
+        $image = "file-text-o";
     } else {
-        $image = "document.png";
+        $image = "file-o";
     }
 
     return $image;

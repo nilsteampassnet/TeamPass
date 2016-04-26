@@ -250,9 +250,9 @@ function allow_pw_change_for_role(id, value)
         },
         function(data) {
             if (value == 0)
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-red.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-red fa-2x fa-magic tip");
             else
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-green.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-green fa-2x fa-magic tip");
             $("#div_loading").hide();
         }
    );

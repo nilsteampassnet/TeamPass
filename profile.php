@@ -170,7 +170,7 @@ echo '
 ?>
 <script type="text/javascript">
 $(function() {
-    $(".tip").tooltipster();
+    $(".tip").tooltipster({multiple: true});
     // password
     $("#but_change_password").click(function() {
         $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked'];?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1];?>");
