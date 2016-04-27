@@ -26,7 +26,7 @@ Last changes
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
 
-2.1.25
+2.1.26
  #1169 sending Google Authenticator code through index page
  #1160 hiding user password change option if DUOSecurity
  #1152 Error while saving settings

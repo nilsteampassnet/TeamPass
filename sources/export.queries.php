@@ -2,7 +2,7 @@
 /**
  * @file          export.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -366,7 +366,7 @@ switch ($_POST['type']) {
           $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
           fwrite(
               $outstream,
-'<html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>TeamPass Off-line mode</title>

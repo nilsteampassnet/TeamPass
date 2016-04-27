@@ -3,7 +3,7 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -420,9 +420,8 @@ function trimElement($chaine, $element)
         if (substr($chaine, strlen($chaine) - 1, 1) == $element) {
             $chaine = substr($chaine, 0, strlen($chaine) - 1);
         }
-
-        return $chaine;
     }
+    return $chaine;
 }
 
 /**
