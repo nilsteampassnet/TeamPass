@@ -137,7 +137,7 @@ foreach ($rows as $record) {
         if (count($rolesList) > 0) {
             foreach ($rolesList as $fonction) {
                 if (in_array($fonction['id'], explode(";", $record['fonction_id']))) {
-                    $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
+                    $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($fonction['title'], FILTER_SANITIZE_STRING))).'<br />';
                 }
             }
             $listAlloFcts_position = true;
@@ -155,7 +155,7 @@ foreach ($rows as $record) {
                 if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident = "";
                     if (in_array($t->id, explode(";", $record['groupes_visibles']))) {
-                        $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                        $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
                     }
                     $prev_level = $t->nlevel;
                 }
@@ -169,7 +169,7 @@ foreach ($rows as $record) {
             foreach ($treeDesc as $t) {
                 $ident = "";
                 if (in_array($t->id, explode(";", $record['groupes_interdits']))) {
-                    $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                    $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
                 }
                 $prev_level = $t->nlevel;
             }
@@ -222,7 +222,7 @@ foreach ($rows as $record) {
         $rows2 = DB::query("SELECT title FROM ".$pre."roles_title"." WHERE id = '".$record['isAdministratedByRole']."' ORDER BY title ASC");
         if (DB::count() > 0) {
             foreach ($rows2 as $record2) {
-                $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of'].' '.@htmlspecialchars($record2['title'], ENT_COMPAT, "UTF-8")).'<br />';
+                $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of']).' '.addslashes(mysqli_real_escape_string($link, filter_var($record2['title'], FILTER_SANITIZE_STRING))).'<br />';
             }
         } else {
             $txt = '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['god']);

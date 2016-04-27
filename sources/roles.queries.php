@@ -262,8 +262,10 @@ if (!empty($_POST['type'])) {
                     } else {
                         $allow_pw_change = '&nbsp;<span class=\'fa fa-magic fa-2x mi-green tip\'  id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'></span>';
                     }
+					$title = mysqli_real_escape_string($link, filter_var($record['title'], FILTER_SANITIZE_STRING));
 
-                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.
+						$title.
                         '<br>'.
 						'<span class=\'fa fa-pencil fa-2x mi-grey-1\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'></span>&nbsp;'.
                         '<span class=\'fa fa-trash fa-2x mi-grey-1\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'></span>'.

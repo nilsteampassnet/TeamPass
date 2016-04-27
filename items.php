@@ -341,24 +341,24 @@ echo '
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_nok" style="display:none; width:300px; margin:20px auto 20px auto;">
+        <div id="item_details_nok" style="display:none; width:400px; margin:20px auto 20px auto;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-                <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['not_allowed_to_see_pw'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['not_allowed_to_see_pw'].'</b>
                 <span id="item_details_nok_restriction_list"></span>
             </div>
         </div>';
 // DATA EXPIRED
 echo '
-        <div id="item_details_expired_full" style="display:none; width:300px; margin:20px auto 20px auto;">
+        <div id="item_details_expired_full" style="display:none; width:400px; margin:20px auto 20px auto;">
             <div class="ui-state-error ui-corner-all" style="padding:10px;">
-                <img src="includes/images/error.png" alt="" />&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
             </div>
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
+        <div id="item_details_no_personal_saltkey" style="display:none; width:400px; margin:20px auto 20px auto; height:180px;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-                <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
             </div>
         </div>';
 
@@ -446,15 +446,19 @@ echo '
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
-                <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" class="cpm_button tip">
-                    <span class="fa fa-refresh fa-2x"></span>
-                </a>
-                <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
-                    <span class="fa fa-copy fa-2x"></span>
-                </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwd()" class="cpm_button tip">
-                    <span class="fa fa-eye fa-2x"></span>
-                </a>
+				
+				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+				</span>
             </div>
             <div style="width:100%;">
                 <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -609,12 +613,12 @@ echo '
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
-                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
-                <input type="hidden" id="edit_mypassword_complex" />
+                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
+                <input type="hidden" id="edit_mypassword_complex" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>
-                <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />
+                <input type="password" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
             </div>
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="edit_custom_pw">
@@ -625,15 +629,19 @@ echo '
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
-                <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" class="cpm_button tip">
-                    <span class="fa fa-refresh fa-2x"></span>
-                </a>
-                <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" class="cpm_button tip">
-                    <span class="fa fa-copy fa-2x"></span>
-                </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" class="cpm_button tip">
-                    <span class="fa fa-eye fa-2x"></span>
-                </a>
+				
+				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+				</span>
             </div>
             <div style="width:100%;">
                 <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>

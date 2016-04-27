@@ -304,7 +304,7 @@ if (isset($_POST['type'])) {
                 // Get Expiration date
                 $expirationFlag = '';
                 if ($_SESSION['settings']['activate_expiration'] == 1) {
-                    $expirationFlag = '<img src="includes/images/flag-green.png">';
+                    $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
                 }
                 // Prepare full line
                 $html = '<li class="item_draggable'
@@ -325,8 +325,7 @@ if (isset($_POST['type'])) {
                 }
                 // display quick icon shortcuts ?
                 if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-                    $itemLogin = '<img src="includes/images/mini_user_disable.png" id="icon_login_'.$newID.'" />';
-                    $itemPw = '<img src="includes/images/mini_lock_disable.png" id="icon_pw_'.$newID.'" class="copy_clipboard" />';
+					$itemLogin = $itemPw = "";
 
                     if (!empty($dataReceived['login'])) {
                         $itemLogin = '<span id="iconlogin_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>';

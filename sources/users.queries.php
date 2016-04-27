@@ -522,7 +522,7 @@ if (!empty($_POST['type'])) {
                     $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
                 }
             } else {
-                $text = '<span style=\"text-align:center\"><img src=\"includes/images/error.png\" /></span>';
+                $text = '<span style=\"text-align:center\"><i class=\"fa fa-warning mi-red\" ></i>&nbsp;</span>';
             }
             // send back data
             echo '[{"text":"'.$text.'"}]';

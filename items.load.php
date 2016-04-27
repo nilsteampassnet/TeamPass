@@ -74,14 +74,6 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
         simpleTreeCollection.get(0).delNode()
     }
 
-    function showItemsInTree(type)
-    {
-        if ($("#img_funnel").attr('src') == "includes/images/funnel_plus.png")
-            $("#img_funnel").attr('src','includes/images/funnel_minus.png');
-        else
-            $("#img_funnel").attr('src','includes/images/funnel_plus.png');
-    }
-
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
@@ -1349,17 +1341,17 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 .prop("disabled", false)
                                 .attr('title','<?php echo $LANG['enable_notify'];?>')
                                 .attr('onclick','notify_click(\'true\')');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
+                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                         } else if (data.notification_status == 1 && data.id_user == <?php echo $_SESSION['user_id'];?>) {
                             $('#menu_button_notify')
                                 .prop("disabled", false)
                                 .attr('title','<?php echo $LANG['disable_notify'];?>')
                                 .attr('onclick','notify_click(\'false\')');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                            $('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'>&nbsp;<?php echo addslashes($LANG['notify_activated']);?></i>");
+                            $('#div_notify').attr('class', '<i class="fa fa-bell-slash mi-red"></i>&nbsp;');
+                            $('#item_extra_info').html("<i><i class=\'fa fa-bell mi-green\'></i>&nbsp;<?php echo addslashes($LANG['notify_activated']);?></i>");
                         } else {
                             $('#menu_button_notify').attr('disabled', 'disabled');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png');
+                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                         }
 
                         //Prepare clipboard copies
@@ -2080,13 +2072,13 @@ function notify_click(status)
                 $('#menu_button_notify')
                     .attr('title','<?php echo $LANG['disable_notify'];?>')
                     .attr('onclick','notify_click(\'false\')');
-                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
+                $('#div_notify').attr('class', '<i class="fa fa-bell-slash mi-green"></i>&nbsp;');
                 $('#item_extra_info').html("<?php echo addslashes($LANG['notify_activated']);?>");
             } else if (data[0].new_status == "false") {
                 $('#menu_button_notify')
                     .attr('title','<?php echo $LANG['enable_notify'];?>')
                     .attr('onclick','notify_click(\'true\')');
-                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
+                $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                 $('#item_extra_info').html("");
             }
         }
