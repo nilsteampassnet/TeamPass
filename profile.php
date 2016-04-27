@@ -355,8 +355,8 @@ $(function() {
           indicator : "<img src=\'includes/images/loading.gif\' />",
           type   : "text",
           select : true,
-          submit : "<img src=\'includes/images/disk_black.png\' />",
-          cancel : "<img src=\'includes/images/cross.png\' />",
+          submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
           name : "newValue"
     });
     $(".editable_select").editable("sources/users.queries.php", {
@@ -365,8 +365,8 @@ $(function() {
          type   : 'select',
          select : true,
          onblur : "cancel",
-         submit : "<img src=\'includes/images/disk_black.png\' />",
-         cancel : "<img src=\'includes/images/cross.png\' />",
+         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
          name : "newValue"
     });
 
