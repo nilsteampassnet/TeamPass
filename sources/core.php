@@ -2,7 +2,7 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -126,7 +126,7 @@ if (
     <script language="javascript" type="text/javascript">
     <!--
         sessionStorage.clear();
-        window.location.href = "logout.php"
+        window.location.href = "logout.php";
     -->
     </script>';
     exit;

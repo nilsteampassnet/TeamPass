@@ -2,7 +2,7 @@
 /**
  * @file          views.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -673,7 +673,7 @@ switch ($_POST['type']) {
 
                 if ($itemDate <= $date) {
                     //Save data found
-                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"javascript:window.location.href = \'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\'\">&nbsp;</span>'.$record['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$record['title'].'</td><td width=\"100px\" align=\"center\">'.$record['login'].'</td></tr>';
+                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"window.location.href = \'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\'\">&nbsp;</span>'.$record['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$record['title'].'</td><td width=\"100px\" align=\"center\">'.$record['login'].'</td></tr>';
 
                     //save data for PDF
                     if (empty($textPdf)) {

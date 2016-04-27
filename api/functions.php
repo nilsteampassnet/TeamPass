@@ -3,7 +3,7 @@
  *
  * @file          configapi.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -125,7 +125,7 @@ function addToCacheTable($id)
             "restricted_to" => $data['restricted_to'],
             "login" => $data['login'],
             "folder" => "",
-            "restricted_to" => "0",
+            //"restricted_to" => "0",
             "author" => "9999999",
         )
     );
