@@ -129,4 +129,17 @@ if ($res === false) {
 	exit();
 }
 
+// add field can_manage_all_users to users table
+$res = addColumnIfNotExist(
+	$_SESSION['tbl_prefix']."users",
+	"can_manage_all_users",
+	"BOOLEAN NOT NULL DEFAULT FALSE"
+);
+if ($res === false) {
+	echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_manage_all_users to table Users! '.mysqli_error($dbTmp).'!"}]';
+	mysqli_close($dbTmp);
+	exit();
+}
+
+
 echo '[{"finish":"1" , "next":"", "error":""}]';

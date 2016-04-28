@@ -698,16 +698,15 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if (isset($dataReceived['salt_key']) && !empty($dataReceived['salt_key'])) {
+                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
-                        $oldPwClear = cryption($oldPw, $dataReceived['salt_key'], "", "decrypt");
+                        $oldPwClear = cryption($oldPw, $_SESSION['my_sk'], "", "decrypt");
                     } else {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption($oldPw, SALT, $oldPwIV, "decrypt");
                     }
-                    //$oldPw = $encrypt['string'];
                     if ($sentPw != $oldPwClear['string']) {
                         logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
                     }
@@ -1349,11 +1348,13 @@ if (isset($_POST['type'])) {
             foreach ($rows as $record) {
                 $reason = explode(':', $record['raison']);
                 if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
-                    // don't do if item is PF
+                    // check if item is PF
                     if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
-                        $reason[1] = @$reason[1]['string'];
-                    }
+                    } else {
+						$reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+					}
+                    $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
                     if (!isUTF8($reason[1]) || is_array($reason[1])) {
                         $reason[1] = "";

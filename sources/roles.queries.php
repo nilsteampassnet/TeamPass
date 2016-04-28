@@ -76,6 +76,23 @@ if (!empty($_POST['type'])) {
                 if ($role_id != 0) {
                     //Actualize the variable
                     $_SESSION['nb_roles'] ++;
+					
+					// get some data
+					$data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
+					
+					// add new role to user
+					DB::update(
+						prefix_table("users"),
+						array(
+							'fonction_id' => $data_tmp['fonction_id'].$role_id.";"
+						   ),
+						"id = %i",
+						$_SESSION['user_id']
+					);
+					$_SESSION['fonction_id'] = $data_tmp['fonction_id'].$role_id.";";
+					$_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
+					
+					
                     echo '[ { "error" : "no" } ]';
                 } else {
                     echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';
@@ -92,6 +109,14 @@ if (!empty($_POST['type'])) {
             DB::delete(prefix_table("roles_values"), "role_id = %i", $_POST['id']);
             //Actualize the variable
             $_SESSION['nb_roles'] --;
+			
+			// parse all users to remove this role
+			$rows = DB::query(
+				"SELECT fonction_id FROM ".prefix_table("users")."
+				ORDER BY id ASC");
+			foreach ($rows as $record) {
+				// todo
+			}
 
             echo '[ { "error" : "no" } ]';
             break;

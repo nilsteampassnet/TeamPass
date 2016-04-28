@@ -3,8 +3,8 @@
  *
  * @file          chinese.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',
     'error_no_email' => '此用户未设置电子邮件地址！',
@@ -99,7 +100,7 @@ $LANG = array (
     'purge_now' => '立即刷新！',
     'purge_done' => '刷新完成。已删除元素：',
     'settings_upload_maxfilesize_tip' => 'Maximum file size you allow. It should be coherant with your server settings.',
-    'settings_upload_docext_tip' => 'Document types. Indicate the file extensions allowed separated with a coma (,)',
+    'settings_upload_docext_tip' => 'Document types. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_imagesext_tip' => '图像类型。用半角逗号（,）分隔的允许的扩展名',
     'settings_upload_pkgext_tip' => '包类型。用半角逗号（,）分隔的允许的扩展名',
     'settings_upload_otherext_tip' => '其他类型。用半角逗号（,）分隔的允许的扩展名',
@@ -711,7 +712,7 @@ $LANG = array (
     'yes' => '是',
     'your_version' => '您的版本',
     'disconnect_all_users_sure' => '您确定要断开所有用户的连接？',
-    'Test the Email configuration' => 'Tester la configuration des Emails',
+    'Test the Email configuration' => 'Test the email configuration',
     'url_copied_clipboard' => 'URL 已复制到剪贴板',
     'url_copy' => '复制 URL 到剪贴板',
     'one_time_item_view' => '一次性查看链接',
@@ -754,9 +755,9 @@ $LANG = array (
     'settings_ldap_bind_dn' => 'LDAP 绑定数据库',
     'settings_ldap_bind_passwd' => 'LDAP 绑定密码',
     'settings_ldap_search_base' => 'LDAP 搜索基点',
-    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
-    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
-    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
+    'settings_ldap_bind_dn_tip' => 'A Bind DN which can bind and search users in the tree',
+    'settings_ldap_bind_passwd_tip' => 'Password for the bind DN which can bind and search users in the tree',
+    'settings_ldap_search_base_tip' => 'Search root DN for searches on the tree',
     'old_saltkey' => '旧的 SALT 密钥',
     'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
     'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
@@ -821,9 +822,9 @@ $LANG = array (
     'generate_random_key' => 'Generate consistent random key',
     'duo_save_sk_file' => 'Save data in sk.php file',
     'settings_duo_explanation' => 'Those credentials are issued from the web application you specially created for Teampass from the DUOSecurity administration page.<br />By clicking the save button they will stored in the sk.php file.',
-    'admin_duo_intro' => 'Fill in the next ields with expected data',
+    'admin_duo_intro' => 'Fill in the next fields with expected data',
     'admin_duo_stored' => 'Credentials stored successfully!',
-    'user_not_exists' => 'This user do not exist!',
+    'user_not_exists' => 'This user does not exist!',
     'dialog_admin_user_edit_title' => 'User account edition',
     'user_info_delete' => 'Please reclick to confirm the DELETION of this account.',
     'user_info_delete_warning' => 'By clicking the Save button, you will delete this account from Teampass.<br />No return is possible.',
@@ -871,5 +872,32 @@ $LANG = array (
     'syslog_enable' => 'Enable log with Syslog',
     'syslog_host' => 'Syslog server',
     'syslog_port' => 'Syslog port',
+    'error_bad_credentials' => 'Login credentials do not correspond!',
+    'reload_page_after_user_account_creation' => 'Your account has been created. This page will be automatically reloaded in 3 seconds ...',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',
+    'error_login_missing' => 'Login is missing!',
+    'error_pwd_missing' => 'Password is missing!',
+    'error_url_missing' => 'URL is missing!',
+    'error_ssh_credentials_missing' => 'SSH credentials are missing!',
+    'error_url_must_be_ssh' => 'URL must start with SSH protocol!',
+    'auto_update_server_password_info' => 'Clicking START button will automatically perform next steps:<ul><li>Connect through SSH to Linux server using login credentials and field `URL`,</li><li>Change user password on Linux server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has root privileges on the server (if not, indicate the root login and password) before starting.</b>',
+    'update_server_password' => 'Update server\'s password',
+    'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
+    'click_to_generate' => 'Click to generate',
+    'error_new_pwd_missing' => 'New password is missing!',
+    'ssh_pwd' => 'SSH password',
+    'ssh_user' => 'SSH user',
+    'ssh_action_performed_with_error' => 'Action was performed with error.<br>Check answer from server and made correction.',
+    'ssh_action_performed' => 'Password updated for this Item.<br /><br />You can now close this popup.',
+    'ssh_answer_from_server' => 'Answer from server',
+    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_scheduled_change' => 'Scheduled change',
+    'ssh_one_shot_change' => 'One shot change',
+    'month' => 'month',
+    'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
+    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     '' => ''
 );

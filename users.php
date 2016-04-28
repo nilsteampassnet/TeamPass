@@ -76,6 +76,7 @@ echo '
         <th style="width:20px;" title="'.$LANG['god'].'"><i class="fa fa-user-secret" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><i class="fa fa-child" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.$LANG['read_only_account'].'"><i class="fa fa-eye" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.$LANG['can_manage_all_users'].'"><i class="fa fa-group" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><i class="fa fa-code-fork" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><i class="fa fa-book" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.$LANG['pw_change'].'"><i class="fa fa-lock" style="font-size:14px;"></i></th>

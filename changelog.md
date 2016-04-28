@@ -19,12 +19,14 @@ Last changes
  #1186 open/highlight folder tree of displayed item
  #1183 Syntax Error on personal folders option
  #1181 403 Access Forbidden by CSRFProtector! at config save
+ #1178 New user right added for managing all users (super Manager)
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
+ FIX: By creating a role, this new one is directly visible by creator.
 
 2.1.26
  #1169 sending Google Authenticator code through index page

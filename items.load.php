@@ -1331,7 +1331,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
-                            $('#item_extra_info').html("<i class='fa fa-bell-o mi-red'></i>&nbsp;<i><?php echo addslashes($LANG['automatic_deletion_activated']);?></i>");
+                            $('#item_extra_info')
+								.html("<b><i class='fa fa-bell-o mi-red'></i></b>&nbsp;")
+								.attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");	
+							$('#item_extra_info').tooltipster({multiple: true});						
                         } else {
                             $('#item_extra_info').html("");
                         }
