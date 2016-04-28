@@ -53,7 +53,7 @@ $listAvailableUsers = $listAdmins = $html = "";
 $listAlloFcts_position = false;
 
 //Columns name
-$aColumns = array('id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id');
+$aColumns = array('id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id');
 $aSortTypes = array('asc', 'desc');
 
 //init SQL variables
@@ -103,7 +103,7 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
 }
 
 // enlarge the query in case of Manager
-if (!$_SESSION['is_admin']) {
+if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
     if (empty($sWhere)) $sWhere = " WHERE ";
     else $sWhere .= " AND ";
     $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
@@ -180,7 +180,8 @@ foreach ($rows as $record) {
     if (
         $_SESSION['is_admin'] ||
         ($record['isAdministratedByRole'] > 0 &&
-        in_array($record['isAdministratedByRole'], $_SESSION['user_roles']))
+        in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
+		($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)
     ) {
         $showUserFolders = true;
     } else {
@@ -247,6 +248,18 @@ foreach ($rows as $record) {
         //col11
         if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
+        $sOutput .= ',';
+
+        //col11
+        if ($_SESSION['is_admin'] == 1 || $_SESSION['user_can_manage_all_users'] == 1) {
+            if ($record['can_manage_all_users'] == 1) {
+                $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-0\"></i>"';
+            } else {
+                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-1\"></i>"';
+            }
+        } else {
+            $sOutput .= '""';
+        }
         $sOutput .= ',';
 
         //col12

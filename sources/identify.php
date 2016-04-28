@@ -377,6 +377,7 @@ function identifyUser($sentData)
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
+                'can_manage_all_users' => '0',
                 'personal_folder' => $_SESSION['settings']['enable_pf_feature'] == "1" ? '1' : '0',
                 'fonction_id' => '0',
                 'groupes_interdits' => '0',
@@ -543,6 +544,7 @@ function identifyUser($sentData)
             $_SESSION['user_id'] = $data['id'];
             $_SESSION['user_admin'] = $data['admin'];
             $_SESSION['user_manager'] = $data['gestionnaire'];
+            $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
             $_SESSION['user_read_only'] = $data['read_only'];
             $_SESSION['last_pw_change'] = $data['last_pw_change'];
             $_SESSION['last_pw'] = $data['last_pw'];

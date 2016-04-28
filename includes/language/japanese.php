@@ -3,8 +3,8 @@
  *
  * @file          japanese.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -99,10 +100,10 @@ $LANG = array (
     'purge_now' => 'Purge Now!',
     'purge_done' => 'Purge done! Number of elements deleted: ',
     'settings_upload_maxfilesize_tip' => 'Maximum file size you allow. It should be coherant with your server settings.',
-    'settings_upload_docext_tip' => 'Document types. Indicate the file extensions allowed separated with a coma (,)',
-    'settings_upload_imagesext_tip' => 'Image types. Indicate the file extensions allowed separated with a coma (,)',
-    'settings_upload_pkgext_tip' => 'Package types. Indicate the file extensions allowed separated with a coma (,)',
-    'settings_upload_otherext_tip' => 'Other types. Indicate the file extensions allowed separated with a coma (,)',
+    'settings_upload_docext_tip' => 'Document types. Indicate the file extensions allowed separated with a comma (,)',
+    'settings_upload_imagesext_tip' => 'Image types. Indicate the file extensions allowed separated with a comma (,)',
+    'settings_upload_pkgext_tip' => 'Package types. Indicate the file extensions allowed separated with a comma (,)',
+    'settings_upload_otherext_tip' => 'Other types. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_imageresize_options_tip' => 'When activated, this option resizes the Images to the format indicated just below.',
     'settings_upload_maxfilesize' => 'Max file size (in Mb)',
     'settings_upload_docext' => 'Allowed document extensions',
@@ -711,7 +712,7 @@ $LANG = array (
     'yes' => 'Yes',
     'your_version' => 'Your version',
     'disconnect_all_users_sure' => 'Are you sure you\'d like to disconnect all users?',
-    'Test the Email configuration' => 'Tester la configuration des Emails',
+    'Test the Email configuration' => 'Test the email configuration',
     'url_copied_clipboard' => 'URL copied in clipboard',
     'url_copy' => 'Copy URL in clipboard',
     'one_time_item_view' => 'One time view link',
@@ -751,12 +752,12 @@ $LANG = array (
     'settings_suggestion' => 'Enable item suggestion for Read-Only users',
     'settings_suggestion_tip' => 'Item suggestion permits the Read-Only users to propose new items or items modification. Those suggestions will be validated by Administrator or Manager users.',
     'imported_via_api' => 'API',
-    'settings_ldap_bind_dn' => 'Ldap Bind Dn',
-    'settings_ldap_bind_passwd' => 'Ldap Bind Passwd',
-    'settings_ldap_search_base' => 'Ldap Search Base',
-    'settings_ldap_bind_dn_tip' => 'A Bind dn which can bind and search users in the tree',
-    'settings_ldap_bind_passwd_tip' => 'Password for the bind dn which can bind and search users in the tree',
-    'settings_ldap_search_base_tip' => 'Search root dn for searches on the tree',
+    'settings_ldap_bind_dn' => 'LDAP Bind DN',
+    'settings_ldap_bind_passwd' => 'LDAP Bind Password',
+    'settings_ldap_search_base' => 'LDAP Search Base',
+    'settings_ldap_bind_dn_tip' => 'A Bind DN which can bind and search users in the tree',
+    'settings_ldap_bind_passwd_tip' => 'Password for the bind DN which can bind and search users in the tree',
+    'settings_ldap_search_base_tip' => 'Search root DN for searches on the tree',
     'old_saltkey' => 'Old SALT key',
     'define_old_saltkey' => 'I want to specify the old SALT Key to use (optional)',
     'admin_email_server_url_tip' => 'Customize the URL to be used in links present in emails if you don\'t want the by-default one used.',
@@ -774,7 +775,7 @@ $LANG = array (
     'duplicate_title_in_same_folder' => 'A similar Item name exists in current Folder! Duplicates are not allowed!',
     'duplicate_item_in_folder' => 'Allow items with similar label in a common folder',
     'find_message' => '<i class="fa fa-info-circle"></i> %X% objects found',
-    'settings_roles_allowed_to_print' => 'Define the roles allowed to print items',
+    'settings_roles_allowed_to_print' => 'Define the roles that are allowed to print items',
     'settings_roles_allowed_to_print_tip' => 'The selected roles will be allowed to print out Items in a file.',
     'user_profile_dialogbox_menu' => 'Your Teampass informations',
     'admin_email_security' => 'SMTP security',
@@ -821,9 +822,9 @@ $LANG = array (
     'generate_random_key' => 'Generate consistent random key',
     'duo_save_sk_file' => 'Save data in sk.php file',
     'settings_duo_explanation' => 'Those credentials are issued from the web application you specially created for Teampass from the DUOSecurity administration page.<br />By clicking the save button they will stored in the sk.php file.',
-    'admin_duo_intro' => 'Fill in the next ields with expected data',
+    'admin_duo_intro' => 'Fill in the next fields with expected data',
     'admin_duo_stored' => 'Credentials stored successfully!',
-    'user_not_exists' => 'This user do not exist!',
+    'user_not_exists' => 'This user does not exist!',
     'dialog_admin_user_edit_title' => 'User account edition',
     'user_info_delete' => 'Please reclick to confirm the DELETION of this account.',
     'user_info_delete_warning' => 'By clicking the Save button, you will delete this account from Teampass.<br />No return is possible.',
@@ -871,5 +872,32 @@ $LANG = array (
     'syslog_enable' => 'Enable log with Syslog',
     'syslog_host' => 'Syslog server',
     'syslog_port' => 'Syslog port',
+    'error_bad_credentials' => 'Login credentials do not correspond!',
+    'reload_page_after_user_account_creation' => 'Your account has been created. This page will be automatically reloaded in 3 seconds ...',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',
+    'error_login_missing' => 'Login is missing!',
+    'error_pwd_missing' => 'Password is missing!',
+    'error_url_missing' => 'URL is missing!',
+    'error_ssh_credentials_missing' => 'SSH credentials are missing!',
+    'error_url_must_be_ssh' => 'URL must start with SSH protocol!',
+    'auto_update_server_password_info' => 'Clicking START button will automatically perform next steps:<ul><li>Connect through SSH to Linux server using login credentials and field `URL`,</li><li>Change user password on Linux server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has root privileges on the server (if not, indicate the root login and password) before starting.</b>',
+    'update_server_password' => 'Update server\'s password',
+    'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
+    'click_to_generate' => 'Click to generate',
+    'error_new_pwd_missing' => 'New password is missing!',
+    'ssh_pwd' => 'SSH password',
+    'ssh_user' => 'SSH user',
+    'ssh_action_performed_with_error' => 'Action was performed with error.<br>Check answer from server and made correction.',
+    'ssh_action_performed' => 'Password updated for this Item.<br /><br />You can now close this popup.',
+    'ssh_answer_from_server' => 'Answer from server',
+    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_scheduled_change' => 'Scheduled change',
+    'ssh_one_shot_change' => 'One shot change',
+    'month' => 'month',
+    'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
+    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     '' => ''
 );

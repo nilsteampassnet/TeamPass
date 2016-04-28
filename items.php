@@ -196,9 +196,6 @@ echo '
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
             <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
-// Info
-echo '
-                <div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
 
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
@@ -232,6 +229,11 @@ echo '
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
+						
+						<!-- INFO -->
+						<div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
+						<!-- INFO END -->
+						
                     </td>
                 </tr>';
 // Line for DESCRIPTION

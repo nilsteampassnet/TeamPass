@@ -3,8 +3,8 @@
  *
  * @file          russian.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',
@@ -27,7 +28,7 @@ $LANG = array (
     'encrypt' => 'Зашифровать',
     'decrypt' => 'Расшифровать',
     'admin_ga_website_name' => 'Имя для Google Authenticator',
-    'admin_ga_website_name_tip' => 'Это имя используется для идентификационного кода в Google Authenticator.',
+    'admin_ga_website_name_tip' => 'Это имя используется для идентификационного кода учетной записи в Google Authenticator.',
     'admin_action_pw_prefix_correct' => 'Исправить префикс паролей',
     'admin_action_pw_prefix_correct_tip' => 'Перед запуском этого скрипта убедитесь, что у Вас есть резервная копия БД. Этот скрипт обновляет префикс паролей. Используйте его только если у всех паролей появился странный префикс.',
     'items_changed' => 'изменен(а).',
@@ -84,7 +85,7 @@ $LANG = array (
     'managed_by' => 'Управляется',
     'admin_small' => 'Admin',
     'setting_can_create_root_folder' => 'Разрешить создание папок на корневом уровне',
-    'settings_enable_sts' => 'Принудительно включить HTTPS Strict Transport Security -- Внимание: См. примечание.',
+    'settings_enable_sts' => 'Принудительно включить HTTPS Strict Transport Security - Внимание! См. примечание.',
     'settings_enable_sts_tip' => 'STS помогает предотвратить атаки SSL Man-in-the-Middle. Для использования этой опции Вам нужен действительный SSL сертификат. Если у Вас самоподписанный сертификат и Вы включите эту опцию, то TeamPass перестанет работать! В конфигурации Apache необходимо задать \'SSLOptions +ExportCertData\'.',
     'channel_encryption_no_gmp' => 'Не загружено расширение GMP! Шифрование не может быть включено!',
     'channel_encryption_no_openssl' => 'Не загружено расширение OPENSSL! Шифрование не может быть включено!',
@@ -773,7 +774,7 @@ $LANG = array (
     'duplicate' => 'Дублировать',
     'duplicate_title_in_same_folder' => 'Элемент с аналогичным именем существуют в текущей папке! Одинаковые имена элементов запрещены!',
     'duplicate_item_in_folder' => 'Разрешить элементы с аналогичными метками в общей папке',
-    'find_message' => '&lt;i class="fa fa-info-circle"&gt;&lt;/i&gt; %X% найдено объекто�',
+    'find_message' => '&lt;i class="fa fa-info-circle"&gt;&lt;/i&gt; %X% найдено объекто�',
     'settings_roles_allowed_to_print' => 'Определить роли которым разрешено печатать элементы',
     'settings_roles_allowed_to_print_tip' => 'Выбранным ролям будет разрешено печатать элементы в файл',
     'user_profile_dialogbox_menu' => 'Ваша TeamPass информация',
@@ -858,18 +859,45 @@ $LANG = array (
     'my_profile' => 'Моя учетная запись',
     'at_suggestion' => 'Предложение одобрено',
     'character_not_allowed' => 'Символ не допустим!',
-    'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
-    'starting' => 'Starting ...',
-    'total_number_of_items' => 'Total number of items',
-    'finalizing' => 'Finalizing',
-    'treating_items' => 'Treating items',
-    'number_of_items_treated' => 'Number of treated items',
-    'error_sent_back' => 'Next error occured',
-    'full' => 'Full',
-    'sequential' => 'Sequential',
-    'tree_load_strategy' => 'Tree load strategy',
-    'syslog_enable' => 'Enable log with Syslog',
-    'syslog_host' => 'Syslog server',
-    'syslog_port' => 'Syslog port',
+    'error_saltkey_length' => 'Ключ шифрования должен быть длиной в 16 символов!',
+    'starting' => 'Начинаем...',
+    'total_number_of_items' => 'Всего элементов',
+    'finalizing' => 'Заканчиваем',
+    'treating_items' => 'Обработка элементов',
+    'number_of_items_treated' => 'Количество обработанных элементов',
+    'error_sent_back' => 'Произошла следующая ошибка',
+    'full' => 'Полностью',
+    'sequential' => 'Последовательный',
+    'tree_load_strategy' => 'Стратегия загрузки дерева',
+    'syslog_enable' => 'Включить логирование с помощью Syslog',
+    'syslog_host' => 'Syslog сервер',
+    'syslog_port' => 'Syslog порт',
+    'error_bad_credentials' => 'Учетные данные не совпадают!',
+    'reload_page_after_user_account_creation' => 'Ваша учетная запись была создана. Страница будет автоматически перезагружена через 3 секунды...',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',
+    'error_login_missing' => 'Имя пользователя не найдено!',
+    'error_pwd_missing' => 'Пароль не найден!',
+    'error_url_missing' => 'URL не найден!',
+    'error_ssh_credentials_missing' => 'Учетные данные SSH не найдены!',
+    'error_url_must_be_ssh' => 'URL должен начинаться с протокола SSH!',
+    'auto_update_server_password_info' => 'После нажатия кнопки \'Начать\' автоматически выполнятся следующие шаги:<ul><li>Подключение через SSH к серверу Linux с помощью учётных данных и поля \'URL\', </li><li>Смена пароля пользователя на Linux сервере</il><li>Сохранение нового пароля в Teampass</il><li>Закрытие SSH соединения</li></ul><br /><b>Пожалуйста, убедитесь, что пользователь имеет привилегии суперпользователя на сервере (если нет, укажите логин и пароль суперпользователя) перед началом работы.</b>',
+    'update_server_password' => 'Update server\'s password',
+    'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
+    'click_to_generate' => 'Click to generate',
+    'error_new_pwd_missing' => 'Новый пароль не найден!',
+    'ssh_pwd' => 'SSH password',
+    'ssh_user' => 'SSH user',
+    'ssh_action_performed_with_error' => 'Action was performed with error.<br>Check answer from server and made correction.',
+    'ssh_action_performed' => 'Password updated for this Item.<br /><br />You can now close this popup.',
+    'ssh_answer_from_server' => 'Answer from server',
+    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_scheduled_change' => 'Запланированное изменение',
+    'ssh_one_shot_change' => 'Однократное изменение',
+    'month' => 'месяц',
+    'server_auto_update_password_enabled_tip' => 'Автоматическая смена пароля пользователя включена',
+    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     '' => ''
 );

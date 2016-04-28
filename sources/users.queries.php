@@ -386,8 +386,8 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'admin' => $_POST['value'],
-                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "1",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = %i",
                 $_POST['id']
@@ -404,13 +404,25 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-
+			
+			// Get some data
+            $data = DB::queryfirstrow(
+                "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+			
             DB::update(
                 prefix_table("users"),
                 array(
                     'gestionnaire' => $_POST['value'],
-                    'admin' => $_POST['value'] == 1 ? "0" : "1",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
+						($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
+						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" : 
+						"1")
+					),
+                    'admin' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = ".$_POST['id']
             );
@@ -435,6 +447,36 @@ if (!empty($_POST['type'])) {
                    ),
                 "id = %i",
                 $_POST['id']
+            );
+            echo prepareExchangedData(array("error" => ""), "encode");
+            break;
+        /**
+         * UPDATE CAN MANAGE ALL USERS RIGHTS FOR USER
+		 * Notice that this role must be also Manager
+         */
+        case "can_manage_all_users":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+			
+			// Get some data
+            $data = DB::queryfirstrow(
+                "SELECT admin, gestionnaire FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            DB::update(
+                prefix_table("users"),
+                array(
+                    'can_manage_all_users' => $_POST['value'],
+                    'gestionnaire' => ($data['gestionnaire'] == 0 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 0) ? "1" : "0")),
+                    'admin' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                   ),
+                "id = ".$_POST['id']
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;

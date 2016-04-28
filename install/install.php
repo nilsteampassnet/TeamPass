@@ -165,7 +165,7 @@ echo '
     </div>
     <div class="line_entry">
     <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder /includes/." />
+        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
     </label>
     <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
     </div>
