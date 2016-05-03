@@ -141,7 +141,6 @@ function rest_delete () {
     }
     if(apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
-        include "../sources/main.functions.php";
         teampass_connect();
         $category_query = "";
 
