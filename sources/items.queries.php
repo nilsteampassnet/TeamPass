@@ -698,7 +698,7 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (isset($_SESSION['my_sk']) || !empty($_SESSION['my_sk'])){
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption($oldPw, $_SESSION['my_sk'], "", "decrypt");
