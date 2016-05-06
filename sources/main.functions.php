@@ -868,7 +868,7 @@ function updateCacheTable($action, $id = "")
     } elseif ($action == "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
-            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login
+            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, l.date
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             WHERE i.id = %i
@@ -910,6 +910,7 @@ function updateCacheTable($action, $id = "")
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
+                'timestamp' => $data['date']
                )
         );
         // DELETE an item

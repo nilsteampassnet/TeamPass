@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1276 MySQL 5.7 query error
  #1263 Error at line 75 in suggestion page
  #1251 Improving CSRFP configuration
  #1240 Security fixes on some missed queries and on non-protected text fields
