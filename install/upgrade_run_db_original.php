@@ -41,11 +41,13 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     while ($c = mysqli_fetch_assoc( $columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
-            return false;
+            return true;
         }
     }
     if (!$exists) {
         return mysqli_query($dbTmp, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
+    } else {
+        return false;
     }
 }
 

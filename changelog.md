@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1284 fix for can_manage_all_users update during upgrade
  #1276 MySQL 5.7 query error
  #1263 Error at line 75 in suggestion page
  #1251 Improving CSRFP configuration
