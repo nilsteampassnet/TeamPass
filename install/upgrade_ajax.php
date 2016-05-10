@@ -567,7 +567,7 @@ require_once \"".$skFile."\";
                 $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
-                $jsUrl = str_replace("//", "/", $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js');
+                $jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                 file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
