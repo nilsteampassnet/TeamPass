@@ -30,6 +30,7 @@ Last changes
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
+ FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
 
 2.1.26
  #1169 sending Google Authenticator code through index page
