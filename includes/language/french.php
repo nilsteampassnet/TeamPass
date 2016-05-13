@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',
@@ -899,5 +898,6 @@ $LANG = array (
     'month' => 'mois',
     'server_auto_update_password_enabled_tip' => 'Changement de mot de passe automatique activé',
     'server_password_change_enable_tip' => 'Cette option permet aux utilisateurs de réaliser automatiquement le changement de mot de passe d\'un utilisateur sur le serveur localisé à l\'URL indiquée, en utilisant une connexion SSH.<br>Notez que le changement automatique à la fréquence indiquée n\'est possible que si le fichier <i>/files/script.ssh.php</i> est ajouté au crontab de ce serveur. La recommandation serait que celui-ci s’exécute une fois par jour.',
+    'can_manage_all_users' => 'Ressources Humaines<br><i>Peut gérer tous les Utilisateurs indépendamment de son Groupe.<br>Cet utilisateur sera automatiquement promu au rang de Manager.<br>Mais il ne sera pas autorisé à changer un compte Administrateur (seul un administrateur peut supprimer les droits d\'un autre administrateur).</i>',
     '' => ''
 );
