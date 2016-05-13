@@ -14,11 +14,10 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
-    'error_no_user' => 'No user found!',
+    'error_no_user' => 'User not found!',
     'email_ga_subject' => 'Your Google Authenticator flash code for Teampass',
     'email_ga_text' => 'Hello,<br><br>Please click this <a href=\'#link#\'>LINK</a> and flash it with GoogleAuthenticator application to get your OTP credentials for Teampass.<br /><br />Cheers',
     'settings_attachments_encryption' => 'Enable encryption of Items attachments',
@@ -899,5 +898,6 @@ $LANG = array (
     'month' => 'month',
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     '' => ''
 );

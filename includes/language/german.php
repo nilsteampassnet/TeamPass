@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',

@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Stuur GoogleAuthenticator naar gebruiker via e-mail',
     'send_ga_code' => 'GoogleAuthenticator voor gebruiker',
     'error_no_email' => 'Deze gebruiker heeft geen e-mailadres ingesteld',
@@ -882,7 +881,7 @@ $LANG = array (
     'error_url_missing' => 'URL ontbreekt!',
     'error_ssh_credentials_missing' => 'SSH gegevens ontbreken!',
     'error_url_must_be_ssh' => 'URL moet beginnen met SSH protocol!',
-    'auto_update_server_password_info' => 'Clicking START button will automatically perform next steps:<ul><li>Connect through SSH to Linux server using login credentials and field `URL`,</li><li>Change user password on Linux server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has root privileges on the server (if not, indicate the root login and password) before starting.</b>',
+    'auto_update_server_password_info' => 'Klik op START en de volgende stappen zullen automatisch uitgevoerd worden:<ul><li>Verbinding maken via SSH</l',
     'update_server_password' => 'Update server password',
     'error_personal_sk_expected' => 'Je moet eerst een persoonlijke salt code invullen!',
     'click_to_generate' => 'Klik om te genereren',
@@ -892,12 +891,13 @@ $LANG = array (
     'ssh_action_performed_with_error' => 'Actie was voltooid met een fout. <br> Bekijk het antwoord van de server gemaakte verbinding',
     'ssh_action_performed' => 'Wachtwoord is veranderd voor het volgende item.<br /><br /> U kunt nu deze popup sluiten',
     'ssh_answer_from_server' => 'Antwoord van server',
-    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_password_frequency_change_info' => 'Je kunt het automatisch vernieuwen een speciaal schema geven. Hiervoor moet je een schema opgeven wanneer de wachtwoorden worden geüpdatet. Selecteer 0 om de taak uit te schakelen.<br />Let op: dit werkt alleen als je beheerder de taak heeft ingeschakeld in het cron schema.',
     'ssh_password_frequency_change' => 'Paswoord verander frequentie (in maanden)',
     'ssh_scheduled_change' => 'Schema veranderen',
     'ssh_one_shot_change' => 'Eenmalige kans verandering',
     'month' => 'Maand',
     'server_auto_update_password_enabled_tip' => 'Automatische gebruiker wachtwoord verandering ingeschakeld',
-    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'server_password_change_enable_tip' => 'Deze optie zorgt ervoor dat gebruikers automatisch het wachtwoord op de server kunnen updaten via SSH.<br>Let op dat het automatisch ',
+    'can_manage_all_users' => 'Human Resources<br><i>Kan alle gebruikers beheren, onafhankelijk van hun groep.<b',
     '' => ''
 );

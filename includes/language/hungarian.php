@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Google Hitelesítő küldése a felhasználónak email-ben.',
     'send_ga_code' => 'Google Hitelesítés a felhasználó számára.',
     'error_no_email' => 'Ennek a felhasználónak nincs email beállítva!',
@@ -898,5 +897,6 @@ $LANG = array (
     'month' => 'month',
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     '' => ''
 );
