@@ -1,5 +1,8 @@
 Last changes
 2.1.26
+ #1284 fix for can_manage_all_users update during upgrade
+ #1279 SyntaxError: Unexpected token î in JSON at position 0
+ #1276 MySQL 5.7 query error
  #1263 Error at line 75 in suggestion page
  #1251 Improving CSRFP configuration
  #1240 Security fixes on some missed queries and on non-protected text fields
@@ -24,9 +27,11 @@ Last changes
  #1158 Can't Change admin Password
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
+ NEW: New user right added for managing all users (super Manager)
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
+ FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
 
 2.1.26
  #1169 sending Google Authenticator code through index page

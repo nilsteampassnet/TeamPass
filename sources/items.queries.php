@@ -698,7 +698,7 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (isset($_SESSION['my_sk']) || !empty($_SESSION['my_sk'])){
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption($oldPw, $_SESSION['my_sk'], "", "decrypt");
@@ -1742,7 +1742,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
-                        GROUP BY i.id
+                        GROUP BY i.id, l.date, l.id_user
                         ORDER BY i.label ASC, l.date DESC",
                         $where
                     );

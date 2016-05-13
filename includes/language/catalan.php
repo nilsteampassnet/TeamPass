@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Enviar GoogleAuthenticator per email',
     'send_ga_code' => 'Google Authenticator per l\'usuari',
     'error_no_email' => 'L\'usuari no te email configurat!',
@@ -172,7 +171,7 @@ $LANG = array (
     'admin_email_port' => 'Port del servidor',
     'admin_email_from' => 'Sender Email (from Email)',
     'admin_email_from_name' => 'Sender Name (from Name)',
-    'admin_email_test_configuration' => 'Test the Email configuration',
+    'admin_email_test_configuration' => 'Prova la configuració del Email',
     'admin_email_test_configuration_tip' => 'This test should send an email to the address indicated. If you don\'t receive it, please check your credentials.',
     'admin_email_test_subject' => '[TeamPass] Mail de prova',
     'admin_email_test_body' => 'Hi,<br><br>Email sent successfully.<br><br>Cheers.',
@@ -899,5 +898,6 @@ $LANG = array (
     'month' => 'month',
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     '' => ''
 );

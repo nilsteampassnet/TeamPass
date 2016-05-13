@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene correo configurado!',
@@ -875,7 +874,7 @@ $LANG = array (
     'reload_page_after_user_account_creation' => 'Tu cuenta ha sido creada. Esta página se recargara automáticamente en 3 segundos ...',
     'settings_ldap_usergroup' => 'grupo LDAP para buscar',
     'settings_ldap_usergroup_tip' => 'Grupo LDAP un usuario debe ser miembro para iniciar sesión. Ejemplo: cn=sysadmins,ou=groups,dc=example,dc=com',
-    'server_password_change_enable' => 'Permitir cambiar el cambio de contraseña del usuario del servidor (utilizando la conexión ssh) ',
+    'server_password_change_enable' => 'Permitir el cambio de contraseña en el servidor remoto (utilizando una conexión ssh)',
     'error_login_missing' => '¡Falta el login!',
     'error_pwd_missing' => '¡Falta la contraseña!',
     'error_url_missing' => '¡Falta la contraseña!',
@@ -888,7 +887,7 @@ $LANG = array (
     'error_new_pwd_missing' => '¡Falta la nueva contraseña!',
     'ssh_pwd' => 'Contraseña SSH',
     'ssh_user' => 'Usuario SSH',
-    'ssh_action_performed_with_error' => 'La acción se llevó a cabo con error.<br>Comprobada respuesta del servidor y hecha la corrección.',
+    'ssh_action_performed_with_error' => 'La acción se llevó a cabo con error.<br>Comprueba la respuesta del servidor y haz la corrección.',
     'ssh_action_performed' => 'Contraseña cambiada para éste artículo.<br /><br />Ya puedes cerrar éste aviso emergente.',
     'ssh_answer_from_server' => 'Respuesta desde el servidor',
     'ssh_password_frequency_change_info' => 'Es posible que desee el cambio se realize de forma automática a una frecuencia en particular. Para ello, es necesario seleccionar la frecuencia a la que se cambiarán las contraseñas de usuario de servidor (seleccionando 0 desactivará la tarea).<br />Nótese que esto sólo funcionará si el administrador ha activado la tarea en el programa cronológico del servidor.',
@@ -898,5 +897,6 @@ $LANG = array (
     'month' => 'mes',
     'server_auto_update_password_enabled_tip' => 'Cambio automático de contraseña del usuario habilitado',
     'server_password_change_enable_tip' => 'Esta opción permite que los usuarios puedan cambiar automáticamente la contraseña del usuario de un servidor que se encuentra en el campo URL usando la conexión SSH.<br>Observe que el cambio automático a una frecuencia específica se puede hacer si el archivo <i>/files/script.ssh.php</i> está añadido al crontab de este servidor. El consejo sería que se ejecutasen una vez al día.',
+    'can_manage_all_users' => 'Recursos Humanos<br><i>Puede gestionar todos los Usuarios independientemente de su grupo.<br>Será promocionado también a la función de Administrador.<br>No podrá modificar un administrador existente (sólo un administrador puede eliminar los derechos de administrador en un usuario).</i> ',
     '' => ''
 );
