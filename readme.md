@@ -2,7 +2,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright (c) 2009-2015, [Nils Laumaillé] (Nils@TeamPass.net)
+> Copyright (c) 2009-2016, [Nils Laumaillé] (Nils@TeamPass.net)
 
 ## Licence Agreement
 
@@ -26,7 +26,7 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 
 * Apache,
 * MySQL,
-* PHP 5.3.0 (or higher),
+* PHP 5.5.0 (or higher),
 * mcrypt PHP extension,
 * openssl PHP extension,
 * ldap PHP extension (if used)

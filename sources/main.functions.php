@@ -3,7 +3,7 @@
  *
  * @file          main.functions.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
@@ -27,6 +27,11 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']
 }
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
+
+
+// prepare Encryption class calls
+use \Defuse\Crypto\Crypto;
+use \Defuse\Crypto\Exception as Ex;
 
 //Generate N# of random bits for use as salt
 function getBits($n)
@@ -246,6 +251,29 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
+function cryption($p1, $p2, $p3, $p4 = null)
+{
+    if (DEFUSE_ENCRYPTION === TRUE) {
+        // load PhpEncryption library
+        if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+            require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+            //require_once '../includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+        } else {
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyConfig.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Config.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+        }
+        return defuse_crypto($p1, $p3, $p4);
+    } else {
+        return cryption_phpCrypt($p1, $p2, $p3, $p4);
+    }
+}
+
 /*
  * cryption() - Encrypt and decrypt string based upon phpCrypt library
  *
@@ -253,7 +281,7 @@ function bCrypt($password, $cost)
  *
  * $key and $iv have to be given in hex format
  */
-function cryption($string, $key, $iv, $type)
+function cryption_phpCrypt($string, $key, $iv, $type)
 {
     // manage key origin
     if (empty($key)) $key = SALT;
@@ -279,18 +307,101 @@ function cryption($string, $key, $iv, $type)
         // return
         return array(
             "string" => bin2hex($encrypt),
-            "iv" => bin2hex($iv)
+            "iv" => bin2hex($iv),
+            "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
         );
     } else if ($type == "decrypt") {
-        if (empty($iv)) return "";
-        $string = hex2bin(trim($string));
-        $iv = hex2bin($iv);
+        // case if IV is empty
+        if (empty($iv))
+            return array(
+                'string' => "",
+                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+            );
+
+        // convert
+        try {
+            $string = testHex2Bin(trim($string));
+            $iv = testHex2Bin($iv);
+        }
+        catch (Exception $e) {
+            // error - $e->getMessage();
+            return array(
+                'string' => "",
+                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+            );
+        }
+
         // load IV
         $crypt->IV($iv);
         // decrypt
         $decrypt = $crypt->decrypt($string);
         // return
-        return str_replace(chr(0), "", $decrypt);
+        //return str_replace(chr(0), "", $decrypt);
+        return array(
+            'string' => str_replace(chr(0), "", $decrypt),
+            'error' => ""
+        );
+    }
+}
+
+function testHex2Bin ($val)
+{
+    if (!@hex2bin($val)) {
+        throw new Exception("ERROR");
+    }
+    return hex2bin($val);
+}
+
+function defuse_crypto($message, $key, $type)
+{
+    //echo $message." ;; ".$key." ;; ".$type;
+    // init
+    $err = '';
+
+    // manage key origin
+    if (empty($key) && $type == "encrypt") {
+        try {
+            $key = \Defuse\Crypto\Crypto::createNewRandomKey();
+        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
+            $err = ('Cannot safely create a key');
+        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
+            $err = ('Cannot safely create a key');
+        }
+
+        //\Defuse\Crypto\Encoding::binToHex($key);
+        $tmp = \Defuse\Crypto\Key::saveToAsciiSafeString($key);
+        //echo $key_plain;
+    }
+
+    if ($type == "encrypt") {
+        try {
+            $ciphertext = \Defuse\Crypto\Crypto::Encrypt($message, $key);
+        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
+            $err = ('Cannot safely perform encryption');
+        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
+            $err = ('Cannot safely perform encryption');
+        }
+
+        return array(
+            'string' => isset($ciphertext) ? $ciphertext : "",
+            //'iv' => $key_plain,
+            'error' => $err
+        );
+
+    } else if ($type == "decrypt") {
+        try {
+            $decrypted = \Defuse\Crypto\Crypto::Decrypt($message, $key);
+        } catch (\Defuse\Crypto\Exception\InvalidCiphertextException $ex) {
+            $err = ('DANGER! DANGER! The ciphertext has been tampered with!');
+        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
+            $err = ('Cannot safely perform decryption');
+        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
+            $err = ('Cannot safely perform decryption');
+        }
+        return array(
+            'string' => isset($decrypted) ? $decrypted : "",
+            'error' => $err
+        );
     }
 }
 
@@ -309,9 +420,8 @@ function trimElement($chaine, $element)
         if (substr($chaine, strlen($chaine) - 1, 1) == $element) {
             $chaine = substr($chaine, 0, strlen($chaine) - 1);
         }
-
-        return $chaine;
     }
+    return $chaine;
 }
 
 /**
@@ -568,7 +678,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $folderId,
                         $fonctionsAssociees,
                         array("W","ND","NE","NDNE")
-                        
+
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -594,11 +704,12 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
-        
-        
+
+
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
+        $_SESSION['personal_visible_groups_list'] = implode(',', $_SESSION['personal_visible_groups']);
         $_SESSION['read_only_folders'] = $listReadOnlyFolders;
 
         $_SESSION['list_folders_limited'] = $listFoldersLimited;
@@ -610,7 +721,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
-    
+
     // update user's timestamp
     DB::update(
         prefix_table('users'),
@@ -703,7 +814,8 @@ function updateCacheTable($action, $id = "")
                     'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
                     'author' => $record['id_user'],
-                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0"
+                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
+					'timestamp' => $record['date']
                    )
             );
         }
@@ -756,7 +868,7 @@ function updateCacheTable($action, $id = "")
     } elseif ($action == "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
-            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login
+            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, l.date
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             WHERE i.id = %i
@@ -798,6 +910,7 @@ function updateCacheTable($action, $id = "")
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
+                'timestamp' => $data['date']
                )
         );
         // DELETE an item
@@ -970,6 +1083,7 @@ function isDate($date)
 
 function isUTF8($string)
 {
+    if (is_array($string) === true) $string = $string['string'];
     return preg_match(
         '%^(?:
         [\x09\x0A\x0D\x20-\x7E] # ASCII
@@ -1123,7 +1237,7 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
             'date' => time(),
             'label' => $label,
             'qui' => $who,
-            'field_1' => $field_1
+            'field_1' => $field_1 == null ? "" : $field_1
         )
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
@@ -1187,4 +1301,16 @@ function get_client_ip_server() {
         $ipaddress = 'UNKNOWN';
 
     return $ipaddress;
+}
+
+/**
+ * Escape all HTML, JavaScript, and CSS
+ *
+ * @param string $input The input string
+ * @param string $encoding Which character encoding are we using?
+ * @return string
+ */
+function noHTML($input, $encoding = 'UTF-8')
+{
+    return htmlentities($input, ENT_QUOTES | ENT_HTML5, $encoding);
 }

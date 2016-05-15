@@ -2,7 +2,7 @@
 /**
  * @file          datatable.users_logged.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -36,23 +36,20 @@ DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-if (isset($_GET['action']) && $_GET['action'] == "connections") {
-    //Columns name
-    $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
-    $aSortTypes = array('ASC', 'DESC');
-
+// prepare the queries
+if (isset($_GET['action'])) {
     //init SQL variables
     $sWhere = $sOrder = $sLimit = "";
+    $aSortTypes = array('ASC', 'DESC');
 
     /* BUILD QUERY */
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
+        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
     }
 
     //Ordering
-
     if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
@@ -70,6 +67,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             $sOrder = "";
         }
     }
+}
+
+if (isset($_GET['action']) && $_GET['action'] == "connections") {
+    //Columns name
+    $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
 
     /*
        * Filtering
@@ -143,36 +145,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     } else {
         $sOutput .= '[] }';
     }
-    /* ERRORS LOG */
+
+/* ERRORS LOG */
 } elseif (isset($_GET['action']) && $_GET['action'] == "errors") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
-
-    //init SQL variables
-    $sWhere = $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
-    }
-
-    //Ordering
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        }
-    }
 
     // Filtering
     $sWhere = " WHERE l.type = 'error'";
@@ -239,36 +216,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     } else {
         $sOutput .= '[] }';
     }
-    /* ACCESS LOG */
+
+/* ACCESS LOG */
 } elseif (isset($_GET['action']) && $_GET['action'] == "access") {
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login');
-
-    //init SQL variables
-    $sWhere = $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
-    }
-
-    //Ordering
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        }
-    }
 
     // Filtering
     $sWhere = " WHERE l.action = 'at_shown'";
@@ -346,36 +298,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     } else {
         $sOutput .= '[] }';
     }
-    /* COPY LOG */
+
+/* COPY LOG */
 } elseif (isset($_GET['action']) && $_GET['action'] == "copy") {
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login');
-
-    //init SQL variables
-    $sWhere = $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT));
-    }
-
-    //Ordering
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        }
-    }
 
     // Filtering
     $sWhere = " WHERE l.action = 'at_copy'";
@@ -443,39 +370,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     } else {
         $sOutput .= '[] }';
     }
-    /*
-     * ADMIN LOG
-     **/
+
+/*
+* ADMIN LOG
+ **/
 } elseif (isset($_GET['action']) && $_GET['action'] == "admin") {
     //Columns name
     $aColumns = array('l.date', 'u.login', 'l.label');
-
-    //init SQL variables
-    $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT));
-    }
-
-    //Ordering
-
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        }
-    }
 
     /*
      * Filtering
@@ -552,38 +453,11 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput = substr_replace($sOutput, "", -2);
     }
     $sOutput .= '] }';
+
+/* ITEMS */
 } elseif (isset($_GET['action']) && $_GET['action'] == "items") {
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso');
-
-    //init SQL variables
-    $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT));
-    }
-
-    //Ordering
-
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        } else {
-            $sOrder .= ", l.date ASC";
-        }
-    }
 
     /*
      * Filtering
@@ -671,36 +545,9 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 }
 
 /* FAILED AUTHENTICATIO? */
-
 elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui');
-
-    //init SQL variables
-    $sWhere = $sOrder = $sLimit = "";
-
-    /* BUILD QUERY */
-    //Paging
-    $sLimit = "";
-    if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
-    }
-
-    //Ordering
-    if (isset($_GET['iSortCol_0'])) {
-        $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-            if ($_GET[ 'bSortable_'.intval($_GET['iSortCol_'.$i]) ] == "true") {
-                $sOrder .= $aColumns[ intval($_GET['iSortCol_'.$i]) ]."
-                        ".mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-            }
-        }
-
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
-        }
-    }
 
     // Filtering
     $sWhere = " WHERE l.type = 'failed_auth'";

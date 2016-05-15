@@ -3,7 +3,7 @@
  *
  * @file          folders.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link	      http://www.teampass.net
@@ -69,14 +69,14 @@ foreach ($tst as $t) {
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
     $LANG['admin_groups'].'&nbsp;&nbsp;
-    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'div_add_group\')" class="button">
-        <img src="includes/images/folder--plus.png" alt="" />
+    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'div_add_group\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
-    <button title="'.$LANG['item_menu_del_rep'].'" id="click_delete_multiple_folders" class="button">
-        <img src="includes/images/folder--minus.png" alt="" />
+    <button title="'.$LANG['item_menu_del_rep'].'" id="click_delete_multiple_folders" class="button" style="font-size:16px;">
+        <i class="fa fa-trash-o"></i>
     </button>
-    <button title="'.$LANG['refresh'].'" id="click_refresh_folders_list" class="button">
-        <img src="includes/images/arrow-repeat.png" alt="" />
+    <button title="'.$LANG['refresh'].'" id="click_refresh_folders_list" class="button" style="font-size:16px;">
+        <i class="fa fa-refresh"></i>
     </button>
 </div>';
 // Hidden things
@@ -97,8 +97,8 @@ echo '
         <th>'.$LANG['group_parent'].'</th>
         <th>'.$LANG['level'].'</th>
         <th style="width:20px;" title="'.$LANG['group_pw_duration_tip'].'">'.$LANG['group_pw_duration'].'</th>
-        <th style="width:20px;" title="'.$LANG['auth_creation_without_complexity'].'"><img src="includes/images/auction-hammer.png" /></th>
-        <th style="width:20px;" title="'.$LANG['auth_modification_without_complexity'].'"><img src="includes/images/alarm-clock.png" /></th>
+        <th style="width:20px;" title="'.$LANG['auth_creation_without_complexity'].'"><i class="fa fa-legal fa-lg"></i></th>
+        <th style="width:20px;" title="'.$LANG['auth_modification_without_complexity'].'"><i class="fa fa-clock-o fa-lg"></i></th>
     </tr></thead>
     <tbody>
     </tbody>
@@ -128,13 +128,13 @@ echo '
 
     <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
-	
+
 	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
 	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
 		<option value="0">'.$LANG['no'].'</option>
 		<option value="1">'.$LANG['yes'].'</option>
 	</select>
-	
+
 	<div style="margin-top:10px;">
 		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
 		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
@@ -142,7 +142,7 @@ echo '
 			<option value="1">'.$LANG['yes'].'</option>
 		</select>
 	</div>
-	
+
 	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
@@ -171,13 +171,13 @@ echo '
 
     <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
-	
+
 	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
 	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
 		<option value="0">'.$LANG['no'].'</option>
 		<option value="1">'.$LANG['yes'].'</option>
 	</select>
-	
+
 	<div style="margin-top:10px;">
 		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
 		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
@@ -185,7 +185,7 @@ echo '
 			<option value="1">'.$LANG['yes'].'</option>
 		</select>
 	</div>
-	
+
 	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>

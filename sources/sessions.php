@@ -141,18 +141,18 @@ class CryptSession {
         );
         $hmac  = hash_hmac('sha256', $iv . $this->_algo . $encrypted, $this->_auth);
         $bytes = @file_put_contents($sess_file, $hmac . ':' . base64_encode($iv) . ':' . base64_encode($encrypted));
-        return ($bytes !== false); 
+        return ($bytes !== false);
     }
      # Destoroy the session
     public function destroy($id)
-    { 
+    {
     	if (!defined("NODESTROY_SESSION")) {
         	$sess_file = $this->_path . $this->_name . "_$id";
         	@setcookie ($this->_keyName, '', time() - 3600);
 			return(@unlink($sess_file));
     	} else {
     		return true;
-    	} 
+    	}
     }
      # Garbage Collector
     public function gc($max)

@@ -2,7 +2,7 @@
 /**
  * @file          error.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -17,13 +17,6 @@
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
-fputs($debug,
-	"\n----ERROR-----\nSESSION_LOGIN: ".$_SESSION['login']."\n".
-	"SESSION_USER ID: ".$_SESSION['user_id']."\n".
-	"SESSION fin_session: ".$_SESSION['fin_session']."\n".
-	"SESSION session: ".$_SESSION['session']."\n".
-	"SESSION error code: ".$_SESSION['error']['code']."\n"
-);
 
 if (isset($_POST['session']) && $_POST['session'] == "expired") {
     //Include files

@@ -3,8 +3,8 @@
  *
  * @file          german.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -868,8 +868,35 @@ $LANG = array (
     'full' => 'Vollständig',
     'sequential' => 'Teilweise',
     'tree_load_strategy' => 'Baum Ladestrategie',
-    'syslog_enable' => 'Enable log with Syslog',
-    'syslog_host' => 'Syslog server',
-    'syslog_port' => 'Syslog port',
+    'syslog_enable' => 'Aktiviere loggen mit Systemlock',
+    'syslog_host' => 'Systemlog-Server',
+    'syslog_port' => 'Systemlog Port',
+    'error_bad_credentials' => 'Login-Daten sind nicht korrekt!',
+    'reload_page_after_user_account_creation' => 'Ihr Account wurde erstellt. Diese Seite wird innerhalb von 3 Sekunden neu geladen.',
+    'settings_ldap_usergroup' => 'zu durchsuchende in LDAP-Gruppe',
+    'settings_ldap_usergroup_tip' => 'LDAP-Gruppe, zu der ein Teilnehmer gehören muss, um sich anmelden zu können. Beispiel: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Ändern des Server-Benutzer-Passwortes erlauben (per ssh-Verbindung)',
+    'error_login_missing' => 'Benutzername fehlt!',
+    'error_pwd_missing' => 'Passwort fehlt!',
+    'error_url_missing' => 'URL fehlt!',
+    'error_ssh_credentials_missing' => 'SSH-Anmeldedaten fehlen!',
+    'error_url_must_be_ssh' => 'URL muss mit SSH-Protokoll beginnen!',
+    'auto_update_server_password_info' => 'Der Klick auf den START-Knopf wird folgende Schritte automatisch ausführen:<ul><li>Verbinden mit dem Linuxserver per SSH mittels der Anmeldedaten und des `URL`-Feldes</li><li>Ändern des Benutzer-Passwortes auf dem Linuxserver</li><li>Sichern des Passwortes in Teampass</li><li>Schließen der SSH-Verbindung</li></ul><br /><b>Bitte stellen Sie vor dem Start sicher, dass der Benutzer auf dem Linuxserver root-Rechte hat (falls nicht, kennzeichnen Sie den root-Benutzer und -Passwort).</b>',
+    'update_server_password' => 'Server-Passwort erneuern',
+    'error_personal_sk_expected' => 'Sie müssen erst ihren persönlichen SALT-Schlüssel eingeben!',
+    'click_to_generate' => 'Klick zum Erzeugen',
+    'error_new_pwd_missing' => 'Das neue Passwort fehlt!',
+    'ssh_pwd' => 'SSH-Passwort',
+    'ssh_user' => 'SSH-Benutzer',
+    'ssh_action_performed_with_error' => 'Die Aktion wurde mit Fehlern ausgeführt.<br />Prüfen Sie die Serverantwort und vorgenommene Änderungen.',
+    'ssh_action_performed' => 'Passwort für diesen Eintrag wurde geändert.<br /><br />Sie können diese Popup jetzt schließen.',
+    'ssh_answer_from_server' => 'Serverantwort',
+    'ssh_password_frequency_change_info' => 'Sie können die Änderung automatisch regelmäßig ausführen lassen. Dafür müssen sie die Frequenz wählen in der die Passworte der Server-Benutzer geändert werden (0 deaktiviert die Funktion).<br />Beachten sie, dass dies nur funktioniert, falls der Administrator den Cron-Task auf dem Server aktiviert hat.',
+    'ssh_password_frequency_change' => 'Passwort-Änderungs-Frequenz (in Monaten)',
+    'ssh_scheduled_change' => 'Regelmäßige Änderung',
+    'ssh_one_shot_change' => 'Einmalige Änderung',
+    'month' => 'Monat',
+    'server_auto_update_password_enabled_tip' => 'Automatische Benutzer-Passwort-Änderung aktiviert',
+    'server_password_change_enable_tip' => 'Diese Option erlaubt die automatische, regelmäßige Änderung der Benutzer-Passworte des Servers im `URL`-Feld unter Verwendung einer SSH-Verbindung.<br />Beachten Sie, dass für diese regelmäßige Änderung die Datei <i>/files/script.ssh.php</i> in der crontab dieses Servers eingetragen ist. Sie sollte einmal täglich laufen.',
     '' => ''
 );

@@ -2,7 +2,7 @@
 /**
  * @file          tree.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -103,8 +103,8 @@ if (isset($_GET['id']) && is_numeric(intval($_GET['id'])) && isset($_SESSION['us
 function buildNodeTree($nodeId)
 {
     global $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG;
-    
-    
+
+
     // Be sure that user can only see folders he/she is allowed to
     if (
         !in_array($nodeId, $_SESSION['forbiden_pfs'])
@@ -115,7 +115,7 @@ function buildNodeTree($nodeId)
         $displayThisNode = false;
         $hide_node = false;
         $nbChildrenItems = 0;
-        
+
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
         foreach ($nodeDescendants as $node) {
@@ -135,11 +135,11 @@ function buildNodeTree($nodeId)
             ) {
                 $displayThisNode = true;
             }
-            
+
             if ($displayThisNode == true) {
                 $hide_node = $show_but_block = $eye_icon = false;
                 $text = $title = "";
-                
+
                 // get info about current folder
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
@@ -148,7 +148,7 @@ function buildNodeTree($nodeId)
                     $node->id
                 );
                 $itemsNb = DB::count();
-                
+
                 // get info about current folder
                 DB::query(
                     "SELECT * FROM ".prefix_table("nested_tree")."
@@ -156,15 +156,15 @@ function buildNodeTree($nodeId)
                     $node->id
                 );
                 $childrenNb = DB::count();
-                
+
                 // If personal Folder, convert id into user name
                 if ($node->title == $_SESSION['user_id'] && $node->nlevel == 1) {
                     $node->title = $_SESSION['login'];
                 }
-                
+
                 // if required, separate the json answer for each folder
                 if (!empty($ret_json)) $ret_json .= ", ";
-                
+
                 // prepare json return for current node
                 if ($node->parent_id==0) $parent = "#";
                 else $parent = "li_".$node->parent_id;
@@ -177,7 +177,7 @@ function buildNodeTree($nodeId)
                 $text .= str_replace("&", "&amp;", $node->title);
                 $restricted = "0";
                 $folderClass = "folder";
-                
+
                 if (in_array($node->id, $_SESSION['groupes_visibles'])) {
                     if (in_array($node->id, $_SESSION['read_only_folders'])) {
                         $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
@@ -193,10 +193,10 @@ function buildNodeTree($nodeId)
                     $text .= ')';
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = "1";
-                    $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'">'.count($_SESSION['list_folders_limited'][$node->id]).'</span>';
+                    $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($_SESSION['list_folders_limited'][$node->id]).'</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = "1";
-                    $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$node->id]).'</span>';
+                    $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($_SESSION['list_restricted_folders_for_items'][$node->id]).'</span>';
                 } else {
                     $restricted = "1";
                     $folderClass = "folder_not_droppable";
@@ -208,14 +208,14 @@ function buildNodeTree($nodeId)
                         $show_but_block = true;
                     }
                 }
-                
+
                 // json
                 if ($hide_node == false && $show_but_block == false) {
                     $ret_json .= '{'.
                         '"id":"li_'.$node->id.'"'.
                         ', "parent":"'.$parent.'"'.
                         ', "children":'. ($childrenNb == 0 ? "false" : "true").
-                        ', "text":"'. ($eye_icon == true ? "<i class='fa fa-eye'></i>&nbsp;" : "") . $text.'"'.
+                        ', "text":"'.str_replace('"', '&quot;', $text).'"'.
                         ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$node->id.'] '.$title.'"}'.
                         ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0)"}'.
                     '}';
@@ -239,7 +239,7 @@ function buildNodeTree($nodeId)
 function recursiveTree($nodeId)
 {
     global $completTree, $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG;
-    
+
     // Be sure that user can only see folders he/she is allowed to
     if (
         !in_array($completTree[$nodeId]->id, $_SESSION['forbiden_pfs'])
@@ -250,7 +250,7 @@ function recursiveTree($nodeId)
         $displayThisNode = false;
         $hide_node = false;
         $nbChildrenItems = 0;
-        
+
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
@@ -279,7 +279,7 @@ function recursiveTree($nodeId)
         if ($displayThisNode == true) {
             $hide_node = $show_but_block = $eye_icon = false;
             $text = $title = "";
-            
+
             // get info about current folder
             DB::query(
                 "SELECT * FROM ".prefix_table("items")."
@@ -288,15 +288,15 @@ function recursiveTree($nodeId)
                 $completTree[$nodeId]->id
             );
             $itemsNb = DB::count();
-            
+
             // If personal Folder, convert id into user name
             if ($completTree[$nodeId]->title == $_SESSION['user_id'] && $completTree[$nodeId]->nlevel == 1) {
                 $completTree[$nodeId]->title = $_SESSION['login'];
             }
-            
+
             // if required, separate the json answer for each folder
             if (!empty($ret_json)) $ret_json .= ", ";
-            
+
             // prepare json return for current node
             if ($completTree[$nodeId]->parent_id==0) $parent = "#";
             else $parent = "li_".$completTree[$nodeId]->parent_id;
@@ -309,7 +309,7 @@ function recursiveTree($nodeId)
             $text .= str_replace("&", "&amp;", $completTree[$nodeId]->title);
             $restricted = "0";
             $folderClass = "folder";
-            
+
             if (in_array($completTree[$nodeId]->id, $_SESSION['groupes_visibles'])) {
                 if (in_array($completTree[$nodeId]->id, $_SESSION['read_only_folders'])) {
                     $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
@@ -325,10 +325,10 @@ function recursiveTree($nodeId)
                 $text .= ')';
             } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys)) {
                 $restricted = "1";
-                $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'">'.count($_SESSION['list_folders_limited'][$completTree[$nodeId]->id]).'</span>';
+                $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($_SESSION['list_folders_limited'][$completTree[$nodeId]->id]).'</span>';
             } elseif (in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys)) {
                 $restricted = "1";
-                $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'">'.count($_SESSION['list_restricted_folders_for_items'][$completTree[$nodeId]->id]).'</span>';
+                $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($_SESSION['list_restricted_folders_for_items'][$completTree[$nodeId]->id]).'</span>';
             } else {
                 $restricted = "1";
                 $folderClass = "folder_not_droppable";
@@ -340,13 +340,13 @@ function recursiveTree($nodeId)
                     $show_but_block = true;
                 }
             }
-            
+
             // json
             if ($hide_node == false && $show_but_block == false) {
                 $ret_json .= '{'.
                     '"id":"li_'.$completTree[$nodeId]->id.'"'.
                     ', "parent":"'.$parent.'"'.
-                    ', "text":"'. ($eye_icon == true ? "<i class='fa fa-eye'></i>&nbsp;" : "") . $text.'"'.
+                    ', "text":"'.str_replace('"', '&quot;', $text).'"'.
                     ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
                     ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
                 '}';
@@ -362,6 +362,6 @@ function recursiveTree($nodeId)
                 recursiveTree($child);
             }
         }
-    }   
+    }
 }
 echo '['.$ret_json.']';

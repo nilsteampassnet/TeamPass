@@ -3,7 +3,7 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -90,7 +90,9 @@ echo '
 <input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
-<input type="hidden" id="access_level" value="" />';
+<input type="hidden" id="access_level" value="" />
+<input type="hidden" id="empty_clipboard" value="" />
+<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
@@ -194,14 +196,11 @@ echo '
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
             <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
-// Info
-echo '
-                <div style="cursor:pointer; float:right; margin:3px 3px 0 0;" id="item_extra_info"></div>';
 
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
                     <div class="ui-state-error ui-corner-all" style="padding:2px;">
-                        <i class="fa fa-warning"></i> <b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                        <i class="fa fa-warning"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
                 <table width="100%">';
@@ -222,12 +221,19 @@ echo '
                                         <li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>
                                         ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
                                         <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['link_copy'].'</li>' : '', '
+                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '
+                                        <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
                                     </ul>
                             </ul>
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
+						
+						<!-- INFO -->
+						<div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
+						<!-- INFO END -->
+						
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -337,24 +343,24 @@ echo '
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_nok" style="display:none; width:300px; margin:20px auto 20px auto;">
+        <div id="item_details_nok" style="display:none; width:400px; margin:20px auto 20px auto;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-                <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['not_allowed_to_see_pw'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['not_allowed_to_see_pw'].'</b>
                 <span id="item_details_nok_restriction_list"></span>
             </div>
         </div>';
 // DATA EXPIRED
 echo '
-        <div id="item_details_expired_full" style="display:none; width:300px; margin:20px auto 20px auto;">
+        <div id="item_details_expired_full" style="display:none; width:400px; margin:20px auto 20px auto;">
             <div class="ui-state-error ui-corner-all" style="padding:10px;">
-                <img src="includes/images/error.png" alt="" />&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
             </div>
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_no_personal_saltkey" style="display:none; width:300px; margin:20px auto 20px auto; height:180px;">
+        <div id="item_details_no_personal_saltkey" style="display:none; width:400px; margin:20px auto 20px auto; height:180px;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
-                <img src="includes/images/lock.png" alt="" />&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
+                <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
             </div>
         </div>';
 
@@ -442,15 +448,19 @@ echo '
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
-                <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" class="cpm_button tip">
-                    <img  src="includes/images/arrow_refresh.png"  />
-                </a>
-                <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" class="cpm_button tip">
-                    <img  src="includes/images/paste_plain.png"  />
-                </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="showPwd()" class="cpm_button tip">
-                    <img  src="includes/images/eye.png"  />
-                </a>
+				
+				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+				</span>
             </div>
             <div style="width:100%;">
                 <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -520,13 +530,12 @@ echo '
                     echo '
                     <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
                         <div style="font-weight:bold;font-size:12px;">
-                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$elem[1].'
+                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                         </div>';
                     foreach ($elem[2] as $field) {
                         echo '
                         <div style="margin:2px 0 2px 15px;">
-                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</span>
                             <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
@@ -569,7 +578,7 @@ echo '
             <label for="" class="cpm_label">'.$LANG['label'].' : </label>
             <input type="text" size="60" id="edit_label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'edit_display_title\')" class="input_text text ui-widget-content ui-corner-all" />
 
-            <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<img src="includes/images/broom.png" style="cursor:pointer;" onclick="clear_html_tags()" /> </label>
+            <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<span class="fa fa-eraser" style="cursor:pointer;" onclick="clear_html_tags()"></span>&nbsp;</label>
             <span id="edit_desc_span">
                 <textarea rows="5" id="edit_desc" name="edit_desc" class="input_text"></textarea>
             </span>';
@@ -606,12 +615,12 @@ echo '
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
                 </label>
-                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:405px;" />
+                <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
+                <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
                 <input type="hidden" id="edit_mypassword_complex" />
-                <img src="includes/images/clipboard-list.png" style="cursor:pointer;" class="tip" id="edit_past_pwds" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>
-                <input type="password" size="30" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" />
+                <input type="password" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
             </div>
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="edit_custom_pw">
@@ -622,15 +631,19 @@ echo '
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
-                <a href="#" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" class="cpm_button tip">
-                    <img  src="includes/images/arrow_refresh.png"  />
-                </a>
-                <a href="#" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" class="cpm_button tip">
-                    <img  src="includes/images/paste_plain.png"  />
-                </a>
-                <a href="#" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" class="cpm_button tip">
-                    <img  src="includes/images/eye.png"  />
-                </a>
+				
+				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+				</span>&nbsp;
+				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+				</span>
             </div>
             <div style="width:100%;">
                 <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -685,19 +698,17 @@ echo '
 echo '
         <div id="tabs-3">
             <div style="font-weight:bold;font-size:12px;">
-                <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$LANG['uploaded_files'].'
+                <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['uploaded_files'].'
             </div>
             <div id="item_edit_list_files" style="margin-left:25px;"></div>
             <div style="margin-top:10px;font-weight:bold;font-size:12px;">
-                <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                '.$LANG['upload_files'].'
+                <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['upload_files'].'
             </div>
             <div id="item_edit_upload">
                 <div id="item_edit_upload_list"></div><br />
                 <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
-                <a id="item_edit_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
+                <a id="item_edit_attach_uploadfiles" href="#sd" class="button">'.$LANG['start_upload'].'</a>
             </div>
         </div>';
 // Tabs EDIT N°4 -> Categories
@@ -710,13 +721,12 @@ echo '
                     echo '
                     <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
                         <div style="font-weight:bold;font-size:12px;">
-                            <span class="ui-icon ui-icon-folder-open" style="float: left; margin-right: .3em;">&nbsp;</span>
-                            '.$elem[1].'
+                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                         </div>';
                     foreach ($elem[2] as $field) {
                         echo '
                         <div style="margin:2px 0 2px 15px;">
-                            <span class="ui-icon ui-icon-tag" style="float: left; margin-right: .1em;">&nbsp;</span>
+                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</label>
                             <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
@@ -729,7 +739,7 @@ echo '
         </div>
     </div>';
 }
-echo '    
+echo '
     <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
     </div>
     </form>
@@ -831,14 +841,16 @@ echo '
 echo '
 <div id="div_del_item" style="display:none;">
         <h2 id="div_del_item_selection"></h2>
-    <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['confirm_deletion'].'</p>
+        <div style="text-align:center;padding:8px;" class="ui-state-error ui-corner-all">
+            <span class="fa fa-warning fa-2x"></span>&nbsp;'.$LANG['confirm_deletion'].'
+        </div>
 </div>';
 // DIALOG INFORM USER THAT LINK IS COPIED
 echo '
 <div id="div_item_copied" style="display:none;">
-    <p>
-        <span class="ui-icon ui-icon-info" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['link_is_copied'].'
-    </p>
+    <div style="text-align:center;padding:8px;" class="ui-state-focus ui-corner-all">
+        <span class="fa fa-info fa-2x"></span>&nbsp;'.$LANG['link_is_copied'].'
+    </div>
     <div id="div_display_link"></div>
 </div>';
 // DIALOG TO WHAT FOLDER COPYING ITEM
@@ -924,5 +936,13 @@ if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['
         </div>
     </div>';
 }
+
+// SSH dialogbox
+echo '
+<div id="dialog_ssh" style="display:none;padding:4px;">
+    <div id="div_ssh">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
+</div>';
 
 require_once 'items.load.php';

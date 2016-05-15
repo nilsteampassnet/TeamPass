@@ -2,7 +2,7 @@
 /**
  * @file          kb.queries.table.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -53,15 +53,15 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 
 if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-	for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
-		if (
-			$_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-			preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-		) {
-			$sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-			.mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-		}
-	}
+    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        if (
+            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+        ) {
+            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
+            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+        }
+    }
 
     $sOrder = substr_replace($sOrder, "", -2);
     if ($sOrder == "ORDER BY") {

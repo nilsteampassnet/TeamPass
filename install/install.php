@@ -17,7 +17,7 @@
 
         </script>
     </head>
-    
+
     <body>
 <?php
 // define root path
@@ -117,14 +117,16 @@ echo '
     <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check12"></span></li>
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
+    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check15"></span></li>
     <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check4"></span></li>
     <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check5"></span></li>
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
     <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
+    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check14"></span></li>
     <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
-    <li>PHP version is greater or equal to 5.4.0&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
     </ul>
 </div>';
@@ -163,7 +165,7 @@ echo '
     </div>
     <div class="line_entry">
     <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder /includes/." />
+        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
     </label>
     <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
     </div>
@@ -211,8 +213,9 @@ echo '
 
 echo '
 <div id="text_step5" style="display:none;">
-    <h5>Populate database:</h5>
-    <ul>
+    <h5>Now populating database</h5>
+    <ul id="pop_db"></ul>
+    <!--<ul>
     <li>Add table "items"&nbsp;<span id="res5_check0"></span></li>
     <li>Add table "log_items"&nbsp;<span id="res5_check1"></span></li>
     <li>Add table "misc"&nbsp;<span id="res5_check2"></span></li>
@@ -240,7 +243,7 @@ echo '
     <li>Add table "api"&nbsp;<span id="res5_check25"></span></li>
     <li>Add table "otv"&nbsp;<span id="res5_check26"></span></li>
     <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
-    </ul>
+    </ul>-->
 </div>';
 
 

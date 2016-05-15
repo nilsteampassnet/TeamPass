@@ -2,7 +2,7 @@
 /**
  * @file		  core.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link    	  http://www.teampass.net
@@ -101,7 +101,7 @@ date_default_timezone_set($_SESSION['settings']['timezone']);
 if (empty($languagesDropmenu)) {
     $languagesDropmenu = "";
     $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name ORDER BY name ASC");
+    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
     foreach ($rows as $record) {
         $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
             $record['flag'].'" alt="'.$record['label'].'" title="'.
@@ -126,7 +126,7 @@ if (
     <script language="javascript" type="text/javascript">
     <!--
         sessionStorage.clear();
-        window.location.href = "logout.php"
+        window.location.href = "logout.php";
     -->
     </script>';
     exit;
@@ -285,7 +285,7 @@ if (
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
     $data = DB::queryfirstrow(
-		"SELECT admin, gestionnaire, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+		"SELECT admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
 		$_SESSION['user_id']
     );
 
@@ -308,6 +308,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         // update user's rights
         $_SESSION['user_admin'] = $data['admin'];
         $_SESSION['user_manager'] = $data['gestionnaire'];
+		$_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         if (!empty($data['groupes_visibles'])) {
@@ -327,7 +328,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                 $_SESSION['user_id']
             );
         }
-		
+
         // get access rights
         identifyUserRights(
             $data['groupes_visibles'],
