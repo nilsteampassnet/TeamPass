@@ -2,7 +2,7 @@
 /**
  * @file          views.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -47,9 +47,10 @@ echo '
     <div id="tabs-1">
         <p>
         '.$LANG['logs_1'].' : <input type="text" id="log_jours" />&nbsp;
-		<a class="button btn-danger" onClick="GenererLog()">
-			<i class="fa fa-cogs fa-lg"></i>
-		</a>
+		<span class="fa-stack tip" title="'.$LANG['pw_generate'].'" onclick="GenererLog()" style="cursor:pointer;">
+			<i class="fa fa-square fa-stack-2x"></i>
+			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+		</span>&nbsp;
         </p>
         <div id="lien_pdf" style="text-align:center; width:100%; margin-top:15px;"></div>
     </div>';
@@ -71,7 +72,10 @@ echo '
             <option value="6months">'.$LANG['expir_six_months'].'</option>
             <option value="1year">'.$LANG['expir_one_year'].'</option>
         </select>
-        <img src="includes/images/asterisk.png" style="cursor:pointer;" alt="" onclick="generate_renewal_listing()" />
+		<span class="fa-stack tip" title="'.$LANG['pw_generate'].'" onclick="generate_renewal_listing()" style="cursor:pointer;">
+			<i class="fa fa-square fa-stack-2x"></i>
+			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+		</span>&nbsp;
         <span id="renewal_icon_pdf" style="margin-left:15px;display:none;cursor:pointer;"><img src="includes/images/document-pdf-text.png" alt="" title="'.$LANG['generate_pdf'].'" onclick="generate_renewal_pdf()" /></span>
         <div id="list_renewal_items" style="width:700px;margin:10px auto 0 auto;"></div>
         <input type="hidden" id="list_renewal_items_pdf" />

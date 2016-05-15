@@ -2,7 +2,7 @@
 /**
  * @file          items.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -74,18 +74,10 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
         simpleTreeCollection.get(0).delNode()
     }
 
-    function showItemsInTree(type)
-    {
-        if ($("#img_funnel").attr('src') == "includes/images/funnel_plus.png")
-            $("#img_funnel").attr('src','includes/images/funnel_minus.png');
-        else
-            $("#img_funnel").attr('src','includes/images/funnel_plus.png');
-    }
-
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
-        if ($("#selected_items").val() == "") return;        
+        if ($("#selected_items").val() == "") return;
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
             itemLog("item_password_shown");
@@ -94,7 +86,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
             $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
         }
     }
-    
+
     $("#tabs-02").on(
         "change",
         "#pw1",
@@ -144,9 +136,9 @@ $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LA
 */
 function LoadTreeNode(node_id)
 {
-    
+
 }
-    
+
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
@@ -159,9 +151,9 @@ function ListerItems(groupe_id, restricted, start)
     } else {
         me.data('requestRunning', true);
     }
-    
+
     $("#request_lastItem, #selected_items").val("");
-    
+
     if (groupe_id != undefined) {
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
         query_in_progress = groupe_id;
@@ -178,9 +170,8 @@ function ListerItems(groupe_id, restricted, start)
         if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
 
         //Disable menu buttons
-        //$('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav,#menu_button_show_pw,#menu_button_copy_pw,#menu_button_copy_login,#menu_button_copy_link,#menu_button_copy_item,#menu_button_notify,#menu_button_history,#menu_button_share,#menu_button_otv').prop('disabled', 'true');
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
-                
+
         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?>');
 
         //ajax query
@@ -194,12 +185,16 @@ function ListerItems(groupe_id, restricted, start)
                 nb_items_to_display_once : $("#nb_items_to_display_once").val()
             },
             function(data) {
+                if (data == "Hacking attempt...") {
+                    alert("Hacking attempt...");
+                    return false;
+                }
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-                    
+
                 // reset doubleclick prevention
                 me.data('requestRunning', false);
-                
+
                 // manage not allowed
                 if (data.error == "not_allowed") {
                    $("#div_dialog_message_text").html(data.error_text);
@@ -208,7 +203,7 @@ function ListerItems(groupe_id, restricted, start)
                    $("#items_list_loader").hide();
                    return false;
                }
-                
+
                 $("#pf_selected").val(data.IsPersonalFolder);
 
                 // display path of folders
@@ -220,7 +215,7 @@ function ListerItems(groupe_id, restricted, start)
                     } else {
                         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['personal_folder'];?>&nbsp;:&nbsp;'+data.arborescence);
                     }
-                    var path_levels = data.arborescence.split('<i class="fa fa-folder-open-o"></i>&nbsp;').length-1;
+                    var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
                     if ($("#items_path_var").width() > path_maxlength) {
                         $("#path_fontsize").val($("#items_path_var").css('font-size'));
                         // start reducing size of font
@@ -231,16 +226,24 @@ function ListerItems(groupe_id, restricted, start)
                             }
                         }
                         if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
+                            // only take first and last
                             var nb = 1;
+                            var totalPathLength = occupedWidth = 0;
                             $(".path_element").each(function () {
-                                // replace name of folder by ...
-                                if (nb > 1 && nb <= path_levels && $(this).html().length > 8 && $("#items_path_var").width() > path_maxlength) {
-                                    $(this).html("<span title='"+$(this).html()+"'>...</span>");
+                                totalPathLength += $(this).width();
+                                if (nb != 1 && nb != (path_levels-1) && nb != path_levels) {
+                                    $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
+                                } else if (nb == path_levels) {
+                                    // next condition occurs if lasst folder name is too long
+                                    if (totalPathLength > $("#items_path_var").width()) {
+                                        var lastTxt = $(this).html();
+                                        while ($(this).width() > (path_maxlength - occupedWidth)) {
+                                            lastTxt = lastTxt.slice(0, -1);
+                                            $(this).html(lastTxt);
+                                        }
+                                    }
                                 }
-                                // last folder name is still too long
-                                if (nb == path_levels  && $("#items_path_var").width() > path_maxlength) {
-                                    
-                                }
+                                occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
                                 nb++;
                             });
                         }
@@ -248,14 +251,14 @@ function ListerItems(groupe_id, restricted, start)
                 } else {
                     $("#items_path_var").html('');
                 }
-                
+
                 if (data.array_items == "" && data.items_count == "0") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
                 }
 
                 // store the categories to be displayed
                 $("#display_categories").val(data.displayCategories);
-                
+
                 // store type of access on folder
                 $("#access_level").val(data.access_level);
 
@@ -309,7 +312,7 @@ function ListerItems(groupe_id, restricted, start)
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
                     $("#item_details_ok, #items_list").show();
-                    
+
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
@@ -459,7 +462,7 @@ function catSelected(val)
 function RecupComplexite(val, edit, context)
 {
     context = context || "";    // make context optional
-    
+
     var funcReturned = null;
     $.ajaxSetup({async: false});
     $.post(
@@ -477,10 +480,10 @@ function RecupComplexite(val, edit, context)
                 $("#complexite_groupe").val(data.val);
                 if (edit == 1) {
                     $("#edit_complex_attendue").html("<b>"+data.complexity+"</b>");
-                    $("#edit_afficher_visibilite").html("<img src='includes/images/users.png'>&nbsp;<b>"+data.visibility+"</b>");
+                    $("#edit_afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 } else {
                     $("#complex_attendue").html("<b>"+data.complexity+"</b>");
-                    $("#afficher_visibilite").html("<img src='includes/images/users.png'>&nbsp;<b>"+data.visibility+"</b>");
+                    $("#afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 }
             } else if (data.error == "no_edition_possible") {
                 $("#div_dialog_message_text").html(data.error_msg);
@@ -684,6 +687,11 @@ function AjouterItem()
                         $("#new_show_error").html('Item password is empty!');
                         $("#new_show_error").show();
                         LoadingPage();
+                    } else if (data.error == "ERR_ENCRYPTION") {
+                        $("#div_formulaire_saisi").dialog("open");
+                        $("#new_show_error").html(data.msg);
+                        $("#new_show_error").show();
+                        LoadingPage();
                     } else if (data.new_id != "") {
                         $("#new_show_error").hide();
 
@@ -695,7 +703,7 @@ function AjouterItem()
 
                         // prepare the display of the new item
                         AfficherDetailsItem(data.new_id);
-                        
+
                         // refresh list of items
                         ListerItems($('#hid_cat').val(), "", 0)
 
@@ -762,14 +770,14 @@ function EditerItem()
 
 
             //Manage restriction
-            var restriction = restriction_role = "";        
+            var restriction = restriction_role = "";
             $("#edit_restricted_to_list option:selected").each(function () {
                 if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val() + ";";
                 } else {
                     restriction += $(this).val() + ";";
                 }
-            });            
+            });
             if (restriction != "" && restriction.indexOf($('#form_user_id').val()) == "-1")
                 restriction = $('#form_user_id').val()+";"+restriction
             if (restriction == ";") restriction = "";
@@ -898,7 +906,7 @@ function EditerItem()
                         $("#id_desc").html(description);
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
-                        $("#id_tags").html($('#edit_tags').val());
+                        $("#id_tags").html(data.tags);
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
                         $("#id_info").html(unsanitizeString(data.history));
@@ -953,7 +961,9 @@ function EditerItem()
                             $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
                             $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
                         }
-                        
+
+                        // tags
+                        $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
                         //Prepare clipboard copies
                         if ($('#edit_pw1').val() != "") {
@@ -962,7 +972,7 @@ function EditerItem()
                                     return unsanitizeString($('#edit_pw1').val());
                                 }
                             });
-                            
+
                             $("#button_quick_pw_copy").show();
                         }
                         if ($('#edit_item_login').val() != "") {
@@ -984,7 +994,7 @@ function EditerItem()
                     }
                 }
            );
-           
+
            // statistic
            /*$.post(
                 "sources/main.queries.php",
@@ -994,7 +1004,7 @@ function EditerItem()
                     stat_action                : "item"
                 },
                 function(data) {
-                
+
                 }
             );*/
 
@@ -1069,7 +1079,7 @@ function SupprimerFolder()
         $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>").show();
     } else if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
         $("#del_folder_loader").show();
-        
+
         $.post(
             "sources/folders.queries.php",
             {
@@ -1086,13 +1096,14 @@ function SupprimerFolder()
     }
 }
 
-function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload)
+function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
     // If a request is already launched, then kill new.
     if ($("#request_ongoing").val() != "") {
         request.abort();
         return;
     }
+    id_tree = id_tree || ""
 
     // Store status query running
     $("#request_ongoing").val("1");
@@ -1169,10 +1180,14 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    
+
                     // reset password shown info
                     $("#pw_shown").val("0");
-                    $("#item_viewed_x_times").html("<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
+
+                    // show some info on top
+                    if (data.auto_update_pwd_frequency != "0") var auto_update_pwd = "<i class='fa fa-shield tip' title='<?php echo $LANG['server_auto_update_password_enabled_tip'];?>'></i>&nbsp;<b>"+data.auto_update_pwd_frequency+"</b>&nbsp;|&nbsp;";
+                    else var auto_update_pwd = "";
+                    $("#item_viewed_x_times").html(auto_update_pwd+"&nbsp;<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
 
                     // Show timestamp
                     $("#timestamp_item_displayed").val(data.timestamp);
@@ -1189,7 +1204,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         $("#edit_item_salt_key").hide();
                     }
-                                        
+
                     // clean some not used fields
                     //$("#item_history_log, #edit_past_pwds, #hid_files, #item_edit_list_files").html("");
 
@@ -1210,7 +1225,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if (data.show_details == "1" && data.show_detail_option != "2") {
                         //unprotect data
                         data.login = unsanitizeString(data.login);
-                        
+
                         $("#id_files").html("");
 
                         //Display details
@@ -1248,9 +1263,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_kbs").html(data.links_to_kbs);
                         $(".tip").tooltipster({
                             maxWidth: 400,
-                            contentAsHTML: true
+                            contentAsHTML: true,
+							multiple: true
                         });
-                        
+
                         // show Field values
                         $(".fields").val("");
                         $(".fields_div").html("");
@@ -1315,7 +1331,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
-                            $('#item_extra_info').html("<i class='fa fa-bell-o mi-red'></i>&nbsp;<i><?php echo addslashes($LANG['automatic_deletion_activated']);?></i>");
+                            $('#item_extra_info')
+								.html("<b><i class='fa fa-bell-o mi-red'></i></b>&nbsp;")
+								.attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");	
+							$('#item_extra_info').tooltipster({multiple: true});						
                         } else {
                             $('#item_extra_info').html("");
                         }
@@ -1325,17 +1344,17 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 .prop("disabled", false)
                                 .attr('title','<?php echo $LANG['enable_notify'];?>')
                                 .attr('onclick','notify_click(\'true\')');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
+                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                         } else if (data.notification_status == 1 && data.id_user == <?php echo $_SESSION['user_id'];?>) {
                             $('#menu_button_notify')
                                 .prop("disabled", false)
                                 .attr('title','<?php echo $LANG['disable_notify'];?>')
                                 .attr('onclick','notify_click(\'false\')');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
-                            $('#item_extra_info').html("<i><img src=\'<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png\'>&nbsp;<?php echo addslashes($LANG['notify_activated']);?></i>");
+                            $('#div_notify').attr('class', '<i class="fa fa-bell-slash mi-red"></i>&nbsp;');
+                            $('#item_extra_info').html("<i><i class=\'fa fa-bell mi-green\'></i>&nbsp;<?php echo addslashes($LANG['notify_activated']);?></i>");
                         } else {
                             $('#menu_button_notify').attr('disabled', 'disabled');
-                            $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock.png');
+                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                         }
 
                         //Prepare clipboard copies
@@ -1351,7 +1370,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                                 e.clearSelection();
                             });
-                            
+
                             $("#button_quick_pw_copy").show();
                         }
                         if (data.login != "") {
@@ -1380,7 +1399,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 e.clearSelection();
                             });
                         }
-                            
+
                         //prepare link to clipboard
                         var clipboard_link = new Clipboard("#menu_button_copy_link", {
                             text: function() {
@@ -1392,7 +1411,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                             e.clearSelection();
                         });
-                        
+
 
                         //set if user can edit
                         if (data.restricted == "1" || data.user_can_modify == "1") {
@@ -1408,6 +1427,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     echo 0;
 }?>);
                         }
+
+                        // tags
+                        $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
                         // continue loading data
                         showDetailsStep2(id, param);
@@ -1431,7 +1453,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#request_ongoing").val("");
                 }
            );
-           
+
+            if (id_tree != "" && id_tree != $("#hid_cat").val()) {
+                refreshTree(id_tree, "0");
+            }
+
            // statistic
            /*$.post(
                 "sources/main.queries.php",
@@ -1441,7 +1467,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     scope                : "item"
                 },
                 function(data) {
-                
+
                 }
             );*/
        }
@@ -1464,7 +1490,18 @@ function showDetailsStep2(id, param)
         id         : id
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            } catch (e) {
+                // error
+                $("#div_loading").hide();
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                return;
+            }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
             $("#edit_past_pwds").attr('title', data.history_of_pwds);
@@ -1493,7 +1530,7 @@ function showDetailsStep2(id, param)
             $(param).prop("disabled", false);
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
             $("#div_loading").hide();
-            
+
             // refresh
             refreshListLastSeenItems();
          }
@@ -1544,7 +1581,7 @@ function open_add_group_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     $("#div_loading").show();
 
     // check if read only or forbidden
@@ -1562,15 +1599,15 @@ function open_add_group_div()
 function open_edit_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     $("#div_loading").show();
 
     // check if read only or forbidden
@@ -1590,12 +1627,21 @@ function open_edit_group_div()
 function open_move_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
+        return false;
+    }*/
+    if ($.inArray($("#hid_cat").val(), $("#personal_visible_groups_list").val().split(',')) != -1 && $("#personal_sk_set").val() == "0") {
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_personal_sk_expected'];?>");
+        return false;
+    }
+
+    if ($("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) echo $_SESSION['personal_folders'][0]; else echo "";?>") {
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
+        displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
     $("#div_loading").show();
@@ -1603,9 +1649,9 @@ function open_move_group_div()
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
 
-    //Select the actual forlder in the dialogbox
-    $('#move_folder_id option[value='+$('#hid_cat').val()+']').prop('selected', true);
-    $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+"[id"+$('#hid_cat').val()+"]");
+    //Select the actual folder in the dialogbox
+    //$('#move_folder_id option[value='+$('#hid_cat').val()+']').prop('selected', true);
+    $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+" [id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
     $("#div_loading").hide();
@@ -1617,23 +1663,23 @@ function open_move_group_div()
 function open_del_group_div()
 {
     // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
+    /*if ($('#recherche_group_pf').val() == "1") {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
-    }
+    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
     $("#div_loading").show();
-    
+
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "delete_folder") == 0) {
         return false;
     } else {
-        $('#div_supprimer_rep').dialog('open');        
-        $('#delete_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);        
+        $('#div_supprimer_rep').dialog('open');
+        $('#delete_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
         $("#div_loading").hide();
     }
 }
@@ -1648,7 +1694,7 @@ function open_add_item_div()
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     LoadingPage();
 
     //Check if personal SK is needed and set
@@ -1704,7 +1750,7 @@ function open_edit_item_div(restricted_to_roles)
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
-    
+
     // If no Item selected, no edition possible
     if ($("#selected_items").val() == "") {
         displayMessage("<?php echo $LANG['none_selected_text'];?>");
@@ -1796,7 +1842,7 @@ function open_edit_item_div(restricted_to_roles)
                 }
             }
         }
-        
+
         if ($('#edit_restricted_to').val() != undefined) {
             $('#edit_restricted_to_list').empty();
             if (restricted_to_roles == 1) {
@@ -1849,7 +1895,7 @@ function open_edit_item_div(restricted_to_roles)
             noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
         });
         $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
-        
+
     }
 
     // disable folder selection if PF
@@ -1874,7 +1920,7 @@ function open_del_item_div()
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;
     }
-    
+
     if ($("#selected_items").val() != "") {
         $("#div_loading").show();
         //Get the associated complexity level
@@ -1884,7 +1930,7 @@ function open_del_item_div()
         if (compReturn == 0) {
             return false;
         }
-        
+
         $("#div_loading").hide();
         $('#div_del_item').dialog('open');
     } else {
@@ -1898,11 +1944,11 @@ function open_del_item_div()
 function open_copy_item_to_folder_div()
 {
     // is user read only
-    if ($("#user_is_read_only").val() == "1") {    
+    if ($("#user_is_read_only").val() == "1") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;
     }
-    
+
     if ($("#selected_items").val() != "") {
         $('#copy_in_folder').val($("#hid_cat").val());
         $('#div_copy_item_to_folder').dialog('open');
@@ -1963,7 +2009,7 @@ PreviewImage = function(uri,title) {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            
+
             $("#dialog_files").html('<img id="image_files" src="" />');
             //Get the HTML Elements
             imageDialog = $("#dialog_files");
@@ -2029,13 +2075,13 @@ function notify_click(status)
                 $('#menu_button_notify')
                     .attr('title','<?php echo $LANG['disable_notify'];?>')
                     .attr('onclick','notify_click(\'false\')');
-                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-minus.png');
+                $('#div_notify').attr('class', '<i class="fa fa-bell-slash mi-green"></i>&nbsp;');
                 $('#item_extra_info').html("<?php echo addslashes($LANG['notify_activated']);?>");
             } else if (data[0].new_status == "false") {
                 $('#menu_button_notify')
                     .attr('title','<?php echo $LANG['enable_notify'];?>')
                     .attr('onclick','notify_click(\'true\')');
-                $('#div_notify').attr('src', '<?php echo $_SESSION['settings']['cpassman_url'];?>/includes/images/alarm-clock-plus.png');
+                $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
                 $('#item_extra_info').html("");
             }
         }
@@ -2095,11 +2141,17 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 /*
 * builds the folders tree
 */
-function refreshTree(node_to_select)
+function refreshTree(node_to_select, do_refresh)
 {
+    do_refresh = do_refresh || ""
     node_to_select = node_to_select || "";
-    $('#jstree').jstree(true).refresh();
-    if (node_to_select != "") $("#jstree").jstree("select_node", "#li_"+node_to_select);
+
+    if (do_refresh != "0") $('#jstree').jstree(true).refresh();
+    if (node_to_select != "") {
+        $("#hid_cat").val(node_to_select);
+        $("#jstree").jstree("deselect_all");
+        $("#jstree").jstree("select_node", "#li_"+node_to_select);
+    }
     refreshVisibleFolders();
 }
 
@@ -2125,9 +2177,10 @@ function refreshVisibleFolders()
                 $('#move_folder_id option[value!="0"]').remove();
                 $('#delete_rep_groupe option[value!="0"]').remove();
                 $('#copy_in_folder option[value!="0"]').remove();
-                
+
                 // append new list
-                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #move_folder_id, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+                $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
                 $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
             }
         }
@@ -2139,7 +2192,18 @@ function refreshVisibleFolders()
 //## EXECUTE WHEN PAGE IS LOADED
 //###########
 $(function() {
-    
+
+    var clear_tp_clipboard = new Clipboard("#but_empty_clipboard", {
+        text: function() {
+            return "cleared";
+        }
+    });
+    clear_tp_clipboard.on('success', function(e) {
+        $("#message_box").html("super").show().fadeOut(1000);
+
+        e.clearSelection();
+    });
+
     $.ajaxSetup({
         error: function(jqXHR, exception) {
             if (jqXHR.status === 0) {
@@ -2231,7 +2295,7 @@ $(function() {
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
-    
+
     //Build multiselect box
     $("#restricted_to_list").multiselect({
         selectedList: 7,
@@ -2259,7 +2323,7 @@ $(function() {
                 "Loading ..." : "<?php echo $LANG['loading'];?>..."
             },
             "error" : {
-                
+
             }
         },
         "plugins" : [
@@ -2273,7 +2337,7 @@ $(function() {
             ListerItems($("#jstree li>a.jstree-search").attr('id').split('_')[1], '', 0);
         }
     });
-    
+
     // load list of visible folders for current user
     refreshVisibleFolders();
 
@@ -2292,7 +2356,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
+        width: 500,
         height: 280,
         title: "<?php echo $LANG['item_menu_add_rep'];?>",
         buttons: {
@@ -2379,7 +2443,7 @@ $(function() {
         }
     });
     //<=
-    
+
     // =>
     $("#div_copy_item_to_folder").dialog({
         bgiframe: true,
@@ -2437,7 +2501,7 @@ $(function() {
         }
     });
     // <=
-    
+
     //=> MOVE A GROUP
     $("#div_move_folder").dialog({
         bgiframe: true,
@@ -2489,6 +2553,7 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $("#edit_rep_show_error").html("").hide();
                 $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                $("#move_rep_show_error").html("").hide();
                 $(this).dialog('close');
             }
         },
@@ -2557,7 +2622,7 @@ $(function() {
                 if ($("#form_tab_fields") != undefined && $("#display_categories").val() != 1)
                     $("#item_tabs").tabs("option", "show", 3);
             }
-            
+
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
                 $("#expected_complexity").hide();
@@ -2634,7 +2699,7 @@ $(function() {
                     $("#edit_item_more").show();
             }
             $("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
-            
+
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
                 $("#edit_expected_complexity").hide();
@@ -2659,24 +2724,24 @@ $(function() {
                     {
                         type    : "del_item",
                         id      : $("#id_item").val(),
-            label   : $("#hid_label").val(),
+                        label   : $("#hid_label").val(),
                         key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
                         $("#div_loading").show();
-                        
+
                         // refresh list of items
                         $("#full_items_list").html("");
                         ListerItems($('#hid_cat').val(), "", 0)
-                        
+
                         // reload tree
                         refreshTree($('#hid_cat').val());
-                        
+
                         // clean fields
                         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
                         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
                         $("#selected_items").val("");
-                        
+
                         $("#div_loading").hide();
                     }
                );
@@ -2794,7 +2859,7 @@ $(function() {
 
     // => ATTACHMENTS INIT
     var uploader_attachments = new plupload.Uploader({
-        runtimes : "gears,html5,flash,silverlight,browserplus",
+        runtimes : "html5,flash,silverlight,html4",
         browse_button : "item_attach_pickfiles",
         container : "item_upload",
         max_file_size : "<?php
@@ -2807,8 +2872,8 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         chunk_size : "1mb",
         dragdrop : true,
         url : "sources/upload/upload.attachments.php",
-        flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+        flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
+        silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
             {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
             {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
@@ -2816,15 +2881,25 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
             {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext'];?>"}
         ],<?php
 if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
-        ?>
+?>
         resize : {
             width : <?php echo $_SESSION['settings']['upload_imageresize_width'];?>,
             height : <?php echo $_SESSION['settings']['upload_imageresize_height'];?>,
             quality : <?php echo $_SESSION['settings']['upload_imageresize_quality'];?>
         },
-        <?php
+<?php
 }
 ?>
+        preinit : {
+            UploadFile: function(up, file) {
+                up.setOption('multipart_params', {
+                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
+                    itemId : $("#random_id").val(),
+                    type_upload : "item_attachments",
+                    edit_item : false
+                });
+            }
+        },
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_upload_wait").show();
@@ -2832,12 +2907,6 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                     var post_id = CreateRandomString(9,"num_no_0");
                     $("#random_id").val(post_id);
                 }
-                up.settings.multipart_params = {
-                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":$("#random_id").val(),
-                    "type_upload":"item_attachments",
-                    "edit_item":false
-                };
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
@@ -2880,7 +2949,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     // Prepare uplupload object for attachments upload
     var edit_uploader_attachments = new plupload.Uploader({
-        runtimes : "gears,html5,flash,silverlight,browserplus",
+        runtimes : "html5,flash,silverlight,html4",
         browse_button : "item_edit_attach_pickfiles",
         container : "item_edit_upload",
         max_file_size : "<?php
@@ -2893,8 +2962,8 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         chunk_size : "1mb",
         dragdrop : true,
         url : "sources/upload/upload.attachments.php",
-        flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
-        silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
+        flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
+        silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
             {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext'];?>"},
             {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext'];?>"},
@@ -2910,15 +2979,19 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         },<?php
 }
 ?>
+        preinit : {
+            UploadFile: function(up, file) {
+                up.setOption('multipart_params', {
+                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
+                    itemId : $('#selected_items').val(),
+                    type_upload : "item_attachments",
+                    edit_item : true
+                });
+            }
+        },
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_edit_upload_wait").show();
-                up.settings.multipart_params = {
-                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "itemId":$('#selected_items').val(),
-                    "type_upload":"item_attachments",
-                    "edit_item":true
-                };
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
@@ -2973,14 +3046,14 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     //load items
     if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
     else start = 0;
-    
+
     ListerItems(first_group,'', start);
     //Load item if needed and display items list
     if ($("#open_id").val() != "") {
         AfficherDetailsItem($("#open_id").val());
         $("#open_item_by_get").val("");
     }
-        
+
     //Password meter for item creation
     $("#pw1").simplePassMeter({
         "requirements": {},
@@ -3224,9 +3297,27 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             }
         }
     });
-    
+
+    //DIALOG FOR SSH
+    $("#dialog_ssh").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 620,
+        height: 500,
+        title: "<?php echo $LANG['update_server_password'];?>",
+        buttons: {
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        close: function() {
+            $("#div_ssh").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b><?php echo $LANG['please_wait'];?></b>");
+        }
+    });
+
     // open personal pwds re-encryption dialogbox
-    if ($("#personal_upgrade_needed").val() == "1") {        
+    if ($("#personal_upgrade_needed").val() == "1") {
         $("#dialog_upgrade_personal_passwords").dialog("open");
     }
 
@@ -3265,7 +3356,7 @@ var showPwdContinuous = function(){
         }
     } else {
         $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
-        $('.tip').tooltipster();
+        $('.tip').tooltipster({multiple: true});
     }
 }
 
@@ -3274,7 +3365,7 @@ var showPwd = function(){
 }
 
 /*
-* permits to save 
+* permits to save
 */
 function itemLog(log_case)
 {
@@ -3356,7 +3447,7 @@ function proceed_list_update()
             $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']);?>").show().fadeOut(1000);
             e.clearSelection();
         });
-        
+
         var clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']);?>").show().fadeOut(1000);
@@ -3364,11 +3455,11 @@ function proceed_list_update()
             e.clearSelection();
         });
 
-        $(".tip").tooltipster();
+        $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
-    
+
         // refine users list to the related roles
         $.post(
             "sources/items.queries.php",
@@ -3410,7 +3501,7 @@ function proceed_list_update()
                     noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
                 });
                 $("#restricted_to_list").multiselect('refresh').multiselectfilter();
-                
+
                 // *** edit_restricted_to_list ***
                 $("#edit_restricted_to_list").empty();
                 if ($('#edit_restricted_to').val() != undefined) {
@@ -3546,7 +3637,23 @@ function prepareOneTimeView()
             if (data.error == "") {
                 $("#div_dialog_message").dialog({height:300,minWidth:750});
                 $("#div_dialog_message").dialog('open');
-                $("#div_dialog_message_text").html(data.url);
+                $("#div_dialog_message_text").html(data.url+
+					'<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
+				);
+				
+				// prepare clipboard
+				var clipboard = new Clipboard("#button_copy_otv_link", {
+					text: function() {
+						return unsanitizeString($('#otv_link').text());
+					}
+				});
+				clipboard.on('success', function(e) {
+					$("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']);?>").show().fadeOut(2000);
+					
+					e.clearSelection();
+				});
+				
+				$(".tip").tooltipster({multiple: true});
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }
@@ -3595,7 +3702,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching'];?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
         $("#full_items_list").html("");
         $("#selected_items").val("");
@@ -3627,7 +3734,7 @@ function searchItemsWithTags(tag)
 {
     //console.log(">"+tag);
     if (tag == "") return false
-    
+
     // wait
     $("#items_list_loader").show();
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching_tag'];?>&nbsp;<b>'+tag+'</b> ...');
@@ -3710,11 +3817,11 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
             aIds.shift();
             var nb2 = aIds.length;
             aIds = aIds.toString();
-            if (nb == 0) 
+            if (nb == 0)
                 $("#reencryption_progress").html("100%");
-            else 
+            else
                 $("#reencryption_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-            
+
             if (nb2 != "0" || (nb2 == "" && currentID != "")) {
                 reEncryptPersonalPwds(aIds, currentID, nb);
             } else {
@@ -3725,4 +3832,30 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
         }
     });
 }
+
+ function serverAutoChangePwd()
+ {
+     console.log("opening");
+    $("#dialog_ssh").dialog({
+        open: function(event, ui) {
+            $("#div_ssh").load(
+                "<?php echo $_SESSION['settings']['cpassman_url'].'/ssh.php?key='.$_SESSION['key'];?>&id="+$("#selected_items").val(), function(){}
+            );
+        }
+    }).dialog("open");
+}
+
+$.fn.simulateClick = function() {
+    return this.each(function() {
+        if('createEvent' in document) {console.log("coucou");
+            var doc = this.ownerDocument,
+                evt = doc.createEvent('MouseEvents');
+            evt.initMouseEvent('click', true, true, doc.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
+            this.dispatchEvent(evt);
+        } else {
+            this.click(); // IE Boss!
+        }
+    });
+}
+
 </script>

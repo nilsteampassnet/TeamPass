@@ -1,4 +1,38 @@
 Last changes
+2.1.26
+ #1284 fix for can_manage_all_users update during upgrade
+ #1279 SyntaxError: Unexpected token î in JSON at position 0
+ #1276 MySQL 5.7 query error
+ #1263 Error at line 75 in suggestion page
+ #1251 Improving CSRFP configuration
+ #1240 Security fixes on some missed queries and on non-protected text fields
+ #1241 OTV visible more than one time
+ #1238 Fix for upgrade.php where mysql_result() command were still not replaced
+ #1235 Import from Keepass: missing items with the same title
+ #1225 Unable to Access OTV Link
+ #1224 Fixed errors in export_to_html_format
+ #1211 No FA code sent from home page
+ #1210 Fix for main.queries.php
+ #1206 Fix for importing files
+ #1203 Needed PHP extensions check during install & update process
+ #1197 Awesome Font 4.5.0
+ #1193 When I login with user admin " loading ... " and it does not finish
+ #1192 Cannot save "enable attachments encryption"
+ #1188 Implemented proposals for source code improvement
+ #1186 open/highlight folder tree of displayed item
+ #1183 Syntax Error on personal folders option
+ #1181 403 Access Forbidden by CSRFProtector! at config save
+ #1178 New user right added for managing all users (super Manager)
+ #1174 Adding LDAP groups support to 'posix-search' LDAP auth
+ #1158 Can't Change admin Password
+ NEW: Server user password change through SSH connection
+ NEW: Upgrade database handler improved for better upgrades management
+ NEW: New user right added for managing all users (super Manager)
+ FIX: If expiration engaged and password is changed, the warning is still present.
+ FIX: New suggestion folder could remain empty in some specific cases.
+ FIX: By creating a role, this new one is directly visible by creator.
+ FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
+
 2.1.25
  #1169 sending Google Authenticator code through index page
  #1160 hiding user password change option if DUOSecurity
@@ -79,7 +113,7 @@ Last changes
  New: Vietnamese language added
  New: Tree structure is loaded dynamically
  New: Notification to Managers for awaiting suggestions
- 
+
  2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
@@ -133,8 +167,8 @@ Last changes
  #697 - Default language setting, not being applied to automatically created ldap users.
  #698 - Default language setting, not being applied to newly created users.
  #707 - httpRequest is missing in upgrade process
- #725 - Disable button after item creation or edition 
- #720 - cannot sign up to 2factor 
+ #725 - Disable button after item creation or edition
+ #720 - cannot sign up to 2factor
  #690 - limit password export via PDF/CSV to user/group
  #745 - Enable again save_button after error on Add/Edit Item
  #739 - OTV correction

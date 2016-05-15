@@ -2,7 +2,7 @@
 /**
  * @file          roles.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -15,9 +15,9 @@
 require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
@@ -66,7 +66,7 @@ if (!empty($_POST['type'])) {
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => htmlentities(stripslashes($_POST['name'])),
+                        'title' => noHTML($_POST['name']),
                         'complexity' => $_POST['complexity'],
                         'creator_id' => $_SESSION['user_id']
                     )
@@ -76,6 +76,23 @@ if (!empty($_POST['type'])) {
                 if ($role_id != 0) {
                     //Actualize the variable
                     $_SESSION['nb_roles'] ++;
+					
+					// get some data
+					$data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
+					
+					// add new role to user
+					DB::update(
+						prefix_table("users"),
+						array(
+							'fonction_id' => $data_tmp['fonction_id'].$role_id.";"
+						   ),
+						"id = %i",
+						$_SESSION['user_id']
+					);
+					$_SESSION['fonction_id'] = $data_tmp['fonction_id'].$role_id.";";
+					$_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
+					
+					
                     echo '[ { "error" : "no" } ]';
                 } else {
                     echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';
@@ -92,6 +109,14 @@ if (!empty($_POST['type'])) {
             DB::delete(prefix_table("roles_values"), "role_id = %i", $_POST['id']);
             //Actualize the variable
             $_SESSION['nb_roles'] --;
+			
+			// parse all users to remove this role
+			$rows = DB::query(
+				"SELECT fonction_id FROM ".prefix_table("users")."
+				ORDER BY id ASC");
+			foreach ($rows as $record) {
+				// todo
+			}
 
             echo '[ { "error" : "no" } ]';
             break;
@@ -106,7 +131,7 @@ if (!empty($_POST['type'])) {
                 DB::update(
                     prefix_table("roles_title"),
                     array(
-                        'title' => $_POST['title'],
+                        'title' => noHTML($_POST['title']),
                         'complexity' => $_POST['complexity']
                    ),
                     'id = %i',
@@ -179,12 +204,12 @@ if (!empty($_POST['type'])) {
                         $access = "NDNE";
                     }
                 } else $access = "";
-                
-                // loop 
+
+                // loop
                 foreach ($tree as $node) {
                     // delete
                     DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
-                    
+
                     //Store in DB
                     DB::insert(
                         prefix_table("roles_values"),
@@ -258,14 +283,17 @@ if (!empty($_POST['type'])) {
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if ($record['allow_pw_change'] == 1) {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-green.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'>';
+                        $allow_pw_change = '&nbsp;<span class=\'fa mi-red fa-2x fa-magic tip\' id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'></span>';
                     } else {
-                        $allow_pw_change = '&nbsp;<img id=\'img_apcfr_'.$record['id'].'\' src=\'includes/images/ui-text-field-password-red.png\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'>';
+                        $allow_pw_change = '&nbsp;<span class=\'fa fa-magic fa-2x mi-green tip\'  id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'></span>';
                     }
+					$title = mysqli_real_escape_string($link, filter_var($record['title'], FILTER_SANITIZE_STRING));
 
-                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").
-                        '<br><img src=\'includes/images/ui-tab--pencil.png\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'>&nbsp;'.
-                        '<img src=\'includes/images/ui-tab--minus.png\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'>'.
+                    $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.
+						$title.
+                        '<br>'.
+						'<span class=\'fa fa-pencil fa-2x mi-grey-1\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'></span>&nbsp;'.
+                        '<span class=\'fa fa-trash fa-2x mi-grey-1\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'></span>'.
                         $allow_pw_change.
                         '<div style=\'margin-top:-8px;\'>[&nbsp;'.$_SESSION['settings']['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
 
@@ -328,8 +356,8 @@ if (!empty($_POST['type'])) {
                         } else {
                             $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
                         }
-                        
-                        
+
+
                         $i++;
                     }
                     $texte .= '</tr>';
@@ -356,17 +384,4 @@ if (!empty($_POST['type'])) {
 
             break;
     }
-} elseif (!empty($_POST['edit_fonction'])) {
-    $id = explode('_', $_POST['id']);
-    //Update DB
-    DB::update(
-        prefix_table("roles_title"),
-        array(
-            'title' => mysqli_escape_string($link, stripslashes(utf8_decode($_POST['edit_fonction'])))
-       ),
-        "id = %i",
-        $id[1]
-    );
-    //Show value
-    echo $_POST['edit_fonction'];
 }

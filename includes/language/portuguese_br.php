@@ -3,8 +3,8 @@
  *
  * @file          portuguese_br.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -871,5 +871,33 @@ $LANG = array (
     'syslog_enable' => 'Habilitar log com Syslog',
     'syslog_host' => 'Servidor Syslog',
     'syslog_port' => 'Porta Syslog',
+    'error_bad_credentials' => 'As credenciais de login não correspondem! ',
+    'reload_page_after_user_account_creation' => 'Sua conta foi criada. Esta página será recarregada automaticamente em 3 segundos ...',
+    'settings_ldap_usergroup' => 'LDAP group to search',
+    'settings_ldap_usergroup_tip' => 'LDAP group a user has to be member of in order to log in. Example: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Enable changing password on distant server (using ssh connection)',
+    'error_login_missing' => 'Login is missing!',
+    'error_pwd_missing' => 'Password is missing!',
+    'error_url_missing' => 'URL is missing!',
+    'error_ssh_credentials_missing' => 'SSH credentials are missing!',
+    'error_url_must_be_ssh' => 'URL must start with SSH protocol!',
+    'auto_update_server_password_info' => 'Clicking START button will automatically perform next steps:<ul><li>Connect through SSH to Linux server using login credentials and field `URL`,</li><li>Change user password on Linux server</il><li>Save the new password in Teampass</il><li>Close SSH connection</li></ul><br /><b>Please ensure that user has root privileges on the server (if not, indicate the root login and password) before starting.</b>',
+    'update_server_password' => 'Update server\'s password',
+    'error_personal_sk_expected' => 'You shall first enter your personal saltkey!',
+    'click_to_generate' => 'Click to generate',
+    'error_new_pwd_missing' => 'New password is missing!',
+    'ssh_pwd' => 'SSH password',
+    'ssh_user' => 'SSH user',
+    'ssh_action_performed_with_error' => 'Action was performed with error.<br>Check answer from server and made correction.',
+    'ssh_action_performed' => 'Password updated for this Item.<br /><br />You can now close this popup.',
+    'ssh_answer_from_server' => 'Answer from server',
+    'ssh_password_frequency_change_info' => 'You may want the change to be done automatically at a special frequency. For this, you need to select the frequency at which the server user passwords shall be changed (selecting 0 will disable task).<br />Notice that this will only work if your administrator has enabled the task in the server cron schedule.',
+    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_scheduled_change' => 'Scheduled change',
+    'ssh_one_shot_change' => 'One shot change',
+    'month' => 'month',
+    'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
+    'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
+    'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
     '' => ''
 );

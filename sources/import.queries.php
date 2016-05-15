@@ -2,7 +2,7 @@
 /**
  * @file          import.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -46,7 +46,7 @@ function sanitiseString($str, $crLFReplacement) {
     if (!empty($str)) {
         addslashes($str);
     }
-	return $str;
+    return $str;
 }
 
 global $k, $settings;
@@ -246,11 +246,11 @@ switch ($_POST['type']) {
             $item = explode('@|@', $item);   //explode item to get all fields
 
             //Encryption key
-			if ($personalFolder == 1) {
-				$encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
-			} else {
-				$encrypt = cryption($item[2], SALT, "", "encrypt");
-			}
+            if ($personalFolder == 1) {
+                $encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
+            } else {
+                $encrypt = cryption($item[2], SALT, "", "encrypt");
+            }
 
             // Insert new item in table ITEMS
             DB::insert(
@@ -258,8 +258,8 @@ switch ($_POST['type']) {
                 array(
                     'label' => $item[0],
                     'description' => $item[4],
-					'pw' => $encrypt['string'],
-					'pw_iv' => $encrypt['iv'],
+                    'pw' => $encrypt['string'],
+                    'pw_iv' => $encrypt['iv'],
                     'url' => $item[3],
                     'id_tree' => $_POST['folder'],
                     'login' => $item[1],
@@ -815,100 +815,90 @@ switch ($_POST['type']) {
                     //$count++;
                     //check if not exists
                     $results .= str_replace($foldersSeparator,"\\",$item[KP_PATH]).'\\'.$item[KP_TITLE];
-                    DB::query(
-                        "SELECT id FROM ".prefix_table("items")."
-                        WHERE id_tree =%i AND label = %s LIMIT 1",
-                        intval($foldersArray[$item[KP_PATH]]['id']),
-                        stripslashes($item[KP_TITLE])
-                    );
-                    $counter = DB::count();
-                    if ($counter == 0) {
-                        $pw = $item[KP_PASSWORD];
 
-                        //Get folder label
-                        if (count($foldersArray)==0 || empty($item[KP_PATH])) {
-                            $folderId = $_POST['destination'];
-                        } else {
-                            $folderId = $foldersArray[$item[KP_PATH]]['id'];
-                        }
-                        $data = DB::queryFirstRow(
-                            "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
-                            intval($folderId)
-                        );
+                    $pw = $item[KP_PASSWORD];
 
-                        $results .= " - Inserting\n";
-						
-						// prepare PW
-						if ($import_perso == true) {
-							$encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
-						} else {
-							$encrypt = cryption($pw, SALT, "", "encrypt");
-						}
-						
-                        //ADD item
-                        DB::insert(
-                            prefix_table("items"),
-                            array(
-                                'label' => stripslashes($item[KP_TITLE]),
-                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'pw' => $encrypt['string'],
-								'pw_iv' => $encrypt['iv'],
-                                'url' => stripslashes($item[KP_URL]),
-                                'id_tree' => $folderId,
-                                'login' => stripslashes($item[KP_USERNAME]),
-                                'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
-                           )
-                        );
-                        $newId = DB::insertId();
-
-                        //if asked, anyone in role can modify
-                        if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
-                            foreach ($_SESSION['arr_roles'] as $role) {
-                                DB::insert(
-                                    prefix_table("restriction_to_roles"),
-                                    array(
-                                        'role_id' => $role['id'],
-                                        'item_id' => $newId
-                                   )
-                                );
-                            }
-                        }
-
-                        //Add log
-                        DB::insert(
-                            prefix_table("log_items"),
-                            array(
-                                'id_item' => $newId,
-                                'date' => time(),
-                                'id_user' => $_SESSION['user_id'],
-                                'action' => 'at_creation',
-                                'raison' => 'at_import'
-                           )
-                        );
-
-                        //Add entry to cache table
-                        DB::insert(
-                            prefix_table("cache"),
-                            array(
-                                'id' => $newId,
-                                'label' => stripslashes($item[KP_TITLE]),
-                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'id_tree' => $folderId,
-                                'perso' => $personalFolder == 0 ? 0 : 1,
-                                'login' => stripslashes($item[KP_USERNAME]),
-                                'folder' => $data['title'],
-                                'author' => $_SESSION['user_id']
-                           )
-                        );
-
-                        //show
-                        //$text .= '- '.addslashes($item[2]).'<br />';
-
-                        //increment number of imported items
-                        $nbItemsImported++;
+                    //Get folder label
+                    if (count($foldersArray)==0 || empty($item[KP_PATH])) {
+                        $folderId = $_POST['destination'];
                     } else {
-                        $results .= " - Skipped\n";
+                        $folderId = $foldersArray[$item[KP_PATH]]['id'];
                     }
+                    $data = DB::queryFirstRow(
+                        "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                        intval($folderId)
+                    );
+
+                    $results .= " - Inserting\n";
+
+                    // prepare PW
+                    if ($import_perso == true) {
+                        $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                    } else {
+                        $encrypt = cryption($pw, SALT, "", "encrypt");
+                    }
+
+                    //ADD item
+                    DB::insert(
+                        prefix_table("items"),
+                        array(
+                            'label' => stripslashes($item[KP_TITLE]),
+                            'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
+                            'pw' => $encrypt['string'],
+                            'pw_iv' => $encrypt['iv'],
+                            'url' => stripslashes($item[KP_URL]),
+                            'id_tree' => $folderId,
+                            'login' => stripslashes($item[KP_USERNAME]),
+                            'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
+                       )
+                    );
+                    $newId = DB::insertId();
+
+                    //if asked, anyone in role can modify
+                    if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
+                        foreach ($_SESSION['arr_roles'] as $role) {
+                            DB::insert(
+                                prefix_table("restriction_to_roles"),
+                                array(
+                                    'role_id' => $role['id'],
+                                    'item_id' => $newId
+                               )
+                            );
+                        }
+                    }
+
+                    //Add log
+                    DB::insert(
+                        prefix_table("log_items"),
+                        array(
+                            'id_item' => $newId,
+                            'date' => time(),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_creation',
+                            'raison' => 'at_import'
+                       )
+                    );
+
+                    //Add entry to cache table
+                    DB::insert(
+                        prefix_table("cache"),
+                        array(
+                            'id' => $newId,
+                            'label' => stripslashes($item[KP_TITLE]),
+                            'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
+                            'id_tree' => $folderId,
+                            'perso' => $personalFolder == 0 ? 0 : 1,
+                            'login' => stripslashes($item[KP_USERNAME]),
+                            'folder' => $data['title'],
+                            'author' => $_SESSION['user_id']
+                       )
+                    );
+
+                    //show
+                    //$text .= '- '.addslashes($item[2]).'<br />';
+
+                    //increment number of imported items
+                    $nbItemsImported++;
                 }
             }
 

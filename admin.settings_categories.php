@@ -3,7 +3,7 @@
  *
  * @file          admin.settings_categories.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -111,16 +111,20 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
         <tr id="t_cat_'.$category[0].'">
             <td colspan="2">
                 <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
+				<span class="fa-stack tip" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-plus fa-stack-1x fa-inverse"></i>
+				</span>
+				&nbsp;
                 <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
                 <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
-                <a href="#" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" class="cpm_button tip" style="margin-left:20px;">
-                    <img src="includes/images/zone--plus.png"  />
-                </a>
             </td>
-            <td>
-                <a href="#" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" class="cpm_button tip" style="margin-left:5px;">
-                    <img src="includes/images/folder_edit.png"  />
-                </a>
+            <td>				
+				<span class="fa-stack tip" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" style="cursor:pointer;">
+					<i class="fa fa-square fa-stack-2x"></i>
+					<i class="fa fa-edit fa-stack-1x fa-inverse"></i>
+				</span>
+				&nbsp;
                 '.$LANG['category_in_folders_title'].':
                 <span style="font-family:italic; margin-left:10px;" id="catFolders_'.$category[0].'">'.$foldersList.'</span>
                 <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
@@ -137,7 +141,7 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
             foreach ($rows as $field) {
                 echo '
         <tr id="t_field_'.$field['id'].'">
-            <td width="20px"></td>
+            <td width="60px"></td>
             <td>
                 <input type="text" id="catOrd_'.$field['id'].'" size="1" class="category_order" value="'.$field['order'].'" />&nbsp;
                 <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />

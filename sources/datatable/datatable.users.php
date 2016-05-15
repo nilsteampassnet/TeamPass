@@ -2,7 +2,7 @@
 /**
  * @file          users.queries.table.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -53,7 +53,7 @@ $listAvailableUsers = $listAdmins = $html = "";
 $listAlloFcts_position = false;
 
 //Columns name
-$aColumns = array('id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id');
+$aColumns = array('id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id');
 $aSortTypes = array('asc', 'desc');
 
 //init SQL variables
@@ -75,17 +75,6 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
         $sOrder .= "".$aColumns[ filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT) ]." "
         .mysqli_escape_string($link, $_GET['order'][0]['column']) .", ";
     }
-    /*
-    for ($i=0; $i<intval($_GET['order[0][column]']); $i++) {
-        if (
-            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-            preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
-        ) {
-            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
-        }
-    }
-    */
 
     $sOrder = substr_replace($sOrder, "", -2);
     if ($sOrder == "ORDER BY") {
@@ -105,8 +94,8 @@ if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None"
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
-} 
-elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") { 
+}
+elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
     if (empty($sWhere)) $sWhere = " WHERE ";
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
@@ -114,7 +103,7 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
 }
 
 // enlarge the query in case of Manager
-if (!$_SESSION['is_admin']) {
+if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
     if (empty($sWhere)) $sWhere = " WHERE ";
     else $sWhere .= " AND ";
     $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
@@ -148,7 +137,7 @@ foreach ($rows as $record) {
         if (count($rolesList) > 0) {
             foreach ($rolesList as $fonction) {
                 if (in_array($fonction['id'], explode(";", $record['fonction_id']))) {
-                    $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($fonction['title'], ENT_COMPAT, "UTF-8").'<br />';
+                    $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($fonction['title'], FILTER_SANITIZE_STRING))).'<br />';
                 }
             }
             $listAlloFcts_position = true;
@@ -166,7 +155,7 @@ foreach ($rows as $record) {
                 if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident = "";
                     if (in_array($t->id, explode(";", $record['groupes_visibles']))) {
-                        $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                        $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
                     }
                     $prev_level = $t->nlevel;
                 }
@@ -180,7 +169,7 @@ foreach ($rows as $record) {
             foreach ($treeDesc as $t) {
                 $ident = "";
                 if (in_array($t->id, explode(";", $record['groupes_interdits']))) {
-                    $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.@htmlspecialchars($ident.$t->title, ENT_COMPAT, "UTF-8").'<br />';
+                    $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
                 }
                 $prev_level = $t->nlevel;
             }
@@ -191,18 +180,19 @@ foreach ($rows as $record) {
     if (
         $_SESSION['is_admin'] ||
         ($record['isAdministratedByRole'] > 0 &&
-        in_array($record['isAdministratedByRole'], $_SESSION['user_roles']))
+        in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
+		($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)
     ) {
         $showUserFolders = true;
     } else {
         $showUserFolders = false;
     }
-    
+
     // Build list of available users
     if ($record['admin'] != 1 && $record['disabled'] != 1) {
         $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
-    }                
-    
+    }
+
     // Display Grid
     if ($showUserFolders == true) {
         $sOutput .= "[";
@@ -215,32 +205,32 @@ foreach ($rows as $record) {
         }
         $sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>"';
         $sOutput .= ',';
-        
+
         //col2
         $sOutput .= '"'.$record['login'].'"';
         $sOutput .= ',';
-        
+
         //col3
         $sOutput .= '"'.$record['name'].'"';
         $sOutput .= ',';
-        
+
         //col4
         $sOutput .= '"'.$record['lastname'].'"';
         $sOutput .= ',';
-        
+
         //col5 - MANAGED BY
         $txt = "";
         $rows2 = DB::query("SELECT title FROM ".$pre."roles_title"." WHERE id = '".$record['isAdministratedByRole']."' ORDER BY title ASC");
         if (DB::count() > 0) {
             foreach ($rows2 as $record2) {
-                $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of'].' '.@htmlspecialchars($record2['title'], ENT_COMPAT, "UTF-8")).'<br />';
+                $txt .= '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['managers_of']).' '.addslashes(mysqli_real_escape_string($link, filter_var($record2['title'], FILTER_SANITIZE_STRING))).'<br />';
             }
         } else {
             $txt = '<i class=\"fa fa-angle-right\"></i>&nbsp;'.addslashes($LANG['god']);
         }
         $sOutput .= '"'.$txt.'"';
         $sOutput .= ',';
-        
+
         //col6
         $sOutput .= '"'.addslashes($listAlloFcts).'"';
         $sOutput .= ',';
@@ -249,31 +239,43 @@ foreach ($rows as $record) {
         if ($record['admin'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col10
         if ($record['gestionnaire'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col11
         if ($record['read_only'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
         $sOutput .= ',';
-        
+
+        //col11
+        if ($_SESSION['is_admin'] == 1 || $_SESSION['user_can_manage_all_users'] == 1) {
+            if ($record['can_manage_all_users'] == 1) {
+                $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-0\"></i>"';
+            } else {
+                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-1\"></i>"';
+            }
+        } else {
+            $sOutput .= '""';
+        }
+        $sOutput .= ',';
+
         //col12
         if ($record['can_create_root_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col13
         if ($record['personal_folder'] == 1) $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
         else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
         $sOutput .= ',';
-        
+
         //col15
         $sOutput .= '"<i class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['change_password'], '"\\/').'\"></i>"';
         $sOutput .= ',';
-        
+
         //col16
         $sOutput .= '"<i class=\"fa fa-newspaper-o tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.addcslashes($LANG['see_logs'], '"\\/').'\"></i>"';
         $sOutput .= ',';
@@ -287,7 +289,7 @@ foreach ($rows as $record) {
 
         //Finish the line
         $sOutput .= '],';
-        
+
         $iFilteredTotal ++;
     }
 }

@@ -2,7 +2,7 @@
 /**
  * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -14,7 +14,7 @@
 
 require_once 'sessions.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || $_GET['key'] != $_SESSION['key'] || $_GET['key_tmp'] != $_SESSION['key_tmp']) {
+if (!isset($_SESSION['CPM']) || !isset($_SESSION['key_tmp']) || !isset($_SESSION['key']) || $_SESSION['CPM'] != 1 || $_GET['key'] != $_SESSION['key'] || $_GET['key_tmp'] != $_SESSION['key_tmp'] || empty($_SESSION['key']) || empty($_SESSION['key_tmp']) ) {
     die('Hacking attempt...');
 }
 
@@ -24,7 +24,7 @@ header("Pragma: no-cache");
 header("Cache-Control: must-revalidate, no-cache, no-store");
 header("Expires: 0");
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
-	readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
+    readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($_GET['file']));
 } else {
     require_once 'main.functions.php';
     // connect to DB

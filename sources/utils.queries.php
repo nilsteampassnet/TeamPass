@@ -2,7 +2,7 @@
 /**
  * @file          utils.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -96,7 +96,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => htmlentities(str_replace(";", ".", $record['description']), ENT_QUOTES, "UTF-8"),
-                                'pw' => substr(addslashes($pw), strlen($record['rand_key'])),
+                                'pw' => substr(addslashes($pw['string']), strlen($record['rand_key'])),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -173,7 +173,7 @@ switch ($_POST['type']) {
 
             //decrypt and retreive data in JSON format
 			$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
-			
+
 			// do a check on old PSK
 			if (empty($_SESSION['my_sk']) || empty($dataReceived['old_sk'])) {
 				echo '[{"error" : "No personnal saltkey provided"}]';
@@ -203,6 +203,7 @@ switch ($_POST['type']) {
             if (!empty($data['pw_iv']) && !empty($data['pw'])) {
                 // decrypt it
                 $pw = cryption($data['pw'], $oldPersonalSaltkey, $data['pw_iv'], "decrypt");
+                $pw = $pw['string'];
             } else {
                 // check if pw encrypted with protocol #2
                 $pw = decrypt($data['pw'], $oldPersonalSaltkey);
@@ -295,4 +296,109 @@ switch ($_POST['type']) {
 
         echo '[{"error" : ""}]';
         break;
+
+        #CASE auto update server password
+    case "server_auto_update_password":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // get data about item
+        $dataItem = DB::queryfirstrow(
+            "SELECT label, login, pw, pw_iv, url
+            FROM ".prefix_table("items")."
+            WHERE id=%i",
+            $dataReceived['currentId']
+        );
+
+        // decrypt password
+        $oldPwClear = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+
+        // encrypt new password
+        $encrypt = cryption(
+            $dataReceived['new_pwd'],
+            SALT,
+            "",
+            "encrypt"
+        );
+
+        // connect ot server with ssh
+        $ret = "";
+        stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
+        include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
+        $parse = parse_url($dataItem['url']);
+        $ssh = new Net_SSH2($parse['host'], $parse['port']);
+        if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
+           echo prepareExchangedData(
+                array(
+                    "error" => "Login failed.<br />Error description: <i>".$_SESSION['sshError']."</i>",
+                    "text" => ""
+                ),
+                "encode"
+            );
+            break;
+        }else{
+            // send ssh script for user change
+            $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
+            $ret_server = $ssh->exec('echo -e "'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
+            if (strpos($ret_server, "updated successfully") !== false) {
+                $err = false;
+            } else {
+                $err = true;
+            }
+            $ret .= $ret_server."</div>";
+        }
+
+        if ($err == false) {
+            // store new password
+            DB::update(
+                prefix_table("items"),
+                array(
+                    'pw' => $encrypt['string'],
+                    'pw_iv' => $encrypt['iv']
+                   ),
+                "id = %i",
+                $dataReceived['currentId']
+            );
+            // update log
+            logItems($dataReceived['currentId'], $dataItem['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
+            $ret .= "<br />".$LANG['ssh_action_performed'];
+        } else {
+            $ret .= "<br /><i class='fa fa-warning'></i>&nbsp;".$LANG['ssh_action_performed_with_error']."<br />";
+        }
+
+        // finished
+        echo prepareExchangedData(
+            array(
+                "error" => "" ,
+                "text" => str_replace(array("\n"), array("<br />"), $ret)
+            ),
+            "encode"
+        );
+        break;
+
+    case "server_auto_update_password_frequency":
+         if ($_POST['key'] != $_SESSION['key'] || !isset($_POST['id']) || !isset($_POST['freq'])) {
+            echo '[{"error" : "something_wrong"}]';
+            break;
+        }
+
+        // store new frequency
+        DB::update(
+            prefix_table("items"),
+            array(
+                'auto_update_pwd_frequency' => $_POST['freq'],
+                'auto_update_pwd_next_date' => time() + (2592000 * intval($_POST['freq']))
+               ),
+            "id = %i",
+            $_POST['id']
+        );
+
+        echo '[{"error" : ""}]';
+
+        break;
+
 }

@@ -3,7 +3,7 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -214,6 +214,15 @@ if (isset($_POST['save_button'])) {
     // Update cpassman_url
     if (isset($_SESSION['settings']['cpassman_url']) && $_SESSION['settings']['cpassman_url'] != $_POST['cpassman_url']) {
         updateSettings('cpassman_url', $_POST['cpassman_url']);
+        // update also jsUrl for CSFP protection
+        $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
+        $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+        $data = file_get_contents($csrfp_file);
+        $posJsUrl = strpos($data, '"jsUrl" => "');
+        $posEndLine = strpos($data, '",', $posJsUrl);
+        $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
+        $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
+        file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
     }
     // Update path_to_upload_folder
     if ((isset($_SESSION['settings']['path_to_upload_folder']) && $_SESSION['settings']['path_to_upload_folder'] != $_POST['path_to_upload_folder']) || (!isset($_SESSION['settings']['path_to_upload_folder']))) {
@@ -342,6 +351,10 @@ if (isset($_POST['save_button'])) {
     // Update LDAP ldap_bind_passwd
     if (isset($_POST['ldap_bind_passwd'])&& @$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
         updateSettings('ldap_bind_passwd', $_POST['ldap_bind_passwd']);
+    }
+    // update ldap_usergroup
+    if (isset($_POST['ldap_usergroup']) && $_SESSION['settings']['ldap_usergroup'] != $_POST['ldap_usergroup']) {
+        updateSettings('ldap_usergroup', $_POST['ldap_usergroup']);
     }
     // Update anyone_can_modify
     if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify_input']) {
@@ -557,6 +570,10 @@ if (isset($_POST['save_button'])) {
     if (@$_SESSION['settings']['syslog_port'] != $_POST['syslog_port']) {
         updateSettings('syslog_port', $_POST['syslog_port']);
     }
+    // Update enable_server_password_change
+    if (@$_SESSION['settings']['enable_server_password_change'] != $_POST['enable_server_password_change_input']) {
+        updateSettings('enable_server_password_change', $_POST['enable_server_password_change_input']);
+    }
 }
 
 echo '
@@ -588,7 +605,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="cpassman_dir">'.$LANG['admin_misc_cpassman_dir'].'</label>
                     </td>
                     <td>
@@ -599,7 +616,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="cpassman_url">'.$LANG['admin_misc_cpassman_url'].'</label>
                     </td>
                     <td>
@@ -610,9 +627,9 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="path_to_upload_folder">'.$LANG['admin_path_to_upload_folder'].'</label>
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_path_to_upload_folder_tip'].'" />
+                        &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_path_to_upload_folder_tip'].'"></i>
                     </td>
                     <td>
                         <input type="text" size="80" id="path_to_upload_folder" name="path_to_upload_folder" value="', isset($_SESSION['settings']['path_to_upload_folder']) ? $_SESSION['settings']['path_to_upload_folder'] : $_SESSION['settings']['cpassman_dir'].'/upload', '" class="text ui-widget-content" />
@@ -622,7 +639,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="url_to_upload_folder">'.$LANG['admin_url_to_upload_folder'].'</label>
                     </td>
                     <td>
@@ -633,9 +650,9 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="path_to_files_folder">'.$LANG['admin_path_to_files_folder'].'</label>
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_path_to_files_folder_tip'].'" />
+                        &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_path_to_files_folder_tip'].'"></i>
                     </td>
                     <td>
                         <input type="text" size="80" id="path_to_files_folder" name="path_to_files_folder" value="', isset($_SESSION['settings']['path_to_files_folder']) ? $_SESSION['settings']['path_to_files_folder'] : $_SESSION['settings']['cpassman_dir'].'/files', '" class="text ui-widget-content" />
@@ -645,7 +662,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="url_to_files_folder">'.$LANG['admin_url_to_files_folder'].'</label>
                     </td>
                     <td>
@@ -656,7 +673,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="favicon">'.$LANG['admin_misc_favicon'].'</label>
                     </td>
                     <td>
@@ -667,7 +684,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="cpassman_dir">'.$LANG['admin_misc_custom_logo'].'</label>
                     </td>
                     <td>
@@ -678,7 +695,7 @@ echo '
 echo '
             <tr style="margin-bottom:3px">
                 <td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="cpassman_dir">'.$LANG['admin_misc_custom_login_text'].'</label>
                 </td>
                 <td>
@@ -697,10 +714,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
             <tr style="margin-bottom:3px">
             <td>
-                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                   <label>' .
 $LANG['settings_maintenance_mode'].'
-                      &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_maintenance_mode_tip'].'" />
+                      &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_maintenance_mode_tip'].'"></i>
                   </label>
             </td>
             <td>
@@ -711,7 +728,7 @@ $LANG['settings_maintenance_mode'].'
 echo '
             <tr style="margin-bottom:3px">
             <td>
-                  <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                  <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                   <label>'.$LANG['settings_default_session_expiration_time'].'</label>
             </td>
             <td>
@@ -723,10 +740,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
             <tr style="margin-bottom:3px">
                 <td>
-                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                       <label>' .
                           $LANG['settings_enable_sts'] . '
-                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $LANG['settings_enable_sts_tip'] . '" />
+                          &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_enable_sts_tip'].'"></i>
                       </label>
                 </td>
                 <td>
@@ -737,10 +754,10 @@ echo '
 echo '
             <tr style="margin-bottom:3px">
                 <td>
-                      <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                      <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                       <label>' .
                           $LANG['settings_encryptClientServer'] . '
-                          &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="' . $LANG['settings_encryptClientServer_tip'] . '" />
+                          &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_encryptClientServer_tip'].'"></i>
                       </label>
                 </td>
                 <td>
@@ -753,9 +770,9 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
             <tr style="margin-bottom:3px">
                 <td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="proxy_ip">'.$LANG['admin_proxy_ip'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_proxy_ip_tip'].'" />
+                    &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_proxy_ip_tip'].'"></i>
                 </td>
                 <td>
                     <input type="text" size="15" id="proxy_ip" name="proxy_ip" value="', isset($_SESSION['settings']['proxy_ip']) ? $_SESSION['settings']['proxy_ip'] : "", '" class="text ui-widget-content" />
@@ -763,9 +780,9 @@ echo '
             </tr>
             <tr style="margin-bottom:3px">
                 <td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="proxy_port">'.$LANG['admin_proxy_port'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_proxy_port_tip'].'" />
+                    &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_proxy_port_tip'].'"></i>
                 </td>
                 <td>
                     <input type="text" size="10" id="proxy_port" name="proxy_port" value="', isset($_SESSION['settings']['proxy_port']) ? $_SESSION['settings']['proxy_port'] : "", '" class="text ui-widget-content" />
@@ -778,15 +795,15 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
             <tr style="margin-bottom:3px">
                 <td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="pwd_maximum_length">'.$LANG['admin_pwd_maximum_length'].'</label>
-                    &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_pwd_maximum_length_tip'].'" />
+                    &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_pwd_maximum_length_tip'].'"></i>
                 </td>
                 <td>
                     <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
                 <td>
             </tr>';
-            
+
 echo '<tr><td colspan="3"><hr></td></tr>';
 // TIMEZONE
 // get list of all timezones
@@ -794,7 +811,7 @@ $zones = timezone_identifiers_list();
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="timezone">'.$LANG['timezone_selection'].'</label>
                     </td>
                     <td>
@@ -812,7 +829,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="date_format">'.$LANG['date_format'].'</label>
                     </td>
                     <td>
@@ -832,7 +849,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="time_format">'.$LANG['time_format'].'</label>
                     </td>
                     <td>
@@ -851,7 +868,7 @@ $zones = timezone_identifiers_list();
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="default_language">'.$LANG['settings_default_language'].'</label>
                     </td>
                     <td>
@@ -871,7 +888,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="number_of_used_pw">'.$LANG['number_of_used_pw'].'</label>
                     </td>
                     <td>
@@ -882,7 +899,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="pw_life_duration">'.$LANG['pw_life_duration'].'</label>
                     </td>
                     <td>
@@ -893,7 +910,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="nb_bad_authentication">'.$LANG['nb_false_login_attempts'].'</label>
                     </td>
                     <td>
@@ -905,7 +922,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable log connections
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_log_connections'].'</label>
                     </td>
                     <td>
@@ -915,7 +932,7 @@ echo '
 // Enable log accessed
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_log_accessed'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="log_accessed" data-toggle-on="', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="log_accessed_input" name="log_accessed_input" value="', isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1 ? '1' : '0', '" />
@@ -926,16 +943,16 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // enable PF
 echo '
             <tr><td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                 <label>'.$LANG['enable_personal_folder_feature'].'</label>
-                <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['enable_personal_folder_feature_tip'].'" /></span>
+                <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['enable_personal_folder_feature_tip'].'"></i></span>
             </td><td>
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
             </td></tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
 echo '
         <tr><td>
-            <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
             <label>'.$LANG['use_md5_password_as_salt'].'</label>
         </td><td>
             <div class="toggle toggle-modern" id="use_md5_password_as_salt" data-toggle-on="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="use_md5_password_as_salt_input" name="use_md5_password_as_salt_input" value="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '1' : '0', '" />
@@ -943,7 +960,7 @@ echo '
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                 <label>'.$LANG['enable_personal_saltkey_cookie'].'</label>
             </td><td>
                 <div class="toggle toggle-modern" id="enable_personal_saltkey_cookie" data-toggle-on="', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_personal_saltkey_cookie_input" name="enable_personal_saltkey_cookie_input" value="', isset($_SESSION['settings']['enable_personal_saltkey_cookie']) && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1 ? '1' : '0', '" />
@@ -951,7 +968,7 @@ echo '
 // PF cookie for Personal SALTKEY duration
 echo '
             <tr><td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                 <label>'.$LANG['personal_saltkey_cookie_duration'].'</label>
             </td><td>
             <div class="div_radio">
@@ -963,23 +980,23 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Attachments encryption strategy
 echo '
                     <tr><td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>
                             '.$LANG['settings_attachments_encryption'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_attachments_encryption_tip'].'" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_attachments_encryption_tip'].'"></i>&nbsp;</span>
                         </label>
                         </td><td>
-                            <div class="toggle toggle-modern" id="log_accessed" data-toggle-on="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_attachment_encryption_input" name="enable_attachment_encryption_input" value="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '1' : '0', '" />
+                            <div class="toggle toggle-modern" id="enable_attachment_encryption" data-toggle-on="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_attachment_encryption_input" name="enable_attachment_encryption_input" value="', isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1 ? '1' : '0', '" />
                     </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable KB
 echo '
                     <tr><td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>
                             '.$LANG['settings_kb'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_kb_tip'].'" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_kb_tip'].'"></i></span>
                         </label>
                         </td><td>
                             <div class="toggle toggle-modern" id="enable_kb" data-toggle-on="', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_kb_input" name="enable_kb_input" value="', isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1 ? '1' : '0', '" />
@@ -989,10 +1006,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable SUGGESTION
 echo '
                     <tr><td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>
                             '.$LANG['settings_suggestion'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_suggestion_tip'].'" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_suggestion_tip'].'"></i></span>
                         </label>
                         </td><td>
                             <div class="toggle toggle-modern" id="enable_suggestion" data-toggle-on="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_suggestion_input" name="enable_suggestion_input" value="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '1' : '0', '" />
@@ -1003,10 +1020,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>' .
 $LANG['settings_send_stats'].'
-                            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_send_stats_tip'].'" />
+                            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_send_stats_tip'].'"></i>
                         </label>
                     </td>
                     <td>
@@ -1016,10 +1033,10 @@ $LANG['settings_send_stats'].'
 // Enable GET TP Information
 echo '
                     <tr><td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>
                             '.$LANG['settings_get_tp_info'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_get_tp_info_tip'].'" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_get_tp_info_tip'].'"></i></span>
                         </label>
                         </td><td>
                             <div class="toggle toggle-modern" id="get_tp_info" data-toggle-on="', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="get_tp_info_input" name="get_tp_info_input" value="', isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1 ? '1' : '0', '" />
@@ -1037,50 +1054,68 @@ echo '
 // Update Personal folders for users
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_check_pf\')" style="cursor:pointer;">'.$LANG['admin_action_check_pf'].'</a>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_check_pf\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_check_pf'].'</label>
                     <span id="result_admin_action_check_pf" style="margin-left:10px;display:none;"><img src="includes/images/tick.png" alt="" /></span>
                 </div>';
 // Clean DB with orphan items
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_clean_items\')" style="cursor:pointer;">'.$LANG['admin_action_db_clean_items'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_clean_items_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_clean_items'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_db_clean_items'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_db_clean_items_tip'].'"></i></span>
                     <span id="result_admin_action_db_clean_items" style="margin-left:10px;"></span>
                 </div>';
 // Optimize the DB
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_db_optimize\')" style="cursor:pointer;">'.$LANG['admin_action_db_optimize'].'</a>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_optimize\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_db_optimize'].'</label>
                     <span id="result_admin_action_db_optimize" style="margin-left:10px;"></span>
                 </div>';
 // Purge old files
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_purge_old_files\')" style="cursor:pointer;">'.$LANG['admin_action_purge_old_files'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_purge_old_files_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_purge_old_files\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_purge_old_files'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_purge_old_files_tip'].'"></i></span>
                     <span id="result_admin_action_purge_old_files" style="margin-left:10px;"></span>
                 </div>';
 // Reload Cache Table
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_reload_cache_table\')" style="cursor:pointer;">'.$LANG['admin_action_reload_cache_table'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_reload_cache_table_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_reload_cache_table\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_reload_cache_table'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_reload_cache_table_tip'].'"></i></span>
                     <span id="result_admin_action_reload_cache_table" style="margin-left:10px;"></span>
                 </div>';
 // Change main SALT key
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="$(\'#div_change_salt_key\').show()" style="cursor:pointer;">'.$LANG['admin_action_change_salt_key'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_change_salt_key_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'div_change_salt_key\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_change_salt_key'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_change_salt_key_tip'].'"></i></span>
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
-                        <img src="includes/images/asterisk.png" alt="" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but" />
+						<span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
                         &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
@@ -1088,24 +1123,27 @@ echo '
 // Correct passwords prefix
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">'.$LANG['admin_action_pw_prefix_correct'].'</a>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_pw_prefix_correct_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['admin_action_pw_prefix_correct'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_pw_prefix_correct_tip'].'"></i></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
-                    <span style="float:left;">
-                    <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
-                    '.$LANG['admin_action_attachments_cryption'].'
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_attachments_cryption_tip'].'" /></span>
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
                     <div class="div_radio" style="float:left;">
                         <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
                         <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
                     </div>
-                    <a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">'.$LANG['admin_action_db_backup_start_tip'].'</a>
+                    '.$LANG['admin_action_attachments_cryption'].'
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_attachments_cryption_tip'].'"></i></span>
                     <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
                 </div>';
 echo '
@@ -1119,9 +1157,9 @@ echo '
 // After how long, edition is considered as failed or finished
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_delay_for_item_edition'].
-    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_delay_for_item_edition_tip'].'" /></span>
+    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_delay_for_item_edition_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" />
@@ -1129,7 +1167,7 @@ echo '
 // Expired time for OTV - otv_expiration_period
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_otv_expiration_period'].'</label>
                     </td><td>
                     <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" />
@@ -1139,7 +1177,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Managers can edit & delete items they are allowed to see
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_manager_edit'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="manager_edit" data-toggle-on="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_edit_input" name="manager_edit_input" value="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '1' : '0', '" />
@@ -1149,7 +1187,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // max items
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="max_last_items">'.$LANG['max_last_items'].'</label>
                     </td><td>
                     <input type="text" size="4" id="max_last_items" name="max_last_items" value="', isset($_SESSION['settings']['max_latest_items']) ? $_SESSION['settings']['max_latest_items'] : '', '" class="text ui-widget-content" />
@@ -1159,7 +1197,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Duplicate folder
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['duplicate_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="duplicate_folder" data-toggle-on="', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="duplicate_folder_input" name="duplicate_folder_input" value="', isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 1 ? '1' : '0', '" />
@@ -1167,7 +1205,7 @@ echo '
 // Duplicate item name
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['duplicate_item'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="duplicate_item" data-toggle-on="', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="duplicate_item_input" name="duplicate_item_input" value="', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? '1' : '0', '" />
@@ -1175,7 +1213,7 @@ echo '
 // Duplicate item name in same folder - item_duplicate_in_same_folder
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['duplicate_item_in_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="item_duplicate_in_same_folder" data-toggle-on="', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_duplicate_in_same_folder_input" name="item_duplicate_in_same_folder_input" value="', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? '1' : '0', '" />
@@ -1183,10 +1221,10 @@ echo '
 // Enable show_only_accessible_folders
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['show_only_accessible_folders'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['show_only_accessible_folders_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['show_only_accessible_folders_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="show_only_accessible_folders" data-toggle-on="', isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="show_only_accessible_folders_input" name="show_only_accessible_folders_input" value="', isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1 ? '1' : '0', '" />
@@ -1194,10 +1232,10 @@ echo '
 // Enable subfolder_rights_as_parent
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['subfolder_rights_as_parent'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['subfolder_rights_as_parent_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['subfolder_rights_as_parent_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="subfolder_rights_as_parent" data-toggle-on="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="subfolder_rights_as_parent_input" name="subfolder_rights_as_parent_input" value="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? '1' : '0', '" />
@@ -1205,10 +1243,10 @@ echo '
 // Enable extra fields for each Item
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_item_extra_fields'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_item_extra_fields_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_item_extra_fields_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '1' : '0', '" />
@@ -1218,7 +1256,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // enable FAVOURITES
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['enable_favourites'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_favourites" data-toggle-on="', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_favourites_input" name="enable_favourites_input" value="', isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] == 1 ? '1' : '0', '" />
@@ -1226,7 +1264,7 @@ echo '
 // enable USER can create folders
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['enable_user_can_create_folders'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_user_can_create_folders" data-toggle-on="', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_user_can_create_folders_input" name="enable_user_can_create_folders_input" value="', isset($_SESSION['settings']['enable_user_can_create_folders']) && $_SESSION['settings']['enable_user_can_create_folders'] == 1 ? '1' : '0', '" />
@@ -1234,7 +1272,7 @@ echo '
 // enable can_create_root_folder
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['setting_can_create_root_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="can_create_root_folder" data-toggle-on="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="can_create_root_folder_input" name="can_create_root_folder_input" value="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '1' : '0', '" />
@@ -1244,10 +1282,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable activate_expiration
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['admin_setting_activate_expiration'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_setting_activate_expiration_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_setting_activate_expiration_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="activate_expiration" data-toggle-on="', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="activate_expiration_input" name="activate_expiration_input" value="', isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] == 1 ? '1' : '0', '" />
@@ -1255,10 +1293,10 @@ echo '
 // Enable enable_delete_after_consultation
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['admin_setting_enable_delete_after_consultation'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_setting_enable_delete_after_consultation_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_setting_enable_delete_after_consultation_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_delete_after_consultation" data-toggle-on="', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_delete_after_consultation_input" name="enable_delete_after_consultation_input" value="', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '1' : '0', '" />
@@ -1268,22 +1306,22 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable Printing
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_printing'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_printing_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_printing_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="allow_print" data-toggle-on="', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="allow_print_input" name="allow_print_input" value="', isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 ? '1' : '0', '" />
                 </td></tr>';
-                
+
 // Enable Printing Groups - roles_allowed_to_print
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_roles_allowed_to_print'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_roles_allowed_to_print_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_roles_allowed_to_print_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="hidden" id="roles_allowed_to_print" name="roles_allowed_to_print" value="', isset($_SESSION['settings']['roles_allowed_to_print']) ? $_SESSION['settings']['roles_allowed_to_print'] : '', '" />
@@ -1303,7 +1341,7 @@ echo '
 // Enable IMPORT
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_importing'].'
                     </label>
@@ -1315,10 +1353,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // Enable Item modification by anyone
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_anyone_can_modify'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_anyone_can_modify_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_anyone_can_modify_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="anyone_can_modify" data-toggle-on="', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="anyone_can_modify_input" name="anyone_can_modify_input" value="', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '1' : '0', '" />
@@ -1326,7 +1364,7 @@ echo '
 // Enable Item modification by anyone by default
 echo '
                 <tr id="tr_option_anyone_can_modify_bydefault"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':' style="display:none;"', '><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_anyone_can_modify_bydefault'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="anyone_can_modify_bydefault" data-toggle-on="', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="anyone_can_modify_bydefault_input" name="anyone_can_modify_bydefault_input" value="', isset($_SESSION['settings']['anyone_can_modify_bydefault']) && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ? '1' : '0', '" />
@@ -1334,7 +1372,7 @@ echo '
 // enable restricted_to option
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_restricted_to'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="restricted_to" data-toggle-on="', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_input" name="restricted_to_input" value="', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? '1' : '0', '" />
@@ -1342,7 +1380,7 @@ echo '
 // enable restricted_to_roles
 echo '
                 <tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline':'none', ';"><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['restricted_to_roles'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="restricted_to_roles" data-toggle-on="', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_roles_input" name="restricted_to_roles_input" value="', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? '1' : '0', '" />
@@ -1352,10 +1390,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // enable show copy to clipboard small icons
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['copy_to_clipboard_small_icons'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['copy_to_clipboard_small_icons_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['copy_to_clipboard_small_icons_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="copy_to_clipboard_small_icons" data-toggle-on="', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="copy_to_clipboard_small_icons_input" name="copy_to_clipboard_small_icons_input" value="', isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? '1' : '0', '" />
@@ -1363,7 +1401,7 @@ echo '
 // Enable Show description in items list
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_show_description'].'
                     </label>
@@ -1373,10 +1411,10 @@ echo '
 // In Tree, display number of Items in subfolders and number of subfolders - tree_counters
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_tree_counters'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_tree_counters_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_tree_counters_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="tree_counters" data-toggle-on="', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="tree_counters_input" name="tree_counters_input" value="', isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 ? '1' : '0', '" />
@@ -1384,9 +1422,9 @@ echo '
 // nb of items to display by ajax query
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['nb_items_by_query'].'</label>
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['nb_items_by_query_tip'].'" /></span>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['nb_items_by_query_tip'].'"></i></span>
                     </td><td>
                     <input type="text" size="4" id="nb_items_by_query" name="nb_items_by_query" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : '', '" class="text ui-widget-content" />
                 <tr><td>';
@@ -1395,7 +1433,7 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // enable sending email on USER login
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['enable_send_email_on_user_login'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_send_email_on_user_login" data-toggle-on="', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_send_email_on_user_login_input" name="enable_send_email_on_user_login_input" value="', isset($_SESSION['settings']['enable_send_email_on_user_login']) && $_SESSION['settings']['enable_send_email_on_user_login'] == 1 ? '1' : '0', '" />
@@ -1403,7 +1441,7 @@ echo '
 // enable email notification on item shown
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['enable_email_notification_on_item_shown'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_email_notification_on_item_shown" data-toggle-on="', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_email_notification_on_item_shown_input" name="enable_email_notification_on_item_shown_input" value="', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '1' : '0', '" />
@@ -1411,7 +1449,7 @@ echo '
 // enable email notification when user password is changed
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['enable_email_notification_on_user_pw_change'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="enable_email_notification_on_user_pw_change" data-toggle-on="', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_email_notification_on_user_pw_change_input" name="enable_email_notification_on_user_pw_change_input" value="', isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1 ? '1' : '0', '" />
@@ -1421,10 +1459,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // enable add manual entries in History
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_insert_manual_entry_item_history'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_insert_manual_entry_item_history_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_insert_manual_entry_item_history_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="insert_manual_entry_item_history" data-toggle-on="', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="insert_manual_entry_item_history_input" name="insert_manual_entry_item_history_input" value="', isset($_SESSION['settings']['insert_manual_entry_item_history']) && $_SESSION['settings']['insert_manual_entry_item_history'] == 1 ? '1' : '0', '" />
@@ -1433,10 +1471,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 // OffLine mode options
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_offline_mode'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_offline_mode_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_attachments_cryption_tip'].'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="settings_offline_mode" data-toggle-on="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="settings_offline_mode_input" name="settings_offline_mode_input" value="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? '1' : '0', '" />
@@ -1445,7 +1483,7 @@ echo '
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label for="offline_key_level">'.$LANG['offline_mode_key_level'].'</label>
                     </td>
                     <td>
@@ -1457,10 +1495,11 @@ echo '
                         </select>
                     <td>
                 </tr>';
+echo '<tr><td colspan="3"><hr></td></tr>';
 // SYSLOG ENABLE
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['syslog_enable'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="syslog_enable" data-toggle-on="', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="syslog_enable_input" name="syslog_enable_input" value="', isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1 ? '1' : '0', '" />
@@ -1469,7 +1508,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-long-arrow-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['syslog_host'].'
                         </td>
                         <td>
@@ -1480,13 +1519,27 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-long-arrow-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['syslog_port'].'
                         </td>
                         <td>
                             <input id="syslog_port" name="syslog_port" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_port']) ? '514' : $_SESSION['settings']['syslog_port'], '" />
                         </td>
                     </tr>';
+
+echo '<tr><td colspan="3"><hr></td></tr>';
+
+// Automatic server password change
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['server_password_change_enable'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i>&nbsp;</span>
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="enable_server_password_change" data-toggle-on="', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_server_password_change_input" name="enable_server_password_change_input" value="', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
 echo '
             </table>
             </div>';
@@ -1500,14 +1553,14 @@ if (!extension_loaded('ldap')) {
     echo '
     <div style="margin-bottom:3px;">
         <div class="ui-widget-content ui-corner-all" style="padding:10px;">
-            <img src="includes/images/error.png" alt="">&nbsp;&nbsp;'.$LANG['ldap_extension_not_loaded'].'
+            <i class="fa fa-warning fa-2x"></i>&nbsp;'.$LANG['ldap_extension_not_loaded'].'
         </div>
     </div>';
 } else {
     // Enable LDAP mode
     echo '
     <div style="margin-bottom:3px;">
-        <label for="ldap_mode">'.$LANG['settings_ldap_mode'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_mode_tip'].'" /></label>
+        <label for="ldap_mode">'.$LANG['settings_ldap_mode'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_mode_tip'].'"></i></label>
 		<div class="toggle toggle-modern" id="ldap_mode" data-toggle-on="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_mode_input" name="ldap_mode_input" value="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '1' : '0', '" />
 	</div>';
     // Type
@@ -1558,35 +1611,42 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 if (isset($ldap_type) && $ldap_type == 'posix-search') {
         echo '
                 <tr>
-                    <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
-                        $LANG['settings_ldap_user_attribute_tip'].'" /></label></td>
+                    <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_user_attribute_tip'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" /></td>
+                </tr>';
+                // LDAP
+                echo '
+                <tr>
+                    <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
+                        $LANG['settings_ldap_usergroup_tip'].'" /></label></td>
+                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
+                        isset($_SESSION['settings']['ldap_usergroup']) ? $_SESSION['settings']['ldap_usergroup'] : '', '" /></td>
                 </tr>';
                 // LDAP BIND DN for search
                 echo '
                 <tr>
-                    <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_dn_tip'].'" /></label></td>
+                    <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_bind_dn_tip'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" /></td>
                 </tr>';
                 // LDAP BIND PASSWD for search
                 echo '
                 <tr>
-                    <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_bind_passwd_tip'].'" /></label></td>
+                    <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_bind_passwd_tip'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" /></td>
                 </tr>';
                 // LDAP BASE for search
                 echo '
                 <tr>
-                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_search_base_tip'].'" /></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
+                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="settings_ldap_search_base_tip" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                 </tr>';
 }
 
 // Domain controler
 echo '
                     <tr>
-                        <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_domain_controler_tip'].'" /></label></td>
+                        <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_domain_controler_tip'].'"></i></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" /></td>
                     </tr>';
 
@@ -1609,7 +1669,7 @@ echo '
 // Enable only localy declared users with tips help
 echo '
                     <tr>
-                        <td><label>'.$LANG['settings_ldap_elusers'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_ldap_elusers_tip'].'" /></label></td>
+                        <td><label>'.$LANG['settings_ldap_elusers'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_elusers_tip'].'"></i></label></td>
                         <td>
                             <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '1' : '0', '" />
                         </td>
@@ -1627,35 +1687,38 @@ echo '
 echo '
             <div id="tabs-5">
                 <div class="" style="padding: 0 .7em;">
-                    <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
+                   <i class="fa fa-chevron-circle-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <b>'.$LANG['admin_one_shot_backup'].'</b>
                 </div>
                 <div style="margin:0 0 5px 20px;">
-                    <table>';
+                    <table width="100%">';
 // Backup the DB
 echo '
                     <tr style="margin-bottom:3px">
-                        <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <td width="35%">
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_action_db_backup'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_db_backup_tip'].'"></i></span>
                         </td>
                         <td>
-                        <span id="result_admin_action_db_backup" style="margin-left:10px;"></span>
-                        <span id="result_admin_action_db_backup_get_key" style="margin-left:10px;">
+                        <span id="result_admin_action_db_backup_get_key" style="margin-left:10px; text-align:left;">
                             &nbsp;'.$LANG['encrypt_key'].'<input type="password" size="20" id="result_admin_action_db_backup_key" />
-                            <img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_key_tip'].'" />
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;" />
+                            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_db_backup_key_tip'].'"></i>&nbsp;
+                            <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span>
                         </span>
+                        <span id="result_admin_action_db_backup" style="margin-left:10px;"></span>
                         </td>
                     </tr>';
 // Restore the DB
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_action_db_restore'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_action_db_restore_tip'].'" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_db_restore_tip'].'"></i></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1672,32 +1735,32 @@ echo '
 
 echo '
                 <div class="" style="0padding: 0 .7em;">
-                    <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
+                   <i class="fa fa-chevron-circle-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <b>'.$LANG['admin_script_backups'].'</b>&nbsp;
-                    <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backups_tip'].'</h2>" /></span>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_script_backups_tip'].'"></i></span>
                 </div>
                 <div style="margin:0 0 5px 20px;">
-                    <table>';
+                    <table width="100%">';
 // Backups script path
 echo '
                     <tr style="margin-bottom:3px">
-                        <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <td width="35%">
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_script_backup_path'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_path_tip'].'</h2>" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_script_backup_path_tip'].'"></i></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <input id="bck_script_path" name="bck_script_path" type="text" size="80px" value="', isset($_SESSION['settings']['bck_script_path']) ? $_SESSION['settings']['bck_script_path'] : $_SESSION['settings']['cpassman_dir'].'/backups', '" />
+                        <input id="bck_script_path" name="bck_script_path" type="text" size="60px" value="', isset($_SESSION['settings']['bck_script_path']) ? $_SESSION['settings']['bck_script_path'] : $_SESSION['settings']['cpassman_dir'].'/backups', '" />
                         </td>
                     </tr>';
 // Backups script name
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_script_backup_filename'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_filename_tip'].'</h2>" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_script_backup_filename_tip'].'"></i></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1708,9 +1771,9 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_script_backup_encryption'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_encryption_tip'].'</h2>" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_script_backup_encryption_tip'].'"></i></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
@@ -1721,14 +1784,18 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         '.$LANG['admin_script_backup_decrypt'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_script_backup_decrypt_tip'].'</h2>" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_script_backup_decrypt_tip'].'"></i></span>
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_decrypt_file" name="bck_script_decrypt_file" type="text" size="50px" value="" />
-                        <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_backup_decrypt\')" style="cursor:pointer;" />
+                        &nbsp;
+                        <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_backup_decrypt\')" style="cursor:pointer;">
+                            <i class="fa fa-square fa-stack-2x"></i>
+                            <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                        </span>
                         </td>
                     </tr>';
 
@@ -1742,7 +1809,7 @@ echo '
 echo '
             <div id="tabs-6">
                 <div class="" style="padding: 0 .7em;">
-                    <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
+                   <i class="fa fa-chevron-circle-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <b>'.$LANG['admin_emails_configuration'].'</b>
                 </div>
                 <div style="margin:0 0 5px 20px;">
@@ -1751,7 +1818,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_smtp_server'].'
                         </td>
                         <td>
@@ -1762,7 +1829,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_auth'].'
                         </td>
                         <td>
@@ -1773,7 +1840,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_auth_username'].'
                         </td>
                         <td>
@@ -1784,7 +1851,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_auth_pwd'].'
                         </td>
                         <td>
@@ -1795,9 +1862,9 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_server_url'].'
-                        <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_server_url_tip'].'</h2>" /></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_email_server_url_tip'].'"></i></span>
                         </td>
                         <td>
                             <input id="email_server_url" name="email_server_url" type="text" size="40px" value="', !isset($_SESSION['settings']['email_server_url']) ? $_SESSION['settings']['cpassman_url'] : $_SESSION['settings']['email_server_url'], '" />
@@ -1807,7 +1874,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_port'].'
                         </td>
                         <td>
@@ -1818,7 +1885,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_security'].'
                         </td>
                         <td>
@@ -1833,7 +1900,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_from'].'
                         </td>
                         <td>
@@ -1844,7 +1911,7 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                            <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_from_name'].'
                         </td>
                         <td>
@@ -1858,7 +1925,7 @@ echo '
 
 echo '
                 <div class="" style="0padding: 0 .7em;">
-                    <span class="ui-icon ui-icon-transferthick-e-w" style="float: left; margin-right: .3em;">&nbsp;</span>
+                   <i class="fa fa-chevron-circle-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <b>'.$LANG['admin_emails_configuration_testing'].'</b>
                 </div>
                 <div id="email_testing_results" class="ui-state-error ui-corner-all" style="padding:5px;display:none;margin:2px;"></div>
@@ -1868,12 +1935,15 @@ echo '
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.$LANG['admin_email_test_configuration'].'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_test_configuration_tip'].'</h2>" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_email_test_configuration_tip'].'"></i></span>
                         </td>
                         <td>
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_test_configuration\')" style="cursor:pointer;" />
+                            <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_test_configuration\')" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span>
                         </td>
                     </tr>';
 // Send emails backlog
@@ -1882,12 +1952,15 @@ $nb_emails = DB::count();
 echo '
                     <tr style="margin-bottom:3px">
                         <td>
-                        <span class="ui-icon ui-icon-gear" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                             '.str_replace("#nb_emails#", $nb_emails, $LANG['admin_email_send_backlog']).'
-                            <span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" style="font-size:11px;" title="<h2>'.$LANG['admin_email_send_backlog_tip'].'</h2>" /></span>
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_email_send_backlog_tip'].'"></i></span>
                         </td>
                         <td>
-                            <img src="includes/images/asterisk.png" class="tip" alt="" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_send_backlog\')" style="cursor:pointer;" />
+                            <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_email_send_backlog\')" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span>
                         </td>
                     </tr>';
 
@@ -1903,9 +1976,9 @@ echo '
 // Max file size
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_maxfilesize'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_maxfilesize_tip'].'" /></span>
+                    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_maxfilesize_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
@@ -1913,9 +1986,9 @@ echo '
 // Extension for Documents
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_docext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_docext_tip'].'" /></span>
+                    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_docext_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
@@ -1923,9 +1996,9 @@ echo '
 // Extension for Images
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_imagesext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_imagesext_tip'].'" /></span>
+                    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_imagesext_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
@@ -1933,9 +2006,9 @@ echo '
 // Extension for Packages
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_pkgext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_pkgext_tip'].'" /></span>
+                    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_pkgext_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
@@ -1943,9 +2016,9 @@ echo '
 // Extension for Other
 echo '
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_otherext'].
-                    '<span style="margin-left:0px;"><img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_otherext_tip'].'" /></span>
+                    '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_otherext_tip'].'"></i></span>
                     </label>
                     </td><td>
                     <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>
@@ -1955,10 +2028,10 @@ echo '<tr><td colspan="3"><hr></td></tr>';
 echo '
                 <tr style="margin-bottom:3px">
                     <td>
-                        <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                         <label>' .
                         $LANG['settings_upload_imageresize_options'].'
-                        &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_upload_imageresize_options_tip'].'" />
+                        &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_imageresize_options_tip'].'"></i>
                         </label>
                     </td>
                     <td>
@@ -1966,7 +2039,7 @@ echo '
                     </td>
                 </tr>
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_imageresize_options_w'].
                     '</label>
                     </td><td>
@@ -1976,7 +2049,7 @@ echo '
                     <td>
                 </tr>
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_imageresize_options_h'].
                     '</label>
                     </td><td>
@@ -1986,7 +2059,7 @@ echo '
                     <td>
                 </tr>
                 <tr><td>
-                    <span class="ui-icon ui-icon-wrench" style="float: left; margin-right: .3em;">&nbsp;</span>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_upload_imageresize_options_q'].
                     '</label>
                     </td><td>

@@ -3,7 +3,7 @@
  *
  * @file          load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -37,7 +37,7 @@ $htmlHeaders = '
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
 
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
 
         <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
@@ -59,7 +59,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
-		
+
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
         <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
@@ -72,7 +72,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css">
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css">
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
@@ -116,7 +116,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
     if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
         $htmlHeaders .= '
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.js"></script>';
+        <!--<script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>-->';
     }
 }
 // Get Favicon
@@ -156,7 +156,7 @@ $htmlHeaders .= '
         return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
-    
+
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();
@@ -429,7 +429,11 @@ $htmlHeaders .= '
 				data = $.parseJSON(data);
                 //check if format error
                 if (data.error == "") {
-                    $("#last_seen_items_list").html(data.text);
+                    if (data.text == null) {
+                        $("#last_seen_items_list").html("<li>'.$LANG['none'].'</li>");
+                    } else {
+                        $("#last_seen_items_list").html(data.text);
+                    }
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
 					// show notification
@@ -458,13 +462,13 @@ $htmlHeaders .= '
             },
 			function(data) {
 				if (data[0].error == "something_wrong") {
-					
+
 				}
 			},
 			"json"
         );
 		*/
-		
+
 		// show dialog
         $("#dialog_duo").dialog({
             width: 600,
@@ -478,7 +482,7 @@ $htmlHeaders .= '
         }).dialog("open");
     }
 
-    // DUO box - wait 
+    // DUO box - wait
     function loadDuoDialogWait()
     {
         $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['duo_wait'].'</center>");
@@ -497,9 +501,10 @@ $htmlHeaders .= '
                     "sources/main.queries.php",
                     {
                         type                : "change_pw",
-                        change_pw_origine    : "first_change",
-                        complexity            :    $("#user_pw_complexity").val(),
-                        data                 :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
+                        change_pw_origine   : "first_change",
+                        complexity          : $("#user_pw_complexity").val(),
+                        key                 : "'.$_SESSION['key'].'",
+                        data                : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
                     },
                     function(data) {
                         if (data[0].error == "complexity_level_not_reached") {
@@ -530,6 +535,7 @@ $htmlHeaders .= '
                     type                : "change_pw",
                     change_pw_origine    : "first_change",
                     complexity            :    $("#user_pw_complexity").val(),
+                    key                 : "'.$_SESSION['key'].'",
                     data                 :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
                 },
                 function(data) {
@@ -555,7 +561,7 @@ $htmlHeaders .= '
         // load DUO login
         if ($("#duo_sig_response").val() != "") {
             $("#login").val($("#duo_login").val());
-            
+
             // checking that response is corresponding to user credentials
             $.post(
                 "sources/identify.php",
@@ -571,7 +577,7 @@ $htmlHeaders .= '
                     } else {
                         // finally launch identification process inside Teampass.
                         loadDuoDialogWait();
-                        
+
                         $.post(
                             "sources/identify.php",
                             {
@@ -592,12 +598,13 @@ $htmlHeaders .= '
             );
         }
 
-        $(".button").button();
-        
+        $(".button, .btn").button();
+
         //TOOLTIPS
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
             maxWidth: 400,
-            contentAsHTML: true
+            contentAsHTML: true,
+			multiple: true
         });
         $("#user_session").val(sessionStorage.password);
 
@@ -756,9 +763,9 @@ $htmlHeaders .= '
                 "'.$LANG['ok'].'": function() {
                     $("#div_change_personal_saltkey_wait").show();
                     var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
-					
+
 					$("#div_change_personal_saltkey_wait_progress").html("  0%");
-					
+
                     //Send query
                     $.post(
                         "sources/main.queries.php",
@@ -993,6 +1000,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                type    : "cpm_status"
             },
             function(data) {
+                console.log(">> "+data[0].output);
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
                 } else if (data[0].error == "conf_block") {
@@ -1000,12 +1008,13 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");
                 }
+                console.log("ending");
             },
             "json"
        );
     }
     //Load function on page load
-    $(function() {
+    $(function() {console.log("starting");
         LoadCPMInfo();
     });';
 } else if (isset($_GET['page']) && $_GET['page'] == "favourites") {

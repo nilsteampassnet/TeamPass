@@ -3,7 +3,7 @@
  *
  * @file          users.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link        http://www.teampass.net
@@ -137,9 +137,9 @@ if (!empty($_POST['type'])) {
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             // Prepare variables
-            $login = htmlspecialchars_decode($dataReceived['login']);
-            $name = htmlspecialchars_decode($dataReceived['name']);
-            $lastname = htmlspecialchars_decode($dataReceived['lastname']);
+            $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
+            $name = noHTML(htmlspecialchars_decode($dataReceived['name']));
+            $lastname = noHTML(htmlspecialchars_decode($dataReceived['lastname']));
             $pw = htmlspecialchars_decode($dataReceived['pw']);
 
             // Empty user
@@ -370,6 +370,7 @@ if (!empty($_POST['type'])) {
                 "id = %i",
                 $_POST['id']
             );
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
          * UPDATE ADMIN RIGHTS FOR USER
@@ -385,13 +386,13 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'admin' => $_POST['value'],
-                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "1",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = %i",
                 $_POST['id']
             );
-            
+
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
@@ -403,13 +404,25 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-
+			
+			// Get some data
+            $data = DB::queryfirstrow(
+                "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+			
             DB::update(
                 prefix_table("users"),
                 array(
                     'gestionnaire' => $_POST['value'],
-                    'admin' => $_POST['value'] == 1 ? "0" : "1",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "1"
+                    'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
+						($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
+						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" : 
+						"1")
+					),
+                    'admin' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = ".$_POST['id']
             );
@@ -438,6 +451,36 @@ if (!empty($_POST['type'])) {
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
         /**
+         * UPDATE CAN MANAGE ALL USERS RIGHTS FOR USER
+		 * Notice that this role must be also Manager
+         */
+        case "can_manage_all_users":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+			
+			// Get some data
+            $data = DB::queryfirstrow(
+                "SELECT admin, gestionnaire FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            DB::update(
+                prefix_table("users"),
+                array(
+                    'can_manage_all_users' => $_POST['value'],
+                    'gestionnaire' => ($data['gestionnaire'] == 0 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 0) ? "1" : "0")),
+                    'admin' => $_POST['value'] == 1 ? "0" : "0",
+                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                   ),
+                "id = ".$_POST['id']
+            );
+            echo prepareExchangedData(array("error" => ""), "encode");
+            break;
+        /**
          * UPDATE PERSONNAL FOLDER FOR USER
          */
         case "personal_folder":
@@ -455,6 +498,7 @@ if (!empty($_POST['type'])) {
                 "id = %i",
                 $_POST['id']
             );
+            echo prepareExchangedData(array("error" => ""), "encode");
             break;
 
         /**
@@ -520,7 +564,7 @@ if (!empty($_POST['type'])) {
                     $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
                 }
             } else {
-                $text = '<span style=\"text-align:center\"><img src=\"includes/images/error.png\" /></span>';
+                $text = '<span style=\"text-align:center\"><i class=\"fa fa-warning mi-red\" ></i>&nbsp;</span>';
             }
             // send back data
             echo '[{"text":"'.$text.'"}]';
@@ -705,7 +749,7 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']); 
+        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             break;
         /*
         * Check the domain
@@ -982,9 +1026,9 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-            
+
             $arrData = array();
-            
+
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
             $tree->register();
@@ -1027,7 +1071,7 @@ if (!empty($_POST['type'])) {
                     $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'</option>';
                 }
             }
-            
+
             // get FOLDERS FORBIDDEN
             $forbiddenFolders = "";
             $userForbidFolders = explode(';', $rowUser['groupes_interdits']);
@@ -1041,12 +1085,12 @@ if (!empty($_POST['type'])) {
                     }
                     if (in_array($t->id, $userForbidFolders)) {
                         $tmp = ' selected="selected"';
-                    }                    
-                    $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';                    
+                    }
+                    $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
                     $prev_level = $t->nlevel;
                 }
             }
-            
+
             // get FOLDERS ALLOWED
             $allowedFolders = "";
             $userAllowFolders = explode(';', $rowUser['groupes_visibles']);
@@ -1065,14 +1109,14 @@ if (!empty($_POST['type'])) {
                     $prev_level = $t->nlevel;
                 }
             }
-            
+
             // get USER STATUS
             if ($rowUser['disabled'] == 1) {
                 $arrData['info'] = $LANG['user_info_locked'].'<br /><input type="checkbox" value="unlock" name="1" class="chk">&nbsp;<label for="1">'.$LANG['user_info_unlock_question'].'</label><br /><input type="checkbox"  value="delete" id="account_delete" class="chk" name="2" onclick="confirmDeletion()">&nbsp;<label for="2">'.$LANG['user_info_delete_question']."</label>";
             } else {
                 $arrData['info'] = $LANG['user_info_active'].'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.$LANG['user_info_lock_question'];
             }
-            
+
             $arrData['error'] = "no";
             $arrData['log'] = $rowUser['login'];
             $arrData['name'] = $rowUser['name'];
@@ -1082,10 +1126,10 @@ if (!empty($_POST['type'])) {
             $arrData['managedby'] = $managedBy;
             $arrData['foldersForbid'] = $forbiddenFolders;
             $arrData['foldersAllow'] = $allowedFolders;
-            
+
             $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             echo $return_values;
-            
+
             break;
 
         /**
@@ -1097,18 +1141,18 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-            
+
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
-            
+
             // Empty user
             if (mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])) == "") {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
-            
+
             $account_status_action = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['action_on_user']));
-            
+
             // delete account
             // delete user in database
             if ($account_status_action == "delete") {
@@ -1152,24 +1196,24 @@ if (!empty($_POST['type'])) {
         logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             }
             else {
-                        
+
                 // Get old data about user
                 $oldData = DB::queryfirstrow(
                     "SELECT * FROM ".prefix_table("users")."
                     WHERE id = %i",
                     $_POST['id']
                 );
-                
+
                 // manage account status
                 $accountDisabled = 0;
                 if ($account_status_action == "unlock") {
                     $accountDisabled = 0;
                     $logDisabledText = "at_user_unlocked";
                 } elseif ($account_status_action == "lock") {
-                    $accountDisabled = 1;        
-                    $logDisabledText = "at_user_locked";        
+                    $accountDisabled = 1;
+                    $logDisabledText = "at_user_locked";
                 }
-                
+
                 // update user
                 DB::update(
                     prefix_table("users"),
@@ -1187,18 +1231,18 @@ if (!empty($_POST['type'])) {
                     "id = %i",
                     $_POST['id']
                 );
-                
-                
+
+
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
             logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
                 }
-                
+
                 if ($oldData['disabled'] != $accountDisabled) {
                     // update LOG
             logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 }
-                
+
     /*
                 DB::update(
                     prefix_table("users"),
@@ -1213,7 +1257,7 @@ if (!empty($_POST['type'])) {
         logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 */
             }
-            
+
             echo '[ { "error" : "no" } ]';
             break;
 
