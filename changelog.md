@@ -33,7 +33,7 @@ Last changes
  FIX: By creating a role, this new one is directly visible by creator.
  FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
 
-2.1.26
+2.1.25
  #1169 sending Google Authenticator code through index page
  #1160 hiding user password change option if DUOSecurity
  #1152 Error while saving settings
