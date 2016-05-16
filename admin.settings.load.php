@@ -59,12 +59,18 @@ function categoryAdd() {
             // build new row
             $("#tbl_categories").append(
                 '<tr id="t_cat_'+data[0].id+'"><td colspan="2">'+
-                '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;'+
+                '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;&nbsp;'+
+                '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
+                data[0].id+')" style="cursor:pointer;">'+
+                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
+                '</span>&nbsp;'+
                 '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
-                $("#new_category_label").val()+'</label><a href="#" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
-                data[0].id+')" class="cpm_button tip" style="margin-left:20px;"><img  src="includes/images/zone--plus.png" /></a></td><td>'+
-                '<a href="#" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+data[0].id+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                $("#new_category_label").val()+'</label>'+
+                '</td><td>'+
+                '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
+                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
+                '</span>&nbsp;'+
                 '<?php echo $LANG['category_in_folders_title'];?>:'+
                 '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
                 '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
@@ -169,11 +175,16 @@ function loadFieldsList() {
                 if (val[0] == 1) {
                     newList += '<tr id="t_cat_'+val[1]+'"><td colspan="2">'+
                     '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
+                    '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
+                    val[1]+')" style="cursor:pointer;">'+
+                    '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
+                    '</span>&nbsp;'+
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
                     '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
-                    '<a href="#" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+val[1]+')" class="cpm_button tip" style="margin-left:20px;">'+
-                    '<img  src="includes/images/zone--plus.png"  /></a></td>'+
-                    '<td><a href="#" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" class="cpm_button tip" style="margin-left:5px;"><img src="includes/images/folder_edit.png"  /></a>'+
+                    '</td><td>'+
+                    '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
+                    '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
+                    '</span>&nbsp;'+
                     '<?php echo $LANG['category_in_folders_title'];?>:'+
                     '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
                     '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
@@ -687,10 +698,10 @@ $(function() {
     $("#new_salt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
         if ($("#new_salt_key").val().length != 16) {
-            $("#change_salt_key_image").attr("src", "includes/images/cross.png");
+            $("#change_salt_key_image").html('<i class="fa fa-cross mi-red"></i>');
             $("#change_salt_key_but").hide();
         } else {
-            $("#change_salt_key_image").attr("src", "includes/images/tick.png");
+            $("#change_salt_key_image").html('<i class="fa fa-check mi-green"></i>');
             $("#change_salt_key_but").show();
         }
         // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
@@ -717,7 +728,7 @@ function manageEncryptionOfAttachments(list, cpt) {
             if (data[0].continu == true ) {
                 manageEncryptionOfAttachments(data[0].list, data[0].cpt);
             } else {
-                $("#result_admin_action_attachments_cryption").html("<img src='includes/images/tick.png' alt='' /> "+data[0].cpt+" files changed");
+                $("#result_admin_action_attachments_cryption").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].cpt+" files changed");
             }
         },
         "json"
