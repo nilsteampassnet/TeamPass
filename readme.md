@@ -2,7 +2,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright (c) 2009-2015, [Nils Laumaillé] (Nils@TeamPass.net)
+> Copyright (c) 2009-2016, [Nils Laumaillé] (Nils@TeamPass.net)
 
 ## Licence Agreement
 
@@ -26,10 +26,18 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 
 * Apache,
 * MySQL,
-* PHP 5.3.0 (or higher),
-* mcrypt PHP extension,
-* openssl PHP extension,
-* ldap PHP extension (if used)
+* PHP 5.5.0 (or higher),
+* PHP extensions:
+** mcrypt
+** openssl
+** ldap (if used)
+** mbstring
+** bcmath
+** iconv
+** xml
+** gd
+** openssl
+* Function 'mysqli_fetch_all'
 
 ## Installation
 
@@ -78,7 +86,8 @@ Teampass is translated in next languages:
 * DUTCH
 * ENGLISH
 * FRENCH 
-* GERMAN 
+* GERMAN
+* HUNGARIAN
 * ITALIAN
 * JAPANESE
 * NORWEGIAN 
@@ -89,5 +98,6 @@ Teampass is translated in next languages:
 * SPANISH
 * TURKISH
 * UKRAINIAN
+* VIETNAMESE
 
 Languages strings are managed at [POEditor.com] (https://poeditor.com/projects/view?id=16418).
