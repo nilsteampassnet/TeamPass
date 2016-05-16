@@ -1059,7 +1059,7 @@ echo '
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
                     <label>'.$LANG['admin_action_check_pf'].'</label>
-                    <span id="result_admin_action_check_pf" style="margin-left:10px;display:none;"><img src="includes/images/tick.png" alt="" /></span>
+                    <span id="result_admin_action_check_pf" style="margin-left:10px;display:none;"></span>
                 </div>';
 // Clean DB with orphan items
 echo '
@@ -1114,7 +1114,7 @@ echo '
                     <label>'.$LANG['admin_action_change_salt_key'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_change_salt_key_tip'].'"></i></span>
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
-                        <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><img src="includes/images/cross.png" id="change_salt_key_image">&nbsp;
+                        <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><span id="change_salt_key_image"></span>&nbsp;
 						<span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
                         &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
@@ -1618,8 +1618,7 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 // LDAP
                 echo '
                 <tr>
-                    <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.
-                        $LANG['settings_ldap_usergroup_tip'].'" /></label></td>
+                    <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_usergroup_tip'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_usergroup']) ? $_SESSION['settings']['ldap_usergroup'] : '', '" /></td>
                 </tr>';
