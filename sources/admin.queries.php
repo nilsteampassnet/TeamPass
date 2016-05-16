@@ -291,8 +291,15 @@ switch ($_POST['type']) {
         }
 
         if (!empty($return)) {
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+            // generate key
+            $token = $pwdlib->getRandomToken(20);
+
             //save file
-            $filename = 'db-backup-'.time().'.sql';
+            $filename = time().'-'.$token.'.sql';
             $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename, 'w+');
 
             //Encrypt the file
