@@ -143,5 +143,7 @@ if ($res === false) {
 	exit();
 }
 
+// alter table Items
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
 
 echo '[{"finish":"1" , "next":"", "error":""}]';

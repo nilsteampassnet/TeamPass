@@ -246,7 +246,7 @@ if (isset($_POST['type'])) {
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
                             `viewed_no` int(12) NOT null DEFAULT '0',
-                            `complexity_level` varchar(2) NOT null DEFAULT '-1',
+                            `complexity_level` varchar(3) NOT null DEFAULT '-1',
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
                             `auto_update_pwd_next_date` int(15) DEFAULT NULL,
                             PRIMARY KEY (`id`),

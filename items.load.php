@@ -902,7 +902,7 @@ function EditerItem()
                         $("#id_label").text($('#edit_label').val());
                         //$("#id_pw").text($('#edit_pw1').val());
                         $("#id_email").html($('#edit_email').val());
-                        $("#id_url").html($('#edit_url').val());
+                        $("#id_url").html($('#edit_url').val().escapeHTML());
                         $("#id_desc").html(description);
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
@@ -916,7 +916,7 @@ function EditerItem()
                         $("#hid_label").val($('#edit_label').val());
                         $("#hid_pw").val($('#edit_pw1').val());
                         $("#hid_email").val($('#edit_email').val());
-                        $("#hid_url").val($('#edit_url').val());
+                        $("#hid_url").val($('#edit_url').val().escapeHTML());
                         $("#hid_desc").val(description);
                         $("#hid_login").val($('#edit_item_login').val());
                         $("#hid_restricted_to").val(restriction);
@@ -2124,7 +2124,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                     if (data[0].duplicate != "1") {
                         $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
                         // display title
-                        $("#"+textFieldId).html(itemTitle);
+                        $("#"+textFieldId).html(itemTitle.escapeHTML());
                     } else {
                         $("#label").focus();
                         $("#new_show_error").html("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
@@ -2133,7 +2133,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
             );
         } else {
             // display title
-            $("#"+textFieldId).html(itemTitle);
+            $("#"+textFieldId).html(itemTitle.escapeHTML());
         }
     }
 }
@@ -3856,6 +3856,16 @@ $.fn.simulateClick = function() {
             this.click(); // IE Boss!
         }
     });
+}
+
+
+// escape HTML characters
+String.prototype.escapeHTML = function() {
+    return this.replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 </script>
