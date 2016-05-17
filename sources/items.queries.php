@@ -384,11 +384,12 @@ if (isset($_POST['type'])) {
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
-                $label = htmlspecialchars_decode($dataReceived['label']);
-                $url = htmlspecialchars_decode($dataReceived['url']);
+                $label = noHTML(htmlspecialchars_decode($dataReceived['label']));
+                $url = noHTML(htmlspecialchars_decode($dataReceived['url']));
                 $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
-                $login = htmlspecialchars_decode($dataReceived['login']);
+                $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
+                $email = noHTML(htmlspecialchars_decode($dataReceived['email']));
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -486,7 +487,7 @@ if (isset($_POST['type'])) {
                             'description' => $dataReceived['description'],
                             'pw' => $passwd['string'],
                             'pw_iv' => $passwd['iv'],
-                            'email' => $dataReceived['email'],
+                            'email' => $email,
                             'login' => $login,
                             'url' => $url,
                             'id_tree' => (!isset($dataReceived['categorie']) || $dataReceived['categorie'] == "undefined") ? $dataItem['id_tree'] : $dataReceived['categorie'],
