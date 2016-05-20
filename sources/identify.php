@@ -524,7 +524,7 @@ function identifyUser($sentData)
             $_SESSION['autoriser'] = true;
 
             // Generate a ramdom ID
-            $key = $pwdlib->getRandomToken(50);
+            $key = GenerateCryptKey(50);
 
             if ($debugDuo == 1) {
                 fputs(
