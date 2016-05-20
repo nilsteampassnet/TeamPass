@@ -1,446 +1,514 @@
 <?php
 
-//name of HTTP POST variable for authentication
-define("CSRFP_TOKEN","csrfp_token");
+if (!defined('__CSRF_PROTECTOR__')) {
+    define('__CSRF_PROTECTOR__', true);     // to avoid multiple declaration errors
 
-/**
- * child exception classes
- */
-class configFileNotFoundException extends \exception {};
-class logDirectoryNotFoundException extends \exception {};
-class jsFileNotFoundException extends \exception {};
-class logFileWriteError extends \exception {};
-class baseJSFileNotFoundExceptio extends \exception {};
+    // name of HTTP POST variable for authentication
+    define("CSRFP_TOKEN","csrfp_token");
 
-class csrfProtector
-{
-	/**
-	 * expiry time for cookie
-	 * @var int
-	 */
-	public static $cookieExpiryTime = 1800;	//30 minutes
+    // We insert token name and list of url patterns for which
+    // GET requests are validated against CSRF as hidden input fields
+    // these are the names of the input fields
+    define("CSRFP_FIELD_TOKEN_NAME", "csrfp_hidden_data_token");
+    define("CSRFP_FIELD_URLS", "csrfp_hidden_data_urls");
 
-	/**
-	 * flag for cross origin/same origin request
-	 * @var bool
-	 */
-	private static $isSameOrigin = true;
+    /**
+     * child exception classes
+     */
+    class configFileNotFoundException extends \exception {};
+    class logDirectoryNotFoundException extends \exception {};
+    class jsFileNotFoundException extends \exception {};
+    class logFileWriteError extends \exception {};
+    class baseJSFileNotFoundExceptio extends \exception {};
+    class incompleteConfigurationException extends \exception {};
 
-	/**
-	 * flag to check if output file is a valid HTML or not
-	 * @var bool
-	 */
-	private static $isValidHTML = false;
+    class csrfProtector
+    {
+        /*
+         * Variable: $cookieExpiryTime
+         * expiry time for cookie
+         * @var int
+         */
+        public static $cookieExpiryTime = 1800; //30 minutes
 
-	/**
-	 * Varaible to store weather request type is post or get
-	 * @var string
-	 */
-	protected static $requestType = "GET";
+        /*
+         * Variable: $isSameOrigin
+         * flag for cross origin/same origin request
+         * @var bool
+         */
+        private static $isSameOrigin = true;
 
-	/**
-	 * config file for CSRFProtector
-	 * @var int Array, length = 6
-	 * @property #1: failedAuthAction (int) => action to be taken in case autherisation fails
-	 * @property #2: logDirectory (string) => directory in which log will be saved
-	 * @property #3: customErrorMessage (string) => custom error message to be sent in case
-	 *						of failed authentication
-	 * @property #4: jsFile (string) => location of the CSRFProtector js file
-	 * @property #5: tokenLength (int) => default length of hash
-	 * @property #6: disabledJavascriptMessage (string) => error message if client's js is disabled
-	 */
-	public static $config = array();
+        /*
+         * Variable: $isValidHTML
+         * flag to check if output file is a valid HTML or not
+         * @var bool
+         */
+        private static $isValidHTML = false;
 
-	/**
-	 * function to initialise the csrfProtector work flow
-	 * @parameters: variables to override default configuration loaded from file
-	 *
-	 * @param $length - length of CSRF_AUTH_TOKEN to be generated
-	 * @param $action - int array, for different actions to be taken in case of failed validation
-	 *
-	 * @return void
-	 *
-	 * @throw configFileNotFoundException
-	 */
-	public static function init($length = null, $action = null)
-	{
-		/**
-		 * if mod_csrfp already enabled, no verification, no filtering
-		 * Already done by mod_csrfp
-		 */
-		if (getenv('mod_csrfp_enabled')) {
-			return;
-		}
+        /*
+         * Variable: $requestType
+         * Varaible to store weather request type is post or get
+         * @var string
+         */
+        protected static $requestType = "GET";
 
-		//start session in case its not
-		if (session_id() == '') {
-			require_once('sources/sessions.php');
-		    session_start();
-		}
+        /*
+         * Variable: $config
+         * config file for CSRFProtector
+         * @var int Array, length = 6
+         * Property: #1: failedAuthAction (int) => action to be taken in case autherisation fails
+         * Property: #2: logDirectory (string) => directory in which log will be saved
+         * Property: #3: customErrorMessage (string) => custom error message to be sent in case
+         *                      of failed authentication
+         * Property: #4: jsFile (string) => location of the CSRFProtector js file
+         * Property: #5: tokenLength (int) => default length of hash
+         * Property: #6: disabledJavascriptMessage (string) => error message if client's js is disabled
+         */
+        public static $config = array();
 
-		if (!file_exists(__DIR__ ."/../csrfp.config.php")) {
-			throw new configFileNotFoundException("configuration file not found for CSRFProtector!");
-		}
-
-		//load configuration file and properties
-		self::$config = include(__DIR__ ."/../csrfp.config.php");
-
-		//overriding length property if passed in parameters
-		if ($length !== null) {
-			self::$config['tokenLength'] = intval($length);
-		}
-
-		//action that is needed to be taken in case of failed authorisation
-		if ($action !== null) {
-			self::$config['failedAuthAction'] = $action;
-		}
-
-		if (self::$config['CSRFP_TOKEN'] == '')
-			self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
-
-		//authorise the incoming request
-		self::authorisePost();
-
-		// Initialize output buffering handler
-		ob_start('csrfProtector::ob_handler');
-
-		if (!isset($_COOKIE[self::$config['CSRFP_TOKEN']])
-			|| !isset($_SESSION[self::$config['CSRFP_TOKEN']]))
-			self::refreshToken();
-	}
-
-	/**
-	 * Function to check weather to use cached version of js
-	 * 		file or not
-	 *
-	 * @param void
-	 *
-	 * @return, bool -- true if cacheversion can be used
-	 *					-- false otherwise
-	 */
-	public static function useCachedVersion()
-	{
-		$configLastModified = filemtime(__DIR__ ."/../csrfp.config.php");
-		if (file_exists(__DIR__ ."/../" .self::$config['jsPath'])) {
-			$jsFileLastModified = filemtime(__DIR__ ."/../"
-				.self::$config['jsPath']);
-			if ($jsFileLastModified < $configLastModified) {
-				// -- config is more recent than js file
-				return false;
-			}
-			return true;
-		} else {
-			return false;
-		}
-
-	}
-
-	/**
-	 * Function to create new cache version of js
-	 *
-	 * @param void
-	 *
-	 * @return void
-	 *
-	 * @throw baseJSFileNotFoundExceptio
-	 */
-	public static function createNewJsCache()
-	{
-		if (!file_exists(__DIR__ ."/csrfpJsFileBase.php")) {
-			throw new baseJSFileNotFoundExceptio("base js file needed to create js file not found at " .__DIR__);
-			return;;
-		}
-
-		$jsFile = file_get_contents(__DIR__ ."/csrfpJsFileBase.php");
-		$arrayStr = '';
-		if (self::$config['verifyGetFor']) {
-			foreach (self::$config['verifyGetFor'] as $key => $value) {
-				if ($key !== 0) $arrayStr .= ',';
-				$arrayStr .= "'". $value ."'";
-			}
-		}
-		$jsFile = str_replace('$$tokenName$$', self::$config['CSRFP_TOKEN'], $jsFile);
-		$jsFile = str_replace('$$getAllowedUrls$$', $arrayStr, $jsFile);
-		file_put_contents(__DIR__ ."/../" .self::$config['jsPath'], $jsFile);
-	}
-
-	/**
-	 * function to authorise incoming post requests
-	 * @param void
-	 * @return void
-	 * @throw logDirectoryNotFoundException
-	 */
-	public static function authorisePost()
-	{
-		//#todo this method is valid for same origin request only,
-		//enable it for cross origin also sometime
-		//for cross origin the functionality is different
-		if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-			//set request type to POST
-			self::$requestType = "POST";
-
-			//currently for same origin only
-			if (!(isset($_POST[self::$config['CSRFP_TOKEN']])
-				&& isset($_SESSION[self::$config['CSRFP_TOKEN']])
-				&& ($_POST[self::$config['CSRFP_TOKEN']] === $_SESSION[self::$config['CSRFP_TOKEN']])
-				)) {
-
-				//action in case of failed validation
-				self::failedValidationAction();
-			} else {
-				self::refreshToken();	//refresh token for successfull validation
-			}
-		} else if (!static::isURLallowed()) {
-
-			//currently for same origin only
-			if (!(isset($_GET[self::$config['CSRFP_TOKEN']])
-				&& isset($_SESSION[self::$config['CSRFP_TOKEN']])
-				&& ($_GET[self::$config['CSRFP_TOKEN']] === $_SESSION[self::$config['CSRFP_TOKEN']])
-				)) {
-
-				//action in case of failed validation
-				self::failedValidationAction();
-			} else {
-				self::refreshToken();	//refresh token for successfull validation
-			}
-		}
-	}
-
-	/**
-	 * function to be called in case of failed validation
-	 * performs logging and take appropriate action
-	 * @param: void
-	 * @return: void
-	 */
-	private static function failedValidationAction()
-	{
-		if (!file_exists(__DIR__ ."/../" .self::$config['logDirectory'])) {
-			throw new logDirectoryNotFoundException("Log Directory Not Found!");
-		}
-
-		//call the logging function
-		static::logCSRFattack();
-
-		//#todo: ask mentors if $failedAuthAction is better as an int or string
-		//default case is case 0
-		switch (self::$config['failedAuthAction'][self::$requestType]) {
-			case 0:
-				//send 403 header
-				header('HTTP/1.0 403 Forbidden');
-				exit("<h2>403 Access Forbidden by CSRFProtector!</h2>");
-				break;
-			case 1:
-				//unset the query parameters and forward
-				if (self::$requestType === 'GET') {
-					$_GET = array();
-				} else {
-					$_POST = array();
-				}
-				break;
-			case 2:
-				//redirect to custom error page
-				$location  = self::$config['errorRedirectionPage'];
-				header("location: $location");
-			case 3:
-				//send custom error message
-				exit(self::$config['customErrorMessage']);
-				break;
-			case 4:
-				//send 500 header -- internal server error
-				header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
-				exit("<h2>500 Internal Server Error!</h2>");
-				break;
-			default:
-				//unset the query parameters and forward
-				if (self::$requestType === 'GET') {
-					$_GET = array();
-				} else {
-					$_POST = array();
-				}
-				break;
-		}
-	}
-
-	/**
-	 * function to set auth cookie
-	 * @param: void
-	 * @return void
-	 */
-	public static function refreshToken()
-	{
-		$token = self::generateAuthToken();
-
-		//set token to session for server side validation
-		$_SESSION[self::$config['CSRFP_TOKEN']] = $token;
-
-		//set token to cookie for client side processing
-		setcookie(self::$config['CSRFP_TOKEN'],
-			$token,
-			time() + self::$cookieExpiryTime);
-	}
-
-	/**
-	 * function to generate random hash of length as given in parameter
-	 * max length = 128
-	 * @param: length to hash required, int
-	 * @return string
-	 */
-	public static function generateAuthToken()
-	{
-		//if config tokenLength value is 0 or some non int
-		if (intval(self::$config['tokenLength']) === 0) {
-			self::$config['tokenLength'] = 32;	//set as default
-		}
-
-		//if $length > 128 throw exception #todo
-
-		if (function_exists("hash_algos") && in_array("sha512", hash_algos())) {
-			$token = hash("sha512", mt_rand(0, mt_getrandmax()));
-		} else {
-			$token = '';
-			for ($i = 0; $i < 128; ++$i) {
-				$r = mt_rand(0, 35);
-				if ($r < 26) {
-					$c = chr(ord('a') + $r);
-				} else {
-					$c = chr(ord('0') + $r - 26);
-				}
-				$token .= $c;
-			}
-		}
-		return substr($token, 0, self::$config['tokenLength']);
-	}
-
-	/**
-	 * Rewrites <form> on the fly to add CSRF tokens to them. This can also
-	 * inject our JavaScript library.
-	 * @param: $buffer, output buffer to which all output are stored
-	 * @param: flag
-	 * @return string, complete output buffer
-	 */
-	public static function ob_handler($buffer, $flags)
-	{
-		// Even though the user told us to rewrite, we should do a quick heuristic
-	    // to check if the page is *actually* HTML. We don't begin rewriting until
-	    // we hit the first <html tag.
-	    if (!self::$isValidHTML) {
-	        // not HTML until proven otherwise
-	        if (stripos($buffer, '<html') !== false) {
-	            self::$isValidHTML = true;
-	        } else {
-	            return $buffer;
-	        }
-	    }
-
-	    //add a <noscript> message to outgoing HTML output,
-	    //informing the user to enable js for CSRFProtector to work
-	    //best section to add, after <body> tag
-	    $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>" .self::$config['disabledJavascriptMessage'] .
-	    	"</noscript>", $buffer);
-
-	    $arrayStr = '';
-	    if (!self::useCachedVersion()) {
-	    	try {
-	    		self::createNewJsCache();
-	    	} catch (exception $ex) {
-	    		if (self::$config['verifyGetFor']) {
-					foreach (self::$config['verifyGetFor'] as $key => $value) {
-						if ($key !== 0) $arrayStr .= ',';
-						$arrayStr .= "'". $value ."'";
-					}
-				}
-	    	}
-	    }
+        /*
+         * Variable: $requiredConfigurations
+         * Contains list of those parameters that are required to be there
+         *  in config file for csrfp to work
+         */
+        public static $requiredConfigurations  = array('logDirectory', 'failedAuthAction', 'jsPath', 'jsUrl', 'tokenLength');
         
-	    $script = '<script type="text/javascript" src="' .self::$config['jsUrl']
-	    	.'"></script>' .PHP_EOL;
+        /*
+         *  Function: init
+         *
+         *  function to initialise the csrfProtector work flow
+         *
+         *  Parameters:
+         *  $length - length of CSRF_AUTH_TOKEN to be generated
+         *  $action - int array, for different actions to be taken in case of failed validation
+         *
+         *  Returns:
+         *      void
+         *
+         *  Throws:
+         *      configFileNotFoundException - when configuration file is not found
+         *      incompleteConfigurationException - when all required fields in config
+         *                                          file are not available
+         *
+         */
+        public static function init($length = null, $action = null)
+        {
+            /*
+             * if mod_csrfp already enabled, no verification, no filtering
+             * Already done by mod_csrfp
+             */
+            if (getenv('mod_csrfp_enabled'))
+                return;
 
-	    $script .= '<script type="text/javascript">' .PHP_EOL;
-	    if ($arrayStr !== '') {
-	    	$script .= 'CSRFP.checkForUrls = [' .$arrayStr .'];' .PHP_EOL;
-	    }
-	    $script .= 'window.onload = function() {' .PHP_EOL;
-	    $script .= '	csrfprotector_init();' .PHP_EOL;
-	    $script .= '};' .PHP_EOL;
-	    $script .= '</script>' .PHP_EOL;
+            //start session in case its not
+            if (session_id() == '')
+                require_once __DIR__ ."/../../../../../sources/sessions.php";
+                session_start();
 
-	    //implant the CSRFGuard js file to outgoing script
-	    $buffer = str_ireplace('</body>', $script . '</body>', $buffer, $count);
-	    if (!$count) {
-	        $buffer .= $script;
-	    }
+            /*
+             * load configuration file and properties
+             * Check locally for a config.php then check for 
+             * a config/csrf_config.php file in the root folder
+             * for composer installations
+             */
+            $standard_config_location = __DIR__ ."/../csrfp.config.php";
+            $composer_config_location = __DIR__ ."/../../../../../config/csrf_config.php";
 
-	    return $buffer;
-	}
+            if (file_exists($standard_config_location)) {
+                self::$config = include($standard_config_location);
+            } elseif(file_exists($composer_config_location)) {
+                self::$config = include($composer_config_location);
+            } else {
+                throw new configFileNotFoundException("OWASP CSRFProtector: configuration file not found for CSRFProtector!");
+            }
 
-	/**
-	 * Functio to log CSRF Attack
-	 * @param: void
-	 * @retrun: void
-	 * @throw: logFileWriteError
-	 */
-	private static function logCSRFattack()
-	{
-		//if file doesnot exist for, create it
-		$logFile = fopen(__DIR__ ."/../" .self::$config['logDirectory']
-		."/" .date("m-20y") .".log", "a+");
+            //overriding length property if passed in parameters
+            if ($length != null)
+                self::$config['tokenLength'] = intval($length);
+            
+            //action that is needed to be taken in case of failed authorisation
+            if ($action != null)
+                self::$config['failedAuthAction'] = $action;
 
-		//throw exception if above fopen fails
-		if (!$logFile) {
-			throw new logFileWriteError("Unable to write to the log file");
-		}
+            if (self::$config['CSRFP_TOKEN'] == '')
+                self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
 
-		//miniature version of the log
-		$log = array();
-		$log['timestamp'] = time();
-		$log['HOST'] = $_SERVER['HTTP_HOST'];
-		$log['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
-		$log['requestType'] = self::$requestType;
+            // Validate the config if everythings filled out
+            foreach (self::$requiredConfigurations as $value) {
+                if (!isset(self::$config[$value]) || self::$config[$value] == '') {
+                    throw new incompleteConfigurationException("OWASP CSRFProtector: Incomplete configuration file!");
+                    exit;
+                }
+            }
 
-		if (self::$requestType === "GET") {
-			$log['query'] = $_GET;
-		} else {
-			$log['query'] = $_POST;
-		}
+            // Authorise the incoming request
+            self::authorizePost();
 
-		$log['cookie'] = $_COOKIE;
+            // Initialize output buffering handler
+            ob_start('csrfProtector::ob_handler');
 
-		//convert log array to JSON format to be logged
-		$log = json_encode($log) .PHP_EOL;
+            if (!isset($_COOKIE[self::$config['CSRFP_TOKEN']])
+                || !isset($_SESSION[self::$config['CSRFP_TOKEN']])
+                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']])
+                || !in_array($_COOKIE[self::$config['CSRFP_TOKEN']],
+                    $_SESSION[self::$config['CSRFP_TOKEN']]))
+                self::refreshToken();
 
-		//append log to the file
-		fwrite($logFile, $log);
+            // Set protected by CSRF Protector header
+            header('X-CSRF-Protection: OWASP CSRFP 1.0.0');
+        }
 
-		//close the file handler
-		fclose($logFile);
-	}
+        /*
+         * Function: authorizePost
+         * function to authorise incoming post requests
+         *
+         * Parameters: 
+         * void
+         *
+         * Returns: 
+         * void
+         *
+         * Throws: 
+         * logDirectoryNotFoundException - if log directory is not found
+         */
+        public static function authorizePost()
+        {
+            //#todo this method is valid for same origin request only, 
+            //enable it for cross origin also sometime
+            //for cross origin the functionality is different
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-	/**
-	 * Function to return current url of executing page
-	 * @param: void
-	 * @return: string, current url
-	 */
-	private static function getCurrentUrl()
-	{
-		return $_SERVER['REQUEST_SCHEME'] .'://'
-			.$_SERVER['HTTP_HOST'] .$_SERVER['PHP_SELF'];
-	}
+                //set request type to POST
+                self::$requestType = "POST";
 
-	/**
-	 * Function to check if current url mataches for any urls
-	 * Listed in config file
-	 * @param: void
-	 * @return: boolean, true is url need no validation, false if validation needed
-	 */
-	public static function isURLallowed() {
-		foreach (self::$config['verifyGetFor'] as $key => $value) {
-			$value = str_replace(array('/','*'), array('\/','(.*)'), $value);
-			preg_match('/' .$value .'/', self::getCurrentUrl(), $output);
-			if (count($output) > 0) {
-				return false;
-			}
-		}
-		return true;
-	}
-};
+                //currently for same origin only
+                if (!(isset($_POST[self::$config['CSRFP_TOKEN']]) 
+                    && isset($_SESSION[self::$config['CSRFP_TOKEN']])
+                    && (self::isValidToken($_POST[self::$config['CSRFP_TOKEN']]))
+                    )) {
+
+                    //action in case of failed validation
+                    self::failedValidationAction();         
+                } else {
+                    self::refreshToken();   //refresh token for successfull validation
+                }
+            } else if (!static::isURLallowed()) {
+                
+                //currently for same origin only
+                if (!(isset($_GET[self::$config['CSRFP_TOKEN']]) 
+                    && isset($_SESSION[self::$config['CSRFP_TOKEN']])
+                    && (self::isValidToken($_GET[self::$config['CSRFP_TOKEN']]))
+                    )) {
+
+                    //action in case of failed validation
+                    self::failedValidationAction();         
+                } else {
+                    self::refreshToken();   //refresh token for successfull validation
+                }
+            }   
+        }
+
+        /*
+         * Function: isValidToken
+         * function to check the validity of token in session array
+         * Function also clears all tokens older than latest one
+         *
+         * Parameters: 
+         * $token - the token sent with GET or POST payload
+         *
+         * Returns: 
+         * bool - true if its valid else false
+         */
+        private static function isValidToken($token) {
+            if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])) return false;
+            if (!is_array($_SESSION[self::$config['CSRFP_TOKEN']])) return false;
+            foreach ($_SESSION[self::$config['CSRFP_TOKEN']] as $key => $value) {
+                if ($value == $token) {
+
+                    // Clear all older tokens assuming they have been consumed
+                    foreach ($_SESSION[self::$config['CSRFP_TOKEN']] as $_key => $_value) {
+                        if ($_value == $token) break;
+                        array_shift($_SESSION[self::$config['CSRFP_TOKEN']]);
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /*
+         * Function: failedValidationAction
+         * function to be called in case of failed validation
+         * performs logging and take appropriate action
+         *
+         * Parameters: 
+         * void
+         *
+         * Returns: 
+         * void
+         */
+        private static function failedValidationAction()
+        {
+            if (!file_exists(__DIR__ ."/../" .self::$config['logDirectory']))
+                throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+        
+            //call the logging function
+            static::logCSRFattack();
+
+            //#todo: ask mentors if $failedAuthAction is better as an int or string
+            //default case is case 0
+            switch (self::$config['failedAuthAction'][self::$requestType]) {
+                case 0:
+                    //send 403 header
+                    header('HTTP/1.0 403 Forbidden');
+                    exit("<h2>403 Access Forbidden by CSRFProtector!</h2>");
+                    break;
+                case 1:
+                    //unset the query parameters and forward
+                    if (self::$requestType === 'GET') {
+                        $_GET = array();
+                    } else {
+                        $_POST = array();
+                    }
+                    break;
+                case 2:
+                    //redirect to custom error page
+                    $location  = self::$config['errorRedirectionPage'];
+                    header("location: $location");
+                case 3:
+                    //send custom error message
+                    exit(self::$config['customErrorMessage']);
+                    break;
+                case 4:
+                    //send 500 header -- internal server error
+                    header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
+                    exit("<h2>500 Internal Server Error!</h2>");
+                    break;
+                default:
+                    //unset the query parameters and forward
+                    if (self::$requestType === 'GET') {
+                        $_GET = array();
+                    } else {
+                        $_POST = array();
+                    }
+                    break;
+            }       
+        }
+
+        /*
+         * Function: refreshToken
+         * Function to set auth cookie
+         *
+         * Parameters: 
+         * void
+         *
+         * Returns: 
+         * void
+         */
+        public static function refreshToken()
+        {
+            $token = self::generateAuthToken();
+
+            if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])
+                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']]))
+                $_SESSION[self::$config['CSRFP_TOKEN']] = array();
+
+            //set token to session for server side validation
+            array_push($_SESSION[self::$config['CSRFP_TOKEN']], $token);
+
+            //set token to cookie for client side processing
+            setcookie(self::$config['CSRFP_TOKEN'], 
+                $token, 
+                time() + self::$cookieExpiryTime);
+        }
+
+        /*
+         * Function: generateAuthToken
+         * function to generate random hash of length as given in parameter
+         * max length = 128
+         *
+         * Parameters: 
+         * length to hash required, int
+         *
+         * Returns:
+         * string, token
+         */
+        public static function generateAuthToken()
+        {
+            //if config tokenLength value is 0 or some non int
+            if (intval(self::$config['tokenLength']) == 0) {
+                self::$config['tokenLength'] = 32;  //set as default
+            }
+
+            //#todo - if $length > 128 throw exception 
+
+            if (function_exists("hash_algos") && in_array("sha512", hash_algos())) {
+                $token = hash("sha512", mt_rand(0, mt_getrandmax()));
+            } else {
+                $token = '';
+                for ($i = 0; $i < 128; ++$i) {
+                    $r = mt_rand(0, 35);
+                    if ($r < 26) {
+                        $c = chr(ord('a') + $r);
+                    } else { 
+                        $c = chr(ord('0') + $r - 26);
+                    }
+                    $token .= $c;
+                }
+            }
+            return substr($token, 0, self::$config['tokenLength']);
+        }
+
+        /*
+         * Function: ob_handler
+         * Rewrites <form> on the fly to add CSRF tokens to them. This can also
+         * inject our JavaScript library.
+         *
+         * Parameters: 
+         * $buffer - output buffer to which all output are stored
+         * $flag - INT
+         *
+         * Return:
+         * string, complete output buffer
+         */
+        public static function ob_handler($buffer, $flags)
+        {
+            // Even though the user told us to rewrite, we should do a quick heuristic
+            // to check if the page is *actually* HTML. We don't begin rewriting until
+            // we hit the first <html tag.
+            if (!self::$isValidHTML) {
+                // not HTML until proven otherwise
+                if (stripos($buffer, '<html') !== false) {
+                    self::$isValidHTML = true; 
+                } else {
+                    return $buffer;
+                }
+            }
+            
+            // TODO: statically rewrite all forms as well so that if a form is submitted
+            // before the js has worked on, it will still have token to send
+            // @priority: medium @labels: important @assign: mebjas
+            // @deadline: 1 week
+
+            //add a <noscript> message to outgoing HTML output,
+            //informing the user to enable js for CSRFProtector to work
+            //best section to add, after <body> tag
+            $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>" .self::$config['disabledJavascriptMessage'] .
+                "</noscript>", $buffer);
+
+            $hiddenInput = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="' 
+                            .self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
+
+            $hiddenInput .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''
+                            .json_encode(self::$config['verifyGetFor']) .'\'>';
+
+            //implant hidden fields with check url information for reading in javascript
+            $buffer = str_ireplace('</body>', $hiddenInput . '</body>', $buffer);
+
+            //implant the CSRFGuard js file to outgoing script
+            $script = '<script type="text/javascript" src="' . self::$config['jsUrl'] . '"></script>' . PHP_EOL;
+            $buffer = str_ireplace('</body>', $script . '</body>', $buffer, $count);
+
+            if (!$count)
+                $buffer .= $script;
+
+            return $buffer;
+        }
+
+        /*
+         * Function: logCSRFattack
+         * Functio to log CSRF Attack
+         * 
+         * Parameters: 
+         * void
+         *
+         * Retruns: 
+         * void
+         *
+         * Throws: 
+         * logFileWriteError - if unable to log an attack
+         */
+        private static function logCSRFattack()
+        {
+            //if file doesnot exist for, create it
+            $logFile = fopen(__DIR__ ."/../" .self::$config['logDirectory']
+            ."/" .date("m-20y") .".log", "a+");
+            
+            //throw exception if above fopen fails
+            if (!$logFile)
+                throw new logFileWriteError("OWASP CSRFProtector: Unable to write to the log file");    
+
+            //miniature version of the log
+            $log = array();
+            $log['timestamp'] = time();
+            $log['HOST'] = $_SERVER['HTTP_HOST'];
+            $log['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
+            $log['requestType'] = self::$requestType;
+
+            if (self::$requestType === "GET")
+                $log['query'] = $_GET;
+            else
+                $log['query'] = $_POST;
+
+            $log['cookie'] = $_COOKIE;
+
+            //convert log array to JSON format to be logged
+            $log = json_encode($log) .PHP_EOL;
+
+            //append log to the file
+            fwrite($logFile, $log);
+
+            //close the file handler
+            fclose($logFile);
+        }
+
+        /*
+         * Function: getCurrentUrl
+         * Function to return current url of executing page
+         * 
+         * Parameters: 
+         * void
+         *
+         * Returns: 
+         * string - current url
+         */
+        private static function getCurrentUrl()
+        {
+            $request_scheme = 'https';
+
+            if (isset($_SERVER['REQUEST_SCHEME'])) {
+                $request_scheme = $_SERVER['REQUEST_SCHEME'];
+            } else {
+                if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+                    $request_scheme = 'https';
+                } else {
+                    $request_scheme = 'http';
+                }
+            }
+
+            return $request_scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
+        }
+
+        /*
+         * Function: isURLallowed
+         * Function to check if a url mataches for any urls
+         * Listed in config file
+         *
+         * Parameters: 
+         * void
+         *
+         * Returns: 
+         * boolean - true is url need no validation, false if validation needed
+         */  
+        public static function isURLallowed() {
+            foreach (self::$config['verifyGetFor'] as $key => $value) {
+                $value = str_replace(array('/','*'), array('\/','(.*)'), $value);
+                preg_match('/' .$value .'/', self::getCurrentUrl(), $output);
+                if (count($output) > 0)
+                    return false;
+            }
+            return true;
+        }
+    };
+}

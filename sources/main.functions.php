@@ -1189,13 +1189,30 @@ function prefix_table($table)
 }
 
 /*
- * Creates a KEY using Crypt
+ * Creates a KEY using PasswordLib
  */
-function GenerateCryptKey($size)
+function GenerateCryptKey($size="", $secure="", $numerals="", $capitalize="", $ambiguous="", $symbols="")
 {
-    return PHP_Crypt::createKey(PHP_Crypt::RAND, $size);
+    // load library
+    $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+    $pwgen->register();
+    $pwgen = new Encryption\PwGen\pwgen();
+    
+    // init
+    if(!empty($size)) $pwgen->setLength($size);
+    if(!empty($secure)) $pwgen->setSecure($secure);
+    if(!empty($numerals)) $pwgen->setNumerals($numerals);
+    if(!empty($capitalize)) $pwgen->setCapitalize($capitalize);
+    if(!empty($ambiguous)) $pwgen->setAmbiguous($ambiguous);
+    if(!empty($symbols)) $pwgen->setSymbols($symbols);
+    
+    // generate and send back   
+    return $pwgen->generate();
 }
 
+/*
+* Send sysLOG message
+*/
 function send_syslog($message, $component = "teampass", $program = "php", $host , $port)
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
