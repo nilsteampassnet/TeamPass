@@ -291,12 +291,8 @@ switch ($_POST['type']) {
         }
 
         if (!empty($return)) {
-            // load passwordLib library
-            $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-            $pwdlib->register();
-            $pwdlib = new PasswordLib\PasswordLib();
-            // generate key
-            $token = $pwdlib->getRandomToken(20);
+            // get a token
+            $token = GenerateCryptKey(20);
 
             //save file
             $filename = time().'-'.$token.'.sql';
@@ -312,15 +308,7 @@ switch ($_POST['type']) {
             fclose($handle);
 
             //generate 2d key
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-            $pwgen->setLength(20);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $_SESSION['key_tmp'] = $pwgen->generate();
+            $_SESSION['key_tmp'] = GenerateCryptKey(20);
 
             //update LOG
         logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
