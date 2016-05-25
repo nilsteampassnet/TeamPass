@@ -1,5 +1,7 @@
 Last changes
 2.1.26
+ #1299 Export to pdf or csv shows htmlencoded
+ #1298 Backup-filename on 2.1.26 contains /
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0
  #1276 MySQL 5.7 query error
