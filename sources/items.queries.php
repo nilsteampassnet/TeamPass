@@ -1146,17 +1146,17 @@ if (isset($_POST['type'])) {
                     $arrData['show_detail_option'] = 2;
                 }
 
-                $arrData['label'] = $dataItem['label'];
+                $arrData['label'] = htmlspecialchars_decode($dataItem['label']);
                 $arrData['pw'] = $pw;
                 $arrData['email'] = $dataItem['email'];
-                $arrData['url'] = $dataItem['url'];
+                $arrData['url'] = htmlspecialchars_decode($dataItem['url']);
                 $arrData['folder'] = $dataItem['id_tree'];
                 if (!empty($dataItem['url'])) {
                     $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'>&nbsp;<i class='fa fa-link tip' title='".$LANG['open_url_link']."'></i></a>";
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
-                $arrData['login'] = str_replace(array('"'), array('&quot;'), $dataItem['login']);
+                $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']));
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = $tags;
