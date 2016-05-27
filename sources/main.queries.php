@@ -18,7 +18,9 @@ $debugLdap = 0; //Can be used in order to debug LDAP authentication
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
+	$_SESSION['error']['code'] = "1004"; //Hacking attempt
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    exit();
 }
 
 /* do checks */

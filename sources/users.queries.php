@@ -111,9 +111,8 @@ if (!empty($_POST['type'])) {
             } else {
                 $new_fonctions = $val[1];
             }
-            while (substr_count($new_fonctions, ";;") > 0) {
-                $new_fonctions = str_replace(";;", ";", $new_fonctions);
-            }
+            // ensure no double ; exists
+			$new_fonctions = str_replace(";;", ";", $new_fonctions);
             // Store id DB
             DB::update(
                 prefix_table("users"),

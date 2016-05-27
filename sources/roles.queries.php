@@ -63,6 +63,7 @@ if (!empty($_POST['type'])) {
             $tmp = DB::query("SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s", stripslashes($_POST['name']));
             $counter = DB::count();
             if ($counter == 0) {
+				db::debugmode(false);
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
@@ -81,15 +82,21 @@ if (!empty($_POST['type'])) {
 					$data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
 					
 					// add new role to user
+					$tmp = str_replace(";;", ";", $data_tmp['fonction_id']);
+					if (substr($tmp, -1) == ";") {
+						$_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].$role_id);
+					} else {
+						$_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].";".$role_id);
+					}
+					// store in DB
 					DB::update(
 						prefix_table("users"),
 						array(
-							'fonction_id' => $data_tmp['fonction_id'].$role_id.";"
+							'fonction_id' => $_SESSION['fonction_id']
 						   ),
 						"id = %i",
 						$_SESSION['user_id']
 					);
-					$_SESSION['fonction_id'] = $data_tmp['fonction_id'].$role_id.";";
 					$_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
 					
 					
@@ -112,10 +119,24 @@ if (!empty($_POST['type'])) {
 			
 			// parse all users to remove this role
 			$rows = DB::query(
-				"SELECT fonction_id FROM ".prefix_table("users")."
+				"SELECT id, fonction_id FROM ".prefix_table("users")."
 				ORDER BY id ASC");
 			foreach ($rows as $record) {
-				// todo
+				$tab = explode(";", $record['fonction_id']);
+				if (($key = array_search($_POST['id'], $tab)) !== false) {
+					// remove the deleted role id
+					unset($tab[$key]);
+					
+					// store new list of functions
+					DB::update(
+						prefix_table("users"),
+						array(
+							'fonction_id' => rtrim(implode(";", $tab), ";")
+						   ),
+						"id = %i",
+						$record['id']
+					);
+				}
 			}
 
             echo '[ { "error" : "no" } ]';
@@ -256,7 +277,7 @@ if (!empty($_POST['type'])) {
 
             //count nb of roles
             $arrUserRoles = array_filter($_SESSION['user_roles']);
-            if (count($arrUserRoles) == 0) $where = "";
+            if (count($arrUserRoles) == 0 || $_SESSION['is_admin'] == 1) $where = "";
             else  $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count =  DB::count();

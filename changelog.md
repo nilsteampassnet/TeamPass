@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
  #1299 Export to pdf or csv shows htmlencoded
  #1298 Backup-filename on 2.1.26 contains /
  #1284 fix for can_manage_all_users update during upgrade
@@ -27,6 +28,7 @@ Last changes
  #1178 New user right added for managing all users (super Manager)
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
+ #910  Backslashes in accounts are not copied to clipboard
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)
