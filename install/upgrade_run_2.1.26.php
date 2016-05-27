@@ -143,7 +143,33 @@ if ($res === false) {
 	exit();
 }
 
+
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
+
+
+// ensure CSRFP config file is ready
+if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['csrfp_config_file']) != 1) {
+	$csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
+	$csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
+	if (file_exists($csrfp_file)) {
+		if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+			echo '[{"finish":"1" , "next":"", "error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch."}]';
+			break;
+		} else {
+			// "The file $csrfp_file already exist. A copy has been created.<br />";
+		}
+	}
+	unlink($csrfp_file);    // delete existing csrfp.config file
+	copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+	$data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
+	$newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
+	$newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
+	$jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
+	$newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+	file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+	
+	$_SESSION['upgrade']['csrfp_config_file']) = 1;
+}
 
 echo '[{"finish":"1" , "next":"", "error":""}]';

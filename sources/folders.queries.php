@@ -410,14 +410,16 @@ if (isset($_POST['newtitle'])) {
 
                         //add access to this new folder
                         foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                            DB::insert(
-                                prefix_table("roles_values"),
-                                array(
-                                    'role_id' => $role,
-                                    'folder_id' => $newId,
-                                    'type' => "W"
-                                )
-                            );
+							if (!empty($role)) {
+								DB::insert(
+									prefix_table("roles_values"),
+									array(
+										'role_id' => $role,
+										'folder_id' => $newId,
+										'type' => "W"
+									)
+								);
+							}
                         }
                     }
 

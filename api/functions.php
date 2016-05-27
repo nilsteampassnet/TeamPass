@@ -741,7 +741,7 @@ function rest_get () {
         } elseif ($GLOBALS['request'][0] == "set") {
             /*
              * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>?apikey=<VALID API KEY>
-             * Example: https://127.0.0.1/teampass/api/index.php/auth/myLogin/myPassword/USER1/test/76?apikey=chahthait5Aidood6johh6Avufieb6ohpaixain
+             * Example: https://127.0.0.1/teampass/api/index.php/set/newLogin/newPassword/newUrl/myLogin/myPassword?apikey=gu6Eexaewaishooph6iethoh5woh0yoit6ohquo
              *
              * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
              */
@@ -754,6 +754,9 @@ function rest_get () {
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
+					if (DB::count() == 0) {
+						rest_error ('AUTH_NO_IDENTIFIER');
+					}
 
                     // load passwordLib library
                     $_SESSION['settings']['cpassman_dir'] = "..";
