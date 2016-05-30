@@ -26,7 +26,7 @@ if (
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    handleError('Not allowed to ...', 110);
+    handleError('Not allowed to ...');
     exit();
 }
 

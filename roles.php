@@ -2,7 +2,7 @@
 /**
  * @file          roles.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -13,8 +13,8 @@
  */
 
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
 ){
     die('Hacking attempt...');
@@ -43,18 +43,18 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button">
-        <img src="includes/images/user--plus.png" alt="" />
+    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
-    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button">
-        <img src="includes/images/arrow_refresh.png" alt="" />
+    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
+        <i class="fa fa-refresh"></i>
     </button>
 </div>
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
-        <img src="includes/images/arrow-180.png" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')">
-        <img src="includes/images/arrow-0.png" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')">
+        <span class="fa fa-arrow-left" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')"></span>&nbsp;
+		<span class="fa fa-arrow-right" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')"></span>
     </div>
 </div>
 <input type="hidden" id="selected_function" />

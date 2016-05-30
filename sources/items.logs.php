@@ -2,7 +2,7 @@
 /**
  * @file          items.logs.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -39,8 +39,8 @@ $link->set_charset($encoding);
 
 // Check KEY and rights
 if (!isset($_POST['key']) || $_POST['key'] != $_SESSION['key']) {
-	echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
-	break;
+    echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+    exit();
 }
 
 // Do asked action
@@ -52,35 +52,45 @@ if (isset($_POST['type'])) {
         */
         case "item_password_shown":
             if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
-        		DB::insert(
-					prefix_table("log_items"),
-					array(
-						'id_item' => $_POST['id_item'],
-						'date' => time(),
-						'id_user' => $_SESSION['user_id'],
-						'action' => 'at_password_shown'
-        		   )
-        		);
-        	}
-			
-			break;
+                DB::insert(
+                    prefix_table("log_items"),
+                    array(
+                        'id_item' => $_POST['id_item'],
+                        'date' => time(),
+                        'id_user' => $_SESSION['user_id'],
+                        'action' => 'at_password_shown'
+                   )
+                );
+
+                // SysLog
+                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+                    send_syslog("The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".","teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+                }
+            }
+
+            break;
         /*
         * CASE
         * log if item's password is copied
         */
         case "item_password_copied":
             if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
-        		DB::insert(
-					prefix_table("log_items"),
-					array(
-						'id_item' => $_POST['id_item'],
-						'date' => time(),
-						'id_user' => $_SESSION['user_id'],
-						'action' => 'at_password_copied'
-        		   )
-        		);
-        	}
-			
-			break;
-	}
+                DB::insert(
+                    prefix_table("log_items"),
+                    array(
+                        'id_item' => $_POST['id_item'],
+                        'date' => time(),
+                        'id_user' => $_SESSION['user_id'],
+                        'action' => 'at_password_copied'
+                   )
+                );
+
+                // SysLog
+                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+                    send_syslog("The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".","teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+                }
+            }
+
+            break;
+    }
 }

@@ -2,7 +2,7 @@
 /**
  * @file          export.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -124,7 +124,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'description' => addslashes($record['description']),
                                 'label' => addslashes($record['label']),
-                                'pw' => stripslashes($pw),
+                                'pw' => stripslashes($pw['string']),
                                 'login' => $record['login'],
                                 'path' => $path
                             )
@@ -285,7 +285,7 @@ switch ($_POST['type']) {
                                 'id' => $record['id'],
                                 'label' => $record['label'],
                                 'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                                'pw' => addslashes($pw),
+                                'pw' => addslashes($pw['string']),
                                 'login' => $record['login'],
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
@@ -317,7 +317,7 @@ switch ($_POST['type']) {
         // - prepare export file
         // - get full list of objects id to export
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
         $idsList = array();
         $objNumber = 0;
 
@@ -366,7 +366,7 @@ switch ($_POST['type']) {
           $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
           fwrite(
               $outstream,
-'<html><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+'<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>TeamPass Off-line mode</title>
@@ -421,8 +421,9 @@ Enter the decryption key : <input type="password" id="saltkey" />
         }
 
         $full_listing = array();
+        $items_id_list = array();
         include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/encryption/GibberishAES/GibberishAES.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
         $rows = DB::query(
             "SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
@@ -456,7 +457,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
                     'id' => $record['id'],
                     'label' => $record['label'],
                     'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
-                    'pw' => $pw,
+                    'pw' => $pw['string'],
                     'login' => $record['login'],
                     'url' => $record['url'],
                     'perso' => $record['perso']

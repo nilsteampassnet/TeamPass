@@ -3,7 +3,7 @@
  *
  * @file          admin.settings_duo.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link		  http://www.teampass.net
@@ -91,7 +91,7 @@ echo '
 			<td>
 				<i class="fa fa-sm fa-wrench"></i>&nbsp;
 				<label>'.$LANG['admin_2factors_authentication_setting'].'
-				&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_2factors_authentication_setting_tip'].'" />
+				&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_2factors_authentication_setting_tip'].'"></i>
 				</label>
 	        </td>
 	        <td>
@@ -106,7 +106,7 @@ echo '
 			<td>
 				<i class="fa fa-sm fa-wrench"></i>&nbsp;
 				<label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
-				&nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['admin_ga_website_name_tip'].'" />
+				&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_ga_website_name_tip'].'"></i>
 				</td>
 				<td>
 				<input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
@@ -123,7 +123,7 @@ echo '
 		<i class="fa fa-sm fa-wrench"></i>&nbsp;
         <label for="api" style="width:350px;">' .
         $LANG['settings_duo'].'
-            &nbsp;<img src="includes/images/question-small-white.png" class="tip" alt="" title="'.$LANG['settings_duo_tip'].'" />
+            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_duo_tip'].'"></i>
         </label>
         <span class="div_radio">
             <input type="radio" id="api_radio1" name="ldap_mode" onclick="saveDuoStatus(1)" value="1"', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? ' checked="checked"' : '', ' /><label for="api_radio1">'.$LANG['yes'].'</label>

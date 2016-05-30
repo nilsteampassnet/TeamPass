@@ -3,7 +3,7 @@
  *
  * @file          items.import.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -95,6 +95,7 @@ $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $folders = $tree->getDescendants();
+$prevLevel = 0;
 
 // show list of all folders
 foreach ($folders as $t) {

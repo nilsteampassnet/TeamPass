@@ -342,4 +342,14 @@ input.watermark {
 
 div.dataTables_processing { z-index: 1; }
 
-.ui-color {background:#F59829 !important}
+.ui-color {background:#F59829 !important;}
+
+.btn-default {
+    width: 40px;
+}
+
+.round-grey {
+  padding:2px 6px 2px 6px;
+  font-size:9pt;
+  border: 1px #f3f3f3;
+}

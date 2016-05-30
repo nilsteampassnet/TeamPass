@@ -3,7 +3,7 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -102,7 +102,7 @@ switch ($_POST['type']) {
                                 if ($tmp[0] == "version") {
                                     $text .= '<li><u>'.$LANG['your_version']."</u> : ".$k['version'];
                                     if (floatval($k['version']) < floatval($tmp[1])) {
-                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b><br />';
+                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
                                     }
                                     $text .= '</li>';
                                 }
@@ -116,8 +116,9 @@ switch ($_POST['type']) {
         } else {
             $error = "conf_block";
         }
+        $text .= "</ul>";
 
-        echo '[{"error":"'.$error.'" , "output":"'.$text.'"}]';
+        echo '[{"error":"'.$error.'" , "output":"'. str_replace(array("\n", "\t", "\r"), '', $text).'"}]';
         break;
 
     ###########################################################
@@ -290,8 +291,11 @@ switch ($_POST['type']) {
         }
 
         if (!empty($return)) {
+            // get a token
+            $token = GenerateCryptKey(20);
+
             //save file
-            $filename = 'db-backup-'.time().'.sql';
+            $filename = time().'-'.$token.'.sql';
             $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename, 'w+');
 
             //Encrypt the file
@@ -304,15 +308,7 @@ switch ($_POST['type']) {
             fclose($handle);
 
             //generate 2d key
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
-            $pwgen->setLength(20);
-            $pwgen->setSecure(true);
-            $pwgen->setSymbols(false);
-            $pwgen->setCapitalize(true);
-            $pwgen->setNumerals(true);
-            $_SESSION['key_tmp'] = $pwgen->generate();
+            $_SESSION['key_tmp'] = GenerateCryptKey(20);
 
             //update LOG
         logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
@@ -487,16 +483,16 @@ switch ($_POST['type']) {
     case "admin_action_change_salt_key___start":
         $error = "";
         require_once 'main.functions.php';
-        
-        // check saltkey        
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+
+        // check saltkey
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
         $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
         if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
             // SK is not correct
             echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
             break;
-        }        
-        
+        }
+
         //put tool in maintenance.
         DB::update(
             prefix_table("misc"),
@@ -508,10 +504,10 @@ switch ($_POST['type']) {
         );
         //log
         logEvents('system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
-        
+
         // get number of items to change
         DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
-        
+
         echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.DB::count().'"}]';
         break;
 
@@ -523,7 +519,7 @@ switch ($_POST['type']) {
         require_once 'main.functions.php';
 
         // prepare SK
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
         $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
         if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
             // SK is not correct
@@ -533,15 +529,15 @@ switch ($_POST['type']) {
 
         //change all passwords in DB
         $rows = DB::query("
-            SELECT id, pw, pw_iv 
-            FROM ".prefix_table("items")." 
-            WHERE perso = %s 
+            SELECT id, pw, pw_iv
+            FROM ".prefix_table("items")."
+            WHERE perso = %s
             LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
             "0");
         foreach ($rows as $record) {
             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
             //encrypt with new SALT
-            $encrypt = cryption($pw, $new_salt_key, "", "encrypt");
+            $encrypt = cryption($pw['string'], $new_salt_key, "", "encrypt");
             DB::update(
                 prefix_table("items"),
                 array(
@@ -552,9 +548,9 @@ switch ($_POST['type']) {
                 $record['id']
             );
         }
-        
+
         $nextStart = intval($_POST['start']) + intval($_POST['length']);
-        
+
         // check if last item to change has been treated
         if ($nextStart >= intval($_POST['nbItems'])) {
             $nextAction = "finishing";
@@ -570,16 +566,16 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___end":
         $error = "";
-        
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");        
+
+        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
         $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
         if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
             // SK is not correct
             echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
             break;
         }
-        
-        // write the sk.php file        
+
+        // write the sk.php file
         // get path to sk.php
         $filename = "../includes/settings.php";
         if (file_exists($filename)) {
@@ -606,7 +602,7 @@ switch ($_POST['type']) {
             )
         );
         fclose($fh);
-        
+
         // quit maintenance mode.
         DB::update(
             prefix_table("misc"),
@@ -616,10 +612,10 @@ switch ($_POST['type']) {
             "intitule = %s AND type= %s",
             "maintenance_mode", "admin"
         );
-        
+
         // redefine SALT
         @define(SALT, $new_salt_key);
-        
+
         echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
         break;
 
@@ -695,7 +691,7 @@ switch ($_POST['type']) {
     /*
     * Correct passwords prefix
     */
-    case "admin_action_pw_prefix_correct":
+    /*case "admin_action_pw_prefix_correct":
         require_once 'main.functions.php';
         $numOfItemsChanged = 0;
         // go for all Items and get their PW
@@ -708,7 +704,7 @@ switch ($_POST['type']) {
                 $storePrefix = false;
                 // decrypt pw
                 $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
-                if (!empty($pw) && strlen($pw) > 15 && isutf8($pw)) {
+                if (!empty($pw['string']) && strlen($pw['string']) > 15 && isutf8($pw['string'])) {
                     // Pw seems to have a prefix
                     // get old prefix
                     $randomKey = substr($pw, 0, 15);
@@ -752,7 +748,7 @@ switch ($_POST['type']) {
             }
         }
         echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$LANG['alert_message_done'].' '.$numOfItemsChanged.' '.$LANG['items_changed'].'"}]';
-        break;
+        break;*/
 
     /*
     * Attachments encryption
@@ -850,7 +846,7 @@ switch ($_POST['type']) {
                     // check if isUTF8. If yes, then check if process = encryption, and vice-versa
                     if (!isUTF8($line) && $_POST['option'] == "decrypt") {
                         $skipFile = true;
-                    } elseif (!isUTF8($line) && $_POST['option'] == "encrypt") {
+                    } elseif (isUTF8($line) && $_POST['option'] == "encrypt") {
                         $skipFile = true;
                     }
                     fclose($fp);
@@ -1040,13 +1036,13 @@ switch ($_POST['type']) {
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
-        
+
         // Prepare variables
         $akey = htmlspecialchars_decode($dataReceived['akey']);
         $ikey = htmlspecialchars_decode($dataReceived['ikey']);
         $skey = htmlspecialchars_decode($dataReceived['skey']);
         $host = htmlspecialchars_decode($dataReceived['host']);
-        
+
         //get infos from SETTINGS.PHP file
         $filename = $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
         if (file_exists($filename)) {
@@ -1057,7 +1053,7 @@ switch ($_POST['type']) {
                     $tmp_skfile = substr($val, 14, strpos($val, '";')-14);
                 }
             }
-            
+
             // before perform a copy of sk.php file
             if (file_exists($tmp_skfile)) {
                 //Do a copy of the existing file
@@ -1079,9 +1075,9 @@ switch ($_POST['type']) {
                 break;
             }
         }
-        
+
         // Write back values in sk.php file
-        $fh = fopen($tmp_skfile, 'w');        
+        $fh = fopen($tmp_skfile, 'w');
         $result2 = fwrite(
             $fh,
             utf8_encode(
@@ -1097,9 +1093,9 @@ switch ($_POST['type']) {
             )
         );
         fclose($fh);
-        
-        
-        
+
+
+
         // send data
         echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
         break;

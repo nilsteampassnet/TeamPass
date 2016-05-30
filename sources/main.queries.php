@@ -3,7 +3,7 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -85,7 +85,7 @@ switch ($_POST['type']) {
         $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));    //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
 
         // User has decided to change is PW
-        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change") {
+        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change" && $_SESSION['user_admin'] != 1) {
 
             // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
@@ -155,12 +155,12 @@ switch ($_POST['type']) {
                     $_SESSION['user_id']
                 );
                 // update LOG
-        logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-        echo '[ { "error" : "none" } ]';
+                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                echo '[ { "error" : "none" } ]';
                 break;
             }
             // ADMIN has decided to change the USER's PW
-        } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "admin_change") {
+        } elseif (isset($_POST['change_pw_origine']) && ($_POST['change_pw_origine'] == "admin_change" || $_SESSION['user_admin'] == 1)) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
@@ -169,14 +169,14 @@ switch ($_POST['type']) {
                 $_SESSION['user_id']
             );
             if ($userInfo['admin'] != 1 && $userInfo['gestionnaire'] != 1) {
-                echo '[ { "error" : "key_not_conform" } ]';
+                echo '[ { "error" : "not_admin_or_manager" } ]';
                 break;
             }
             // Check KEY
-            if ($dataReceived['key'] != $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
+            /*if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform '.$_POST['key'].'" } ]';
                 break;
-            }
+            }*/
             // update DB
             DB::update(
                 prefix_table("users"),
@@ -188,7 +188,7 @@ switch ($_POST['type']) {
                 $dataReceived['user_id']
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
             //Send email to user
             $row = DB::queryFirstRow(
                 "SELECT email FROM ".prefix_table("users")."
@@ -248,7 +248,7 @@ switch ($_POST['type']) {
             );
         } else {
             $data = DB::queryfirstrow(
-                "SELECT login, email
+                "SELECT id, login, email
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
@@ -580,7 +580,7 @@ switch ($_POST['type']) {
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
-                
+
         if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
             // delete all previous items of this user
             $rows = DB::query(
@@ -822,7 +822,7 @@ switch ($_POST['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
-        
+
         // get list of last items seen
         $x = 1;
         $arrTmp = array();
@@ -846,7 +846,7 @@ switch ($_POST['type']) {
                 }
             }
         }
-        
+
         // get wainting suggestions
         $nb_suggestions_waiting = 0;
         if (
@@ -856,11 +856,11 @@ switch ($_POST['type']) {
             $rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
             $nb_suggestions_waiting = DB::count();
         }
-        
+
         echo json_encode(
             array(
-                "error" => "", 
-                "existing_suggestions" => $nb_suggestions_waiting, 
+                "error" => "",
+                "existing_suggestions" => $nb_suggestions_waiting,
                 "text" => ($return)
             ),
             JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
@@ -869,7 +869,7 @@ switch ($_POST['type']) {
     /**
      * Generates a KEY with CRYPT
      */
-    case "generate_new_key":        
+    case "generate_new_key":
         // load passwordLib library
         $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
         $pwdlib->register();

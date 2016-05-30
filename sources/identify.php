@@ -3,7 +3,7 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -29,7 +29,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 // DUO
 if ($_POST['type'] === "identify_duo_user") {
     // This step creates the DUO request encrypted key
-    
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -50,7 +50,7 @@ if ($_POST['type'] === "identify_duo_user") {
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
-    
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -105,7 +105,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
     }
-    
+
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
@@ -211,6 +211,20 @@ function identifyUser($sentData)
                 if ($ldapbind) {
                     $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=posixAccount))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    if (isset($_SESSION['settings']['ldap_usergroup'])) {
+                       $filter_group = "memberUid=".$username;
+                       $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
+                       if ($debugLdap == 1) {
+                               fputs(
+                                    $dbgLdap,
+                                    'Search filter (group): ' . $filter_group . "\n" .
+                                    'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "\n"
+                               );
+                       }
+                       if (!ldap_count_entries($ldapconn, $result_group)) {
+                               $ldapConnection = false;
+                       }
+                    }
                     if ($debugLdap == 1) {
                         fputs(
                             $dbgLdap,
@@ -363,6 +377,7 @@ function identifyUser($sentData)
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
+                'can_manage_all_users' => '0',
                 'personal_folder' => $_SESSION['settings']['enable_pf_feature'] == "1" ? '1' : '0',
                 'fonction_id' => '0',
                 'groupes_interdits' => '0',
@@ -509,7 +524,7 @@ function identifyUser($sentData)
             $_SESSION['autoriser'] = true;
 
             // Generate a ramdom ID
-            $key = $pwdlib->getRandomToken(50);
+            $key = GenerateCryptKey(50);
 
             if ($debugDuo == 1) {
                 fputs(
@@ -529,6 +544,7 @@ function identifyUser($sentData)
             $_SESSION['user_id'] = $data['id'];
             $_SESSION['user_admin'] = $data['admin'];
             $_SESSION['user_manager'] = $data['gestionnaire'];
+            $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
             $_SESSION['user_read_only'] = $data['read_only'];
             $_SESSION['last_pw_change'] = $data['last_pw_change'];
             $_SESSION['last_pw'] = $data['last_pw'];

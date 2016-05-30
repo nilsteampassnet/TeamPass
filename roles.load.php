@@ -2,7 +2,7 @@
 /**
  * @file          roles.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
+ * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -250,9 +250,9 @@ function allow_pw_change_for_role(id, value)
         },
         function(data) {
             if (value == 0)
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-red.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-red fa-2x fa-magic tip");
             else
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-green.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-green fa-2x fa-magic tip");
             $("#div_loading").hide();
         }
    );

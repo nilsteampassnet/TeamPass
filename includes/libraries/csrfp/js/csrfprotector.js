@@ -11,8 +11,11 @@
  * =================================================================
  */
 
+var CSRFP_FIELD_TOKEN_NAME = 'csrfp_hidden_data_token';
+var CSRFP_FIELD_URLS = 'csrfp_hidden_data_urls';
+
 var CSRFP = {
-	CSRFP_TOKEN: 'csrfp_token',
+	CSRFP_TOKEN: 'c42f1a870f5a58088dbfaea2f9788d9f967ecfa64251de294d',
 	/**
 	 * Array of patterns of url, for which csrftoken need to be added
 	 * In case of GET request also, provided from server
@@ -140,6 +143,14 @@ var CSRFP = {
 	 * @return void
 	 */
 	_init: function() {
+		CSRFP.CSRFP_TOKEN = document.getElementById(CSRFP_FIELD_TOKEN_NAME).value;
+		try {
+			CSRFP.checkForUrls = JSON.parse(document.getElementById(CSRFP_FIELD_URLS).value);
+		} catch (err) {
+			console.error(err);
+			console.error('[ERROR] [CSRF Protector] unable to parse blacklisted url fields.');
+		}
+
 		//convert these rules received from php lib to regex objects
 		for (var i = 0; i < CSRFP.checkForUrls.length; i++) {
 			CSRFP.checkForUrls[i] = CSRFP.checkForUrls[i].replace(/\*/g, '(.*)')
@@ -247,14 +258,16 @@ function csrfprotector_init() {
 	 */
 	function new_send(data) {
 		if (this.method.toLowerCase() === 'post') {
-			
-			if (data !== "") {
-				data += "&";
+			if (data !== null && typeof data === 'object') {
+				data.append(CSRFP.CSRFP_TOKEN, CSRFP._getAuthKey());
 			} else {
-				data = "";
+				if (typeof data != "undefined") {
+					data += "&";
+				} else {
+					data = "";
+				}
+				data += CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
 			}
-			
-			data += CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
 		}
 		return this.old_send(data);
 	}
@@ -276,39 +289,47 @@ function csrfprotector_init() {
 	// Rewrite existing urls ( Attach CSRF token )
 	// Rules:
 	// Rewrite those urls which matches the regex sent by Server
-	// Ingore cross origin urls & internal links (one with hashtags)
+	// Ignore cross origin urls & internal links (one with hashtags)
 	// Append the token to those url already containig GET query parameter(s)
 	// Add the token to those which does not contain GET query parameter(s)
 	//==================================================================
 
 	for (var i = 0; i < document.links.length; i++) {
-        document.links[i].addEventListener("mousedown", function(event) {
-            var urlDisect = event.target.href.split('#');
-            var url = urlDisect[0];
-            var hash = urlDisect[1];
-			
-            if(CSRFP._getDomain(url).indexOf(document.domain) === -1
-				|| CSRFP._isValidGetRequest(url)) {
-                //cross origin or not to be protected by rules -- ignore 
-				return;
-            }
-            
-            if (url.indexOf('?') !== -1) {
-                if(url.indexOf(CSRFP.CSRFP_TOKEN) === -1) {
-                    url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-                } else {
-                    url = url.replace(new RegExp(CSRFP.CSRFP_TOKEN +"=.*?(&|$)", 'g'),
-						CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey() + "$1");
-                }
-            } else {
-                url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
-            }
-            
-            event.target.href = url;
-            if (typeof hash !== 'undefined') {
-                event.target.href += '#' +hash;
-            }
-        });
+		document.links[i].addEventListener("mousedown", function(event) {
+			var href = event.target.href;
+			if(typeof href === "string")
+			{
+				var urlDisect = href.split('#');
+				var url = urlDisect[0];
+				var hash = urlDisect[1];
+
+				if(CSRFP._getDomain(url).indexOf(document.domain) === -1
+					|| CSRFP._isValidGetRequest(url)) {
+					//cross origin or not to be protected by rules -- ignore
+					return;
+				}
+
+				if (url.indexOf('?') !== -1) {
+					if(url.indexOf(CSRFP.CSRFP_TOKEN) === -1) {
+						url += "&" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
+					} else {
+						url = url.replace(new RegExp(CSRFP.CSRFP_TOKEN +"=.*?(&|$)", 'g'),
+							CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey() + "$1");
+					}
+				} else {
+					url += "?" +CSRFP.CSRFP_TOKEN +"=" +CSRFP._getAuthKey();
+				}
+
+				event.target.href = url;
+				if (typeof hash !== 'undefined') {
+					event.target.href += '#' +hash;
+				}
+			}
+		});
 	}
 
 }
+
+window.addEventListener("DOMContentLoaded", function() {
+	csrfprotector_init();
+}, false);

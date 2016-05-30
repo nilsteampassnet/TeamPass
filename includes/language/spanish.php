@@ -3,8 +3,8 @@
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     2009 - 2015 Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     2009 - 2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -857,18 +857,46 @@ $LANG = array (
     'my_profile' => 'Mi perfil.',
     'at_suggestion' => 'Sugerencia aceptada.',
     'character_not_allowed' => 'El carácter no está permitido.',
-    'error_saltkey_length' => 'SaltKey must be a 16 characters string!',
-    'starting' => 'Starting ...',
-    'total_number_of_items' => 'Total number of items',
-    'finalizing' => 'Finalizing',
-    'treating_items' => 'Treating items',
-    'number_of_items_treated' => 'Number of treated items',
-    'error_sent_back' => 'Next error occured',
-    'full' => 'Full',
-    'sequential' => 'Sequential',
-    'tree_load_strategy' => 'Tree load strategy',
-    'syslog_enable' => 'Enable log with Syslog',
-    'syslog_host' => 'Syslog server',
-    'syslog_port' => 'Syslog port',
+    'error_saltkey_length' => '¡SaltKey debe ser una cadena de 16 caracteres!',
+    'starting' => 'Empezando...',
+    'total_number_of_items' => 'Número total de ítems ',
+    'finalizing' => 'Finalizando',
+    'treating_items' => 'Tratando objetos',
+    'number_of_items_treated' => 'Número de objetos tratados',
+    'error_sent_back' => 'Ocurrió el siguiente error',
+    'full' => 'Completo',
+    'sequential' => 'Secuencial',
+    'tree_load_strategy' => 'Estrategia de carga de árbol',
+    'syslog_enable' => 'Habilitar logs con Syslog',
+    'syslog_host' => 'Servidor Syslog',
+    'syslog_port' => 'Puerto Syslog',
+    'error_bad_credentials' => '¡Las credenciales de inicio de sesión no corresponden!',
+    'reload_page_after_user_account_creation' => 'Tu cuenta ha sido creada. Esta página se recargara automáticamente en 3 segundos ...',
+    'settings_ldap_usergroup' => 'grupo LDAP para buscar',
+    'settings_ldap_usergroup_tip' => 'Grupo LDAP un usuario debe ser miembro para iniciar sesión. Ejemplo: cn=sysadmins,ou=groups,dc=example,dc=com',
+    'server_password_change_enable' => 'Permitir el cambio de contraseña en el servidor remoto (utilizando una conexión ssh)',
+    'error_login_missing' => '¡Falta el login!',
+    'error_pwd_missing' => '¡Falta la contraseña!',
+    'error_url_missing' => '¡Falta la contraseña!',
+    'error_ssh_credentials_missing' => '¡Faltan las credenciales SSH!',
+    'error_url_must_be_ssh' => '¡La URL debe empezar con protocolo SSH!',
+    'auto_update_server_password_info' => 'Al hacer clic en el botón START realizará automáticamente los siguientes pasos:<ul><li>Conectar a través de SSH al servidor Linux usando las credenciales de inicio de sesión y campo `URL`,</li><li>Cambiar contraseña de usuario en el servidor Linux</il><li>Guardar la nueva contraseña en Teampass </il><li>Cerrar la conexión SSH</li></ul><br /><b>Asegúrese de que el usuario tiene privilegios de root en el servidor (si no, indicar el inicio de sesión root y su contraseña) antes de comenzar.</b>',
+    'update_server_password' => 'Actualiza la contraseña del serividor',
+    'error_personal_sk_expected' => '¡Debes introduucir primero tu saltkey personal!',
+    'click_to_generate' => 'Click para generar',
+    'error_new_pwd_missing' => '¡Falta la nueva contraseña!',
+    'ssh_pwd' => 'Contraseña SSH',
+    'ssh_user' => 'Usuario SSH',
+    'ssh_action_performed_with_error' => 'La acción se llevó a cabo con error.<br>Comprueba la respuesta del servidor y haz la corrección.',
+    'ssh_action_performed' => 'Contraseña cambiada para éste artículo.<br /><br />Ya puedes cerrar éste aviso emergente.',
+    'ssh_answer_from_server' => 'Respuesta desde el servidor',
+    'ssh_password_frequency_change_info' => 'Es posible que desee el cambio se realize de forma automática a una frecuencia en particular. Para ello, es necesario seleccionar la frecuencia a la que se cambiarán las contraseñas de usuario de servidor (seleccionando 0 desactivará la tarea).<br />Nótese que esto sólo funcionará si el administrador ha activado la tarea en el programa cronológico del servidor.',
+    'ssh_password_frequency_change' => 'Frecuencia de cambio de contraseña (en meses)',
+    'ssh_scheduled_change' => 'Cambio programado',
+    'ssh_one_shot_change' => 'Cambio único',
+    'month' => 'mes',
+    'server_auto_update_password_enabled_tip' => 'Cambio automático de contraseña del usuario habilitado',
+    'server_password_change_enable_tip' => 'Esta opción permite que los usuarios puedan cambiar automáticamente la contraseña del usuario de un servidor que se encuentra en el campo URL usando la conexión SSH.<br>Observe que el cambio automático a una frecuencia específica se puede hacer si el archivo <i>/files/script.ssh.php</i> está añadido al crontab de este servidor. El consejo sería que se ejecutasen una vez al día.',
+    'can_manage_all_users' => 'Recursos Humanos<br><i>Puede gestionar todos los Usuarios independientemente de su grupo.<br>Será promocionado también a la función de Administrador.<br>No podrá modificar un administrador existente (sólo un administrador puede eliminar los derechos de administrador en un usuario).</i> ',
     '' => ''
 );
