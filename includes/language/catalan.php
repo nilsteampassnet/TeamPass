@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Enviar GoogleAuthenticator per email',
     'send_ga_code' => 'Google Authenticator per l\'usuari',
     'error_no_email' => 'L\'usuari no te email configurat!',
