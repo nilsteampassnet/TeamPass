@@ -605,7 +605,8 @@ if (isset($_POST['type'])) {
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),
                                 ('catalan', 'Catalan' , 'ct', 'ct.png'),
-                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
+                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
+                                ('estonia', 'Estonia' , 'ee', 'ee.png');"
                             );
                         }
                     } else if ($task == "emails") {

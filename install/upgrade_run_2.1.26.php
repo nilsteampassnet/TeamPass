@@ -95,81 +95,84 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 
 //Build tree
 $tree = new Tree\NestedTree\NestedTree(
-	$_SESSION['tbl_prefix'].'nested_tree',
-	'id',
-	'parent_id',
-	'title'
+    $_SESSION['tbl_prefix'].'nested_tree',
+    'id',
+    'parent_id',
+    'title'
 );
 
 // dataBase
 $res = "";
 
 mysqli_connect(
-	$_SESSION['db_host'],
-	$_SESSION['db_login'],
-	$_SESSION['db_pw'],
-	$_SESSION['db_bdd'],
-	$_SESSION['db_port']
+    $_SESSION['db_host'],
+    $_SESSION['db_login'],
+    $_SESSION['db_pw'],
+    $_SESSION['db_bdd'],
+    $_SESSION['db_port']
 );
 $dbTmp = mysqli_connect(
-	$_SESSION['db_host'],
-	$_SESSION['db_login'],
-	$_SESSION['db_pw'],
-	$_SESSION['db_bdd'],
-	$_SESSION['db_port']
+    $_SESSION['db_host'],
+    $_SESSION['db_login'],
+    $_SESSION['db_pw'],
+    $_SESSION['db_bdd'],
+    $_SESSION['db_port']
 );
 
 // add field timestamp to cache table
 $res = addColumnIfNotExist(
-	$_SESSION['tbl_prefix']."cache",
-	"timestamp",
-	"VARCHAR(50) NOT NULL"
+    $_SESSION['tbl_prefix']."cache",
+    "timestamp",
+    "VARCHAR(50) NOT NULL"
 );
 if ($res === false) {
-	echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Timestamp to table Cache! '.mysqli_error($dbTmp).'!"}]';
-	mysqli_close($dbTmp);
-	exit();
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Timestamp to table Cache! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
 }
 
 // add field can_manage_all_users to users table
 $res = addColumnIfNotExist(
-	$_SESSION['tbl_prefix']."users",
-	"can_manage_all_users",
-	"BOOLEAN NOT NULL DEFAULT FALSE"
+    $_SESSION['tbl_prefix']."users",
+    "can_manage_all_users",
+    "BOOLEAN NOT NULL DEFAULT FALSE"
 );
 if ($res === false) {
-	echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_manage_all_users to table Users! '.mysqli_error($dbTmp).'!"}]';
-	mysqli_close($dbTmp);
-	exit();
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_manage_all_users to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
 }
 
 
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
 
+// add Estonia
+mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonia', 'Estonia', 'ee', 'ee.png')");
+
 
 // ensure CSRFP config file is ready
 if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['csrfp_config_file']) != 1) {
-	$csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
-	$csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
-	if (file_exists($csrfp_file)) {
-		if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-			echo '[{"finish":"1" , "next":"", "error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch."}]';
-			break;
-		} else {
-			// "The file $csrfp_file already exist. A copy has been created.<br />";
-		}
-	}
-	unlink($csrfp_file);    // delete existing csrfp.config file
-	copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
-	$data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
-	$newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-	$newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
-	$jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
-	$newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
-	file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
-	
-	$_SESSION['upgrade']['csrfp_config_file']) = 1;
+    $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
+    $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
+    if (file_exists($csrfp_file)) {
+        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+            echo '[{"finish":"1" , "next":"", "error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch."}]';
+            break;
+        } else {
+            // "The file $csrfp_file already exist. A copy has been created.<br />";
+        }
+    }
+    unlink($csrfp_file);    // delete existing csrfp.config file
+    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+    $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
+    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
+    $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
+    $jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
+    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+    file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+    
+    $_SESSION['upgrade']['csrfp_config_file']) = 1;
 }
 
 echo '[{"finish":"1" , "next":"", "error":""}]';

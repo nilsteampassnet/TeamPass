@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',
@@ -773,7 +774,7 @@ $LANG = array (
     'duplicate' => 'Дублировать',
     'duplicate_title_in_same_folder' => 'Элемент с аналогичным именем существуют в текущей папке! Одинаковые имена элементов запрещены!',
     'duplicate_item_in_folder' => 'Разрешить элементы с аналогичными метками в общей папке',
-    'find_message' => '&lt;i class="fa fa-info-circle"&gt;&lt;/i&gt; %X% найдено объекто�',
+    'find_message' => '&lt;i class="fa fa-info-circle"&gt;&lt;/i&gt; %X% найдено объекто?,
     'settings_roles_allowed_to_print' => 'Определить роли которым разрешено печатать элементы',
     'settings_roles_allowed_to_print_tip' => 'Выбранным ролям будет разрешено печатать элементы в файл',
     'user_profile_dialogbox_menu' => 'Ваша TeamPass информация',

@@ -864,6 +864,103 @@ function rest_get () {
             } else {
                 rest_error ('AUTH_NO_IDENTIFIER');
             }
+        }
+        /*
+        * DELETE
+        *
+        * Expected call format: .../api/index.php/delete/folder>/<folder_name1;folder_name2;folder_name3>?apikey=<VALID API KEY>
+        * Expected call format: .../api/index.php/delete/item>/<folder_name1;folder_name2;folder_name3>/<item_name1;item_name2;item_name3>?apikey=<VALID API KEY>
+        */
+        elseif ($GLOBALS['request'][0] == "delete") {
+            if($GLOBALS['request'][1] == "folder") {
+                $array_category = explode(';',$GLOBALS['request'][2]);
+
+                foreach($array_category as $category) {
+                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                        rest_error('CATEGORY_MALFORMED');
+                    }
+                }
+
+                if(count($array_category) > 1 && count($array_category) < 5) {
+                    for ($i = count($array_category); $i > 0; $i--) {
+                        $slot = $i - 1;
+                        if (!$slot) {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                        } else {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                        }
+                    }
+                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
+                } elseif (count($array_category) == 1) {
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                } else {
+                    rest_error ('NO_CATEGORY');
+                }
+
+                // Delete items which in category
+                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.")");
+                // Delete sub-categories which in category
+                $response = DB::delete(prefix_table("nested_tree"), "parent_id = (".$category_query.")");
+                // Delete category
+                $response = DB::delete(prefix_table("nested_tree"), "id = (".$category_query.")");
+
+                $json['type'] = 'category';
+                $json['category'] = $GLOBALS['request'][2];
+                if($response) {
+                    $json['status'] = 'OK';
+                } else {
+                    $json['status'] = 'KO';
+                }
+
+            } elseif($GLOBALS['request'][1] == "item") {
+                $array_category = explode(';',$GLOBALS['request'][2]);
+                $item = $GLOBALS['request'][3];
+
+                foreach($array_category as $category) {
+                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                        rest_error('CATEGORY_MALFORMED');
+                    }
+                }
+
+                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item,$result)) {
+                    rest_error('ITEM_MALFORMED');
+                } elseif (empty($item) || count($array_category) == 0) {
+                    rest_error('MALFORMED');
+                }
+
+                if(count($array_category) > 1 && count($array_category) < 5) {
+                    for ($i = count($array_category); $i > 0; $i--) {
+                        $slot = $i - 1;
+                        if (!$slot) {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                        } else {
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                        }
+                    }
+                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
+                } elseif (count($array_category) == 1) {
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                } else {
+                    rest_error ('NO_CATEGORY');
+                }
+
+                // Delete item
+                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.") and label LIKE '".$item."'");
+                $json['type'] = 'item';
+                $json['item'] = $item;
+                $json['category'] = $GLOBALS['request'][2];
+                if($response) {
+                    $json['status'] = 'OK';
+                } else {
+                    $json['status'] = 'KO';
+                }
+            }
+
+            if ($json) {
+                echo json_encode($json);
+            } else {
+                rest_error ('EMPTY');
+            }
         } else {
             rest_error ('METHOD');
         }
