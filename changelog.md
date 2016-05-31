@@ -32,10 +32,13 @@ Last changes
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)
+ NEW: After 3 bad login attempts, user needs to wait 10s before new try
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
  FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
+ FIX: QRCode is not visible in Users list
+ FIX: Display inconsistancies in User log results
 
 2.1.25
  #1169 sending Google Authenticator code through index page

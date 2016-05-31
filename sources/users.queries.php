@@ -252,7 +252,8 @@ if (!empty($_POST['type'])) {
                     $dataReceived['email']
                 );
                 // update LOG
-        logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+				logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+				
                 echo '[ { "error" : "no" } ]';
             } else {
                 echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
@@ -802,8 +803,8 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_items")." as l
                     INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
-                    WHERE l.id_user = %i",
-                    intval($_POST['id'].$sql_filter)
+                    WHERE l.id_user = %i ".$sql_filter,
+                    intval($_POST['id'])
                 );
                 $counter = DB::count();
                 // define query limits
@@ -818,10 +819,10 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_items")." as l
                     INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
-                    WHERE l.id_user = %i
+                    WHERE l.id_user = %i ".$sql_filter."
                     ORDER BY date DESC
                     LIMIT ".intval($start).",".intval($_POST['nb_items_by_page']),
-                    intval($_POST['id'].$sql_filter)
+                    intval($_POST['id'])
                 );
             } else {
                 // get number of pages
@@ -854,7 +855,7 @@ if (!empty($_POST['type'])) {
             if (isset($counter) && $counter != 0) {
                 $nb_pages = ceil($counter / $_POST['nb_items_by_page']);
                 for ($i = 1; $i <= $nb_pages; $i++) {
-                    $pages .= '<td onclick=\'displayLogs('.$i.',\"user_mngt\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$_POST['scope'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
                 }
             }
             $pages .= '</tr></table>';
