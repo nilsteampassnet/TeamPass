@@ -17,6 +17,7 @@ $_SESSION['CPM'] = 1;
 require_once "../includes/include.php";
 require_once "../sources/main.functions.php";
 
+
 function teampass_api_enabled() {
     teampass_connect();
     $response = DB::queryFirstRow(
@@ -99,19 +100,7 @@ function addToCacheTable($id)
             $tags .= $itemTag['tag']." ";
         }
     }
-    // form id_tree to full foldername
-    /*$folder = "";
-    $arbo = $tree->getPath($data['id_tree'], true);
-    foreach ($arbo as $elem) {
-        if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
-            $elem->title = $_SESSION['login'];
-        }
-        if (empty($folder)) {
-            $folder = stripslashes($elem->title);
-        } else {
-            $folder .= " » ".stripslashes($elem->title);
-        }
-    }*/
+
     // finaly update
     DB::insert(
         prefix_table("cache"),
@@ -868,92 +857,111 @@ function rest_get () {
         /*
         * DELETE
         *
-        * Expected call format: .../api/index.php/delete/folder>/<folder_name1;folder_name2;folder_name3>?apikey=<VALID API KEY>
-        * Expected call format: .../api/index.php/delete/item>/<folder_name1;folder_name2;folder_name3>/<item_name1;item_name2;item_name3>?apikey=<VALID API KEY>
+        * Expected call format: .../api/index.php/delete/folder/<folder_id1;folder_id2;folder_id3>?apikey=<VALID API KEY>
+        * Expected call format: .../api/index.php/delete/item>/<item_id1;item_id2;item_id3>?apikey=<VALID API KEY>
         */
         elseif ($GLOBALS['request'][0] == "delete") {
+            $_SESSION['settings']['cpassman_dir'] = "..";
             if($GLOBALS['request'][1] == "folder") {
                 $array_category = explode(';',$GLOBALS['request'][2]);
 
-                foreach($array_category as $category) {
-                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
-                        rest_error('CATEGORY_MALFORMED');
-                    }
-                }
+                if(count($array_category) > 0 && count($array_category) < 5) {
+					// load passwordLib library
+                    require_once '../sources/SplClassLoader.php';
+					
+					// prepare tree
+					$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+					$tree->register();
+					$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
+										
+					// this will delete all sub folders and items associated
+					for ($i=0; $i < count($array_category); $i ++) {
+						// Get through each subfolder
+						$folders = $tree->getDescendants($array_category[$i], true);
+						print_r($folders);
+						if (count($folders) > 0) {
+							foreach ($folders as $folder) {
+								if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
+									//Store the deleted folder (recycled bin)
+									DB::insert(
+										prefix_table("misc"),
+										array(
+											'type' => 'folder_deleted',
+											'intitule' => "f".$array_category[$i],
+											'valeur' => $folder->id.', '.$folder->parent_id.', '.
+												$folder->title.', '.$folder->nleft.', '.$folder->nright.', '. $folder->nlevel.', 0, 0, 0, 0'
+									   )
+									);
+									//delete folder
+									DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
 
-                if(count($array_category) > 1 && count($array_category) < 5) {
-                    for ($i = count($array_category); $i > 0; $i--) {
-                        $slot = $i - 1;
-                        if (!$slot) {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
-                        } else {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
-                        }
-                    }
-                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
-                } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+									//delete items & logs
+									$items = DB::query(
+										"SELECT id 
+										FROM ".prefix_table("items")." 
+										WHERE id_tree=%i", 
+										$folder->id
+									);
+									foreach ($items as $item) {
+										DB::update(
+											prefix_table("items"),
+											array(
+												'inactif' => '1',
+											),
+											"id = %i",
+											$item['id']
+										);
+										//log
+										DB::insert(
+											prefix_table("log_items"),
+											array(
+												'id_item' => $item['id'],
+												'date' => time(),
+												'id_user' => "9999999",
+												'action' => 'at_delete'
+											)
+										);
+									}
+									//Update CACHE table
+									updateCacheTable("delete_value", $array_category[$i]);
+								}
+							}
+						}
+					}					
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
-                // Delete items which in category
-                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.")");
-                // Delete sub-categories which in category
-                $response = DB::delete(prefix_table("nested_tree"), "parent_id = (".$category_query.")");
-                // Delete category
-                $response = DB::delete(prefix_table("nested_tree"), "id = (".$category_query.")");
-
-                $json['type'] = 'category';
-                $json['category'] = $GLOBALS['request'][2];
-                if($response) {
-                    $json['status'] = 'OK';
-                } else {
-                    $json['status'] = 'KO';
-                }
+				$json['status'] = 'OK';
 
             } elseif($GLOBALS['request'][1] == "item") {
-                $array_category = explode(';',$GLOBALS['request'][2]);
-                $item = $GLOBALS['request'][3];
-
-                foreach($array_category as $category) {
-                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
-                        rest_error('CATEGORY_MALFORMED');
-                    }
-                }
-
-                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item,$result)) {
-                    rest_error('ITEM_MALFORMED');
-                } elseif (empty($item) || count($array_category) == 0) {
-                    rest_error('MALFORMED');
-                }
-
-                if(count($array_category) > 1 && count($array_category) < 5) {
-                    for ($i = count($array_category); $i > 0; $i--) {
-                        $slot = $i - 1;
-                        if (!$slot) {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
-                        } else {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
-                        }
-                    }
-                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
-                } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
-                } else {
-                    rest_error ('NO_CATEGORY');
-                }
-
-                // Delete item
-                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.") and label LIKE '".$item."'");
-                $json['type'] = 'item';
-                $json['item'] = $item;
-                $json['category'] = $GLOBALS['request'][2];
-                if($response) {
-                    $json['status'] = 'OK';
-                } else {
-                    $json['status'] = 'KO';
-                }
+                $array_items = explode(';',$GLOBALS['request'][2]);
+				
+				for ($i=0; $i < count($array_items); $i ++) {
+					DB::update(
+						prefix_table("items"),
+						array(
+							'inactif' => '1',
+						),
+						"id = %i",
+						$array_items[$i]
+					);
+					//log
+					DB::insert(
+						prefix_table("log_items"),
+						array(
+							'id_item' => $array_items[$i],
+							'date' => time(),
+							'id_user' => "9999999",
+							'action' => 'at_delete'
+						)
+					);
+					
+					//Update CACHE table
+					updateCacheTable("delete_value", $array_items[$i]);
+				}
+				
+				$json['status'] = 'OK';
             }
 
             if ($json) {

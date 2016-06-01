@@ -728,6 +728,14 @@ if (isset($_POST['type'])) {
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'],'13' )."' WHERE login = 'admin' AND id = '1'");
                         }
+						
+						// check that API doesn't exist
+                        $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '9999999'"));
+                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                            $mysqli_result = mysqli_query($dbTmp,
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+                            );
+						}
                     }
                 }
                 // answer back
