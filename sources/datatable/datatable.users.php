@@ -203,8 +203,9 @@ foreach ($rows as $record) {
         } else {
             $sOutput .= '"';
         }
-        $sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>"';
-        $sOutput .= ',';
+		if ($record['id'] != "9999999")
+			$sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>';
+        $sOutput .= '",';
 
         //col2
         $sOutput .= '"'.$record['login'].'"';
