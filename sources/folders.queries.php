@@ -183,7 +183,7 @@ if (isset($_POST['newtitle'])) {
                         prefix_table("misc"),
                         array(
                             'type' => 'folder_deleted',
-                            'intitule' => "f".$_POST['id'],
+                            'intitule' => "f".$folder->id,
                             'valeur' => $folder->id.', '.$folder->parent_id.', '.
                                 $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
                                 $folder->nlevel.', 0, 0, 0, 0'
