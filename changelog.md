@@ -39,6 +39,8 @@ Last changes
  FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
  FIX: QRCode is not visible in Users list
  FIX: Display inconsistancies in User log results
+ Fix: Inconsistency in Delete & Restore process
+ Fix: Errors in CSV import process
 
 2.1.25
  #1169 sending Google Authenticator code through index page

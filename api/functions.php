@@ -743,9 +743,9 @@ function rest_get () {
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
-					if (DB::count() == 0) {
-						rest_error ('AUTH_NO_IDENTIFIER');
-					}
+                    if (DB::count() == 0) {
+                        rest_error ('AUTH_NO_IDENTIFIER');
+                    }
 
                     // load passwordLib library
                     $_SESSION['settings']['cpassman_dir'] = "..";
@@ -866,102 +866,102 @@ function rest_get () {
                 $array_category = explode(';',$GLOBALS['request'][2]);
 
                 if(count($array_category) > 0 && count($array_category) < 5) {
-					// load passwordLib library
+                    // load passwordLib library
                     require_once '../sources/SplClassLoader.php';
-					
-					// prepare tree
-					$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-					$tree->register();
-					$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
-										
-					// this will delete all sub folders and items associated
-					for ($i=0; $i < count($array_category); $i ++) {
-						// Get through each subfolder
-						$folders = $tree->getDescendants($array_category[$i], true);
-						print_r($folders);
-						if (count($folders) > 0) {
-							foreach ($folders as $folder) {
-								if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
-									//Store the deleted folder (recycled bin)
-									DB::insert(
-										prefix_table("misc"),
-										array(
-											'type' => 'folder_deleted',
-											'intitule' => "f".$array_category[$i],
-											'valeur' => $folder->id.', '.$folder->parent_id.', '.
-												$folder->title.', '.$folder->nleft.', '.$folder->nright.', '. $folder->nlevel.', 0, 0, 0, 0'
-									   )
-									);
-									//delete folder
-									DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
+                    
+                    // prepare tree
+                    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                    $tree->register();
+                    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
+                                        
+                    // this will delete all sub folders and items associated
+                    for ($i=0; $i < count($array_category); $i ++) {
+                        // Get through each subfolder
+                        $folders = $tree->getDescendants($array_category[$i], true);
+                        print_r($folders);
+                        if (count($folders) > 0) {
+                            foreach ($folders as $folder) {
+                                if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
+                                    //Store the deleted folder (recycled bin)
+                                    DB::insert(
+                                        prefix_table("misc"),
+                                        array(
+                                            'type' => 'folder_deleted',
+                                            'intitule' => "f".$array_category[$i],
+                                            'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '. $folder->nlevel.', 0, 0, 0, 0'
+                                       )
+                                    );
+                                    //delete folder
+                                    DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
 
-									//delete items & logs
-									$items = DB::query(
-										"SELECT id 
-										FROM ".prefix_table("items")." 
-										WHERE id_tree=%i", 
-										$folder->id
-									);
-									foreach ($items as $item) {
-										DB::update(
-											prefix_table("items"),
-											array(
-												'inactif' => '1',
-											),
-											"id = %i",
-											$item['id']
-										);
-										//log
-										DB::insert(
-											prefix_table("log_items"),
-											array(
-												'id_item' => $item['id'],
-												'date' => time(),
-												'id_user' => "9999999",
-												'action' => 'at_delete'
-											)
-										);
-									}
-									//Update CACHE table
-									updateCacheTable("delete_value", $array_category[$i]);
-								}
-							}
-						}
-					}					
+                                    //delete items & logs
+                                    $items = DB::query(
+                                        "SELECT id 
+                                        FROM ".prefix_table("items")." 
+                                        WHERE id_tree=%i", 
+                                        $folder->id
+                                    );
+                                    foreach ($items as $item) {
+                                        DB::update(
+                                            prefix_table("items"),
+                                            array(
+                                                'inactif' => '1',
+                                            ),
+                                            "id = %i",
+                                            $item['id']
+                                        );
+                                        //log
+                                        DB::insert(
+                                            prefix_table("log_items"),
+                                            array(
+                                                'id_item' => $item['id'],
+                                                'date' => time(),
+                                                'id_user' => "9999999",
+                                                'action' => 'at_delete'
+                                            )
+                                        );
+                                    }
+                                    //Update CACHE table
+                                    updateCacheTable("delete_value", $array_category[$i]);
+                                }
+                            }
+                        }
+                    }                   
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
 
-				$json['status'] = 'OK';
+                $json['status'] = 'OK';
 
             } elseif($GLOBALS['request'][1] == "item") {
                 $array_items = explode(';',$GLOBALS['request'][2]);
-				
-				for ($i=0; $i < count($array_items); $i ++) {
-					DB::update(
-						prefix_table("items"),
-						array(
-							'inactif' => '1',
-						),
-						"id = %i",
-						$array_items[$i]
-					);
-					//log
-					DB::insert(
-						prefix_table("log_items"),
-						array(
-							'id_item' => $array_items[$i],
-							'date' => time(),
-							'id_user' => "9999999",
-							'action' => 'at_delete'
-						)
-					);
-					
-					//Update CACHE table
-					updateCacheTable("delete_value", $array_items[$i]);
-				}
-				
-				$json['status'] = 'OK';
+                
+                for ($i=0; $i < count($array_items); $i ++) {
+                    DB::update(
+                        prefix_table("items"),
+                        array(
+                            'inactif' => '1',
+                        ),
+                        "id = %i",
+                        $array_items[$i]
+                    );
+                    //log
+                    DB::insert(
+                        prefix_table("log_items"),
+                        array(
+                            'id_item' => $array_items[$i],
+                            'date' => time(),
+                            'id_user' => "9999999",
+                            'action' => 'at_delete'
+                        )
+                    );
+                    
+                    //Update CACHE table
+                    updateCacheTable("delete_value", $array_items[$i]);
+                }
+                
+                $json['status'] = 'OK';
             }
 
             if ($json) {

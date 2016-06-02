@@ -91,14 +91,14 @@ switch ($_POST['type']) {
     case "import_file_format_csv":
         //load full tree
         $tree->rebuild();
-        $tst = $tree->getDescendants();
+        $tree = $tree->getDescendants();
 
         // do some initializations
         $file = $_SESSION['settings']['path_to_files_folder']."/".$_POST['file'];
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
-        $fields_expected = array("Account","Login Name","Password","Web Site","Comments");  //requiered fields from CSV
+        $fields_expected = array("Label","Login","Password","URL","Comments");  //requiered fields from CSV
         $importation_possible = true;
         $display = "<table>";
         $line_number = $prev_level = 0;
@@ -156,7 +156,7 @@ switch ($_POST['type']) {
                     $comment .= addslashes($row['Label']);
                 } else {
                     // Store in variable values from previous line
-                    if (!empty($row['Label']) && !empty($row['Password']) && !empty($account)) {
+                    if (!empty($account)) {
                         if ($continue_on_next_line == false) {
                             // Prepare listing that will be shown to user
                             $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
@@ -195,11 +195,11 @@ switch ($_POST['type']) {
             $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
-            $display .= '<tr><td><input type=\"checkbox\" id=\"item_all_selection\" /></td><td>'.$LANG['all'].'</td></tr>';
+            $display .= '<tr><td colspan=\"2\"><br><input type=\"checkbox\" id=\"item_all_selection\" />&nbsp;'.$LANG['all'].'</td></tr>';
 
             // Prepare a list of all folders that the user can choose
             $display .= '</table><div style=\"margin-top:10px;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\">';
-            foreach ($tst as $t) {
+            foreach ($tree as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident="";
                     for ($x=1; $x<$t->nlevel; $x++) {
