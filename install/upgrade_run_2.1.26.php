@@ -154,10 +154,17 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(100)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY url VARCHAR(500)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY restricted_to DEFAULT NULL");
+
+// alter table cache
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(100)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY restricted_to DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY tags DEFAULT NULL");
 
 // add Estonia
 mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonia', 'Estonia', 'ee', 'ee.png')");
-
 
 // ensure CSRFP config file is ready
 if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['csrfp_config_file']) != 1) {
