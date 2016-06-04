@@ -183,7 +183,7 @@ if (isset($_POST['newtitle'])) {
                         prefix_table("misc"),
                         array(
                             'type' => 'folder_deleted',
-                            'intitule' => "f".$_POST['id'],
+                            'intitule' => "f".$folder->id,
                             'valeur' => $folder->id.', '.$folder->parent_id.', '.
                                 $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
                                 $folder->nlevel.', 0, 0, 0, 0'
@@ -410,14 +410,16 @@ if (isset($_POST['newtitle'])) {
 
                         //add access to this new folder
                         foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                            DB::insert(
-                                prefix_table("roles_values"),
-                                array(
-                                    'role_id' => $role,
-                                    'folder_id' => $newId,
-                                    'type' => "W"
-                                )
-                            );
+							if (!empty($role)) {
+								DB::insert(
+									prefix_table("roles_values"),
+									array(
+										'role_id' => $role,
+										'folder_id' => $newId,
+										'type' => "W"
+									)
+								);
+							}
                         }
                     }
 

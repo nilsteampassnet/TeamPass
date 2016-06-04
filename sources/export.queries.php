@@ -122,10 +122,10 @@ switch ($_POST['type']) {
                             prefix_table("export"),
                             array(
                                 'id' => $record['id'],
-                                'description' => addslashes($record['description']),
-                                'label' => addslashes($record['label']),
+                                'description' => htmlspecialchars_decode(addslashes($record['description'])),
+                                'label' => htmlspecialchars_decode(addslashes($record['label'])),
                                 'pw' => stripslashes($pw['string']),
-                                'login' => $record['login'],
+                                'login' => htmlspecialchars_decode($record['login']),
                                 'path' => $path
                             )
                         );
@@ -283,10 +283,10 @@ switch ($_POST['type']) {
                             }
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
-                                'label' => $record['label'],
-                                'description' => addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description']))))),
+                                'label' => htmlspecialchars_decode($record['label']),
+                                'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
                                 'pw' => addslashes($pw['string']),
-                                'login' => $record['login'],
+                                'login' => htmlspecialchars_decode($record['login']),
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso']
                             );

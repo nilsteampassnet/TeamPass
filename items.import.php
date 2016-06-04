@@ -65,6 +65,15 @@ echo '
     </ul>
     <!-- TAB1 -->
     <div id="tabs-1">
+        <!-- show some info -->
+		<div class="ui-state-highlight ui-corner-all" style="padding:10px;" id="csv_import_info">
+			<table border="0">
+				<tr>
+				<td valign="center"><span class="fa fa-info-circle fa-2x"></span>&nbsp;</td>
+				<td>'.$LANG['csv_import_information'].'</td>
+				</tr>
+			</table>			
+		</div>
         <!-- show input file -->
         <div id="upload_container_csv">
             <div id="filelist_csv"></div><br />

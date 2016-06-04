@@ -609,11 +609,13 @@ class MeekroDB {
     // ----- BEGIN ERROR HANDLING
     if (!$sql || $db->error) {
       if ($this->error_handler) {
+        $db_error = $db->error;
+        $db_errno = $db->errno;
           $db->query(
               "INSERT INTO ".$GLOBALS['pre']."log_system SET
               date=".time().",
               qui=".$_SESSION['user_id'].",
-              label='".addslashes($sql)."<br />".addslashes($db->error)."@".$_SERVER['REQUEST_URI']."',
+              label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".$_SERVER['REQUEST_URI']."',
               type='error'",
               MYSQLI_USE_RESULT
           );
@@ -623,8 +625,8 @@ class MeekroDB {
         call_user_func($error_handler, array(
           'type' => 'sql',
           'query' => $sql,
-          'error' => $db->error,
-          'code' => $db->errno
+          'error' => $db_error,
+          'code' => $db_errno
         ));
       }
       
