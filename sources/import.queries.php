@@ -828,82 +828,83 @@ switch ($_POST['type']) {
                         "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                         intval($folderId)
                     );
-					
-					// escape if folderId is empty
-					if (!empty($folderId)) {
-						$results .= " - Inserting\n";
+                    
+                    // escape if folderId is empty
+                    if (!empty($folderId)) {
+                        $results .= " - Inserting\n";
 
-						// prepare PW
-						if ($import_perso == true) {
-							$encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
-						} else {
-							$encrypt = cryption($pw, SALT, "", "encrypt");
-						}
+                        // prepare PW
+                        if ($import_perso == true) {
+                            $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                        } else {
+                            $encrypt = cryption($pw, SALT, "", "encrypt");
+                        }
 
-						//ADD item
-						DB::insert(
-							prefix_table("items"),
-							array(
-								'label' => stripslashes($item[KP_TITLE]),
-								'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-								'pw' => $encrypt['string'],
-								'pw_iv' => $encrypt['iv'],
-								'url' => stripslashes($item[KP_URL]),
-								'id_tree' => $folderId,
-								'login' => stripslashes($item[KP_USERNAME]),
-								'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
-						   )
-						);
-						$newId = DB::insertId();
+                        //ADD item
+                        DB::insert(
+                            prefix_table("items"),
+                            array(
+                                'label' => stripslashes($item[KP_TITLE]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
+                                'pw' => $encrypt['string'],
+                                'pw_iv' => $encrypt['iv'],
+                                'url' => stripslashes($item[KP_URL]),
+                                'id_tree' => $folderId,
+                                'login' => stripslashes($item[KP_USERNAME]),
+                                'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
+                           )
+                        );
+                        $newId = DB::insertId();
 
-						//if asked, anyone in role can modify
-						if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
-							foreach ($_SESSION['arr_roles'] as $role) {
-								DB::insert(
-									prefix_table("restriction_to_roles"),
-									array(
-										'role_id' => $role['id'],
-										'item_id' => $newId
-								   )
-								);
-							}
-						}
+                        //if asked, anyone in role can modify
+                        if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
+                            foreach ($_SESSION['arr_roles'] as $role) {
+                                DB::insert(
+                                    prefix_table("restriction_to_roles"),
+                                    array(
+                                        'role_id' => $role['id'],
+                                        'item_id' => $newId
+                                   )
+                                );
+                            }
+                        }
 
-						//Add log
-						DB::insert(
-							prefix_table("log_items"),
-							array(
-								'id_item' => $newId,
-								'date' => time(),
-								'id_user' => $_SESSION['user_id'],
-								'action' => 'at_creation',
-								'raison' => 'at_import'
-						   )
-						);
+                        //Add log
+                        DB::insert(
+                            prefix_table("log_items"),
+                            array(
+                                'id_item' => $newId,
+                                'date' => time(),
+                                'id_user' => $_SESSION['user_id'],
+                                'action' => 'at_creation',
+                                'raison' => 'at_import'
+                           )
+                        );
 
-						//Add entry to cache table
-						DB::insert(
-							prefix_table("cache"),
-							array(
-								'id' => $newId,
-								'label' => stripslashes($item[KP_TITLE]),
-								'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-								'id_tree' => $folderId,
-								'perso' => $personalFolder == 0 ? 0 : 1,
-								'login' => stripslashes($item[KP_USERNAME]),
-								'folder' => $data['title'],
-								'author' => $_SESSION['user_id']
-						   )
-						);
+                        //Add entry to cache table
+                        DB::insert(
+                            prefix_table("cache"),
+                            array(
+                                'id' => $newId,
+                                'label' => stripslashes($item[KP_TITLE]),
+                                'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
+                                'id_tree' => $folderId,
+                                'perso' => $personalFolder == 0 ? 0 : 1,
+                                'login' => stripslashes($item[KP_USERNAME]),
+                                'folder' => $data['title'],
+                                'author' => $_SESSION['user_id'],
+                                'timestamp' => time()
+                           )
+                        );
 
-						//show
-						//$text .= '- '.addslashes($item[2]).'<br />';
+                        //show
+                        //$text .= '- '.addslashes($item[2]).'<br />';
 
-						//increment number of imported items
-						$nbItemsImported++;
-					} else {
-						$results .= " - ".$item[KP_TITLE]." was not imported\n";
-					}
+                        //increment number of imported items
+                        $nbItemsImported++;
+                    } else {
+                        $results .= " - ".$item[KP_TITLE]." was not imported\n";
+                    }
                 }
             }
 
