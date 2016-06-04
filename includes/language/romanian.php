@@ -179,7 +179,7 @@ $LANG = array (
     'admin_email_result_nok' => 'Emailul nu a fost trimis ... verifica-ti configuratia. Vezi eroarea generata:␣',
     'email_subject_item_updated' => 'Parola a fost actualizata',
     'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'".@$_SESSION[\'settings\'][\'cpassman_url\']."/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
-    'email_bodyalt_item_updated' => 'Password for #item_label# has been updated.',
+    'email_bodyalt_item_updated' => 'Parola itemului #item_label# a fost actualizata.',
     'admin_email_send_backlog' => 'Send emails backlog (actually #nb_emails# emails)',
     'admin_email_send_backlog_tip' => 'This script permits to force the emails in the database to be sent.<br />This could take some time depending of the number of emails to send.',
     'please_wait' => 'Va rugam, asteptati!',
@@ -899,5 +899,6 @@ $LANG = array (
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     '' => ''
 );

@@ -1,5 +1,10 @@
 Last changes
 2.1.26
+ #1310 Addes Estonian language
+ #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
+ #1300 After 3 bad login attempts, user needs to wait 10s before new try
+ #1299 Export to pdf or csv shows htmlencoded
+ #1298 Backup-filename on 2.1.26 contains /
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0
  #1276 MySQL 5.7 query error
@@ -25,6 +30,7 @@ Last changes
  #1178 New user right added for managing all users (super Manager)
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1158 Can't Change admin Password
+ #910  Backslashes in accounts are not copied to clipboard
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)
@@ -32,6 +38,10 @@ Last changes
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
  FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
+ FIX: QRCode is not visible in Users list
+ FIX: Display inconsistancies in User log results
+ Fix: Inconsistency in Delete & Restore process
+ Fix: Errors in CSV import process
 
 2.1.25
  #1169 sending Google Authenticator code through index page

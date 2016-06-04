@@ -118,6 +118,8 @@ echo '
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
     <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check15"></span></li>
+    <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check16"></span></li>
+    <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check17"></span></li>
     <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check4"></span></li>
     <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check5"></span></li>
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>

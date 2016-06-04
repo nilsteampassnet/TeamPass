@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Google Hitelesítő küldése a felhasználónak email-ben.',
     'send_ga_code' => 'Google Hitelesítés a felhasználó számára.',
     'error_no_email' => 'Ennek a felhasználónak nincs email beállítva!',

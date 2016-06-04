@@ -231,17 +231,17 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
-                            `label` varchar(100) NOT NULL,
+                            `label` varchar(250) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
                             `pw_iv` text NOT NULL,
                             `pw_len` int(5) NOT NULL DEFAULT '0',
-                            `url` varchar(250) DEFAULT NULL,
+                            `url` varchar(500) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
                             `perso` tinyint(1) NOT null DEFAULT '0',
                             `login` varchar(200) DEFAULT NULL,
                             `inactif` tinyint(1) NOT null DEFAULT '0',
-                            `restricted_to` varchar(200) NOT NULL,
+                            `restricted_to` varchar(200) DEFAULT NULL,
                             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
                             `email` varchar(100) DEFAULT NULL,
                             `notification` varchar(250) DEFAULT NULL,
@@ -506,12 +506,12 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."cache` (
                             `id` int(12) NOT NULL,
-                            `label` varchar(50) NOT NULL,
+                            `label` varchar(250) NOT NULL,
                             `description` text NOT NULL,
-                            `tags` text NOT NULL,
+                            `tags` text DEFAULT NULL,
                             `id_tree` int(12) NOT NULL,
                             `perso` tinyint(1) NOT NULL,
-                            `restricted_to` varchar(200) NOT NULL,
+                            `restricted_to` varchar(200) DEFAULT NULL,
                             `login` varchar(200) DEFAULT NULL,
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
@@ -605,7 +605,8 @@ if (isset($_POST['type'])) {
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),
                                 ('catalan', 'Catalan' , 'ct', 'ct.png'),
-                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
+                                ('vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
+                                ('estonia', 'Estonia' , 'ee', 'ee.png');"
                             );
                         }
                     } else if ($task == "emails") {
@@ -727,6 +728,14 @@ if (isset($_POST['type'])) {
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'],'13' )."' WHERE login = 'admin' AND id = '1'");
                         }
+						
+						// check that API doesn't exist
+                        $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '9999999'"));
+                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                            $mysqli_result = mysqli_query($dbTmp,
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+                            );
+						}
                     }
                 }
                 // answer back

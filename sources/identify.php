@@ -73,8 +73,24 @@ if ($_POST['type'] === "identify_duo_user") {
         echo '[{"resp" : "'.$resp.'"}]';
     }
 } elseif ($_POST['type'] == "identify_user") {
-    // identify the user through Teampass process
-    identifyUser($_POST['data']);
+	// increment counter of login attempts
+	if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
+	else $_SESSION["pwd_attempts"] ++;
+		
+	// manage brute force
+	if ($_SESSION["pwd_attempts"] <= 3) {
+		// identify the user through Teampass process
+		identifyUser($_POST['data']);
+	} elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
+		$_SESSION["pwd_attempts"] = 1;
+		// identify the user through Teampass process
+		identifyUser($_POST['data']);		
+	} else {
+		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
+		echo '[{"error" : "bruteforce_wait"}]';
+        return false;
+	}
+	
 } elseif ($_POST['type'] == "store_data_in_cookie") {
     // not used any more (only development purpose)
     if ($_POST['key'] != $_SESSION['key']) {
@@ -522,6 +538,7 @@ function identifyUser($sentData)
                 )
         ) {
             $_SESSION['autoriser'] = true;
+			$_SESSION["pwd_attempts"] = 0;
 
             // Generate a ramdom ID
             $key = GenerateCryptKey(50);
@@ -801,8 +818,13 @@ function identifyUser($sentData)
             "Identified : " . $return . "\n\n"
         );
     }
+	
+	// manage bruteforce
+	if ($_SESSION["pwd_attempts"] > 2) {
+		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
+	}
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$_SESSION["pwd_attempts"].'"}]';
 
     $_SESSION['initial_url'] = "";
     if ($_SESSION['settings']['cpassman_dir'] == "..") {
