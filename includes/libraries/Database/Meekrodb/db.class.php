@@ -190,7 +190,7 @@ class MeekroDB {
     }
     
     $error_handler = is_callable($this->nonsql_error_handler) ? $this->nonsql_error_handler : 'meekrodb_error_handler';
-        
+
     call_user_func($error_handler, array(
       'type' => 'nonsql',
       'error' => $message
@@ -611,17 +611,17 @@ class MeekroDB {
       if ($this->error_handler) {
         $db_error = $db->error;
         $db_errno = $db->errno;
-          $db->query(
-              "INSERT INTO ".$GLOBALS['pre']."log_system SET
-              date=".time().",
-              qui=".$_SESSION['user_id'].",
-              label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".$_SERVER['REQUEST_URI']."',
-              type='error'",
-              MYSQLI_USE_RESULT
-          );
+		$db->query(
+			"INSERT INTO ".$GLOBALS['pre']."log_system SET
+			date=".time().",
+			qui=".$_SESSION['user_id'].",
+			label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".$_SERVER['REQUEST_URI']."',
+			type='error'",
+			MYSQLI_USE_RESULT
+		);
 
         $error_handler = is_callable($this->error_handler) ? $this->error_handler : 'meekrodb_error_handler';
-        
+		
         call_user_func($error_handler, array(
           'type' => 'sql',
           'query' => $sql,
@@ -629,9 +629,9 @@ class MeekroDB {
           'code' => $db_errno
         ));
       }
-      
+	  
       if ($this->throw_exception_on_error) {
-        $e = new MeekroDBException($db->error, $sql, $db->errno);
+        $e = new MeekroDBException($db_error, $sql, $db_errno);
         throw $e;
       }
     } else if ($this->success_handler) {
@@ -910,15 +910,19 @@ class DBHelper {
 }
 
 function meekrodb_error_handler($params) {
-  if (isset($params['query'])) $out[] = "QUERY: " . $params['query'];
+  /*if (isset($params['query'])) $out[] = "QUERY: " . $params['query'];
   if (isset($params['error'])) $out[] = "ERROR: " . $params['error'];
   $out[] = "";
+  
   
   if (php_sapi_name() == 'cli' && empty($_SERVER['REMOTE_ADDR'])) {
     echo implode("\n", $out);
   } else {
     echo implode("<br>\n", $out);
   }
+  */
+  
+  echo prepareExchangedData('[{"error" : "'.$params['error'].'"}]', "encode");
   
   die;
 }
