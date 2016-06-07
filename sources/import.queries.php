@@ -309,7 +309,8 @@ switch ($_POST['type']) {
                     'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => $item[1],
                     'folder' => $data_fld['title'],
-                    'author' => $_SESSION['user_id']
+                    'author' => $_SESSION['user_id'],
+					'timestamp' => time()
                )
             );
         }
