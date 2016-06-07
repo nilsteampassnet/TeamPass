@@ -1,10 +1,10 @@
 /**
- * @file 		install.js
- * @author		Nils Laumaillé
- * @version 	2.1.22
- * @copyright 	(c) 2009-2011 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file        install.js
+ * @author      Nils Laumaillé
+ * @version     2.1.22
+ * @copyright   (c) 2009-2011 Nils Laumaillé
+ * @licensing   GNU AFFERO GPL 3.0
+ * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -119,6 +119,7 @@ function CheckPage()
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         var globalResult = true;
         $("#step_res").val("true");
+        $('#pop_db').html("");
         var ajaxReqs = [];
         for (index = 0; index < tasks.length; ++index) {
             var tsk = tasks[index].split("*");//console.log(tsk[1]);
@@ -152,11 +153,12 @@ function CheckPage()
                                 $("#step_result").html(data[0].result);
                             }
                         } else {
-                        	// ignore setting error if regarding setting permissions (step 6, index 2)
-                        	if (step+data[0].index != "62") {
-                        		$("#step_res").val("false");
-                        	}
+                            // ignore setting error if regarding setting permissions (step 6, index 2)
+                            if (step+data[0].index != "62") {
+                                $("#step_res").val("false");
+                            }
                             $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
+                            $('#pop_db').append('<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>'+data[0].table+'`</b>. <i>'+data[0].error+'</i></li>');
                             if (data[0].result != undefined && data[0].result != "" ) {
                                 $("#step_result").html(data[0].result);
                             }
@@ -169,7 +171,7 @@ function CheckPage()
             setTimeout(function(){
                 // all requests are complete
                 if ($("#step_res").val() == "false") {
-                	data = $.parseJSON(data.responseText);
+                    data = $.parseJSON(data.responseText);
                     $("#step_error").show().html("At least one task has failed! Please correct and relaunch. ");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
@@ -179,8 +181,8 @@ function CheckPage()
                     $("#but_next").show();
                     // Hide restart button at end of step 6 if successful
                     if (step == "7") {
-                    	$("#but_restart").prop("disabled", true);
-                    	$("#but_restart").hide();
+                        $("#but_restart").prop("disabled", true);
+                        $("#but_restart").hide();
                     }
                 }
                 $("#step_result").html("");
