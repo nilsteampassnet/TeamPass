@@ -1,6 +1,19 @@
 <?php
+/**
+ * @file          upgrade.ajax.php
+ * @author        Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     (c) 2009-2011 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link          http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ */
+ 
 /*
-** For release 2.1.26
+** Upgrade script for release 2.1.26
 */
 require_once('../sources/sessions.php');
 session_start();
@@ -164,11 +177,20 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY rest
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY tags DEFAULT NULL");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY timestamp DEFAULT NULL");
 
-// add Estonia
-mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonia', 'Estonia', 'ee', 'ee.png')");
+// add Estonian
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+	mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
+}
+
+// remove Estonia
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+	mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'");
+}
 
 // ensure CSRFP config file is ready
-if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['csrfp_config_file']) != 1) {
+if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['csrfp_config_file'] != 1) {
     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
     if (file_exists($csrfp_file)) {
@@ -188,7 +210,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
     file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
     
-    $_SESSION['upgrade']['csrfp_config_file']) = 1;
+    $_SESSION['upgrade']['csrfp_config_file'] = 1;
 }
 
 echo '[{"finish":"1" , "next":"", "error":""}]';
