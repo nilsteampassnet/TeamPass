@@ -357,13 +357,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     || (isset($_GET['step']) && $_GET['step'] == 1)
 ) {
 //define root path
-    $abs_path = "";
-    if (strrpos($_SERVER['DOCUMENT_ROOT'],"/") == 1) {
-        $abs_path = strlen($_SERVER['DOCUMENT_ROOT'])-1;
-    } else {
-        $abs_path = $_SERVER['DOCUMENT_ROOT'];
-    }
-    $abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
+    $abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
     if( isset($_SERVER['HTTPS'] ) ) {
         $protocol = 'https://';
     } else {
