@@ -167,7 +167,6 @@ if (!empty($listPf)) {
     if (!empty($sWhere)) {
         $sWhere .= " AND ";
     }
-    //$sWhere = "WHERE ".$sWhere."id_tree NOT IN (".$listPf.") ";
     $sWhere = "WHERE ".$sWhere."id_tree NOT IN %ls_pf ";
 } else {
     $sWhere = "WHERE ".$sWhere;
