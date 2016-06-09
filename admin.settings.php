@@ -1615,7 +1615,9 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 
 // LDAP username attribute
 if (isset($ldap_type) && $ldap_type == 'posix-search') {
-    echo '
+
+    // LDAP Object Class
+        echo '
                 <tr>
                     <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_object_class'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
@@ -1650,7 +1652,7 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 echo '
                 <tr>
                     <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="settings_ldap_search_base_tip" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                 </tr>';
 }
 
