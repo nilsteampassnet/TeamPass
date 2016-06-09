@@ -320,6 +320,12 @@ if (isset($_POST['save_button'])) {
     if (isset($_POST['ldap_domain_controler']) && @$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
         updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
     }
+
+    // Update LDAP ldap_object_class
+    if (isset($_POST['ldap_object_class']) && $_SESSION['settings']['ldap_object_class'] != @$_POST['ldap_object_class']) {
+        updateSettings('ldap_object_class', $_POST['ldap_object_class']);
+    }
+
     // Update LDAP ldap_user_attribute
     if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
         updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
@@ -1609,6 +1615,12 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 
 // LDAP username attribute
 if (isset($ldap_type) && $ldap_type == 'posix-search') {
+    echo '
+                <tr>
+                    <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_object_class'].'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
+                    isset($_SESSION['settings']['ldap_object_class']) ? $_SESSION['settings']['ldap_object_class'] : 'posixAccount', '" /></td>
+                </tr>';
         echo '
                 <tr>
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_user_attribute_tip'].'"></i></label></td>
