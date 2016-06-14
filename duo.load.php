@@ -23,7 +23,7 @@ if (
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 
 
-/* 
+/*
 ** This page contains the javascript call for DUOSecurity api
 ** It loads the expected iFrame where user gives his DUO credentials
 ** It sends the request to the DUO server
@@ -31,33 +31,34 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 ?>
 <script type="text/javascript">
 $(function() {
-	$.getScript("./includes/libraries/Authentication/DuoSecurity/Duo-Web-v2.min.js");
-	$.post(
-		"sources/identify.php",
-		{
-			type : "identify_duo_user",
-			login: sanitizeString($("#login").val())
-		},
-		function(data) {
-			var ret = data[0].sig_request.split('|');
-			if (ret[0] === "ERR") {
-				$("#div_duo").html("ERROR " + ret[1]);
-			} else {
-				// preparing the DUO iframe
-				var cssLink = $("<link rel='stylesheet' type='text/css' href='./includes/libraries/Authentication/DuoSecurity/Duo-Frame.css'>");
-		    	$("head").append(cssLink);
-				$("#div_duo").html('<iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
+    $.getScript("./includes/libraries/Authentication/DuoSecurity/Duo-Web-v2.min.js");
+    $.post(
+        "sources/identify.php",
+        {
+            type : "identify_duo_user",
+            login: sanitizeString($("#login").val())
+        },
+        function(data) {
+            var ret = data[0].sig_request.split('|');
+            if (ret[0] === "ERR") {
+                $("#div_duo").html("ERROR " + ret[1]);
+            } else {
+                // preparing the DUO iframe
+                var cssLink = $("<link rel='stylesheet' type='text/css' href='./includes/libraries/Authentication/DuoSecurity/Duo-Frame.css'>");
+                $("head").append(cssLink);
+                $("#div_duo").html('<iframe id="duo_iframe" frameborder="0" data-host="<?php echo HOST; ?>" data-sig-request="'+data[0].sig_request+'"></iframe>');
 
-				// loading the DUO iframe
-			    Duo.init({
-	                'host': '<?php echo HOST; ?>',
-	                'sig_request': data[0].sig_request
-	            });
+                // loading the DUO iframe
+                Duo.init({
+                    'host': '<?php echo HOST; ?>',
+                    'sig_request': data[0].sig_request,
+                    'post_action': "index.php?page=duo_check&"+data[0].csrfp_token+"="+data[0].csrfp_key
+                });
 
-	            $("#duo_login").val($("#login").val());
-			}
-		},
-		"json"
-	);
+                $("#duo_login").val($("#login").val());
+            }
+        },
+        "json"
+    );
 });
 </script>

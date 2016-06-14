@@ -16,13 +16,13 @@ require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
 
 $pagesRights = array(
     "user" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "duo_check"
     ),
     "manager" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users", "duo_check"
     ),
     "admin" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users", "manage_settings", "manage_main"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users", "manage_settings", "manage_main", "duo_check"
     )
 );
 
