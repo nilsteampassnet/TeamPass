@@ -257,9 +257,9 @@ $htmlHeaders .= '
                     );
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
-				} else if (data[0].pwd_attempts >=3 ||data[0].error == "bruteforce_wait") {
-					// now user needs to wait 10 secs before new passwd
-					$("#connection_error").html("'.$LANG['error_bad_credentials_more_than_3_times'].'").show();					
+                } else if (data[0].pwd_attempts >=3 ||data[0].error == "bruteforce_wait") {
+                    // now user needs to wait 10 secs before new passwd
+                    $("#connection_error").html("'.$LANG['error_bad_credentials_more_than_3_times'].'").show();                 
                 } else if (data[0].error == "bad_credentials") {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
@@ -267,8 +267,8 @@ $htmlHeaders .= '
                 } else {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
-				
-				$("#ajax_loader_connexion").hide();
+                
+                $("#ajax_loader_connexion").hide();
             },
             "json"
        );
@@ -430,7 +430,7 @@ $htmlHeaders .= '
                 key        : "'.$_SESSION["key"].'"
             },
             function(data) {
-				data = $.parseJSON(data);
+                data = $.parseJSON(data);
                 //check if format error
                 if (data.error == "") {
                     if (data.text == null) {
@@ -440,10 +440,10 @@ $htmlHeaders .= '
                     }
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
-					// show notification
-					if (data.existing_suggestions != 0) {
-						blink("#menu_button_suggestion", -1, 500, "ui-state-error");
-					}
+                    // show notification
+                    if (data.existing_suggestions != 0) {
+                        blink("#menu_button_suggestion", -1, 500, "ui-state-error");
+                    }
                 } else {
                     $("#main_info_box_text").html(data.error);
                     setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
@@ -455,25 +455,7 @@ $htmlHeaders .= '
     // DUO box - identification
     function loadDuoDialog()
     {
-		/*
-		// save data connection
-		$.post(
-            "sources/identify.php",
-            {
-                type   : "store_data_in_cookie",
-                data   : prepareExchangedData($("#duo_data").val(), "encode", "'.$_SESSION['key'].'>"),
-                key    : "'.$_SESSION['key'].'"
-            },
-			function(data) {
-				if (data[0].error == "something_wrong") {
-
-				}
-			},
-			"json"
-        );
-		*/
-
-		// show dialog
+        // show dialog
         $("#dialog_duo").dialog({
             width: 600,
             height: 500,
@@ -496,6 +478,7 @@ $htmlHeaders .= '
             title: "DUO Security - please wait ..."
         }).dialog("open");
     }
+    
     function ChangeMyPass()
     {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
@@ -608,7 +591,7 @@ $htmlHeaders .= '
         $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
             maxWidth: 400,
             contentAsHTML: true,
-			multiple: true
+            multiple: true
         });
         $("#user_session").val(sessionStorage.password);
 
@@ -715,7 +698,7 @@ $htmlHeaders .= '
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
                 $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
-				console.log("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+                console.log("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
@@ -768,7 +751,7 @@ $htmlHeaders .= '
                     $("#div_change_personal_saltkey_wait").show();
                     var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
 
-					$("#div_change_personal_saltkey_wait_progress").html("  0%");
+                    $("#div_change_personal_saltkey_wait_progress").html("  0%");
 
                     //Send query
                     $.post(
@@ -946,8 +929,8 @@ $htmlHeaders .= '
         });
         $("#new_pw").bind({
             "score.simplePassMeter" : function(jQEvent, score) {
-				$("#pw_strength_value").val(score);
-			}
+                $("#pw_strength_value").val(score);
+            }
         }).change({
             "score.simplePassMeter" : function(jQEvent, score) {
         $("#pw_strength_value").val(score);
@@ -957,32 +940,32 @@ $htmlHeaders .= '
         // get list of last items
         refreshListLastSeenItems();
 
-		// prevent usage of symbols in Personal saltkey
-		$(".text_without_symbols").bind("keydown", function (event) {
-			switch (event.keyCode) {
-				case 8:  // Backspace
-				case 9:  // Tab
-				case 13: // Enter
-				case 37: // Left
-				case 38: // Up
-				case 39: // Right
-				case 40: // Down
-				break;
-				default:
-				var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
-				var key = event.key;
-				if (!regex.test(key)) {
-					$("#set_personal_saltkey_warning").html("'.addslashes($LANG['character_not_allowed']).'").stop(true,true).show().fadeOut(1000);
-					event.preventDefault();
-					return false;
-				}
-				if (key !== "Alt" && key !== "Control" && key !== "Shift") $("#set_personal_saltkey_last_letter").html(key).stop(true,true).show().fadeOut(1400);
-				break;
-			}
-		}).bind("paste",function(e){
-			$("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
-			e.preventDefault();
-		});
+        // prevent usage of symbols in Personal saltkey
+        $(".text_without_symbols").bind("keydown", function (event) {
+            switch (event.keyCode) {
+                case 8:  // Backspace
+                case 9:  // Tab
+                case 13: // Enter
+                case 37: // Left
+                case 38: // Up
+                case 39: // Right
+                case 40: // Down
+                break;
+                default:
+                var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
+                var key = event.key;
+                if (!regex.test(key)) {
+                    $("#set_personal_saltkey_warning").html("'.addslashes($LANG['character_not_allowed']).'").stop(true,true).show().fadeOut(1000);
+                    event.preventDefault();
+                    return false;
+                }
+                if (key !== "Alt" && key !== "Control" && key !== "Shift") $("#set_personal_saltkey_last_letter").html(key).stop(true,true).show().fadeOut(1400);
+                break;
+            }
+        }).bind("paste",function(e){
+            $("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
+            e.preventDefault();
+        });
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';

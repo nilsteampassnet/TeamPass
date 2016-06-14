@@ -582,6 +582,7 @@ require_once \"".$skFile."\";
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
                 $jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+                $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
                 file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
 
