@@ -31,6 +31,7 @@ if ($_POST['type'] === "identify_duo_user") {
     // This step creates the DUO request encrypted key
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
@@ -45,8 +46,11 @@ if ($_POST['type'] === "identify_duo_user") {
         );
     }
 
+    // load csrfprotector
+    $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+
     // return result
-    echo '[{"sig_request" : "'.$sig_request.'"}]';
+    echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
@@ -76,7 +80,7 @@ if ($_POST['type'] === "identify_duo_user") {
 	// increment counter of login attempts
 	if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
 	else $_SESSION["pwd_attempts"] ++;
-		
+
 	// manage brute force
 	if ($_SESSION["pwd_attempts"] <= 3) {
 		// identify the user through Teampass process
@@ -84,13 +88,13 @@ if ($_POST['type'] === "identify_duo_user") {
 	} elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
 		$_SESSION["pwd_attempts"] = 1;
 		// identify the user through Teampass process
-		identifyUser($_POST['data']);		
+		identifyUser($_POST['data']);
 	} else {
 		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
 		echo '[{"error" : "bruteforce_wait"}]';
         return false;
 	}
-	
+
 } elseif ($_POST['type'] == "store_data_in_cookie") {
     // not used any more (only development purpose)
     if ($_POST['key'] != $_SESSION['key']) {
@@ -818,7 +822,7 @@ function identifyUser($sentData)
             "Identified : " . $return . "\n\n"
         );
     }
-	
+
 	// manage bruteforce
 	if ($_SESSION["pwd_attempts"] > 2) {
 		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
