@@ -50,7 +50,7 @@ if ($_POST['type'] === "identify_duo_user") {
     $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
-    echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
+    echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
