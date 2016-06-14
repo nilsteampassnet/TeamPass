@@ -159,9 +159,9 @@ if ($res === false) {
 // check that API doesn't exist
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '9999999'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-	mysqli_query($dbTmp,
-		"INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
-	);
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+    );
 }
 
 
@@ -180,13 +180,13 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY time
 // add Estonian
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-	mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
+    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
 }
 
 // remove Estonia
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-	mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'");
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'");
 }
 
 // ensure CSRFP config file is ready

@@ -176,7 +176,20 @@ if (!defined('__CSRF_PROTECTOR__')) {
             //#todo this method is valid for same origin request only, 
             //enable it for cross origin also sometime
             //for cross origin the functionality is different
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if (!static::isURLallowed()) {
+                
+                //currently for same origin only
+                if (!(isset($_GET[self::$config['CSRFP_TOKEN']]) 
+                    && isset($_SESSION[self::$config['CSRFP_TOKEN']])
+                    && (self::isValidToken($_GET[self::$config['CSRFP_TOKEN']]))
+                    )) {
+
+                    //action in case of failed validation
+                    self::failedValidationAction();         
+                } else {
+                    self::refreshToken();   //refresh token for successfull validation
+                }
+            } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 //set request type to POST
                 self::$requestType = "POST";
@@ -192,20 +205,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 } else {
                     self::refreshToken();   //refresh token for successfull validation
                 }
-            } else if (!static::isURLallowed()) {
-                
-                //currently for same origin only
-                if (!(isset($_GET[self::$config['CSRFP_TOKEN']]) 
-                    && isset($_SESSION[self::$config['CSRFP_TOKEN']])
-                    && (self::isValidToken($_GET[self::$config['CSRFP_TOKEN']]))
-                    )) {
-
-                    //action in case of failed validation
-                    self::failedValidationAction();         
-                } else {
-                    self::refreshToken();   //refresh token for successfull validation
-                }
-            }   
+            } 
         }
 
         /*
@@ -487,7 +487,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 }
             }
 
-            return $request_scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['PHP_SELF'];
+            return $request_scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
         }
 
         /*
