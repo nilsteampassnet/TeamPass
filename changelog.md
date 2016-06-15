@@ -1,13 +1,17 @@
 Last changes
 2.1.26
+ #1332 API not allowing roles separation of pipe '|'
+ #1325 updated Dockerfile
  #1310 Addes Estonian language
  #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
+ #1301 add ldap_search_base record for db init
  #1300 After 3 bad login attempts, user needs to wait 10s before new try
  #1299 Export to pdf or csv shows htmlencoded
  #1298 Backup-filename on 2.1.26 contains /
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0
  #1276 MySQL 5.7 query error
+ #1269 Typo error
  #1263 Error at line 75 in suggestion page
  #1251 Improving CSRFP configuration
  #1240 Security fixes on some missed queries and on non-protected text fields
@@ -43,6 +47,8 @@ Last changes
  FIX: Display inconsistancies in User log results
  Fix: Inconsistency in Delete & Restore process
  Fix: Errors in CSV import process
+ Fix: Impossible to proceed with 'password lost' process
+ Fix: OTV item not reachable
 
 2.1.25
  #1169 sending Google Authenticator code through index page
