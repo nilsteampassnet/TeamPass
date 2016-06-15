@@ -43,6 +43,8 @@ Last changes
  FIX: Display inconsistancies in User log results
  Fix: Inconsistency in Delete & Restore process
  Fix: Errors in CSV import process
+ Fix: Impossible to proceed with 'password lost' process
+ Fix: OTV item not reachable
 
 2.1.25
  #1169 sending Google Authenticator code through index page

@@ -18,14 +18,14 @@ $debugLdap = 0; //Can be used in order to debug LDAP authentication
 require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-	$_SESSION['error']['code'] = "1004"; //Hacking attempt
+    $_SESSION['error']['code'] = "1004"; //Hacking attempt
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (isset($_POST['type']) && $_POST['type'] == "send_pw_by_email") {
+if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
     // continue
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -44,7 +44,6 @@ if (isset($_POST['type']) && $_POST['type'] == "send_pw_by_email") {
     exit();
 }
 
-global $k;
 include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
@@ -330,12 +329,8 @@ switch ($_POST['type']) {
      * Used in order to send the password to the user by email
      */
     case "send_pw_by_email":
-        // load passwordLib library
-        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-        $pwdlib->register();
-        $pwdlib = new PasswordLib\PasswordLib();
         // generate key
-        $key = $pwdlib->getRandomToken(50);
+        $key =  GenerateCryptKey(50);
 
         // Get account and pw associated to email
         DB::query(

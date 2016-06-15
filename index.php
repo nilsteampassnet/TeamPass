@@ -125,9 +125,9 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>Teampass</title>
 <script type="text/javascript">
-            if (window.location.href.indexOf("page=") == -1 && window.location.href.indexOf("otv=") == -1) {
+            if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 || window.location.href.indexOf("action=") == -1)) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
-                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+                    //location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
                 } else {
                     location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
                 }
@@ -304,9 +304,6 @@ echo '
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="action_on_going" id="action_on_going" value="" />
         <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'">';
-
-echo '
-    ';
 
 echo '
     <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
