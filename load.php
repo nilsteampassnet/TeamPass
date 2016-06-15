@@ -318,7 +318,7 @@ $htmlHeaders .= '
             \'"key":"\'+sanitizeString(key)+\'"}\';
         //send query
         $.post("sources/main.queries.php", {
-                type :    "generate_new_password",
+                type : "generate_new_password",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
@@ -987,7 +987,6 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                type    : "cpm_status"
             },
             function(data) {
-                console.log(">> "+data[0].output);
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
                 } else if (data[0].error == "conf_block") {
