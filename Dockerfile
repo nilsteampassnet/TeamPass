@@ -1,6 +1,6 @@
 FROM ubuntu:14.04
 MAINTAINER arthur@caranta.com
-RUN apt-get update && apt-get install -y git apache2 php5 libapache2-mod-php5  php5-mcrypt php5-mysqlnd php5-ldap
+RUN apt-get update && apt-get install -y git apache2 php5 libapache2-mod-php5 php5-mcrypt php5-mysqlnd php5-ldap php5-gd
 ENV APACHE_RUN_USER www-data
 ENV APACHE_RUN_GROUP www-data
 ENV APACHE_LOG_DIR /var/log/apache2
