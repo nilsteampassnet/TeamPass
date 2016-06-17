@@ -1,11 +1,11 @@
 <?php
 /**
- * @file		  core.php
+ * @file          core.php
  * @author        Nils Laumaillé
  * @version       2.1.26
  * @copyright     (c) 2009-2015 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link    	  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -39,8 +39,8 @@ if (
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
-	$url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
-	redirect($url);
+    $url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    redirect($url);
 }
 
 /* LOAD CPASSMAN SETTINGS */
@@ -118,8 +118,8 @@ if (empty($languagesDropmenu)) {
 
 /* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
 if (
-        (isset($_GET['session']) && $_GET['session'] == "expired")
-        || (isset($_POST['session']) && $_POST['session'] == "expired")
+    (isset($_GET['session']) && $_GET['session'] == "expired")
+    || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
     // REDIRECTION PAGE ERREUR
     echo '
@@ -135,7 +135,7 @@ if (
 /* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
 if (!empty($_SESSION['fin_session'])) {
     $dataSession = DB::queryFirstRow(
-		"SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
+        "SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
         $_SESSION['user_id']
     );
 } else {
@@ -285,8 +285,8 @@ if (
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     // query on user
     $data = DB::queryfirstrow(
-		"SELECT admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
-		$_SESSION['user_id']
+        "SELECT admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+        $_SESSION['user_id']
     );
 
     //Check if user has been deleted or unlogged
@@ -308,7 +308,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         // update user's rights
         $_SESSION['user_admin'] = $data['admin'];
         $_SESSION['user_manager'] = $data['gestionnaire'];
-		$_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
+        $_SESSION['user_can_manage_all_users'] = $data['can_manage_all_users'];
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['groupes_interdits'] = array();
         if (!empty($data['groupes_visibles'])) {

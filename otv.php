@@ -51,7 +51,7 @@ if (
         $data['timestamp'] == $_GET['stamp']
     ) {
         // otv is too old
-        if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400) ) {
+        if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
         } else {
             $dataItem = DB::queryfirstrow(
@@ -87,7 +87,7 @@ if (
                 "</div>";
 
             // delete entry
-            DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
+            DB::delete(prefix_table("otv"), "id = %i", $data['id']);
 
             // display
             echo $html;

@@ -515,12 +515,12 @@ function rest_get () {
             /*
              * Case where a new user has to be added
              *
-             * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1|ROLE2|...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
+             * Expected call format: .../api/index.php/add/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1,ROLE2,...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
              * with:
              * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
              * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
              *
-             * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers|Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
+             * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers,Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
              *
              */
             elseif($GLOBALS['request'][1] == "user") {
@@ -573,7 +573,7 @@ function rest_get () {
 
                         // prepare roles list
                         $rolesList = "";
-                        foreach (explode('|', $roles) as $role) {//echo $role."-";
+                        foreach (explode(',', $roles) as $role) {//echo $role."-";
                             $tmp = DB::queryFirstRow(
                                 "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
                                 $role
