@@ -1637,8 +1637,8 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 // LDAP BASE for search
                 echo '
                 <tr>
-                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="settings_ldap_search_base_tip" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
+                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_search_base_tip'].'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                 </tr>';
 }
 
