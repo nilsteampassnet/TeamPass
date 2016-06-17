@@ -1278,17 +1278,7 @@ switch ($_POST['type']) {
         $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];
 
         // save change in config file
-        $tp_config_file = "../includes/config/tp.config.php";
-        $data = file($tp_config_file);
-        $x = 0;
-        foreach($data as $line) {
-            if (stristr($line, "'".$dataReceived['field']."' => '")) {
-                $data[$x] = "    '".$dataReceived['field']."' => '".$dataReceived['value']."',\n";
-                break;
-            }
-            $x++;
-        }
-        file_put_contents($tp_config_file, implode('', $data));
+        handleConfigFile ("update", $dataReceived['field'], $dataReceived['value']);
 
         // Encrypt data to return
         echo prepareExchangedData(

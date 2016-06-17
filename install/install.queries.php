@@ -288,8 +288,8 @@ if (isset($_POST['type'])) {
                         }
                         $fh = fopen($tp_config_file, 'w');
                         $config_text = "<?php
-global $SETTINGS;
-$SETTINGS = array (";
+global \$SETTINGS;
+\$SETTINGS = array (";
 
                         // add by default settings
                         $aMiscVal = array(

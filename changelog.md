@@ -49,6 +49,7 @@ Last changes
  Fix: Errors in CSV import process
  Fix: Impossible to proceed with 'password lost' process
  Fix: OTV item not reachable
+ Analyzed with RIPS (https://www.ripstech.com/) against security bugs
 
 2.1.25
  #1169 sending Google Authenticator code through index page

@@ -1331,3 +1331,58 @@ function noHTML($input, $encoding = 'UTF-8')
 {
     return htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, $encoding);
 }
+
+/**
+ * handleConfigFile()
+ *
+ * permits to handle the Teampass config file
+ * $action accepts "rebuild" and "update"
+ */
+function handleConfigFile($action, $field, $value)
+{
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    $tp_config_file = "../includes/config/tp.config.php";
+
+    // include librairies & connect to DB
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    if (!file_exists($tp_config_file) || $action == "rebuild") {
+        $data = array();
+        $data[0] = "<?php\n";
+        $data[1] = "global \$SETTINGS;\n";
+        $data[2] = "\$SETTINGS = array (\n";
+        $rows = DB::query(
+            "SELECT * FROM ".prefix_table("misc")." WHERE type=%s",
+            "admin"
+        );
+        foreach ($rows as $record) {
+            array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
+        }
+        array_push($data, ");");
+        array_unique($data);
+    } else if ($action == "update" && !empty($field)) {
+        $data = file($tp_config_file);
+        $x = 0;
+        foreach($data as $line) {
+            if (stristr($line, "'".$field."' => '")) {
+                $data[$x] = "    '".$field."' => '".$value."',\n";
+                break;
+            }
+            $x++;
+        }
+    } else {
+        // ERROR
+    }
+
+    // update file
+    file_put_contents($tp_config_file, implode('', $data));
+}

@@ -863,6 +863,7 @@ switch ($_POST['type']) {
             JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
         );
         break;
+
     /**
      * Generates a KEY with CRYPT
      */

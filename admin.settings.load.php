@@ -399,12 +399,12 @@ function updateSetting(field)
 
     // store in DB
     var data = '{"field":"'+field+'", "value":"'+$("#"+field).val()+'"}';
-    console.log(data);
+    //console.log(data);
     $.post(
         "sources/admin.queries.php",
         {
             type    : "save_option_change",
-            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
             key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
@@ -486,8 +486,12 @@ $(function() {
     $("#upload_imageresize_quality").spinner({
         min: 0,
         max: 100,
-        value: 90
+        value: 90,
+        spin: function(event, ui) {
+            updateSetting($("#upload_imageresize_quality").attr('id'));
+        }
     });
+    
     //BUILD BUTTONSET
     $(".div_radio").buttonset();
 
