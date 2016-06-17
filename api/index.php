@@ -19,13 +19,18 @@ require_once('functions.php');
 header('Content-Type: application/json');
 
 if (teampass_api_enabled() != "1") {
-    echo '{"err":"API access not allowed."}';
-    exit;
+  echo '{"err":"API access not allowed."}';
+  exit;
 }
 
 teampass_whitelist();
 
-parse_str($_SERVER['QUERY_STRING']);
+if (!isset($_GET['apikey'])) {
+  rest_error('UNKNOWN');
+} else {
+  $GLOBALS['apikey'] = $_GET['apikey'];
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $request = explode("/", substr(@$_SERVER['PATH_INFO'], 1));
 
