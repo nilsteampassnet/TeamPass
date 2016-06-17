@@ -29,553 +29,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     exit();
 }
 
-/*
-* FUNCTION permitting to store into DB the settings changes
-*/
-function updateSettings ($setting, $val, $type = '')
-{
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
-
-    if (empty($type)) {
-        $type = 'admin';
-    }
-
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-
-    // Connect to database
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
-
-    // Check if setting is already in DB. If NO then insert, if YES then update.
-    $data = DB::query(
-        "SELECT * FROM ".prefix_table("misc")."
-        WHERE type = %s AND intitule = %s",
-        $type,
-        $setting
-    );
-    $counter = DB::count();
-    if ($counter == 0) {
-        DB::insert(
-            prefix_table("misc"),
-            array(
-                'valeur' => $val,
-                'type' => $type,
-                'intitule' => $setting
-               )
-        );
-        // in case of stats enabled, add the actual time
-        if ($setting == 'send_stats') {
-            DB::insert(
-                prefix_table("misc"),
-                array(
-                    'valeur' => time(),
-                    'type' => $type,
-                    'intitule' => $setting.'_time'
-                   )
-            );
-        }
-    } else {
-        DB::update(
-            prefix_table("misc"),
-            array(
-                'valeur' => $val
-               ),
-            "type = %s AND intitule = %s",
-            $type,
-            $setting
-        );
-        // in case of stats enabled, update the actual time
-        if ($setting == 'send_stats') {
-            // Check if previous time exists, if not them insert this value in DB
-            $data_time = DB::query(
-                "SELECT * FROM ".prefix_table("misc")."
-                WHERE type = %s AND intitule = %s",
-                $type,
-                $setting.'_time'
-            );
-            $counter = DB::count();
-            if ($counter == 0) {
-                DB::insert(
-                    prefix_table("misc"),
-                    array(
-                        'valeur' => 0,
-                        'type' => $type,
-                        'intitule' => $setting.'_time'
-                       )
-                );
-            } else {
-                DB::update(
-                    prefix_table("misc"),
-                    array(
-                        'valeur' => 0
-                       ),
-                    "type = %s AND intitule = %s",
-                    $type,
-                    $setting
-                );
-            }
-        }
-    }
-    $_SESSION['settings'][$setting] = $val;
-}
-// SAVE CHANGES
-if (isset($_POST['save_button'])) {
-    // Update last seen items
-    if (isset($_SESSION['settings']['max_latest_items']) && $_SESSION['settings']['max_latest_items'] != $_POST['max_last_items']) {
-        updateSettings('max_latest_items', $_POST['max_last_items']);
-    }
-    // Update delay_item_edition
-    if (isset($_SESSION['settings']['delay_item_edition']) && $_SESSION['settings']['delay_item_edition'] != $_POST['delay_item_edition']) {
-        updateSettings('delay_item_edition', $_POST['delay_item_edition']);
-    }
-    // Update otv_expiration_period
-    if (isset($_SESSION['settings']['otv_expiration_period']) && $_SESSION['settings']['otv_expiration_period'] != $_POST['otv_expiration_period']) {
-        updateSettings('otv_expiration_period', $_POST['otv_expiration_period']);
-    }
-    // Update favourites
-    if (isset($_SESSION['settings']['enable_favourites']) && $_SESSION['settings']['enable_favourites'] != $_POST['enable_favourites_input']) {
-        updateSettings('enable_favourites', $_POST['enable_favourites_input']);
-    }
-    /*
-    // Update last shown items
-    if (isset($_SESSION['settings']['show_last_items']) && $_SESSION['settings']['show_last_items'] != $_POST['show_last_items']) {
-        updateSettings('show_last_items', $_POST['show_last_items']);
-    }
-    */
-    // Update personal feature
-    if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] != $_POST['enable_pf_feature_input']) {
-        updateSettings('enable_pf_feature', $_POST['enable_pf_feature_input']);
-    }
-    // Update loggin connections setting
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] != $_POST['log_connections_input']) {
-        updateSettings('log_connections', $_POST['log_connections_input']);
-    }
-    // Update log_accessed setting
-    if ((isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] != $_POST['log_accessed_input']) || !isset($_SESSION['settings']['log_accessed'])) {
-        updateSettings('log_accessed', $_POST['log_accessed_input']);
-    }
-    // Update date format setting
-    if (isset($_SESSION['settings']['date_format']) && $_SESSION['settings']['date_format'] != $_POST['date_format']) {
-        updateSettings('date_format', $_POST['date_format']);
-    }
-    // Update time format setting
-    if (isset($_SESSION['settings']['time_format']) && $_SESSION['settings']['time_format'] != $_POST['time_format']) {
-        updateSettings('time_format', $_POST['time_format']);
-    }
-    // Update default language setting
-    if (@$_SESSION['settings']['default_language'] != $_POST['default_language']) {
-        updateSettings('default_language', $_POST['default_language']);
-    }
-    // Update duplicate folder setting
-    if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] != $_POST['duplicate_folder_input']) {
-        updateSettings('duplicate_folder', $_POST['duplicate_folder_input']);
-    }
-    // Update duplicate item setting
-    if (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] != $_POST['duplicate_item_input']) {
-        updateSettings('duplicate_item', $_POST['duplicate_item_input']);
-    }
-    // Update item_duplicate_in_same_folder setting
-    if (@$_SESSION['settings']['item_duplicate_in_same_folder'] != $_POST['item_duplicate_in_same_folder_input']) {
-        updateSettings('item_duplicate_in_same_folder', $_POST['item_duplicate_in_same_folder_input']);
-    }
-    // Update pwd_maximum_length setting
-    if (isset($_SESSION['settings']['pwd_maximum_length']) && $_SESSION['settings']['pwd_maximum_length'] != $_POST['pwd_maximum_length']) {
-        updateSettings('pwd_maximum_length', $_POST['pwd_maximum_length']);
-    }
-    // Update subfolder_rights_as_parent
-    if (isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] != $_POST['subfolder_rights_as_parent_input']) {
-        updateSettings('subfolder_rights_as_parent', $_POST['subfolder_rights_as_parent_input']);
-    }
-    // Update show_only_accessible_folders
-    if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] != $_POST['show_only_accessible_folders_input']) {
-        updateSettings('show_only_accessible_folders', $_POST['show_only_accessible_folders_input']);
-    }
-    // Update number_of_used_pw setting
-    if (isset($_SESSION['settings']['number_of_used_pw']) && $_SESSION['settings']['number_of_used_pw'] != $_POST['number_of_used_pw']) {
-        updateSettings('number_of_used_pw', $_POST['number_of_used_pw']);
-    }
-    // Update duplicate Manager edit
-    if (isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] != $_POST['manager_edit_input']) {
-        updateSettings('manager_edit', $_POST['manager_edit_input']);
-    }
-    // Update cpassman_dir
-    if (isset($_SESSION['settings']['cpassman_dir']) && $_SESSION['settings']['cpassman_dir'] != $_POST['cpassman_dir']) {
-        updateSettings('cpassman_dir', $_POST['cpassman_dir']);
-    }
-    // Update cpassman_url
-    if (isset($_SESSION['settings']['cpassman_url']) && $_SESSION['settings']['cpassman_url'] != $_POST['cpassman_url']) {
-        updateSettings('cpassman_url', $_POST['cpassman_url']);
-        // update also jsUrl for CSFP protection
-        $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
-        $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
-        $data = file_get_contents($csrfp_file);
-        $posJsUrl = strpos($data, '"jsUrl" => "');
-        $posEndLine = strpos($data, '",', $posJsUrl);
-        $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
-        $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-        file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
-    }
-    // Update path_to_upload_folder
-    if ((isset($_SESSION['settings']['path_to_upload_folder']) && $_SESSION['settings']['path_to_upload_folder'] != $_POST['path_to_upload_folder']) || (!isset($_SESSION['settings']['path_to_upload_folder']))) {
-        updateSettings('path_to_upload_folder', $_POST['path_to_upload_folder']);
-    }
-    // Update url_to_upload_folder
-    if ((isset($_SESSION['settings']['url_to_upload_folder']) && $_SESSION['settings']['url_to_upload_folder'] != $_POST['url_to_upload_folder']) || (!isset($_SESSION['settings']['url_to_upload_folder']))) {
-        updateSettings('url_to_upload_folder', $_POST['url_to_upload_folder']);
-    }
-    // Update path_to_files_folder
-    if ((isset($_SESSION['settings']['path_to_files_folder']) && $_SESSION['settings']['path_to_files_folder'] != $_POST['path_to_files_folder']) || (!isset($_SESSION['settings']['path_to_files_folder']))) {
-        updateSettings('path_to_files_folder', $_POST['path_to_files_folder']);
-    }
-    // Update url_to_upload_folder
-    if ((isset($_SESSION['settings']['url_to_files_folder']) && $_SESSION['settings']['url_to_files_folder'] != $_POST['url_to_files_folder']) || (!isset($_SESSION['settings']['url_to_files_folder']))) {
-        updateSettings('url_to_files_folder', $_POST['url_to_files_folder']);
-    }
-    // Update pw_life_duration
-    if (isset($_SESSION['settings']['pw_life_duration']) && $_SESSION['settings']['pw_life_duration'] != $_POST['pw_life_duration']) {
-        updateSettings('pw_life_duration', $_POST['pw_life_duration']);
-    }
-    // Update favicon
-    if (isset($_SESSION['settings']['favicon']) && $_SESSION['settings']['favicon'] != $_POST['favicon']) {
-        updateSettings('favicon', $_POST['favicon']);
-    }
-    // Update activate_expiration setting
-    if (isset($_SESSION['settings']['activate_expiration']) && $_SESSION['settings']['activate_expiration'] != $_POST['activate_expiration_input']) {
-        updateSettings('activate_expiration', $_POST['activate_expiration_input']);
-    }
-    // Update maintenance mode
-    if (@$_SESSION['settings']['maintenance_mode'] != $_POST['maintenance_mode_input']) {
-        updateSettings('maintenance_mode', $_POST['maintenance_mode_input']);
-    }
-    // default_session_expiration_time
-    if (@$_SESSION['settings']['default_session_expiration_time'] != $_POST['default_session_expiration_time']) {
-        updateSettings('default_session_expiration_time', $_POST['default_session_expiration_time']);
-    }
-    // Update sts mode
-    if ( @$_SESSION['settings']['enable_sts'] != $_POST['enable_sts_input'] ) {
-        updateSettings('enable_sts', $_POST['enable_sts_input']);
-    }
-    // Update sts mode
-    if (@$_SESSION['settings']['encryptClientServer'] != $_POST['encryptClientServer_input']) {
-        updateSettings('encryptClientServer', $_POST['encryptClientServer_input']);
-    }
-    // Update send_stats
-    if (@$_SESSION['settings']['send_stats'] != $_POST['send_stats_input']) {
-        updateSettings('send_stats', $_POST['send_stats_input']);
-    }
-    // Update get_tp_info
-    if (@$_SESSION['settings']['get_tp_info'] != $_POST['get_tp_info_input']) {
-        updateSettings('get_tp_info', $_POST['get_tp_info_input']);
-    }
-    // Update allow_print
-    if (@$_SESSION['settings']['allow_print'] != $_POST['allow_print_input']) {
-        updateSettings('allow_print', $_POST['allow_print_input']);
-    }
-    // Update roles_allowed_to_print
-    if (@$_SESSION['settings']['roles_allowed_to_print'] != $_POST['roles_allowed_to_print']) {
-        updateSettings('roles_allowed_to_print', $_POST['roles_allowed_to_print']);
-    }
-    // Update allow_import
-    if (@$_SESSION['settings']['allow_import'] != $_POST['allow_import_input']) {
-        updateSettings('allow_import', $_POST['allow_import_input']);
-    }
-    // Update show_description
-    if (@$_SESSION['settings']['show_description'] != $_POST['show_description_input']) {
-        updateSettings('show_description', $_POST['show_description_input']);
-    }
-    // Update tree_counters
-    if (@$_SESSION['settings']['tree_counters'] != $_POST['tree_counters_input']) {
-        updateSettings('tree_counters', $_POST['tree_counters_input']);
-    }
-    // Update item_extra_fields
-    if (@$_SESSION['settings']['item_extra_fields'] != $_POST['item_extra_fields_input']) {
-        updateSettings('item_extra_fields', $_POST['item_extra_fields_input']);
-    }
-    // Update LDAP mode
-    if (isset($_POST['ldap_mode_input']) && @$_SESSION['settings']['ldap_mode'] != $_POST['ldap_mode_input']) {
-        updateSettings('ldap_mode', $_POST['ldap_mode_input']);
-    }
-    // Update LDAP type
-    if (isset($_POST['ldap_type']) && @$_SESSION['settings']['ldap_type'] != $_POST['ldap_type']) {
-        updateSettings('ldap_type', $_POST['ldap_type']);
-    }
-    // Update LDAP ldap_suffix
-    if (isset($_POST['ldap_suffix']) && @$_SESSION['settings']['ldap_suffix'] != $_POST['ldap_suffix']) {
-        updateSettings('ldap_suffix', $_POST['ldap_suffix']);
-    }
-    // Update LDAP ldap_domain_dn
-    if (isset($_POST['ldap_domain_dn']) && @$_SESSION['settings']['ldap_domain_dn'] != $_POST['ldap_domain_dn']) {
-        updateSettings('ldap_domain_dn', $_POST['ldap_domain_dn']);
-    }
-    // Update LDAP ldap_domain_controler
-    if (isset($_POST['ldap_domain_controler']) && @$_SESSION['settings']['ldap_domain_controler'] != $_POST['ldap_domain_controler']) {
-        updateSettings('ldap_domain_controler', $_POST['ldap_domain_controler']);
-    }
-    // Update LDAP ldap_user_attribute
-    if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != @$_POST['ldap_user_attribute']) {
-        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
-    }
-    // Update LDAP ssl
-    if (isset($_POST['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] != $_POST['ldap_ssl_input']) {
-        updateSettings('ldap_ssl', $_POST['ldap_ssl_input']);
-    }
-    // Update LDAP tls
-    if (@$_SESSION['settings']['ldap_tls'] != $_POST['ldap_tls_input']) {
-        updateSettings('ldap_tls', $_POST['ldap_tls_input']);
-    }
-    // Update LDAP ldap_elusers
-    if (@$_SESSION['settings']['ldap_elusers'] != $_POST['ldap_elusers_input']) {
-        updateSettings('ldap_elusers', $_POST['ldap_elusers_input']);
-    }
-    // Update LDAP ldap_bind_dn
-    if (isset($_POST['ldap_bind_dn']) && @$_SESSION['settings']['ldap_bind_dn'] != $_POST['ldap_bind_dn']) {
-        updateSettings('ldap_bind_dn', $_POST['ldap_bind_dn']);
-    }
-    // Update LDAP ldap_user_attribute
-    if (isset($_POST['ldap_user_attribute']) && $_SESSION['settings']['ldap_user_attribute'] != $_POST['ldap_user_attribute']) {
-        updateSettings('ldap_user_attribute', $_POST['ldap_user_attribute']);
-    }
-    // Update LDAP ldap_search_base
-    if (isset($_POST['ldap_search_base'])&& @$_SESSION['settings']['ldap_search_base'] != $_POST['ldap_search_base']) {
-        updateSettings('ldap_search_base', $_POST['ldap_search_base']);
-    }
-    // Update LDAP ldap_bind_passwd
-    if (isset($_POST['ldap_bind_passwd'])&& @$_SESSION['settings']['ldap_bind_passwd'] != $_POST['ldap_bind_passwd']) {
-        updateSettings('ldap_bind_passwd', $_POST['ldap_bind_passwd']);
-    }
-    // update ldap_usergroup
-    if (isset($_POST['ldap_usergroup']) && $_SESSION['settings']['ldap_usergroup'] != $_POST['ldap_usergroup']) {
-        updateSettings('ldap_usergroup', $_POST['ldap_usergroup']);
-    }
-    // Update anyone_can_modify
-    if (@$_SESSION['settings']['anyone_can_modify'] != $_POST['anyone_can_modify_input']) {
-        updateSettings('anyone_can_modify', $_POST['anyone_can_modify_input']);
-    }
-    // Update anyone_can_modify_bydefault
-    if (@$_SESSION['settings']['anyone_can_modify_bydefault'] != $_POST['anyone_can_modify_bydefault_input']) {
-        updateSettings('anyone_can_modify_bydefault', $_POST['anyone_can_modify_bydefault_input']);
-    }
-    // Update enable_attachment_encryption
-    if (@$_SESSION['settings']['enable_attachment_encryption'] != $_POST['enable_attachment_encryption_input']) {
-        updateSettings('enable_attachment_encryption', $_POST['enable_attachment_encryption_input']);
-    }
-    // Update enable_kb
-    if (@$_SESSION['settings']['enable_kb'] != $_POST['enable_kb_input']) {
-        updateSettings('enable_kb', $_POST['enable_kb_input']);
-    }
-    // Update enable_suggestion
-    if (@$_SESSION['settings']['enable_suggestion'] != $_POST['enable_suggestion_input']) {
-        updateSettings('enable_suggestion', $_POST['enable_suggestion_input']);
-    }
-    // Update nb_bad_identification
-    if (@$_SESSION['settings']['nb_bad_authentication'] != $_POST['nb_bad_authentication']) {
-        updateSettings('nb_bad_authentication', $_POST['nb_bad_authentication']);
-    }
-    // Update restricted_to(if restricted_to is FALSE then restricted_to_roles needs to be FALSE
-    if (@$_SESSION['settings']['restricted_to'] != $_POST['restricted_to_input']) {
-        updateSettings('restricted_to', $_POST['restricted_to_input']);
-        if ($_POST['restricted_to_input'] == 0) {
-            updateSettings('restricted_to_roles', 0);
-        }
-    }
-    // Update restricted_to_roles
-    if (@$_SESSION['settings']['restricted_to_roles'] != $_POST['restricted_to_roles_input'] && (@$_SESSION['settings']['restricted_to'] == 1 OR $_POST['restricted_to_input'] == 1)) {
-        updateSettings('restricted_to_roles', $_POST['restricted_to_roles_input']);
-    }
-    // Update copy_to_clipboard_small_icons
-    if (@$_SESSION['settings']['copy_to_clipboard_small_icons'] != $_POST['copy_to_clipboard_small_icons_input']) {
-        updateSettings('copy_to_clipboard_small_icons', $_POST['copy_to_clipboard_small_icons_input']);
-    }
-    // Update timezone_selection
-    if (@$_SESSION['settings']['timezone'] != $_POST['timezone']) {
-        updateSettings('timezone', $_POST['timezone']);
-    }
-    // Update enable_user_can_create_folders
-    if (@$_SESSION['settings']['enable_user_can_create_folders'] != $_POST['enable_user_can_create_folders_input']) {
-        updateSettings('enable_user_can_create_folders', $_POST['enable_user_can_create_folders_input']);
-    }
-    // Update enable_send_email_on_user_login
-    if (@$_SESSION['settings']['enable_send_email_on_user_login'] != $_POST['enable_send_email_on_user_login_input']) {
-        updateSettings('enable_send_email_on_user_login', $_POST['enable_send_email_on_user_login_input']);
-    }
-    // Update enable_email_notification_on_item_shown
-    if (@$_SESSION['settings']['enable_email_notification_on_item_shown'] != $_POST['enable_email_notification_on_item_shown_input']) {
-        updateSettings('enable_email_notification_on_item_shown', $_POST['enable_email_notification_on_item_shown_input']);
-    }
-    // Update enable_email_notification_on_user_pw_change
-    if (@$_SESSION['settings']['enable_email_notification_on_user_pw_change'] != $_POST['enable_email_notification_on_user_pw_change_input']) {
-        updateSettings('enable_email_notification_on_user_pw_change', $_POST['enable_email_notification_on_user_pw_change_input']);
-    }
-    // Update custom_logo
-    if (@$_SESSION['settings']['custom_logo'] != $_POST['custom_logo']) {
-        updateSettings('custom_logo', $_POST['custom_logo']);
-    }
-    // Update custom_login_text
-    if (@$_SESSION['settings']['custom_login_text'] != $_POST['custom_login_text']) {
-        updateSettings('custom_login_text', htmlentities($_POST['custom_login_text'], ENT_QUOTES, "UTF-8"));
-    }
-    // Update nb of items to get in one query iterration
-    if (@$_SESSION['settings']['nb_items_by_query'] != $_POST['nb_items_by_query']) {
-        updateSettings('nb_items_by_query', $_POST['nb_items_by_query']);
-    }
-    // Update enable_delete_after_consultation
-    if (@$_SESSION['settings']['enable_delete_after_consultation'] != $_POST['enable_delete_after_consultation_input']) {
-        updateSettings('enable_delete_after_consultation', $_POST['enable_delete_after_consultation_input']);
-    }
-    // Update enable_personal_saltkey_cookie
-    if (@$_SESSION['settings']['enable_personal_saltkey_cookie'] != $_POST['enable_personal_saltkey_cookie_input']) {
-        updateSettings('enable_personal_saltkey_cookie', $_POST['enable_personal_saltkey_cookie_input']);
-    }
-    // Update use_md5_password_as_salt
-    if (@$_SESSION['settings']['use_md5_password_as_salt'] != $_POST['use_md5_password_as_salt_input']) {
-        updateSettings('use_md5_password_as_salt', $_POST['use_md5_password_as_salt_input']);
-    }
-    // Update personal_saltkey_cookie_duration
-    if (@$_SESSION['settings']['personal_saltkey_cookie_duration'] != $_POST['personal_saltkey_cookie_duration']) {
-        updateSettings('personal_saltkey_cookie_duration', $_POST['personal_saltkey_cookie_duration']);
-    }
-    // Update settings_offline_mode
-    if (@$_SESSION['settings']['settings_offline_mode'] != $_POST['settings_offline_mode_input']) {
-        updateSettings('settings_offline_mode', $_POST['settings_offline_mode_input']);
-    }
-    // Update offline_key_level
-    if (@$_SESSION['settings']['offline_key_level'] != $_POST['offline_key_level']) {
-        updateSettings('offline_key_level', $_POST['offline_key_level']);
-    }
-    // Update email_smtp_server
-    if (@$_SESSION['settings']['email_smtp_server'] != $_POST['email_smtp_server']) {
-        updateSettings('email_smtp_server', $_POST['email_smtp_server']);
-    }
-    // Update email_auth
-    if (@$_SESSION['settings']['email_smtp_auth'] != $_POST['email_smtp_auth_input']) {
-        updateSettings('email_smtp_auth', $_POST['email_smtp_auth_input']);
-    }
-    // Update email_auth_username
-    if (@$_SESSION['settings']['email_auth_username'] != $_POST['email_auth_username']) {
-        updateSettings('email_auth_username', $_POST['email_auth_username']);
-    }
-    // Update email_auth_pwd
-    if (@$_SESSION['settings']['email_auth_pwd'] != $_POST['email_auth_pwd']) {
-        updateSettings('email_auth_pwd', $_POST['email_auth_pwd']);
-    }
-    // Update email_from
-    if (@$_SESSION['settings']['email_from'] != $_POST['email_from']) {
-        updateSettings('email_from', $_POST['email_from']);
-    }
-    // Update email_from_name
-    if (@$_SESSION['settings']['email_from_name'] != $_POST['email_from_name']) {
-        updateSettings('email_from_name', $_POST['email_from_name']);
-    }
-    // Update email_port
-    if (@$_SESSION['settings']['email_port'] != $_POST['email_port']) {
-        updateSettings('email_port', $_POST['email_port']);
-    }
-    // Update email_security
-    if (@$_SESSION['settings']['email_security'] != $_POST['email_security']) {
-        updateSettings('email_security', $_POST['email_security']);
-    }
-    // Update email_server_url
-    if (@$_SESSION['settings']['email_server_url'] != $_POST['email_server_url']) {
-        updateSettings('email_server_url', $_POST['email_server_url']);
-    }
-    // store backups settings
-    if (@$_SESSION['settings']['bck_script_filename'] != $_POST['bck_script_filename']) {
-        updateSettings('bck_script_filename', $_POST['bck_script_filename']);
-    }
-    if (@$_SESSION['settings']['bck_script_path'] != $_POST['bck_script_path']) {
-        updateSettings('bck_script_path', $_POST['bck_script_path']);
-    }
-    if (@$_SESSION['settings']['bck_script_key'] != $_POST['bck_script_key']) {
-        updateSettings('bck_script_key', $_POST['bck_script_key']);
-    }
-    // Update insert_manual_entry_item_history
-    if (@$_SESSION['settings']['insert_manual_entry_item_history'] != $_POST['insert_manual_entry_item_history_input']) {
-        updateSettings('insert_manual_entry_item_history', $_POST['insert_manual_entry_item_history_input']);
-    }
-    //2factors_authentication
-    if (isset($_POST['2factors_authentication'])) {
-        updateSettings('2factors_authentication', $_POST['2factors_authentication']);
-    }
-    //psk_authentication
-    if (isset($_POST['psk_authentication'])) {
-        updateSettings('psk_authentication', $_POST['psk_authentication']);
-    }
-    // Update proxy_ip setting
-    if (@$_SESSION['settings']['proxy_ip'] != $_POST['proxy_ip']) {
-        updateSettings('proxy_ip', $_POST['proxy_ip']);
-    }
-    // Update proxy_port setting
-    if (@$_SESSION['settings']['proxy_port'] != $_POST['proxy_port']) {
-        updateSettings('proxy_port', $_POST['proxy_port']);
-    }
-
-    // Update settings_upload_maxfilesize
-    if (@$_SESSION['settings']['upload_maxfilesize'] != $_POST['upload_maxfilesize']) {
-        updateSettings('upload_maxfilesize', $_POST['upload_maxfilesize']);
-    }
-    // Update upload_docext
-    if (@$_SESSION['settings']['upload_docext'] != $_POST['upload_docext']) {
-        updateSettings('upload_docext', $_POST['upload_docext']);
-    }
-    // Update upload_imagesext
-    if (@$_SESSION['settings']['upload_imagesext'] != $_POST['upload_imagesext']) {
-        updateSettings('upload_imagesext', $_POST['upload_imagesext']);
-    }
-    // Update upload_pkgext
-    if (@$_SESSION['settings']['upload_pkgext'] != $_POST['upload_pkgext']) {
-        updateSettings('upload_pkgext', $_POST['upload_pkgext']);
-    }
-    // Update upload_othext
-    if (@$_SESSION['settings']['upload_otherext'] != $_POST['upload_otherext']) {
-        updateSettings('upload_otherext', $_POST['upload_otherext']);
-    }
-    // Update upload_imageresize_options
-    if (@$_SESSION['settings']['upload_imageresize_options'] != $_POST['upload_imageresize_options_input']) {
-        updateSettings('upload_imageresize_options', $_POST['upload_imageresize_options_input']);
-    }
-    // Update upload_imageresize_width
-    if (@$_SESSION['settings']['upload_imageresize_width'] != @$_POST['upload_imageresize_width']) {
-        @updateSettings('upload_imageresize_width', $_POST['upload_imageresize_width']);
-    }
-    // Update upload_imageresize_height
-    if (@$_SESSION['settings']['upload_imageresize_height'] != @$_POST['upload_imageresize_height']) {
-        @updateSettings('upload_imageresize_height', $_POST['upload_imageresize_height']);
-    }
-    // Update upload_imageresize_quality
-    if (@$_SESSION['settings']['upload_imageresize_quality'] != @$_POST['upload_imageresize_quality']) {
-        @updateSettings('upload_imageresize_quality', $_POST['upload_imageresize_quality']);
-    }
-    // Update can_create_root_folder
-    if (@$_SESSION['settings']['can_create_root_folder'] != $_POST['can_create_root_folder_input']) {
-        updateSettings('can_create_root_folder', $_POST['can_create_root_folder_input']);
-    }
-    // Update syslog_enable
-    if (@$_SESSION['settings']['syslog_enable'] != $_POST['syslog_enable_input']) {
-        updateSettings('syslog_enable', $_POST['syslog_enable_input']);
-    }
-    // Update syslog_host
-    if (@$_SESSION['settings']['syslog_host'] != $_POST['syslog_host']) {
-        updateSettings('syslog_host', $_POST['syslog_host']);
-    }
-    // Update syslog_port
-    if (@$_SESSION['settings']['syslog_port'] != $_POST['syslog_port']) {
-        updateSettings('syslog_port', $_POST['syslog_port']);
-    }
-    // Update enable_server_password_change
-    if (@$_SESSION['settings']['enable_server_password_change'] != $_POST['enable_server_password_change_input']) {
-        updateSettings('enable_server_password_change', $_POST['enable_server_password_change_input']);
-    }
-}
-
 echo '
 <div style="margin-top:10px;">
     <form name="form_settings" method="post" action="">';
@@ -609,7 +62,7 @@ echo '
                         <label for="cpassman_dir">'.$LANG['admin_misc_cpassman_dir'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="cpassman_dir" name="cpassman_dir" value="', isset($_SESSION['settings']['cpassman_dir']) ? $_SESSION['settings']['cpassman_dir'] : '', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="cpassman_dir" name="cpassman_dir" value="', isset($_SESSION['settings']['cpassman_dir']) ? $_SESSION['settings']['cpassman_dir'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // cpassman_url
@@ -620,7 +73,7 @@ echo '
                         <label for="cpassman_url">'.$LANG['admin_misc_cpassman_url'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="cpassman_url" name="cpassman_url" value="', isset($_SESSION['settings']['cpassman_url']) ? $_SESSION['settings']['cpassman_url'] : '', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="cpassman_url" name="cpassman_url" value="', isset($_SESSION['settings']['cpassman_url']) ? $_SESSION['settings']['cpassman_url'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // path_to_upload_folder
@@ -632,7 +85,7 @@ echo '
                         &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_path_to_upload_folder_tip'].'"></i>
                     </td>
                     <td>
-                        <input type="text" size="80" id="path_to_upload_folder" name="path_to_upload_folder" value="', isset($_SESSION['settings']['path_to_upload_folder']) ? $_SESSION['settings']['path_to_upload_folder'] : $_SESSION['settings']['cpassman_dir'].'/upload', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="path_to_upload_folder" name="path_to_upload_folder" value="', isset($_SESSION['settings']['path_to_upload_folder']) ? $_SESSION['settings']['path_to_upload_folder'] : $_SESSION['settings']['cpassman_dir'].'/upload', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // url_to_upload_folder
@@ -643,7 +96,7 @@ echo '
                         <label for="url_to_upload_folder">'.$LANG['admin_url_to_upload_folder'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="url_to_upload_folder" name="url_to_upload_folder" value="', isset($_SESSION['settings']['url_to_upload_folder']) ? $_SESSION['settings']['url_to_upload_folder'] : $_SESSION['settings']['cpassman_url'].'/upload', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="url_to_upload_folder" name="url_to_upload_folder" value="', isset($_SESSION['settings']['url_to_upload_folder']) ? $_SESSION['settings']['url_to_upload_folder'] : $_SESSION['settings']['cpassman_url'].'/upload', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // path_to_files_folder
@@ -655,7 +108,7 @@ echo '
                         &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_path_to_files_folder_tip'].'"></i>
                     </td>
                     <td>
-                        <input type="text" size="80" id="path_to_files_folder" name="path_to_files_folder" value="', isset($_SESSION['settings']['path_to_files_folder']) ? $_SESSION['settings']['path_to_files_folder'] : $_SESSION['settings']['cpassman_dir'].'/files', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="path_to_files_folder" name="path_to_files_folder" value="', isset($_SESSION['settings']['path_to_files_folder']) ? $_SESSION['settings']['path_to_files_folder'] : $_SESSION['settings']['cpassman_dir'].'/files', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // url_to_files_folder
@@ -666,7 +119,7 @@ echo '
                         <label for="url_to_files_folder">'.$LANG['admin_url_to_files_folder'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="url_to_files_folder" name="url_to_files_folder" value="', isset($_SESSION['settings']['url_to_files_folder']) ? $_SESSION['settings']['url_to_files_folder'] : $_SESSION['settings']['cpassman_url'].'/files', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="url_to_files_folder" name="url_to_files_folder" value="', isset($_SESSION['settings']['url_to_files_folder']) ? $_SESSION['settings']['url_to_files_folder'] : $_SESSION['settings']['cpassman_url'].'/files', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // Favicon
@@ -677,7 +130,7 @@ echo '
                         <label for="favicon">'.$LANG['admin_misc_favicon'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="favicon" name="favicon" value="', isset($_SESSION['settings']['favicon']) ? $_SESSION['settings']['favicon'] : '', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="favicon" name="favicon" value="', isset($_SESSION['settings']['favicon']) ? $_SESSION['settings']['favicon'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // custom_logo
@@ -688,7 +141,7 @@ echo '
                         <label for="cpassman_dir">'.$LANG['admin_misc_custom_logo'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="80" id="custom_logo" name="custom_logo" value="', isset($_SESSION['settings']['custom_logo']) ? $_SESSION['settings']['custom_logo'] : '', '" class="text ui-widget-content" />
+                        <input type="text" size="80" id="custom_logo" name="custom_logo" value="', isset($_SESSION['settings']['custom_logo']) ? $_SESSION['settings']['custom_logo'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // custom_login_text
@@ -699,7 +152,7 @@ echo '
                     <label for="cpassman_dir">'.$LANG['admin_misc_custom_login_text'].'</label>
                 </td>
                 <td>
-                    <input type="text" size="80" id="custom_login_text" name="custom_login_text" value="', isset($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : '', '" class="text ui-widget-content" />
+                    <input type="text" size="80" id="custom_login_text" name="custom_login_text" value="', isset($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <td>
             </tr>';
 
@@ -732,7 +185,7 @@ echo '
                   <label>'.$LANG['settings_default_session_expiration_time'].'</label>
             </td>
             <td>
-                <input type="text" size="15" id="default_session_expiration_time" name="default_session_expiration_time" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" class="text ui-widget-content" />
+                <input type="text" size="15" id="default_session_expiration_time" name="default_session_expiration_time" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
               <td>
             </tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -775,7 +228,7 @@ echo '
                     &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_proxy_ip_tip'].'"></i>
                 </td>
                 <td>
-                    <input type="text" size="15" id="proxy_ip" name="proxy_ip" value="', isset($_SESSION['settings']['proxy_ip']) ? $_SESSION['settings']['proxy_ip'] : "", '" class="text ui-widget-content" />
+                    <input type="text" size="15" id="proxy_ip" name="proxy_ip" value="', isset($_SESSION['settings']['proxy_ip']) ? $_SESSION['settings']['proxy_ip'] : "", '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <td>
             </tr>
             <tr style="margin-bottom:3px">
@@ -785,7 +238,7 @@ echo '
                     &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_proxy_port_tip'].'"></i>
                 </td>
                 <td>
-                    <input type="text" size="10" id="proxy_port" name="proxy_port" value="', isset($_SESSION['settings']['proxy_port']) ? $_SESSION['settings']['proxy_port'] : "", '" class="text ui-widget-content" />
+                    <input type="text" size="10" id="proxy_port" name="proxy_port" value="', isset($_SESSION['settings']['proxy_port']) ? $_SESSION['settings']['proxy_port'] : "", '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <td>
             </tr>';
 
@@ -800,7 +253,7 @@ echo '
                     &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_pwd_maximum_length_tip'].'"></i>
                 </td>
                 <td>
-                    <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" />
+                    <input type="text" size="10" id="pwd_maximum_length" name="pwd_maximum_length" value="', isset($_SESSION['settings']['pwd_maximum_length']) ? $_SESSION['settings']['pwd_maximum_length'] : 40, '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <td>
             </tr>';
 
@@ -892,7 +345,7 @@ echo '
                         <label for="number_of_used_pw">'.$LANG['number_of_used_pw'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="10" id="number_of_used_pw" name="number_of_used_pw" value="', isset($_SESSION['settings']['number_of_used_pw']) ? $_SESSION['settings']['number_of_used_pw'] : '5', '" class="text ui-widget-content" />
+                        <input type="text" size="10" id="number_of_used_pw" name="number_of_used_pw" value="', isset($_SESSION['settings']['number_of_used_pw']) ? $_SESSION['settings']['number_of_used_pw'] : '5', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // Number days before changing pw
@@ -903,7 +356,7 @@ echo '
                         <label for="pw_life_duration">'.$LANG['pw_life_duration'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="10" id="pw_life_duration" name="pw_life_duration" value="', isset($_SESSION['settings']['pw_life_duration']) ? $_SESSION['settings']['pw_life_duration'] : '5', '" class="text ui-widget-content" />
+                        <input type="text" size="10" id="pw_life_duration" name="pw_life_duration" value="', isset($_SESSION['settings']['pw_life_duration']) ? $_SESSION['settings']['pw_life_duration'] : '5', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 // Number of bad authentication tentations before disabling user
@@ -914,7 +367,7 @@ echo '
                         <label for="nb_bad_authentication">'.$LANG['nb_false_login_attempts'].'</label>
                     </td>
                     <td>
-                        <input type="text" size="10" id="nb_bad_authentication" name="nb_bad_authentication" value="', isset($_SESSION['settings']['nb_bad_authentication']) ? $_SESSION['settings']['nb_bad_authentication'] : '0', '" class="text ui-widget-content" />
+                        <input type="text" size="10" id="nb_bad_authentication" name="nb_bad_authentication" value="', isset($_SESSION['settings']['nb_bad_authentication']) ? $_SESSION['settings']['nb_bad_authentication'] : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>';
 
@@ -972,7 +425,7 @@ echo '
                 <label>'.$LANG['personal_saltkey_cookie_duration'].'</label>
             </td><td>
             <div class="div_radio">
-                <input type="text" size="10" id="personal_saltkey_cookie_duration" name="personal_saltkey_cookie_duration" value="', isset($_SESSION['settings']['personal_saltkey_cookie_duration']) ? $_SESSION['settings']['personal_saltkey_cookie_duration'] : '31', '" class="text ui-widget-content" />
+                <input type="text" size="10" id="personal_saltkey_cookie_duration" name="personal_saltkey_cookie_duration" value="', isset($_SESSION['settings']['personal_saltkey_cookie_duration']) ? $_SESSION['settings']['personal_saltkey_cookie_duration'] : '31', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
             </div>
             </td></tr>';
 
@@ -1115,7 +568,7 @@ echo '
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_action_change_salt_key_tip'].'"></i></span>
                     <span id="div_change_salt_key" style="margin-left:10px;display:none;">
                         <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><span id="change_salt_key_image"></span>&nbsp;
-						<span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
+                        <span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
                         &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
@@ -1162,7 +615,7 @@ echo '
     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_delay_for_item_edition_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" />
+                    <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 </td></tr>';
 // Expired time for OTV - otv_expiration_period
 echo '
@@ -1170,7 +623,7 @@ echo '
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['settings_otv_expiration_period'].'</label>
                     </td><td>
-                    <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" />
+                    <input type="text" size="5" id="otv_expiration_period" name="otv_expiration_period" value="', isset($_SESSION['settings']['otv_expiration_period']) ? $_SESSION['settings']['otv_expiration_period'] : '7', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 </td></tr>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -1190,7 +643,7 @@ echo '
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label for="max_last_items">'.$LANG['max_last_items'].'</label>
                     </td><td>
-                    <input type="text" size="4" id="max_last_items" name="max_last_items" value="', isset($_SESSION['settings']['max_latest_items']) ? $_SESSION['settings']['max_latest_items'] : '', '" class="text ui-widget-content" />
+                    <input type="text" size="4" id="max_last_items" name="max_last_items" value="', isset($_SESSION['settings']['max_latest_items']) ? $_SESSION['settings']['max_latest_items'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <tr><td>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -1426,7 +879,7 @@ echo '
                     <label>'.$LANG['nb_items_by_query'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['nb_items_by_query_tip'].'"></i></span>
                     </td><td>
-                    <input type="text" size="4" id="nb_items_by_query" name="nb_items_by_query" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : '', '" class="text ui-widget-content" />
+                    <input type="text" size="4" id="nb_items_by_query" name="nb_items_by_query" value="', isset($_SESSION['settings']['nb_items_by_query']) ? $_SESSION['settings']['nb_items_by_query'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 <tr><td>';
 
 echo '<tr><td colspan="3"><hr></td></tr>';
@@ -1560,26 +1013,30 @@ if (!extension_loaded('ldap')) {
     // Enable LDAP mode
     echo '
     <div style="margin-bottom:3px;">
-        <label for="ldap_mode">'.$LANG['settings_ldap_mode'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_mode_tip'].'"></i></label>
-		<div class="toggle toggle-modern" id="ldap_mode" data-toggle-on="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_mode_input" name="ldap_mode_input" value="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '1' : '0', '" />
-	</div>';
-    // Type
-    $ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
-    echo '
-<div style="margin-bottom:3px;">
-    <label for="ldap_type">'.$LANG['settings_ldap_type'].'</label>
-    <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
-        <option value="windows">Windows / Active Directory</option>
-        <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
-        <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
-    </select>
-</div>';
+        <table><tr>
+        <td><label for="ldap_mode">'.$LANG['settings_ldap_mode'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_mode_tip'].'"></i></label></td>
+        <td><div class="toggle toggle-modern" id="ldap_mode" data-toggle-on="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_mode_input" name="ldap_mode_input" value="', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '1' : '0', '" /></td>
+        </tr></table>
+    </div>';
 }
 // LDAP inputs
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
                 <table>';
+// Type
+$ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
+echo '
+                    <tr>
+                        <td><label for="ldap_type">'.$LANG['settings_ldap_type'].'</label></td>
+                        <td>
+                            <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
+                                <option value="windows">Windows / Active Directory</option>
+                                <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
+                                <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
+                            </select>
+                        </td>
+                    </tr>';
 // Domain
 if (isset($ldap_type) && $ldap_type != 'posix' && $ldap_type != 'posix-search') {
 echo '
@@ -1821,7 +1278,7 @@ echo '
                             '.$LANG['admin_email_smtp_server'].'
                         </td>
                         <td>
-                            <input id="email_smtp_server" name="email_smtp_server" type="text" size="40px" value="', !isset($_SESSION['settings']['email_smtp_server']) ? $smtp_server : $_SESSION['settings']['email_smtp_server'], '" />
+                            <input type="text" size="80" id="email_smtp_server" name="email_smtp_server" value="', !isset($_SESSION['settings']['email_smtp_server']) ? $smtp_server : $_SESSION['settings']['email_smtp_server'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP auth
@@ -1843,7 +1300,7 @@ echo '
                             '.$LANG['admin_email_auth_username'].'
                         </td>
                         <td>
-                            <input id="email_auth_username" name="email_auth_username" type="text" size="40px" value="', !isset($_SESSION['settings']['email_auth_username']) ? $smtp_auth_username : $_SESSION['settings']['email_auth_username'], '" />
+                            <input id="email_auth_username" name="email_auth_username" type="text" size="40px" value="', !isset($_SESSION['settings']['email_auth_username']) ? $smtp_auth_username : $_SESSION['settings']['email_auth_username'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP auth pwd
@@ -1854,7 +1311,7 @@ echo '
                             '.$LANG['admin_email_auth_pwd'].'
                         </td>
                         <td>
-                            <input id="email_auth_pwd" name="email_auth_pwd" type="password" size="40px" value="', !isset($_SESSION['settings']['email_auth_pwd']) ? $smtp_auth_password : $_SESSION['settings']['email_auth_pwd'], '" />
+                            <input id="email_auth_pwd" name="email_auth_pwd" type="password" size="40px" value="', !isset($_SESSION['settings']['email_auth_pwd']) ? $smtp_auth_password : $_SESSION['settings']['email_auth_pwd'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP server url
@@ -1866,7 +1323,7 @@ echo '
                         <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_email_server_url_tip'].'"></i></span>
                         </td>
                         <td>
-                            <input id="email_server_url" name="email_server_url" type="text" size="40px" value="', !isset($_SESSION['settings']['email_server_url']) ? $_SESSION['settings']['cpassman_url'] : $_SESSION['settings']['email_server_url'], '" />
+                            <input id="email_server_url" name="email_server_url" type="text" size="40px" value="', !isset($_SESSION['settings']['email_server_url']) ? $_SESSION['settings']['cpassman_url'] : $_SESSION['settings']['email_server_url'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP port
@@ -1877,7 +1334,7 @@ echo '
                             '.$LANG['admin_email_port'].'
                         </td>
                         <td>
-                            <input id="email_port" name="email_port" type="text" size="40px" value="', !isset($_SESSION['settings']['email_port']) ? '25' : $_SESSION['settings']['email_port'], '" />
+                            <input id="email_port" name="email_port" type="text" size="40px" value="', !isset($_SESSION['settings']['email_port']) ? '25' : $_SESSION['settings']['email_port'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP security
@@ -1903,7 +1360,7 @@ echo '
                             '.$LANG['admin_email_from'].'
                         </td>
                         <td>
-                            <input id="email_from" name="email_from" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from']) ? $email_from : $_SESSION['settings']['email_from'], '" />
+                            <input id="email_from" name="email_from" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from']) ? $email_from : $_SESSION['settings']['email_from'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SMTP from name
@@ -1914,7 +1371,7 @@ echo '
                             '.$LANG['admin_email_from_name'].'
                         </td>
                         <td>
-                            <input id="email_from_name" name="email_from_name" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from_name']) ? $email_from_name : $_SESSION['settings']['email_from_name'], '" />
+                            <input id="email_from_name" name="email_from_name" type="text" size="40px" value="', !isset($_SESSION['settings']['email_from_name']) ? $email_from_name : $_SESSION['settings']['email_from_name'], '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 
@@ -1980,7 +1437,7 @@ echo '
                     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_maxfilesize_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" /></div>
+                    <input type="text" size="5" id="upload_maxfilesize" name="upload_maxfilesize" value="', isset($_SESSION['settings']['upload_maxfilesize']) ? $_SESSION['settings']['upload_maxfilesize'] : '10', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></div>
                 </td></tr>';
 // Extension for Documents
 echo '
@@ -1990,7 +1447,7 @@ echo '
                     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_docext_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" /></div>
+                    <input type="text" size="70" id="upload_docext" name="upload_docext" value="', isset($_SESSION['settings']['upload_docext']) ? $_SESSION['settings']['upload_docext'] : 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></div>
                 </td></tr>';
 // Extension for Images
 echo '
@@ -2000,7 +1457,7 @@ echo '
                     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_imagesext_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" /></div>
+                    <input type="text" size="70" id="upload_imagesext" name="upload_imagesext" value="', isset($_SESSION['settings']['upload_imagesext']) ? $_SESSION['settings']['upload_imagesext'] : 'jpg,jpeg,gif,png', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></div>
                 </td></tr>';
 // Extension for Packages
 echo '
@@ -2010,7 +1467,7 @@ echo '
                     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_pkgext_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" /></div>
+                    <input type="text" size="70" id="upload_pkgext" name="upload_pkgext" value="', isset($_SESSION['settings']['upload_pkgext']) ? $_SESSION['settings']['upload_pkgext'] : '7z,rar,tar,zip', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></div>
                 </td></tr>';
 // Extension for Other
 echo '
@@ -2020,7 +1477,7 @@ echo '
                     '<span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_upload_otherext_tip'].'"></i></span>
                     </label>
                     </td><td>
-                    <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" /></div>
+                    <input type="text" size="70" id="upload_otherext" name="upload_otherext" value="', isset($_SESSION['settings']['upload_otherext']) ? $_SESSION['settings']['upload_otherext'] : 'sql,xml', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></div>
                 </td></tr>';
 echo '<tr><td colspan="3"><hr></td></tr>';
 // Image resize width / height / quality
@@ -2072,12 +1529,6 @@ echo '
                 </table>
             </div>';
 // --------------------------------------------------------------------------------
-
-// Save button
-echo '
-            <div style="margin:auto;">
-                <input type="submit" id="save_button" name="save_button" value="'.$LANG['save_button'].'" />
-            </div>';
 
 echo '
         </div>';

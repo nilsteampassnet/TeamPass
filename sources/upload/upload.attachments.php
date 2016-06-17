@@ -170,7 +170,7 @@ if (isset($_SERVER["CONTENT_TYPE"])) {
 // should we encrypt the attachment?
 if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
     // prepare encryption of attachment
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
     $key = substr(
         md5("\x2D\xFC\xD8".SALT, true).
@@ -254,7 +254,7 @@ $fileRandomId = md5($fileName.time());
 rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $fileRandomId);
 
 //Connect to mysql server
-require_once '../../includes/settings.php';
+require_once '../../includes/config/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;

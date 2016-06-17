@@ -14,7 +14,7 @@
  */
 
 $_SESSION['CPM'] = 1;
-require_once "../includes/include.php";
+require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
 
 
@@ -39,7 +39,7 @@ function teampass_whitelist() {
 function teampass_connect()
 {
     global $server, $user, $pass, $database, $link, $port, $encoding;
-    require_once("../includes/settings.php");
+    require_once("../includes/config/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
     DB::$host = $server;
     DB::$user = $user;
@@ -868,12 +868,12 @@ function rest_get () {
                 if(count($array_category) > 0 && count($array_category) < 5) {
                     // load passwordLib library
                     require_once '../sources/SplClassLoader.php';
-                    
+
                     // prepare tree
                     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                     $tree->register();
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
-                                        
+
                     // this will delete all sub folders and items associated
                     for ($i=0; $i < count($array_category); $i ++) {
                         // Get through each subfolder
@@ -897,9 +897,9 @@ function rest_get () {
 
                                     //delete items & logs
                                     $items = DB::query(
-                                        "SELECT id 
-                                        FROM ".prefix_table("items")." 
-                                        WHERE id_tree=%i", 
+                                        "SELECT id
+                                        FROM ".prefix_table("items")."
+                                        WHERE id_tree=%i",
                                         $folder->id
                                     );
                                     foreach ($items as $item) {
@@ -927,7 +927,7 @@ function rest_get () {
                                 }
                             }
                         }
-                    }                   
+                    }
                 } else {
                     rest_error ('NO_CATEGORY');
                 }
@@ -936,7 +936,7 @@ function rest_get () {
 
             } elseif($GLOBALS['request'][1] == "item") {
                 $array_items = explode(';',$GLOBALS['request'][2]);
-                
+
                 for ($i=0; $i < count($array_items); $i ++) {
                     DB::update(
                         prefix_table("items"),
@@ -956,11 +956,11 @@ function rest_get () {
                             'action' => 'at_delete'
                         )
                     );
-                    
+
                     //Update CACHE table
                     updateCacheTable("delete_value", $array_items[$i]);
                 }
-                
+
                 $json['status'] = 'OK';
             }
 

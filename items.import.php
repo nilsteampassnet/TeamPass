@@ -25,7 +25,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -34,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -72,7 +72,7 @@ echo '
 				<td valign="center"><span class="fa fa-info-circle fa-2x"></span>&nbsp;</td>
 				<td>'.$LANG['csv_import_information'].'</td>
 				</tr>
-			</table>			
+			</table>
 		</div>
         <!-- show input file -->
         <div id="upload_container_csv">

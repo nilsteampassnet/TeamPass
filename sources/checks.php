@@ -12,7 +12,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 
 $pagesRights = array(
     "user" => array(
@@ -44,7 +44,7 @@ function checkUser($userId, $userKey, $pageVisited)
         $pageVisited = array($pageVisited);
     }
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once 'main.functions.php';

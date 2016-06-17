@@ -198,7 +198,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     );
 
     //Connect to mysql server
-    require_once '../../includes/settings.php';
+    require_once '../../includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;

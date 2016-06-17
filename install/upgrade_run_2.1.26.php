@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 /*
 ** Upgrade script for release 2.1.26
 */
@@ -22,8 +22,8 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
-if (!file_exists("../includes/settings.php")) {
+require_once '../includes/config/include.php';
+if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -32,7 +32,7 @@ if (!file_exists("../includes/settings.php")) {
     exit;
 }
 
-require_once '../includes/settings.php';
+require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";
@@ -209,8 +209,44 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     $jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
     $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
     file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
-    
+
     $_SESSION['upgrade']['csrfp_config_file'] = 1;
 }
 
+
+// add config file
+$tp_config_file = "../includes/config/tp.config.php";
+if (file_exists($tp_config_file)) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+        echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+        break;
+    } else {
+        unlink($tp_config_file);
+    }
+}
+$fh = fopen($tp_config_file, 'w');
+$config_text = "<?php
+global \$SETTINGS;
+\$SETTINGS = array (";
+
+$result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin'");
+while($row = mysqli_fetch_assoc($result)) {
+    // append new setting in config file
+    $config_text .= "
+    '".$row['intitule']."' => '".$row['valeur']."',";
+}
+mysqli_free_result($result);
+
+// write to config file
+$result = fwrite(
+    $fh,
+    utf8_encode(
+        substr_replace($config_text, "", -1)."
+);"
+    )
+);
+fclose($fh);
+
+
+// Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

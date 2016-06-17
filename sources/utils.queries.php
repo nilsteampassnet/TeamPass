@@ -19,8 +19,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
 require_once 'main.functions.php';
 

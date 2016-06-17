@@ -21,7 +21,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser(@$_SESSION['user_id'], @$_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -30,7 +30,7 @@ if (!checkUser(@$_SESSION['user_id'], @$_SESSION['key'], "manage_settings")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
@@ -119,7 +119,7 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                 <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
                 <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
             </td>
-            <td>                
+            <td>
                 <span class="fa-stack tip" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" style="cursor:pointer;">
                     <i class="fa fa-square fa-stack-2x"></i>
                     <i class="fa fa-edit fa-stack-1x fa-inverse"></i>

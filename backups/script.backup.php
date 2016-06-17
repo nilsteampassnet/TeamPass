@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include '../includes/settings.php';
+include '../includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
 // connect to DB

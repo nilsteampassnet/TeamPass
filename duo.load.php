@@ -20,7 +20,7 @@ if (
 {
     die('Hacking attempt...');
 }
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 
 
 /*

@@ -20,8 +20,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 if (isset($_POST['session']) && $_POST['session'] == "expired") {
     //Include files
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to DB

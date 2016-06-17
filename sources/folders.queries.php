@@ -23,7 +23,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset==utf-8");
 require_once 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -219,7 +219,7 @@ if (isset($_POST['newtitle'])) {
                     $_SESSION['nb_folders'] --;
                 }
             }
-            
+
             // delete folder from SESSION
             if(($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
                 unset($messages[$key]);
@@ -286,13 +286,13 @@ if (isset($_POST['newtitle'])) {
                                     'action' => 'at_delete'
                                 )
                             );
-            
+
                             // delete folder from SESSION
                             if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
                                 unset($messages[$key]);
                             }
                         }
-                        
+
                         //Actualize the variable
                         $_SESSION['nb_folders'] --;
                     }
@@ -316,7 +316,7 @@ if (isset($_POST['newtitle'])) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
-            
+
             $error = $newId = $droplist = "";
 
             //decrypt and retreive data in JSON format
@@ -436,7 +436,7 @@ if (isset($_POST['newtitle'])) {
                            )
                         );
                     }
-                    
+
                     // rebuild the droplist
                     $prev_level = 0;
                     $tst = $tree->getDescendants();
@@ -533,8 +533,8 @@ if (isset($_POST['newtitle'])) {
 
             //Get user's rights
             identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
-            
-                    
+
+
             // rebuild the droplist
             $prev_level = 0;
             $tst = $tree->getDescendants();
@@ -621,13 +621,13 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
-            
+
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
                 exit();
             }
-            
+
             // send query
             DB::update(
                 prefix_table("nested_tree"),
@@ -648,7 +648,7 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
-            
+
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error

@@ -24,8 +24,8 @@ if (
     && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
 ) {
     //Include files
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 

@@ -18,8 +18,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 require_once 'main.functions.php';
 
 //Class loader
