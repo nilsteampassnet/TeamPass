@@ -24,7 +24,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -33,7 +33,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -308,10 +308,10 @@ switch ($_POST['type']) {
             fclose($handle);
 
             //generate 2d key
-            $_SESSION['key_tmp'] = GenerateCryptKey(20);
+            $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
 
             //update LOG
-        logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
+            logEvents('admin_action', 'dataBase backup', $_SESSION['user_id'], $_SESSION['login']);
 
             echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name='.urlencode($filename).'&sub=files&file='.$filename.'&type=sql&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&pathIsFiles=1"}]';
         }
@@ -577,7 +577,7 @@ switch ($_POST['type']) {
 
         // write the sk.php file
         // get path to sk.php
-        $filename = "../includes/settings.php";
+        $filename = "../includes/config/settings.php";
         if (file_exists($filename)) {
             //copy some constants from this existing file
             $settings_file = file($filename);
@@ -817,7 +817,7 @@ switch ($_POST['type']) {
          * Attachments encryption - Treatment in several loops
          */
         case "admin_action_attachments_cryption_continu":
-            include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+            include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
             require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
             $cpt = 0;
@@ -1044,7 +1044,7 @@ switch ($_POST['type']) {
         $host = htmlspecialchars_decode($dataReceived['host']);
 
         //get infos from SETTINGS.PHP file
-        $filename = $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+        $filename = $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
@@ -1167,5 +1167,136 @@ switch ($_POST['type']) {
 
         // send data
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
+
+    case "save_option_change":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+        $type = "admin";
+
+        // Check if setting is already in DB. If NO then insert, if YES then update.
+        $data = DB::query(
+            "SELECT * FROM ".prefix_table("misc")."
+            WHERE type = %s AND intitule = %s",
+            $type,
+            $dataReceived['field']
+        );
+        $counter = DB::count();
+        if ($counter == 0) {
+            DB::insert(
+                prefix_table("misc"),
+                array(
+                    'valeur' => $dataReceived['value'],
+                    'type' => $type,
+                    'intitule' => $dataReceived['field']
+                   )
+            );
+            // in case of stats enabled, add the actual time
+            if ($dataReceived['field'] == 'send_stats') {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => time(),
+                        'type' => $type,
+                        'intitule' => $dataReceived['field'].'_time'
+                       )
+                );
+            }
+        } else {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => $dataReceived['value']
+                   ),
+                "type = %s AND intitule = %s",
+                $type,
+                $dataReceived['field']
+            );
+            // in case of stats enabled, update the actual time
+            if ($dataReceived['field'] == 'send_stats') {
+                // Check if previous time exists, if not them insert this value in DB
+                $data_time = DB::query(
+                    "SELECT * FROM ".prefix_table("misc")."
+                    WHERE type = %s AND intitule = %s",
+                    $type,
+                    $dataReceived['field'].'_time'
+                );
+                $counter = DB::count();
+                if ($counter == 0) {
+                    DB::insert(
+                        prefix_table("misc"),
+                        array(
+                            'valeur' => 0,
+                            'type' => $type,
+                            'intitule' => $dataReceived['field'].'_time'
+                           )
+                    );
+                } else {
+                    DB::update(
+                        prefix_table("misc"),
+                        array(
+                            'valeur' => 0
+                           ),
+                        "type = %s AND intitule = %s",
+                        $type,
+                        $dataReceived['field']
+                    );
+                }
+            }
+        }
+
+        // special Cases
+        if ($dataReceived['field'] == "cpassman_url") {
+            // update also jsUrl for CSFP protection
+            $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
+            $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+            $data = file_get_contents($csrfp_file);
+            $posJsUrl = strpos($data, '"jsUrl" => "');
+            $posEndLine = strpos($data, '",', $posJsUrl);
+            $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
+            $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
+            file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+        } else
+        if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => 0
+                   ),
+                "type = %s AND intitule = %s",
+                $type,
+                'restricted_to_roles'
+            );
+        }
+
+        // store in SESSION
+        $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];
+
+        // save change in config file
+        $tp_config_file = "../includes/config/tp.config.php";
+        $data = file($tp_config_file);
+        $x = 0;
+        foreach($data as $line) {
+            if (stristr($line, "'".$dataReceived['field']."' => '")) {
+                $data[$x] = "    '".$dataReceived['field']."' => '".$dataReceived['value']."',\n";
+                break;
+            }
+            $x++;
+        }
+        file_put_contents($tp_config_file, implode('', $data));
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            array(
+                "error" => "",
+                "misc" => $counter." ; ".$_SESSION['settings'][$dataReceived['field']]
+            ),
+            "encode"
+        );
         break;
 }

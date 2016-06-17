@@ -19,7 +19,7 @@ require_once 'sessions.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     $_SESSION['error']['code'] = "1004"; //Hacking attempt
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include '../error.php';
     exit();
 }
 
@@ -44,7 +44,7 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
@@ -633,7 +633,7 @@ switch ($_POST['type']) {
     /**
      * Send emails not sent
      */
-    case "send_wainting_emails":
+    case "send_waiting_emails":
         if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
             && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
             && isset($_SESSION['key'])

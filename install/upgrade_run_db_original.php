@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -19,8 +19,8 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
-if (!file_exists("../includes/settings.php")) {
+require_once '../includes/config/include.php';
+if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -29,7 +29,7 @@ if (!file_exists("../includes/settings.php")) {
     exit;
 }
 
-require_once '../includes/settings.php';
+require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";

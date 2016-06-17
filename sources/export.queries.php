@@ -22,7 +22,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 set_time_limit(0);
 
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
@@ -316,7 +316,7 @@ switch ($_POST['type']) {
         // step 1:
         // - prepare export file
         // - get full list of objects id to export
-        include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
         $idsList = array();
         $objNumber = 0;
@@ -422,7 +422,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
         $full_listing = array();
         $items_id_list = array();
-        include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
 
         $rows = DB::query(
@@ -532,7 +532,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
         //CASE export in HTML format - Iteration loop
     case "export_to_html_format_finalize":
-        include $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
         // open file
         $outstream = fopen($_POST['file'], "a");
 

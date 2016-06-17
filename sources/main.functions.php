@@ -927,7 +927,7 @@ function teampassStats()
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to the server
@@ -1008,7 +1008,7 @@ function teampassStats()
 function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 {
     global $LANG;
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     //load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
@@ -1197,7 +1197,7 @@ function GenerateCryptKey($size="", $secure="", $numerals="", $capitalize="", $a
     $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
     $pwgen->register();
     $pwgen = new Encryption\PwGen\pwgen();
-    
+
     // init
     if(!empty($size)) $pwgen->setLength($size);
     if(!empty($secure)) $pwgen->setSecure($secure);
@@ -1205,8 +1205,8 @@ function GenerateCryptKey($size="", $secure="", $numerals="", $capitalize="", $a
     if(!empty($capitalize)) $pwgen->setCapitalize($capitalize);
     if(!empty($ambiguous)) $pwgen->setAmbiguous($ambiguous);
     if(!empty($symbols)) $pwgen->setSymbols($symbols);
-    
-    // generate and send back   
+
+    // generate and send back
     return $pwgen->generate();
 }
 

@@ -25,7 +25,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "suggestion")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -34,7 +34,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "suggestion")) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
@@ -107,7 +107,7 @@ if (!empty($_POST['type'])) {
                         'folder_id' => $folder
                     )
                 );
-				
+
 				// get some info to add to the notification email
 				$resp_user = DB::queryfirstrow(
 					"SELECT login FROM ".prefix_table("users")." WHERE id = %i",
@@ -117,10 +117,10 @@ if (!empty($_POST['type'])) {
 					"SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
 					$folder
 				);
-				
+
 				// notify Managers
 				$rows = DB::query(
-					"SELECT email 
+					"SELECT email
 					FROM ".prefix_table("users")."
 					WHERE `gestionnaire` = %i AND `email` IS NOT NULL",
 					1
@@ -132,7 +132,7 @@ if (!empty($_POST['type'])) {
 						$record['email']
 					);
 				}
-				
+
                 echo '[ { "status" : "done" } ]';
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';
@@ -185,7 +185,7 @@ if (!empty($_POST['type'])) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
-                FROM ".prefix_table("suggestion")." 
+                FROM ".prefix_table("suggestion")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -194,10 +194,10 @@ if (!empty($_POST['type'])) {
             // if Yes, update the existing one
             // if Not, create new Item
             $existing_item_id = DB::queryfirstrow(
-                "SELECT id 
-                FROM ".prefix_table("items")." 
-                WHERE label = %s AND id_tree = %i", 
-                $suggestion['label'], 
+                "SELECT id
+                FROM ".prefix_table("items")."
+                WHERE label = %s AND id_tree = %i",
+                $suggestion['label'],
                 $suggestion['folder_id']
             );
             $counter = DB::count();

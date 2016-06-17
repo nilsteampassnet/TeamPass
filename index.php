@@ -14,7 +14,7 @@
  */
 
 // Before we start processing, we should abort no install is present
-if (!file_exists('includes/settings.php')) {
+if (!file_exists('includes/config/settings.php')) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (!headers_sent()) {
@@ -41,8 +41,8 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // Include files
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
@@ -127,7 +127,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <script type="text/javascript">
             if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 || window.location.href.indexOf("action=") == -1)) {
                 if (window.location.href.indexOf("session_over=true") == -1) {
-                    //location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
                 } else {
                     location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
                 }

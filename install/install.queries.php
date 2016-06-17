@@ -274,7 +274,22 @@ if (isset($_POST['type'])) {
                         );
 
                         // include constants
-                        require_once "../includes/include.php";
+                        require_once "../includes/config/include.php";
+
+                        // prepare config file
+                        $tp_config_file = "../includes/config/tp.config.php";
+                        if (file_exists($tp_config_file)) {
+                            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                                break;
+                            } else {
+                                unlink($tp_config_file);
+                            }
+                        }
+                        $fh = fopen($tp_config_file, 'w');
+                        $config_text = "<?php
+global $SETTINGS;
+$SETTINGS = array (";
 
                         // add by default settings
                         $aMiscVal = array(
@@ -393,7 +408,21 @@ if (isset($_POST['type'])) {
                                     str_replace("'", "", $elem[2])."');"
                                 );    // or die(mysqli_error($dbTmp))
                             }
+
+                            // append new setting in config file
+                            $config_text .= "
+    '".$elem[1]."' => '".str_replace("'", "", $elem[2])."',";
                         }
+
+                        // write to config file
+                        $result = fwrite(
+                            $fh,
+                            utf8_encode(
+                                substr_replace($config_text, "", -1)."
+);"
+                            )
+                        );
+                        fclose($fh);
 
                     } else if ($task == "nested_tree") {
                         $mysqli_result = mysqli_query($dbTmp,
@@ -786,7 +815,7 @@ if (isset($_POST['type'])) {
 
             if ($activity == "file") {
                 if ($task == "settings.php") {
-                    $filename = "../includes/settings.php";
+                    $filename = "../includes/config/settings.php";
 
                     if (file_exists($filename)) {
                         if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {

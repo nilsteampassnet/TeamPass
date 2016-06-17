@@ -108,6 +108,7 @@ echo '
     <ul>
     <li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
     <li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
+    <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check18"></span></li>
     <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check12"></span></li>
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>

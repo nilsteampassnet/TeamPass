@@ -18,17 +18,17 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 <script type="text/javascript">
 $(function() {
-	// manage delete
-	$("input[name=right_types_radio]").click(function(event) {
-		if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-			$("#div_delete_option").show();
-		} else {
-			$("#div_delete_option").hide();
-		}
-	});
-	
-	
-	$("#add_new_role").dialog({
+    // manage delete
+    $("input[name=right_types_radio]").click(function(event) {
+        if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+            $("#div_delete_option").show();
+        } else {
+            $("#div_delete_option").hide();
+        }
+    });
+
+
+    $("#add_new_role").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
@@ -37,9 +37,9 @@ $(function() {
         title: "<?php echo $LANG["give_function_title"];?>",
         buttons: {
             "<?php echo $LANG["save_button"];?>": function() {
-            	$("#new_role_error").hide().html("");
-            	if ($("#new_role_complexity").val() != "") {
-					$("#add_role_loader").show();
+                $("#new_role_error").hide().html("");
+                if ($("#new_role_complexity").val() != "") {
+                    $("#add_role_loader").show();
                     $.post(
                         "sources/roles.queries.php",
                         {
@@ -53,15 +53,15 @@ $(function() {
                                 $("#add_new_role").dialog("close");
                                 refresh_roles_matrix("reload");
                             } else {
-                            	$("#new_role_error").show().html(data[0].message);
+                                $("#new_role_error").show().html(data[0].message);
                             }
-							$("#add_role_loader").hide();
+                            $("#add_role_loader").hide();
                         },
                         "json"
                    );
-            	} else {
-            		$("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']);?>");
-            	}
+                } else {
+                    $("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']);?>");
+                }
             },
             "<?php echo $LANG["cancel_button"];?>": function() {
                 $(this).dialog("close");
@@ -78,7 +78,7 @@ $(function() {
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
-				$("#delete_role_loader").show();
+                $("#delete_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -90,7 +90,7 @@ $(function() {
                             $("#delete_role").dialog("close");
                             refresh_roles_matrix("reload");
                         }
-						$("#delete_role_loader").hide();
+                        $("#delete_role_loader").hide();
                     },
                     "json"
                );
@@ -110,8 +110,8 @@ $(function() {
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
-            	$("#edit_role_error").hide().html("");
-				$("#edit_role_loader").show();
+                $("#edit_role_error").hide().html("");
+                $("#edit_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -130,7 +130,7 @@ $(function() {
                             $("#div_loading").show();
                             refresh_roles_matrix("reload");
                         }
-						$("#edit_role_loader").hide();
+                        $("#edit_role_loader").hide();
                     },
                     "json"
                );
@@ -151,27 +151,27 @@ $(function() {
         title: "<?php echo $LANG["change_right_access"];?>",
         buttons: {
             "<?php echo $LANG["save_button"];?>": function() {
-            	$("#edit_role_error").hide().html("");
-				$("#role_rights_loader").show();
-				
-				// get write option
-				var accessoption = "";
-				if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-					if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
-						accessoption = "nodelete_noedit";
-					} else if ($("#right_nodelete").prop("checked") == true) {
-						accessoption = "nodelete";
-					} else if ($("#right_noedit").prop("checked") == true) {
-						accessoption = "noedit";
-					}
-				}
-				
+                $("#edit_role_error").hide().html("");
+                $("#role_rights_loader").show();
+
+                // get write option
+                var accessoption = "";
+                if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+                    if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
+                        accessoption = "nodelete_noedit";
+                    } else if ($("#right_nodelete").prop("checked") == true) {
+                        accessoption = "nodelete";
+                    } else if ($("#right_noedit").prop("checked") == true) {
+                        accessoption = "noedit";
+                    }
+                }
+
                 $.post(
                     "sources/roles.queries.php",
                     {
                         type    : "change_role_via_tm",
                         access  : $("input[name=right_types_radio]:checked").attr("id").substring(6),
-						accessoption : accessoption,
+                        accessoption : accessoption,
                         folder  : $("#change_folder").val(),
                         role    : $('#change_role').val(),
                         line    : $("#change_line").val()
@@ -180,7 +180,7 @@ $(function() {
                         $("#div_loading").show();
                         refresh_roles_matrix("reload");
                         $("#type_of_rights").dialog("close");
-						$("#role_rights_loader").hide();
+                        $("#role_rights_loader").hide();
                     },
                     "json"
                );
@@ -193,8 +193,8 @@ $(function() {
             $("#accordion").accordion({ autoHeight: false, navigation: true, collapsible: true, active: false });
         }
     });
-    
-    
+
+
 
     refresh_roles_matrix();
 });
@@ -254,6 +254,7 @@ function allow_pw_change_for_role(id, value)
             else
                 $("#img_apcfr_"+id).attr("class","fa mi-green fa-2x fa-magic tip");
             $("#div_loading").hide();
+            refresh_roles_matrix("reload");
         }
    );
 }
@@ -265,7 +266,7 @@ function allow_pw_change_for_role(id, value)
  **/
 function refresh_roles_matrix(order)
 {
-	$("#div_loading").show();
+    $("#div_loading").show();
 
     //clean up
     $("#roles_next, #roles_previous").hide();
@@ -317,27 +318,27 @@ function openRightsDialog(role, folder, line, right)
     if (right == "W") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete, #right_noedit").prop("checked", false);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "ND") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", true);
         $("#right_noedit").prop("checked", false);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "NE") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", false);
         $("#right_noedit").prop("checked", true);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "NDNE") {
         $("#right_write").prop("checked", true);
         $("#right_noedit, #right_nodelete").prop("checked", true);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "R") {
         $("#right_read").prop("checked", true);
-		$("#div_delete_option").hide();
+        $("#div_delete_option").hide();
     } else {
         $("#right_noaccess").prop("checked", true);
-		$("#div_delete_option").hide();
+        $("#div_delete_option").hide();
     }
     $("#change_role").val(role);
     $("#change_folder").val(folder);
