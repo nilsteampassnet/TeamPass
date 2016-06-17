@@ -1619,7 +1619,7 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
     // LDAP Object Class
         echo '
                 <tr>
-                    <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_object_class'].'"></i></label></td>
+                    <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_object_class_tip'].'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
                     isset($_SESSION['settings']['ldap_object_class']) ? $_SESSION['settings']['ldap_object_class'] : 'posixAccount', '" /></td>
                 </tr>';
