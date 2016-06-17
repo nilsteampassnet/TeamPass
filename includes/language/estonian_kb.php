@@ -1,6 +1,6 @@
 <?php
-$LANG['category'] = "Category";
-$LANG['kb'] = "Knowledge Base";
-$LANG['kb_anyone_can_modify'] = "Anyone can modify it";
-$LANG['kb_form'] = "Manage entries in KB";
-$LANG['new_kb'] = "Add a new KB";
+$LANG['category'] = "Kategooria";
+$LANG['kb'] = "Teadmiste baas";
+$LANG['kb_anyone_can_modify'] = "Igaüks saab seda muuta";
+$LANG['kb_form'] = "Halda KKK kirjeid";
+$LANG['new_kb'] = "Lisa uus KKK";
