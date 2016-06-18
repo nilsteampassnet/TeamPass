@@ -56,25 +56,25 @@ $row = DB::query(
 $arrayPf = $crit = array();
 $listPf = "";
 if (!empty($row['id'])) {
-	$rows = DB::query(
-	    "SELECT id FROM ".prefix_table("nested_tree")."
-	    WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
+    $rows = DB::query(
+        "SELECT id FROM ".prefix_table("nested_tree")."
+        WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
         "1",
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
-	);
-	foreach ($rows as $record) {
-		if (!in_array($record['id'], $arrayPf)) {
-			//build an array of personal folders ids
-			array_push($arrayPf, $record['id']);
-			//build also a string with those ids
-			if (empty($listPf)) {
-				$listPf = $record['id'];
-			} else {
-				$listPf .= ', '.$record['id'];
-			}
-		}
-	}
+    );
+    foreach ($rows as $record) {
+        if (!in_array($record['id'], $arrayPf)) {
+            //build an array of personal folders ids
+            array_push($arrayPf, $record['id']);
+            //build also a string with those ids
+            if (empty($listPf)) {
+                $listPf = $record['id'];
+            } else {
+                $listPf .= ', '.$record['id'];
+            }
+        }
+    }
 }
 
 
@@ -125,7 +125,7 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
 
-	$crit = array(
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
@@ -141,7 +141,7 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
 if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
     $sWhere .= " AND tags LIKE %ss_0";
 
-	$crit = array(
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
@@ -149,7 +149,7 @@ if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
 }
 
 if (count($crit) == 0) {
-	$crit = array(
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),

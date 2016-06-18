@@ -1066,6 +1066,13 @@ if (isset($ldap_type) && $ldap_type == 'posix') {
 
 // LDAP username attribute
 if (isset($ldap_type) && $ldap_type == 'posix-search') {
+        // LDAP Object Class
+        echo '
+                <tr>
+                    <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_object_class_tip'].'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
+                    isset($_SESSION['settings']['ldap_object_class']) ? $_SESSION['settings']['ldap_object_class'] : 'posixAccount', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                </tr>';
         echo '
                 <tr>
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_user_attribute_tip'].'"></i></label></td>
@@ -1094,8 +1101,8 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 // LDAP BASE for search
                 echo '
                 <tr>
-                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['server_password_change_enable_tip'].'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="settings_ldap_search_base_tip" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                    <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_search_base_tip'].'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
                 </tr>';
 }
 

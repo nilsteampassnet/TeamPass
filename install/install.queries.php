@@ -389,7 +389,8 @@ global \$SETTINGS;
                             array('admin','otv_expiration_period','7'),
                             array('admin','default_session_expiration_time','60'),
                             array('admin','duo','0'),
-                            array('admin','enable_server_password_change','0')
+                            array('admin','enable_server_password_change','0'),
+                            array('admin','ldap_object_class','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
