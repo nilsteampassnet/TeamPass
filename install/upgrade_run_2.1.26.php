@@ -213,39 +213,47 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     $_SESSION['upgrade']['csrfp_config_file'] = 1;
 }
 
-
-// add config file
-$tp_config_file = "../includes/config/tp.config.php";
-if (file_exists($tp_config_file)) {
-    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-        echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-        break;
-    } else {
-        unlink($tp_config_file);
+/*
+* Introduce new CONFIG file
+*/
+    $tp_config_file = "../includes/config/tp.config.php";
+    if (file_exists($tp_config_file)) {
+        if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+            echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+            break;
+        } else {
+            unlink($tp_config_file);
+        }
     }
-}
-$fh = fopen($tp_config_file, 'w');
-$config_text = "<?php
-global \$SETTINGS;
-\$SETTINGS = array (";
+    $fh = fopen($tp_config_file, 'w');
+    $config_text = "<?php
+    global \$SETTINGS;
+    \$SETTINGS = array (";
 
-$result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin'");
-while($row = mysqli_fetch_assoc($result)) {
-    // append new setting in config file
-    $config_text .= "
-    '".$row['intitule']."' => '".$row['valeur']."',";
-}
-mysqli_free_result($result);
+    $result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin'");
+    while($row = mysqli_fetch_assoc($result)) {
+        // append new setting in config file
+        $config_text .= "
+        '".$row['intitule']."' => '".$row['valeur']."',";
+    }
+    mysqli_free_result($result);
 
-// write to config file
-$result = fwrite(
-    $fh,
-    utf8_encode(
-        substr_replace($config_text, "", -1)."
-);"
-    )
-);
-fclose($fh);
+    // write to config file
+    $result = fwrite(
+        $fh,
+        utf8_encode(
+            substr_replace($config_text, "", -1)."
+    );"
+        )
+    );
+    fclose($fh);
+
+
+// add new setting - ldap_object_class
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE intitule = 'admin' AND valeur = 'ldap_object_class'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
+}
 
 
 // Finished
