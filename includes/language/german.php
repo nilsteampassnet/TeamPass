@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
@@ -174,7 +173,7 @@ $LANG = array (
     'admin_email_from_name' => 'Name des Absenders (von Name)',
     'admin_email_test_configuration' => 'Email-Einstellungen testen',
     'admin_email_test_configuration_tip' => 'Dieser Test sendet eine E-Mail an die hinterlegte Adresse. Sollten Sie sie nicht empfangen, prüfen Sie bitte Ihre Zugangsdaten.',
-    'admin_email_test_subject' => ' [TeamPass] Test-Email',
+    'admin_email_test_subject' => ' [TeamPass] Test-E-Mail',
     'admin_email_test_body' => 'Hallo,&lt;br&gt;&lt;br&gt;die Email wurde erfolgreich versandt.&lt;br&gt;&lt;br&gt;Gruß.',
     'admin_email_result_ok' => 'Email wurde versandt... Schauen Sie in Ihrer Mailbox nach.',
     'admin_email_result_nok' => 'Email wurde nicht versandt... Überprüfen Sie Ihre Einstellungen - siehe entsprechende Fehlermeldung.',
@@ -899,5 +898,13 @@ $LANG = array (
     'month' => 'Monat',
     'server_auto_update_password_enabled_tip' => 'Automatische Benutzer-Passwort-Änderung aktiviert',
     'server_password_change_enable_tip' => 'Diese Option erlaubt die automatische, regelmäßige Änderung der Benutzer-Passworte des Servers im `URL`-Feld unter Verwendung einer SSH-Verbindung.<br />Beachten Sie, dass für diese regelmäßige Änderung die Datei <i>/files/script.ssh.php</i> in der crontab dieses Servers eingetragen ist. Sie sollte einmal täglich laufen.',
+    'can_manage_all_users' => 'Personalverwalter<br><i>Kann alle Benutzer unabhängig deren Gruppenzugehörigkeit verwalten.<br>Erhält zusätzlich die Rolle "Manager".<br> Ist nicht befugt einen Administrator-Account zu bearbeiten (Nur Administratoren können administrative Rechte entziehen).</i>',
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
+    'settings_ldap_object_class' => 'Class to search',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, e.g. Person or posixAccount',
+    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
+    'rebuild_config_file' => 'Rebuild configuration file',
     '' => ''
 );

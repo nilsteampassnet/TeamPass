@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene correo configurado!',
@@ -899,5 +898,12 @@ $LANG = array (
     'server_auto_update_password_enabled_tip' => 'Cambio automático de contraseña del usuario habilitado',
     'server_password_change_enable_tip' => 'Esta opción permite que los usuarios puedan cambiar automáticamente la contraseña del usuario de un servidor que se encuentra en el campo URL usando la conexión SSH.<br>Observe que el cambio automático a una frecuencia específica se puede hacer si el archivo <i>/files/script.ssh.php</i> está añadido al crontab de este servidor. El consejo sería que se ejecutasen una vez al día.',
     'can_manage_all_users' => 'Recursos Humanos<br><i>Puede gestionar todos los Usuarios independientemente de su grupo.<br>Será promocionado también a la función de Administrador.<br>No podrá modificar un administrador existente (sólo un administrador puede eliminar los derechos de administrador en un usuario).</i> ',
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
+    'settings_ldap_object_class' => 'Class to search',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, e.g. Person or posixAccount',
+    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
+    'rebuild_config_file' => 'Rebuild configuration file',
     '' => ''
 );

@@ -384,7 +384,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "gd" is loaded</span><br />
-                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.4.0</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.5.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
