@@ -131,7 +131,7 @@ while ($data = mysqli_fetch_array($rows)) {
     }
 
     // does tables KEYS exists
-    if(mysql_num_rows(mysql_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
+    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
         $table_keys_exists = 1;
     } else {
         $table_keys_exists = 0;

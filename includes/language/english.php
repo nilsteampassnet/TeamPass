@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
     'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
 	'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',

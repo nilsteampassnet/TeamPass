@@ -284,6 +284,8 @@ function LaunchAdminActions(action,option)
                     } else if (data[0].error == "file_not_clear") {
                         $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
                     }
+                } else if (data[0].result == "rebuild_config_file") {
+                    $("#result_admin_rebuild_config_file").html("<img src='includes/images/tick.png' alt='' />").show();
                 }
             }
         },

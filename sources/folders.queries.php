@@ -346,11 +346,27 @@ if (isset($_POST['newtitle'])) {
 
             if ($createNewFolder == true) {
                 //check if parent folder is personal
-                $data = DB::queryfirstrow("SELECT personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i", $parentId);
+                $data = DB::queryfirstrow(
+                    "SELECT n.personal_folder, m.valeur
+                    FROM ".prefix_table("nested_tree")." AS n
+                    JOIN ".prefix_table("misc")." AS m ON (m.intitule = n.id)
+                    WHERE n.id = %i AND m.type = %s",
+                    $parentId,
+                    "complex"
+                );
                 if ($data['personal_folder'] == "1") {
                     $isPersonal = 1;
                 } else {
                     $isPersonal = 0;
+                }
+
+                // check if complexity level is good
+                // if manager or admin don't care
+                if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                    if (intval($complexity) < intval($data['valeur'])) {
+                        echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                        break;
+                    }
                 }
 
                 if (
@@ -410,16 +426,16 @@ if (isset($_POST['newtitle'])) {
 
                         //add access to this new folder
                         foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-							if (!empty($role)) {
-								DB::insert(
-									prefix_table("roles_values"),
-									array(
-										'role_id' => $role,
-										'folder_id' => $newId,
-										'type' => "W"
-									)
-								);
-							}
+                            if (!empty($role)) {
+                                DB::insert(
+                                    prefix_table("roles_values"),
+                                    array(
+                                        'role_id' => $role,
+                                        'folder_id' => $newId,
+                                        'type' => "W"
+                                    )
+                                );
+                            }
                         }
                     }
 
@@ -496,9 +512,26 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = DB::queryfirstrow("SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
+                $data = DB::queryfirstrow(
+                    "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
                 if (!empty($data['id']) && $dataReceived['id'] != $data['id'] && $title != $data['title'] ) {
                     echo '[ { "error" : "error_group_exist" } ]';
+                    break;
+                }
+            }
+
+            // check if complexity level is good
+            // if manager or admin don't care
+            if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                $data = DB::queryfirstrow(
+                    "SELECT valeur
+                    FROM ".prefix_table("misc")."
+                    WHERE intitule = %i AND type = %s",
+                    $parentId,
+                    "complex"
+                );
+                if (intval($complexity) < intval($data['valeur'])) {
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }

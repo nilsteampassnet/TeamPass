@@ -504,6 +504,17 @@ echo '
 // TAB Né2
 echo '
             <div id="tabs-2">';
+// Rebuild Config file
+echo '
+                <div style="margin-bottom:3px">
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_rebuild_config_file\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                    </span>
+                    <label>'.$LANG['rebuild_config_file'].'</label>
+                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['rebuild_config_file_tip'].'"></i></span>
+                    <span id="result_admin_rebuild_config_file" style="margin-left:10px;display:none;"></span>
+                </div>';
 // Update Personal folders for users
 echo '
                 <div style="margin-bottom:3px">
@@ -517,7 +528,7 @@ echo '
 // Clean DB with orphan items
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_clean_items'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.$LANG['admin_action_db_backup_start_tip'].'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>

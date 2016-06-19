@@ -450,6 +450,22 @@ switch ($_POST['type']) {
         break;
 
     /*
+       * REBUILD CONFIG FILE
+    */
+    case "admin_action_rebuild_config_file":
+        $error = "";
+        
+        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        $ret = handleConfigFile ("rebuild");
+
+        if ($ret !== true) $error = $ret;
+        else $error = "rebuild_config_file";
+
+        echo '[{"result":"'.$error.'"}]';
+        break;
+
+
+    /*
     * Decrypt a backup file
     */
     case "admin_action_backup_decrypt":

@@ -140,13 +140,12 @@ function buildNodeTree($nodeId)
                 $hide_node = $show_but_block = $eye_icon = false;
                 $text = $title = "";
 
-                // get count of Items in this folder (including subfolders)
-                $tmpNodeDescendants = $tree->getDescendants($node->id, true, false, true);
+                // get count of Items in this folder
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree IN %ls",
                     0,
-                    $tmpNodeDescendants
+                    $node->id
                 );
                 $itemsNb = DB::count();
 
