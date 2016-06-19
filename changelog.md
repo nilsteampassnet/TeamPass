@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1328 Minimum password complexity for folders and items
  #1334 Fix "installation related pages" dead link
  #1333 Fix LDAP search base input
  #1332 API not allowing roles separation of pipe '|'

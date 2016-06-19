@@ -1057,15 +1057,16 @@ function AddNewFolder()
                 if (data[0].error == "error_group_exist") {
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']);?>").show();
                 } else if (data[0].error == "error_html_codes") {
-                    $("#addgroup_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
                 } else if (data[0].error != "") {
-                    $("#addgroup_show_error").html(data[0].error).show();
+                    $("#new_rep_show_error").html(data[0].error).show();
+                    console.log(data[0].error);
                 } else {
                     $("#new_rep_titre").val("");
-                    $("#add_folder_loader").hide();
                     refreshTree(data[0].newid);
                     $("#div_ajout_rep").dialog("close");
                 }
+                $("#add_folder_loader").hide();
             },
             "json"
            );
@@ -1180,11 +1181,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-					
-					if (data.error != "") {
-						$("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
+                    
+                    if (data.error != "") {
+                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
-					}
+                    }
 
                     // reset password shown info
                     $("#pw_shown").val("0");
@@ -1269,7 +1270,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $(".tip").tooltipster({
                             maxWidth: 400,
                             contentAsHTML: true,
-							multiple: true
+                            multiple: true
                         });
 
                         // show Field values
@@ -1337,9 +1338,9 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
                             $('#item_extra_info')
-								.html("<b><i class='fa fa-bell-o mi-red'></i></b>&nbsp;")
-								.attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");	
-							$('#item_extra_info').tooltipster({multiple: true});						
+                                .html("<b><i class='fa fa-bell-o mi-red'></i></b>&nbsp;")
+                                .attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");  
+                            $('#item_extra_info').tooltipster({multiple: true});                        
                         } else {
                             $('#item_extra_info').html("");
                         }
@@ -1591,6 +1592,18 @@ function open_add_group_div()
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
+
+    /*
+    // hide not allowed complexity level
+    $("#new_rep_complexite > option").each(function() {
+        if (parseInt(this.value) < parseInt($("#complexite_groupe").val())) {
+            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', true);
+        } else {
+            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', false);
+        }
+    });
+    $('#new_rep_complexite option[value='+$('#complexite_groupe').val()+']').prop('selected', true);
+    */
 
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
@@ -2425,12 +2438,13 @@ $(function() {
                                 $("#path_elem_"+$('#edit_folder_folder').val()).text($('#edit_folder_title').val());
                                 $("#fld_"+$('#edit_folder_folder').val()).html($('#edit_folder_title').val());
                                 $("#edit_folder_title").val($('#edit_folder_title').val());
-                                $("#edit_folder_loader").hide();
-                                $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                                 $("#div_editer_rep").dialog("close");
                             } else {
                                 $("#edit_rep_show_error").html(data[0].error).show();
+
                             }
+                            $("#edit_folder_loader").hide();
+                            $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
                         },
                         "json"
                    );
@@ -3643,22 +3657,22 @@ function prepareOneTimeView()
                 $("#div_dialog_message").dialog({height:300,minWidth:750});
                 $("#div_dialog_message").dialog('open');
                 $("#div_dialog_message_text").html(data.url+
-					'<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
-				);
-				
-				// prepare clipboard
-				var clipboard = new Clipboard("#button_copy_otv_link", {
-					text: function() {
-						return unsanitizeString($('#otv_link').text());
-					}
-				});
-				clipboard.on('success', function(e) {
-					$("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']);?>").show().fadeOut(2000);
-					
-					e.clearSelection();
-				});
-				
-				$(".tip").tooltipster({multiple: true});
+                    '<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
+                );
+                
+                // prepare clipboard
+                var clipboard = new Clipboard("#button_copy_otv_link", {
+                    text: function() {
+                        return unsanitizeString($('#otv_link').text());
+                    }
+                });
+                clipboard.on('success', function(e) {
+                    $("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']);?>").show().fadeOut(2000);
+                    
+                    e.clearSelection();
+                });
+                
+                $(".tip").tooltipster({multiple: true});
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }

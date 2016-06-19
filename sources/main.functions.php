@@ -815,7 +815,7 @@ function updateCacheTable($action, $id = "")
                     'folder' => $folder,
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
-					'timestamp' => $record['date']
+                    'timestamp' => $record['date']
                    )
             );
         }
@@ -1338,7 +1338,7 @@ function noHTML($input, $encoding = 'UTF-8')
  * permits to handle the Teampass config file
  * $action accepts "rebuild" and "update"
  */
-function handleConfigFile($action, $field, $value)
+function handleConfigFile($action, $field = null, $value = null)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     $tp_config_file = "../includes/config/tp.config.php";
@@ -1356,6 +1356,14 @@ function handleConfigFile($action, $field, $value)
     $link->set_charset($encoding);
 
     if (!file_exists($tp_config_file) || $action == "rebuild") {
+        // perform a copy
+        if (file_exists($tp_config_file)) {
+            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d_His", time()))) {
+                return "ERROR: Could not copy file '" . $tp_config_file . "'";
+            }
+        }
+
+        // regenerate
         $data = array();
         $data[0] = "<?php\n";
         $data[1] = "global \$SETTINGS;\n";
@@ -1368,7 +1376,7 @@ function handleConfigFile($action, $field, $value)
             array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
         }
         array_push($data, ");");
-        array_unique($data);
+        $dat = array_unique($data);
     } else if ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
         $x = 0;
@@ -1385,4 +1393,6 @@ function handleConfigFile($action, $field, $value)
 
     // update file
     file_put_contents($tp_config_file, implode('', $data));
+
+    return true;
 }
