@@ -7,7 +7,7 @@ A folder is needed to organize your items. It is similare to windows file direct
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>Each folder is associated to a depth level in the tree structure.
 </div>
 <div id='accordion'>
-    <h3><a href='#'>Add a new FOLDER</a></h3>
+    <h3><a href='#'>Lisa uus kaust</a></h3>
     <div>
         Just click on icon <img src='includes/images/folder--plus.png' alt='' />. A dedicated dialogbox will appear in which you will have to enter:<br />
         - the folder's label or title<br />
@@ -15,7 +15,7 @@ A folder is needed to organize your items. It is similare to windows file direct
         - a complexity level (complexity level is used for password complexity. When creating a new item, associated password cannot be less complexe than the level required)<br />
         - a renewal period expressed in months (is needed in order to force password renewal after a specific period).
     </div>
-    <h3><a href='#'>Edit an existing folder</a></h3>
+    <h3><a href='#'>Muuda olemasolevat kausta</a></h3>
     <div>
         In order to change the label, the complexity, the parent folder or the renewal period, you just have to click in the cell.<br />
         This will make the cell editable. Change the value and click on icon <img src='includes/images/disk_black.png' alt='' /> to save, or on icon <img src='includes/images/cross.png' alt='' /> to cancel.<br />
@@ -26,7 +26,7 @@ A folder is needed to organize your items. It is similare to windows file direct
             Notice that if you change the parent folder, then all subfolders of the changed folder will be moved.
         </div>
     </div>
-    <h3><a href='#'>Delete a Folder</a></h3>
+    <h3><a href='#'>Kustuta kaust</a></h3>
     <div>
         You can decide to give to delete a folder. To do so, just click on icon <img src='includes/images/folder--minus.png' alt='' />.<br />
         This will delete all items inside the folder as all subfolders ... be carefull!!!!
@@ -34,7 +34,7 @@ A folder is needed to organize your items. It is similare to windows file direct
         <img src='includes/images/help/folders_2.png' alt='' />
         </p>
     </div>
-    <h3><a href='#'>Special tweaks</a></h3>
+    <h3><a href='#'>Muud seadistused</a></h3>
     <div>
         Two tweaks exist on folder.<br />
         The 1st allows item creation without respecting the required complexity level for the password.<br />
@@ -52,12 +52,12 @@ A role is associated to a set of allowed and forbidden folders.<br />
 Once several roles are defined, you can associate USERS to them.
 </div>
 <div id='accordion'>
-    <h3><a href='#'>Add a new ROLE</a></h3>
+    <h3><a href='#'>Lisa uus roll</a></h3>
     <div>
         Just click on icon <img src='includes/images/users--plus.png' alt='' />. A dedicated dialogbox will appear in which you will have to enter a title for this new ROLE.
     </div>
 
-    <h3><a href='#'>Allow or Forbid a folder</a></h3>
+    <h3><a href='#'>Luba või keela kausta ligipääs</a></h3>
     <div>
         You can use the matrix 'Roles vs Folders' to define the access rights. If a cell is red, then the role can't access to the folder, and if the cell is gree, then the role can access to the folder.<br />
         In order to change the access, just click on the cell you want.<br/>
@@ -67,19 +67,19 @@ Once several roles are defined, you can associate USERS to them.
         In previous screen capture, you can see that folder 'Cleaner' is allowed to role 'Dev' but not for role 'Commercial'.
     </div>
 
-    <h3><a href='#'>Refresh manually the matrix</a></h3>
+    <h3><a href='#'>Värskenda käsitsi maatriksit</a></h3>
     <div>
         Just click on icon <img src='includes/images/arrow_refresh.png' alt='' />.
     </div>
 
-    <h3><a href='#'>Edit a role</a></h3>
+    <h3><a href='#'>Muuda rolli</a></h3>
     <div>
         You can change the title of a role with no impact on the parameters already done.<br />
         Select the role you want to change, and click on icon <img src='includes/images/ui-tab--pencil.png' alt='' />.<br />
         This will popup a dialogbox in which you will be asked to enter a new title.
     </div>
 
-    <h3><a href='#'>Delete a role</a></h3>
+    <h3><a href='#'>Kustuta roll</a></h3>
     <div>
         You can decide to delete an existing role.<br />
         Select the role you want to delete, and click on icon <img src='includes/images/ui-tab--minus.png' alt='' />.<br />
@@ -93,7 +93,7 @@ A user account is needed for each physical person that will have to use TeamPass
 <span class='ui-icon ui-icon-lightbulb' style='float: left;'>&nbsp;</span>2d step is to customize specific folders access or not.
 </div>
 <div id='accordion'>
-    <h3><a href='#'>Add a new USER</a></h3>
+    <h3><a href='#'>Lisa uus kasutaja</a></h3>
     <div>
         Just click on icon <img src='includes/images/user--plus.png' alt='' />. A dedicated dialogbox will appear in which you will have to enter:<br />
         - the user's login<br />
@@ -103,7 +103,7 @@ A user account is needed for each physical person that will have to use TeamPass
         - if the user will be a Manager (full rights on Items)<br />
         - if the user could have Personal Folders
     </div>
-    <h3><a href='#'>Add a ROLE to a USER</a></h3>
+    <h3><a href='#'>Lisa kasutajale roll</a></h3>
     <div>
         You can associate a USER to as many ROLES you want. For that, just click on icon <img src='includes/images/cog_edit.png' alt='' />.<br />
         A specific dialogbox will appear in which you will have to tick or not the wanted roles.<br /><br />
@@ -120,7 +120,7 @@ A user account is needed for each physical person that will have to use TeamPass
             </p>
         </div>
     </div>
-    <h3><a href='#'>Is Administrator (GOD)</a></h3>
+    <h3><a href='#'>On administraator</a></h3>
     <div>
         You can decide to give the GOD right to a user. To do so, just tick the box.<br />
         GOD is allowed to anything in TeamPass with absolutely no restriction ... so be carefull!!!!
@@ -128,7 +128,7 @@ A user account is needed for each physical person that will have to use TeamPass
         <img src='includes/images/help/users_1.png' alt='' />
         </p>
     </div>
-    <h3><a href='#'>Is Manager</a></h3>
+    <h3><a href='#'>On haldaja</a></h3>
     <div>
         You can decide to give the MANAGER right to a user. To do so, just tick the box.<br />
         A Manager can modify and delete items and folders, even them that he has not created.<br />
@@ -137,14 +137,14 @@ A user account is needed for each physical person that will have to use TeamPass
         <img src='includes/images/help/users_2.png' alt='' />
         </p>
     </div>
-    <h3><a href='#'>Delete a USER</a></h3>
+    <h3><a href='#'>Kustuta kasutaja</a></h3>
     <div>
         You can decide to give to delete a user. To do so, just click on icon <img src='includes/images/user--minus.png' alt='' />.
         <p style='text-align:center;'>
         <img src='includes/images/help/users_3.png' alt='' />
         </p>
     </div>
-    <h3><a href='#'>Change the User's password</a></h3>
+    <h3><a href='#'>Muuda kasutaja parooli</a></h3>
     <div>
         You can decide to give to change the password of a user. To do so, just click on icon <img src='includes/images/lock__pencil.png' alt='' />.<br />
         At 1st connection, the user will have to change it.
@@ -152,7 +152,7 @@ A user account is needed for each physical person that will have to use TeamPass
         <img src='includes/images/help/users_4.png' alt='' />
         </p>
     </div>
-    <h3><a href='#'>Change the User's email</a></h3>
+    <h3><a href='#'>Muuda kasutaja e-posti aadressi</a></h3>
     <div>
         You can decide to give to change the password of a user. To do so, just click on icon <img src='includes/images/mail--pencil.png' alt='' />.<br />
         <p style='text-align:center;'>

@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 /*
 ** Is always performed at the end of the update process
 */
@@ -22,8 +22,8 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
-if (!file_exists("../includes/settings.php")) {
+require_once '../includes/config/include.php';
+if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -32,7 +32,7 @@ if (!file_exists("../includes/settings.php")) {
     exit;
 }
 
-require_once '../includes/settings.php';
+require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once '../sources/SplClassLoader.php';
 
@@ -41,12 +41,12 @@ $next = "";	// init on 1st task to be done
 
 //Update CACHE table -> this will be the last task during update
 if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
-	
+
 	//Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-	
+
 	$dbTmp = mysqli_connect(
 		$_SESSION['db_host'],
 		$_SESSION['db_login'],
@@ -54,12 +54,12 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 		$_SESSION['db_bdd'],
 		$_SESSION['db_port']
 	);
-	
+
 	// truncate table
 	mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['tbl_prefix']."cache");
 
 	// reload table
-	$rows = mysqli_query($dbTmp, 
+	$rows = mysqli_query($dbTmp,
 		"SELECT *
 		FROM ".$_SESSION['tbl_prefix']."items as i
 		INNER JOIN ".$_SESSION['tbl_prefix']."log_items as l ON (l.id_item = i.id)
@@ -98,7 +98,7 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 				$folder .= " » ".stripslashes($elem->title);
 			}
 		}
-		
+
 		// temp data
 		if (!isset($record['login'])) $record['login'] = "";
 		if (!isset($resNT['renewal_period'])) $resNT['renewal_period'] = "0";
@@ -107,17 +107,17 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 		$res = mysqli_query($dbTmp,
 			"INSERT INTO `".$_SESSION['tbl_prefix']."cache`
 			(`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`, `renewal_period`, `timestamp`) VALUES (
-			'".$record['id']."', 
+			'".$record['id']."',
 			'".addslashes($record['label'])."',
-			'".addslashes($record['description'])."', 
-			'".$tags."', 
-			'".$record['id_tree']."', 
-			'".$record['perso']."', 
-			'".$record['restricted_to']."', 
-			'".$record['login']."', 
-			'".$folder."', 
-			'".$record['id_user']."', 
-			'".$resNT['renewal_period']."', 
+			'".addslashes($record['description'])."',
+			'".$tags."',
+			'".$record['id_tree']."',
+			'".$record['perso']."',
+			'".$record['restricted_to']."',
+			'".$record['login']."',
+			'".$folder."',
+			'".$record['id_user']."',
+			'".$resNT['renewal_period']."',
 			'".$record['date']."'
 			)"
 		);
@@ -125,7 +125,7 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 			echo $res;
 		}
 	}
-	
+
 	$finish = 1;
 }
 

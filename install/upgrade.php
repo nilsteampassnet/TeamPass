@@ -14,7 +14,7 @@ function getSettingValue($val)
 }
 
 //get infos from SETTINGS.PHP file
-$filename = "../includes/settings.php";
+$filename = "../includes/config/settings.php";
 $events = "";
 if (file_exists($filename)) {    // && empty($_SESSION['server'])
     //copy some constants from this existing file
@@ -275,7 +275,7 @@ if (
     <body>
 <?php
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
+require_once '../includes/config/include.php';
 
 if (isset($_POST['db_host'])) {
     $_SESSION['db_host'] = $_POST['db_host'];
@@ -377,13 +377,14 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">File "settings.php" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/install/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/includes/" is writable</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">Directory "/includes/config/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/includes/avatars/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "gd" is loaded</span><br />
-                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.4.0</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.5.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>

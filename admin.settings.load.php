@@ -284,6 +284,8 @@ function LaunchAdminActions(action,option)
                     } else if (data[0].error == "file_not_clear") {
                         $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
                     }
+                } else if (data[0].result == "rebuild_config_file") {
+                    $("#result_admin_rebuild_config_file").html("<img src='includes/images/tick.png' alt='' />").show();
                 }
             }
         },
@@ -297,27 +299,27 @@ function LaunchAdminActions(action,option)
 function changeMainSaltKey(start)
 {
     var nb = 10;    // can be changed - number of items treated in each loop
-    
+
     // check saltkey length
     if ($("#new_salt_key").val().length != 16) {
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_saltkey_length'];?>");
         return false;
     }
-    
+
     // prepare excahnge
     var newSK = prepareExchangedData(
-        '{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}', 
-        "encode", 
+        '{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}',
+        "encode",
         "<?php echo $_SESSION['key'];?>"
     );
-    
+
     //console.log("Start value: "+start);
-    
+
     // start change
     if (start == "starting") {
         // inform
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['starting'];?>");
-        
+
         // launch query
         $.post(
             "sources/admin.queries.php",
@@ -342,9 +344,9 @@ function changeMainSaltKey(start)
     }
     else if (isFinite(start)) {
         //console.log("Step Encrypt - " + newSK+" ; "+start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
-        
+
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
-                    
+
         $.post(
             "sources/admin.queries.php",
             {
@@ -390,6 +392,43 @@ function changeMainSaltKey(start)
     }
 }
 
+/*
+* FUNCTION permitting to store into DB the settings changes
+*/
+function updateSetting(field)
+{
+    if (field == "") return false;
+
+    // store in DB
+    var data = '{"field":"'+field+'", "value":"'+$("#"+field).val()+'"}';
+    //console.log(data);
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type    : "save_option_change",
+            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            } catch (e) {
+                // error
+                $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+
+                return;
+            }
+            console.log(data);
+            if (data.error == "") {
+                $("#"+field).after("<span class='fa fa-check fa-lg mi-green new_check'></span>");
+                $(".new_check").fadeOut(2000);
+                setTimeout('$(".new_check").remove()', 2100);
+            }
+        }
+    );
+}
+
 // Init
 $(function() {
     $('.toggle').toggles({
@@ -409,19 +448,52 @@ $(function() {
     $('.toggle').on('toggle', function(e, active) {
         if (active) {
             $("#"+e.target.id+"_input").val(1);
+            if (e.target.id == "ldap_mode") {$("#div_ldap_configuration").show();}
         } else {
             $("#"+e.target.id+"_input").val(0);
+            if (e.target.id == "ldap_mode") {$("#div_ldap_configuration").hide();}
         }
+
+        // store in DB
+        var data = '{"field":"'+e.target.id+'", "value":"'+$("#"+e.target.id+"_input").val()+'"}';
+        console.log(data);
+        $.post(
+            "sources/admin.queries.php",
+            {
+                type    : "save_option_change",
+                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                key     : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                //decrypt data
+                try {
+                    data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                } catch (e) {
+                    // error
+                    $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+
+                    return;
+                }
+                console.log(data);
+                if (data.error == "") {
+                    $("#"+e.target.id).after("<span class='fa fa-check fa-lg mi-green new_check' style='float:left;margin:-18px 0 0 56px;'></span>");
+                    $(".new_check").fadeOut(2000);
+                    setTimeout('$(".new_check").remove()', 2100);
+                }
+            }
+        );
     });
 
-
-    $("input[type=button], #save_button, .button").button();
     // spinner
     $("#upload_imageresize_quality").spinner({
         min: 0,
         max: 100,
-        value: 90
+        value: 90,
+        spin: function(event, ui) {
+            updateSetting($("#upload_imageresize_quality").attr('id'));
+        }
     });
+    
     //BUILD BUTTONSET
     $(".div_radio").buttonset();
 
@@ -444,8 +516,8 @@ $(function() {
         load: function( event, ui ) {
             $("#loader_tab").remove();
         }
-    });    
-    
+    });
+
     $('#tabs').click(function(e){
         var current_index = $("#tabs").tabs("option","active");
         if (current_index == 9 || current_index == 10) {

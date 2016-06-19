@@ -30,7 +30,7 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 if ($_POST['type'] === "identify_duo_user") {
     // This step creates the DUO request encrypted key
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -55,7 +55,7 @@ if ($_POST['type'] === "identify_duo_user") {
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
@@ -77,23 +77,23 @@ if ($_POST['type'] === "identify_duo_user") {
         echo '[{"resp" : "'.$resp.'"}]';
     }
 } elseif ($_POST['type'] == "identify_user") {
-	// increment counter of login attempts
-	if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
-	else $_SESSION["pwd_attempts"] ++;
+    // increment counter of login attempts
+    if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
+    else $_SESSION["pwd_attempts"] ++;
 
-	// manage brute force
-	if ($_SESSION["pwd_attempts"] <= 3) {
-		// identify the user through Teampass process
-		identifyUser($_POST['data']);
-	} elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
-		$_SESSION["pwd_attempts"] = 1;
-		// identify the user through Teampass process
-		identifyUser($_POST['data']);
-	} else {
-		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
-		echo '[{"error" : "bruteforce_wait"}]';
+    // manage brute force
+    if ($_SESSION["pwd_attempts"] <= 3) {
+        // identify the user through Teampass process
+        identifyUser($_POST['data']);
+    } elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
+        $_SESSION["pwd_attempts"] = 1;
+        // identify the user through Teampass process
+        identifyUser($_POST['data']);
+    } else {
+        $_SESSION["next_possible_pwd_attempts"] = time() + 10;
+        echo '[{"error" : "bruteforce_wait"}]';
         return false;
-	}
+    }
 
 } elseif ($_POST['type'] == "store_data_in_cookie") {
     // not used any more (only development purpose)
@@ -116,7 +116,7 @@ if ($_POST['type'] === "identify_duo_user") {
 function identifyUser($sentData)
 {
     global $debugLdap, $debugDuo, $k;
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     error_reporting(E_ERROR);
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
@@ -229,7 +229,7 @@ function identifyUser($sentData)
                     fputs($dbgLdap, "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
                 }
                 if ($ldapbind) {
-                    $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=posixAccount))";
+                    $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=" . $_SESSION['settings']['ldap_object_class'] ."))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                        $filter_group = "memberUid=".$username;
@@ -542,7 +542,7 @@ function identifyUser($sentData)
                 )
         ) {
             $_SESSION['autoriser'] = true;
-			$_SESSION["pwd_attempts"] = 0;
+            $_SESSION["pwd_attempts"] = 0;
 
             // Generate a ramdom ID
             $key = GenerateCryptKey(50);
@@ -823,10 +823,10 @@ function identifyUser($sentData)
         );
     }
 
-	// manage bruteforce
-	if ($_SESSION["pwd_attempts"] > 2) {
-		$_SESSION["next_possible_pwd_attempts"] = time() + 10;
-	}
+    // manage bruteforce
+    if ($_SESSION["pwd_attempts"] > 2) {
+        $_SESSION["next_possible_pwd_attempts"] = time() + 10;
+    }
 
     echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$_SESSION["pwd_attempts"].'"}]';
 

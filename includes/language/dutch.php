@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Stuur GoogleAuthenticator naar gebruiker via e-mail',
     'send_ga_code' => 'GoogleAuthenticator voor gebruiker',
     'error_no_email' => 'Deze gebruiker heeft geen e-mailadres ingesteld',
@@ -900,5 +899,12 @@ $LANG = array (
     'server_auto_update_password_enabled_tip' => 'Automatische gebruiker wachtwoord verandering ingeschakeld',
     'server_password_change_enable_tip' => 'Deze optie zorgt ervoor dat gebruikers automatisch het wachtwoord op de server kunnen updaten via SSH.<br>Let op dat het automatisch ',
     'can_manage_all_users' => 'Human Resources<br><i>Kan alle gebruikers beheren, onafhankelijk van hun groep.<b',
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
+    'settings_ldap_object_class' => 'Class to search',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, e.g. Person or posixAccount',
+    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
+    'rebuild_config_file' => 'Rebuild configuration file',
     '' => ''
 );

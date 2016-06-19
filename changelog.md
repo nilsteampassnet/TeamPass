@@ -1,6 +1,10 @@
 Last changes
 2.1.26
+ #1328 Minimum password complexity for folders and items
+ #1334 Fix "installation related pages" dead link
+ #1333 Fix LDAP search base input
  #1332 API not allowing roles separation of pipe '|'
+ #1326 Fixed LDAP functionality
  #1325 updated Dockerfile
  #1310 Addes Estonian language
  #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
@@ -34,6 +38,7 @@ Last changes
  #1181 403 Access Forbidden by CSRFProtector! at config save
  #1178 New user right added for managing all users (super Manager)
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
+ #1172 Complete number of Items displayed in Tree
  #1158 Can't Change admin Password
  #910  Backslashes in accounts are not copied to clipboard
  NEW: Server user password change through SSH connection
@@ -49,6 +54,7 @@ Last changes
  Fix: Errors in CSV import process
  Fix: Impossible to proceed with 'password lost' process
  Fix: OTV item not reachable
+ Analyzed with RIPS (https://www.ripstech.com/) against security bugs
 
 2.1.25
  #1169 sending Google Authenticator code through index page

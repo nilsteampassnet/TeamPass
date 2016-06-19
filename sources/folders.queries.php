@@ -23,7 +23,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset==utf-8");
 require_once 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -219,7 +219,7 @@ if (isset($_POST['newtitle'])) {
                     $_SESSION['nb_folders'] --;
                 }
             }
-            
+
             // delete folder from SESSION
             if(($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
                 unset($messages[$key]);
@@ -286,13 +286,13 @@ if (isset($_POST['newtitle'])) {
                                     'action' => 'at_delete'
                                 )
                             );
-            
+
                             // delete folder from SESSION
                             if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
                                 unset($messages[$key]);
                             }
                         }
-                        
+
                         //Actualize the variable
                         $_SESSION['nb_folders'] --;
                     }
@@ -316,7 +316,7 @@ if (isset($_POST['newtitle'])) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
-            
+
             $error = $newId = $droplist = "";
 
             //decrypt and retreive data in JSON format
@@ -346,11 +346,27 @@ if (isset($_POST['newtitle'])) {
 
             if ($createNewFolder == true) {
                 //check if parent folder is personal
-                $data = DB::queryfirstrow("SELECT personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i", $parentId);
+                $data = DB::queryfirstrow(
+                    "SELECT n.personal_folder, m.valeur
+                    FROM ".prefix_table("nested_tree")." AS n
+                    JOIN ".prefix_table("misc")." AS m ON (m.intitule = n.id)
+                    WHERE n.id = %i AND m.type = %s",
+                    $parentId,
+                    "complex"
+                );
                 if ($data['personal_folder'] == "1") {
                     $isPersonal = 1;
                 } else {
                     $isPersonal = 0;
+                }
+
+                // check if complexity level is good
+                // if manager or admin don't care
+                if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                    if (intval($complexity) < intval($data['valeur'])) {
+                        echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                        break;
+                    }
                 }
 
                 if (
@@ -410,16 +426,16 @@ if (isset($_POST['newtitle'])) {
 
                         //add access to this new folder
                         foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-							if (!empty($role)) {
-								DB::insert(
-									prefix_table("roles_values"),
-									array(
-										'role_id' => $role,
-										'folder_id' => $newId,
-										'type' => "W"
-									)
-								);
-							}
+                            if (!empty($role)) {
+                                DB::insert(
+                                    prefix_table("roles_values"),
+                                    array(
+                                        'role_id' => $role,
+                                        'folder_id' => $newId,
+                                        'type' => "W"
+                                    )
+                                );
+                            }
                         }
                     }
 
@@ -436,7 +452,7 @@ if (isset($_POST['newtitle'])) {
                            )
                         );
                     }
-                    
+
                     // rebuild the droplist
                     $prev_level = 0;
                     $tst = $tree->getDescendants();
@@ -496,9 +512,26 @@ if (isset($_POST['newtitle'])) {
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
-                $data = DB::queryfirstrow("SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
+                $data = DB::queryfirstrow(
+                    "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
                 if (!empty($data['id']) && $dataReceived['id'] != $data['id'] && $title != $data['title'] ) {
                     echo '[ { "error" : "error_group_exist" } ]';
+                    break;
+                }
+            }
+
+            // check if complexity level is good
+            // if manager or admin don't care
+            if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                $data = DB::queryfirstrow(
+                    "SELECT valeur
+                    FROM ".prefix_table("misc")."
+                    WHERE intitule = %i AND type = %s",
+                    $parentId,
+                    "complex"
+                );
+                if (intval($complexity) < intval($data['valeur'])) {
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }
@@ -533,8 +566,8 @@ if (isset($_POST['newtitle'])) {
 
             //Get user's rights
             identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
-            
-                    
+
+
             // rebuild the droplist
             $prev_level = 0;
             $tst = $tree->getDescendants();
@@ -621,13 +654,13 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
-            
+
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
                 exit();
             }
-            
+
             // send query
             DB::update(
                 prefix_table("nested_tree"),
@@ -648,7 +681,7 @@ if (isset($_POST['newtitle'])) {
                 include $_SESSION['settings']['cpassman_dir'].'/error.php';
                 exit();
             }
-            
+
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error

@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 
 require_once('../sources/sessions.php');
 session_start();
@@ -20,8 +20,8 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
-if (!file_exists("../includes/settings.php")) {
+require_once '../includes/config/include.php';
+if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -29,7 +29,7 @@ if (!file_exists("../includes/settings.php")) {
     echo 'document.getElementById("loader").style.display = "none";';
     exit;
 }
-require_once '../includes/settings.php';
+require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";
@@ -131,7 +131,7 @@ while ($data = mysqli_fetch_array($rows)) {
     }
 
     // does tables KEYS exists
-    if(mysql_num_rows(mysql_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
+    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
         $table_keys_exists = 1;
     } else {
         $table_keys_exists = 0;

@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -36,7 +36,7 @@ if (isset($_SESSION['settings']['timezone'])) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
@@ -325,7 +325,7 @@ if (isset($_POST['type'])) {
                 }
                 // display quick icon shortcuts ?
                 if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-					$itemLogin = $itemPw = "";
+                    $itemLogin = $itemPw = "";
 
                     if (!empty($dataReceived['login'])) {
                         $itemLogin = '<span id="iconlogin_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>';
@@ -1353,8 +1353,8 @@ if (isset($_POST['type'])) {
                     if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
                     } else {
-						$reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
-					}
+                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                    }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
                     if (!isUTF8($reason[1]) || is_array($reason[1])) {
@@ -1508,6 +1508,29 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
+
+            // check if complexity level is good
+            // if manager or admin don't care
+            if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                $data = DB::queryfirstrow(
+                    "SELECT parent_id
+                    FROM ".prefix_table("nested_tree")."
+                    WHERE id = %i",
+                    $dataReceived['folder']
+                );
+                $data = DB::queryfirstrow(
+                    "SELECT valeur
+                    FROM ".prefix_table("misc")."
+                    WHERE intitule = %i AND type = %s",
+                    $data['parent_id'],
+                    "complex"
+                );
+                if (intval($dataReceived['complexity']) < intval($data['valeur'])) {
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                    break;
+                }
+            }
+            
             // update Folders table
             $tmp = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",

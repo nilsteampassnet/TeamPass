@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
- 
+
 require_once('../sources/sessions.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
@@ -19,8 +19,8 @@ $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
-require_once '../includes/include.php';
-if (!file_exists("../includes/settings.php")) {
+require_once '../includes/config/include.php';
+if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -28,7 +28,7 @@ if (!file_exists("../includes/settings.php")) {
     echo 'document.getElementById("loader").style.display = "none";';
     exit;
 }
-require_once '../includes/settings.php';
+require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";
@@ -112,10 +112,11 @@ if (isset($_POST['type'])) {
             $txt = "";
             $x=1;
             $tab = array(
-                $abspath."/includes/settings.php",
+                $abspath."/includes/config/settings.php",
                 $abspath."/includes/libraries/csrfp/libs/",
                 $abspath."/install/",
                 $abspath."/includes/",
+                $abspath."/includes/config/",
                 $abspath."/includes/avatars/",
                 $abspath."/files/",
                 $abspath."/upload/"
@@ -215,7 +216,7 @@ if (isset($_POST['type'])) {
             }
 
             //get infos from SETTINGS.PHP file
-            $filename = "../includes/settings.php";
+            $filename = "../includes/config/settings.php";
             $events = "";
             if (file_exists($filename)) {
                 //copy some constants from this existing file
@@ -445,7 +446,7 @@ if (isset($_POST['type'])) {
 
             //=============================
         case "step5":
-            $filename = "../includes/settings.php";
+            $filename = "../includes/config/settings.php";
             $events = "";
             if (file_exists($filename)) {
                 //Do a copy of the existing file

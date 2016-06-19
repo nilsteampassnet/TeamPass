@@ -22,7 +22,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 global $k, $settings, $link;
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
@@ -56,25 +56,25 @@ $row = DB::query(
 $arrayPf = $crit = array();
 $listPf = "";
 if (!empty($row['id'])) {
-	$rows = DB::query(
-	    "SELECT id FROM ".prefix_table("nested_tree")."
-	    WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
+    $rows = DB::query(
+        "SELECT id FROM ".prefix_table("nested_tree")."
+        WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
         "1",
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
-	);
-	foreach ($rows as $record) {
-		if (!in_array($record['id'], $arrayPf)) {
-			//build an array of personal folders ids
-			array_push($arrayPf, $record['id']);
-			//build also a string with those ids
-			if (empty($listPf)) {
-				$listPf = $record['id'];
-			} else {
-				$listPf .= ', '.$record['id'];
-			}
-		}
-	}
+    );
+    foreach ($rows as $record) {
+        if (!in_array($record['id'], $arrayPf)) {
+            //build an array of personal folders ids
+            array_push($arrayPf, $record['id']);
+            //build also a string with those ids
+            if (empty($listPf)) {
+                $listPf = $record['id'];
+            } else {
+                $listPf .= ', '.$record['id'];
+            }
+        }
+    }
 }
 
 
@@ -124,8 +124,8 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
-	
-	$crit = array(
+
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
@@ -140,8 +140,8 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
 
 if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
     $sWhere .= " AND tags LIKE %ss_0";
-	
-	$crit = array(
+
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
@@ -149,7 +149,7 @@ if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
 }
 
 if (count($crit) == 0) {
-	$crit = array(
+    $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
@@ -424,12 +424,12 @@ if (!isset($_GET['type'])) {
                 $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
             }
         }
-        
+
         // set folder
         $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
-        
+
         // Prepare make Favorite small icon
         $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
         if (in_array($record['id'], $_SESSION['favourites'])) {

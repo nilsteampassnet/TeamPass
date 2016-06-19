@@ -52,7 +52,7 @@ function sanitiseString($str, $crLFReplacement) {
 global $k, $settings;
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 
 //Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -829,7 +829,7 @@ switch ($_POST['type']) {
                         "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                         intval($folderId)
                     );
-                    
+
                     // escape if folderId is empty
                     if (!empty($folderId)) {
                         $results .= " - Inserting\n";

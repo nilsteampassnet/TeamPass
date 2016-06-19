@@ -24,7 +24,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
@@ -253,7 +253,7 @@ if (!empty($_POST['type'])) {
                 );
                 // update LOG
 				logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
-				
+
                 echo '[ { "error" : "no" } ]';
             } else {
                 echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
@@ -404,21 +404,21 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-			
+
 			// Get some data
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
-			
+
             DB::update(
                 prefix_table("users"),
                 array(
                     'gestionnaire' => $_POST['value'],
                     'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
 						($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
-						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" : 
+						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
 						"1")
 					),
                     'admin' => $_POST['value'] == 1 ? "0" : "0",
@@ -460,7 +460,7 @@ if (!empty($_POST['type'])) {
                 // error
                 exit();
             }
-			
+
 			// Get some data
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
