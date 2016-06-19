@@ -14,7 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -900,5 +899,12 @@ $LANG = array (
     'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This option permits to allow users to automatically change the user\'s password of a server located in the url field using SSH connection.<br>Notice that the automatic change at specific frequency can be done if the file <i>/files/script.ssh.php</i> is added to the crontab of this server. The advice would be to run it once a day.',
     'can_manage_all_users' => 'Human Resources<br><i>Can manage all Users independately of his/hers group.<br>Will be also promoted to Manager role.<br>Will not be able to change an existing administrator (only an Administrator can remove administrator rights on a user).</i>',
+    'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
+    'settings_ldap_object_class' => 'Class to search',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, e.g. Person or posixAccount',
+    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
+    'rebuild_config_file' => 'Rebuild configuration file',
     '' => ''
 );

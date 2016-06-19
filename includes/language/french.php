@@ -899,5 +899,12 @@ $LANG = array (
     'server_auto_update_password_enabled_tip' => 'Changement de mot de passe automatique activé',
     'server_password_change_enable_tip' => 'Cette option permet aux utilisateurs de réaliser automatiquement le changement de mot de passe d\'un utilisateur sur le serveur localisé à l\'URL indiquée, en utilisant une connexion SSH.<br>Notez que le changement automatique à la fréquence indiquée n\'est possible que si le fichier <i>/files/script.ssh.php</i> est ajouté au crontab de ce serveur. La recommandation serait que celui-ci s’exécute une fois par jour.',
     'can_manage_all_users' => 'Ressources Humaines<br><i>Peut gérer tous les Utilisateurs indépendamment de son Groupe.<br>Cet utilisateur sera automatiquement promu au rang de Manager.<br>Mais il ne sera pas autorisé à changer un compte Administrateur (seul un administrateur peut supprimer les droits d\'un autre administrateur).</i>',
+    'error_bad_credentials_more_than_3_times' => 'Informations de connexion erronées !<br>Merci de patienter 10 secondes avant de faire une nouvelle tentative',
+    'settings_ldap_object_class' => 'Class to search',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, e.g. Person or posixAccount',
+    'rebuild_config_file' => 'Rebuild the configuration file',
+    'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
+    'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
+    'rebuild_config_file' => 'Rebuild configuration file',
     '' => ''
 );
