@@ -15,15 +15,15 @@
 require_once 'sessions.php';
 session_start();
 if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
-    !isset($_SESSION['key']) || empty($_SESSION['key'])) 
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
     die('Hacking attempt...');
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset==utf-8");
 require_once 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -158,7 +158,7 @@ if (isset($_POST['type'])) {
                         $foldersNumList .= ";".$recordF['id_folder'];
                     }
                 }
-                
+
                 // store
                 array_push(
                     $arrCategories,
@@ -210,7 +210,7 @@ if (isset($_POST['type'])) {
                             'id_folder' => $folder
                            )
                     );
-                    
+
                     // prepare a list
                     $row = DB::queryfirstrow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id=%i", $folder);
                     if (empty($list)) {

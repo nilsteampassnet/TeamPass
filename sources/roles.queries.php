@@ -23,7 +23,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_roles")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_roles")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once 'main.functions.php';
 
@@ -77,10 +77,10 @@ if (!empty($_POST['type'])) {
                 if ($role_id != 0) {
                     //Actualize the variable
                     $_SESSION['nb_roles'] ++;
-					
+
 					// get some data
 					$data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
-					
+
 					// add new role to user
 					$tmp = str_replace(";;", ";", $data_tmp['fonction_id']);
 					if (substr($tmp, -1) == ";") {
@@ -98,8 +98,8 @@ if (!empty($_POST['type'])) {
 						$_SESSION['user_id']
 					);
 					$_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
-					
-					
+
+
                     echo '[ { "error" : "no" } ]';
                 } else {
                     echo '[ { "error" : "yes" , "message" : "Database error. Contact your administrator!" } ]';
@@ -116,7 +116,7 @@ if (!empty($_POST['type'])) {
             DB::delete(prefix_table("roles_values"), "role_id = %i", $_POST['id']);
             //Actualize the variable
             $_SESSION['nb_roles'] --;
-			
+
 			// parse all users to remove this role
 			$rows = DB::query(
 				"SELECT id, fonction_id FROM ".prefix_table("users")."
@@ -126,7 +126,7 @@ if (!empty($_POST['type'])) {
 				if (($key = array_search($_POST['id'], $tab)) !== false) {
 					// remove the deleted role id
 					unset($tab[$key]);
-					
+
 					// store new list of functions
 					DB::update(
 						prefix_table("users"),

@@ -55,7 +55,7 @@ function CheckPage()
             error = "Fields need to be filled in!";
         } else {
             data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
-            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log"];
+            tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log", "folder*includes/config"];
             multiple = true;
             $("#hid_abspath").val($("#root_path").val());
             $("#hid_url_path").val($("#url_path").val());

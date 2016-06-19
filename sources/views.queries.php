@@ -23,7 +23,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -32,7 +32,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once 'main.functions.php';
 
@@ -317,7 +317,7 @@ switch ($_POST['type']) {
             FROM ".prefix_table("log_system")." as l
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
-            ORDER BY %s %s           
+            ORDER BY %s %s
 			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             "user_connection",
 			$_POST['order'],

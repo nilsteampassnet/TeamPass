@@ -28,7 +28,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 } else {
     require_once 'main.functions.php';
     // connect to DB
-    include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
@@ -39,7 +39,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
-    
+
     // get file key
     $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
 
@@ -48,7 +48,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
 
     // should we decrypt the attachment?
     if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
-        include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+        include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 
         // Prepare encryption options
         $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);

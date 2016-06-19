@@ -259,7 +259,7 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
                 } else if (data[0].pwd_attempts >=3 ||data[0].error == "bruteforce_wait") {
                     // now user needs to wait 10 secs before new passwd
-                    $("#connection_error").html("'.$LANG['error_bad_credentials_more_than_3_times'].'").show();                 
+                    $("#connection_error").html("'.$LANG['error_bad_credentials_more_than_3_times'].'").show();
                 } else if (data[0].error == "bad_credentials") {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
@@ -267,7 +267,7 @@ $htmlHeaders .= '
                 } else {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
-                
+
                 $("#ajax_loader_connexion").hide();
             },
             "json"
@@ -478,7 +478,7 @@ $htmlHeaders .= '
             title: "DUO Security - please wait ..."
         }).dialog("open");
     }
-    
+
     function ChangeMyPass()
     {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {

@@ -20,7 +20,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset==utf-8");
 
 // connect to DB

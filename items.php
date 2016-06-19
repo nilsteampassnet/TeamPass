@@ -229,11 +229,11 @@ echo '
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
-						
-						<!-- INFO -->
-						<div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
-						<!-- INFO END -->
-						
+                        
+                        <!-- INFO -->
+                        <div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
+                        <!-- INFO END -->
+                        
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -448,19 +448,19 @@ echo '
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
-				
-				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-				</span>&nbsp;
-				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
-				</span>&nbsp;
-				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
-				</span>
+                
+                <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                </span>
             </div>
             <div style="width:100%;">
                 <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
@@ -631,19 +631,19 @@ echo '
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
-				
-				<span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-				</span>&nbsp;
-				<span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-copy fa-stack-1x fa-inverse"></i>
-				</span>&nbsp;
-				<span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
-					<i class="fa fa-square fa-stack-2x"></i>
-					<i class="fa fa-eye fa-stack-1x fa-inverse"></i>
-				</span>
+                
+                <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                </span>
             </div>
             <div style="width:100%;">
                 <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>

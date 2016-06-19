@@ -1,9 +1,16 @@
 <?php
 /**
- * Created by PhpStorm.
- * User: Nous
- * Date: 05/01/2016
- * Time: 20:12
+ *
+ * @file          logout.php
+ * @author        Nils Laumaillé
+ * @version       2.1.26
+ * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
+ * @link          http://www.teampass.net
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
 session_start();
