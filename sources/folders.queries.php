@@ -362,7 +362,7 @@ if (isset($_POST['newtitle'])) {
 
                 // check if complexity level is good
                 // if manager or admin don't care
-                if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+                if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $isPersonal == 0) {
                     if (intval($complexity) < intval($data['valeur'])) {
                         echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                         break;
