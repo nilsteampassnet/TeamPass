@@ -1181,7 +1181,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    
+
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -1339,8 +1339,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
                             $('#item_extra_info')
                                 .html("<b><i class='fa fa-bell-o mi-red'></i></b>&nbsp;")
-                                .attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");  
-                            $('#item_extra_info').tooltipster({multiple: true});                        
+                                .attr("title", "<?php echo addslashes($LANG['automatic_deletion_activated']);?>");
+                            $('#item_extra_info').tooltipster({multiple: true});
                         } else {
                             $('#item_extra_info').html("");
                         }
@@ -3659,7 +3659,7 @@ function prepareOneTimeView()
                 $("#div_dialog_message_text").html(data.url+
                     '<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
                 );
-                
+
                 // prepare clipboard
                 var clipboard = new Clipboard("#button_copy_otv_link", {
                     text: function() {
@@ -3668,10 +3668,10 @@ function prepareOneTimeView()
                 });
                 clipboard.on('success', function(e) {
                     $("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']);?>").show().fadeOut(2000);
-                    
+
                     e.clearSelection();
                 });
-                
+
                 $(".tip").tooltipster({multiple: true});
             } else {
                 $("#item_history_log_error").html(data.error).show();

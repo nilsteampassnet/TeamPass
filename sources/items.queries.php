@@ -291,13 +291,13 @@ if (isset($_POST['type'])) {
                     // send email
                     foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                         if (!empty($emailAddress)) {
-                        // send it
-                        @sendEmail(
-                            $LANG['email_subject'],
-                            $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
-                            $emailAddress,
-                            $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
-                        );
+                            // send it
+                            @sendEmail(
+                                $LANG['email_subject'],
+                                $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
+                                $emailAddress,
+                                $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
+                            );
                         }
                     }
                 }

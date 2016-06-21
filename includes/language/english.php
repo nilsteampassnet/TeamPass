@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
+	'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -803,7 +805,7 @@ $LANG = array (
     'edit_user' => 'Edit user',
     'pf_change_encryption' => 'The encryption algorithm has changed and your personal passwords have to be re-encoded. You need to run this process to use your passwords. This process may take several minutes depending on the number of items you have.',
     'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',
-    'show_password' => 'Show password',
+    'show_password' => 'Click and maintain to show password',
     'change_password' => 'Change password',
     'pf_sk_set' => 'Your personal Salt Key is correctly set, You can click on button Start',
     'pf_sk_not_set' => 'Your personal Salt Key is NOT set! Please enter it.',
