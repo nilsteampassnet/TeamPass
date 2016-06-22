@@ -4,7 +4,7 @@
  * @file          admin.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -454,7 +454,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_rebuild_config_file":
         $error = "";
-        
+
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         $ret = handleConfigFile ("rebuild");
 

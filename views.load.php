@@ -3,7 +3,7 @@
  * @file          views.load.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -22,7 +22,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 function GenererLog()
 {
     if ($("#log_jours").val() == "") return false;
-    
+
     LoadingPage();
     $.post(
         "sources/views.queries.php",
@@ -175,7 +175,7 @@ $(function() {
     });
 
     ListerElemDel();
-    
+
     $("#log_jours").datepicker({
         regional: 'fr',
         dateFormat : 'dd/mm/yy'
