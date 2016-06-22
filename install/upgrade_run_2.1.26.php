@@ -23,7 +23,7 @@ $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
-if (!file_exists("../includes/config/settings.php")) {
+if (!file_exists("../includes/settings.php") && !file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("res_step1_error").innerHTML = "";';
     echo 'document.getElementById("res_step1_error").innerHTML = '.
         '"File settings.php does not exist in folder includes/! '.
@@ -31,6 +31,17 @@ if (!file_exists("../includes/config/settings.php")) {
     echo 'document.getElementById("loader").style.display = "none";';
     exit;
 }
+
+// handle file
+if (file_exists("../includes/settings.php") && !file_exists("../includes/config/settings.php")) {
+    // copy to config/
+    copy("../includes/settings.php", "../includes/config/settings.php");
+    unlink("../includes/settings.php");
+} else if (file_exists("../includes/settings.php") && file_exists("../includes/config/settings.php")) {
+    // remove as not used anymore
+    unlink("../includes/settings.php");
+}
+
 
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
