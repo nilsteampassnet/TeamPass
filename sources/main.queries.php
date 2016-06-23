@@ -161,7 +161,7 @@ switch ($_POST['type']) {
                 break;
             }
             // ADMIN has decided to change the USER's PW
-        } elseif (isset($_POST['change_pw_origine']) && ($_POST['change_pw_origine'] == "admin_change" || $_SESSION['user_admin'] == 1)) {
+        } elseif (isset($_POST['change_pw_origine']) && ($_POST['change_pw_origine'] == "admin_change" && $_SESSION['user_admin'] == 1)) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
@@ -188,8 +188,10 @@ switch ($_POST['type']) {
                 "id = %i",
                 $dataReceived['user_id']
             );
+
             // update LOG
             logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+
             //Send email to user
             $row = DB::queryFirstRow(
                 "SELECT email FROM ".prefix_table("users")."
@@ -220,9 +222,15 @@ switch ($_POST['type']) {
                 "id = %i",
                 $_SESSION['user_id']
             );
+
+            // update sessions
+            $_SESSION['last_pw'] = $oldPw;
             $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+            $_SESSION['validite_pw'] = true;
+
             // update LOG
-        logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+
             echo '[ { "error" : "none" } ]';
             break;
         } else {
