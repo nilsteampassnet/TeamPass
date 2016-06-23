@@ -906,5 +906,6 @@ $LANG = array (
     'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
     'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
     'rebuild_config_file' => 'Rebuild configuration file',
+    'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
     '' => ''
 );
