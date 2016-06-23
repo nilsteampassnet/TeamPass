@@ -14,8 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
-	'error_bad_credentials_more_than_3_times' => 'Login credentials do not correspond!<br>Please wait 10 seconds before new try',
     'user_ga_code' => 'Send GoogleAuthenticator to user by email',
     'send_ga_code' => 'Google Authenticator for user',
     'error_no_email' => 'This user has no email set!',
@@ -908,5 +906,6 @@ $LANG = array (
     'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
     'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
     'rebuild_config_file' => 'Rebuild configuration file',
+    'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
     '' => ''
 );
