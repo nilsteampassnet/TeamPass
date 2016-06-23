@@ -1363,7 +1363,7 @@ echo '
                             '.$LANG['admin_email_security'].'
                         </td>
                         <td>
-                            <select id="email_security" name="email_security" class="text ui-widget-content">
+                            <select id="email_security" name="email_security" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="none"', !isset($_SESSION['settings']['email_security']) || $_SESSION['settings']['email_security'] == "none" ? ' selected="selected"':"", '>None</option>
                             <option value="ssl"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "ssl" ? ' selected="selected"':"", '>SSL</option>
                             <option value="tls"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "tls" ? ' selected="selected"':"", '>TLS</option>
