@@ -410,6 +410,11 @@ function updateSetting(field)
             key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
+            // force page reload in case of encryptClientServer
+            if (field == "encryptClientServer") {console.log("coucou");
+                location.reload(true);
+                return false;
+            }
             //decrypt data
             try {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
@@ -465,6 +470,11 @@ $(function() {
                 key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
+                // force page reload in case of encryptClientServer
+                if (e.target.id == "encryptClientServer") {console.log("coucou");
+                    location.reload(true);
+                    return false;
+                }
                 //decrypt data
                 try {
                     data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
