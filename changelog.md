@@ -2,6 +2,7 @@ Last changes
 2.1.26
  #1346 On upgrade settings.php not found
  #1345 Admin, password change and logoff not working
+ #1342 Change my password screen loop
  #1328 Minimum password complexity for folders and items
  #1334 Fix "installation related pages" dead link
  #1333 Fix LDAP search base input
