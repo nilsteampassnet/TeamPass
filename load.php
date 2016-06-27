@@ -4,7 +4,7 @@
  * @file          load.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -510,38 +510,6 @@ $htmlHeaders .= '
             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
         }
     }
-
-    function ChangeMyPass()
-{
-    if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
-        if ($("#pw_strength_value").val() >= $("#user_pw_complexity").val()) {
-            var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
-            $.post(
-                "sources/main.queries.php",
-                {
-                    type                : "change_pw",
-                    change_pw_origine    : "first_change",
-                    complexity            :    $("#user_pw_complexity").val(),
-                    key                 : "'.$_SESSION['key'].'",
-                    data                 :    prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
-                },
-                function(data) {
-                    if (data[0].error == "complexity_level_not_reached") {
-                        $("#new_pw, #new_pw2").val("");
-                        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_complex_not_enought'].'></span>");
-                    } else {
-                        location.reload(true);
-                    }
-                },
-                "json"
-            );
-        } else {
-            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
-        }
-    } else {
-        $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
-    }
-}
 
     $(function() {
         countdown();

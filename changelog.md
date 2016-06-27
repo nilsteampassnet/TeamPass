@@ -1,5 +1,10 @@
 Last changes
 2.1.26
+ #1346 On upgrade settings.php not found
+ #1345 Admin, password change and logoff not working
+ #1342 Change my password screen loop
+ #1340 Upgrade process last step
+ #1335 This page doesn't exist
  #1328 Minimum password complexity for folders and items
  #1334 Fix "installation related pages" dead link
  #1333 Fix LDAP search base input
@@ -7,6 +12,7 @@ Last changes
  #1326 Fixed LDAP functionality
  #1325 updated Dockerfile
  #1310 Addes Estonian language
+ #1309 error while loading folders (if simplify tree option enabled)
  #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
  #1301 add ldap_search_base record for db init
  #1300 After 3 bad login attempts, user needs to wait 10s before new try

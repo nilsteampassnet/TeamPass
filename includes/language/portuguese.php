@@ -802,7 +802,7 @@ $LANG = array (
     'edit_user' => 'Edit user',
     'pf_change_encryption' => 'The encryption algorithm has changed and your personal passwords have to be re-encoded. You need to run this process to use your passwords. This process may take several minutes depending on the number of items you have.',
     'operation_encryption_done' => 'Re-encryption has been performed. You can close this dialogbox.',
-    'show_password' => 'Show password',
+    'show_password' => 'Click and maintain to show password',
     'change_password' => 'Change password',
     'pf_sk_set' => 'Your personal Salt Key is correctly set, You can click on button Start',
     'pf_sk_not_set' => 'Your personal Salt Key is NOT set! Please enter it.',
@@ -905,5 +905,6 @@ $LANG = array (
     'rebuild_config_file_tip' => 'Configuration file is located in folder ./includes/config/tp.config.php. It contains the configuration variables as defined in Settings and Customize tabs. Rebuilding the configuration file can be done at any moment.',
     'error_folder_complexity_lower_than_top_folder' => 'It is required to have a Password Complexity at least equal to the Top Folder',
     'rebuild_config_file' => 'Rebuild configuration file',
+    'csv_import_information' => 'The CSV file needs to fullfil next rules:<ul><li>The 1st line must be a header,</li><li>It must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
     '' => ''
 );

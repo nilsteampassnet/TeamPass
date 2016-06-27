@@ -4,7 +4,7 @@
  * @file          users.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link        http://www.teampass.net
  *
@@ -27,9 +27,11 @@ if (
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
-    exit();
+    if (!isset($_POST['newValue']) || empty(filter_var($_POST['newValue'], FILTER_SANITIZE_STRING))) {
+        $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        exit();
+    }
 }
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
