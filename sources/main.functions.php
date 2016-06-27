@@ -4,7 +4,7 @@
  * @file          main.functions.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -1019,7 +1019,6 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->SMTPDebug = 0; //value 1 can be used to debug
     $mail->Port = $_SESSION['settings']['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
-    // $mail->SMTPSecure = 'ssl';     //COULD BE USED
     $smtp_security = $_SESSION['settings']['email_security'];
     if ($smtp_security == "tls" || $smtp_security == "ssl") {
         $mail->SMTPSecure = $smtp_security;

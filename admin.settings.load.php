@@ -3,7 +3,7 @@
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2015 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -410,6 +410,11 @@ function updateSetting(field)
             key     : "<?php echo $_SESSION['key'];?>"
         },
         function(data) {
+            // force page reload in case of encryptClientServer
+            if (field == "encryptClientServer") {
+                location.reload(true);
+                return false;
+            }
             //decrypt data
             try {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
@@ -465,6 +470,11 @@ $(function() {
                 key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
+                // force page reload in case of encryptClientServer
+                if (e.target.id == "encryptClientServer") {
+                    location.reload(true);
+                    return false;
+                }
                 //decrypt data
                 try {
                     data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
@@ -493,7 +503,7 @@ $(function() {
             updateSetting($("#upload_imageresize_quality").attr('id'));
         }
     });
-    
+
     //BUILD BUTTONSET
     $(".div_radio").buttonset();
 
