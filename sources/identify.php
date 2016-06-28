@@ -219,9 +219,6 @@ function identifyUser($sentData)
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
-            if ($_SESSION['settings']['ldap_tls']) {
-               ldap_start_tls($ldapconn);
-            }
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
             }

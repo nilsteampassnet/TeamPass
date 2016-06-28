@@ -411,7 +411,7 @@ function updateSetting(field)
         },
         function(data) {
             // force page reload in case of encryptClientServer
-            if (field == "encryptClientServer") {
+            if (field == "encryptClientServer") {console.log("coucou");
                 location.reload(true);
                 return false;
             }
@@ -471,7 +471,7 @@ $(function() {
             },
             function(data) {
                 // force page reload in case of encryptClientServer
-                if (e.target.id == "encryptClientServer") {
+                if (e.target.id == "encryptClientServer") {console.log("coucou");
                     location.reload(true);
                     return false;
                 }
