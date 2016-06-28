@@ -779,7 +779,11 @@ if (isset($_POST['type'])) {
                             if (!empty($emailAddress)) {
                                 @sendEmail(
                                     $LANG['email_subject_item_updated'],
-                                    str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $LANG['email_body_item_updated']),
+                                    str_replace(
+                                        array("#item_label#", "#item_category#", "#item_id#", "#url#"),
+                                        array($label, $dataReceived['categorie'], $dataReceived['id'], $_SESSION['settings']['cpassman_url']),
+                                        $LANG['email_body_item_updated']
+                                    ),
                                     $emailAddress,
                                     str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
                                 );
