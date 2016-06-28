@@ -3,7 +3,7 @@
  * @file          install.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2011 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -390,7 +390,9 @@ global \$SETTINGS;
                             array('admin','default_session_expiration_time','60'),
                             array('admin','duo','0'),
                             array('admin','enable_server_password_change','0'),
-                            array('admin','ldap_object_class','0')
+                            array('admin','ldap_object_class','0'),
+                            array('admin','bck_script_path', $var['abspath']."/backups"),
+                            array('admin','bck_script_filename', 'bck_cpassman')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
