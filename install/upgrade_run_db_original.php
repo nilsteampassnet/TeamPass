@@ -3,7 +3,7 @@
  * @file          upgrade_run_db_original.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2011 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -287,7 +287,9 @@ $val = array(
 	array('admin','otv_expiration_period','7', 0),
 	array('admin','default_session_expiration_time','60', 0),
 	array('admin','duo','0', 0),
-	array('admin','enable_server_password_change','0', 0)
+	array('admin','enable_server_password_change','0', 0),
+	array('admin','bck_script_path', $_SESSION['abspath']."/backups", 0),
+	array('admin','bck_script_filename', 'bck_cpassman', 0)
 );
 $res1 = "na";
 foreach ($val as $elem) {
