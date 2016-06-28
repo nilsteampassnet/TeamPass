@@ -2520,13 +2520,13 @@ if (isset($_POST['type'])) {
                         $dataAuthor['email']
                     );
                 } elseif ($_POST['cat'] == "share_this_item") {
-                    $dataItem = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id= ".$_POST['id']);
+                    $dataItem = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id= ".(mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_STRING)));
                     // send email
                     $ret = @sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($dataItem['label'])),
+                            array($_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_STRING)), addslashes($_SESSION['login']), addslashes($dataItem['label'])),
                             $LANG['email_share_item_mail']
                         ),
                         $_POST['receipt']
