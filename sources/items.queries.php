@@ -2520,7 +2520,12 @@ if (isset($_POST['type'])) {
                         $dataAuthor['email']
                     );
                 } elseif ($_POST['cat'] == "share_this_item") {
-                    $dataItem = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id= ".(mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_STRING)));
+                    $dataItem = DB::queryfirstrow(
+                        "SELECT label,id_tree 
+                        FROM ".prefix_table("items")." 
+                        WHERE id= %i",
+                        (mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)))
+                    );
                     // send email
                     $ret = @sendEmail(
                         $LANG['email_share_item_subject'],
