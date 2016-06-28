@@ -125,14 +125,14 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>Teampass</title>
 <script type="text/javascript">
-            if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 || window.location.href.indexOf("action=") == -1)) {
-                if (window.location.href.indexOf("session_over=true") == -1) {
-                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
-                } else {
-                    location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
-                }
-            }
-        </script>
+    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
+        if (window.location.href.indexOf("session_over=true") == -1) {
+            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+        } else {
+            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
+        }
+    }
+</script>
 <?php
 echo $htmlHeaders;
 ?>
@@ -516,6 +516,9 @@ if (
                     <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.htmlspecialchars($_GET['key'], ENT_QUOTES).'\',\''.htmlspecialchars($_GET['login'], ENT_QUOTES).'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
                     <br /><br />
                     <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+                </div>
+                <div style="margin-top:30px; text-align:center;">
+                    <a href="index.php" class="tip" title="'.$LANG['home'].'"><span class="fa fa-home fa-lg"></span></a>
                 </div>
             </div>';
     } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {

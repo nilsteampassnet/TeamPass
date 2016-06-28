@@ -330,26 +330,38 @@ switch ($_POST['type']) {
         stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
         include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
         $parse = parse_url($dataItem['url']);
-        $ssh = new Net_SSH2($parse['host'], $parse['port']);
-        if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
-           echo prepareExchangedData(
+        if (!isset($parse['host']) || empty(parse['host']) ||!isset($parse['host']) || empty(parse['host'])) {
+            // error in parsing the url
+            echo prepareExchangedData(
                 array(
-                    "error" => "Login failed.<br />Error description: <i>".$_SESSION['sshError']."</i>",
+                    "error" => "Parsing URL failed.<br />Ensure the URL is well written!</i>",
                     "text" => ""
                 ),
                 "encode"
             );
             break;
-        }else{
-            // send ssh script for user change
-            $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
-            $ret_server = $ssh->exec('echo -e "'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
-            if (strpos($ret_server, "updated successfully") !== false) {
-                $err = false;
-            } else {
-                $err = true;
+        } else {
+            $ssh = new Net_SSH2($parse['host'], $parse['port']);
+            if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
+               echo prepareExchangedData(
+                    array(
+                        "error" => "Login failed.<br />Error description: <i>".$_SESSION['sshError']."</i>",
+                        "text" => ""
+                    ),
+                    "encode"
+                );
+                break;
+            }else{
+                // send ssh script for user change
+                $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
+                $ret_server = $ssh->exec('echo -e "'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
+                if (strpos($ret_server, "updated successfully") !== false) {
+                    $err = false;
+                } else {
+                    $err = true;
+                }
+                $ret .= $ret_server."</div>";
             }
-            $ret .= $ret_server."</div>";
         }
 
         if ($err == false) {

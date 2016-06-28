@@ -291,13 +291,13 @@ if (isset($_POST['type'])) {
                     // send email
                     foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                         if (!empty($emailAddress)) {
-                        // send it
-                        @sendEmail(
-                            $LANG['email_subject'],
-                            $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
-                            $emailAddress,
-                            $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
-                        );
+                            // send it
+                            @sendEmail(
+                                $LANG['email_subject'],
+                                $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
+                                $emailAddress,
+                                $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
+                            );
                         }
                     }
                 }
@@ -1509,15 +1509,17 @@ if (isset($_POST['type'])) {
                 }
             }
 
+            // query on folder
+            $data = DB::queryfirstrow(
+                "SELECT parent_id, personal_folder
+                FROM ".prefix_table("nested_tree")."
+                WHERE id = %i",
+                $dataReceived['folder']
+            );
+
             // check if complexity level is good
             // if manager or admin don't care
-            if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
-                $data = DB::queryfirstrow(
-                    "SELECT parent_id
-                    FROM ".prefix_table("nested_tree")."
-                    WHERE id = %i",
-                    $dataReceived['folder']
-                );
+            if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $data['personal_folder'] == "0") {
                 $data = DB::queryfirstrow(
                     "SELECT valeur
                     FROM ".prefix_table("misc")."
@@ -1530,7 +1532,7 @@ if (isset($_POST['type'])) {
                     break;
                 }
             }
-            
+
             // update Folders table
             $tmp = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",

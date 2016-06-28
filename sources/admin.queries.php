@@ -454,7 +454,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_rebuild_config_file":
         $error = "";
-        
+
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
         $ret = handleConfigFile ("rebuild");
 

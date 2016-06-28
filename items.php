@@ -229,11 +229,11 @@ echo '
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
-                        
+
                         <!-- INFO -->
                         <div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
                         <!-- INFO END -->
-                        
+
                     </td>
                 </tr>';
 // Line for DESCRIPTION
@@ -448,7 +448,7 @@ echo '
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
-                
+
                 <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
                     <i class="fa fa-square fa-stack-2x"></i>
                     <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
@@ -631,7 +631,7 @@ echo '
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
-                
+
                 <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
                     <i class="fa fa-square fa-stack-2x"></i>
                     <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
