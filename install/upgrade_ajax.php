@@ -291,12 +291,10 @@ if (isset($_POST['type'])) {
             if ($okWritable == true && $okExtensions == true && $okEncryptKey == true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
-                //echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
             } else {
                 echo 'document.getElementById("but_next").disabled = "disabled";';
                 echo 'document.getElementById("res_step1").innerHTML = "Correct the shown '.
                     'errors and click on button Launch to refresh";';
-                //echo 'gauge.modify($("pbar"),{values:[0.25,1]});';
             }
 
             echo 'document.getElementById("res_step1").innerHTML = "'.$txt.'";';
@@ -328,7 +326,6 @@ if (isset($_POST['type'])) {
                     $_POST['db_bdd'],
                     $_POST['db_port']
                 );
-                //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                 $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
 
@@ -372,7 +369,6 @@ if (isset($_POST['type'])) {
                     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
             } else {
-                //echo 'gauge.modify($("pbar"),{values:[0.50,1]});';
                 $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
                 echo 'document.getElementById("but_next").disabled = "disabled";';
             }
@@ -601,7 +597,6 @@ require_once \"".$skFile."\";
                     $result1 != false
                     && (!isset($result2) || (isset($result2) && $result2 != false))
                 ) {
-                    //echo 'gauge.modify($("pbar"),{values:[1,1]});';
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step5").innerHTML = '.
                         '"Operations are successfully completed.";';
