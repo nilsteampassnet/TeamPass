@@ -48,6 +48,7 @@ Last changes
  #1172 Complete number of Items displayed in Tree
  #1158 Can't Change admin Password
  #910  Backslashes in accounts are not copied to clipboard
+ #268  Password recovery "Forgot your password?" don't do anything
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)

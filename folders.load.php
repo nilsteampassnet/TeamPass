@@ -50,8 +50,8 @@ $(function() {
     .on('xhr.dt', function ( e, settings, json, xhr ) {
         //$(".tip").tooltipster();
     } );
-    
-    
+
+
     $("#div_add_group").dialog({
         bgiframe: true,
         modal: true,
@@ -61,7 +61,7 @@ $(function() {
         title: "<?php echo $LANG['add_new_group'];?>",
         open: function(event, ui) {
             $("#new_folder_wait").hide();
-            
+
             //empty dialogbox
             $("#div_add_group input, #div_add_group select").val("");
             $("#add_node_renewal_period").val("0");
@@ -210,7 +210,7 @@ $(function() {
             }
         }
     });
-    
+
     $(".cb_selected_folder").click(function() {
         var elem = $(this).attr("id").split("-");
         if ($(this).prop("checked") == true) {
@@ -221,13 +221,13 @@ $(function() {
             $("#title_"+elem[1]).css({"background-color":"#FFF"});
         }
     });
-    
+
     // manage the click on toggle icons
     $(document).on({
         click: function (event) {
             $("#div_loading").show();
-            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue  
-                        
+            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue
+
             // send change to be stored
             $.post(
                 "sources/folders.queries.php",
@@ -242,10 +242,10 @@ $(function() {
                     // refresh table content
                     tableFolders.api().ajax.reload();
                 }
-            );            
+            );
         }
     }, ".fa-toggle-off, .fa-toggle-on");
-    
+
     $( "#click_delete_multiple_folders" ).click(function() {
         var list_i = "";
         $(".cb_selected_folder:checked").each(function() {
@@ -274,7 +274,7 @@ $(function() {
            );
         }
     });
-    
+
     $("#click_refresh_folders_list").click(function() {
         tableFolders.api().ajax.reload();
     });

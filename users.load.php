@@ -107,18 +107,18 @@ $(function() {
     alphabet.on( 'click', 'span', function () {
         alphabet.find( '.active' ).removeClass( 'active' );
         $(this).addClass( 'active' );
-        
+
         _alphabetSearch = $(this).data('letter');
 
         tableUsers.api().ajax.reload();
     } );
-    
+
     // manage the click on toggle icons
     $(document).on({
         click: function (event) {
             $("#div_loading").show();
-            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue  
-            
+            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue
+
             // send change to be stored
             $.post(
                 "sources/users.queries.php",
@@ -131,18 +131,18 @@ $(function() {
                 function(data) {
                     data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
                     $("#div_loading").hide();
-                                            
+
                     // manage not allowed
                     if (data.error == "not_allowed") {
                        $("#div_dialog_message_text").html(data.error_text);
                        $("#div_dialog_message").dialog("open");
                        return false;
                     }
-                   
+
                     // refresh table content
                     tableUsers.api().ajax.reload();
                 }
-            );            
+            );
         }
     }, ".fa-toggle-off, .fa-toggle-on");
 
@@ -601,7 +601,7 @@ $(function() {
                 function(data) {
                     if (data.error == "no") {
                         $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
-                        
+
                         $("#user_edit_login").val(data.log);
                         $("#user_edit_name").val(data.name);
                         $("#user_edit_lastname").val(data.lastname);
@@ -639,25 +639,25 @@ $(function() {
                 // manage the multiselect boxes
                 $("#user_edit_functions_list option:selected").each(function () {
                     functions += $(this).val() + ";";
-                }); 
+                });
                 $("#user_edit_managedby option:selected").each(function () {
                     managedby = $(this).val();
-                }); 
+                });
                 $("#user_edit_auth option:selected").each(function () {
                     allowFld += $(this).val() + ";";
-                }); 
+                });
                 $("#user_edit_forbid option:selected").each(function () {
                     forbidFld += $(this).val() + ";";
-                }); 
-                
+                });
+
                 // manage the account status
                 $(".chk:checked").each(function() {
                     if ($(this).val() == "lock") action_on_user = "lock";
                     else if ($(this).val() == "delete") action_on_user = "delete";
                     else if ($(this).val() == "unlock") action_on_user = "unlock";
                 });
-                
-                
+
+
                 //prepare data
                 var data = '{"login":"'+sanitizeString($('#user_edit_login').val())+'", '+
                     '"name":"'+sanitizeString($('#user_edit_name').val())+'", '+
@@ -680,7 +680,7 @@ $(function() {
                     },
                     function(data) {
                         if (data[0].error == "no") {
-                            
+
                         }
                         // refresh table content
                         tableUsers.api().ajax.reload();
@@ -702,7 +702,7 @@ $(function() {
 */
 function confirmDeletion()
 {
-    if ($("#account_delete").prop("checked") == true) {        
+    if ($("#account_delete").prop("checked") == true) {
         if ($("#confirm_deletion").val() == "") {
             $("#account_delete").prop("checked", false);
             $("#confirm_deletion").val("1");
@@ -822,7 +822,7 @@ function Change_user_rights(id,type)
     if (type == "functions") var form = document.forms.tmp_functions;
     if (type == "autgroups") var form = document.forms.tmp_autgroups;
     if (type == "forgroups") var form = document.forms.tmp_forgroups;
-    
+
     $("#div_loading").show();
 
     for (i=0 ; i<= form.length-1 ; i++) {
@@ -832,7 +832,7 @@ function Change_user_rights(id,type)
             else list = list + ";" + function_id[1];
         }
     }
-    
+
     $.post("sources/users.queries.php",
         {
             type    : "change_user_"+type,
