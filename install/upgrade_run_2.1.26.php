@@ -188,6 +188,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY rest
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY tags DEFAULT NULL");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY timestamp DEFAULT NULL");
 
+// alter table files
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
+
 // add Estonian
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
@@ -231,7 +234,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     if (file_exists($tp_config_file)) {
         if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
             echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-            break;
+            return false;
         } else {
             unlink($tp_config_file);
         }

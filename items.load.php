@@ -18,6 +18,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LANG['show_password'].'"></i>&nbsp;&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>';
 
+// load csrfprotector
+$csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 ?>
 
 <script type="text/javascript">
@@ -2890,7 +2892,7 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
 ?>",
         chunk_size : "1mb",
         dragdrop : true,
-        url : "sources/upload/upload.attachments.php",
+        url : "sources/upload/upload.attachments.php?<?php echo $csrfp_config['CSRFP_TOKEN'];?>=<?php echo $_COOKIE[$csrfp_config['CSRFP_TOKEN']];?>",
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
