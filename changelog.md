@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set
  #1346 On upgrade settings.php not found
  #1345 Admin, password change and logoff not working

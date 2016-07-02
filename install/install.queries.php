@@ -530,7 +530,7 @@ global \$SETTINGS;
                             `name` varchar(100) NOT NULL,
                             `size` int(10) NOT NULL,
                             `extension` varchar(10) NOT NULL,
-                            `type` varchar(50) NOT NULL,
+                            `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
