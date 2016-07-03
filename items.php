@@ -123,7 +123,8 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 }
 
 echo '
-<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
+<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />
+<input type="hidden" id="item_user_token" value="" />';
 
 echo '
 <div id="div_items">';

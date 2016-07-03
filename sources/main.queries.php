@@ -884,4 +884,35 @@ switch ($_POST['type']) {
         $key = $pwdlib->getRandomToken($_POST['size']);
         echo '[{"key" : "'.$key.'"}]';
         break;
+
+    /**
+     * Generates a TOKEN with CRYPT
+     */
+    case "save_token":
+        $token = GenerateCryptKey(
+            isset($_POST['size']) ? $_POST['size'] : 20,
+            isset($_POST['secure']) ? $_POST['secure'] : false,
+            isset($_POST['capital']) ? $_POST['capital'] : false,
+            isset($_POST['numeric']) ? $_POST['numeric'] : false,
+            isset($_POST['ambiguous']) ? $_POST['ambiguous'] : false,
+            isset($_POST['symbols']) ? $_POST['symbols'] : false
+            );
+
+        // store in DB
+        DB::insert(
+            prefix_table("tokens"),
+            array(
+                'user_id' => $_SESSION['user_id'],
+                'token' => $token,
+                'reason' => $_POST['reason'],
+                'creation_timestamp' => time(),
+                'end_timestamp' => time()+$_POST['duration']    // in secs
+            )
+        );
+
+        echo '[{"token" : "'.$token.'"}]';
+        break;
+
+
+        
 }

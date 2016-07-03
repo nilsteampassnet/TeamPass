@@ -2892,7 +2892,7 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
 ?>",
         chunk_size : "1mb",
         dragdrop : true,
-        url : "sources/upload/upload.attachments.php?<?php echo $csrfp_config['CSRFP_TOKEN'];?>=<?php echo $_COOKIE[$csrfp_config['CSRFP_TOKEN']];?>",
+        url : "sources/upload/upload.attachments.php",
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
@@ -2911,23 +2911,22 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 <?php
 }
 ?>
-        preinit : {
-            UploadFile: function(up, file) {
-                up.setOption('multipart_params', {
-                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
-                    itemId : $("#random_id").val(),
-                    type_upload : "item_attachments",
-                    edit_item : false
-                });
-            }
-        },
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_upload_wait").show();
+
                 if ($("#random_id").val() == "") {
                     var post_id = CreateRandomString(9,"num_no_0");
                     $("#random_id").val(post_id);
                 }
+
+                up.setOption('multipart_params', {
+                    PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
+                    itemId : $("#random_id").val(),
+                    type_upload : "item_attachments",
+                    edit_item : false,
+                    user_token: $("#item_user_token").val()
+                });
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
@@ -2954,7 +2953,24 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     // Load edit uploaded click
     $("#item_attach_uploadfiles").click(function(e) {
-        uploader_attachments.start();
+        // generate and save token
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "save_token",
+                size : 25,
+                capital: true,
+                numeric: true,
+                ambiguous: true,
+                reason: "item_attachments",
+                duration: 10
+            },
+            function(data) {console.log(data[0].token);
+                $("#item_user_token").val(data[0].token);
+                uploader_attachments.start();
+            },
+            "json"
+        );
         e.preventDefault();
     });
     uploader_attachments.init();
@@ -3000,19 +3016,17 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         },<?php
 }
 ?>
-        preinit : {
-            UploadFile: function(up, file) {
+        init: {
+            BeforeUpload: function (up, file) {
+                $("#item_edit_upload_wait").show();
+                
                 up.setOption('multipart_params', {
                     PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
                     itemId : $('#selected_items').val(),
                     type_upload : "item_attachments",
-                    edit_item : true
+                    edit_item : true,
+                    user_token: $("#item_user_token").val()
                 });
-            }
-        },
-        init: {
-            BeforeUpload: function (up, file) {
-                $("#item_edit_upload_wait").show();
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
@@ -3039,7 +3053,25 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     // Load edit uploaded click
     $("#item_edit_attach_uploadfiles").click(function(e) {
-        edit_uploader_attachments.start();
+        // generate and save token
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "save_token",
+                size : 25,
+                capital: true,
+                numeric: true,
+                ambiguous: true,
+                reason: "item_attachments",
+                duration: 10
+            },
+            function(data) {
+                $("#item_user_token").val(data[0].token);
+                edit_uploader_attachments.start();
+            },
+            "json"
+        );
+        
         e.preventDefault();
     });
     edit_uploader_attachments.init();

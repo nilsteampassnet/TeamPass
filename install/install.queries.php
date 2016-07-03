@@ -231,7 +231,7 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
-                            `label` varchar(250) NOT NULL,
+                            `label` varchar(500) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
                             `pw_iv` text NOT NULL,
@@ -748,7 +748,18 @@ global \$SETTINGS;
                             `path` varchar(255) NOT NULL
                             ) CHARSET=utf8;"
                         );
-                    }
+                    } else if ($task == "tokens") {
+                        $mysqli_result = mysqli_query($dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."tokens` (
+                            `id` int(12) NOT NULL AUTO_INCREMENT,
+                            `user_id` int(10) NOT NULL,
+                            `token` varchar(255) NOT NULL,
+                            `reason` varchar(255) NOT NULL,
+                            `creation_timestamp` varchar(50) NOT NULL,
+                            `end_timestamp` varchar(50) NOT NULL,
+                            PRIMARY KEY (`id`)
+                            ) CHARSET=utf8;"
+                        );
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
                         require_once '../sources/main.functions.php';
