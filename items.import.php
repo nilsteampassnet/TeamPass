@@ -58,6 +58,7 @@ $link->set_charset($encoding);
 
 echo '
 <input type="hidden" id="folder_id_selected" value="', isset($_GET["folder_id"]) ? $_GET["folder_id"] : '', '" />
+<input type="hidden" id="import_user_token" value="" />
 <div id="import_tabs">
     <ul>
         <li><a href="#tabs-1">CSV</a></li>
@@ -181,6 +182,25 @@ foreach ($folders as $t) {
                 {title : "CSV files", extensions : "csv"}
             ],
             init: {
+                Init: function(up, files) {
+                    // generate and save token
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type : "save_token",
+                            size : 25,
+                            capital: true,
+                            numeric: true,
+                            ambiguous: true,
+                            reason: "import_items_from_csv",
+                            duration: 10
+                        },
+                        function(data) {
+                            $("#import_user_token").val(data[0].token);
+                        },
+                        "json"
+                    );
+                },
                 FilesAdded: function(up, files) {
                     up.start();
                 },
@@ -188,7 +208,8 @@ foreach ($folders as $t) {
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'];?>",
                         "csvFile":file.name,
-                        "type_upload":"import_items_from_csv"
+                        "type_upload":"import_items_from_csv",
+                        "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {
@@ -245,6 +266,25 @@ foreach ($folders as $t) {
                 {title : "Keypass files", extensions : "xml"}
             ],
             init: {
+                Init: function(up, files) {
+                    // generate and save token
+                    $.post(
+                        "sources/main.queries.php",
+                        {
+                            type : "save_token",
+                            size : 25,
+                            capital: true,
+                            numeric: true,
+                            ambiguous: true,
+                            reason: "import_items_from_keypass",
+                            duration: 10
+                        },
+                        function(data) {
+                            $("#import_user_token").val(data[0].token);
+                        },
+                        "json"
+                    );
+                },
                 FilesAdded: function(up, files) {
                     up.start();
                 },
@@ -253,7 +293,8 @@ foreach ($folders as $t) {
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'];?>",
                         "xmlFile":file.name,
-                        "type_upload":"import_items_from_keypass"
+                        "type_upload":"import_items_from_keypass",
+                        "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {

@@ -178,18 +178,32 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(100)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY url VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY restricted_to DEFAULT NULL");
 
 // alter table cache
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(100)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY restricted_to DEFAULT NULL");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY tags DEFAULT NULL");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY timestamp DEFAULT NULL");
 
 // alter table files
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
+
+// create new table
+mysqli_query($dbTmp, 
+    "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."tokens` (
+    `id` int(12) NOT NULL AUTO_INCREMENT,
+    `user_id` int(10) NOT NULL,
+    `token` varchar(255) NOT NULL,
+    `reason` varchar(255) NOT NULL,
+    `creation_timestamp` varchar(50) NOT NULL,
+    `end_timestamp` varchar(50) NOT NULL,
+    PRIMARY KEY (`id`)
+    ) CHARSET=utf8;"
+);
+
 
 // add Estonian
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));

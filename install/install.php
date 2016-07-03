@@ -240,6 +240,7 @@ echo '
     <li>Add table "api"&nbsp;<span id="res5_check25"></span></li>
     <li>Add table "otv"&nbsp;<span id="res5_check26"></span></li>
     <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
+    <li>Add table "tokens"&nbsp;<span id="res5_check28"></span></li>
     </ul>-->
 </div>';
 

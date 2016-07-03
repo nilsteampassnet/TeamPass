@@ -30,6 +30,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 echo '
+<input type="hidden" id="user_token" value="" />
 <div style="margin-top:10px;">
     <form name="form_settings" method="post" action="">';
 // Main div for TABS

@@ -39,6 +39,31 @@ if (isset($_POST['PHPSESSID'])) {
     handleError('No Session was found.', 110);
 }
 
+/*
+// token check
+if (!isset($_POST['user_token'])) {
+    handleError('No user token found.', 110);
+    exit();
+} else {
+    // check if token is expired
+    $data = DB::queryFirstRow(
+        "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
+        $_SESSION['user_id'],
+        $_POST['user_token']
+    );
+    // clear user token
+    DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+
+    if (time() <= $data['end_timestamp']) {
+        // it is ok
+    } else {
+        // too old
+        handleError('User token expired.', 110);
+        exit();
+    }
+}
+*/
+
 // HTTP headers for no cache etc
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
