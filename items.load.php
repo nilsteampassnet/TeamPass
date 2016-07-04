@@ -727,6 +727,7 @@ function AjouterItem()
            );
         } else {
             $('#new_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
+            $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
             $("#div_formulaire_saisi_info").hide().html("");
         }
     }
@@ -1012,6 +1013,7 @@ function EditerItem()
 
         } else {
             $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']);?>").show();
+            $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
             $("#div_formulaire_edition_item_info").hide().html("");
         }
     }
@@ -2925,7 +2927,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                     itemId : $("#random_id").val(),
                     type_upload : "item_attachments",
                     edit_item : false,
-                    user_token: $("#item_user_token").val()
+                    user_token: $("#item_user_token").val(),
+                    files_number: $("#files_number").val()
                 });
             },
             UploadComplete: function(up, files) {
@@ -2980,6 +2983,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
             '</div>');
+            $("#files_number").val(parseInt($("#files_number").val())+1);
         });
         up.refresh(); // Reposition Flash/Silverlight
     });
@@ -3025,7 +3029,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                     itemId : $('#selected_items').val(),
                     type_upload : "item_attachments",
                     edit_item : true,
-                    user_token: $("#item_user_token").val()
+                    user_token: $("#item_user_token").val(),
+                    files_number: $("#edit_files_number").val()
                 });
             },
             UploadComplete: function(up, files) {
@@ -3063,7 +3068,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 numeric: true,
                 ambiguous: true,
                 reason: "item_attachments",
-                duration: 10
+                duration: 30
             },
             function(data) {
                 $("#item_user_token").val(data[0].token);
@@ -3081,6 +3086,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
             '</div>');
+            $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
         });
         up.refresh(); // Reposition Flash/Silverlight
     });

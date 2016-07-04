@@ -39,12 +39,50 @@ if (isset($_POST['PHPSESSID'])) {
     handleError('No Session was found.', 110);
 }
 
-/*
 // token check
 if (!isset($_POST['user_token'])) {
     handleError('No user token found.', 110);
     exit();
 } else {
+    //Connect to mysql server
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    // delete expired tokens
+    DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
+
+    // create a session if several files to upload
+    if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
+        $_SESSION[$_POST['user_token']] = $_POST['files_number'];
+    } else if ($_SESSION[$_POST['user_token']] > 0) {
+        // increase end_timestamp for token
+        DB::update(
+            prefix_table('tokens'),
+            array(
+                'end_timestamp' => time() + 30
+               ),
+            "user_id = %i AND token = %s",
+            $_SESSION['user_id'],
+            $_POST['user_token']
+        );
+        // decrease counter of files to upload
+        $_SESSION[$_POST['user_token']]--;
+    } else {
+        // no more files to upload, kill session
+        unset($_SESSION[$_POST['user_token']]);
+        handleError('No user token found.', 110);
+        exit();
+    }
+
     // check if token is expired
     $data = DB::queryFirstRow(
         "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
@@ -52,17 +90,20 @@ if (!isset($_POST['user_token'])) {
         $_POST['user_token']
     );
     // clear user token
-    DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+    if ($_SESSION[$_POST['user_token']] === 0) {
+        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+        unset($_SESSION[$_POST['user_token']]);
+    }
 
     if (time() <= $data['end_timestamp']) {
         // it is ok
     } else {
         // too old
+        unset($_SESSION[$_POST['user_token']]);
         handleError('User token expired.', 110);
         exit();
     }
 }
-*/
 
 // HTTP headers for no cache etc
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
@@ -277,19 +318,6 @@ if (!$chunks || $chunk == $chunks - 1) {
 // Get some variables
 $fileRandomId = md5($fileName.time());
 rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $fileRandomId);
-
-//Connect to mysql server
-require_once '../../includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-DB::$host = $server;
-DB::$user = $user;
-DB::$password = $pass;
-DB::$dbName = $database;
-DB::$port = $port;
-DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
-$link = mysqli_connect($server, $user, $pass, $database, $port);
-$link->set_charset($encoding);
 
 //Get data from DB
 /*$data = DB::queryfirstrow(
