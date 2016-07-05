@@ -295,7 +295,7 @@ $(function() {
         flash_swf_url : "includes/libraries/Plupload/plupload.flash.swf",
         silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
         init: {
-            Init: function(up, files) {
+            FilesAdded: function(up, files) {
                 // generate and save token
                 $.post(
                     "sources/main.queries.php",
@@ -310,12 +310,10 @@ $(function() {
                     },
                     function(data) {
                         $("#profile_user_token").val(data[0].token);
+                        up.start();
                     },
                     "json"
                 );
-            },
-            FilesAdded: function(up, files) {
-                up.start();
             },
             BeforeUpload: function (up, file) {
                 var tmp = Math.random().toString(36).substring(7);
@@ -359,12 +357,6 @@ $(function() {
         $("#filelist_photo").html('').hide();
     });
 
-    // Load CSV click
-    $("#uploadfiles_photo").click(function(e) {
-        uploader_photo.start();
-        e.preventDefault();
-        
-    });
     uploader_photo.init();
 
    $("#but_pickfiles_photo").click(function() {

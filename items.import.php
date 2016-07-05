@@ -182,7 +182,7 @@ foreach ($folders as $t) {
                 {title : "CSV files", extensions : "csv"}
             ],
             init: {
-                Init: function(up, files) {
+                FilesAdded: function(up, files) {
                     // generate and save token
                     $.post(
                         "sources/main.queries.php",
@@ -197,12 +197,10 @@ foreach ($folders as $t) {
                         },
                         function(data) {
                             $("#import_user_token").val(data[0].token);
+                            up.start();
                         },
                         "json"
                     );
-                },
-                FilesAdded: function(up, files) {
-                    up.start();
                 },
                 BeforeUpload: function (up, file) {
                     up.settings.multipart_params = {
@@ -266,7 +264,7 @@ foreach ($folders as $t) {
                 {title : "Keypass files", extensions : "xml"}
             ],
             init: {
-                Init: function(up, files) {
+                FilesAdded: function(up, files) {
                     // generate and save token
                     $.post(
                         "sources/main.queries.php",
@@ -281,12 +279,10 @@ foreach ($folders as $t) {
                         },
                         function(data) {
                             $("#import_user_token").val(data[0].token);
+                            up.start();
                         },
                         "json"
                     );
-                },
-                FilesAdded: function(up, files) {
-                    up.start();
                 },
                 BeforeUpload: function (up, file) {
                     $("#import_status_ajax_loader").show();
