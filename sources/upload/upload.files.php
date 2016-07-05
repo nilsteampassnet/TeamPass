@@ -53,6 +53,9 @@ if (!isset($_POST['user_token'])) {
     // clear user token
     DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
 
+    // delete expired tokens
+    DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
+
     if (time() <= $data['end_timestamp']) {
         // it is ok
     } else {

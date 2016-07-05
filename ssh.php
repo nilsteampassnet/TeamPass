@@ -19,7 +19,7 @@ if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']) || !isset($_GET['id'])
-    || empty($_GET['key']) || $_GET['key'] != $_SESSION['key']
+     || empty($_GET['key']) || $_GET['key'] != $_SESSION['key']
 ) {
     die('Hacking attempt...');
 }
@@ -123,132 +123,132 @@ echo '
 ?>
 <script type="text/javascript">
 
-    function save_cronned_task()
-    {
-        $("#cronned_task_error").hide();
-        $.post(
-            "sources/utils.queries.php",
-            {
-                type    : "server_auto_update_password_frequency",
-                id      : $('#selected_items').val(),
-                freq    : $('#ssh_freq').val(),
-                key     : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data) {
-                if (data[0].error != "") {
-                    $("#cronned_task_error")
-                        .html("Error: "+data[0].error)
-                        .show()
-                        .removeClass( "ui-state-focus" )
-                        .addClass( "ui-state-error" );
-                } else {
-                    $("#cronned_task_error")
-                        .html("<?php echo $LANG['alert_message_done'];?>")
-                        .show()
-                        .removeClass( "ui-state-error" )
-                        .addClass( "ui-state-focus" );
-                }
-            },
-            "json"
-        );
-    }
+function save_cronned_task()
+{
+    $("#cronned_task_error").hide();
+    $.post(
+        "sources/utils.queries.php",
+        {
+            type    : "server_auto_update_password_frequency",
+            id      : $('#selected_items').val(),
+            freq    : $('#ssh_freq').val(),
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            if (data[0].error != "") {
+                $("#cronned_task_error")
+                    .html("Error: "+data[0].error)
+                    .show()
+                    .removeClass( "ui-state-focus" )
+                    .addClass( "ui-state-error" );
+            } else {
+                $("#cronned_task_error")
+                    .html("<?php echo $LANG['alert_message_done'];?>")
+                    .show()
+                    .removeClass( "ui-state-error" )
+                    .addClass( "ui-state-focus" );
+            }
+        },
+        "json"
+    );
+}
 
-    function start_one_shot_change()
-    {
-        // check if new password is set
-        if($("#ausp_pwd").val() == "") {
-            $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_new_pwd_missing'];?>').show();
-            return false;
-        }
-        // check if new password is set
-        if($("#ausp_ssh_root").val() == "" || $("#ausp_ssh_pwd").val() == "") {
-            $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_ssh_credentials_missing'];?>').show();
-            return false;
-        }
-        // show progress
-        $("#dialog_auto_update_server_pwd_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;').attr("class","").show();
-        $("#dialog_auto_update_server_pwd_info").html("").hide();
-        //prepare data
+function start_one_shot_change()
+{
+    // check if new password is set
+    if($("#ausp_pwd").val() == "") {
+        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_new_pwd_missing'];?>').show();
+        return false;
+    }
+    // check if new password is set
+    if($("#ausp_ssh_root").val() == "" || $("#ausp_ssh_pwd").val() == "") {
+        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_ssh_credentials_missing'];?>').show();
+        return false;
+    }
+    // show progress
+    $("#dialog_auto_update_server_pwd_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;').attr("class","").show();
+    $("#dialog_auto_update_server_pwd_info").html("").hide();
+    //prepare data
         var data = '{"currentId":"'+$('#selected_items').val() + '", '+
-            '"new_pwd":"'+$('#ausp_pwd').val()+'", '+
-            '"ssh_root":"'+$('#ausp_ssh_root').val()+'", '+
-            '"ssh_pwd":"'+$('#ausp_ssh_pwd').val()+'", '+
-            '"user_id":"<?php echo $_SESSION['user_id'];?>"}';
+        '"new_pwd":"'+$('#ausp_pwd').val()+'", '+
+        '"ssh_root":"'+$('#ausp_ssh_root').val()+'", '+
+        '"ssh_pwd":"'+$('#ausp_ssh_pwd').val()+'", '+
+        '"user_id":"<?php echo $_SESSION['user_id'];?>"}';
 
-        $.post(
-            "sources/utils.queries.php",
-            {
-                type        : "server_auto_update_password",
-                data        : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                key         : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data) {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-                //check if format error
-                if (data.error != "") {
-                    $("#dialog_auto_update_server_pwd_info").html("Error: "+data.error).show();
-                    $("#dialog_auto_update_server_pwd_status").html("<?php echo $LANG['auto_update_server_password_info'];?>");
-                } else {
-                    // tbc
-                    $("#dialog_auto_update_server_pwd_status").html("done "+data.text);
-                    // change password in item form
-                    $('#edit_pw1').val($('#ausp_pwd').val());
-                    $("#hid_pw").val($('#ausp_pwd').val());
-                    // change quick password
-                    new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
-                        text: function() {
-                            return unsanitizeString($('#edit_pw1').val());
-                        }
-                    });
+    $.post(
+        "sources/utils.queries.php",
+        {
+            type        : "server_auto_update_password",
+            data        : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+            key         : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            //check if format error
+            if (data.error != "") {
+                $("#dialog_auto_update_server_pwd_info").html("Error: "+data.error).show();
+                $("#dialog_auto_update_server_pwd_status").html("<?php echo $LANG['auto_update_server_password_info'];?>");
+            } else {
+                // tbc
+                $("#dialog_auto_update_server_pwd_status").html("done "+data.text);
+                // change password in item form
+                $('#edit_pw1').val($('#ausp_pwd').val());
+                $("#hid_pw").val($('#ausp_pwd').val());
+                // change quick password
+                new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+                    text: function() {
+                        return unsanitizeString($('#edit_pw1').val());
+                    }
+                });
 
-                    $("#button_quick_pw_copy").show();
-                }
+                $("#button_quick_pw_copy").show();
             }
-        );
-    }
+        }
+    );
+}
 
-    function generate_pw()
-    {
-        $("#ausp_pwd_loader").show();
-        $.post(
-            "sources/main.queries.php",
-            {
-                type       : "generate_a_password",
-                size       : 12,
-                secure     : false,
-                symbols    : true,
-                capitalize : true,
-                numerals   : true
-            },
-            function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-                if (data.error == "true") {
-                    $("#dialog_auto_update_server_pwd_info").html(data.error_msg).show();
-                } else {
-                    $("#ausp_pwd").val(data.key);
-                }
-                $("#ausp_pwd_loader").hide();
+function generate_pw()
+{
+    $("#ausp_pwd_loader").show();
+    $.post(
+        "sources/main.queries.php",
+        {
+            type       : "generate_a_password",
+            size       : 12,
+            secure     : false,
+            symbols    : true,
+            capitalize : true,
+            numerals   : true
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            if (data.error == "true") {
+                $("#dialog_auto_update_server_pwd_info").html(data.error_msg).show();
+            } else {
+                $("#ausp_pwd").val(data.key);
             }
-        );
-    }
+            $("#ausp_pwd_loader").hide();
+        }
+    );
+}
 
-    $(function() {
-        $("#tabs").tabs();
+$(function() {
+    $("#tabs").tabs();
 
-        $(".button")
-            .button()
-            .click(function(event) {
-                event.preventDefault();
-            });
-
-        // generate new pw at opening
-        generate_pw();
-
-        // button to generate
-        $("#ausp_but_generate").click(function() {
-            generate_pw();
-        });
+    $(".button")
+    .button()
+    .click(function(event) {
+        event.preventDefault();
     });
+
+    // generate new pw at opening
+    generate_pw();
+
+    // button to generate
+    $("#ausp_but_generate").click(function() {
+        generate_pw();
+    });
+});
 
 
 

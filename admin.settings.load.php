@@ -716,7 +716,7 @@ $(function() {
             {title : "SQL files", extensions : "sql"}
         ],
         init: {
-            Init: function(up, files) {
+            FilesAdded: function(up, files) {
                 // generate and save token
                 $.post(
                     "sources/main.queries.php",
@@ -731,12 +731,10 @@ $(function() {
                     },
                     function(data) {
                         $("#user_token").val(data[0].token);
+                        up.start();
                     },
                     "json"
                 );
-            },
-            FilesAdded: function(up, files) {
-                up.start();
             },
             BeforeUpload: function (up, file) {
                 $("#import_status_ajax_loader").show();

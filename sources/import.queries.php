@@ -310,7 +310,9 @@ switch ($_POST['type']) {
                     'login' => $item[1],
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
-					'timestamp' => time()
+                    'timestamp' => time(),
+                    'tags' => '',
+                    'restricted_to' => ''
                )
             );
         }

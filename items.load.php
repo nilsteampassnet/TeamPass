@@ -264,6 +264,11 @@ function ListerItems(groupe_id, restricted, start)
                 // store type of access on folder
                 $("#access_level").val(data.access_level);
 
+                // warn about a required change of personal SK
+                if ($("#personal_upgrade_needed").val() == "1" && data.recherche_group_pf === 1) {
+                    $("#dialog_upgrade_personal_passwords").dialog("open");
+                }
+
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
                     $("#item_details_no_personal_saltkey").show();
@@ -2803,7 +2808,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 500,
+        width: 1000,
         height: 400,
         title: "<?php echo $LANG['history'];?>",
         buttons: {
@@ -2813,6 +2818,34 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+
+            // load content
+            var data = '{"id":"'+$("#id_item").val()+'"}';
+            $.post(
+                "sources/items.queries.php",
+                {
+                    type    : "load_item_history",
+                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                    key     : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    //decrypt data
+                    try {
+                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                    } catch (e) {
+                        // error
+                        $("#div_loading").hide();
+                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data);
+                        $("#div_dialog_message").show();
+                        return;
+                    }
+
+                    if (data.error === "") {
+                        $("#item_history_log").html(data.html);
+                    }
+                },
+                "json"
+           );
         }
     });
     //<=
@@ -3023,7 +3056,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         init: {
             BeforeUpload: function (up, file) {
                 $("#item_edit_upload_wait").show();
-                
+
                 up.setOption('multipart_params', {
                     PHPSESSID : "<?php echo $_SESSION['user_id'];?>",
                     itemId : $('#selected_items').val(),
@@ -3076,7 +3109,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             "json"
         );
-        
+
         e.preventDefault();
     });
     edit_uploader_attachments.init();
@@ -3374,11 +3407,6 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             $("#div_ssh").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b><?php echo $LANG['please_wait'];?></b>");
         }
     });
-
-    // open personal pwds re-encryption dialogbox
-    if ($("#personal_upgrade_needed").val() == "1") {
-        $("#dialog_upgrade_personal_passwords").dialog("open");
-    }
 
     //Simulate a CRON activity
     $.post(
