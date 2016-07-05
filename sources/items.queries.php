@@ -1371,11 +1371,11 @@ if (isset($_POST['type'])) {
                 }
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
-                    if (empty($history)) {
+                    /*if (empty($history)) {
                         $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
                     } else {
                         $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-                    }
+                    }*/
                     if (trim($reason[0]) == "at_pw") {
                         if (empty($historyOfPws)) {
                             $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
@@ -3107,9 +3107,10 @@ if (isset($_POST['type'])) {
             $id = noHTML(htmlspecialchars_decode($dataReceived['id']));
 
             // get item history
-            $history = "";
+            $history = '<table border=0>';
             $rows = DB::query(
-            "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
+                "SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
+                u.login as login, u.avatar_thumb as avatar_thumb
                 FROM ".prefix_table("log_items")." as l
                 LEFT JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                 WHERE id_item=%i AND action <> %s
@@ -3138,15 +3139,17 @@ if (isset($_POST['type'])) {
                 }
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
-                    if (empty($history)) {
-                        $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-                    } else {
-                        $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-                    }
+                    $history .= '<tr style="padding:1px;border-bottom-style:dotted;">'.
+                        '<td rowspan="2" style="width:40px;"><img src="'.$_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'].'" title="'.$record['login'].'" class="tip"></td>'.
+                        '<td colspan="2" style="font-size:11px;"><i>by '.$record['login'].' the '.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
+                        '<tr><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
+                        '<td>'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '</tr>';
                 }
             }
+            $history .= "</table>";
 
-            $data = '[{"error" : "" , "html" : "'.$history.'"}]';
+            $data = '[{"error" : "" , "new_html" : "'.addslashes($history).'"}]';
             // send data
             echo prepareExchangedData($data, "encode");
 

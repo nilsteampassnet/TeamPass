@@ -2808,7 +2808,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 1000,
+        width: 650,
         height: 400,
         title: "<?php echo $LANG['history'];?>",
         buttons: {
@@ -2840,8 +2840,8 @@ $(function() {
                         return;
                     }
 
-                    if (data.error === "") {
-                        $("#item_history_log").html(data.html);
+                    if (data[0].error === "") {
+                        $("#item_history_log").html(data[0].new_html);
                     }
                 },
                 "json"
@@ -3637,31 +3637,6 @@ function items_list_filter(id)
     }
 }
 
-function displayHistory()
-{
-    //Send query
-    $.post(
-        "sources/items.queries.php",
-        {
-            type    : "displayHistory",
-            id    : $("#id_item").val(),
-            salt_key_required   : $('#recherche_group_pf').val(),
-            salt_key_set        : $('#personal_sk_set').val(),
-            key        : "<?php echo $_SESSION['key'];?>"
-        },
-        function(data) {
-            //check if format error
-            if (data[0].error == "") {
-                $("#item_history_log_error").html("").hide();
-                $("#add_history_entry_label").val("");
-                $("#item_history_log").html(htmlspecialchars_decode(data.historique));
-            } else {
-                $("#item_history_log_error").html(data[0].error).show();
-            }
-            $("#div_item_history").dialog("open");
-        }
-   );
-}
 
 function manage_history_entry(type, id)
 {
@@ -3741,37 +3716,6 @@ function prepareOneTimeView()
                 });
 
                 $(".tip").tooltipster({multiple: true});
-            } else {
-                $("#item_history_log_error").html(data.error).show();
-            }
-            $("#div_loading").hide();
-        },
-        "json"
-   );
-}
-
-/*
-* Launch show History of Item
-*/
-function loadItemHistory()
-{
-    if ($("#selected_items").val() == "") return false;
-    $("#div_loading").show();
-
-    //Send query
-    $.post(
-        "sources/items.queries.php",
-        {
-            type    : "load_item_history",
-            id      : $("#id_item").val(),
-            key     : "<?php echo $_SESSION['key'];?>"
-        },
-        function(data) {
-            //check if format error
-            if (data.error == "") {
-                $("#div_dialog_message").dialog({height:600,minWidth:550});
-                $("#div_dialog_message").dialog('open');
-                $("#div_dialog_message_text").html(data.history);
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }
