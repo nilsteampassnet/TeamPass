@@ -53,6 +53,7 @@ Last changes
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)
+ FIX: Admin password cannot be changed
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
