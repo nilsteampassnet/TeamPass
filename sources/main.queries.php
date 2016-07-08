@@ -87,13 +87,28 @@ switch ($_POST['type']) {
 
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change" && $_SESSION['user_admin'] != 1) {
-
             // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
+
+            // check if badly written
+            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
+            if ($data_roles['fonction_id'][0] === "") {
+                $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
+                $data_roles['fonction_id'] = implode(',', $data_roles['fonction_id']);
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'fonction_id' => $data_roles['fonction_id']
+                       ),
+                    "id = %i",
+                    $_SESSION['user_id']
+                );
+            }
+
             $data = DB::query(
                 "SELECT complexity
                 FROM ".prefix_table("roles_title")."
-                WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
+                WHERE id IN (".$data_roles['fonction_id'].")
                 ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
@@ -161,7 +176,7 @@ switch ($_POST['type']) {
                 break;
             }
             // ADMIN has decided to change the USER's PW
-        } elseif (isset($_POST['change_pw_origine']) && ($_POST['change_pw_origine'] == "admin_change" && $_SESSION['user_admin'] == 1)) {
+        } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] == "admin_change" || $_POST['change_pw_origine'] == "user_change") && $_SESSION['user_admin'] == 1)) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
@@ -178,6 +193,11 @@ switch ($_POST['type']) {
                 echo '[ { "error" : "key_not_conform '.$_POST['key'].'" } ]';
                 break;
             }*/
+            // adapt
+            if ($_POST['change_pw_origine'] == "user_change") {
+                $dataReceived['user_id'] = $_SESSION['user_id'];
+            }
+
             // update DB
             DB::update(
                 prefix_table("users"),
@@ -193,18 +213,20 @@ switch ($_POST['type']) {
             logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             //Send email to user
-            $row = DB::queryFirstRow(
-                "SELECT email FROM ".prefix_table("users")."
-                WHERE id = %i",
-                $dataReceived['user_id']
-            );
-            if (!empty($row['email']) && isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1) {
-                sendEmail(
-                    $LANG['forgot_pw_email_subject'],
-                    $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
-                    $row[0],
-                    $LANG['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
+            if ($_POST['change_pw_origine'] != "admin_change") {
+                $row = DB::queryFirstRow(
+                    "SELECT email FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $dataReceived['user_id']
                 );
+                if (!empty($row['email']) && isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1) {
+                    sendEmail(
+                        $LANG['forgot_pw_email_subject'],
+                        $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
+                        $row[0],
+                        $LANG['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
+                    );
+                }
             }
 
             echo '[ { "error" : "none" } ]';
@@ -884,4 +906,35 @@ switch ($_POST['type']) {
         $key = $pwdlib->getRandomToken($_POST['size']);
         echo '[{"key" : "'.$key.'"}]';
         break;
+
+    /**
+     * Generates a TOKEN with CRYPT
+     */
+    case "save_token":
+        $token = GenerateCryptKey(
+            isset($_POST['size']) ? $_POST['size'] : 20,
+            isset($_POST['secure']) ? $_POST['secure'] : false,
+            isset($_POST['capital']) ? $_POST['capital'] : false,
+            isset($_POST['numeric']) ? $_POST['numeric'] : false,
+            isset($_POST['ambiguous']) ? $_POST['ambiguous'] : false,
+            isset($_POST['symbols']) ? $_POST['symbols'] : false
+            );
+
+        // store in DB
+        DB::insert(
+            prefix_table("tokens"),
+            array(
+                'user_id' => $_SESSION['user_id'],
+                'token' => $token,
+                'reason' => $_POST['reason'],
+                'creation_timestamp' => time(),
+                'end_timestamp' => time()+$_POST['duration']    // in secs
+            )
+        );
+
+        echo '[{"token" : "'.$token.'"}]';
+        break;
+
+
+
 }

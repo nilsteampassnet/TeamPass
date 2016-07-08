@@ -45,6 +45,7 @@ $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("
 @$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
 echo '
+<input type="hidden" id="profile_user_token" value="" />
 <table>
     <tr>
         <td rowspan="4" style="width:94px">
@@ -295,7 +296,24 @@ $(function() {
         silverlight_xap_url : "includes/libraries/Plupload/plupload.silverlight.xap",
         init: {
             FilesAdded: function(up, files) {
-                up.start();
+                // generate and save token
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type : "save_token",
+                        size : 25,
+                        capital: true,
+                        numeric: true,
+                        ambiguous: true,
+                        reason: "avatar_profile_upload",
+                        duration: 10
+                    },
+                    function(data) {
+                        $("#profile_user_token").val(data[0].token);
+                        up.start();
+                    },
+                    "json"
+                );
             },
             BeforeUpload: function (up, file) {
                 var tmp = Math.random().toString(36).substring(7);
@@ -303,8 +321,9 @@ $(function() {
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
                     "fileName":file.name,
+                    "newFileName":"user<?php echo $_SESSION['user_id'];?>"+tmp,
                     "type_upload":"upload_profile_photo",
-                    "newFileName":"user<?php echo $_SESSION['user_id'];?>"+tmp
+                    "user_token": $("#profile_user_token").val()
                 };
             }
         }
@@ -338,11 +357,6 @@ $(function() {
         $("#filelist_photo").html('').hide();
     });
 
-    // Load CSV click
-    $("#uploadfiles_photo").click(function(e) {
-        uploader_photo.start();
-        e.preventDefault();
-    });
     uploader_photo.init();
 
    $("#but_pickfiles_photo").click(function() {

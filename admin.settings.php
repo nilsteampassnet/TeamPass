@@ -30,6 +30,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 echo '
+<input type="hidden" id="user_token" value="" />
 <div style="margin-top:10px;">
     <form name="form_settings" method="post" action="">';
 // Main div for TABS
@@ -268,7 +269,7 @@ echo '
                         <label for="timezone">'.$LANG['timezone_selection'].'</label>
                     </td>
                     <td>
-                        <select id="timezone" name="timezone" class="text ui-widget-content">
+                        <select id="timezone" name="timezone" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="">-- '.$LANG['select'].' --</option>';
 foreach ($zones as $zone) {
     echo '
@@ -286,7 +287,7 @@ echo '
                         <label for="date_format">'.$LANG['date_format'].'</label>
                     </td>
                     <td>
-                        <select id="date_format" name="date_format" class="text ui-widget-content">
+                        <select id="date_format" name="date_format" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="d/m/Y"', !isset($_SESSION['settings']['date_format']) || $_SESSION['settings']['date_format'] == "d/m/Y" ? ' selected="selected"':"", '>d/m/Y</option>
                             <option value="m/d/Y"', $_SESSION['settings']['date_format'] == "m/d/Y" ? ' selected="selected"':"", '>m/d/Y</option>
                             <option value="d-M-Y"', $_SESSION['settings']['date_format'] == "d-M-Y" ? ' selected="selected"':"", '>d-M-Y</option>
@@ -306,7 +307,7 @@ echo '
                         <label for="time_format">'.$LANG['time_format'].'</label>
                     </td>
                     <td>
-                        <select id="time_format" name="time_format" class="text ui-widget-content">
+                        <select id="time_format" name="time_format" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="H:i:s"', !isset($_SESSION['settings']['time_format']) || $_SESSION['settings']['time_format'] == "H:i:s" ? ' selected="selected"':"", '>H:i:s</option>
                             <option value="h:m:s a"', $_SESSION['settings']['time_format'] == "h:i:s a" ? ' selected="selected"':"", '>h:i:s a</option>
                             <option value="g:i:s a"', $_SESSION['settings']['time_format'] == "g:i:s a" ? ' selected="selected"':"", '>g:i:s a</option>
@@ -951,7 +952,7 @@ echo '
                         <label for="offline_key_level">'.$LANG['offline_mode_key_level'].'</label>
                     </td>
                     <td>
-                        <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content">';
+                        <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'"', isset($_SESSION['settings']['offline_key_level']) && $_SESSION['settings']['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
 }
@@ -976,7 +977,7 @@ echo '
                             '.$LANG['syslog_host'].'
                         </td>
                         <td>
-                            <input id="syslog_server" name="syslog_host" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_host']) ? 'localhost' : $_SESSION['settings']['syslog_host'], '" />
+                            <input id="syslog_server" name="syslog_host" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_host']) ? 'localhost' : $_SESSION['settings']['syslog_host'], '" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SYSLOG port
@@ -987,7 +988,7 @@ echo '
                             '.$LANG['syslog_port'].'
                         </td>
                         <td>
-                            <input id="syslog_port" name="syslog_port" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_port']) ? '514' : $_SESSION['settings']['syslog_port'], '" />
+                            <input id="syslog_port" name="syslog_port" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_port']) ? '514' : $_SESSION['settings']['syslog_port'], '" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 
@@ -1041,7 +1042,7 @@ echo '
                     <tr>
                         <td><label for="ldap_type">'.$LANG['settings_ldap_type'].'</label></td>
                         <td>
-                            <select id="ldap_type" name="ldap_type" class="text ui-widget-content">
+                            <select id="ldap_type" name="ldap_type" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                                 <option value="windows">Windows / Active Directory</option>
                                 <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
                                 <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
@@ -1113,7 +1114,7 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 echo '
                 <tr>
                     <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_ldap_search_base_tip'].'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" /></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
 }
 
@@ -1519,7 +1520,7 @@ echo '
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_width" name="upload_imageresize_width" value="',
                         isset($_SESSION['settings']['upload_imageresize_width']) ? $_SESSION['settings']['upload_imageresize_width'] :
-                        '800', '" class="text ui-widget-content upl_img_opt" />
+                        '800', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>
                 <tr><td>
@@ -1529,7 +1530,7 @@ echo '
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_height" name="upload_imageresize_height" value="',
                         isset($_SESSION['settings']['upload_imageresize_height']) ? $_SESSION['settings']['upload_imageresize_height'] :
-                        '600', '" class="text ui-widget-content upl_img_opt" />
+                        '600', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
                     <td>
                 </tr>
                 <tr><td>

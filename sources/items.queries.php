@@ -779,7 +779,11 @@ if (isset($_POST['type'])) {
                             if (!empty($emailAddress)) {
                                 @sendEmail(
                                     $LANG['email_subject_item_updated'],
-                                    str_replace(array("#item_label#", "#item_category#", "#item_id#"), array($label, $dataReceived['categorie'], $dataReceived['id']), $LANG['email_body_item_updated']),
+                                    str_replace(
+                                        array("#item_label#", "#item_category#", "#item_id#", "#url#"),
+                                        array($label, $dataReceived['categorie'], $dataReceived['id'], $_SESSION['settings']['cpassman_url']),
+                                        $LANG['email_body_item_updated']
+                                    ),
                                     $emailAddress,
                                     str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
                                 );
@@ -1367,11 +1371,11 @@ if (isset($_POST['type'])) {
                 }
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
-                    if (empty($history)) {
+                    /*if (empty($history)) {
                         $history = date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
                     } else {
                         $history .= "<br />".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']]." - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'');
-                    }
+                    }*/
                     if (trim($reason[0]) == "at_pw") {
                         if (empty($historyOfPws)) {
                             $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
@@ -1749,7 +1753,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
-                        GROUP BY i.id, l.date, l.id_user
+                        GROUP BY i.id, l.date, l.id_user, l.action
                         ORDER BY i.label ASC, l.date DESC".$query_limit,//
                         $where
                     );
@@ -1768,7 +1772,7 @@ if (isset($_POST['type'])) {
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
-                        GROUP BY i.id, l.date, l.id_user
+                        GROUP BY i.id, l.date, l.id_user, l.action
                         ORDER BY i.label ASC, l.date DESC",
                         $where
                     );
@@ -2520,13 +2524,18 @@ if (isset($_POST['type'])) {
                         $dataAuthor['email']
                     );
                 } elseif ($_POST['cat'] == "share_this_item") {
-                    $dataItem = DB::queryfirstrow("SELECT label,id_tree FROM ".prefix_table("items")." WHERE id= ".$_POST['id']);
+                    $dataItem = DB::queryfirstrow(
+                        "SELECT label,id_tree
+                        FROM ".prefix_table("items")."
+                        WHERE id= %i",
+                        (mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)))
+                    );
                     // send email
                     $ret = @sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$_POST['id'], addslashes($_SESSION['login']), addslashes($dataItem['label'])),
+                            array($_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_STRING)), addslashes($_SESSION['login']), addslashes($dataItem['label'])),
                             $LANG['email_share_item_mail']
                         ),
                         $_POST['receipt']
@@ -3079,6 +3088,74 @@ if (isset($_POST['type'])) {
             echo prepareExchangedData($data, "encode");
 
             break;
+
+        /*
+        * CASE
+        * Load item history
+        */
+        case "load_item_history":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+            // Prepare variables
+            $id = noHTML(htmlspecialchars_decode($dataReceived['id']));
+
+            // get item history
+            $history = '<table style="background-color:#D4D5D5; margin:0px; width:100%;">';
+            $rows = DB::query(
+                "SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
+                u.login as login, u.avatar_thumb as avatar_thumb
+                FROM ".prefix_table("log_items")." as l
+                LEFT JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
+                WHERE id_item=%i AND action <> %s
+                ORDER BY date ASC",
+                $id,
+                "at_shown"
+            );
+            foreach ($rows as $record) {
+                $reason = explode(':', $record['raison']);
+                if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
+                    // check if item is PF
+                    if ($dataItem['perso'] != 1) {
+                        $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                    } else {
+                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                    }
+                    $reason[1] = @$reason[1]['string'];
+                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+                    if (!isUTF8($reason[1]) || is_array($reason[1])) {
+                        $reason[1] = "";
+                    }
+                }
+                // imported via API
+                if ($record['login'] == "") {
+                    $record['login'] = $LANG['imported_via_api'];
+                }
+
+                if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
+                    $avatar = isset($record['avatar_thumb']) && !empty($record['avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+                    $history .= '<tr style="padding:1px;">'.
+                        '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
+                        '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
+                        '<tr style="border-bottom:1px solid;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
+                        '<td>'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '</tr>';
+                }
+            }
+            $history .= "</table>";
+
+            $data = '[{"error" : "" , "new_html" : "'.addslashes($history).'"}]';
+            // send data
+            echo prepareExchangedData($data, "encode");
+
+            break;
+
     }
 }
 // Build the QUERY in case of GET

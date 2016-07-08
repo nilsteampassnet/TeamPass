@@ -615,7 +615,7 @@ class MeekroDB {
 			"INSERT INTO ".$GLOBALS['pre']."log_system SET
 			date=".time().",
 			qui=".$_SESSION['user_id'].",
-			label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".$_SERVER['REQUEST_URI']."',
+			label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".mysqli_real_escape_string($link, filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',
 			type='error'",
 			MYSQLI_USE_RESULT
 		);
