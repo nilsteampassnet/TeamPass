@@ -123,7 +123,8 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 }
 
 echo '
-<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />';
+<input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />
+<input type="hidden" id="item_user_token" value="" />';
 
 echo '
 <div id="div_items">';
@@ -517,6 +518,7 @@ echo '
                 <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
+                <input type="hidden" id="files_number" value="0" />
             </div>
         </div>';
 // Tabs N°4
@@ -709,6 +711,7 @@ echo '
                 <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_edit_attach_uploadfiles" href="#sd" class="button">'.$LANG['start_upload'].'</a>
+                <input type="hidden" id="edit_files_number" value="0" />
             </div>
         </div>';
 // Tabs EDIT N°4 -> Categories

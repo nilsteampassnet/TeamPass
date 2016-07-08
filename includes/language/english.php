@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -178,7 +178,7 @@ $LANG = array (
     'admin_email_result_ok' => 'Email sent to #email# ... check your inbox.',
     'admin_email_result_nok' => 'Email not sent ... check your configuration. See associated error: ',
     'email_subject_item_updated' => 'Password has been updated',
-    'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'".@$_SESSION[\'settings\'][\'cpassman_url\']."/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
+    'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
     'email_bodyalt_item_updated' => 'Password for #item_label# has been updated.',
     'admin_email_send_backlog' => 'Send emails backlog (actually #nb_emails# emails)',
     'admin_email_send_backlog_tip' => 'This script permits to force the emails in the database to be sent.<br />This could take some time depending of the number of emails to send.',

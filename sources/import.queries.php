@@ -256,7 +256,7 @@ switch ($_POST['type']) {
             DB::insert(
                 prefix_table("items"),
                 array(
-                    'label' => $item[0],
+                    'label' => substr($item[0], 500),
                     'description' => $item[4],
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
@@ -303,14 +303,16 @@ switch ($_POST['type']) {
                 prefix_table("cache"),
                 array(
                     'id' => $newId,
-                    'label' => $item[0],
+                    'label' => substr($item[0], 500),
                     'description' => $item[4],
                     'id_tree' => $_POST['folder'],
                     'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => $item[1],
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
-					'timestamp' => time()
+                    'timestamp' => time(),
+                    'tags' => '',
+                    'restricted_to' => ''
                )
             );
         }
@@ -845,7 +847,7 @@ switch ($_POST['type']) {
                         DB::insert(
                             prefix_table("items"),
                             array(
-                                'label' => stripslashes($item[KP_TITLE]),
+                                'label' => substr(stripslashes($item[KP_TITLE]), 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'pw' => $encrypt['string'],
                                 'pw_iv' => $encrypt['iv'],
@@ -887,7 +889,7 @@ switch ($_POST['type']) {
                             prefix_table("cache"),
                             array(
                                 'id' => $newId,
-                                'label' => stripslashes($item[KP_TITLE]),
+                                'label' => substr(stripslashes($item[KP_TITLE]), 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,

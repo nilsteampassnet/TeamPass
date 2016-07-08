@@ -717,14 +717,32 @@ $(function() {
         ],
         init: {
             FilesAdded: function(up, files) {
-                up.start();
+                // generate and save token
+                $.post(
+                    "sources/main.queries.php",
+                    {
+                        type : "save_token",
+                        size : 25,
+                        capital: true,
+                        numeric: true,
+                        ambiguous: true,
+                        reason: "restore_db",
+                        duration: 10
+                    },
+                    function(data) {
+                        $("#user_token").val(data[0].token);
+                        up.start();
+                    },
+                    "json"
+                );
             },
             BeforeUpload: function (up, file) {
                 $("#import_status_ajax_loader").show();
                 up.settings.multipart_params = {
                     "PHPSESSID":"'.$_SESSION['user_id'].'",
                     "File":file.name,
-                    "type_upload":"restore_db"
+                    "type_upload":"restore_db",
+                    "user_token": $("#user_token").val()
                 };
             },
             UploadComplete: function(up, files) {

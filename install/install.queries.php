@@ -3,7 +3,7 @@
  * @file          install.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.26
- * @copyright     (c) 2009-2011 Nils Laumaillé
+ * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -231,7 +231,7 @@ if (isset($_POST['type'])) {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
-                            `label` varchar(250) NOT NULL,
+                            `label` varchar(500) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
                             `pw_iv` text NOT NULL,
@@ -390,7 +390,9 @@ global \$SETTINGS;
                             array('admin','default_session_expiration_time','60'),
                             array('admin','duo','0'),
                             array('admin','enable_server_password_change','0'),
-                            array('admin','ldap_object_class','0')
+                            array('admin','ldap_object_class','0'),
+                            array('admin','bck_script_path', $var['abspath']."/backups"),
+                            array('admin','bck_script_filename', 'bck_cpassman')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -528,7 +530,7 @@ global \$SETTINGS;
                             `name` varchar(100) NOT NULL,
                             `size` int(10) NOT NULL,
                             `extension` varchar(10) NOT NULL,
-                            `type` varchar(50) NOT NULL,
+                            `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
@@ -746,7 +748,18 @@ global \$SETTINGS;
                             `path` varchar(255) NOT NULL
                             ) CHARSET=utf8;"
                         );
-                    }
+                    } else if ($task == "tokens") {
+                        $mysqli_result = mysqli_query($dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."tokens` (
+                            `id` int(12) NOT NULL AUTO_INCREMENT,
+                            `user_id` int(10) NOT NULL,
+                            `token` varchar(255) NOT NULL,
+                            `reason` varchar(255) NOT NULL,
+                            `creation_timestamp` varchar(50) NOT NULL,
+                            `end_timestamp` varchar(50) NOT NULL,
+                            PRIMARY KEY (`id`)
+                            ) CHARSET=utf8;"
+                        );
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
                         require_once '../sources/main.functions.php';

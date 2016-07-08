@@ -330,7 +330,7 @@ switch ($_POST['type']) {
         stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
         include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
         $parse = parse_url($dataItem['url']);
-        if (!isset($parse['host']) || empty(parse['host']) ||!isset($parse['host']) || empty(parse['host'])) {
+        if (!isset($parse['host']) || empty($parse['host']) ||!isset($parse['host']) || empty($parse['host'])) {
             // error in parsing the url
             echo prepareExchangedData(
                 array(

@@ -18,15 +18,16 @@ session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']) || !isset($_GET['id']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key']) || !isset($_GET['id'])
+     || empty($_GET['key']) || $_GET['key'] != $_SESSION['key']
+) {
     die('Hacking attempt...');
 }
-
+$_SESSION['settings']['enable_server_password_change']  = 1;
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home") || !isset($_SESSION['settings']['enable_server_password_change']) || $_SESSION['settings']['enable_server_password_change'] != 1) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
@@ -50,6 +51,19 @@ DB::$encoding = $encoding;
 DB::$error_handler = 'db_error_handler';
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
+
+// check user's token
+$dataUser = DB::queryfirstrow(
+    "SELECT key_tempo
+    FROM ".prefix_table("users")."
+    WHERE id=%i",
+    $_SESSION['user_id']
+);
+if ($dataUser['key_tempo'] !== $_GET['key']) {
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    exit();
+}
 
 // get data about item
 $dataItem = DB::queryfirstrow(
