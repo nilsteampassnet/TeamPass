@@ -21,6 +21,7 @@ Last changes
  #1300 After 3 bad login attempts, user needs to wait 10s before new try
  #1299 Export to pdf or csv shows htmlencoded
  #1298 Backup-filename on 2.1.26 contains /
+ #1292 SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0
  #1276 MySQL 5.7 query error
@@ -48,13 +49,12 @@ Last changes
  #1178 New user right added for managing all users (super Manager)
  #1174 Adding LDAP groups support to 'posix-search' LDAP auth
  #1172 Complete number of Items displayed in Tree
- #1158 Can't Change admin Password
+ #1158 Admin password cannot be changed
  #910  Backslashes in accounts are not copied to clipboard
  #268  Password recovery "Forgot your password?" don't do anything
  NEW: Server user password change through SSH connection
  NEW: Upgrade database handler improved for better upgrades management
  NEW: New user right added for managing all users (super Manager)
- FIX: Admin password cannot be changed
  FIX: If expiration engaged and password is changed, the warning is still present.
  FIX: New suggestion folder could remain empty in some specific cases.
  FIX: By creating a role, this new one is directly visible by creator.
