@@ -269,7 +269,7 @@ if (isset($_SESSION['login'])) {
     // show avatar
     echo '
                 <div style="float:right; margin-right:10px;">
-                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:25px; cursor:pointer;" onclick="loadProfileDialog()">
+                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()">
                 </div>';
 
     echo '

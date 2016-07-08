@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set
  #1346 On upgrade settings.php not found
