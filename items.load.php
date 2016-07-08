@@ -2177,7 +2177,12 @@ function refreshTree(node_to_select, do_refresh)
     if (node_to_select != "") {
         $("#hid_cat").val(node_to_select);
         $("#jstree").jstree("deselect_all");
-        $("#jstree").jstree("select_node", "#li_"+node_to_select);
+
+        $('#jstree')
+        .one("refresh.jstree", function (e, data) {
+            data.instance.select_node("#li_"+node_to_select);
+        }).jstree(true).refresh();
+
     }
     refreshVisibleFolders();
 }
@@ -3143,6 +3148,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     //Load item if needed and display items list
     if ($("#open_id").val() != "") {
         AfficherDetailsItem($("#open_id").val());
+        //refreshTree($("#hid_cat").val(), "0");
         $("#open_item_by_get").val("");
     }
 
