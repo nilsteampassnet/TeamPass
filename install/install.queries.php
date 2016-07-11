@@ -760,6 +760,7 @@ global \$SETTINGS;
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
+                    }
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
                         require_once '../sources/main.functions.php';
