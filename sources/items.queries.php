@@ -2706,7 +2706,7 @@ if (isset($_POST['type'])) {
             }
 
             // generate session
-            $otv_code = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+            $otv_code = GenerateCryptKey(32, false, true, true, true, false);
 
             DB::insert(
                 prefix_table("otv"),
