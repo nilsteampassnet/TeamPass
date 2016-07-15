@@ -48,7 +48,7 @@ if (
         intval($_GET['code'])
     );
     if (
-        $data['timestamp'] == $_GET['stamp']
+        $data['timestamp'] == intval($_GET['stamp'])
     ) {
         // otv is too old
         if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
@@ -65,7 +65,7 @@ if (
 
             // get data
             $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
-
+            echo $dataItem['pw']. " ;; ".SALT." ;; ". $dataItem['pw_iv']. " ;; ".$pw['string'] ;
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];
@@ -77,11 +77,11 @@ if (
                 "<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
                 "<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
                 "<div style='margin-top:10px;'><table>".
-                "<tr><td>Label:</td><td>" . $label . "</td</tr>".
-                "<tr><td>Password:</td><td>" . $pw['string'] . "</td</tr>".
-                "<tr><td>Description:</td><td>" . $description . "</td</tr>".
-                "<tr><td>login:</td><td>" . $login . "</td</tr>".
-                "<tr><td>URL:</td><td>" . $url ."</td</tr>".
+                "<tr><td>Label:</td><td>" . $label . "</td></tr>".
+                "<tr><td>Password:</td><td>" . $pw['string'] . "</td></tr>".
+                "<tr><td>Description:</td><td>" . $description . "</td></tr>".
+                "<tr><td>login:</td><td>" . $login . "</td></tr>".
+                "<tr><td>URL:</td><td>" . $url ."</td></tr>".
                 "</table></div>".
                 "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
                 "</div>";

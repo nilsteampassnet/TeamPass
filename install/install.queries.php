@@ -539,7 +539,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."cache` (
                             `id` int(12) NOT NULL,
-                            `label` varchar(250) NOT NULL,
+                            `label` varchar(500) NOT NULL,
                             `description` text NOT NULL,
                             `tags` text DEFAULT NULL,
                             `id_tree` int(12) NOT NULL,

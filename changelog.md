@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1380 CSV or KeePass Import - Title as "0"
  #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set
@@ -24,6 +25,7 @@ Last changes
  #1292 SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0
+ #1278 CSRFProtector protection while restoring a backup file
  #1276 MySQL 5.7 query error
  #1269 Typo error
  #1263 Error at line 75 in suggestion page

@@ -256,7 +256,7 @@ switch ($_POST['type']) {
             DB::insert(
                 prefix_table("items"),
                 array(
-                    'label' => substr($item[0], 500),
+                    'label' => substr($item[0], 0, 500),
                     'description' => $item[4],
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
@@ -303,7 +303,7 @@ switch ($_POST['type']) {
                 prefix_table("cache"),
                 array(
                     'id' => $newId,
-                    'label' => substr($item[0], 500),
+                    'label' => substr($item[0], 0, 500),
                     'description' => $item[4],
                     'id_tree' => $_POST['folder'],
                     'perso' => $personalFolder == 0 ? 0 : 1,
@@ -847,7 +847,7 @@ switch ($_POST['type']) {
                         DB::insert(
                             prefix_table("items"),
                             array(
-                                'label' => substr(stripslashes($item[KP_TITLE]), 500),
+                                'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'pw' => $encrypt['string'],
                                 'pw_iv' => $encrypt['iv'],
@@ -889,7 +889,7 @@ switch ($_POST['type']) {
                             prefix_table("cache"),
                             array(
                                 'id' => $newId,
-                                'label' => substr(stripslashes($item[KP_TITLE]), 500),
+                                'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
