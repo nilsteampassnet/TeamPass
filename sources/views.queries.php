@@ -140,7 +140,7 @@ switch ($_POST['type']) {
         //ITEMS deleted
         $texte .= "<tr><td><span class='fa fa-key'></span>&nbsp;<u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
         $rows = DB::query(
-            "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date
+            "SELECT MIN(u.login) as login, MIN(i.id) as id, MIN(i.label) as label, MIN(i.id_tree) as id_tree, MIN(l.date) as date
             FROM ".prefix_table("log_items")." as l
             INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)

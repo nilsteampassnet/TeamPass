@@ -1743,12 +1743,12 @@ if (isset($_POST['type'])) {
                         mysqli_real_escape_string($link, filter_var($items_to_display_once, FILTER_SANITIZE_NUMBER_INT));
 
                     $rows = DB::query(
-                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
-                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
-                        i.pw_iv AS pw_iv,
-                        i.anyone_can_modify AS anyone_can_modify, l.date AS date,
-                        n.renewal_period AS renewal_period,
-                        l.action AS log_action, l.id_user AS log_user
+                        "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
+                        MIN(i.pw_iv) AS pw_iv,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date,
+                        MIN(n.renewal_period) AS renewal_period,
+                        MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
@@ -1762,12 +1762,12 @@ if (isset($_POST['type'])) {
                     $where->add('i.inactif=%i',0);
 
                     $rows = DB::query(
-                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
-                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
-                        i.pw_iv AS pw_iv,
-                        i.anyone_can_modify AS anyone_can_modify,l.date AS date,
-                        n.renewal_period AS renewal_period,
-                        l.action AS log_action, l.id_user AS log_user
+                        "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
+                        MIN(i.pw_iv) AS pw_iv,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date,
+                        MIN(n.renewal_period) AS renewal_period,
+                        MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
