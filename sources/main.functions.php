@@ -626,6 +626,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 array_push($allowedFolders, $id);
             }
         }
+
         // Clean array
         $listAllowedFolders = array_filter(array_unique($allowedFolders));
         // Exclude all PF
@@ -659,7 +660,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
-                    $ids = $tree->getDescendants($pf['id'], true);
+                    $ids = $tree->getDescendants($pf['id'], true, true);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
@@ -704,7 +705,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
         }
-
 
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
