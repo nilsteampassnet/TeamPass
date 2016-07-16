@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
  #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
