@@ -1743,12 +1743,12 @@ if (isset($_POST['type'])) {
                         mysqli_real_escape_string($link, filter_var($items_to_display_once, FILTER_SANITIZE_NUMBER_INT));
 
                     $rows = DB::query(
-                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
-                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
-                        i.pw_iv AS pw_iv,
-                        i.anyone_can_modify AS anyone_can_modify, l.date AS date,
-                        n.renewal_period AS renewal_period,
-                        l.action AS log_action, l.id_user AS log_user
+                        "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
+                        MIN(i.pw_iv) AS pw_iv,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date,
+                        MIN(n.renewal_period) AS renewal_period,
+                        MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
@@ -1762,12 +1762,12 @@ if (isset($_POST['type'])) {
                     $where->add('i.inactif=%i',0);
 
                     $rows = DB::query(
-                        "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso,
-                        i.label AS label, i.description AS description, i.pw AS pw, i.login AS login,
-                        i.pw_iv AS pw_iv,
-                        i.anyone_can_modify AS anyone_can_modify,l.date AS date,
-                        n.renewal_period AS renewal_period,
-                        l.action AS log_action, l.id_user AS log_user
+                        "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
+                        MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
+                        MIN(i.pw_iv) AS pw_iv,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date,
+                        MIN(n.renewal_period) AS renewal_period,
+                        MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
@@ -3106,8 +3106,16 @@ if (isset($_POST['type'])) {
             // Prepare variables
             $id = noHTML(htmlspecialchars_decode($dataReceived['id']));
 
+            // get item info
+            $dataItem = DB::queryFirstRow(
+                "SELECT *
+                FROM ".prefix_table("items")."
+                WHERE id=%i",
+                $id
+            );
+
             // get item history
-            $history = '<table style="background-color:#D4D5D5; margin:0px; width:100%;">';
+            $history = '<table style="margin:0px; width:100%; border-collapse: collapse; background-color:#D4D5D5;" cellspacing="0" cellpadding="1">';
             $rows = DB::query(
                 "SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
                 u.login as login, u.avatar_thumb as avatar_thumb
@@ -3140,17 +3148,22 @@ if (isset($_POST['type'])) {
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
                     $avatar = isset($record['avatar_thumb']) && !empty($record['avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
-                    $history .= '<tr style="padding:1px;">'.
+                    $history .= '<tr style="">'.
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
-                        '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
-                        '<tr style="border-bottom:1px solid;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td>'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
-                        '</tr>';
+                        '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
+                        '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
+                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '</tr>'.
+                        '<tr></tr>';
                 }
             }
             $history .= "</table>";
 
-            $data = '[{"error" : "" , "new_html" : "'.addslashes($history).'"}]';
+            $data = array(
+                'error' => "",
+                'new_html' => $history
+            );
+
             // send data
             echo prepareExchangedData($data, "encode");
 

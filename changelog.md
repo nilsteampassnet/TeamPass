@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1386 JSON parse failed (history item view)
  #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
  #1369 Cannot save some settings
@@ -7,6 +8,7 @@ Last changes
  #1353 Add ldap_start_tls if set
  #1346 On upgrade settings.php not found
  #1345 Admin, password change and logoff not working
+ #1344 Wrap all non-GROUP BY columns in an aggregate function (MIN)
  #1342 Change my password screen loop
  #1340 Upgrade process last step
  #1335 This page doesn't exist
