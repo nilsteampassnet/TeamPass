@@ -2845,11 +2845,10 @@ $(function() {
                         return;
                     }
 
-                    if (data[0].error === "") {
-                        $("#item_history_log").html(data[0].new_html);
+                    if (data.error === "") {
+                        $("#item_history_log").html(data.new_html);
                     }
-                },
-                "json"
+                }
            );
         }
     });
