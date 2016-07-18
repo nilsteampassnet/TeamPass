@@ -277,7 +277,7 @@ switch ($_POST['type']) {
                             if (isset($row[$j])) {
                                 $return.= '"'.$row[$j].'"';
                             } else {
-                                $return.= '""';
+                                $return.= 'NULL';
                             }
                             if ($j<($numFields-1)) {
                                 $return.= ',';

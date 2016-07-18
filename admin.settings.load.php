@@ -252,9 +252,9 @@ function LaunchAdminActions(action,option)
                     $("#restore_bck_encryption_key_dialog").dialog("close");
                     $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />");
                     $("#result_admin_action_db_restore_get_file").hide();
-                    //deconnect user
-                    $("#menu_action").val("deconnexion");
-                    document.main_form.submit();
+                    //deconnect userd
+                    sessionStorage.clear();
+                    window.location.href = "logout.php"
                 } else if (data[0].result == "cache_reload") {
                     $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />");
                 } else if (data[0].result == "db_optimize") {
@@ -267,7 +267,7 @@ function LaunchAdminActions(action,option)
                     //deconnect user
                     $("#menu_action").val("deconnexion");
                     sessionStorage.clear();
-                    document.main_form.submit();
+                    window.location.href = "logout.php"
                 } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
                     if (data[0].error != "") {
                         $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']);?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
@@ -684,8 +684,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width:100,
-        height:140,
+        width:250,
+        height:150,
         title: "<?php echo $LANG['admin_action_db_restore_key'];?>",
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
