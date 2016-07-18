@@ -253,7 +253,7 @@ $htmlHeaders .= '
                         function (){
                             window.location.href="index.php"
                         },
-                        3000
+                        2000
                     );
                 } else if (data[0].value == "false_onetimepw") {
                     $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
