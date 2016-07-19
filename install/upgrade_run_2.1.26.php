@@ -175,6 +175,20 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
     );
 }
 
+// check that SYSLOG doesn't exist
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_enable', '0')"
+    );
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_host', 'localhost')"
+    );
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_port', '514')"
+    );
+}
+
 
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");

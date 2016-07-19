@@ -1,6 +1,7 @@
 Last changes
 2.1.26
  #1386 JSON parse failed (history item view)
+ #1384 SyntaxError: Invalid Character if Syslog enabled
  #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
  #1369 Cannot save some settings

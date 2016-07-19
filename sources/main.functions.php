@@ -1379,12 +1379,18 @@ function handleConfigFile($action, $field = null, $value = null)
     } else if ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
         $x = 0;
+        $bFound = false;
         foreach($data as $line) {
+            if (stristr($line, ");")) break;
             if (stristr($line, "'".$field."' => '")) {
                 $data[$x] = "    '".$field."' => '".$value."',\n";
+                $bFound = true;
                 break;
             }
             $x++;
+        }
+        if ($bFound === false) {
+            $data[($x-1)] = "    '".$field."' => '".$value."',\n";
         }
     } else {
         // ERROR
