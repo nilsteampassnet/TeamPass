@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1389 Requested JSON parse failed when copying item
  #1386 JSON parse failed (history item view)
  #1384 SyntaxError: Invalid Character if Syslog enabled
  #1381 LDAP user have unlimited access on first logon
