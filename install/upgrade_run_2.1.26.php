@@ -195,6 +195,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY comp
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY url VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY restricted_to DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `description` `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw` `pw` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw_iv` `pw_iv` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
 
 // alter table cache
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(500)");

@@ -232,9 +232,9 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `label` varchar(500) NOT NULL,
-                            `description` text NOT NULL,
-                            `pw` text NOT NULL,
-                            `pw_iv` text NOT NULL,
+                            `description` text DEFAULT NULL,
+                            `pw` text DEFAULT NULL,
+                            `pw_iv` text DEFAULT NULL,
                             `pw_len` int(5) NOT NULL DEFAULT '0',
                             `url` varchar(500) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
