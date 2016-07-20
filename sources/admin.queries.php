@@ -665,7 +665,7 @@ switch ($_POST['type']) {
                 DB::update(
                     prefix_table("emails"),
                     array(
-                        'status' => "not sent"
+                        'status' => "not_sent"
                    ),
                     "timestamp = %s",
                     $record['timestamp']
