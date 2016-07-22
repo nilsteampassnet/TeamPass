@@ -20,13 +20,27 @@ $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
+
+// manage settings.php file
 if (!file_exists("../includes/config/settings.php")) {
-    echo 'document.getElementById("res_step1_error").innerHTML = "";';
-    echo 'document.getElementById("res_step1_error").innerHTML = '.
-        '"File settings.php does not exist in folder includes/! '.
-        'If it is an upgrade, it should be there, otherwise select install!";';
-    echo 'document.getElementById("loader").style.display = "none";';
-    exit;
+    if (file_exists("../includes/settings.php")) {
+        // since 2.1.26, this file has changed location
+        if (copy("../includes/settings.php", "../includes/config/settings.php")) {
+            unlink("../includes/settings.php");
+        } else {
+            echo 'document.getElementById("res_step1_error").innerHTML = '.
+                '"Could not copy /includes/settings.php to /includes/config/settings.php! '.
+                'Please do it manually and press button Launch.";';
+            echo 'document.getElementById("loader").style.display = "none";';
+            exit;
+        }
+    } else {
+        echo 'document.getElementById("res_step1_error").innerHTML = '.
+            '"File settings.php does not exist in folder includes/! '.
+            'If it is an upgrade, it should be there, otherwise select install!";';
+        echo 'document.getElementById("loader").style.display = "none";';
+        exit;
+    }
 }
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
