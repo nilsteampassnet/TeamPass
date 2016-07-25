@@ -25,7 +25,7 @@ function PauseInExecution(millis)
 function httpRequest(file,data,type) {
     var xhr_object = null;
     var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
-
+    
     if (document.getElementById("menu_action") != null) {
         document.getElementById("menu_action").value = "action";
     }
@@ -48,7 +48,7 @@ function httpRequest(file,data,type) {
             if(xhr_object.readyState == 4) {
                 eval(xhr_object.responseText);
                 //Check if query is for user identification. If yes, then reload page.
-                if (data != "" && data.indexOf('ype=identify_user') > 0 ) {
+                if (data != "" && data !== undefined && data.indexOf('ype=identify_user') > 0 ) {
                     if (is_chrome == true ) PauseInExecution(100);  //Needed pause for Chrome
                     if (type == "") {
                         if (document.getElementById('erreur_connexion').style.display == "") {
