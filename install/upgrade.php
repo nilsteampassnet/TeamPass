@@ -85,7 +85,7 @@ if (
         <script type="text/javascript">
         $(function(){
             $("#but_next").click(function(event) {
-                console.log("> "+$(this).attr("target_id"));
+                //console.log("> "+$(this).attr("target_id"));
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
@@ -94,15 +94,6 @@ if (
         function aes_encrypt(text)
         {
             return Aes.Ctr.encrypt(text, "cpm", 128);
-        }
-
-        function goto_next_page(page)
-        {
-            if (page == "3" && document.getElementById("cpm_isUTF8").value == 1) {
-                page = "4";
-            }
-            document.getElementById("step").value=page;
-            document.install.submit();
         }
 
         function Check(step)
@@ -309,7 +300,7 @@ echo '
         <div id="content">
             <div id="center" class="ui-corner-bottom">
                 <form name="install" method="post" action="">';
-
+                
 //HIDDEN THINGS
 echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
@@ -523,7 +514,7 @@ if (!isset($_POST['step'])) {
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
+                            <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
 } elseif ($_POST['step'] == 3 && $conversion_utf8 == true) {
@@ -532,7 +523,7 @@ if (!isset($_POST['step'])) {
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                            <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                            <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
 } elseif ($_POST['step'] == 6) {
@@ -546,7 +537,7 @@ if (!isset($_POST['step'])) {
                          <div id="progressbar" style="float:left;margin-top:9px;"></div>
                          <div id="buttons_bottom">
                              <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                             <input type="button" id="but_next" onclick="goto_next_page(\''. (intval($_POST['step'])+1).'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                             <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                          </div>
                      </div>';
 }

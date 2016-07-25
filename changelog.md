@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1395 Error with Chrom while upgrading
  #1394 Replace ascii characters in cpliboard copy
  #1392 Corrected sql error while restoring database
  #1389 Requested JSON parse failed when copying item
