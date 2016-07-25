@@ -221,6 +221,17 @@ mysqli_query($dbTmp,
     ) CHARSET=utf8;"
 );
 
+// change to 0 if auto_update_pwd_next_date empty in ITEMS table
+$result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['tbl_prefix']."items` WHERE auto_update_pwd_next_date = ''");
+while($row = mysqli_fetch_assoc($result)) {
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['tbl_prefix']."items`
+        SET `auto_update_pwd_next_date` = '0'
+        WHERE id = '".$row['id']."'"
+    );
+}
+mysqli_free_result($result);
+
 
 // add Estonian
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));
