@@ -90,6 +90,7 @@ switch ($_POST['type']) {
             // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
+
             // check if badly written
             $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
             if ($data_roles['fonction_id'][0] === "") {
@@ -105,10 +106,11 @@ switch ($_POST['type']) {
                 );
             }
 
+
             $data = DB::query(
-                "SELECT complexity
+                "SELECT complexity 
                 FROM ".prefix_table("roles_title")."
-                WHERE id IN (".$data_roles['fonction_id'].")
+                WHERE id IN (".implode(',', $data_roles['fonction_id']).")
                 ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
