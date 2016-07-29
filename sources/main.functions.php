@@ -431,6 +431,8 @@ function trimElement($chaine, $element)
  */
 function cleanString($string)
 {
+
+
     // Create temporary table for special characters escape
     $tabSpecialChar = array();
     for ($i = 0; $i <= 31; $i++) {
@@ -1101,12 +1103,17 @@ function isUTF8($string)
     );
 }
 
+
+
+
 /*
 * FUNCTION
 * permits to prepare data to be exchanged
 */
 function prepareExchangedData($data, $type)
 {
+
+
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
     //Load AES
@@ -1125,18 +1132,21 @@ function prepareExchangedData($data, $type)
 
             return json_encode(
                 $data,
-                JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_UNESCAPED_UNICODE
             );
         } else {
+
+
 
             return Encryption\Crypt\aesctr::encrypt(
                 json_encode(
                     $data,
-                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+                    JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_UNESCAPED_UNICODE
                 ),
                 $_SESSION['key'],
                 256
             );
+
         }
     } elseif  ($type == "decode") {
         if (

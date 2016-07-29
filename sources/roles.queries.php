@@ -301,6 +301,8 @@ if (!empty($_POST['type'])) {
                 "SELECT * FROM ".prefix_table("roles_title").
                 $where."
                 ORDER BY title ASC".$sql_limit);
+
+
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if ($record['allow_pw_change'] == 1) {
