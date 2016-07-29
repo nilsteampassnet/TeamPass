@@ -58,6 +58,106 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+
+
+
+////**/
+//
+//$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+//
+//$folderId=25;
+//$folders = $tree->getDescendants($folderId, true);
+//var_dump($folders);
+//die;
+//
+//
+//function getDescendants($id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
+//{
+//    global $link;
+//    $idField = $this->fields['id'];
+//
+//    $node = $this->getNode($id);
+//    if (is_null($node)) {
+//        $nleft = 0;
+//        $nright = 0;
+//        $parent_id = 0;
+//        $personal_folder = 0;
+//    } else {
+//        $nleft = $node->nleft;
+//        $nright = $node->nright;
+//        $parent_id = $node->$idField;
+//        $personal_folder = $node->personal_folder;
+//    }
+//
+//    if ($childrenOnly) {
+//        if ($includeSelf) {
+//            $query = sprintf(
+//                'select %s from %s where %s = %d or %s = %d order by nleft',
+//                join(',', $this->getFields()),
+//                $this->table,
+//                $this->fields['id'],
+//                $parent_id,
+//                $this->fields['parent'],
+//                $parent_id
+//            );
+//        } else {
+//            $query = sprintf(
+//                'select %s from %s where %s = %d order by nleft',
+//                join(',', $this->getFields()),
+//                $this->table,
+//                $this->fields['parent'],
+//                $parent_id
+//            );
+//        }
+//    } else {
+//        if ($nleft > 0 && $includeSelf) {
+//            $query = sprintf(
+//                'select %s from %s where nleft >= %d and nright <= %d order by nleft',
+//                join(',', $this->getFields()),
+//                $this->table,
+//                $nleft,
+//                $nright
+//            );
+//        } elseif ($nleft > 0) {
+//            $query = sprintf(
+//                'select %s from %s where nleft > %d and nright < %d order by nleft',
+//                join(',', $this->getFields()),
+//                $this->table,
+//                $nleft,
+//                $nright
+//            );
+//        } else {
+//            $query = sprintf(
+//                'select %s from %s order by nleft',
+//                join(',', $this->getFields()),
+//                $this->table
+//            );
+//        }
+//    }
+//
+//    $result = mysqli_query($link, $query);
+//
+//    $arr = array();
+//    while ($row = mysqli_fetch_object($result)) {
+//        if ($unique_id_list == false) {
+//            $arr[$row->$idField] = $row;
+//        } else {
+//            array_push($arr, $row->$idField);
+//        }
+//    }
+//
+//    return $arr;
+//}
+//
+/////////////////////
+
+
+
+
+
+
+
+
 // CASE where title is changed
 if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
@@ -245,11 +345,12 @@ if (isset($_POST['newtitle'])) {
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-
+            $folderForDel =array();
             foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
                 $foldersDeleted = "";
                 // Get through each subfolder
                 $folders = $tree->getDescendants($folderId, true);
+
                 foreach ($folders as $folder) {
                     if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                         //Store the deleted folder (recycled bin)
@@ -263,8 +364,9 @@ if (isset($_POST['newtitle'])) {
                                     $folder->nlevel.', 0, 0, 0, 0'
                             )
                         );
-                        //delete folder
-                        DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
+                        //array for delete folder
+                        $folderForDel[]=$folder->id;
+              //
                         //delete items & logs
                         $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $folder->id);
                         foreach ($items as $item) {
@@ -299,6 +401,13 @@ if (isset($_POST['newtitle'])) {
                 }
                 //Update CACHE table
                 updateCacheTable("delete_value", $folderId);
+            }
+
+
+            $folderForDel=array_unique($folderForDel);
+
+            foreach ($folderForDel as $fol){
+                DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
             }
 
             //rebuild tree
