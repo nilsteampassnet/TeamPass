@@ -91,18 +91,19 @@ switch ($_POST['type']) {
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
             // check if badly written
-            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
-            if ($data_roles['fonction_id'][0] === "") {
-                $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
-                $data_roles['fonction_id'] = implode(',', $data_roles['fonction_id']);
+            $arrRoles = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
+            if ($arrRoles[0] === "") {
+                $arrRoles = array_filter($arrRoles);
+                $arrRoles = implode(',', $arrRoles);
                 DB::update(
                     prefix_table("users"),
                     array(
-                        'fonction_id' => $data_roles['fonction_id']
+                        'fonction_id' => $arrRoles
                        ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
+                $data_roles['fonction_id'] = $arrRoles;
             }
 
             $data = DB::query(
@@ -702,7 +703,7 @@ switch ($_POST['type']) {
                     );
 
                     if (!empty($ret['error'])) {
-                        $status = "not sent";
+                        $status = "not_sent";
                     } else {
                         $status = "sent";
                     }
@@ -715,7 +716,7 @@ switch ($_POST['type']) {
                         "timestamp = %s",
                         $record['timestamp']
                     );
-                    if ($status == "not sent") {
+                    if ($status == "not_sent") {
                         break;
                     }
                 }

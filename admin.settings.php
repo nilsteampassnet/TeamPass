@@ -977,7 +977,7 @@ echo '
                             '.$LANG['syslog_host'].'
                         </td>
                         <td>
-                            <input id="syslog_server" name="syslog_host" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_host']) ? 'localhost' : $_SESSION['settings']['syslog_host'], '" onchange="updateSetting($(this).attr(\'id\'));" />
+                            <input id="syslog_host" name="syslog_host" type="text" size="40px" value="', !isset($_SESSION['settings']['syslog_host']) ? 'localhost' : $_SESSION['settings']['syslog_host'], '" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // SYSLOG port
