@@ -175,12 +175,29 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
     );
 }
 
+// check that SYSLOG doesn't exist
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_enable', '0')"
+    );
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_host', 'localhost')"
+    );
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_port', '514')"
+    );
+}
+
 
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY url VARCHAR(500)");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY restricted_to DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `description` `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw` `pw` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw_iv` `pw_iv` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
 
 // alter table cache
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(500)");
@@ -203,6 +220,17 @@ mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
+
+// change to 0 if auto_update_pwd_next_date empty in ITEMS table
+$result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['tbl_prefix']."items` WHERE auto_update_pwd_next_date = ''");
+while($row = mysqli_fetch_assoc($result)) {
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['tbl_prefix']."items`
+        SET `auto_update_pwd_next_date` = '0'
+        WHERE id = '".$row['id']."'"
+    );
+}
+mysqli_free_result($result);
 
 
 // add Estonian

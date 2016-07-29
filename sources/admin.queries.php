@@ -252,15 +252,14 @@ switch ($_POST['type']) {
 
                 $result = DB::queryRaw('SELECT * FROM '.$table);
                 $mysqli_result = DB::queryRaw(
-                    "SELECT COUNT(*) AS Columns
+                    "SELECT *
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE table_schema = %s
                     AND table_name = %s",
                     $database,
                     $table
                 );
-                $row = $mysqli_result->fetch_row();
-                $numFields = $row[0];
+                $numFields = DB::count();
 
                 // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
@@ -665,7 +664,7 @@ switch ($_POST['type']) {
                 DB::update(
                     prefix_table("emails"),
                     array(
-                        'status' => "not sent"
+                        'status' => "not_sent"
                    ),
                     "timestamp = %s",
                     $record['timestamp']

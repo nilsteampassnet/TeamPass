@@ -232,9 +232,9 @@ if (isset($_POST['type'])) {
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `label` varchar(500) NOT NULL,
-                            `description` text NOT NULL,
-                            `pw` text NOT NULL,
-                            `pw_iv` text NOT NULL,
+                            `description` text DEFAULT NULL,
+                            `pw` text DEFAULT NULL,
+                            `pw_iv` text DEFAULT NULL,
                             `pw_len` int(5) NOT NULL DEFAULT '0',
                             `url` varchar(500) DEFAULT NULL,
                             `id_tree` varchar(10) DEFAULT NULL,
@@ -248,7 +248,7 @@ if (isset($_POST['type'])) {
                             `viewed_no` int(12) NOT null DEFAULT '0',
                             `complexity_level` varchar(3) NOT null DEFAULT '-1',
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
-                            `auto_update_pwd_next_date` int(15) DEFAULT NULL,
+                            `auto_update_pwd_next_date` int(15) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
@@ -392,7 +392,10 @@ global \$SETTINGS;
                             array('admin','enable_server_password_change','0'),
                             array('admin','ldap_object_class','0'),
                             array('admin','bck_script_path', $var['abspath']."/backups"),
-                            array('admin','bck_script_filename', 'bck_cpassman')
+                            array('admin','bck_script_filename', 'bck_cpassman'),
+                            array('admin','syslog_enable','0'),
+                            array('admin','syslog_host','localhost'),
+                            array('admin','syslog_port','514')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

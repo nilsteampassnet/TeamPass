@@ -585,7 +585,7 @@ $res2 = addColumnIfNotExist(
 $res2 = addColumnIfNotExist(
 	$_SESSION['tbl_prefix']."items",
 	"auto_update_pwd_next_date",
-	"INT(15) DEFAULT NULL"
+	"INT(15) NOT NULL DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
 	$_SESSION['tbl_prefix']."cache",
