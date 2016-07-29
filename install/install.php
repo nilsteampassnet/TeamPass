@@ -122,7 +122,6 @@ echo '
     <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
     <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check14"></span></li>
-    <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
     <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
     </ul>

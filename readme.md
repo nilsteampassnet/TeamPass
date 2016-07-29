@@ -37,7 +37,6 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 ** xml
 ** gd
 ** openssl
-* Function 'mysqli_fetch_all'
 
 ## Installation
 
