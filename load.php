@@ -779,8 +779,8 @@ $htmlHeaders .= '
                         "sources/main.queries.php",
                         {
                             type    : "send_pw_by_email",
-                            email    : $("#forgot_pw_email").val(),
-                            login    : $("#forgot_pw_login").val()
+                            email    : $("#forgot_pw_email").val()
+
                         },
                         function(data) {
                             $("#div_forgot_pw_status").hide();
