@@ -612,7 +612,12 @@ $(function() {
                         $("#user_edit_functions_list").multiselect('refresh');
 
                         $("#user_edit_managedby").append(data.managedby);
-                        $("#user_edit_managedby").multiselect('refresh');
+                        $("#user_edit_managedby").multiselect({
+                            multiple: false,
+                            header: "Select an option",
+                            noneSelectedText: "Select an Option",
+                            selectedList: 1
+                        }, 'refresh');
 
                         $("#user_edit_auth").append(data.foldersAllow);
                         $("#user_edit_auth").multiselect('refresh');

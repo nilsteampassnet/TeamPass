@@ -1216,6 +1216,7 @@ if (!empty($_POST['type'])) {
                     $logDisabledText = "at_user_locked";
                 }
 
+
                 // update user
                 DB::update(
                     prefix_table("users"),
