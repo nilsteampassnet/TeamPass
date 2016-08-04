@@ -1376,7 +1376,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.pw != "") {
                             var clipboard_pw = new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
                                 text: function() {
-                                    return (data.pw);
+                                    return (unsanitizeString(data.pw));
                                 }
                             });
                             clipboard_pw.on('success', function(e) {

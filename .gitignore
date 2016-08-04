@@ -50,6 +50,7 @@ crashlytics-build.properties
 docker-compose.yml
 Dockerfile
 run.sh
-/install/
+/install
+
 
 

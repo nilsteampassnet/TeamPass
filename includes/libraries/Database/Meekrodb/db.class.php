@@ -600,6 +600,9 @@ class MeekroDB {
     }
 
     $sql = call_user_func_array(array($this, 'parseQueryParams'), $args);
+
+   // var_dump($sql);
+
     
     if ($this->success_handler) $starttime = microtime(true);
     $result = $db->query($sql, $is_buffered ? MYSQLI_STORE_RESULT : MYSQLI_USE_RESULT);
@@ -637,7 +640,7 @@ class MeekroDB {
     } else if ($this->success_handler) {
       $runtime = sprintf('%f', $runtime * 1000);
       $success_handler = is_callable($this->success_handler) ? $this->success_handler : 'meekrodb_debugmode_handler';
-      
+
       call_user_func($success_handler, array(
         'query' => $sql,
         'runtime' => $runtime,
