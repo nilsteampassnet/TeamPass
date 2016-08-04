@@ -47,12 +47,12 @@ function getBits($n)
 //generate pbkdf2 compliant hash
 function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
 {
-    $kb = $st+$kl;  // Key blocks to compute
+    $kb = $st + $kl;  // Key blocks to compute
     $dk = '';    // Derived key
 
-    for ($block=1; $block<=$kb; $block++) { // Create key
+    for ($block = 1; $block <= $kb; $block++) { // Create key
         $ib = $h = hash_hmac($a, $s . pack('N', $block), $p, true); // Initial hash for this block
-        for ($i=1; $i<$c; $i++) { // Perform block iterations
+        for ($i = 1; $i < $c; $i++) { // Perform block iterations
             $ib ^= ($h = hash_hmac($a, $h, $p, true));  // XOR each iterate
         }
         $dk .= $ib; // Append iterated block
@@ -404,10 +404,6 @@ function defuse_crypto($message, $key, $type)
                 'error' => $err
             );
         }
-        return array(
-            'string' => isset($decrypted) ? $decrypted : "",
-            'error' => $err
-        );
     }
 }
 
@@ -824,6 +820,7 @@ function updateCacheTable($action, $id = "")
                     'restricted_to' => $record['restricted_to'],
                     'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
+                    'url' => $record['url'],
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
                     'timestamp' => $record['date']
