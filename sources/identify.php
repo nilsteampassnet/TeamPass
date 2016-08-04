@@ -767,7 +767,7 @@ function identifyUser($sentData)
                             $LANG['email_body_on_user_login']
                         ),
                         'receivers' => $receivers,
-                        'status' => "not_sent"
+                        'status' => "not sent"
                     )
                 );
             }

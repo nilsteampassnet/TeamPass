@@ -252,14 +252,15 @@ switch ($_POST['type']) {
 
                 $result = DB::queryRaw('SELECT * FROM '.$table);
                 $mysqli_result = DB::queryRaw(
-                    "SELECT *
+                    "SELECT COUNT(*) AS Columns
                     FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE table_schema = %s
                     AND table_name = %s",
                     $database,
                     $table
                 );
-                $numFields = DB::count();
+                $row = $mysqli_result->fetch_row();
+                $numFields = $row[0];
 
                 // prepare a drop table
                 $return.= 'DROP TABLE '.$table.';';
