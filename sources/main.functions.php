@@ -553,6 +553,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         DB::query("SELECT * FROM " . prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     } else {
+
         // init
         $_SESSION['groupes_visibles'] = array();
         $_SESSION['personal_folders'] = array();
@@ -617,8 +618,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $x = 0;
         $rows = DB::query(
             "SELECT id, id_tree FROM " . prefix_table("items") . "
-            WHERE restricted_to=%ss AND inactif=%s",
-            $_SESSION['user_id'],
+            WHERE restricted_to LIKE %ss AND inactif=%s",
+            $_SESSION['user_id'].';',
             '0'
         );
         foreach ($rows as $record) {
