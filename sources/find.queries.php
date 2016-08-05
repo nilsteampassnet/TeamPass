@@ -193,10 +193,12 @@ $rows = DB::query(
 
 $iFilteredTotal = DB::count();
 
+
 /*
  * Output
  */
 if (!isset($_GET['type'])) {
+
     $sOutput = '{';
     if (isset($_GET['sEcho'])) $sOutput .= '"sEcho": ' . intval($_GET['sEcho']) . ', ';
     $sOutput .= '"iTotalRecords": ' . $iFilteredTotal . ', ';
@@ -278,7 +280,9 @@ if (!isset($_GET['type'])) {
 
     echo $sOutput;
 } else if (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
+
     require_once 'main.functions.php';
+
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
@@ -296,6 +300,7 @@ if (!isset($_GET['type'])) {
                 $expired_item = 1;
             }
         }
+
         // list of restricted users
         $restricted_users_array = explode(';', $record['restricted_to']);
         $itemPw = $itemLogin = "";
@@ -316,6 +321,7 @@ if (!isset($_GET['type'])) {
                 }
             }
         }
+
         // Manage the restricted_to variable
         if (isset($_POST['restricted'])) {
             $restrictedTo = $_POST['restricted'];
@@ -339,6 +345,7 @@ if (!isset($_GET['type'])) {
             && $item_is_restricted_to_role == 1
             && !in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
+
             $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
             $findPfGroup = 0;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\', \''.$record['id_tree'].'\')';
@@ -350,12 +357,15 @@ if (!isset($_GET['type'])) {
             in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
+
             $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
             $findPfGroup = 1;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 1;
         }
+
+
         // CAse where item is restricted to a group of users included user
         elseif (
             !empty($record['restricted_to'])
@@ -364,6 +374,7 @@ if (!isset($_GET['type'])) {
                 && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
             && in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
+
             $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
             $findPfGroup = 0;
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
@@ -386,6 +397,7 @@ if (!isset($_GET['type'])) {
                 && $item_is_restricted_to_role == 1
             )
         ) {
+
             if (
                 isset($user_is_included_in_role)
                 && isset($item_is_restricted_to_role)
@@ -412,6 +424,7 @@ if (!isset($_GET['type'])) {
                 }
             }
         } else {
+
             $perso = '<i class="fa fa-tag mi-green"></i>&nbsp;';
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
@@ -421,23 +434,24 @@ if (!isset($_GET['type'])) {
                 $findPfGroup = "";
                 $init_personal_folder = true;
             }
+
         }
 
 
         // prepare new line
-        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
+        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.mb_substr(stripslashes($record['label']), 0, 65);
 
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
             } else {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($tempo[0]), 0, 30))).']</font>';
             }
         }
 
         // set folder
-        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
+        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(mb_substr (cleanString($record['folder']), 0, 50))).'</span>';
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
 
@@ -457,6 +471,7 @@ if (!isset($_GET['type'])) {
         "items_html" => $sOutput,
         "message" => str_replace("%X%", $iFilteredTotal, $LANG['find_message'])
     );
+
 
     echo prepareExchangedData($returnValues, "encode");
 
