@@ -39,7 +39,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Columns name
-$aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
+$aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
@@ -123,7 +123,9 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
     for ($i=0; $i<count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
+
     $sWhere = substr_replace($sWhere, "", -3).") ";
+
 
     $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
@@ -134,6 +136,7 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
         '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
     );
 }
@@ -158,6 +161,7 @@ if (count($crit) == 0) {
         '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
     );
 }
@@ -172,17 +176,21 @@ if (!empty($listPf)) {
     $sWhere = "WHERE ".$sWhere;
 }
 
+
 DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
+
 $rows = DB::query(
-    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, timestamp
+    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
     FROM ".prefix_table("cache")."
     $sWhere
     $sOrder
     $sLimit",
     $crit
 );
+
+
 $iFilteredTotal = DB::count();
 
 /*
@@ -195,6 +203,7 @@ if (!isset($_GET['type'])) {
     $sOutput .= '"iTotalDisplayRecords": ' . $iTotal . ', ';
     $sOutput .= '"aaData": [ ';
     $sOutputConst = "";
+
 
 
     foreach ($rows as $record) {
@@ -250,6 +259,7 @@ if (!isset($_GET['type'])) {
 
         //col5 - TAGS
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['url']), ENT_QUOTES) . '", ';
 
         //col6 - Prepare the Treegrid
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
@@ -413,6 +423,7 @@ if (!isset($_GET['type'])) {
             }
         }
 
+
         // prepare new line
         $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
 
@@ -448,4 +459,5 @@ if (!isset($_GET['type'])) {
     );
 
     echo prepareExchangedData($returnValues, "encode");
+
 }

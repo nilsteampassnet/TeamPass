@@ -813,6 +813,7 @@ function updateCacheTable($action, $id = "")
                     'restricted_to' => $record['restricted_to'],
                     'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
+                    'url' => $record['url'],
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
                     'timestamp' => $record['date']
@@ -823,7 +824,7 @@ function updateCacheTable($action, $id = "")
     } elseif ($action == "update_value") {
         // get new value from db
         $data = DB::queryfirstrow(
-            "SELECT label, description, id_tree, perso, restricted_to, login
+            "SELECT label, description, id_tree, perso, restricted_to, login, url
             FROM ".$pre."items
             WHERE id=%i", $id);
         // Get all TAGS
@@ -854,6 +855,7 @@ function updateCacheTable($action, $id = "")
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'tags' => $tags,
+                'url' => $data['url'],
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
@@ -904,6 +906,7 @@ function updateCacheTable($action, $id = "")
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'tags' => $tags,
+                'url' => $data['url'],
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
@@ -1110,16 +1113,22 @@ function prepareExchangedData($data, $type)
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
 
+
     if ($type == "encode") {
+
+
+
         if (
             isset($_SESSION['settings']['encryptClientServer'])
             && $_SESSION['settings']['encryptClientServer'] == 0
         ) {
+
             return json_encode(
                 $data,
                 JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
             );
         } else {
+
             return Encryption\Crypt\aesctr::encrypt(
                 json_encode(
                     $data,
@@ -1379,18 +1388,12 @@ function handleConfigFile($action, $field = null, $value = null)
     } else if ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
         $x = 0;
-        $bFound = false;
         foreach($data as $line) {
-            if (stristr($line, ");")) break;
             if (stristr($line, "'".$field."' => '")) {
                 $data[$x] = "    '".$field."' => '".$value."',\n";
-                $bFound = true;
                 break;
             }
             $x++;
-        }
-        if ($bFound === false) {
-            $data[($x-1)] = "    '".$field."' => '".$value."',\n";
         }
     } else {
         // ERROR

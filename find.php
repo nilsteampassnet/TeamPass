@@ -57,6 +57,8 @@ echo '<input type="hidden" id="id_selected_item" />
         <th style="width:20%;">'.$LANG['login'].'</th>
         <th style="width:25%;">'.$LANG['description'].'</th>
         <th style="width:13%;">'.$LANG['tags'].'</th>
+        <th style="width:13%;">'.$LANG['url'].'</th>
+        
         <th style="width:20%;">'.$LANG['group'].'</th>
     </tr></thead>
     <tbody>
