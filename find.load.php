@@ -20,6 +20,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 function aes_decrypt(text)
 {
+
     return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
 }
 
@@ -118,7 +119,8 @@ $("#div_item_data").dialog({
                         //Admin cannot see Item
                         return_html = "<?php echo $LANG['not_allowed_to_see_pw'];?>";
                     } else {
-                        return_html = "<table>"+
+
+                            return_html = "<table>"+
                             "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['label'];?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['description'];?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['pw'];?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
@@ -161,6 +163,7 @@ $(function() {
         },
         "columns": [
             { "width": "10%" },
+            null,
             null,
             null,
             null,
