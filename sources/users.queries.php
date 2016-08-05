@@ -1300,8 +1300,12 @@ elseif (!empty($_POST['newValue'])) {
     // update LOG
     logEvents('user_mngt', 'at_user_new_'.$value[0].':'.$value[1], $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
     // refresh SESSION if requested
-    if ($value[0] == "treeloadstrategy") {
+    if ($value[0] === "treeloadstrategy") {
         $_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
+    }
+    // special case for usertimezone where session needs to be updated
+    if ($value[0] === "usertimezone") {
+        $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
     }
     // Display info
     echo $_POST['newValue'];

@@ -185,6 +185,9 @@ switch ($_POST['type']) {
             }
             // close file
             fclose($fp);
+
+            // remove file
+            unlink($file);
         } else {
             echo '[{"error":"cannot_open"}]';
             break;

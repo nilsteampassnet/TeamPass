@@ -330,7 +330,8 @@ if (isset($_POST['newtitle'])) {
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
-                $error = 'error_html_codes';
+                echo '[ { "error" : "error_html_codes"} ]';
+                break;
             }
 
             //Check if duplicate folders name are allowed
@@ -347,27 +348,34 @@ if (isset($_POST['newtitle'])) {
             if ($createNewFolder == true) {
                 //check if parent folder is personal
                 $data = DB::queryfirstrow(
-                    "SELECT n.personal_folder, m.valeur
-                    FROM ".prefix_table("nested_tree")." AS n
-                    JOIN ".prefix_table("misc")." AS m ON (m.intitule = n.id)
-                    WHERE n.id = %i AND m.type = %s",
-                    $parentId,
-                    "complex"
+                    "SELECT personal_folder
+                    FROM ".prefix_table("nested_tree")." 
+                    WHERE id = %i",
+                    $parentId
                 );
-                if ($data['personal_folder'] == "1") {
+                if ($data['personal_folder'] === "1") {
                     $isPersonal = 1;
                 } else {
                     $isPersonal = 0;
-                }
 
-                // check if complexity level is good
-                // if manager or admin don't care
-                if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $isPersonal == 0) {
-                    if (intval($complexity) < intval($data['valeur'])) {
-                        echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
-                        break;
+                    // check if complexity level is good
+                    // if manager or admin don't care
+                    if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1) {
+                        // get complexity level for this folder
+                        $data = DB::queryfirstrow(
+                            "SELECT valeur
+                            FROM ".prefix_table("misc")."
+                            WHERE intitule = %i AND type = %s",
+                            $parentId,
+                            "complex"
+                        );
+                        if (intval($complexity) < intval($data['valeur'])) {
+                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                            break;
+                        }
                     }
                 }
+                
 
                 if (
                     $isPersonal == 1

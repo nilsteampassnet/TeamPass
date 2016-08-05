@@ -936,6 +936,18 @@ switch ($_POST['type']) {
         echo '[{"token" : "'.$token.'"}]';
         break;
 
+    /**
+     * Create list of timezones
+     */
+    case "generate_timezones_list":
+
+        foreach (timezone_identifiers_list() as $zone) {
+            $array[$zone] = $zone;
+        }
+
+        echo json_encode($array);
+        break;
+
 
 
 }

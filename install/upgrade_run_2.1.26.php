@@ -208,6 +208,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY time
 // alter table files
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
 
+// alter table USers
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
+
 // create new table
 mysqli_query($dbTmp, 
     "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."tokens` (

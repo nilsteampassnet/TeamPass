@@ -1,5 +1,7 @@
 Last changes
 2.1.26
+ #1414 Subfolders created into personal folders are presented in Folders and Roles management
+ #1402 User can define his timezone
  #1395 Error with Chrom while upgrading
  #1394 Replace ascii characters in cpliboard copy
  #1392 Corrected sql error while restoring database

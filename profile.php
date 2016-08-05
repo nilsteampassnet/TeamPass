@@ -44,6 +44,11 @@ $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("
 @$_SESSION['user_avatar'] = $userData['avatar'];
 @$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
+// prepare list of timezones
+foreach (timezone_identifiers_list() as $zone) {
+    $arrayTimezones[$zone] = $zone;
+}
+
 echo '
 <input type="hidden" id="profile_user_token" value="" />
 <table>
@@ -86,7 +91,10 @@ echo '
         <input type="hidden" id="upload_enabled2" value="" />
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+    </div>
+    <div style="margin-bottom:6px;">
+        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
     </div>
 </div>
 
@@ -366,22 +374,32 @@ $(function() {
 
     //inline editing
     $(".editable_textarea").editable("sources/users.queries.php", {
-          indicator : "<img src=\'includes/images/loading.gif\' />",
-          type   : "text",
-          select : true,
-          submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
-          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
-          name : "newValue"
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        type   : "text",
+        select : true,
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
     });
     $(".editable_select").editable("sources/users.queries.php", {
-         indicator : "<img src=\'includes/images/loading.gif\' />",
-         data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
-         type   : 'select',
-         select : true,
-         onblur : "cancel",
-         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
-          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
-         name : "newValue"
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
+    });
+    $(".editable_timezone").editable("sources/users.queries.php", {
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data : '<?php print json_encode($arrayTimezones);?>',
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
     });
 
 
