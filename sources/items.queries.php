@@ -971,7 +971,7 @@ if (isset($_POST['type'])) {
             $dataDeleted = DB::count();
             $dataRestored = DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $_POST['id'], "at_restored");
             $dataRestored = DB::count();
-            if ($dataDeleted != 0 && $dataDeleted > $dataRestored) {
+            if ($dataDeleted != 0 && $dataDeleted > $dataRestored)  {
                 // This item is deleted => exit
                 echo prepareExchangedData(array('show_detail_option' => 2), "encode");
                 break;
@@ -992,6 +992,7 @@ if (isset($_POST['type'])) {
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
             $listeRestriction = $listNotification = $listNotificationEmails = "";
             $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
+
             foreach ($rows as $record) {
                 // Get auhtor
                 if ($record['id'] == $dataItem['id_user']) {
@@ -1035,12 +1036,16 @@ if (isset($_POST['type'])) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+
             if (in_array($_SESSION['user_id'], $restrictedTo)) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to'])) {
                 $restrictionActive = false;
             }
+
+
+
             // Check if user has a role that is accepted
             $rows_tmp = DB::query("SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id=%i", $_POST['id']);
             $myTest = 0;
@@ -1079,15 +1084,18 @@ if (isset($_POST['type'])) {
             // check user is admin
             if ($_SESSION['user_admin'] == 1 && $dataItem['perso'] != 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
                 $arrData['show_details'] = 0;
+
             }
             // Check if actual USER can see this ITEM
             elseif (
-                ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && ($dataItem['perso'] == 0 || ($dataItem['perso'] == 1 && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive == false)
+                ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1)&&
+                    ($dataItem['perso'] == 0 ||  ($dataItem['perso'] == 1 && $dataItem['id_user'] == $_SESSION['user_id']))   ||  $restrictionActive == false)
                 ||
                 (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $dataItem['anyone_can_modify'] == 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && $restrictionActive == false)
                 ||
-                (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
+                (in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
+
                 // Allow show details
                 $arrData['show_details'] = 1;
                 // Display menu icon for deleting if user is allowed
