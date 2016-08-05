@@ -58,6 +58,15 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+
+
+
+
+
+
+
+
+
 // CASE where title is changed
 if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
@@ -245,11 +254,12 @@ if (isset($_POST['newtitle'])) {
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-
+            $folderForDel =array();
             foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
                 $foldersDeleted = "";
                 // Get through each subfolder
                 $folders = $tree->getDescendants($folderId, true);
+
                 foreach ($folders as $folder) {
                     if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                         //Store the deleted folder (recycled bin)
@@ -263,8 +273,9 @@ if (isset($_POST['newtitle'])) {
                                     $folder->nlevel.', 0, 0, 0, 0'
                             )
                         );
-                        //delete folder
-                        DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
+                        //array for delete folder
+                        $folderForDel[]=$folder->id;
+              //
                         //delete items & logs
                         $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $folder->id);
                         foreach ($items as $item) {
@@ -299,6 +310,13 @@ if (isset($_POST['newtitle'])) {
                 }
                 //Update CACHE table
                 updateCacheTable("delete_value", $folderId);
+            }
+
+
+            $folderForDel=array_unique($folderForDel);
+
+            foreach ($folderForDel as $fol){
+                DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
             }
 
             //rebuild tree
