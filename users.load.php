@@ -362,7 +362,6 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
-                console.log("coucou");
             }
         }
     });

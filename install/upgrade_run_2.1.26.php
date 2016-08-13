@@ -168,10 +168,10 @@ if ($res === false) {
 }
 
 // check that API doesn't exist
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '9999999'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
     );
 }
 

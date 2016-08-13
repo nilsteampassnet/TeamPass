@@ -54,6 +54,7 @@ if (
         if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
         } else {
+            // get from DB
             $dataItem = DB::queryfirstrow(
                 "SELECT *
                 FROM ".prefix_table("items")." as i
@@ -63,9 +64,50 @@ if (
                 'at_creation'
             );
 
+            // is Item still valid regarding number of times being seen
+            // Decrement the number before being deleted
+            $dataDelete = DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i",
+                $data['item_id']
+            );
+            if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
+                if ($dataDelete['del_enabled'] == 1) {
+                    if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
+                        // decrease counter
+                        DB::update(
+                            $pre."automatic_del",
+                            array(
+                                'del_value' => $dataDelete['del_value'] - 1
+                               ),
+                            "item_id = %i",
+                            $data['item_id']
+                        );
+                    } elseif (
+                        $dataDelete['del_type'] == 1 && $dataDelete['del_value'] <= 1
+                        || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
+                    ) {
+                        // delete item
+                        DB::delete($pre."automatic_del", "item_id = %i", $data['item_id']);
+                        // make inactive object
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'inactif' => '1',
+                               ),
+                            "id = %i",
+                            $data['item_id']
+                        );
+                        // log
+                        logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_delete', 'otv', 'at_automatically_deleted');
+
+                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.LANG['not_allowed_to_see_pw_is_expired'].'</div>';
+                        return false;
+                    }
+                }
+            }
+
             // get data
             $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
-            echo $dataItem['pw']. " ;; ".SALT." ;; ". $dataItem['pw_iv']. " ;; ".$pw['string'] ;
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];
@@ -93,8 +135,8 @@ if (
             echo $html;
         }
     } else {
-        echo "Not a valid page!";
+        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;Not a valid page!</div>';
     }
 } else {
-    echo "No valid OTV inputs!";
+    echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;No valid OTV inputs!</div>';
 }
