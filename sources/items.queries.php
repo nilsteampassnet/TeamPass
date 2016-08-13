@@ -2703,7 +2703,7 @@ if (isset($_POST['type'])) {
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period'] * 86400));
             foreach ($rows as $record) {
                 DB::delete(prefix_table('otv'), "id=%i", $record['id']);
             }

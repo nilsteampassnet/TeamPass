@@ -44,8 +44,8 @@ if (
     // check session validity
     $data = DB::queryfirstrow(
         "SELECT id, timestamp, code, item_id FROM ".prefix_table("otv")."
-        WHERE code = %i",
-        intval($_GET['code'])
+        WHERE code = %s",
+        $_GET['code']
     );
     if (
         $data['timestamp'] == intval($_GET['stamp'])
