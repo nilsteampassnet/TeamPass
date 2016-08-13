@@ -422,6 +422,7 @@ if (isset($_POST['newtitle'])) {
                         $isPersonal != 1
                         && isset($_SESSION['settings']['subfolder_rights_as_parent'])
                         && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                        && $_SESSION['is_admin'] !== 0
                     ){
                         //Get user's rights
                         @identifyUserRights(
@@ -457,7 +458,7 @@ if (isset($_POST['newtitle'])) {
                                 'role_id' => $record['role_id'],
                                 'folder_id' => $newId,
                                 'type' => $record['type']
-                           )
+                            )
                         );
                     }
 

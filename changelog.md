@@ -1,6 +1,8 @@
 Last changes
 2.1.26
  #1414 Subfolders created into personal folders are presented in Folders and Roles management
+ #1409 Updated PDF library to fit 7.x PHP
+ #1407 Remove Save button in 2FA settings tab
  #1402 User can define his timezone
  #1395 Error with Chrom while upgrading
  #1394 Replace ascii characters in cpliboard copy

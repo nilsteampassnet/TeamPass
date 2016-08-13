@@ -838,10 +838,11 @@ function manageEncryptionOfAttachments(list, cpt) {
 function refreshInput()
 {
     var ids = "";
-    $("#roles_allowed_to_print_select :selected").each(function(i, selected) {
-        if (ids == "") ids = $(selected).val();
-        else ids = ids + ";" + $(selected).val();
+    $.each($("#roles_allowed_to_print_select option:selected"), function(){  
+        if (ids == "") ids = $(this).val();
+        else ids = ids + ";" + $(this).val();
     });
     $("#roles_allowed_to_print").val(ids);
+    updateSetting('roles_allowed_to_print');
 }
 </script>

@@ -142,7 +142,7 @@ echo '
                 var nb2 = aIds.length;
                 aIds = aIds.toString();
                 $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-				console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+				//console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
                 if (currentID != "") {
                     pollExport(export_format, aIds, currentID, nb);
                 } else {
