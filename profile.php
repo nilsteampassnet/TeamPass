@@ -188,7 +188,7 @@ $(function() {
 
       if ($("#div_change_password").not(":visible")) {
          $("#div_change_password").show();
-         $("#dialog_user_profil").dialog("option", "height", 500);
+         $("#dialog_user_profil").dialog("option", "height", 580);
       }
     });
 
@@ -260,7 +260,7 @@ $(function() {
                             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought'];?></span>");
                         } else {
                             $("#div_change_password").hide();
-                            $("#dialog_user_profil").dialog("option", "height", 400);
+                            $("#dialog_user_profil").dialog("option", "height", 450);
                             $("#new_pw, #new_pw2").val("");
                         }
                         $("#password_change_wait").hide();
@@ -369,7 +369,7 @@ $(function() {
 
    $("#but_pickfiles_photo").click(function() {
       $("#div_change_psk, #div_reset_psk, #div_change_password").hide();
-      $("#dialog_user_profil").dialog("option", "height", 400);
+      $("#dialog_user_profil").dialog("option", "height", 450);
    });
 
     //inline editing
@@ -413,7 +413,7 @@ $(function() {
       $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk']));?>");
 
       $("#div_change_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 530);
+      $("#dialog_user_profil").dialog("option", "height", 600);
     });
    $("#button_change_psk").click(function() {
       $("#psk_change_wait").show();
@@ -451,7 +451,7 @@ $(function() {
       $("#new_reset_psk").val("");
 
       $("#div_reset_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 520);
+      $("#dialog_user_profil").dialog("option", "height", 600);
     });
    $("#button_reset_psk").click(function() {
       $("#psk_reset_wait").show();

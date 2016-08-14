@@ -108,7 +108,7 @@ switch ($_POST['type']) {
             $data = DB::query(
                 "SELECT complexity
                 FROM ".prefix_table("roles_title")."
-                WHERE id IN (".implode(';', $data_roles['fonction_id']).")
+                WHERE id IN (".implode(',', $data_roles['fonction_id']).")
                 ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {

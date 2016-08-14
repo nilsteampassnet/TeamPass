@@ -628,7 +628,7 @@ $htmlHeaders .= '
             modal: true,
             autoOpen: false,
             width: 500,
-            height: 400,
+            height: 450,
             title: "'.$LANG['user_profile_dialogbox_menu'].'",
             buttons: {
                 "'.$LANG['close'].'": function() {

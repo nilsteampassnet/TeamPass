@@ -18,6 +18,7 @@ Last changes
  #1383 Export to PDF - Incorrect formatting
  #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
+ #1378 JSON parse error when changing user password (with several roles)
  #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set
