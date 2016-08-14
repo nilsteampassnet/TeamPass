@@ -499,7 +499,7 @@ global \$SETTINGS;
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
                             `can_manage_all_users` BOOLEAN NOT NULL DEFAULT FALSE,
-                            `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'
+                            `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
