@@ -104,7 +104,7 @@ echo '
 
 <div style="margin-top:5px; display:none;" id="div_export_pdf_password">
     <label for="export_pdf_password" class="form_label">'.$LANG['file_protection_password'].':</label>
-    <input type="text" id="export_pdf_password" />
+    <input type="password" id="export_pdf_password" />
 </div>
 
 <div style="text-align:center;margin-top:10px; display:none;" id="export_information"></div>';

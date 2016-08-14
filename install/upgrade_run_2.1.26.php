@@ -155,6 +155,18 @@ if ($res === false) {
     exit();
 }
 
+// add field url to cache table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."cache",
+    "url",
+    "VARCHAR(500) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Url to table Cache! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
 // add field can_manage_all_users to users table
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."users",

@@ -52,11 +52,12 @@ echo '<input type="hidden" id="id_selected_item" />
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
     <thead><tr>
-        <th style="width:80px;"></th>
+        <th></th>
         <th style="width:15%;">'.$LANG['label'].'</th>
         <th style="width:20%;">'.$LANG['login'].'</th>
         <th style="width:25%;">'.$LANG['description'].'</th>
         <th style="width:13%;">'.$LANG['tags'].'</th>
+        <th style="width:13%;">'.$LANG['url'].'</th>
         <th style="width:20%;">'.$LANG['group'].'</th>
     </tr></thead>
     <tbody>

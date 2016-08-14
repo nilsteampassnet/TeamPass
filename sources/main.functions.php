@@ -601,8 +601,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $x = 0;
         $rows = DB::query(
             "SELECT id, id_tree FROM ".prefix_table("items")."
-            WHERE restricted_to=%ss AND inactif=%s",
-            $_SESSION['user_id'],
+            WHERE restricted_to LIKE %ss AND inactif=%s",
+            $_SESSION['user_id'].';',
             '0'
         );
         foreach ($rows as $record) {
@@ -807,10 +807,11 @@ function updateCacheTable($action, $id = "")
                     'id' => $record['id'],
                     'label' => $record['label'],
                     'description' => $record['description'],
+                    'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : "0",
                     'tags' => $tags,
                     'id_tree' => $record['id_tree'],
                     'perso' => $record['perso'],
-                    'restricted_to' => $record['restricted_to'],
+                    'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : "0",
                     'login' => isset($record['login']) ? $record['login'] : "",
                     'folder' => $folder,
                     'author' => $record['id_user'],
@@ -823,7 +824,7 @@ function updateCacheTable($action, $id = "")
     } elseif ($action == "update_value") {
         // get new value from db
         $data = DB::queryfirstrow(
-            "SELECT label, description, id_tree, perso, restricted_to, login
+            "SELECT label, description, id_tree, perso, restricted_to, login, url
             FROM ".$pre."items
             WHERE id=%i", $id);
         // Get all TAGS
@@ -854,6 +855,7 @@ function updateCacheTable($action, $id = "")
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'tags' => $tags,
+                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],
@@ -868,7 +870,7 @@ function updateCacheTable($action, $id = "")
     } elseif ($action == "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
-            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, l.date
+            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             WHERE i.id = %i
@@ -904,6 +906,8 @@ function updateCacheTable($action, $id = "")
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'tags' => $tags,
+                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
+                'url' => $data['url'],
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
                 'restricted_to' => $data['restricted_to'],

@@ -186,6 +186,7 @@ switch ($_POST['type']) {
                 //row height calculation
                 $nb = 0;
                 $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[1], $record['login']));
                 $nb = max($nb, nbLines($table_col_width[3], $record['description']));
                 $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
 
