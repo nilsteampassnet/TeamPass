@@ -115,7 +115,7 @@ function addToCacheTable($id)
             "login" => $data['login'],
             "folder" => "",
             //"restricted_to" => "0",
-            "author" => "9999999",
+            "author" => API_USER_ID,
         )
     );
 }
@@ -465,7 +465,7 @@ function rest_get () {
                                 array(
                                     "id_item" => $newID,
                                     "date" => time(),
-                                    "id_user" => "9999999",
+                                    "id_user" => API_USER_ID,
                                     "action" => "at_creation"
                                 )
                             );
@@ -497,7 +497,7 @@ function rest_get () {
                                     "restricted_to" => "",
                                     "login" => $item_login,
                                     "folder" => "",
-                                    "author" => "9999999"
+                                    "author" => API_USER_ID
                                 )
                             );
 
@@ -917,7 +917,7 @@ function rest_get () {
                                             array(
                                                 'id_item' => $item['id'],
                                                 'date' => time(),
-                                                'id_user' => "9999999",
+                                                'id_user' => API_USER_ID,
                                                 'action' => 'at_delete'
                                             )
                                         );
@@ -952,7 +952,7 @@ function rest_get () {
                         array(
                             'id_item' => $array_items[$i],
                             'date' => time(),
-                            'id_user' => "9999999",
+                            'id_user' => API_USER_ID,
                             'action' => 'at_delete'
                         )
                     );

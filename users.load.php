@@ -362,7 +362,6 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
-                console.log("coucou");
             }
         }
     });
@@ -612,7 +611,12 @@ $(function() {
                         $("#user_edit_functions_list").multiselect('refresh');
 
                         $("#user_edit_managedby").append(data.managedby);
-                        $("#user_edit_managedby").multiselect('refresh');
+                        $("#user_edit_managedby").multiselect({
+                            multiple: false,
+                            header: "<?php echo $LANG['select'];?>",
+                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            selectedList: 1
+                        }, 'refresh');
 
                         $("#user_edit_auth").append(data.foldersAllow);
                         $("#user_edit_auth").multiselect('refresh');

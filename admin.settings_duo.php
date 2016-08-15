@@ -110,10 +110,6 @@ echo '
             <td>
         </tr>
         </table>
-        <div style="margin:5px 0 5px 20px;">
-            <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" style="cursor:pointer; padding:4px; width:75px;" />
-            &nbsp;<span id="savefa_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
-        </div>
     </div>
     <hr style="margin:10px 0 10px 0;">
     <div style="width:100%;">

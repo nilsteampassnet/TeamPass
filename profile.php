@@ -44,6 +44,11 @@ $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("
 @$_SESSION['user_avatar'] = $userData['avatar'];
 @$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
+// prepare list of timezones
+foreach (timezone_identifiers_list() as $zone) {
+    $arrayTimezones[$zone] = $zone;
+}
+
 echo '
 <input type="hidden" id="profile_user_token" value="" />
 <table>
@@ -86,7 +91,10 @@ echo '
         <input type="hidden" id="upload_enabled2" value="" />
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+    </div>
+    <div style="margin-bottom:6px;">
+        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
     </div>
 </div>
 
@@ -180,7 +188,7 @@ $(function() {
 
       if ($("#div_change_password").not(":visible")) {
          $("#div_change_password").show();
-         $("#dialog_user_profil").dialog("option", "height", 500);
+         $("#dialog_user_profil").dialog("option", "height", 580);
       }
     });
 
@@ -252,7 +260,7 @@ $(function() {
                             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought'];?></span>");
                         } else {
                             $("#div_change_password").hide();
-                            $("#dialog_user_profil").dialog("option", "height", 400);
+                            $("#dialog_user_profil").dialog("option", "height", 450);
                             $("#new_pw, #new_pw2").val("");
                         }
                         $("#password_change_wait").hide();
@@ -361,27 +369,37 @@ $(function() {
 
    $("#but_pickfiles_photo").click(function() {
       $("#div_change_psk, #div_reset_psk, #div_change_password").hide();
-      $("#dialog_user_profil").dialog("option", "height", 400);
+      $("#dialog_user_profil").dialog("option", "height", 450);
    });
 
     //inline editing
     $(".editable_textarea").editable("sources/users.queries.php", {
-          indicator : "<img src=\'includes/images/loading.gif\' />",
-          type   : "text",
-          select : true,
-          submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
-          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
-          name : "newValue"
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        type   : "text",
+        select : true,
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
     });
     $(".editable_select").editable("sources/users.queries.php", {
-         indicator : "<img src=\'includes/images/loading.gif\' />",
-         data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
-         type   : 'select',
-         select : true,
-         onblur : "cancel",
-         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
-          cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
-         name : "newValue"
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
+    });
+    $(".editable_timezone").editable("sources/users.queries.php", {
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data : '<?php print json_encode($arrayTimezones);?>',
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
     });
 
 
@@ -395,7 +413,7 @@ $(function() {
       $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk']));?>");
 
       $("#div_change_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 530);
+      $("#dialog_user_profil").dialog("option", "height", 600);
     });
    $("#button_change_psk").click(function() {
       $("#psk_change_wait").show();
@@ -433,7 +451,7 @@ $(function() {
       $("#new_reset_psk").val("");
 
       $("#div_reset_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 520);
+      $("#dialog_user_profil").dialog("option", "height", 600);
     });
    $("#button_reset_psk").click(function() {
       $("#psk_reset_wait").show();

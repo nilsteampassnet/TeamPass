@@ -95,7 +95,14 @@ if (isset($_SESSION['user_language'])) {
 if (!isset($_SESSION['settings']['timezone'])) {
     $_SESSION['settings']['timezone'] = 'UTC';
 }
-date_default_timezone_set($_SESSION['settings']['timezone']);
+if (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
+    // use user timezone
+    date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
+} else {
+    // use server timezone
+    date_default_timezone_set($_SESSION['settings']['timezone']);
+}
+
 
 //Load Languages stuff
 if (empty($languagesDropmenu)) {

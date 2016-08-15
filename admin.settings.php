@@ -790,7 +790,7 @@ echo '
                     </label>
                     </td><td>
                     <input type="hidden" id="roles_allowed_to_print" name="roles_allowed_to_print" value="', isset($_SESSION['settings']['roles_allowed_to_print']) ? $_SESSION['settings']['roles_allowed_to_print'] : '', '" />
-                    <select id="roles_allowed_to_print_select" name="roles_allowed_to_print_select" class="text ui-widget-content" multiple onblur="refreshInput()">';
+                    <select id="roles_allowed_to_print_select" name="roles_allowed_to_print_select" class="text ui-widget-content" multiple onchange="refreshInput()">';
                     if (!isset($_SESSION['settings']['roles_allowed_to_print']) || empty($_SESSION['settings']['roles_allowed_to_print'])) {
                         $arrRolesToPrint = array();
                     } else {

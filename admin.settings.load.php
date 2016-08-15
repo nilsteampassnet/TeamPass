@@ -245,24 +245,24 @@ function LaunchAdminActions(action,option)
             $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
-                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>");
+                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
                 } else if (data[0].result == "pf_done") {
-                    $("#result_admin_action_check_pf").show();
+                    $("#result_admin_action_check_pf").html("<img src='includes/images/tick.png' alt='' />").show();
                 } else if (data[0].result == "db_restore") {
                     $("#restore_bck_encryption_key_dialog").dialog("close");
-                    $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />");
+                    $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />").show();
                     $("#result_admin_action_db_restore_get_file").hide();
                     //deconnect userd
                     sessionStorage.clear();
                     window.location.href = "logout.php"
                 } else if (data[0].result == "cache_reload") {
-                    $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />");
+                    $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />").show();
                 } else if (data[0].result == "db_optimize") {
-                    $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />");
+                    $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />").show();
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>");
+                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
                 } else if (data[0].result == "db_clean_items") {
-                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>");
+                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
                 } else if (data[0].result == "changed_salt_key") {
                     //deconnect user
                     $("#menu_action").val("deconnexion");
@@ -275,14 +275,14 @@ function LaunchAdminActions(action,option)
                         $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok']));?>").show().attr("class","ui-corner-all ui-state-focus");
                     }
                 } else if (data[0].result == "pw_prefix_correct") {
-                    $("result_admin_action_pw_prefix_correct").html(data[0].ret);
+                    $("result_admin_action_pw_prefix_correct").html(data[0].ret).show();
                 } else if (data[0].result == "attachments_cryption") {
                     if (data[0].continu == true) {
                         manageEncryptionOfAttachments(data[0].list, data[0].cpt);
                     } else if (data[0].error == "file_not_encrypted") {
-                        $("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.");
+                        $("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.").show();
                     } else if (data[0].error == "file_not_clear") {
-                        $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.");
+                        $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.").show();
                     }
                 } else if (data[0].result == "rebuild_config_file") {
                     $("#result_admin_rebuild_config_file").html("<img src='includes/images/tick.png' alt='' />").show();
@@ -838,10 +838,11 @@ function manageEncryptionOfAttachments(list, cpt) {
 function refreshInput()
 {
     var ids = "";
-    $("#roles_allowed_to_print_select :selected").each(function(i, selected) {
-        if (ids == "") ids = $(selected).val();
-        else ids = ids + ";" + $(selected).val();
+    $.each($("#roles_allowed_to_print_select option:selected"), function(){  
+        if (ids == "") ids = $(this).val();
+        else ids = ids + ";" + $(this).val();
     });
     $("#roles_allowed_to_print").val(ids);
+    updateSetting('roles_allowed_to_print');
 }
 </script>

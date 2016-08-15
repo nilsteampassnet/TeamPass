@@ -1086,7 +1086,7 @@ if (isset($_POST['type'])) {
                 ||
                 (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $dataItem['anyone_can_modify'] == 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && $restrictionActive == false)
                 ||
-                (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
+                (in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
                 // Allow show details
                 $arrData['show_details'] = 1;
@@ -1246,7 +1246,7 @@ if (isset($_POST['type'])) {
                 $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
                 if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                     if ($dataDelete['del_enabled'] == 1 || $arrData['id_user'] != $_SESSION['user_id']) {
-                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] > 1) {
+                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
                                 $pre."automatic_del",
@@ -1834,10 +1834,12 @@ if (isset($_POST['type'])) {
                                 $restrictedTo .= ','.$_SESSION['user_id'];
                             }
                         }
+
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] == 1 ||
-                            $_SESSION['user_id'] == $record['log_user'] ||
-                            ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
+                        if ($record['anyone_can_modify'] == 1
+                            || $_SESSION['user_id'] === $record['log_user']
+                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0) 
+                            //|| $_SESSION['user_manager'] == 1   // force draggable if user is manager
                         ) {
                             $canMove = 1;
                         }
@@ -1880,6 +1882,7 @@ if (isset($_POST['type'])) {
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = 1;
+                            $canMove = 1;
                         }
                         // CAse where item is restricted to a group of users not including user
                         elseif (
@@ -2700,7 +2703,7 @@ if (isset($_POST['type'])) {
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period'] * 86400));
             foreach ($rows as $record) {
                 DB::delete(prefix_table('otv'), "id=%i", $record['id']);
             }

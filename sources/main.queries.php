@@ -91,25 +91,24 @@ switch ($_POST['type']) {
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
             // check if badly written
-            $arrRoles = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
-            if ($arrRoles[0] === "") {
-                $arrRoles = array_filter($arrRoles);
-                $arrRoles = implode(',', $arrRoles);
+            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
+            if ($data_roles['fonction_id'][0] === "") {
+                $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
+                $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 DB::update(
                     prefix_table("users"),
                     array(
-                        'fonction_id' => $arrRoles
+                        'fonction_id' => $data_roles['fonction_id']
                        ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
-                $data_roles['fonction_id'] = $arrRoles;
             }
 
             $data = DB::query(
                 "SELECT complexity
                 FROM ".prefix_table("roles_title")."
-                WHERE id IN (".$data_roles['fonction_id'].")
+                WHERE id IN (".implode(',', $data_roles['fonction_id']).")
                 ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
@@ -934,6 +933,18 @@ switch ($_POST['type']) {
         );
 
         echo '[{"token" : "'.$token.'"}]';
+        break;
+
+    /**
+     * Create list of timezones
+     */
+    case "generate_timezones_list":
+
+        foreach (timezone_identifiers_list() as $zone) {
+            $array[$zone] = $zone;
+        }
+
+        echo json_encode($array);
         break;
 
 

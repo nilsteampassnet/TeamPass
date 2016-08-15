@@ -155,6 +155,18 @@ if ($res === false) {
     exit();
 }
 
+// add field url to cache table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."cache",
+    "url",
+    "VARCHAR(500) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Url to table Cache! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
 // add field can_manage_all_users to users table
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."users",
@@ -168,10 +180,10 @@ if ($res === false) {
 }
 
 // check that API doesn't exist
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '9999999'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
     );
 }
 
@@ -207,6 +219,12 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY time
 
 // alter table files
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
+
+// alter table USers
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
+
+// create index in log_items
+mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
 
 // create new table
 mysqli_query($dbTmp, 

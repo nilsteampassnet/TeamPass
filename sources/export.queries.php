@@ -113,10 +113,6 @@ switch ($_POST['type']) {
                         } else {
                             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                         }
-                        /*if ($record['perso'] != 1) {
-                            $pw = stripslashes($pw);
-                            $pw = substr(addslashes($pw), strlen($record['rand_key']));
-                        }*/
                         // store
                         DB::insert(
                             prefix_table("export"),
@@ -153,6 +149,7 @@ switch ($_POST['type']) {
 
             //Prepare the PDF file
             include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
+
             $pdf=new FPDF_Protection();
             $pdf->SetProtection(array('print'), $_POST['pdf_password']);
 
@@ -189,6 +186,7 @@ switch ($_POST['type']) {
                 //row height calculation
                 $nb = 0;
                 $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[1], $record['login']));
                 $nb = max($nb, nbLines($table_col_width[3], $record['description']));
                 $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
 
@@ -215,6 +213,7 @@ switch ($_POST['type']) {
             }
 
             $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
+
             //send the file
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 

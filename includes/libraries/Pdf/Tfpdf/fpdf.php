@@ -1,33 +1,36 @@
 <?php
-
 /****************************************************************************
- * Software: FPDF_Protection                                                 *
- * Version:  1.03                                                            *
- * Date:     2009-11-29                                                      *
- * Author:   Klemen VODOPIVEC                                                *
- * License:  FPDF                                                            *
- *                                                                           *
- * Thanks:  Cpdf (http://www.ros.co.nz/pdf) was my working sample of how to  *
- *          implement protection in pdf.                                     *
- ****************************************************************************/
+* Software: FPDF_Protection                                                 *
+* Version:  1.04                                                            *
+* Date:     2015-12-06                                                      *
+* Author:   Klemen VODOPIVEC                                                *
+* License:  FPDF                                                            *
+*                                                                           *
+* Thanks:  Cpdf (http://www.ros.co.nz/pdf) was my working sample of how to  *
+*          implement protection in pdf.                                     *
+****************************************************************************/
 
-require 'tfpdf.class.php';
+require('tfpdf.class.php');
 
-if (function_exists('mcrypt_encrypt')) {
+if(function_exists('mcrypt_encrypt'))
+{
     function RC4($key, $data)
     {
         return mcrypt_encrypt(MCRYPT_ARCFOUR, $key, $data, MCRYPT_MODE_STREAM, '');
     }
-} else {
+}
+else
+{
     function RC4($key, $data)
     {
         static $last_key, $last_state;
 
-        if ($key != $last_key) {
+        if($key != $last_key)
+        {
             $k = str_repeat($key, 256/strlen($key)+1);
             $state = range(0, 255);
             $j = 0;
-            for ($i=0; $i<256; $i++) {
+            for ($i=0; $i<256; $i++){
                 $t = $state[$i];
                 $j = ($j + $t + ord($k[$i])) % 256;
                 $state[$i] = $state[$j];
@@ -35,15 +38,15 @@ if (function_exists('mcrypt_encrypt')) {
             }
             $last_key = $key;
             $last_state = $state;
-        } else {
-            $state = $last_state;
         }
+        else
+            $state = $last_state;
 
         $len = strlen($data);
         $a = 0;
         $b = 0;
         $out = '';
-        for ($i=0; $i<$len; $i++) {
+        for ($i=0; $i<$len; $i++){
             $a = ($a+1) % 256;
             $t = $state[$a];
             $b = ($b+$t) % 256;
@@ -52,34 +55,34 @@ if (function_exists('mcrypt_encrypt')) {
             $k = $state[($state[$a]+$state[$b]) % 256];
             $out .= chr(ord($data[$i]) ^ $k);
         }
-
         return $out;
     }
 }
 
-class FPDF_Protection extends TFPDF
+class FPDF_Protection extends tFPDF
 {
-    public $encrypted = false;  //whether document is protected
-    public $Uvalue;             //U entry in pdf document
-    public $Ovalue;             //O entry in pdf document
-    public $Pvalue;             //P entry in pdf document
-    public $enc_obj_id;         //encryption object id
+    var $encrypted = false;  //whether document is protected
+    var $Uvalue;             //U entry in pdf document
+    var $Ovalue;             //O entry in pdf document
+    var $Pvalue;             //P entry in pdf document
+    var $enc_obj_id;         //encryption object id
 
     /**
-     * Function to set permissions as well as user and owner passwords
-     *
-     * - permissions is an array with values taken from the following list:
-     *   copy, print, modify, annot-forms
-     *   If a value is present it means that the permission is granted
-     * - If a user password is set, user will be prompted before document is opened
-     * - If an owner password is set, document can be opened in privilege mode with no
-     *   restriction if that password is entered
-     */
-    public function SetProtection($permissions = array(), $user_pass = '', $owner_pass = null)
+    * Function to set permissions as well as user and owner passwords
+    *
+    * - permissions is an array with values taken from the following list:
+    *   copy, print, modify, annot-forms
+    *   If a value is present it means that the permission is granted
+    * - If a user password is set, user will be prompted before document is opened
+    * - If an owner password is set, document can be opened in privilege mode with no
+    *   restriction if that password is entered
+    */
+    function SetProtection($permissions=array(), $user_pass='', $owner_pass=null)
     {
-        $options = array('print' => 4, 'modify' => 8, 'copy' => 16, 'annot-forms' => 32);
+        $options = array('print' => 4, 'modify' => 8, 'copy' => 16, 'annot-forms' => 32 );
         $protection = 192;
-        foreach ($permissions as $permission) {
+        foreach($permissions as $permission)
+        {
             if (!isset($options[$permission]))
                 $this->Error('Incorrect permission: '.$permission);
             $protection += $options[$permission];
@@ -92,38 +95,37 @@ class FPDF_Protection extends TFPDF
         $this->_generateencryptionkey($user_pass, $owner_pass, $protection);
     }
 
-    /****************************************************************************
-     *                                                                           *
-     *                              Private methods                              *
-     *                                                                           *
-     ****************************************************************************/
+/****************************************************************************
+*                                                                           *
+*                              Private methods                              *
+*                                                                           *
+****************************************************************************/
 
-    public function _putstream($s)
+    function _putstream($s)
     {
-        if ($this->encrypted) {
+        if ($this->encrypted)
             $s = RC4($this->_objectkey($this->n), $s);
-        }
         parent::_putstream($s);
     }
 
-    public function _textstring($s)
+    function _textstring($s)
     {
-        if ($this->encrypted) {
+        //if (!$this->_isascii($s))
+        //    $s = $this->_UTF8toUTF16($s);
+        if ($this->encrypted)
             $s = RC4($this->_objectkey($this->n), $s);
-        }
-
-        return parent::_textstring($s);
+        return '('.$this->_escape($s).')';
     }
 
     /**
-     * Compute key depending on object number where the encrypted data is stored
-     */
-    public function _objectkey($n)
+    * Compute key depending on object number where the encrypted data is stored
+    */
+    function _objectkey($n)
     {
         return substr($this->_md5_16($this->encryption_key.pack('VXxx',$n)),0,10);
     }
 
-    public function _putresources()
+    function _putresources()
     {
         parent::_putresources();
         if ($this->encrypted) {
@@ -136,7 +138,7 @@ class FPDF_Protection extends TFPDF
         }
     }
 
-    public function _putencryption()
+    function _putencryption()
     {
         $this->_out('/Filter /Standard');
         $this->_out('/V 1');
@@ -146,7 +148,7 @@ class FPDF_Protection extends TFPDF
         $this->_out('/P '.$this->Pvalue);
     }
 
-    public function _puttrailer()
+    function _puttrailer()
     {
         parent::_puttrailer();
         if ($this->encrypted) {
@@ -156,36 +158,35 @@ class FPDF_Protection extends TFPDF
     }
 
     /**
-     * Get MD5 as binary string
-     */
-    public function _md5_16($string)
+    * Get MD5 as binary string
+    */
+    function _md5_16($string)
     {
         return pack('H*',md5($string));
     }
 
     /**
-     * Compute O value
-     */
-    public function _Ovalue($user_pass, $owner_pass)
+    * Compute O value
+    */
+    function _Ovalue($user_pass, $owner_pass)
     {
         $tmp = $this->_md5_16($owner_pass);
         $owner_RC4_key = substr($tmp,0,5);
-
         return RC4($owner_RC4_key, $user_pass);
     }
 
     /**
-     * Compute U value
-     */
-    public function _Uvalue()
+    * Compute U value
+    */
+    function _Uvalue()
     {
         return RC4($this->encryption_key, $this->padding);
     }
 
     /**
-     * Compute encryption key
-     */
-    public function _generateencryptionkey($user_pass, $owner_pass, $protection)
+    * Compute encryption key
+    */
+    function _generateencryptionkey($user_pass, $owner_pass, $protection)
     {
         // Pad passwords
         $user_pass = substr($user_pass.$this->padding,0,32);

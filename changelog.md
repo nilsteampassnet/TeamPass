@@ -1,13 +1,24 @@
 Last changes
 2.1.26
+ #1426 Fixes for many critical issues with OTV
+ #1421 Item will not be automatically deleted when accessed through otv option enabled
+ #1415 Installation Issue and PDF export password field mask
+       Fixed problem for user to change self password
+       Fixed problem for deleting all directories
+ #1414 Subfolders created into personal folders are presented in Folders and Roles management
+ #1409 Updated PDF library to fit 7.x PHP
+ #1407 Remove Save button in 2FA settings tab
+ #1402 User can define his timezone
  #1395 Error with Chrom while upgrading
  #1394 Replace ascii characters in cpliboard copy
  #1392 Corrected sql error while restoring database
  #1389 Requested JSON parse failed when copying item
  #1386 JSON parse failed (history item view)
  #1384 SyntaxError: Invalid Character if Syslog enabled
+ #1383 Export to PDF - Incorrect formatting
  #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
+ #1378 JSON parse error when changing user password (with several roles)
  #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set

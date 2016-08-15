@@ -160,7 +160,8 @@ $(function() {
             $("#find_page input").focus();
         },
         "columns": [
-            { "width": "10%" },
+            { "width": "40px" },
+            null,
             null,
             null,
             null,
