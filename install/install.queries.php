@@ -264,6 +264,10 @@ if (isset($_POST['type'])) {
                             `raison_iv` text NULL
                             ) CHARSET=utf8;"
                         );
+                        // create index
+                        mysqli_query($dbTmp,
+                            "CREATE INDEX teampass_log_items_id_item_IDX ON ".$var['tbl_prefix']."log_items (id_item,date);"
+                        );
                     } else if ($task == "misc") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."misc` (

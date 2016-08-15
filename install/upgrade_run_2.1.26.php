@@ -223,6 +223,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type
 // alter table USers
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
 
+// create index in log_items
+mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
+
 // create new table
 mysqli_query($dbTmp, 
     "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."tokens` (
