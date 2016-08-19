@@ -558,7 +558,7 @@ global \$SETTINGS;
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
-                            `url` varchar(500) NOT NULL DEFAULT '0',
+                            `url` varchar(500) NOT NULL DEFAULT '0'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "roles_title") {
