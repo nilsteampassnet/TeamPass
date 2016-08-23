@@ -65,7 +65,7 @@ echo '
         </div>
         <div id="tab5_2" style="display:none;margin-top:30px;">
             <div style="font-style:italic;">
-                <input type="button" class="button" id="but_disconnect_all_users" value="'.$LANG['disconnect_all_users'].'"><br />
+                <input type="button" class="button" id="but_disconnect_all_users" value="'.htmlentities(strip_tags($LANG['disconnect_all_users']), ENT_QUOTES).'"><br />
                 '.$LANG['info_list_of_connected_users_approximation'].'
             </div>
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_users_logged_page">
