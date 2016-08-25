@@ -12,7 +12,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title></head><body>
+<?php
 require_once('sources/sessions.php');
 session_start();
 if (
@@ -91,33 +94,33 @@ echo '
             <td>
                 <i class="fa fa-sm fa-wrench"></i>&nbsp;
                 <label>'.$LANG['admin_2factors_authentication_setting'].'
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_2factors_authentication_setting_tip'].'"></i>
+                &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_2factors_authentication_setting_tip']), ENT_QUOTES).'"></i>
                 </label>
             </td>
             <td style="margin-left:15px;">
                 <div class="toggle toggle-modern" id="2factors_authentication" data-toggle-on="', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="2factors_authentication_input" name="2factors_authentication_input" value="', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '1' : '0', '" />
-            <td>
+            </td>
         </tr>
     <!-- // Google Authenticator website name -->
         <tr style="margin-bottom:3px">
             <td>
                 <i class="fa fa-sm fa-wrench"></i>&nbsp;
                 <label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_ga_website_name_tip'].'"></i>
+                &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_ga_website_name_tip']), ENT_QUOTES).'"></i>
                 </td>
                 <td>
                 <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
-            <td>
+            </td>
         </tr>
         </table>
     </div>
-    <hr style="margin:10px 0 10px 0;">
+    <hr style="margin:10px 0 10px 0;" />
     <div style="width:100%;">
         <div style="margin-bottom:3px; float:left; width:350px;">
             <i class="fa fa-sm fa-wrench"></i>&nbsp;
             <label for="api">' .
             $LANG['settings_duo'].'
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_duo_tip'].'"></i>
+                &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_duo_tip']), ENT_QUOTES).'"></i>
             </label>
         </div>
         <div class="toggle toggle-modern" id="duo" data-toggle-on="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 'true' : 'false', '" style=" float:left; margin-left: 15px; width:70px;"></div><input type="hidden" id="duo_input" name="duo_input" value="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '1' : '0', '" />
@@ -139,7 +142,7 @@ echo '
                 <td>
                 <input type="text" size="60" id="duo_akey" name="duo_akey" value="'.$tmp_akey.'" class="text ui-widget-content" />
                 &nbsp;<input type="button" onclick="GenerateCryptKey(40)" value="'.$LANG['generate_random_key'].'" class="ui-state-default ui-corner-all" style="cursor:pointer;" />&nbsp;<span id="generate_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
-                <td>
+                </td>
             </tr>';
 // IKEY
 echo '
@@ -150,7 +153,7 @@ echo '
                 </td>
                 <td>
                 <input type="text" size="60" id="duo_ikey" name="duo_ikey" value="'.$tmp_ikey.'" class="text ui-widget-content" />
-                <td>
+                </td>
             </tr>';
 // SKEY
 echo '
@@ -161,7 +164,7 @@ echo '
                 </td>
                 <td>
                 <input type="text" size="60" id="duo_skey" name="duo_skey" value="'.$tmp_skey.'" class="text ui-widget-content" />
-                <td>
+                </td>
             </tr>';
 // HOST
 echo '
@@ -172,23 +175,25 @@ echo '
                 </td>
                 <td>
                 <input type="text" size="60" id="duo_host" name="duo_host" value="'.$tmp_host.'" class="text ui-widget-content" />
-                <td>
+                </td>
             </tr>';
 
 echo '
         </table>
-    <div style="margin:15px 0 0 0;">' .
-        $LANG['settings_duo_explanation'].'
-    </div>
-    <div style="margin-bottom:20px; margin-top:20px;">
-        <input type="button" onclick="SaveKeys()" value="'.$LANG['duo_save_sk_file'].'" class="ui-state-default ui-corner-all" style="cursor:pointer;" />
-        &nbsp;<span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+        <div style="margin:15px 0 0 0;">' .
+            $LANG['settings_duo_explanation'].'
+        </div>
+        <div style="margin-bottom:20px; margin-top:20px;">
+            <input type="button" onclick="SaveKeys()" value="'.$LANG['duo_save_sk_file'].'" class="ui-state-default ui-corner-all" style="cursor:pointer;" />
+            &nbsp;<span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+        </div>
     </div>
     </div>
 </div>';
 
 echo '
 <script type="text/javascript">
+//<![CDATA[
 function saveDuoStatus(status)
 {
     $("#save_status_wait").show();
@@ -354,6 +359,7 @@ $(function() {
         );
     });
 });
-
+//]]>
 </script>
-';
+
+</body></html>';

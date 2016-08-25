@@ -87,10 +87,10 @@ echo '
     <div style="width:100%;">
         <div style="float:left;width:50%;">
             <label for="kb_category" class="label">'.$LANG['category'].'</label>
-            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" width="300px;" value="">
+            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" style="width: 300px;" value="" />
         </div>
         <div style="float:right;width:50%;">
-            <label for="" class="">'.$LANG['kb_anyone_can_modify'].' : </label>
+            <label class="modify_kb_label">'.$LANG['kb_anyone_can_modify'].' : </label>
             <span class="div_radio">
                 <input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$LANG['yes'].'</label>
                 <input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$LANG['no'].'</label>
@@ -100,7 +100,7 @@ echo '
 
     <div style="float:left;width:100%;">
         <label for="kb_description" class="label">'.$LANG['description'].'</label>
-        <textarea rows="5" name="kb_description" id="kb_description" class="input"></textarea>
+        <textarea rows="5" name="kb_description" id="kb_description" class="input" cols="70"></textarea>
     </div>
 
     <div style="float:left;width:100%;margin-top:15px;">
