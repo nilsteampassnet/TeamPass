@@ -150,18 +150,18 @@ echo '
     <input type="text" id="suggestion_label" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
 
 	<label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
-	<textarea rows="2" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
+	<textarea rows="2" cols="70" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
     <br />
 
 	<label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
-	<select name="suggestion_folder" id="suggestion_folder" onChange="GetRequiredComplexity()" style="width:100%;">
+	<select name="suggestion_folder" id="suggestion_folder" onchange="GetRequiredComplexity()" style="width:100%;">
 		'.$selectVisibleFoldersOptions.'
 	</select>
 	<br /><br />
 
 	<label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].
 	'&nbsp;
-	<span id="pw_wait" style="display:none;"><img src="includes/images/ajax-loader.gif" /></span>
+	<span id="pw_wait" style="display:none;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
 	<span id="complexity_required_text"></span>
 	</label>
 	<input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
@@ -172,7 +172,7 @@ echo '
 	</div>
 
 	<label for="suggestion_comment" class="label_cpm">'.$LANG['comment'].'</label>
-	<textarea rows="2" name="suggestion_comment" id="suggestion_comment" class="input" style="width:100%;"></textarea>
+	<textarea rows="2" cols="70" name="suggestion_comment" id="suggestion_comment" class="input" style="width:100%;"></textarea>
 
 	<div style="padding:5px; z-index:9999999; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="add_suggestion_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'

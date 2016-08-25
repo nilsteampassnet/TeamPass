@@ -17,8 +17,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 //Function opening
     function openKB(id)
     {
@@ -175,5 +175,5 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 $(this).trigger("keydown.autocomplete");
         });
     });
-
+//]]>
 </script>

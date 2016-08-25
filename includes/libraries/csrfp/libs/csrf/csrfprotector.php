@@ -399,10 +399,10 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 "</noscript>", $buffer);
 
             $hiddenInput = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'
-                            .self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
+                            .self::$config['CSRFP_TOKEN'] .'" />' .PHP_EOL;
 
             $hiddenInput .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''
-                            .json_encode(self::$config['verifyGetFor']) .'\'>';
+                            .json_encode(self::$config['verifyGetFor']) .'\' />';
 
             //implant hidden fields with check url information for reading in javascript
             $buffer = str_ireplace('</body>', $hiddenInput . '</body>', $buffer);
