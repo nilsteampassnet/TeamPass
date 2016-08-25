@@ -2939,6 +2939,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
+                $("#files_number").val(0);
             }
         }
     });
@@ -3041,6 +3042,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
+                $("#edit_files_number").val(0);
             }
         }
     });

@@ -23,7 +23,7 @@ if (
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once '../checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     handleError('Not allowed to ...', 110);
@@ -39,14 +39,21 @@ if (isset($_POST['PHPSESSID'])) {
     handleError('No Session was found.', 110);
 }
 
+
+// Get parameters
+$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
+$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
+$fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
+
+
 // token check
 if (!isset($_POST['user_token'])) {
     handleError('No user token found.', 110);
     exit();
 } else {
     //Connect to mysql server
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once '../../includes/config/settings.php';
+    require_once '../../includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -60,48 +67,62 @@ if (!isset($_POST['user_token'])) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    // create a session if several files to upload
-    if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
-        $_SESSION[$_POST['user_token']] = $_POST['files_number'];
-    } else if ($_SESSION[$_POST['user_token']] > 0) {
+    if (isset($_SESSION[$_POST['user_token']]) && ($chunk < $chunks - 1) && $_SESSION[$_POST['user_token']] >= 0) {
         // increase end_timestamp for token
         DB::update(
             prefix_table('tokens'),
             array(
-                'end_timestamp' => time() + 30
+                'end_timestamp' => time() + 10
                ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
             $_POST['user_token']
         );
-        // decrease counter of files to upload
-        $_SESSION[$_POST['user_token']]--;
     } else {
-        // no more files to upload, kill session
-        unset($_SESSION[$_POST['user_token']]);
-        handleError('No user token found.', 110);
-        exit();
-    }
 
-    // check if token is expired
-    $data = DB::queryFirstRow(
-        "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
-        $_SESSION['user_id'],
-        $_POST['user_token']
-    );
-    // clear user token
-    if ($_SESSION[$_POST['user_token']] === 0) {
-        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
-        unset($_SESSION[$_POST['user_token']]);
-    }
+        // create a session if several files to upload
+        if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
+            $_SESSION[$_POST['user_token']] = $_POST['files_number'];
+        } else if ($_SESSION[$_POST['user_token']] > 0) {
+            // increase end_timestamp for token
+            DB::update(
+                prefix_table('tokens'),
+                array(
+                    'end_timestamp' => time() + 30
+                   ),
+                "user_id = %i AND token = %s",
+                $_SESSION['user_id'],
+                $_POST['user_token']
+            );
+            // decrease counter of files to upload
+            $_SESSION[$_POST['user_token']]--;
+        } else {
+            // no more files to upload, kill session
+            unset($_SESSION[$_POST['user_token']]);
+            handleError('No user token found.', 110);
+            die();
+        }
 
-    if (time() <= $data['end_timestamp']) {
-        // it is ok
-    } else {
-        // too old
-        unset($_SESSION[$_POST['user_token']]);
-        handleError('User token expired.', 110);
-        exit();
+        // check if token is expired
+        $data = DB::queryFirstRow(
+            "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
+            $_SESSION['user_id'],
+            $_POST['user_token']
+        );
+        // clear user token
+        if ($_SESSION[$_POST['user_token']] === 0) {
+            DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+            unset($_SESSION[$_POST['user_token']]);
+        }
+
+        if (time() <= $data['end_timestamp']) {
+            // it is ok
+        } else {
+            // too old
+            unset($_SESSION[$_POST['user_token']]);
+            handleError('User token expired.', 110);
+            die();
+        }
     }
 }
 
@@ -174,11 +195,6 @@ if (!in_array(
 
 // Uncomment this one to fake upload time
 // usleep(5000);
-
-// Get parameters
-$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
-$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
-$fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 // Clean the fileName for security reasons
 $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
@@ -313,6 +329,9 @@ if (strpos($contentType, "multipart") !== false) {
 if (!$chunks || $chunk == $chunks - 1) {
     // Strip the temp .part suffix off
     rename("{$filePath}.part", $filePath);
+} else {
+    // continue uploading other chunks
+    die();
 }
 
 // Get some variables
