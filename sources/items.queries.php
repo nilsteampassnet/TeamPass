@@ -384,7 +384,8 @@ if (isset($_POST['type'])) {
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
-                $label = noHTML(htmlspecialchars_decode($dataReceived['label']));
+                $label = noHTML(($dataReceived['label']));
+                echo $dataReceived['label']." -- ".$label;
                 $url = noHTML(htmlspecialchars_decode($dataReceived['url']));
                 $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
                 $login = noHTML(htmlspecialchars_decode($dataReceived['login']));

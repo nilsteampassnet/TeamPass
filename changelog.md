@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1448 admin delete removed password multiple select not working
  #1439 Fix for large files upload
  #1426 Fixes for many critical issues with OTV
  #1421 Item will not be automatically deleted when accessed through otv option enabled
