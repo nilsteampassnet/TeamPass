@@ -70,7 +70,7 @@ if (isset($_POST['type'])) {
             break;
         case "deleteCategory":
             DB::delete(prefix_table("categories"), "id = %i", $_POST['id']);
-            DB::delete(prefix_table("categories_folders"), "category_id = %i", $_POST['id']);
+            DB::delete(prefix_table("categories_folders"), "id_category = %i", $_POST['id']);
             echo '[{"error" : ""}]';
             break;
         case "addNewField":

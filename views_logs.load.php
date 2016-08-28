@@ -123,7 +123,7 @@ function loadTable(table_id)
             }
         });
     } else if (table_id == "t_admin") {
-        $("#type_log_displayed").val("items_logs");
+        $("#type_log_displayed").val("admin_logs");
         oTable4 = $("#t_admin").dataTable({
             "aaSorting": [[ 1, "asc" ]],
             "sPaginationType": "full_numbers",
@@ -240,6 +240,14 @@ $(function() {
                 if (data[0].status == "ok") {
                     $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
                     $("#div_dialog_message").dialog("open");
+                    // refresh table
+                    if ($("#type_log_displayed").val() == "connections_logs") oTable0.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "errors_logs") oTable1.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "access_logs") oTable2.api().ajax.reload();  
+                    else if ($("#type_log_displayed").val() == "copy_logs") oTable3.api().ajax.reload(); 
+                    else if ($("#type_log_displayed").val() == "admin_logs") oTable4.api().ajax.reload(); 
+                    else if ($("#type_log_displayed").val() == "items_logs") oTable5.api().ajax.reload(); 
+                    else if ($("#type_log_displayed").val() == "failed_auth_logs") oTable6.api().ajax.reload();                 
                 }
                 $("#purgeTo, #purgeFrom").val("");
             },

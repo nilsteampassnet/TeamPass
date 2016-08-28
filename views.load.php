@@ -185,44 +185,7 @@ $(function() {
     $("#radio_logs").click(function(e) {
         $("#div_log_purge").show();
     });
-    $("#butPurge").button().click(function(e) {
-        $.post(
-            "sources/views.queries.php",
-            {
-                type       : "purgeLogs",
-                purgeTo    : $("#purgeTo").val(),
-                purgeFrom  : $("#purgeFrom").val(),
-                logType    : $("#type_log_displayed").val()
-            },
-            function(data) {
-                if (data[0].status == "ok") {
-                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
-                    $("#div_dialog_message").dialog("open");
-                }
-                $("#purgeTo, #purgeFrom").val("");
-            },
-            "json"
-       );
-    });
-
-    $( "#purgeFrom" ).datepicker({
-        defaultDate: "today",
-        changeMonth: true,
-        changeYear: true,
-        numberOfMonths: 1,
-        onClose: function( selectedDate ) {
-            $( "#to" ).datepicker( "option", "minDate", selectedDate );
-        }
-    });
-    $( "#purgeTo" ).datepicker({
-        defaultDate: "+1w",
-        changeMonth: true,
-        changeYear: true,
-        numberOfMonths: 1,
-        onClose: function( selectedDate ) {
-            $( "#from" ).datepicker( "option", "maxDate", selectedDate );
-        }
-    });
+    
 
     $("#tab2_dialog").dialog({
         bgiframe: true,
