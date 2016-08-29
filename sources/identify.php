@@ -390,14 +390,16 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        
+        // get user info from LDAP
+        //$user_info_from_ad = $adldap->authenticate($auth_username);
 
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
-                //'pw' => $password,
                 'pw' => $data['pw'],
-                'email' => "",
+                'email' => "",  //$user_info_from_ad['mail'],
                 'admin' => '0',
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',

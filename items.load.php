@@ -1245,7 +1245,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Display details
                         $("#id_label").html(data.label);
-                        $("#hid_label").val(data.label);
+                        $("#hid_label").val(unsanitizeString(data.label));
                         $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {

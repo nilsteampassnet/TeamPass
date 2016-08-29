@@ -385,7 +385,6 @@ if (isset($_POST['type'])) {
             if (count($dataReceived) > 0) {
                 // Prepare variables
                 $label = noHTML(($dataReceived['label']));
-                echo $dataReceived['label']." -- ".$label;
                 $url = noHTML(htmlspecialchars_decode($dataReceived['url']));
                 $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
                 $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
@@ -1952,7 +1951,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes(handleBackslash($record['label'])), 0, 65);
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                             $tempo = explode("<br />", $record['description']);
                             if (count($tempo) == 1) {
@@ -3156,7 +3155,7 @@ if (isset($_POST['type'])) {
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
                         '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
                         '</tr>'.
                         '<tr></tr>';
                 }

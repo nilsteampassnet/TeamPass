@@ -223,8 +223,12 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type
 // alter table USers
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
 
-// create index in log_items
+// create index in log_items - for performance
 mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
+
+// change to true setting variable encryptClientServer
+// this variable is not to be changed anymore
+mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
 
 // create new table
 mysqli_query($dbTmp, 

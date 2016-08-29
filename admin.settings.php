@@ -205,6 +205,7 @@ echo '
                 <td>
             </tr>';
 //Enable data exchange encryption
+/*
 echo '
             <tr style="margin-bottom:3px">
                 <td>
@@ -218,7 +219,7 @@ echo '
                     <div class="toggle toggle-modern" id="encryptClientServer" data-toggle-on="', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="encryptClientServer_input" name="encryptClientServer_input" value="', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '1' : '0', '" />
                 <td>
             </tr>';
-
+*/
 echo '<tr><td colspan="3"><hr></td></tr>';
 //Proxy
 echo '
