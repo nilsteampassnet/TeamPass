@@ -1195,7 +1195,7 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-        logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             }
             else {
 
@@ -1234,15 +1234,20 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
 
+                // update SESSION
+                $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
+                $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
+                $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
+
 
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
-            logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+                    logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
                 }
 
                 if ($oldData['disabled'] != $accountDisabled) {
                     // update LOG
-            logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                    logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 }
 
     /*
