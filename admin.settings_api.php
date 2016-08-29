@@ -12,7 +12,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title></head><body>
+<?php
 require_once('sources/sessions.php');
 session_start();
 if (
@@ -62,7 +65,7 @@ echo '
         <td><div class="toggle toggle-modern" id="api" data-toggle-on="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="api_input" name="api_input" value="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? '1' : '0', '" /></td>
         </tr></table>
     </div>
-    <hr>
+    <hr />
     <div style="margin-bottom:3px;">
         <label for="api" style="width:350px;"><b>' .$LANG['settings_api_keys_list'].'</b>
             &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_keys_list_tip'].'"></i>
@@ -70,10 +73,10 @@ echo '
         </label>
         <div id="api_keys_list">
             <table id="tbl_keys">
-                <thead>
+                <thead><tr>
                 <th>'.$LANG['label'].'</th>
                 <th>'.$LANG['settings_api_key'].'</th>
-                </thead>';
+                </tr></thead><tbody><tr style="display: none ! important;"><td>HTML validation placeholder</td></tr>';
                 $rows = DB::query(
                     "SELECT id, label, value FROM ".prefix_table("api")."
                     WHERE type = %s
@@ -89,10 +92,10 @@ echo '
                     </tr>';
                 }
                 echo '
-            </table>
+            </tbody></table>
         </div>
     </div>
-    <hr>
+    <hr />
     <div style="margin-bottom:3px;">
         <label for="api" style="width:350px;"><b>'.$LANG['settings_api_ip_whitelist'].'</b>
             &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_ip_whitelist_tip'].'"></i>
@@ -156,7 +159,7 @@ echo '
 
 echo '
 <script type="text/javascript">
-
+//<![CDATA[
 /* FUNCTIONS FOR KEYS */
 function newKeyDB()
 {
@@ -360,5 +363,5 @@ $(function() {
         );
     });
 });
-
-</script>';
+//]]>
+</script></body></html>';

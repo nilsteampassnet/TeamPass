@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-
+//<![CDATA[
 $(function() {
 
     //Launch the datatables pluggin
@@ -291,5 +291,5 @@ function open_edit_folder_dialog(id)
     $("#folder_id_to_edit").val(id);
     $("#div_edit_folder").dialog("open");
 }
-
+//]]>
 </script>

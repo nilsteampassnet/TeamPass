@@ -17,8 +17,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 function GenererLog()
 {
     if ($("#log_jours").val() == "") return false;
@@ -268,5 +268,5 @@ $(function() {
         }
     });
 });
-
+//]]>
 </script>

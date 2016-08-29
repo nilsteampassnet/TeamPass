@@ -12,7 +12,10 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title></head><body>
+<?php
 require_once('sources/sessions.php');
 session_start();
 
@@ -83,7 +86,7 @@ foreach ($rows as $record) {
 echo '
 <div id="tabs-8">
     <div id="categories_list">
-        <table id="tbl_categories" style="">';
+        <table id="tbl_categories" style=""><tr style="display: none ! important;"><td>HTML validation placeholder</td></tr>';
 
 if (isset($arrCategories) && count($arrCategories) > 0) {
     // build table
@@ -160,7 +163,7 @@ echo '
 
 if (!isset($arrCategories) || count($arrCategories) == 0) {
     echo '
-    <div class=ui-state-highlight ui-corner-all" style="padding:2px;" id="no_category">
+    <div class="ui-state-highlight ui-corner-all" style="padding:2px;" id="no_category">
         '.$LANG['no_category_defined'].'
     </div>';
 }
@@ -181,7 +184,7 @@ echo '
             <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
             <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" />
-            <select id="moveItemTo" style="margin-left:10px;">'.$categoriesSelect.'</select>
+            <select id="moveItemTo" style="margin-left:10px;"><option style="display: none ! important;" value="HTML validation placeholder"></option>'.$categoriesSelect.'</select>
         </div>
         <div style="margin-top:5px;">
             <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" />
@@ -216,7 +219,7 @@ echo '
         &nbsp;&quot;<span style="font-weight:bold;" id="catInFolder_title"></span>&quot;&nbsp;:
         <br />
         <div style="text-align:center; margin-top:10px;">
-        <select id="cat_folders_selection" multiple size="12">';
+        <select id="cat_folders_selection" multiple="multiple" size="12">';
         $folders = $tree->getDescendants();
         foreach ($folders as $folder) {
             DB::query(
@@ -232,8 +235,11 @@ echo '
             }
         }
 echo '
+        </select>
         </div>
         <div id="catInFolder_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
     </div>';
 
 require_once 'admin.settings.load.php';
+echo '
+</body></html>';

@@ -18,8 +18,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 var oTable0;
 var oTable1;
 var oTable2;
@@ -278,4 +278,5 @@ $(function() {
         }
     });
 });
+//]]>
 </script>
