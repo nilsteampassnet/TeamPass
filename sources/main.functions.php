@@ -1407,7 +1407,7 @@ function handleConfigFile($action, $field = null, $value = null)
 }
 
 /*
-**
+** Permits to replace &#92; to permit correct display
 */
 function handleBackslash ($input)
 {

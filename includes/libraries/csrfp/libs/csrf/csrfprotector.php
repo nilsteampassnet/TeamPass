@@ -397,12 +397,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
             //best section to add, after <body> tag
             $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>" .self::$config['disabledJavascriptMessage'] .
                 "</noscript>", $buffer);
-
-            $hiddenInput = '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'
-                            .self::$config['CSRFP_TOKEN'] .'">' .PHP_EOL;
+            $hiddenInput = '<fieldset style="display: none"><legend>CSRF Protection</legend>' .PHP_EOL;
+            $hiddenInput .= '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'
+                            .self::$config['CSRFP_TOKEN'] .'" />' .PHP_EOL;
 
             $hiddenInput .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''
-                            .json_encode(self::$config['verifyGetFor']) .'\'>';
+                            .json_encode(str_replace("&","%26",self::$config['verifyGetFor'])) .'\' />' .PHP_EOL;
+            $hiddenInput .= '</fieldset>';
 
             //implant hidden fields with check url information for reading in javascript
             $buffer = str_ireplace('</body>', $hiddenInput . '</body>', $buffer);
