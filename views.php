@@ -47,7 +47,7 @@ echo '
     <div id="tabs-1">
         <p>
         '.$LANG['logs_1'].' : <input type="text" id="log_jours" />&nbsp;
-		<span class="fa-stack tip" title="'.$LANG['pw_generate'].'" onclick="GenererLog()" style="cursor:pointer;">
+		<span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="GenererLog()" style="cursor:pointer;">
 			<i class="fa fa-square fa-stack-2x"></i>
 			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
 		</span>&nbsp;
@@ -72,11 +72,11 @@ echo '
             <option value="6months">'.$LANG['expir_six_months'].'</option>
             <option value="1year">'.$LANG['expir_one_year'].'</option>
         </select>
-		<span class="fa-stack tip" title="'.$LANG['pw_generate'].'" onclick="generate_renewal_listing()" style="cursor:pointer;">
+		<span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generate_renewal_listing()" style="cursor:pointer;">
 			<i class="fa fa-square fa-stack-2x"></i>
 			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
 		</span>&nbsp;
-        <span id="renewal_icon_pdf" style="margin-left:15px;display:none;cursor:pointer;"><img src="includes/images/document-pdf-text.png" alt="" title="'.$LANG['generate_pdf'].'" onclick="generate_renewal_pdf()" /></span>
+        <span id="renewal_icon_pdf" style="margin-left:15px;display:none;cursor:pointer;"><img src="includes/images/document-pdf-text.png" alt="" title="'.htmlentities(strip_tags($LANG['generate_pdf']), ENT_QUOTES).'" onclick="generate_renewal_pdf()" /></span>
         <div id="list_renewal_items" style="width:700px;margin:10px auto 0 auto;"></div>
         <input type="hidden" id="list_renewal_items_pdf" />
     </div>';

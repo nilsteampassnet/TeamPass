@@ -146,11 +146,12 @@ echo '
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
+               	</li>
             </ul>
         </div>
         <div style="margin:3px 0px 10px 18px;font-weight:bold;">
             '.$LANG['items_browser_title'].'
-            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.$LANG['item_menu_find'].'" />
+            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.htmlentities(strip_tags($LANG['item_menu_find']), ENT_QUOTES).'" />
         </div>
         <div id="sidebar" class="sidebar">
             <div id="jstree" style="overflow:auto;"></div>
@@ -181,13 +182,14 @@ echo '
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
                         <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
-                        <input class="form-control text ui-widget-content" type="text" placeholder="'.$LANG['item_menu_find'].'" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+                        <!--    placeholder="'.$LANG['item_menu_find'].'"   -->
+                        <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
                     </div>
 
                     <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
                 </div>
             </div>
-            <!--<div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" /></div>-->
+            <!--<div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" alt="loading" /></div>-->
             <div id="items_list"></div>
         </div>';
 // Zone ITEM DETAIL
@@ -225,6 +227,7 @@ echo '
                                         ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '
                                         <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
                                     </ul>
+                               	</li>
                             </ul>
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
@@ -400,13 +403,13 @@ echo '
 echo '
             <label for="" class="label_cpm">'.$LANG['description'].' : </label>
             <span id="desc_span">
-                <textarea rows="5" name="desc" id="desc" class="input_text"></textarea>
+                <textarea rows="5" cols="60" name="desc" id="desc" class="input_text"></textarea>
             </span>
             <br />';
 // Line for FOLDERS
 echo '
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onChange="RecupComplexite(this.value,0)" style="width:200px"></select>';
+            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:200px"><option style="display: none;"></option></select>';
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
@@ -433,7 +436,7 @@ echo'
 echo '
             <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
                 <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
+                <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
             <input type="hidden" id="mypassword_complex" />
@@ -445,7 +448,7 @@ echo '
                     <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
                     <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
                     <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="pw_secure" checked /><label for="pw_secure">'.$LANG['secure'].'</label>
+                    <input type="checkbox" id="pw_secure" checked="checked" /><label for="pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
                 </span>
@@ -494,11 +497,11 @@ echo '
                 <input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
                 <label for="enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
                 <input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$LANG['times'].'&nbsp;
-                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onChange="$(\'#times_before_deletion\').val(\'\')" />
+                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onchange="$(\'#times_before_deletion\').val(\'\')" />
             </div>';
 // Line for EMAIL
 echo '
-            <input type="checkbox" name="annonce" id="annonce" onChange="toggleDiv(\'annonce_liste\')" />
+            <input type="checkbox" name="annonce" id="annonce" onchange="toggleDiv(\'annonce_liste\')" />
             <label for="annonce">'.$LANG['email_announce'].'</label>
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
                 <h3>'.$LANG['email_select'].'</h3>
@@ -582,13 +585,13 @@ echo '
 
             <label for="" class="cpm_label">'.$LANG['description'].'&nbsp;<span class="fa fa-eraser" style="cursor:pointer;" onclick="clear_html_tags()"></span>&nbsp;</label>
             <span id="edit_desc_span">
-                <textarea rows="5" id="edit_desc" name="edit_desc" class="input_text"></textarea>
+                <textarea rows="5" cols="70" id="edit_desc" name="edit_desc" class="input_text"></textarea>
             </span>';
 // Line for FOLDER
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onChange="RecupComplexite(this.value,1)" style="width:200px;"></select>
+            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:200px;"><option style="display: none;"></option></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -615,7 +618,7 @@ echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" /></span>
+                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
@@ -629,7 +632,7 @@ echo '
                     <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
                     <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
                     <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="edit_pw_secure" checked /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
+                    <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
@@ -679,12 +682,12 @@ echo '
             <div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
                 <input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
                 <label for="edit_enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
-                <input type="text" value="" size="1" id="edit_times_before_deletion" onChange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$LANG['times'].'&nbsp;
-                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onChange="$(\'#edit_times_before_deletion\').val(\'\')" />
+                <input type="text" value="" size="1" id="edit_times_before_deletion" onchange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$LANG['times'].'&nbsp;
+                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onchange="$(\'#edit_times_before_deletion\').val(\'\')" />
             </div>';
 
 echo '
-            <input type="checkbox" name="edit_annonce" id="edit_annonce" onChange="toggleDiv(\'edit_annonce_liste\')" />
+            <input type="checkbox" name="edit_annonce" id="edit_annonce" onchange="toggleDiv(\'edit_annonce_liste\')" />
             <label for="edit_annonce">'.$LANG['email_announce'].'</label>
             <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
                 <h3>'.$LANG['email_select'].'</h3>
@@ -761,7 +764,7 @@ echo '
         </tr>
         <tr>
             <td>'.$LANG['sub_group_of'].' : </td>
-            <td><select id="new_rep_groupe">
+            <td><select id="new_rep_groupe"><option style="display: none;"></option>
                 ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
                 '<option value="0">---</option>' : '', '' .'
             </select></td>
@@ -774,6 +777,7 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 }
 echo '
             </select>
+           	</td>
         </tr>';
 echo '
     </table>
@@ -804,6 +808,7 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 }
 echo '
             </select>
+	        </td>
         </tr>
     </table>
     <div id="edit_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -815,7 +820,7 @@ echo '
 <div id="div_move_folder" style="display:none;">
     <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <div style="text-align:center;margin-top:20px;">
-        The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br>
+        The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br />
         <select id="move_folder_id">
             <option value="0">-choisir-</option>
         </select>
@@ -889,7 +894,7 @@ echo '
     <div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <div style="">'.$LANG['item_share_text'].'</div>
     <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
-    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
+    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" alt="loading" /></div>
 </div>';
 // DIALOG FOR ITEM IS UPDATED
 echo '

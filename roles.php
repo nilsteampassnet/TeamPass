@@ -43,10 +43,10 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['add_role_tip']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
-    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['refresh_matrix']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
         <i class="fa fa-refresh"></i>
     </button>
 </div>

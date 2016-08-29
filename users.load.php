@@ -19,7 +19,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-
+//<![CDATA[
 
     $.extend($.expr[":"], {
         "containsIN": function(elem, i, match, array) {
@@ -1053,5 +1053,5 @@ function htmlspecialchars_decode (string, quote_style)
 
     return string;
 }
-
+//]]>
 </script>
