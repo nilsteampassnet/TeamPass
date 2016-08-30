@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1457 New email address not used until logoff & logon
  #1450 Purge log feature - purges nothing
  #1449 Delete category hangs UI and crashes PHP
  #1448 admin delete removed password multiple select not working

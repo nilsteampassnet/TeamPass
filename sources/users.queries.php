@@ -1312,6 +1312,10 @@ elseif (!empty($_POST['newValue'])) {
     if ($value[0] === "usertimezone") {
         $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
     }
+    // store email change in session
+    if ($value[0] === "email") {
+        $_SESSION['user_email'] = $_POST['newValue'];
+    }
     // Display info
     echo $_POST['newValue'];
 }
