@@ -316,7 +316,7 @@ function identifyUser($sentData)
             }
 
             // authenticate the user
-            if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
+            if ($adldap->user()->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
                 //update user's password
                 $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
@@ -392,17 +392,16 @@ function identifyUser($sentData)
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
         
         // get user info from LDAP
-        //$user_info_from_ad = $adldap->user_info($auth_username, array("mail", "name", "lastname"));
+        $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
 
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
                 'pw' => $data['pw'],
-                /*'email' => $user_info_from_ad['mail'],
-                'name' => $user_info_from_ad['name'],
-                'lastname' => $user_info_from_ad['lastname'],*/
-                'email' => "",
+                'email' => $user_info_from_ad[0]['mail'][0],
+                'name' => $user_info_from_ad[0]['givenname'][0],
+                'lastname' => $user_info_from_ad[0]['sn'][0],
                 'admin' => '0',
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
