@@ -1,5 +1,8 @@
 Last changes
 2.1.26
+ #1454 API outputs deleted passwords
+ #1453 API should have function "userpw"
+ #1452 API should also output the url to each password
  #1457 New email address not used until logoff & logon
  #1450 Purge log feature - purges nothing
  #1449 Delete category hangs UI and crashes PHP

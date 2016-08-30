@@ -260,13 +260,14 @@ function rest_get () {
                 DB::debugMode(false);
 
                 // get items in this module
-                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
+                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
                 foreach ($response as $data)
                 {
                     // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json[$id]['pw'] = $crypt_pw['string'];
                 }
@@ -280,13 +281,84 @@ function rest_get () {
                 $i = 0;
                 foreach ($response as $row)
                 {
-                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
+                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
                     foreach ($response as $data)
                     {
                         // prepare output
                         $id = $data['id'];
                         $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                         $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                        $json[$id]['pw'] = $crypt_pw['string'];
+                    }
+                }
+            }
+            else if($GLOBALS['request'][1] == "userpw") {
+                $username = $GLOBALS['request'][2];
+                if(strcmp($username,"admin")==0) {
+                    // forbid admin access
+                }
+                $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                foreach ($response as $data)
+                {
+                    $role_str = $data['fonction_id'];
+                }
+                $folder_arr = array();
+                $roles = explode(";", $role_str);
+                foreach ($roles as $role)
+                {
+                    $response = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
+                    foreach ($response as $data)
+                    {
+                        $folder_id = $data['folder_id'];
+                        if(!array_key_exists($folder_id,$folder_arr)) {
+                            array_push($folder_arr,$folder_id);
+                        }
+                    }
+                }
+                $folder_str = implode(";",$folder_arr);
+                
+                // get ids
+                if (strpos($folder_str,";") > 0) {
+                    $condition = "id_tree IN %ls";
+                    $condition_value = explode(';', $folder_str);
+                } else {
+                    $condition = "id_tree = %s";
+                    $condition_value = $folder_str;
+                }
+                DB::debugMode(false);
+                $data = "";
+                // get items in this module
+                $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$id]['pw'] = $crypt_pw['string'];
+                }
+
+                /* load folders */
+                $response = DB::query(
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
+                    $folder_str
+                );
+                $rows = array();
+                $i = 0;
+                foreach ($response as $row)
+                {
+                    $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
+                    foreach ($response as $data)
+                    {
+                        // prepare output
+                        $id = $data['id'];
+                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                         $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                         $json[$id]['pw'] = $crypt_pw['string'];
                     }
@@ -307,13 +379,14 @@ function rest_get () {
                     }
                 }
 
-                $response = DB::query("select id,label,login,pw, pw_iv, id_tree from ".prefix_table("items")." where id IN %ls", $array_items);
+                $response = DB::query("SELECT id,label,login,pw, pw_iv, id_tree FROM ".prefix_table("items")." WHERE inactif = %i AND id IN %ls", "0", $array_items);
                 foreach ($response as $data)
                 {
                     // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json[$id]['pw'] = $crypt_pw['string'];
                 }
@@ -358,10 +431,13 @@ function rest_get () {
 
                 DB::debugMode(false);
                 $response = DB::query(
-                    "select id, label, login, pw, pw_iv, id_tree
-                    from ".prefix_table("items")."
-                    where id_tree = (%s)
-                    and label LIKE %ss",
+                    "SELECT id, label, login, pw, pw_iv, id_tree
+                    FROM ".prefix_table("items")."
+                    WHERE 
+                    inactif = %i 
+                    AND id_tree = (%s)
+                    AND label LIKE %ss",
+                    "0"
                     $category_query,
                     $item
                 );
@@ -371,6 +447,7 @@ function rest_get () {
                     $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
                     $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json['pw'] = $crypt_pw['string'];
                     $json['folder_id'] = $data['id_tree'];
@@ -1109,4 +1186,3 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
 
     return substr($dk, $st, $kl);
 }
-
