@@ -38,7 +38,7 @@ function getBits($n)
 {
     $str = '';
     $x = $n + 10;
-    for ($i=0; $i<$x; $i++) {
+    for ($i = 0; $i < $x; $i++) {
         $str .= base_convert(mt_rand(1, 36), 10, 36);
     }
     return substr($str, 0, $n);
@@ -160,9 +160,9 @@ function encrypt($decrypted, $personalSalt = "")
     }
 
     if (!empty($personalSalt)) {
-         $staticSalt = $personalSalt;
+        $staticSalt = $personalSalt;
     } else {
-         $staticSalt = SALT;
+        $staticSalt = SALT;
     }
 
     //set our salt to a variable
@@ -170,7 +170,7 @@ function encrypt($decrypted, $personalSalt = "")
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
     //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
-    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
     // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
     $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
@@ -212,7 +212,7 @@ function decrypt($encrypted, $personalSalt = "")
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
     //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
-    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16+32, true), 32, 16);
+    $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
     // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
     $iv = base64_decode(substr($encrypted, 0, 43) . '==');
     // Remove $iv from $encrypted.
@@ -243,9 +243,9 @@ function bCrypt($password, $cost)
     if (function_exists('openssl_random_pseudo_bytes')) {
         $salt .= bin2hex(openssl_random_pseudo_bytes(11));
     } else {
-        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for ($i=0; $i<22; $i++) {
-            $salt.=$chars[mt_rand(0, 63)];
+        $chars = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i = 0; $i < 22; $i++) {
+            $salt .= $chars[mt_rand(0, 63)];
         }
     }
     return crypt($password, $salt);
@@ -253,7 +253,7 @@ function bCrypt($password, $cost)
 
 function cryption($p1, $p2, $p3, $p4 = null)
 {
-    if (DEFUSE_ENCRYPTION === TRUE) {
+    if (DEFUSE_ENCRYPTION === true) {
         // load PhpEncryption library
         if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
             require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
@@ -284,7 +284,9 @@ function cryption($p1, $p2, $p3, $p4 = null)
 function cryption_phpCrypt($string, $key, $iv, $type)
 {
     // manage key origin
-    if (empty($key)) $key = SALT;
+    if (empty($key)) {
+        $key = SALT;
+    }
 
     if ($key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
@@ -292,8 +294,10 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             for ($x = strlen($key) + 1; $x <= 16; $x++) {
                 $key .= chr(0);
             }
-        } else if (strlen($key) > 16) {
-            $key = substr($key, 16);
+        } else {
+            if (strlen($key) > 16) {
+                $key = substr($key, 16);
+            }
         }
     }
 
@@ -310,41 +314,43 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             "iv" => bin2hex($iv),
             "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
         );
-    } else if ($type == "decrypt") {
-        // case if IV is empty
-        if (empty($iv))
-            return array(
-                'string' => "",
-                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
-            );
+    } else {
+        if ($type == "decrypt") {
+            // case if IV is empty
+            if (empty($iv)) {
+                return array(
+                    'string' => "",
+                    'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+                );
+            }
 
-        // convert
-        try {
-            $string = testHex2Bin(trim($string));
-            $iv = testHex2Bin($iv);
-        }
-        catch (Exception $e) {
-            // error - $e->getMessage();
+            // convert
+            try {
+                $string = testHex2Bin(trim($string));
+                $iv = testHex2Bin($iv);
+            } catch (Exception $e) {
+                // error - $e->getMessage();
+                return array(
+                    'string' => "",
+                    'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+                );
+            }
+
+            // load IV
+            $crypt->IV($iv);
+            // decrypt
+            $decrypt = $crypt->decrypt($string);
+            // return
+            //return str_replace(chr(0), "", $decrypt);
             return array(
-                'string' => "",
-                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+                'string' => str_replace(chr(0), "", $decrypt),
+                'error' => ""
             );
         }
-
-        // load IV
-        $crypt->IV($iv);
-        // decrypt
-        $decrypt = $crypt->decrypt($string);
-        // return
-        //return str_replace(chr(0), "", $decrypt);
-        return array(
-            'string' => str_replace(chr(0), "", $decrypt),
-            'error' => ""
-        );
     }
 }
 
-function testHex2Bin ($val)
+function testHex2Bin($val)
 {
     if (!@hex2bin($val)) {
         throw new Exception("ERROR");
@@ -433,6 +439,8 @@ function trimElement($chaine, $element)
  */
 function cleanString($string)
 {
+
+
     // Create temporary table for special characters escape
     $tabSpecialChar = array();
     for ($i = 0; $i <= 31; $i++) {
@@ -443,7 +451,8 @@ function cleanString($string)
     return str_replace($tabSpecialChar, "", $string);
 }
 
-function db_error_handler($params) {
+function db_error_handler($params)
+{
     echo "Error: " . $params['error'] . "<br>\n";
     echo "Query: " . $params['query'] . "<br>\n";
     die; // don't want to keep going if a query broke
@@ -459,10 +468,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     //load ClassLoader
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -474,7 +483,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     $link->set_charset($encoding);
 
     //Build tree
-    $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+    $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'] . '/includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -489,7 +498,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['groupes_visibles_list'] = "";
         $_SESSION['list_folders_limited'] = "";
-        $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
+        $rows = DB::query("SELECT id FROM " . prefix_table("nested_tree") . " WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -505,7 +514,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
         // Get ID of personal folder
         $pf = DB::queryfirstrow(
-            "SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s",
+            "SELECT id FROM " . prefix_table("nested_tree") . " WHERE title = %s",
             $_SESSION['user_id']
         );
         if (!empty($pf['id'])) {
@@ -513,7 +522,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 array_push($_SESSION['groupes_visibles'], $pf['id']);
                 array_push($_SESSION['personal_visible_groups'], $pf['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title',
+                    'personal_folder');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($pf['id']);
                 foreach ($tst as $t) {
@@ -526,7 +536,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // get complete list of ROLES
         $tmp = explode(";", $_SESSION['fonction_id']);
         $rows = DB::query(
-            "SELECT * FROM ".prefix_table("roles_title")."
+            "SELECT * FROM " . prefix_table("roles_title") . "
             ORDER BY title ASC");
         foreach ($rows as $record) {
             if (!empty($record['id']) && !in_array($record['id'], $tmp)) {
@@ -607,10 +617,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         // Does this user is allowed to see other items
         $x = 0;
         $rows = DB::query(
-                "SELECT id, id_tree FROM " . prefix_table("items") . "
+            "SELECT id, id_tree FROM " . prefix_table("items") . "
             WHERE restricted_to LIKE %ss AND inactif=%s",
-                $_SESSION['user_id'].';',
-                '0'
+            $_SESSION['user_id'].';',
+            '0'
         );
         foreach ($rows as $record) {
             $listRestrictedFoldersForItems[$record['id_tree']][$x] = $record['id'];
@@ -651,7 +661,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $pfs = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
+        $pfs = DB::query("SELECT id FROM " . prefix_table("nested_tree") . " WHERE %l", $where);
         foreach ($pfs as $pfId) {
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
@@ -662,7 +672,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
+            $pf = DB::queryfirstrow("SELECT id FROM " . prefix_table("nested_tree") . " WHERE title = %s",
+                $_SESSION['user_id']);
             if (!empty($pf['id'])) {
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $pf['id']);
@@ -678,14 +689,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, array_unique (array_merge ($listReadOnlyFolders, $_SESSION['personal_folders'])))) {   //
+                if (!in_array($folderId,
+                    array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders'])))
+                ) {   //
                     DB::query(
                         "SELECT *
-                        FROM ".prefix_table("roles_values")."
+                        FROM " . prefix_table("roles_values") . "
                         WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        array("W","ND","NE","NDNE")
+                        array("W", "ND", "NE", "NDNE")
 
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
@@ -700,11 +713,11 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 if (!in_array($folderId, $listReadOnlyFolders)) {   // || (isset($pf) && $folderId != $pf['id'])
                     DB::query(
                         "SELECT *
-                        FROM ".prefix_table("roles_values")."
+                        FROM " . prefix_table("roles_values") . "
                         WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
-                        array("W","ND","NE","NDNE")
+                        array("W", "ND", "NE", "NDNE")
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -723,9 +736,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")."");
+        DB::queryfirstrow("SELECT id FROM " . prefix_table("nested_tree") . "");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
+        DB::queryfirstrow("SELECT id FROM " . prefix_table("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
 
@@ -748,10 +761,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 function updateCacheTable($action, $id = "")
 {
     global $db, $server, $user, $pass, $database, $pre, $port, $encoding;
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     //Connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -770,13 +783,13 @@ function updateCacheTable($action, $id = "")
     // Rebuild full cache table
     if ($action == "reload") {
         // truncate table
-        DB::query("TRUNCATE TABLE ".$pre."cache");
+        DB::query("TRUNCATE TABLE " . $pre . "cache");
 
         // reload date
         $rows = DB::query(
             "SELECT *
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            FROM " . $pre . "items as i
+            INNER JOIN " . $pre . "log_items as l ON (l.id_item = i.id)
             AND l.action = %s
             AND i.inactif = %i",
             'at_creation',
@@ -785,14 +798,15 @@ function updateCacheTable($action, $id = "")
         foreach ($rows as $record) {
             // Get all TAGS
             $tags = "";
-            $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $record['id']);
+            $itemTags = DB::query("SELECT tag FROM " . $pre . "tags WHERE item_id=%i", $record['id']);
             foreach ($itemTags as $itemTag) {
                 if (!empty($itemTag['tag'])) {
-                    $tags .= $itemTag['tag']." ";
+                    $tags .= $itemTag['tag'] . " ";
                 }
             }
             // Get renewal period
-            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".$pre."nested_tree WHERE id=%i", $record['id_tree']);
+            $resNT = DB::queryfirstrow("SELECT renewal_period FROM " . $pre . "nested_tree WHERE id=%i",
+                $record['id_tree']);
 
             // form id_tree to full foldername
             $folder = "";
@@ -804,12 +818,12 @@ function updateCacheTable($action, $id = "")
                 if (empty($folder)) {
                     $folder = stripslashes($elem->title);
                 } else {
-                    $folder .= " » ".stripslashes($elem->title);
+                    $folder .= " » " . stripslashes($elem->title);
                 }
             }
             // store data
             DB::insert(
-                $pre."cache",
+                $pre . "cache",
                 array(
                     'id' => $record['id'],
                     'label' => $record['label'],
@@ -824,22 +838,22 @@ function updateCacheTable($action, $id = "")
                     'author' => $record['id_user'],
                     'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
                     'timestamp' => $record['date']
-                   )
+                )
             );
         }
         // UPDATE an item
     } elseif ($action == "update_value") {
         // get new value from db
         $data = DB::queryfirstrow(
-            "SELECT label, description, id_tree, perso, restricted_to, login
-            FROM ".$pre."items
+            "SELECT label, description, id_tree, perso, restricted_to, login, url
+            FROM " . $pre . "items
             WHERE id=%i", $id);
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
+        $itemTags = DB::query("SELECT tag FROM " . $pre . "tags WHERE item_id=%i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag']." ";
+                $tags .= $itemTag['tag'] . " ";
             }
         }
         // form id_tree to full foldername
@@ -852,12 +866,12 @@ function updateCacheTable($action, $id = "")
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= " » " . stripslashes($elem->title);
             }
         }
         // finaly update
         DB::update(
-            $pre."cache",
+            $pre . "cache",
             array(
                 'label' => $data['label'],
                 'description' => $data['description'],
@@ -869,7 +883,7 @@ function updateCacheTable($action, $id = "")
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
-               ),
+            ),
             "id = %i",
             $id
         );
@@ -878,18 +892,18 @@ function updateCacheTable($action, $id = "")
         // get new value from db
         $data = DB::queryFirstRow(
             "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, l.date
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            FROM " . $pre . "items as i
+            INNER JOIN " . $pre . "log_items as l ON (l.id_item = i.id)
             WHERE i.id = %i
             AND l.action = %s",
             $id, 'at_creation'
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id = %i", $id);
+        $itemTags = DB::query("SELECT tag FROM " . $pre . "tags WHERE item_id = %i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag']." ";
+                $tags .= $itemTag['tag'] . " ";
             }
         }
         // form id_tree to full foldername
@@ -902,12 +916,12 @@ function updateCacheTable($action, $id = "")
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= " » " . stripslashes($elem->title);
             }
         }
         // finaly update
         DB::insert(
-            $pre."cache",
+            $pre . "cache",
             array(
                 'id' => $data['id'],
                 'label' => $data['label'],
@@ -921,11 +935,11 @@ function updateCacheTable($action, $id = "")
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                 'timestamp' => $data['date']
-               )
+            )
         );
         // DELETE an item
     } elseif ($action == "delete_value") {
-        DB::delete($pre."cache", "id = %i", $id);
+        DB::delete($pre . "cache", "id = %i", $id);
     }
 }
 
@@ -937,12 +951,12 @@ function teampassStats()
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/sources/SplClassLoader.php';
 
     // connect to the server
 
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -955,21 +969,21 @@ function teampassStats()
 
     // Prepare stats to be sent
     // Count no FOLDERS
-    DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
+    DB::query("SELECT * FROM " . prefix_table("nested_tree") . "");
     $dataFolders = DB::count();
     // Count no USERS
-    $dataUsers = DB::query("SELECT * FROM ".$pre."users");
+    $dataUsers = DB::query("SELECT * FROM " . $pre . "users");
     $dataUsers = DB::count();
     // Count no ITEMS
-    $dataItems = DB::query("SELECT * FROM ".$pre."items");
+    $dataItems = DB::query("SELECT * FROM " . $pre . "items");
     $dataItems = DB::count();
     // Get info about installation
     $dataSystem = array();
     $rows = DB::query(
-        "SELECT valeur,intitule FROM ".$pre."misc
+        "SELECT valeur,intitule FROM " . $pre . "misc
         WHERE type = %s
         AND intitule IN %ls",
-        'admin', array('enable_pf_feature','log_connections','cpassman_version')
+        'admin', array('enable_pf_feature', 'log_connections', 'cpassman_version')
     );
     foreach ($rows as $record) {
         if ($record['intitule'] == 'enable_pf_feature') {
@@ -990,18 +1004,18 @@ function teampassStats()
         'cpm_version' => $dataSystem['cpassman_version'],
         'enable_pf_feature' => $dataSystem['enable_pf_feature'],
         'log_connections' => $dataSystem['log_connections'],
-       );
+    );
     // Encode all the data, for security.
     foreach ($statsToSend as $k => $v) {
-        $statsToSend[$k] = urlencode($k).'='.urlencode($v);
+        $statsToSend[$k] = urlencode($k) . '=' . urlencode($v);
     }
     // Turn this into the query string!
     $statsToSend = implode('&', $statsToSend);
 
-    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$statsToSend, 'r');
+    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?" . $statsToSend, 'r');
     // update the actual time
     DB::update(
-        $pre."misc",
+        $pre . "misc",
         array(
             'valeur' => time()
         ),
@@ -1018,12 +1032,14 @@ function teampassStats()
 function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 {
     global $LANG;
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    include $_SESSION['settings']['cpassman_dir'] . '/includes/config/settings.php';
     //load library
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
     // load PHPMailer
-    if (!isset($mail)) $mail = new PHPMailer();
+    if (!isset($mail)) {
+        $mail = new PHPMailer();
+    }
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
@@ -1048,9 +1064,10 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->AltBody = $textMailAlt;
     // send email
     if (!$mail->send()) {
-        return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        return '"error":"error_mail_not_send" , "message":"' . str_replace(array("\n", "\t", "\r"), '',
+            $mail->ErrorInfo) . '"';
     } else {
-        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        return '"error":"" , "message":"' . $LANG['forgot_my_pw_email_sent'] . '"';
     }
 }
 
@@ -1061,7 +1078,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
  */
 function generateKey()
 {
-    return substr(md5(rand().rand()), 0, 15);
+    return substr(md5(rand() . rand()), 0, 15);
 }
 
 /**
@@ -1092,7 +1109,9 @@ function isDate($date)
 
 function isUTF8($string)
 {
-    if (is_array($string) === true) $string = $string['string'];
+    if (is_array($string) === true) {
+        $string = $string['string'];
+    }
     return preg_match(
         '%^(?:
         [\x09\x0A\x0D\x20-\x7E] # ASCII
@@ -1108,28 +1127,36 @@ function isUTF8($string)
     );
 }
 
+
 /*
 * FUNCTION
 * permits to prepare data to be exchanged
 */
 function prepareExchangedData($data, $type)
 {
+
+
     //load ClassLoader
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/sources/SplClassLoader.php';
     //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
     $aes->register();
 
+
     if ($type == "encode") {
+
+
         if (
             isset($_SESSION['settings']['encryptClientServer'])
             && $_SESSION['settings']['encryptClientServer'] == 0
         ) {
+
             return json_encode(
                 $data,
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE
             );
         } else {
+
             return Encryption\Crypt\aesctr::encrypt(
                 json_encode(
                     $data,
@@ -1138,8 +1165,9 @@ function prepareExchangedData($data, $type)
                 $_SESSION['key'],
                 256
             );
+
         }
-    } elseif  ($type == "decode") {
+    } elseif ($type == "decode") {
         if (
             isset($_SESSION['settings']['encryptClientServer'])
             && $_SESSION['settings']['encryptClientServer'] == 0
@@ -1161,7 +1189,8 @@ function prepareExchangedData($data, $type)
     }
 }
 
-function make_thumb($src, $dest, $desired_width) {
+function make_thumb($src, $dest, $desired_width)
+{
 
     /* read the source image */
     $source_image = imagecreatefrompng($src);
@@ -1187,7 +1216,7 @@ function make_thumb($src, $dest, $desired_width) {
 function prefix_table($table)
 {
     global $pre;
-    $safeTable = htmlspecialchars($pre.$table);
+    $safeTable = htmlspecialchars($pre . $table);
     if (!empty($safeTable)) {
         // sanitize string
         return $safeTable;
@@ -1234,15 +1263,14 @@ function GenerateCryptKey($size = "", $secure = "", $numerals = "", $capitalize 
 /*
 * Send sysLOG message
 */
-function send_syslog($message, $component = "teampass", $program = "php", $host , $port)
+function send_syslog($message, $component = "teampass", $program = "php", $host, $port)
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
+    //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
     $syslog_message = "<123>" . date('M d H:i:s ') . $component . ": " . $message;
-        socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
+    socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
     socket_close($sock);
 }
-
 
 
 /**
@@ -1250,14 +1278,16 @@ function send_syslog($message, $component = "teampass", $program = "php", $host 
  *
  * permits to log events into DB
  */
-function logEvents($type, $label, $who, $login="", $field_1 = NULL)
+function logEvents($type, $label, $who, $login = "", $field_1 = null)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
-    if (empty($who)) $who = get_client_ip_server();
+    if (empty($who)) {
+        $who = get_client_ip_server();
+    }
 
     // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1279,19 +1309,21 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
         )
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-        if ($type == "user_mngt"){
-            send_syslog("The User " .$login. " perform the acction off " .$label. " to the user " .$field_1. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+        if ($type == "user_mngt") {
+            send_syslog("The User " . $login . " perform the acction off " . $label . " to the user " . $field_1 . " - " . $type,
+                "teampass", "php", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
         } else {
-            send_syslog("The User " .$login. " perform the acction off " .$label. " - " .$type,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+            send_syslog("The User " . $login . " perform the acction off " . $label . " - " . $type, "teampass", "php",
+                $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
         }
     }
 }
 
-function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
+function logItems($id, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1304,18 +1336,19 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
     DB::insert(
         prefix_table(
             "log_items"),
-            array(
-                'id_item' => $id,
-                'date' => time(),
-                'id_user' => $id_user,
-                'action' => $action,
-                'raison' => $raison,
-                'raison_iv' => $raison_iv
-            )
-        );
-        if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison,"teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
-        }
+        array(
+            'id_item' => $id,
+            'date' => time(),
+            'id_user' => $id_user,
+            'action' => $action,
+            'raison' => $raison,
+            'raison_iv' => $raison_iv
+        )
+    );
+    if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+        send_syslog("The Item " . $item . " was " . $action . " by " . $login . " " . $raison, "teampass", "php",
+            $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+    }
 }
 
 /*
@@ -1377,7 +1410,7 @@ function handleConfigFile($action, $field = null, $value = null)
     $tp_config_file = "../includes/config/tp.config.php";
 
     // include librairies & connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1391,7 +1424,7 @@ function handleConfigFile($action, $field = null, $value = null)
     if (!file_exists($tp_config_file) || $action == "rebuild") {
         // perform a copy
         if (file_exists($tp_config_file)) {
-            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d_His", time()))) {
+            if (!copy($tp_config_file, $tp_config_file . '.' . date("Y_m_d_His", time()))) {
                 return "ERROR: Could not copy file '" . $tp_config_file . "'";
             }
         }

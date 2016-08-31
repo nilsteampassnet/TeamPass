@@ -971,7 +971,7 @@ if (isset($_POST['type'])) {
             $dataDeleted = DB::count();
             $dataRestored = DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $_POST['id'], "at_restored");
             $dataRestored = DB::count();
-            if ($dataDeleted != 0 && $dataDeleted > $dataRestored)  {
+            if ($dataDeleted != 0 && $dataDeleted > $dataRestored) {
                 // This item is deleted => exit
                 echo prepareExchangedData(array('show_detail_option' => 2), "encode");
                 break;
@@ -992,9 +992,6 @@ if (isset($_POST['type'])) {
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
             $listeRestriction = $listNotification = $listNotificationEmails = "";
             $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
-
-//            var_dump($rows, $dataItem['id_user']);
-
             foreach ($rows as $record) {
                 // Get auhtor
                 if ($record['id'] == $dataItem['id_user']) {
@@ -1038,7 +1035,6 @@ if (isset($_POST['type'])) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-
             if (in_array($_SESSION['user_id'], $restrictedTo)) {
                 $restrictionActive = false;
             }

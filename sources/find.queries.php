@@ -439,14 +439,14 @@ if (!isset($_GET['type'])) {
 
 
         // prepare new line
-        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
+        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.mb_substr(stripslashes($record['label']), 0, 65);
 
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
             } else {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($tempo[0]), 0, 30))).']</font>';
             }
         }
 

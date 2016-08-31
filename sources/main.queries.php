@@ -24,38 +24,36 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'] . '/sources/checks.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
     // continue
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'] . '/error.php';
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 } elseif (
     (isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
-    (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))
-) {
+    (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
 } elseif (
-(isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")
-) {
+    (isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
     // continue
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'] . '/error.php';
+    include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'] . '/includes/config/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 error_reporting(E_ERROR);
-require_once $_SESSION['settings']['cpassman_dir'] . '/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'] . '/sources/SplClassLoader.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -72,7 +70,7 @@ $aes->register();
 
 // User's language loading
 $k['langage'] = @$_SESSION['user_language'];
-require_once $_SESSION['settings']['cpassman_dir'] . '/includes/language/' . $_SESSION['user_language'] . '.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 // Manage type of action asked
 switch ($_POST['type']) {
     case "change_pw":
@@ -90,20 +88,19 @@ switch ($_POST['type']) {
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change" && $_SESSION['user_admin'] != 1) {
             // check if expected security level is reached
-            $data_roles = DB::queryfirstrow("SELECT fonction_id FROM " . prefix_table("users") . " WHERE id = %i",
-                $_SESSION['user_id']);
+            $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
 
             // check if badly written
-            $data_roles['fonction_id'] = explode(',', str_replace(';', ',', $data_roles['fonction_id']));
+            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
             if ($data_roles['fonction_id'][0] === "") {
                 $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
-                $data_roles['fonction_id'] = implode(',', $data_roles['fonction_id']);
+                $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 DB::update(
                     prefix_table("users"),
                     array(
                         'fonction_id' => $data_roles['fonction_id']
-                    ),
+                       ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
@@ -112,8 +109,8 @@ switch ($_POST['type']) {
 
             $data = DB::query(
                 "SELECT complexity
-                FROM " . prefix_table("roles_title") . "
-                WHERE id IN (" . implode(', ', $data_roles['fonction_id']) . ")
+                FROM ".prefix_table("roles_title")."
+                WHERE id IN (".implode(';', $data_roles['fonction_id']).")
                 ORDER BY complexity DESC"
             );
             if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
@@ -125,7 +122,7 @@ switch ($_POST['type']) {
             $lastPw = explode(';', $_SESSION['last_pw']);
             // if size is bigger then clean the array
             if (sizeof($lastPw) > $_SESSION['settings']['number_of_used_pw']
-                && $_SESSION['settings']['number_of_used_pw'] > 0
+                    && $_SESSION['settings']['number_of_used_pw'] > 0
             ) {
                 for ($x = 0; $x < $_SESSION['settings']['number_of_used_pw']; $x++) {
                     unset($lastPw[$x]);
@@ -155,7 +152,7 @@ switch ($_POST['type']) {
                         if (empty($oldPw)) {
                             $oldPw = $elem;
                         } else {
-                            $oldPw .= ";" . $elem;
+                            $oldPw .= ";".$elem;
                         }
                     }
                 }
@@ -171,13 +168,12 @@ switch ($_POST['type']) {
                         'pw' => $newPw,
                         'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
                         'last_pw' => $oldPw
-                    ),
+                       ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
                 // update LOG
-                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'],
-                    $_SESSION['user_id']);
+                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                 echo '[ { "error" : "none" } ]';
                 break;
             }
@@ -186,7 +182,7 @@ switch ($_POST['type']) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
-                FROM " . prefix_table("users") . "
+                FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_SESSION['user_id']
             );
@@ -210,19 +206,18 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                ),
+                   ),
                 "id = %i",
                 $dataReceived['user_id']
             );
 
             // update LOG
-            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'],
-                $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             //Send email to user
             if ($_POST['change_pw_origine'] != "admin_change") {
                 $row = DB::queryFirstRow(
-                    "SELECT email FROM " . prefix_table("users") . "
+                    "SELECT email FROM ".prefix_table("users")."
                     WHERE id = %i",
                     $dataReceived['user_id']
                 );
@@ -247,7 +242,7 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                ),
+                   ),
                 "id = %i",
                 $_SESSION['user_id']
             );
@@ -258,8 +253,7 @@ switch ($_POST['type']) {
             $_SESSION['validite_pw'] = true;
 
             // update LOG
-            logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'],
-                $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             echo '[ { "error" : "none" } ]';
             break;
@@ -269,8 +263,8 @@ switch ($_POST['type']) {
         }
         break;
     /**
-     * This will generate the QR Google Authenticator
-     */
+    * This will generate the QR Google Authenticator
+    */
     case "ga_generate_qr":
         // Check if user exists
         if (!isset($_POST['id']) || empty($_POST['id'])) {
@@ -281,14 +275,14 @@ switch ($_POST['type']) {
 
             $data = DB::queryfirstrow(
                 "SELECT id, email
-                FROM " . prefix_table("users") . "
+                FROM ".prefix_table("users")."
                 WHERE login = %s",
                 $login
             );
         } else {
             $data = DB::queryfirstrow(
                 "SELECT id, login, email
-                FROM " . prefix_table("users") . "
+                FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -302,8 +296,8 @@ switch ($_POST['type']) {
                 echo '[{"error" : "no_email"}]';
             } else {
                 // generate new GA user code
-                include_once($_SESSION['settings']['cpassman_dir'] . "/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-                include_once($_SESSION['settings']['cpassman_dir'] . "/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
                 $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
                 $gaSecretKey = $g->generateSecret();
 
@@ -312,7 +306,7 @@ switch ($_POST['type']) {
                     prefix_table("users"),
                     array(
                         'ga' => $gaSecretKey
-                    ),
+                       ),
                     "id = %i",
                     $data['id']
                 );
@@ -322,7 +316,7 @@ switch ($_POST['type']) {
 
                 // send mail?
                 if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
-                    sendEmail(
+                    sendEmail (
                         $LANG['email_ga_subject'],
                         str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
                         $data['email']
@@ -330,7 +324,7 @@ switch ($_POST['type']) {
                 }
 
                 // send back
-                echo '[{ "error" : "0" , "ga_url" : "' . $gaUrl . '" }]';
+                echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
             }
         }
         break;
@@ -352,7 +346,7 @@ switch ($_POST['type']) {
                 $_SESSION['user_id']
             );
             // Return data
-            echo '[{"new_value":"' . $_SESSION['fin_session'] . '"}]';
+            echo '[{"new_value":"'.$_SESSION['fin_session'].'"}]';
         } else {
             echo '[{"new_value":"expired"}]';
         }
@@ -368,33 +362,30 @@ switch ($_POST['type']) {
      */
     case "send_pw_by_email":
         // generate key
-        $key = GenerateCryptKey(50);
+        $key =  GenerateCryptKey(50);
 
         // Get account and pw associated to email
-
-        $dataUser = DB::queryOneRow(
-            "SELECT login,pw FROM " . prefix_table("users") . " WHERE email = %s",
+        DB::query(
+            "SELECT * FROM ".prefix_table("users")." WHERE email = %s",
             mysqli_escape_string($link, stripslashes($_POST['email']))
         );
-
         $counter = DB::count();
-        if ($counter === 1) {
-
-            $textMail = $LANG['forgot_pw_email_body_1'] . " <a href=\"" .
-                $_SESSION['settings']['cpassman_url'] . "/index.php?action=password_recovery&key=" . $key .
-                "&login=" . mysqli_escape_string($link,
-                    $dataUser['login']) . "\">" . $_SESSION['settings']['cpassman_url'] .
-                "/index.php?action=password_recovery&key=" . $key . "&login=" . mysqli_escape_string($link,
-                    $dataUser['login']) . "</a>.<br><br>" . $LANG['thku'];
-            $textMailAlt = $LANG['forgot_pw_email_altbody_1'] . " " . $LANG['at_login'] . " : " . mysqli_escape_string($link,
-                    $dataUser['login']) . " - " .
-                $LANG['index_password'] . " : " . md5($dataUser['pw']);
-
+        if ($counter != 0) {
+            $data = DB::query(
+                "SELECT login,pw FROM ".prefix_table("users")." WHERE email = %s",
+                mysqli_escape_string($link, stripslashes($_POST['email']))
+            );
+            $textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
+                $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+                "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+                "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
+            $textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
+                $LANG['index_password']." : ".md5($data['pw']);
 
             // Check if email has already a key in DB
             $data = DB::query(
-                "SELECT * FROM " . prefix_table("misc") . " WHERE intitule = %s AND type = %s",
-                mysqli_escape_string($link, $dataUser['login']),
+                "SELECT * FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
+                mysqli_escape_string($link, $_POST['login']),
                 "password_recovery"
             );
             $counter = DB::count();
@@ -406,7 +397,7 @@ switch ($_POST['type']) {
                     ),
                     "type = %s and intitule = %s",
                     "password_recovery",
-                    mysqli_escape_string($link, $dataUser['login'])
+                    mysqli_escape_string($link, $_POST['login'])
                 );
             } else {
                 // store in DB the password recovery informations
@@ -414,32 +405,28 @@ switch ($_POST['type']) {
                     prefix_table("misc"),
                     array(
                         'type' => 'password_recovery',
-                        'intitule' => mysqli_escape_string($link, $dataUser['login']),
+                        'intitule' => mysqli_escape_string($link, $_POST['login']),
                         'valeur' => $key
                     )
                 );
             }
 
-            echo '[{' . sendEmail($LANG['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt) . '}]';
+            echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
         } else {
             // no one has this email ... alert
-            echo '[{"error":"error_email" , "message":"' . $LANG['forgot_my_pw_error_email_not_exist'] . '"}]';
+            echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
         }
         break;
     // Send to user his new pw if key is conform
     case "generate_new_password":
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
-
         // Prepare variables
         $login = htmlspecialchars_decode($dataReceived['login']);
         $key = htmlspecialchars_decode($dataReceived['key']);
-
-
-
         // check if key is okay
         $data = DB::queryFirstRow(
-            "SELECT valeur FROM " . prefix_table("misc") . " WHERE intitule = %s AND type = %s",
+            "SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
             mysqli_escape_string($link, $login),
             "password_recovery"
         );
@@ -450,7 +437,6 @@ switch ($_POST['type']) {
             $pwdlib = new PasswordLib\PasswordLib();
             // generate key
             $newPwNotCrypted = $pwdlib->getRandomToken(10);
-
 
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -464,7 +450,7 @@ switch ($_POST['type']) {
                 prefix_table("users"),
                 array(
                     'pw' => $newPw
-                ),
+                   ),
                 "login = %s",
                 mysqli_escape_string($link, $login)
             );
@@ -478,21 +464,20 @@ switch ($_POST['type']) {
             );
             // Get email
             $dataUser = DB::queryFirstRow(
-                "SELECT email FROM " . prefix_table("users") . " WHERE login = %s",
+                "SELECT email FROM ".prefix_table("users")." WHERE login = %s",
                 mysqli_escape_string($link, $login)
             );
 
             $_SESSION['validite_pw'] = false;
             // send to user
             $ret = json_decode(
-                sendEmail(
+                @sendEmail(
                     $LANG['forgot_pw_email_subject_confirm'],
-                    $LANG['forgot_pw_email_body'] . " " . $newPwNotCrypted.'<br> '.$LANG['index_login'].' '.$login,
+                    $LANG['forgot_pw_email_body']." ".$newPwNotCrypted,
                     $dataUser['email'],
-                    strip_tags($LANG['forgot_pw_email_body']) . " " . $newPwNotCrypted
+                    strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
                 )
             );
-
             // send email
             if (empty($ret['error'])) {
                 echo 'done';
@@ -508,12 +493,12 @@ switch ($_POST['type']) {
         //Load Tree
         $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
         $tree->register();
-        $tree = new Tree\NestedTree\NestedTree($pre . 'nested_tree', 'id', 'parent_id', 'title');
+        $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
         $folders = $tree->getDescendants();
         $arrOutput = array();
 
         /* Build list of all folders */
-        $foldersList = "\'0\':\'" . $LANG['root'] . "\'";
+        $foldersList = "\'0\':\'".$LANG['root']."\'";
         foreach ($folders as $f) {
             // Be sure that user can only see folders he/she is allowed to
             if (!in_array($f->id, $_SESSION['forbiden_pfs'])) {
@@ -535,7 +520,7 @@ switch ($_POST['type']) {
                 }
             }
         }
-        echo json_encode($arrOutput, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        echo json_encode($arrOutput, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
         break;
     /**
      * Store the personal saltkey
@@ -545,7 +530,7 @@ switch ($_POST['type']) {
         if ($dataReceived['psk'] != "") {
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
             setcookie(
-                "TeamPass_PFSK_" . md5($_SESSION['user_id']),
+                "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
                 (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
@@ -575,8 +560,8 @@ switch ($_POST['type']) {
         // Change encryption
         $rows = DB::query(
             "SELECT i.id as id, i.pw as pw
-            FROM " . prefix_table("items") . " as i
-            INNER JOIN " . prefix_table("log_items") . " as l ON (i.id=l.id_item)
+            FROM ".prefix_table("items")." as i
+            INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
             WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
             "1",
             $_SESSION['user_id'],
@@ -588,7 +573,7 @@ switch ($_POST['type']) {
                 if (empty($list)) {
                     $list = $record['id'];
                 } else {
-                    $list .= "," . $record['id'];
+                    $list .= ",".$record['id'];
                 }
             }
         }
@@ -596,7 +581,7 @@ switch ($_POST['type']) {
         // change salt
         $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
         setcookie(
-            "TeamPass_PFSK_" . md5($_SESSION['user_id']),
+            "TeamPass_PFSK_".md5($_SESSION['user_id']),
             encrypt($_SESSION['my_sk'], ""),
             time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
             '/'
@@ -629,8 +614,8 @@ switch ($_POST['type']) {
             // delete all previous items of this user
             $rows = DB::query(
                 "SELECT i.id as id
-                FROM " . prefix_table("items") . " as i
-                INNER JOIN " . prefix_table("log_items") . " as l ON (i.id=l.id_item)
+                FROM ".prefix_table("items")." as i
+                INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
                 WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
                 "1",
                 $_SESSION['user_id'],
@@ -645,7 +630,7 @@ switch ($_POST['type']) {
             // change salt
             $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
             setcookie(
-                "TeamPass_PFSK_" . md5($_SESSION['user_id']),
+                "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($_SESSION['my_sk'], ""),
                 time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                 '/'
@@ -666,7 +651,7 @@ switch ($_POST['type']) {
                 prefix_table("users"),
                 array(
                     'user_language' => $language
-                ),
+                   ),
                 "id = %i",
                 $_SESSION['user_id']
             );
@@ -686,13 +671,13 @@ switch ($_POST['type']) {
             && isset($_SESSION['key'])
         ) {
             $row = DB::queryFirstRow(
-                "SELECT valeur FROM " . prefix_table("misc") . " WHERE type = %s AND intitule = %s",
+                "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
                 "cron",
                 "sending_emails"
             );
             if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                 //load library
-                require $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+                require $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
                 // load PHPMailer
                 $mail = new PHPMailer();
 
@@ -707,7 +692,7 @@ switch ($_POST['type']) {
                 $mail->WordWrap = 80; // set word wrap
                 $mail->isHtml(true); // send as HTML
                 $status = "";
-                $rows = DB::query("SELECT * FROM " . prefix_table("emails") . " WHERE status != %s", "sent");
+                $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                 foreach ($rows as $record) {
                     // send email
                     $ret = json_decode(
@@ -728,7 +713,7 @@ switch ($_POST['type']) {
                         prefix_table("emails"),
                         array(
                             'status' => $status
-                        ),
+                           ),
                         "timestamp = %s",
                         $record['timestamp']
                     );
@@ -742,7 +727,7 @@ switch ($_POST['type']) {
                 prefix_table("misc"),
                 array(
                     'valeur' => time()
-                ),
+                   ),
                 "intitule = %s AND type = %s",
                 "sending_emails",
                 "cron"
@@ -755,7 +740,7 @@ switch ($_POST['type']) {
     case "store_error":
         if (!empty($_SESSION['user_id'])) {
             // update DB
-            logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
+        logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
         }
         break;
     /**
@@ -785,10 +770,10 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
         } else {
-            $pwgen->setSecure(($_POST['secure'] == "true") ? true : false);
-            $pwgen->setNumerals(($_POST['numerals'] == "true") ? true : false);
-            $pwgen->setCapitalize(($_POST['capitalize'] == "true") ? true : false);
-            $pwgen->setSymbols(($_POST['symbols'] == "true") ? true : false);
+            $pwgen->setSecure(($_POST['secure'] == "true")? true : false);
+            $pwgen->setNumerals(($_POST['numerals'] == "true")? true : false);
+            $pwgen->setCapitalize(($_POST['capitalize'] == "true")? true : false);
+            $pwgen->setSymbols(($_POST['symbols'] == "true")? true : false);
         }
 
         echo prepareExchangedData(
@@ -804,7 +789,7 @@ switch ($_POST['type']) {
      */
     case "check_login_exists":
         $data = DB::query(
-            "SELECT login, psk FROM " . prefix_table("users") . "
+            "SELECT login, psk FROM ".prefix_table("users")."
             WHERE login = %i",
             mysqli_escape_string($link, stripslashes($_POST['userId']))
         );
@@ -822,7 +807,7 @@ switch ($_POST['type']) {
             $pskSet = false;
         }
 
-        echo '[{"login" : "' . $userOk . '", "psk":"' . $pskSet . '"}]';
+        echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
         break;
     /**
      * Make statistics on item
@@ -830,7 +815,7 @@ switch ($_POST['type']) {
     case "item_stat":
         if (isset($_POST['scope']) && $_POST['scope'] == "item") {
             $data = DB::queryfirstrow(
-                "SELECT view FROM " . prefix_table("statistics") . " WHERE scope = %s AND item_id = %i",
+                "SELECT view FROM ".prefix_table("statistics")." WHERE scope = %s AND item_id = %i",
                 'item',
                 $_POST['id']
             );
@@ -849,7 +834,7 @@ switch ($_POST['type']) {
                     prefix_table("statistics"),
                     array(
                         'scope' => 'item',
-                        'view' => $data['view'] + 1
+                        'view' => $data['view']+1
                     ),
                     "item_id = %i",
                     $_POST['id']
@@ -872,8 +857,8 @@ switch ($_POST['type']) {
         $arrTmp = array();
         $rows = DB::query(
             "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
-            FROM " . prefix_table("log_items") . " AS l
-            RIGHT JOIN " . prefix_table("items") . " AS i ON (l.id_item = i.id)
+            FROM ".prefix_table("log_items")." AS l
+            RIGHT JOIN ".prefix_table("items")." AS i ON (l.id_item = i.id)
             WHERE l.action = %s AND l.id_user = %i
             ORDER BY l.date DESC
             LIMIT 0, 100",
@@ -883,12 +868,10 @@ switch ($_POST['type']) {
         if (DB::count() > 0) {
             foreach ($rows as $record) {
                 if (!in_array($record['id'], $arrTmp)) {
-                    $return .= '<li onclick="displayItemNumber(' . $record['id'] . ', ' . $record['id_tree'] . ')"><i class="fa fa-hand-o-right"></i>&nbsp;' . ($record['label']) . '</li>';
+                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
                     $x++;
                     array_push($arrTmp, $record['id']);
-                    if ($x >= 10) {
-                        break;
-                    }
+                    if ($x >= 10) break;
                 }
             }
         }
@@ -899,7 +882,7 @@ switch ($_POST['type']) {
             isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
             && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
         ) {
-            $rows = DB::query("SELECT * FROM " . prefix_table("suggestion"));
+            $rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
             $nb_suggestions_waiting = DB::count();
         }
 
@@ -909,7 +892,7 @@ switch ($_POST['type']) {
                 "existing_suggestions" => $nb_suggestions_waiting,
                 "text" => ($return)
             ),
-            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
+            JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
         );
         break;
 
@@ -923,7 +906,7 @@ switch ($_POST['type']) {
         $pwdlib = new PasswordLib\PasswordLib();
         // generate key
         $key = $pwdlib->getRandomToken($_POST['size']);
-        echo '[{"key" : "' . $key . '"}]';
+        echo '[{"key" : "'.$key.'"}]';
         break;
 
     /**
@@ -937,7 +920,7 @@ switch ($_POST['type']) {
             isset($_POST['numeric']) ? $_POST['numeric'] : false,
             isset($_POST['ambiguous']) ? $_POST['ambiguous'] : false,
             isset($_POST['symbols']) ? $_POST['symbols'] : false
-        );
+            );
 
         // store in DB
         DB::insert(
@@ -947,12 +930,13 @@ switch ($_POST['type']) {
                 'token' => $token,
                 'reason' => $_POST['reason'],
                 'creation_timestamp' => time(),
-                'end_timestamp' => time() + $_POST['duration']    // in secs
+                'end_timestamp' => time()+$_POST['duration']    // in secs
             )
         );
 
-        echo '[{"token" : "' . $token . '"}]';
+        echo '[{"token" : "'.$token.'"}]';
         break;
+
 
 
 }
