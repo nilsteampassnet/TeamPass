@@ -521,7 +521,7 @@ global \$SETTINGS;
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
-                            `can_manage_all_users` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)

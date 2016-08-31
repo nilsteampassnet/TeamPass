@@ -1262,7 +1262,21 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_login").val(data.login);
                         $("#id_email").html(data.email);
                         $("#hid_email").val(data.email);
-                        $("#id_restricted_to").html(data.id_restricted_to+data.id_restricted_to_roles);
+                        //prepare nice list of users / groups
+                        var tmp_arr = data.id_restricted_to.split(";");
+                        var html_users = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_users += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-user fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        var tmp_arr = data.id_restricted_to_roles.split(";");
+                        var html_groups = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_groups += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-group fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        $("#id_restricted_to").html(
+                            html_users+
+                            html_groups
+                        );
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
                         $("#id_tags").html(data.tags);
