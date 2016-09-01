@@ -284,7 +284,7 @@ function identifyUser($sentData)
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
             }
-            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+            $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
             $adldap->register();
 
             // Posix style LDAP handles user searches a bit differently
@@ -316,7 +316,7 @@ function identifyUser($sentData)
             }
 
             // authenticate the user
-            if ($adldap->user()->authenticate($auth_username, html_entity_decode($passwordClear))) {
+            if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
                 //update user's password
                 $data['pw'] = $pwdlib->createPasswordHash($passwordClear);

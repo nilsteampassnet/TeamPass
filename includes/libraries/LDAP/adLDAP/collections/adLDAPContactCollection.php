@@ -1,15 +1,17 @@
 <?php
+namespace adLDAP\collections;
+use adLDAP\adLDAP;
 /**
  * PHP LDAP CLASS FOR MANIPULATING ACTIVE DIRECTORY 
- * Version 4.0.4
+ * Version 5.0.0
  * 
  * PHP Version 5 with SSL and LDAP support
  * 
  * Written by Scott Barnett, Richard Hyland
  *   email: scott@wiggumworld.com, adldap@richardhyland.com
- *   http://adldap.sourceforge.net/
+ *   http://github.com/adldap/adLDAP
  * 
- * Copyright (c) 2006-2012 Scott Barnett, Richard Hyland
+ * Copyright (c) 2006-2014 Scott Barnett, Richard Hyland
  * 
  * We'd appreciate any improvements or additions to be submitted back
  * to benefit the entire community :)
@@ -28,18 +30,15 @@
  * @package adLDAP
  * @subpackage ContactCollection
  * @author Scott Barnett, Richard Hyland
- * @copyright (c) 2006-2012 Scott Barnett, Richard Hyland
+ * @copyright (c) 2006-2014 Scott Barnett, Richard Hyland
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPLv2.1
- * @revision $Revision: 97 $
- * @version 4.0.4
- * @link http://adldap.sourceforge.net/
-*/
-
+ * @version 5.0.0
+ * @link http://github.com/adldap/adLDAP
+ */
 class adLDAPContactCollection extends adLDAPCollection 
 {
     
-    public function __set($attribute, $value)
-    {
+    public function __set($attribute, $value) {
 
     }
 }

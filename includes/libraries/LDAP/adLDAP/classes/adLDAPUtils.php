@@ -1,15 +1,17 @@
 <?php
+namespace adLDAP\classes;
+use adLDAP\adLDAP;
 /**
  * PHP LDAP CLASS FOR MANIPULATING ACTIVE DIRECTORY 
- * Version 4.0.4
+ * Version 5.0.0
  * 
  * PHP Version 5 with SSL and LDAP support
  * 
  * Written by Scott Barnett, Richard Hyland
  *   email: scott@wiggumworld.com, adldap@richardhyland.com
- *   http://adldap.sourceforge.net/
+ *   http://github.com/adldap/adLDAP
  * 
- * Copyright (c) 2006-2012 Scott Barnett, Richard Hyland
+ * Copyright (c) 2006-2014 Scott Barnett, Richard Hyland
  * 
  * We'd appreciate any improvements or additions to be submitted back
  * to benefit the entire community :)
@@ -28,11 +30,10 @@
  * @package adLDAP
  * @subpackage Utils
  * @author Scott Barnett, Richard Hyland
- * @copyright (c) 2006-2012 Scott Barnett, Richard Hyland
+ * @copyright (c) 2006-2014 Scott Barnett, Richard Hyland
  * @license http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html LGPLv2.1
- * @revision $Revision: 97 $
- * @version 4.0.4
- * @link http://adldap.sourceforge.net/
+ * @version 5.0.0
+ * @link http://github.com/adldap/adLDAP
  */
 require_once(dirname(__FILE__) . '/../adLDAP.php');
 
@@ -40,7 +41,7 @@ require_once(dirname(__FILE__) . '/../adLDAP.php');
 * UTILITY FUNCTIONS
 */
 class adLDAPUtils {
-    const ADLDAP_VERSION = '4.0.4';
+    const ADLDAP_VERSION = '5.0.0';
     
     /**
     * The current adLDAP connection via dependency injection
@@ -60,11 +61,10 @@ class adLDAPUtils {
     * @param array $groups
     * @return array
     */
-    public function niceNames($groups)
-    {
+    public function niceNames($groups) {
 
         $groupArray = array();
-        for ($i=0; $i<$groups["count"]; $i++){ // For each group
+        for ($i=0; $i<$groups["count"]; $i++) { // For each group
             $line = $groups[$i];
             
             if (strlen($line)>0) { 
@@ -97,12 +97,17 @@ class adLDAPUtils {
     *
     * @param string $str The string the parse
     * @author Port by Andreas Gohr <andi@splitbrain.org>
+    * @author Modified for PHP55 by Esteban Santana Santana <MentalPower@GMail.com>
     * @return string
     */
-    public function ldapSlashes($str){
-        return preg_replace('/([\x00-\x1F\*\(\)\\\\])/e',
-                            '"\\\\\".join("",unpack("H2","$1"))',
-                            $str);
+    public function ldapSlashes($str) {
+        return preg_replace_callback(
+      		'/([\x00-\x1F\*\(\)\\\\])/',
+        	function ($matches) {
+            	return "\\".join("", unpack("H2", $matches[1]));
+        	},
+        	$str
+    	);
     }
     
     /**
@@ -111,8 +116,7 @@ class adLDAPUtils {
     * @param string $strGUID A string representation of a GUID
     * @return string
     */
-    public function strGuidToHex($strGUID) 
-    {
+    public function strGuidToHex($strGUID) {
         $strGUID = str_replace('-', '', $strGUID);
 
         $octet_str = '\\' . substr($strGUID, 6, 2);
@@ -162,8 +166,7 @@ class adLDAPUtils {
     * @param string $hex A hex code
     * @return string
     */
-     public function littleEndian($hex) 
-     {
+     public function littleEndian($hex) {
         $result = '';
         for ($x = strlen($hex) - 2; $x >= 0; $x = $x - 2) {
             $result .= substr($hex, $x, 2);
@@ -177,8 +180,7 @@ class adLDAPUtils {
     * @param string $bin A binary LDAP attribute
     * @return string
     */
-    public function binaryToText($bin) 
-    {
+    public function binaryToText($bin) {
         $hex_guid = bin2hex($bin); 
         $hex_guid_to_guid_str = ''; 
         for($k = 1; $k <= 4; ++$k) { 
@@ -203,8 +205,7 @@ class adLDAPUtils {
     * @param string $binaryGuid The binary GUID attribute to convert
     * @return string
     */
-    public function decodeGuid($binaryGuid) 
-    {
+    public function decodeGuid($binaryGuid) {
         if ($binaryGuid === null){ return "Missing compulsory field [binaryGuid]"; }
         
         $strGUID = $this->binaryToText($binaryGuid);          
@@ -218,8 +219,7 @@ class adLDAPUtils {
     * @param bool $bool Boolean value
     * @return string
     */
-    public function boolToStr($bool) 
-    {
+    public function boolToStr($bool) {
         return ($bool) ? 'TRUE' : 'FALSE';
     }
     
@@ -256,8 +256,31 @@ class adLDAPUtils {
     * @return long $unixTime
     */
     public static function convertWindowsTimeToUnixTime($windowsTime) {
-      $unixTime = round($windowsTime / 10000000) - 11644477200; 
+      $unixTime = round($windowsTime / 10000000) - 11644473600; 
       return $unixTime; 
+    }
+
+    /**
+     * Convert DN string to array
+     *
+     * @param $dnStr
+     * @param bool $excludeBaseDn exclude base DN from results
+     *
+     * @return array
+     */
+    public function dnStrToArr($dnStr, $excludeBaseDn = true){
+        $dnArr = array();
+        if(!empty($dnStr)){
+            $tmpArr = explode(',', $dnStr);
+            $baseDnArr = explode(',', $this->adldap->getBaseDn());
+            foreach($tmpArr as $_tmpStr){
+                if($excludeBaseDn && in_array($_tmpStr, $baseDnArr)){
+                    continue;
+                }
+                $dnArr[]= substr($_tmpStr, strpos($_tmpStr, '=') + 1);
+            }
+        }
+        return $dnArr;
     }
 }
 
