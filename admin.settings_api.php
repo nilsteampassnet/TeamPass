@@ -153,7 +153,7 @@ echo '
                     <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
                     <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
                     <td>
-                      <i class="fa fa-pencil tip" onclick="ip_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
+                      <i class="fa fa-pencil tip" onclick="key_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
                       <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
                     </td>
                     
@@ -276,7 +276,7 @@ function newKeyDB()
 function key_update(id, value, key)
 {
     $("#api_db_type").val("admin_action_api_save_key");
-    $("#api_db_id").val(id).slice(5);
+    $("#api_db_id").val(id);
     $("#api_db_action").val("update");
     $("#api_db_intro").html("'.$LANG['settings_api_db_intro'].'");
     $("#api_db_label_span").html("'.$LANG['label'].'");
