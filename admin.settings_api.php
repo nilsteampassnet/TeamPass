@@ -36,7 +36,7 @@ th:nth-child(3) {
   width: 40%;
 }
 .maintable-right {
-  width: 600%;
+  width: 60%;
 }
 .fa-chevron-right {
 margin-right: .8em;
