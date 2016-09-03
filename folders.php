@@ -69,13 +69,13 @@ foreach ($tst as $t) {
 echo '
 <div class="title ui-widget-content ui-corner-all">' .
     $LANG['admin_groups'].'&nbsp;&nbsp;
-    <button title="'.$LANG['item_menu_add_rep'].'" onclick="OpenDialog(\'div_add_group\')" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['item_menu_add_rep']), ENT_QUOTES).'" onclick="OpenDialog(\'div_add_group\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
-    <button title="'.$LANG['item_menu_del_rep'].'" id="click_delete_multiple_folders" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['item_menu_del_rep']), ENT_QUOTES).'" id="click_delete_multiple_folders" class="button" style="font-size:16px;">
         <i class="fa fa-trash-o"></i>
     </button>
-    <button title="'.$LANG['refresh'].'" id="click_refresh_folders_list" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['refresh']), ENT_QUOTES).'" id="click_refresh_folders_list" class="button" style="font-size:16px;">
         <i class="fa fa-refresh"></i>
     </button>
 </div>';
@@ -96,11 +96,11 @@ echo '
         <th>'.$LANG['complexity'].'</th>
         <th>'.$LANG['group_parent'].'</th>
         <th>'.$LANG['level'].'</th>
-        <th style="width:20px;" title="'.$LANG['group_pw_duration_tip'].'">'.$LANG['group_pw_duration'].'</th>
-        <th style="width:20px;" title="'.$LANG['auth_creation_without_complexity'].'"><i class="fa fa-legal fa-lg"></i></th>
-        <th style="width:20px;" title="'.$LANG['auth_modification_without_complexity'].'"><i class="fa fa-clock-o fa-lg"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['group_pw_duration_tip']), ENT_QUOTES).'">'.$LANG['group_pw_duration'].'</th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['auth_creation_without_complexity']), ENT_QUOTES).'"><i class="fa fa-legal fa-lg"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['auth_modification_without_complexity']), ENT_QUOTES).'"><i class="fa fa-clock-o fa-lg"></i></th>
     </tr></thead>
-    <tbody>
+    <tbody><tr id="placeholder_tr" style="display: none;"><td></td></tr>
     </tbody>
 </table>
 </div>';

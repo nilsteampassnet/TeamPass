@@ -46,6 +46,25 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
     return $res;
 }
 
+/**
+ * genHash()
+ *
+ * Generate a hash for user login
+ */
+function bCrypt($password, $cost)
+{
+    $salt = sprintf('$2y$%02d$', $cost);
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
+    } else {
+        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i=0; $i<22; $i++) {
+            $salt.=$chars[mt_rand(0, 63)];
+        }
+    }
+    return crypt($password, $salt);
+}
+
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
@@ -502,7 +521,7 @@ global \$SETTINGS;
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
-                            `can_manage_all_users` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
@@ -772,7 +791,6 @@ global \$SETTINGS;
                     }
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
-                        require_once '../sources/main.functions.php';
                         // check that admin accounts doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {

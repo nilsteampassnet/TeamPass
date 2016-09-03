@@ -243,7 +243,7 @@ switch ($_POST['type']) {
                 //delete any subfolder
                 $rows = DB::query(
                     "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s AND intitule = %s",
-                    folder_deleted,
+                    "folder_deleted",
                     $fId
                 );
                 foreach ($rows as $record) {
@@ -277,7 +277,7 @@ switch ($_POST['type']) {
             //delete from TAGS
             DB::delete(prefix_table("tags"), "item_id=%i", $id);
             //delete from KEYS
-            DB::delete(prefix_table("keys"), "`id` =%i AND `sql_table`=%s", $id, "items");
+            //DB::delete(prefix_table("keys"), "`id` =%i AND `sql_table`=%s", $id, "items");
         }
         break;
 
@@ -737,7 +737,6 @@ switch ($_POST['type']) {
      * CASE purging logs
      */
     case "purgeLogs":
-    	db::debugMode(true);
         if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
             if ($_POST['logType'] == "items_logs") {
@@ -748,39 +747,39 @@ switch ($_POST['type']) {
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
-                $nbElements = DB::count();
+                $counter = DB::count();
                     // Delete
-//                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
-//                     "at_shown",
-//                     intval(strtotime($_POST['purgeFrom'])),
-//                     intval(strtotime($_POST['purgeTo']))
-//                 );
+                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+                    "at_shown",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
+                 );
             } elseif ($_POST['logType'] == "connections_logs") {
                 DB::query(
-                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                     "AND date BETWEEN %i AND %i",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
-                $nbElements = DB::count();
+                $counter = DB::count();
                 // Delete
-                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_system"), "type=%s AND date BETWEEN %i AND %i",
                     "user_connection",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
             } elseif ($_POST['logType'] == "errors_logs") {
                 DB::query(
-                    "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
+                    "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                     "AND date BETWEEN %i AND %i",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
-                $nbElements = DB::count();
+                $counter = DB::count();
                 // Delete
-                DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+                DB::delete(prefix_table("log_system"), "type=%s AND date BETWEEN %i AND %i",
                     "error",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
@@ -793,16 +792,48 @@ switch ($_POST['type']) {
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
                 );
-                $nbElements = DB::count();
+                $counter = DB::count();
                 // Delete
                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "at_copy",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
+                );            
+            } elseif ($_POST['logType'] == "admin_logs") {
+                DB::query(
+                    "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
+                    "AND date BETWEEN %i AND %i",
+                    "admin_action",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
                 );
+                $counter = DB::count();
+                // Delete
+                DB::delete(prefix_table("log_system"), "type=%s AND date BETWEEN %i AND %i",
+                    "admin_action",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
+                );
+            } elseif ($_POST['logType'] == "failed_auth_logs") {
+                DB::query(
+                    "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
+                    "AND date BETWEEN %i AND %i",
+                    "failed_auth",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
+                );
+                $counter = DB::count();
+                // Delete
+                DB::delete(prefix_table("log_system"), "type=%s AND date BETWEEN %i AND %i",
+                    "failed_auth",
+                    intval(strtotime($_POST['purgeFrom'])),
+                    intval(strtotime($_POST['purgeTo']))
+                );
+            } else {
+                $counter = 0;
             }
 
-            echo '[{"status" : "ok", "nb":"'.$nbElements.'"}]';
+            echo '[{"status" : "ok", "nb":"'.$counter.'"}]';
         } else {
             echo '[{"status" : "nok"}]';
         }

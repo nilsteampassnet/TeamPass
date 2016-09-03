@@ -178,7 +178,7 @@ $LANG = array (
     'admin_email_result_ok' => 'E-mail envoyé ... vérifiez votre boite de réception',
     'admin_email_result_nok' => 'E-mail non envoyé… Vérifiez votre configuration. Erreur retournée : ',
     'email_subject_item_updated' => 'Mot de passe mis à jour',
-    'email_body_item_updated' => 'Bonjour,<br><br>Le mot de passe de l\'élément \'#item_label#\' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\'".@$_SESSION[\'settings\'][\'cpassman_url\']."/index.php?page=items&group=#item_category#&id=#item_id#\'>ICI</a><br /><br />Salutation',
+    'email_body_item_updated' => 'Bonjour,<br><br>Le mot de passe de l\'élément \'#item_label#\' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>ICI</a><br /><br />Salutation',
     'email_bodyalt_item_updated' => 'Le mot de passe de #item_label# a été mis à jour.',
     'admin_email_send_backlog' => 'Envoyer les e-mails dans la file d\'attente (actuellement #nb_emails# e-mails)',
     'admin_email_send_backlog_tip' => 'Ce script permet de forcer l\'envoi des e-mails dans la file d\'attente de la base de données.<br /> Cela peut prendre plusieurs minutes en fonction du nombre d\'e-mails à envoyer.',

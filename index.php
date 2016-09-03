@@ -125,6 +125,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>Teampass</title>
 <script type="text/javascript">
+    //<![CDATA[
     if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
@@ -132,6 +133,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
         }
     }
+    //]]>
 </script>
 <?php
 echo $htmlHeaders;
@@ -269,7 +271,7 @@ if (isset($_SESSION['login'])) {
     // show avatar
     echo '
                 <div style="float:right; margin-right:10px;">
-                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()">
+                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()" alt="photo" />
                 </div>';
 
     echo '
@@ -310,7 +312,7 @@ echo '
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="action_on_going" id="action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'">';
+        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
 
 echo '
     <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
@@ -403,7 +405,7 @@ if (
             class="ui-state-highlight ui-corner-all" id="div_maintenance">
             <b>'.$LANG['update_needed_mode_admin'].'</b>
             <span style="float:right;cursor:pointer;">
-                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" />
+                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" alt="close" />
             </span>
         </div>';
 }
@@ -638,7 +640,7 @@ if (
                     <br />
                     <label for="forgot_pw_login">'.$LANG['login'].'</label>
                     <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
-                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
+                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" alt="loading" /></div>
                 </div>';
     }
 echo '
@@ -710,7 +712,7 @@ if (
     <div id="dialog_duo" style="display:none;padding:4px;">
         <div id="div_duo"></div>
         '.$LANG['duo_loading_iframe'].'
-        <form method="POST" id="duo_form">
+        <form method="post" id="duo_form" action="#">
             <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
             <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
         </form>
@@ -720,8 +722,6 @@ if (
 closelog();
 
 ?>
+<script type="text/javascript">NProgress.start();</script>
     </body>
 </html>
-<script>
-    NProgress.start();
-</script>

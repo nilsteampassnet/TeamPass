@@ -17,6 +17,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 ?>
 <script type="text/javascript">
+//<![CDATA[
 $(function() {
     // manage delete
     $("input[name=right_types_radio]").click(function(event) {
@@ -345,4 +346,5 @@ function openRightsDialog(role, folder, line, right)
     $("#change_line").val(line);
     $("#type_of_rights").dialog("open");
 }
+//]]>
 </script>

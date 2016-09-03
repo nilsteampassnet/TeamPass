@@ -23,14 +23,14 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.structure.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
-        <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" />
 
         <script type="text/javascript" src="includes/js/functions.js"></script>
 
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
 
-        <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css">
+        <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" />
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
 
         <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
@@ -39,7 +39,7 @@ $htmlHeaders = '
 
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
 
-        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css">
+        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css" />
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
 
 // For ITEMS page, load specific CSS files for treeview
@@ -64,13 +64,13 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
         <!--
-        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
         -->';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
-        <link rel="stylesheet" href="includes/js/toggles/css/toggles.css">
-        <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css">
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {

@@ -1,6 +1,15 @@
 Last changes
 2.1.26
+ #1454 API outputs deleted passwords
+ #1453 API should have function "userpw"
+ #1452 API should also output the url to each password
+ #1457 New email address not used until logoff & logon
+ #1450 Purge log feature - purges nothing
+ #1449 Delete category hangs UI and crashes PHP
+ #1448 admin delete removed password multiple select not working
+ #1445 Password label doesn't preserve '\' character
  #1439 Fix for large files upload
+ #1438 Sanitize ampersand to URL encoding in csrfp.config
  #1426 Fixes for many critical issues with OTV
  #1421 Item will not be automatically deleted when accessed through otv option enabled
  #1415 Installation Issue and PDF export password field mask

@@ -456,6 +456,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
 /* ITEMS */
 } elseif (isset($_GET['action']) && $_GET['action'] == "items") {
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso');
 
@@ -516,7 +517,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col3
-        $sOutput_item .= '"'.(stripslashes("<b>".$record['label']."</b>&nbsp;<span style='font-size:10px;font-style:italic;'><i class='fa fa-folder-o'></i>&nbsp;".$record['folder']."</span>")).'", ';
+        $sOutput_item .= '"'.(stripslashes("<b>".handleBackslash($record['label'])."</b>&nbsp;<span style='font-size:10px;font-style:italic;'><i class='fa fa-folder-o'></i>&nbsp;".$record['folder']."</span>")).'", ';
 
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';

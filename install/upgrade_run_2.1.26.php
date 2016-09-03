@@ -171,7 +171,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."users",
     "can_manage_all_users",
-    "BOOLEAN NOT NULL DEFAULT FALSE"
+    "tinyint(1) NOT NULL DEFAULT '0'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_manage_all_users to table Users! '.mysqli_error($dbTmp).'!"}]';
@@ -222,9 +222,14 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type
 
 // alter table USers
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
 
-// create index in log_items
+// create index in log_items - for performance
 mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
+
+// change to true setting variable encryptClientServer
+// this variable is not to be changed anymore
+mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
 
 // create new table
 mysqli_query($dbTmp, 
