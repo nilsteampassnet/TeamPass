@@ -12,7 +12,12 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>Admin Settings</title></head><body>
+<?php
+require_once('sources/sessions.php');
+session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -220,7 +225,7 @@ echo '
                 </td>
             </tr>';
 */
-echo '<tr><td colspan="3"><hr></td></tr>';
+echo '<tr><td colspan="3"><hr /></td></tr>';
 //Proxy
 echo '
             <tr style="margin-bottom:3px">
@@ -940,7 +945,7 @@ echo '
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['settings_offline_mode'].'
-                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_attachments_cryption_tip']), ENT_QUOTES).'"></i></span>
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_offline_mode_tip']), ENT_QUOTES).'"></i></span>
                     </label>
                     </td><td>
                         <div class="toggle toggle-modern" id="settings_offline_mode" data-toggle-on="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="settings_offline_mode_input" name="settings_offline_mode_input" value="', isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 ? '1' : '0', '" />
@@ -1563,3 +1568,4 @@ echo '
     <input id="restore_bck_encryption_key" name="restore_bck_encryption_key" type="text" value="" />
 </div>';
 include "admin.settings.load.php";
+echo '</body></html>';

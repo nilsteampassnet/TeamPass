@@ -178,7 +178,7 @@ echo '
     <input type="checkbox" id="new_read_only" />
        <label for="new_read_only">'.$LANG['is_read_only'].'</label>
     <br />
-    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked':'', ' />
+    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
        <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
     <div id="auto_create_folder_role">
     <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
