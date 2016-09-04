@@ -12,12 +12,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><title>Admin Settings</title></head><body>
-<?php
-require_once('sources/sessions.php');
-session_start();
+
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -1568,4 +1563,3 @@ echo '
     <input id="restore_bck_encryption_key" name="restore_bck_encryption_key" type="text" value="" />
 </div>';
 include "admin.settings.load.php";
-echo '</body></html>';
