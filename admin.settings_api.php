@@ -15,7 +15,7 @@
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>API Settings</title>
-<style>
+<style type="text/css">
 table {
   width: 100%;
 }

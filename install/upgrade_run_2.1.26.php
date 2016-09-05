@@ -339,6 +339,19 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }
 
+// convert 2factors_ to google_ due to illegal id, and for clarification of purpose
+$tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
+$tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
+
+if ($tmp_googlecount[0] > 0 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
+} else {
+    if ($tmp_twocount[0] > 0 ) {
+        mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
+    } else {
+        mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'google_authentication', '0')");
+    }
+}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

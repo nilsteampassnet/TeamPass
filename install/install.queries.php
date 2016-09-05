@@ -389,7 +389,7 @@ global \$SETTINGS;
                             array('admin','email_from', ''),
                             array('admin','email_from_name', ''),
                             array('admin','pwd_maximum_length', '40'),
-                            array('admin','2factors_authentication', '0'),
+                            array('admin','google_authentication', '0'),
                             array('admin','delay_item_edition', '0'),
                             array('admin','allow_import','0'),
                             array('admin','proxy_ip',''),

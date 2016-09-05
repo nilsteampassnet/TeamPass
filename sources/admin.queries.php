@@ -1130,7 +1130,7 @@ switch ($_POST['type']) {
         echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
         break;
 
-    case "save_fa_options":
+    case "save_google_options":
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
@@ -1139,17 +1139,17 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
-        // 2factors_authentication
-        if (htmlspecialchars_decode($dataReceived['2factors_authentication']) == "false") $tmp = 0;
+        // Google Authentication
+        if (htmlspecialchars_decode($dataReceived['google_authentication']) == "false") $tmp = 0;
         else $tmp = 1;
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "2factors_authentication");
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "google_authentication");
         $counter = DB::count();
         if ($counter == 0) {
             DB::insert(
                 prefix_table("misc"),
                 array(
                     'type' => "admin",
-                    "intitule" => "2factors_authentication",
+                    "intitule" => "google_authentication",
                     'valeur' => $tmp
                 )
             );
@@ -1161,10 +1161,10 @@ switch ($_POST['type']) {
                 ),
                 "type = %s AND intitule = %s",
                 "admin",
-                "2factors_authentication"
+                "google_authentication"
             );
         }
-        $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
+        $_SESSION['settings']['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
 
         // ga_website_name
         if (!is_null($dataReceived['ga_website_name'])) {
