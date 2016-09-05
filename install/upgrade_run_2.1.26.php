@@ -328,8 +328,13 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     fclose($fh);
 
 
+// clean duplicate ldap_object_class from bad update script version
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+if ($tmp[0] > 1 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
+}
 // add new setting - ldap_object_class
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE intitule = 'admin' AND valeur = 'ldap_object_class'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }
