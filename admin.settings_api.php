@@ -14,7 +14,47 @@
  */
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><title>API Settings</title></head><body>
+<html><head><title>API Settings</title>
+<style>
+table {
+  width: 100%;
+}
+td {
+vertical-align: top;
+}
+th:nth-child(1) {
+  width: 25%;
+}
+th:nth-child(2) {
+  width: 60%;
+}
+th:nth-child(3) {
+  width: 10%;
+  display: hidden;
+}
+.maintable-left {
+  width: 40%;
+}
+.maintable-right {
+  width: 60%;
+}
+.fa-chevron-right {
+margin-right: .8em;
+}
+.tip {
+cursor:pointer;
+}
+.keytable tr {
+background-color: white;
+padding: 0 5px 0 5px;
+}
+.keytable td:nth-child(3) {
+ text-align: center;
+}
+
+
+</style>
+</head><body>
 <?php
 require_once('sources/sessions.php');
 session_start();
@@ -39,7 +79,6 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
@@ -56,27 +95,52 @@ $link->set_charset($encoding);
 
 echo '
 <div id="tabs-9">
-    <div style="margin-bottom:3px;">
-        <table><tr>
-        <td><label for="api" style="width:350px;">' .
+  <table>
+    <tbody>
+<!-- Enable API (toggle) -->
+      <tr>
+        <td class="maintable-left">
+          <label for="api">
+          <i class="fa fa-chevron-right mi-grey-1"></i>' .
             $LANG['settings_api'].'
-            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_tip'].'"></i>
-        </label></td>
-        <td><div class="toggle toggle-modern" id="api" data-toggle-on="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="api_input" name="api_input" value="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? '1' : '0', '" /></td>
-        </tr></table>
-    </div>
-    <hr />
-    <div style="margin-bottom:3px;">
-        <label for="api" style="width:350px;"><b>' .$LANG['settings_api_keys_list'].'</b>
-            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_keys_list_tip'].'"></i>
-            &nbsp;<input type="button" id="but_add_new_key" value="'.$LANG['settings_api_add_key'].'" onclick="newKeyDB()" class="ui-state-default ui-corner-all" />
-        </label>
-        <div id="api_keys_list">
+            &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_api_tip']), ENT_QUOTES).'"></i>
+          </label>
+        </td>
+        <td class="maintable-right">
+          <div class="toggle toggle-modern" id="api" data-toggle-on="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? 'true' : 'false', '">
+          </div>
+          <div><input type="hidden" id="api_input" name="api_input" value="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? '1' : '0', '" />
+        </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="2"><hr />
+        </td>
+      </tr>
+
+<!-- API Keys (table) -->
+      <tr class="hideable">
+        <td>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          <label for="api_keys_list">' .$LANG['settings_api_keys_list'].'
+          &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_api_keys_list_tip']), ENT_QUOTES).'"></i>
+          </label>
+        </td>
+        <td>
+          <div id="api_keys_list">
             <table id="tbl_keys">
-                <thead><tr>
+              <thead>
+                <tr>
                 <th>'.$LANG['label'].'</th>
                 <th>'.$LANG['settings_api_key'].'</th>
-                </tr></thead><tbody><tr style="display: none ! important;"><td>HTML validation placeholder</td></tr>';
+                <th></th>
+                </tr>
+              </thead>
+              <tbody class="keytable">
+                <tr style="display: none ! important;">
+                  <td>HTML validation placeholder</td>
+                </tr>';
                 $rows = DB::query(
                     "SELECT id, label, value FROM ".prefix_table("api")."
                     WHERE type = %s
@@ -84,59 +148,88 @@ echo '
                     'key'
                 );
                 foreach ($rows as $record) {
-                    echo '
-                    <tr id="'.$record['id'].'">
-                        <td onclick="key_update($(this).closest(\'tr\').attr(\'id\'), $(this).text(), $(this).next(\'td\').text())" style="cursor:pointer;">'.$record['label'].'</td>
-                        <td>'.$record['value'].'</td>
-                        <td>&nbsp;<span class="fa fa-trash mi-red" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;"></span></td>
-                    </tr>';
+                echo '
+                  <tr id="apiid'.$record['id'].'">
+                    <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
+                    <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
+                    <td>
+                      <i class="fa fa-pencil tip" onclick="key_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
+                      <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
+                    </td>
+                    
+                </tr>';
                 }
                 echo '
-            </tbody></table>
-        </div>
-    </div>
-    <hr />
-    <div style="margin-bottom:3px;">
-        <label for="api" style="width:350px;"><b>'.$LANG['settings_api_ip_whitelist'].'</b>
-            &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_api_ip_whitelist_tip'].'"></i>
-            &nbsp;<input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
-        </label>
+              </tbody>
+            </table>
+          </div>
+          <br /><input type="button" id="but_add_new_key" value="'.$LANG['settings_api_add_key'].'" onclick="newKeyDB()" class="ui-state-default ui-corner-all" />
+        </td>
+      </tr>
+
+      <tr class="hideable">
+        <td colspan="2"><hr />
+        </td>
+      </tr>
+
+<!-- API IP Whitelist (table) -->
+      <tr class="hideable">
+        <td>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          <label for="api">
+            '.$LANG['settings_api_ip_whitelist'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_api_ip_whitelist_tip']), ENT_QUOTES).'"></i>
+          </label>
+ 	 	    </td>
+      	<td>
         <div id="api_ips_list">';
-        $data = DB::query(
+          $data = DB::query(
             "SELECT id, label, value FROM ".prefix_table("api")."
             WHERE type = %s",
             'ip'
-        );
-        $counter = DB::count();
-        if ($counter != 0) {
+          );
+          $counter = DB::count();
+          if ($counter != 0) {
             echo '
             <table id="tbl_ips">
-                <thead>
-                <th>'.$LANG['label'].'</th>
-                <th>'.$LANG['settings_api_ip'].'</th>
-                </thead>';
-                    $rows = DB::query(
-                        "SELECT id, label, value FROM ".prefix_table("api")."
-                        WHERE type = %s
-                        ORDER BY timestamp ASC",
-                        'ip'
-                    );
-                    foreach ($rows as $record) {
-                        echo '
-                        <tr id="'.$record['id'].'">
-                        <td onclick="ip_update($(this).closest(\'tr\').attr(\'id\'), $(this).text(), $(this).next(\'td\').text())" style="cursor:pointer;">'.$record['label'].'</td>
-                        <td>'.$record['value'].'</td>
-                        <td>&nbsp;<span class="fa fa-trash mi-red" onclick="deleteApiKey($(this).closest(\'tr\').attr(\'id\'))" title="" style="cursor:pointer;"></span></td>
-                    </tr>';
-}
-echo '
-            </table>';
-        }else {
+              <thead>
+                <tr>
+                  <th>'.$LANG['label'].'</th>
+                  <th>'.$LANG['settings_api_ip'].'</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody class="keytable">';
+                $rows = DB::query(
+                    "SELECT id, label, value FROM ".prefix_table("api")."
+                    WHERE type = %s
+                    ORDER BY timestamp ASC",
+                    'ip'
+                );
+                foreach ($rows as $record) {
+                  echo '
+                  <tr id="apiid'.$record['id'].'">
+                    <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
+                    <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
+                    <td>
+                      <i class="fa fa-pencil tip" onclick="ip_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
+                      <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
+                  </tr>';
+                }
+              echo '
+              </tbody>
+            </table>
+            ';
+          }else {
             echo $LANG['settings_api_world_open'];
-        }
+          }
         echo '
         </div>
-    </div>
+        <br />
+        <input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />        
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>';
 
 // dialog box
@@ -147,12 +240,12 @@ echo '
     <input type="hidden" id="api_db_id" />
     <div id="api_db_message" style="display:none;"></div>
     <div id="api_db_intro"></div>
-    <div style="margin-top:5px;">
-        <span id="api_db_label_span" style="width:200px;"></span>
+    <div>
+        <span id="api_db_label_span"></span>
         <input type="text" id="api_db_label_input" size="50" />
     </div>
-    <div style="margin-top:5px;" id="div_key">
-        <span id="api_db_key_span" style="width:200px;"></span>
+    <div id="div_key">
+        <span id="api_db_key_span" ></span>
         <input type="text" id="api_db_key_input" disabled="disabled" size="50" />
     </div>
 </div>';
@@ -160,6 +253,11 @@ echo '
 echo '
 <script type="text/javascript">
 //<![CDATA[
+$(".tip").tooltipster({
+    maxWidth: 400,
+    contentAsHTML: true
+});
+
 /* FUNCTIONS FOR KEYS */
 function newKeyDB()
 {
@@ -329,10 +427,10 @@ $(function() {
     $(".toggle").on("toggle", function(e, active) {
         if (active) {
             $("#"+e.target.id+"_input").val(1);
-            if(e.target.id == "duo") $("#duo_enabled").show();
+            if(e.target.id == "api") $(".hideable").show();
         } else {
             $("#"+e.target.id+"_input").val(0);
-            if(e.target.id == "duo") $("#duo_enabled").hide();
+            if(e.target.id == "api") $(".hideable").hide();
         }
         // store in DB
         var data = "{\"field\":\""+e.target.id+"\", \"value\":\""+$("#"+e.target.id+"_input").val()+"\"}";
@@ -349,15 +447,15 @@ $(function() {
                     data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
                 } catch (e) {
                     // error
-                    $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+                    $("#message_box").html("Error: Server reply cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
 
                     return;
                 }
                 console.log(data);
                 if (data.error == "") {
-                    $("#"+e.target.id).after("<span class=\"fa fa-check fa-lg mi-green new_check\" style=\"float:left;\"></span>");
-                    $(".new_check").fadeOut(2000);
-                    setTimeout("$(\".new_check\").remove()", 2100);
+                    $("#"+e.target.id).before("<i class=\"fa fa-check fa-lg mi-green new_check\" style=\"float:right;\"></i>");
+                    $(".new_check").fadeOut(4000);
+                    setTimeout("$(\".new_check\").remove()", 4000);
                 }
             }
         );
