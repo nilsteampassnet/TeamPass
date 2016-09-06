@@ -1332,7 +1332,7 @@ function get_client_ip_server() {
  */
 function noHTML($input, $encoding = 'UTF-8')
 {
-    return htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, $encoding);
+    return htmlspecialchars($input, ENT_QUOTES | ENT_XHTML, $encoding, false);
 }
 
 /**

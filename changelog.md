@@ -19,7 +19,7 @@ Last changes
  #1409 Updated PDF library to fit 7.x PHP
  #1407 Remove Save button in 2FA settings tab
  #1402 User can define his timezone
- #1395 Error with Chrom while upgrading
+ #1395 Error with Chrome while upgrading
  #1394 Replace ascii characters in cpliboard copy
  #1392 Corrected sql error while restoring database
  #1389 Requested JSON parse failed when copying item
