@@ -19,22 +19,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Common elements
 $htmlHeaders = '
-        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.structure.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
-        <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" />
-
-        <script type="text/javascript" src="includes/js/functions.js"></script>
-
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
-
-        <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" />
-        <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
-
-        <script language="JavaScript" type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
+        <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
 
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
@@ -42,31 +33,27 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/nprogress/nprogress.css" />
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
 
+        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />
         <link rel="stylesheet" href="includes/js/jstree/themes/default/style.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jstree/jstree.min.js"></script>
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
-
         <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
-
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
-
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
-
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
         <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
-
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
-        -->';
+        -->
+        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
@@ -91,22 +78,18 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
     $htmlHeaders .= '
-        <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
-
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
-
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>
-
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
-        <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>';
+        <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />';
 } else if (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
-
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
