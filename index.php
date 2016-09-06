@@ -583,7 +583,7 @@ if (
                         </div>
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
 
         // Personal salt key
@@ -600,7 +600,7 @@ if (
         }
 
         // Google Authenticator code
-        if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+        if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1) {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'

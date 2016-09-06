@@ -251,7 +251,7 @@ $val = array(
 	array('admin', 'email_security', @$_SESSION['smtp_security'], 0),
 	array('admin', 'email_from', @$_SESSION['email_from'], 0),
 	array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
-	array('admin', '2factors_authentication', 0, 0),
+	array('admin', 'google_authentication', 0, 0),
 	array('admin', 'delay_item_edition', 0, 0),
 	array('admin', 'allow_import',0,0),
 	array('admin', 'proxy_port',0,0),

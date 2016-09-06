@@ -328,12 +328,30 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     fclose($fh);
 
 
+// clean duplicate ldap_object_class from bad update script version
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+if ($tmp[0] > 1 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
+}
 // add new setting - ldap_object_class
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE intitule = 'admin' AND valeur = 'ldap_object_class'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }
 
+// convert 2factors_ to google_ due to illegal id, and for clarification of purpose
+$tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
+$tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
+
+if ($tmp_googlecount[0] > 0 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
+} else {
+    if ($tmp_twocount[0] > 0 ) {
+        mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
+    } else {
+        mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'google_authentication', '0')");
+    }
+}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
