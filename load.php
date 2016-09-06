@@ -26,13 +26,14 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
+        <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" type="text/css" />
+        <script type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
         <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
-
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
-
-        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css" />
-        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>';
-
+        <link rel="stylesheet" href="includes/js/nprogress/nprogress.css" type="text/css" />
+        <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
+        <script type="text/javascript" src="includes/js/functions.js"></script>
+        <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
