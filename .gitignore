@@ -51,7 +51,7 @@ docker-compose.yml
 Dockerfile
 run.sh
 /install
-/includes/config/settings.php
-includes/config/*
-includes/sk.php
+#/includes/config/settings.php
+#includes/config/*
+#includes/sk.php
 
