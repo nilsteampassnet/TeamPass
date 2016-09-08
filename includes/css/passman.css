@@ -351,12 +351,12 @@ div.dataTables_processing { z-index: 1; }
 }
 
 #main_menu .btn-default {
-  width: 40px; height: 38px;
-  font-size: 13px;
+  width: 32px; height: 26px;
+  font-size: 10px;
 	vertical-align: center;
   padding: 2px 0 2px 0;
   margin: 0px;
-  top: -8px;
+  top: -5px;
   background: rgba(240,240,240,1);
   background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(240,240,240,1)), color-stop(60%, rgba(246,246,246,1)), color-stop(100%, rgba(199,199,199,1)));
   background: -webkit-linear-gradient(top, rgba(240,240,240,1) 0%, rgba(246,246,246,1) 60%, rgba(199,199,199,1) 100%);
@@ -364,19 +364,19 @@ div.dataTables_processing { z-index: 1; }
 }
 
 #main_menu > div > ul > li > i {
-  font-size: 20px ! important;
+  font-size: 15px ! important;
 }
 
 #main_menu > div > ul  {
   border-radius: 4px;
-  height: 28px;
+  height: 26px;
 }
 
 .ui-button-text-only .ui-button-text {
   padding: 4px;
 }
 .ui-menu-item > i {
-  font-size: 1.6em;
+  font-size: 1.0em;
   line-height: .70em;
   vertical-align: -20%;
   padding: 2px 0 0 0 ;

@@ -1,5 +1,6 @@
 Last changes
 2.1.26
+ #1463 PDF Export still broken
  #1454 API outputs deleted passwords
  #1453 API should have function "userpw"
  #1452 API should also output the url to each password

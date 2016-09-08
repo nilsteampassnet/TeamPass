@@ -429,7 +429,7 @@ function trimElement($chaine, $element)
  *
  * permits to suppress all "special" characters from string
  */
-function cleanString($string)
+function cleanString($string, $special = false)
 {
     // Create temporary table for special characters escape
     $tabSpecialChar = array();
@@ -437,8 +437,11 @@ function cleanString($string)
         $tabSpecialChar[] = chr($i);
     }
     array_push($tabSpecialChar, "<br />");
+    if ($special == "1") {
+        $tabSpecialChar = array_merge($tabSpecialChar, array("</li>", "<ul>", "<ol>"));
+    }
 
-    return str_replace($tabSpecialChar, "", $string);
+    return str_replace($tabSpecialChar, "\n", $string);
 }
 
 function db_error_handler($params) {
@@ -1412,4 +1415,13 @@ function handleConfigFile($action, $field = null, $value = null)
 function handleBackslash ($input)
 {
     return str_replace("&amp;#92;", "&#92;", $input);
+}
+
+function someDecoding($input)
+{
+    return strip_tags(str_replace(
+        array("&#92;", "<br />"), 
+        array("\\", "\n"), 
+        $input
+    ));
 }
