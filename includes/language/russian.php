@@ -341,6 +341,7 @@ $LANG = array (
     'at_url' => 'URL',
     'auteur' => 'Автор',
     'author' => 'Автор',
+    'remove_author' => 'Удалить автора при обновлении прав доступа',
     'authorized_groups' => 'Разрешенные папки',
     'auth_creation_without_complexity' => 'Разрешить создание элементов без учета требований сложности',
     'auth_modification_without_complexity' => 'Разрешить редактирование элементов без учета требований сложности',

@@ -341,6 +341,7 @@ $LANG = array (
     'at_url' => 'URL',
     'auteur' => 'Author',
     'author' => 'Author',
+    'remove_author' => 'Remove author while updating access rights',
     'authorized_groups' => 'Allowed Folders',
     'auth_creation_without_complexity' => 'Allow creating an item without respecting the required password complexity',
     'auth_modification_without_complexity' => 'Allow modifying an item without respecting the required password complexity',

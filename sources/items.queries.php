@@ -382,6 +382,8 @@ if (isset($_POST['type'])) {
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
+
+
             if (count($dataReceived) > 0) {
                 // Prepare variables
                 $label = noHTML(htmlspecialchars_decode($dataReceived['label']));
@@ -395,25 +397,66 @@ if (isset($_POST['type'])) {
                     "SELECT *
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
+                    LEFT JOIN  ".prefix_table("restriction_to_roles")." as r ON (i.id=r. item_id )
+                    LEFT JOIN ".prefix_table("cache")." as c ON (i.id=c.id)
                     WHERE i.id=%i AND l.action = %s",
                     $dataReceived['id'],
                     "at_creation"
                 );
+
+
                 // check that actual user can access this item
                 $restrictionActive = true;
                 $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
                 if (in_array($_SESSION['user_id'], $restrictedTo)) {
                     $restrictionActive = false;
                 }
-                if (empty($dataItem['restricted_to'])) {
+
+
+                $restrictedToUser = array_filter(explode(';', $dataReceived['restricted_to']));
+
+                //if early user not assign to restrict we  must add curent user to restrict_to
+                if(empty($dataItem['restricted_to']) && !empty($dataReceived['restricted_to'])
+                    //if add restricted role and user is empty so we must add curent user to restrict_to
+                || (empty($dataItem['role_id']) && !empty($dataReceived['restricted_to_roles']) && empty($dataItem['restricted_to']))
+                    //if author will be remove, we must add author
+                || (!empty($dataReceived['restricted_to']) && !in_array($dataItem['author'], $restrictedToUser))
+                ){
+                    //disable doubles if current user is author
+                    if ($dataItem['author'] && $dataItem['author']!==$_SESSION['user_id']) {
+                        $dataReceived['restricted_to'] .= $_SESSION['user_id'] . ';' . $dataItem['author'].';';
+                    }
+                    else{
+                        $dataReceived['restricted_to'] .= $_SESSION['user_id'] . ';';
+                    }
+                    $restrictionActive = false;
+                }
+
+//TODO remove author
+
+//                $author=trim($dataItem['author'], ';');
+//                $restrictedToUser = array_filter(explode(';', $dataReceived['restricted_to']));
+//                if ($dataReceived['remove_author']=='on' && in_array($author, $restrictedToUser)){
+//
+//
+//                    if(($key = array_search($author, $restrictedToUser)) !== false) {
+//                        unset($restrictedToUser[$key]);
+//                    }
+//
+//                    $dataReceived['restricted_to']=implode(';', $restrictedToUser);
+//                    $restrictionActive = false;
+//
+//                }
+
+                if (empty($dataItem['restricted_to'])  && empty($dataItem['role_id'])) {
                     $restrictionActive = false;
                 }
 
                 if (
                     (
-                        in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])
+                    (  in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']))
                         && ($dataItem['perso'] == 0 || ($dataItem['perso'] == 1 && $dataItem['id_user'] == $_SESSION['user_id']))
-                        && $restrictionActive == false
+                        &&  $restrictionActive == false
                     )
                     ||
                     (
@@ -424,7 +467,7 @@ if (isset($_POST['type'])) {
                         && $restrictionActive == false
                     )
                     ||
-                    (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
+                    (in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
                  ) {
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
@@ -668,6 +711,20 @@ if (isset($_POST['type'])) {
                                 $listOfRestricted .= ";".$dataTmp['title'];
                             }
                         }
+
+                        //set restriction for user if select only role
+                        if (empty($dataReceived['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
+
+
+                                    $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= %i", $_SESSION['user_id']);
+                                    if (empty($listOfRestricted)) {
+                                        $listOfRestricted = $dataTmp['login'];
+                                    } else {
+                                        $listOfRestricted .= ";".$dataTmp['login'];
+                                    }
+                                }
+
+
                     }
                     // Update CACHE table
                     updateCacheTable("update_value", $dataReceived['id']);
@@ -777,7 +834,7 @@ if (isset($_POST['type'])) {
                     if (!empty($dataReceived['diffusion'])) {
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                             if (!empty($emailAddress)) {
-                                @sendEmail(
+                                sendEmail(
                                     $LANG['email_subject_item_updated'],
                                     str_replace(
                                         array("#item_label#", "#item_category#", "#item_id#", "#url#"),
@@ -971,7 +1028,7 @@ if (isset($_POST['type'])) {
             $dataDeleted = DB::count();
             $dataRestored = DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $_POST['id'], "at_restored");
             $dataRestored = DB::count();
-            if ($dataDeleted != 0 && $dataDeleted > $dataRestored) {
+            if ($dataDeleted != 0 && $dataDeleted > $dataRestored)  {
                 // This item is deleted => exit
                 echo prepareExchangedData(array('show_detail_option' => 2), "encode");
                 break;
@@ -992,6 +1049,7 @@ if (isset($_POST['type'])) {
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
             $listeRestriction = $listNotification = $listNotificationEmails = "";
             $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
+
             foreach ($rows as $record) {
                 // Get auhtor
                 if ($record['id'] == $dataItem['id_user']) {
@@ -1035,14 +1093,27 @@ if (isset($_POST['type'])) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+
             if (in_array($_SESSION['user_id'], $restrictedTo)) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to'])) {
                 $restrictionActive = false;
             }
+
+
+
             // Check if user has a role that is accepted
             $rows_tmp = DB::query("SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id=%i", $_POST['id']);
+
+            foreach ($rows_tmp as $role){
+                foreach ($_SESSION['user_roles'] as $userrole){
+                    if($role['role_id']==$userrole){
+                        $restrictionActive=false;
+                    }
+                }
+            }
+
             $myTest = 0;
             if (in_array($_SESSION['user_id'], $rows_tmp)) {
                 $myTest = 1;
@@ -1079,15 +1150,18 @@ if (isset($_POST['type'])) {
             // check user is admin
             if ($_SESSION['user_admin'] == 1 && $dataItem['perso'] != 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
                 $arrData['show_details'] = 0;
+
             }
             // Check if actual USER can see this ITEM
             elseif (
-                ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && ($dataItem['perso'] == 0 || ($dataItem['perso'] == 1 && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive == false)
+                (((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) && $restrictionActive == false) || $_SESSION['is_admin'] == 1)&&
+                    ($dataItem['perso'] == 0 ||  ($dataItem['perso'] == 1 && $dataItem['id_user'] == $_SESSION['user_id']))   ||  $restrictionActive == false)
                 ||
                 (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $dataItem['anyone_can_modify'] == 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && $restrictionActive == false)
                 ||
                 (in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
+
                 // Allow show details
                 $arrData['show_details'] = 1;
                 // Display menu icon for deleting if user is allowed
@@ -1246,7 +1320,7 @@ if (isset($_POST['type'])) {
                 $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
                 if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                     if ($dataDelete['del_enabled'] == 1 || $arrData['id_user'] != $_SESSION['user_id']) {
-                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] > 1) {
+                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
                                 $pre."automatic_del",
@@ -1693,8 +1767,8 @@ if (isset($_POST['type'])) {
                 $_POST['id'],
                 array_merge(
                     $_SESSION['groupes_visibles'],
-                    @array_keys($_SESSION['list_restricted_folders_for_items']),
-                    @array_keys($_SESSION['list_folders_limited'])
+                    array_keys($_SESSION['list_restricted_folders_for_items']),
+                    array_keys($_SESSION['list_folders_limited'])
                 )
             )) {
                 echo prepareExchangedData(array("error" => "not_authorized"), "encode");
@@ -1834,10 +1908,12 @@ if (isset($_POST['type'])) {
                                 $restrictedTo .= ','.$_SESSION['user_id'];
                             }
                         }
+
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] == 1 ||
-                            $_SESSION['user_id'] == $record['log_user'] ||
-                            ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
+                        if ($record['anyone_can_modify'] == 1
+                            || $_SESSION['user_id'] === $record['log_user']
+                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0) 
+                            //|| $_SESSION['user_manager'] == 1   // force draggable if user is manager
                         ) {
                             $canMove = 1;
                         }
@@ -1880,6 +1956,7 @@ if (isset($_POST['type'])) {
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = 1;
+                            $canMove = 1;
                         }
                         // CAse where item is restricted to a group of users not including user
                         elseif (
@@ -2700,7 +2777,7 @@ if (isset($_POST['type'])) {
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period'] * 86400));
             foreach ($rows as $record) {
                 DB::delete(prefix_table('otv'), "id=%i", $record['id']);
             }

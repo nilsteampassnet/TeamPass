@@ -194,6 +194,7 @@ function ListerItems(groupe_id, restricted, start)
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
 
+
                 // reset doubleclick prevention
                 me.data('requestRunning', false);
 
@@ -639,7 +640,7 @@ function AjouterItem()
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"'+$('#random_id').val()+'", "to_be_deleted":"'+to_be_deleted+'", "fields":"'+sanitizeString(fields)+'", ' +
-            '"complexity_level":"'+parseInt($("#mypassword_complex").val())+'"}';
+            '"complexity_level":"'+parseInt($("#mypassword_complex").val())+'", "remove_author":"'+$('#remove_author:checked').val()+'"}';
 
             //Send query
             $.post(
@@ -786,8 +787,7 @@ function EditerItem()
                     restriction += $(this).val() + ";";
                 }
             });
-            if (restriction != "" && restriction.indexOf($('#form_user_id').val()) == "-1")
-                restriction = $('#form_user_id').val()+";"+restriction
+
             if (restriction == ";") restriction = "";
 
 
@@ -847,7 +847,7 @@ function EditerItem()
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+'", "is_pf":"'+$('#recherche_group_pf').val()+'", '+
             '"annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#edit_anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#edit_tags').val())+'" ,'+
-            '"to_be_deleted":"'+to_be_deleted+'" ,"fields":"'+sanitizeString(fields)+'", "complexity_level":"'+parseInt($("#edit_mypassword_complex").val())+'"}';
+            '"to_be_deleted":"'+to_be_deleted+'" ,"fields":"'+sanitizeString(fields)+'", "complexity_level":"'+parseInt($("#edit_mypassword_complex").val())+'", "remove_author":"'+$('#edit_remove_author:checked').val()+'"}';
 
             //send query
             $.post(
@@ -1586,12 +1586,7 @@ function ActionOnQuickIcon(id, action)
 //## FUNCTION : prepare new folder dialogbox
 //###########
 function open_add_group_div()
-{/*
-    // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
+{
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1601,18 +1596,6 @@ function open_add_group_div()
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
-
-    /*
-    // hide not allowed complexity level
-    $("#new_rep_complexite > option").each(function() {
-        if (parseInt(this.value) < parseInt($("#complexite_groupe").val())) {
-            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', true);
-        } else {
-            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', false);
-        }
-    });
-    $('#new_rep_complexite option[value='+$('#complexite_groupe').val()+']').prop('selected', true);
-    */
 
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
@@ -1625,11 +1608,6 @@ function open_add_group_div()
 //###########
 function open_edit_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1653,11 +1631,6 @@ function open_edit_group_div()
 //###########
 function open_move_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($.inArray($("#hid_cat").val(), $("#personal_visible_groups_list").val().split(',')) != -1 && $("#personal_sk_set").val() == "0") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_personal_sk_expected'];?>");
         return false;
@@ -1689,11 +1662,6 @@ function open_move_group_div()
 //###########
 function open_del_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -2970,6 +2938,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
+                $("#files_number").val(0);
             }
         }
     });
@@ -3072,6 +3041,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
+                $("#edit_files_number").val(0);
             }
         }
     });
@@ -3883,7 +3853,7 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
 
 $.fn.simulateClick = function() {
     return this.each(function() {
-        if('createEvent' in document) {console.log("coucou");
+        if('createEvent' in document) {
             var doc = this.ownerDocument,
                 evt = doc.createEvent('MouseEvents');
             evt.initMouseEvent('click', true, true, doc.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
