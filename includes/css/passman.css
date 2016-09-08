@@ -153,7 +153,7 @@ float:left;
 
 .td_title{
 font-weight:bold;
-font-family: serif;
+// font-family: serif;
 min-width: 150px;
 }
 
@@ -344,12 +344,57 @@ div.dataTables_processing { z-index: 1; }
 
 .ui-color {background:#F59829 !important;}
 
-.btn-default {
-    width: 40px;
-}
-
 .round-grey {
   padding:2px 6px 2px 6px;
   font-size:9pt;
   border: 1px #f3f3f3;
+}
+
+#main_menu .btn-default {
+  width: 40px; height: 38px;
+  font-size: 13px;
+	vertical-align: center;
+  padding: 2px 0 2px 0;
+  margin: 0px;
+  top: -8px;
+  background: rgba(240,240,240,1);
+  background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(240,240,240,1)), color-stop(60%, rgba(246,246,246,1)), color-stop(100%, rgba(199,199,199,1)));
+  background: -webkit-linear-gradient(top, rgba(240,240,240,1) 0%, rgba(246,246,246,1) 60%, rgba(199,199,199,1) 100%);
+  background: linear-gradient(to bottom, rgba(240,240,240,1) 0%, rgba(236,236,236,1) 60%, rgba(199,199,199,1) 100%);
+}
+
+#main_menu > div > ul > li > i {
+  font-size: 20px ! important;
+}
+
+#main_menu > div > ul  {
+  border-radius: 4px;
+  height: 28px;
+}
+
+.ui-button-text-only .ui-button-text {
+  padding: 4px;
+}
+.ui-menu-item > i {
+  font-size: 1.6em;
+  line-height: .70em;
+  vertical-align: -20%;
+  padding: 2px 0 0 0 ;
+}
+.title .ui-button-text > i {
+  width: 1.0em;
+}
+
+.quick_menu {
+  border-radius: 4px;
+}
+.ui-menu  .ui-menu-item  {
+  padding: 1px 3px 4px 3px ;
+}
+
+.fa-bars {
+	font-size: 1.px
+	line-height: .80;
+	vertical-align: -20%;
+  margin: 3px;
 }
