@@ -52,7 +52,6 @@ Dockerfile
 run.sh
 /install
 /includes/config/settings.php
-
-
-
+includes/config/*
+includes/sk.php
 
