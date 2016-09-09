@@ -163,10 +163,7 @@ switch ($_POST['type']) {
                 // correct bug #1414
                 // Get an array of all folders
                 $folders = $tree->getDescendants($record['id'], false, true, true);
-                $file = 'bugdump.txt';
-                file_put_contents ( $file , "ID: ".$data['id']."\n", FILE_APPEND );
                 foreach ($folders as $folder) {
-                file_put_contents ( $file , "iter:".$folder."\n", FILE_APPEND );
                  //update PF field for user
                     DB::update(
                         prefix_table("nested_tree"),
