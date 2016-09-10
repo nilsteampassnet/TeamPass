@@ -888,7 +888,7 @@ switch ($_POST['type']) {
             array(
                 "error" => "",
                 "existing_suggestions" => $nb_suggestions_waiting,
-                "text" => ($return)
+                "text" => handleBackslash($return)
             ),
             JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
         );

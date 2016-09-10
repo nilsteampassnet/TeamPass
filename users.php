@@ -53,7 +53,7 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_user_title'].'" onclick="OpenDialog(\'add_new_user\')" class="button" style="font-size:16px;">
+    <button title="'.htmlentities(strip_tags($LANG['new_user_title']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_user\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
 </div>';
@@ -73,15 +73,15 @@ echo '
         <th>'.$LANG['functions'].'</th>
         <!--<th>'.$LANG['authorized_groups'].'</th>
         <th>'.$LANG['forbidden_groups'].'</th>-->
-        <th style="width:20px;" title="'.$LANG['god'].'"><i class="fa fa-user-secret" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['gestionnaire'].'"><i class="fa fa-child" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['read_only_account'].'"><i class="fa fa-eye" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['can_manage_all_users'].'"><i class="fa fa-group" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['can_create_root_folder'].'"><i class="fa fa-code-fork" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['enable_personal_folder'].'"><i class="fa fa-book" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['pw_change'].'"><i class="fa fa-lock" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['logs'].'"><i class="fa fa-newspaper-o" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.$LANG['send_ga_code'].'"><i class="fa fa-qrcode" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['god']), ENT_QUOTES).'"><i class="fa fa-user-secret" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['gestionnaire']), ENT_QUOTES).'"><i class="fa fa-child" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['read_only_account']), ENT_QUOTES).'"><i class="fa fa-eye" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['can_manage_all_users']), ENT_QUOTES).'"><i class="fa fa-group" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['can_create_root_folder']), ENT_QUOTES).'"><i class="fa fa-code-fork" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['enable_personal_folder']), ENT_QUOTES).'"><i class="fa fa-book" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['pw_change']), ENT_QUOTES).'"><i class="fa fa-lock" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['logs']), ENT_QUOTES).'"><i class="fa fa-newspaper-o" style="font-size:14px;"></i></th>
+        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['send_ga_code']), ENT_QUOTES).'"><i class="fa fa-qrcode" style="font-size:14px;"></i></th>
     </tr></thead>
     <tbody>
         <tr><td></td></tr>
@@ -169,22 +169,22 @@ foreach ($rolesList as $fonction) {
 echo '
     </select>
     <br />
-    <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
+    <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
        <label for="new_admin">'.$LANG['is_admin'].'</label>
     <br />
-    <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled', ' />
+    <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
        <label for="new_manager">'.$LANG['is_manager'].'</label>
     <br />
     <input type="checkbox" id="new_read_only" />
        <label for="new_read_only">'.$LANG['is_read_only'].'</label>
     <br />
-    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked':'', ' />
+    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
        <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
     <div id="auto_create_folder_role">
-    <input type="checkbox" id="new_folder_role_domain" disabled />
+    <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
     <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
     <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
-    <input type="hidden" id="new_domain">
+    <input type="hidden" id="new_domain" />
     </div>
     <div style="display:none;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
 </div>';
@@ -211,7 +211,7 @@ $LANG['give_new_pw'].'
     <div style="width:100%;height:20px;">
         <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
     </div>
-    <div style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" /></div>
+    <div style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" alt="ajax-loader" /></div>
     <input type="hidden" id="change_user_pw_id" />
 </div>';
 // DIV FOR CHANGING EMAIL
@@ -250,7 +250,7 @@ echo '
     <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="user_logs"></div>
      <div>' .
 $LANG['nb_items_by_page'].':
-        <select id="nb_items_by_page" onChange="displayLogs(1,$(\'#activity\').val())">
+        <select id="nb_items_by_page" onchange="displayLogs(1,$(\'#activity\').val())">
             <option value="10">10</option>
             <option value="25">25</option>
             <option value="50">50</option>
@@ -258,13 +258,13 @@ $LANG['nb_items_by_page'].':
         </select>
         &nbsp;&nbsp;' .
 $LANG['select'].':
-        <select id="activity" onChange="show_user_log($(\'#activity\').val())">
+        <select id="activity" onchange="show_user_log($(\'#activity\').val())">
             <option value="user_mngt">'.$LANG['user_mngt'].'</option>
             <option value="user_activity">'.$LANG['user_activity'].'</option>
         </select>
         <span id="span_user_activity_option" style="display:none;">&nbsp;&nbsp;' .
 $LANG['activity'].':
-            <select id="activity_filter" onChange="displayLogs(1,\'user_activity\')">
+            <select id="activity_filter" onchange="displayLogs(1,\'user_activity\')">
                 <option value="all">'.$LANG['all'].'</option>
                 <option value="at_modification">'.$LANG['at_modification'].'</option>
                 <option value="at_creation">'.$LANG['at_creation'].'</option>
@@ -285,7 +285,7 @@ $LANG['activity'].':
                 <th width="20%">'.$LANG['activity'].'</th>
             </tr>
         </thead>
-        <tbody id="tbody_logs">
+        <tbody id="tbody_logs"><tr id="placeholder_tr" style="display: none;"><td></td></tr>
         </tbody>
     </table>
     <div id="log_pages" style="margin-top:10px;"></div>
@@ -317,16 +317,16 @@ echo '
     </div>
     <div style="width:100%; margin-top:10px;">
         <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].' : </label>
-        <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"></select>
+        <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
         <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
-        <select name="user_edit_managedby" id="user_edit_managedby"></select>
+        <select name="user_edit_managedby" id="user_edit_managedby"><option label="" style="display: none;"></option></select>
         <br />
         <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
-        <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"></select>
+        <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
         <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].' : </label>
-        <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"></select>
+        <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
     </div>
 

@@ -23,6 +23,7 @@ $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/librari
 ?>
 
 <script type="text/javascript">
+//<![CDATA[
     var query_in_progress = 0;
 
     $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
@@ -1245,7 +1246,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Display details
                         $("#id_label").html(data.label);
-                        $("#hid_label").val(data.label);
+                        $("#hid_label").val(unsanitizeString(data.label));
                         $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
@@ -1261,7 +1262,21 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_login").val(data.login);
                         $("#id_email").html(data.email);
                         $("#hid_email").val(data.email);
-                        $("#id_restricted_to").html(data.id_restricted_to+data.id_restricted_to_roles);
+                        //prepare nice list of users / groups
+                        var tmp_arr = data.id_restricted_to.split(";");
+                        var html_users = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_users += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-user fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        var tmp_arr = data.id_restricted_to_roles.split(";");
+                        var html_groups = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_groups += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-group fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        $("#id_restricted_to").html(
+                            html_users+
+                            html_groups
+                        );
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
                         $("#id_tags").html(data.tags);
@@ -1458,7 +1473,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         //Dont show details
                         $("#item_details_nok").show();
-                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $LANG['author'];?>: </b>'+data.author+'<br><b><?php echo $LANG['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($LANG['request_access_ot_item']);?></a></u></div>');
+                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $LANG['author'];?>: </b>'+data.author+'<br /><b><?php echo $LANG['restricted_to'];?>: </b>'+data.restricted_to+'<br /><br /><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($LANG['request_access_ot_item']);?></a></u></div>');
                         $("#item_details_ok").hide();
                         $("#item_details_expired").hide();
                         $("#item_details_expired_full").hide();
@@ -3873,5 +3888,5 @@ String.prototype.escapeHTML = function() {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-
+//]]>
 </script>

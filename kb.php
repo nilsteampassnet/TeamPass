@@ -87,10 +87,10 @@ echo '
     <div style="width:100%;">
         <div style="float:left;width:50%;">
             <label for="kb_category" class="label">'.$LANG['category'].'</label>
-            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" width="300px;" value="">
+            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" style="width: 300px;" value="" />
         </div>
         <div style="float:right;width:50%;">
-            <label for="" class="">'.$LANG['kb_anyone_can_modify'].' : </label>
+            <label class="modify_kb_label">'.$LANG['kb_anyone_can_modify'].' : </label>
             <span class="div_radio">
                 <input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$LANG['yes'].'</label>
                 <input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$LANG['no'].'</label>
@@ -100,7 +100,7 @@ echo '
 
     <div style="float:left;width:100%;">
         <label for="kb_description" class="label">'.$LANG['description'].'</label>
-        <textarea rows="5" name="kb_description" id="kb_description" class="input"></textarea>
+        <textarea rows="5" name="kb_description" id="kb_description" class="input" cols="70"></textarea>
     </div>
 
     <div style="float:left;width:100%;margin-top:15px;">
@@ -110,26 +110,35 @@ echo '
             $items_id_list = array();
             $rows = DB::query(
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                    l.date as date,
-                    n.renewal_period as renewal_period
+                    l.date as date
                 FROM ".prefix_table("items")." as i
-                INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                 INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
                 WHERE i.inactif = %i
                 AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                AND i.id_tree IN %ls
                 ORDER BY i.label ASC, l.date DESC",
                 '0',
                 'at_creation',
                 'at_modification',
-                'at_pw :%'
+                'at_pw :%',
+                array_unique(array_merge($_SESSION['all_non_personal_folders'], $_SESSION['list_folders_editable_by_role'], $_SESSION['list_restricted_folders_for_items'], $_SESSION['list_folders_limited']))
             );
-foreach ($rows as $reccord) {
-    if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
-        echo '
-        <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
-        array_push($items_id_list, $reccord['id']);
-    }
-}
+            foreach ($rows as $reccord) {
+                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
+                    // exclude item if it is restricted to a group the user doesn't have
+                    $include_item = false;
+                    if (empty($reccord['restricted_to'])) {
+                        $include_item = true;
+                    } else if (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
+                        $include_item = true;
+                    }
+                    if ($include_item === true) {
+                        echo '
+                        <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
+                        array_push($items_id_list, $reccord['id']);
+                    }
+                }
+            }
         echo '
         </select>
     </div>

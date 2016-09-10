@@ -65,7 +65,7 @@ echo '
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['email'].':</td>
-        <td title="'.$LANG['click_to_change'].'"><span style="cursor:pointer;" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i></td>
+        <td title="'.$LANG['click_to_change'].'"><span style="cursor:pointer;" class="editable_textarea" id="email_'.$_SESSION['user_id'].'">'.$_SESSION['user_email'].'</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i></td>
     </tr>
     <tr>
         <td style="width:70px;">&nbsp;'.$LANG['role'].':</td>
@@ -91,10 +91,10 @@ echo '
         <input type="hidden" id="upload_enabled2" value="" />
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+        <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw" class="tip"></i>
+        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>
 </div>
 
@@ -379,7 +379,8 @@ $(function() {
         select : true,
         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
         cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
-        name : "newValue"
+        name   : "newValue",
+        width  : 220
     });
     $(".editable_select").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
@@ -400,6 +401,10 @@ $(function() {
         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
         cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
         name : "newValue"
+    });
+
+    $('.jeditable-activate').click(function() {
+        $(this).prev().click();
     });
 
 

@@ -429,7 +429,7 @@ function trimElement($chaine, $element)
  *
  * permits to suppress all "special" characters from string
  */
-function cleanString($string)
+function cleanString($string, $special = false)
 {
     // Create temporary table for special characters escape
     $tabSpecialChar = array();
@@ -437,8 +437,11 @@ function cleanString($string)
         $tabSpecialChar[] = chr($i);
     }
     array_push($tabSpecialChar, "<br />");
+    if ($special == "1") {
+        $tabSpecialChar = array_merge($tabSpecialChar, array("</li>", "<ul>", "<ol>"));
+    }
 
-    return str_replace($tabSpecialChar, "", $string);
+    return str_replace($tabSpecialChar, "\n", $string);
 }
 
 function db_error_handler($params) {
@@ -1332,7 +1335,7 @@ function get_client_ip_server() {
  */
 function noHTML($input, $encoding = 'UTF-8')
 {
-    return htmlspecialchars($input, ENT_QUOTES | ENT_HTML5, $encoding);
+    return htmlspecialchars($input, ENT_QUOTES | ENT_XHTML, $encoding, false);
 }
 
 /**
@@ -1404,4 +1407,12 @@ function handleConfigFile($action, $field = null, $value = null)
     file_put_contents($tp_config_file, implode('', $data));
 
     return true;
+}
+
+/*
+** Permits to replace &#92; to permit correct display
+*/
+function handleBackslash ($input)
+{
+    return str_replace("&amp;#92;", "&#92;", $input);
 }

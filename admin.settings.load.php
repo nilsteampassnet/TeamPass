@@ -18,6 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
+//<![CDATA[
 /*
 * Add a new field to a category
 */
@@ -845,4 +846,5 @@ function refreshInput()
     $("#roles_allowed_to_print").val(ids);
     updateSetting('roles_allowed_to_print');
 }
+//]]>
 </script>

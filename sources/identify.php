@@ -390,13 +390,18 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        
+        // get user info from LDAP
+        //$user_info_from_ad = $adldap->user_info($auth_username, array("mail", "givenname", "sn"));
 
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
-                //'pw' => $password,
                 'pw' => $data['pw'],
+                /*'email' => $user_info_from_ad[0]['mail'][0],
+                'name' => $user_info_from_ad[0]['givenname'][0],
+                'lastname' => $user_info_from_ad[0]['sn'][0],*/
                 'email' => "",
                 'admin' => '0',
                 'gestionnaire' => '0',
@@ -449,7 +454,7 @@ function identifyUser($sentData)
     }
 
     // check GA code
-    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 && $username != "admin") {
+    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");

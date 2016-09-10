@@ -183,7 +183,6 @@ if (!empty($_POST['type'])) {
             $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $_POST['id']);
             $arrOptions = array();
             foreach ($rows as $record) {
-                //echo '$("#kb_associated_to option[value='.$record['item_id'].']").attr("selected","selected");';
                 array_push($arrOptions, $record['item_id']);
             }
 
