@@ -160,7 +160,6 @@ switch ($_POST['type']) {
                    "title=%s AND parent_id=%i", $record['id'], 0
                 );
 
-                // correct bug #1414
                 // Get an array of all folders
                 $folders = $tree->getDescendants($record['id'], false, true, true);
                 foreach ($folders as $folder) {
@@ -176,13 +175,6 @@ switch ($_POST['type']) {
                 }          
             }
         }
-
-        //Delete PF for deleted users - TODO
-        /*DB::query(
-            "SELECT COUNT(*) FROM ".prefix_table("nested_tree")." as t
-            LEFT JOIN ".prefix_table("users")." as u ON t.title = u.id
-            WHERE u.id IS null AND t.parent_id=0 AND t.title REGEXP '^[0-9]'"
-        );*/
 
         //rebuild fuild tree folder
         $tree->rebuild();

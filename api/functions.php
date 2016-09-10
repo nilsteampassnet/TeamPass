@@ -437,7 +437,7 @@ function rest_get () {
                     inactif = %i 
                     AND id_tree = (%s)
                     AND label LIKE %ss",
-                    "0"
+                    "0",
                     $category_query,
                     $item
                 );
@@ -613,9 +613,9 @@ function rest_get () {
                 $lastname = $array_user[2];
                 $password = $array_user[3];
                 $email = $array_user[4];
-                $adminby = $array_user[5];
-                $isreadonly = $array_user[6];
-                $roles = $array_user[7];
+                $adminby = urldecode($array_user[5]);
+                $isreadonly = urldecode($array_user[6]);
+                $roles = urldecode($array_user[7]);
                 $isadmin = $array_user[8];
                 $ismanager = $array_user[9];
                 $haspf = $array_user[10];
