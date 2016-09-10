@@ -1416,12 +1416,3 @@ function handleBackslash ($input)
 {
     return str_replace("&amp;#92;", "&#92;", $input);
 }
-
-function someDecoding($input)
-{
-    return strip_tags(str_replace(
-        array("&#92;", "<br />"), 
-        array("\\", "\n"), 
-        $input
-    ));
-}
