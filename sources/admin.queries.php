@@ -159,21 +159,21 @@ switch ($_POST['type']) {
                    ),
                    "title=%s AND parent_id=%i", $record['id'], 0
                 );
-            }
 
-            // correct bug #1414
-            // Get an array of all folders
-            $folders = $tree->getDescendants($data['id'], false, true, true);
-            foreach ($folders as $folder) {
-                //update PF field for user
-                DB::update(
-                    prefix_table("nested_tree"),
-                    array(
-                        'personal_folder' => '1'
-                   ),
-                    "id = %i",
-                    $folder
-                );
+                // correct bug #1414
+                // Get an array of all folders
+                $folders = $tree->getDescendants($record['id'], false, true, true);
+                foreach ($folders as $folder) {
+                 //update PF field for user
+                    DB::update(
+                        prefix_table("nested_tree"),
+                        array(
+                            'personal_folder' => '1'
+                       ),
+                        "id = %s",
+                        $folder
+                    );
+                }          
             }
         }
 
