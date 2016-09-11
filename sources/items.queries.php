@@ -294,9 +294,17 @@ if (isset($_POST['type'])) {
                             // send it
                             @sendEmail(
                                 $LANG['email_subject'],
-                                $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
+                                str_replace(
+                                    array("#label", "#link"),
+                                    array(stripslashes($label), $_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    $LANG['new_item_email_body']
+                                ),
                                 $emailAddress,
-                                $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
+                                str_replace(
+                                    array("#label", "#link"),
+                                    array(stripslashes($label), $_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    $LANG['new_item_email_body']
+                                )
                             );
                         }
                     }
