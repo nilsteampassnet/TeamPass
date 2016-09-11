@@ -405,7 +405,6 @@ echo '
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
             </td></tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
-/* DISABLED FOR 2.1.26
 echo '
         <tr><td>
             <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
@@ -413,7 +412,6 @@ echo '
         </td><td>
             <div class="toggle toggle-modern" id="use_md5_password_as_salt" data-toggle-on="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="use_md5_password_as_salt_input" name="use_md5_password_as_salt_input" value="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '1' : '0', '" />
         </td></tr>';
-*/
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
