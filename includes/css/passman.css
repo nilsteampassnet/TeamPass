@@ -395,4 +395,6 @@ div.dataTables_processing { z-index: 1; }
   display:block;
   content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAMAAABBwMRzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRFAAAAAAAApWe5zwAAAAJ0Uk5T/wDltzBKAAAAGUlEQVR42mJgZEAGjAwE+agAkz+w5gEEGAAggABP5U/AbAAAAABJRU5ErkJggg==');
   margin: 1px 1px 0px 1px;
+  width: 17px;
+  height: 15px;
   }
