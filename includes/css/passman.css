@@ -353,7 +353,6 @@ div.dataTables_processing { z-index: 1; }
 #main_menu .btn-default {
   width: 32px; height: 26px;
   font-size: 10px;
-	vertical-align: center;
   padding: 2px 0 2px 0;
   margin: 0px;
   top: -5px;
@@ -392,9 +391,10 @@ div.dataTables_processing { z-index: 1; }
   padding: 1px 3px 4px 3px ;
 }
 
-.fa-bars {
-	font-size: 1.px
-	line-height: .80;
-	vertical-align: -20%;
-  margin: 3px;
-}
+.fa-bars:before {
+  display:block;
+  content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAMAAABBwMRzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRFAAAAAAAApWe5zwAAAAJ0Uk5T/wDltzBKAAAAGUlEQVR42mJgZEAGjAwE+agAkz+w5gEEGAAggABP5U/AbAAAAABJRU5ErkJggg==');
+  margin: 1px 1px 0px 1px;
+  width: 15px;
+  height: 15px;
+  }
