@@ -2294,7 +2294,7 @@ $(function() {
     $("#jstree").height(window_height-185);
 
     //warning if screen height too short
-    if (parseInt(window_height-440) <= 50) {
+    if (parseInt(window_height-440) <= 30) {
         $("#div_dialog_message_text").html("<?php echo addslashes($LANG['warning_screen_height']);?>");
         $("#div_dialog_message").dialog('open');
     }
@@ -2304,7 +2304,7 @@ $(function() {
         //do nothing ... good value
     } else {
         //adapt to the screen height
-        $("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+        $("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
     }
 
     // Build buttons
