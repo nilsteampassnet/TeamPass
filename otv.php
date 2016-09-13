@@ -120,7 +120,7 @@ if (
                 "<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
                 "<div style='margin-top:10px;'><table>".
                 "<tr><td>Label:</td><td>" . $label . "</td></tr>".
-                "<tr><td>Password:</td><td>" . $pw['string'] . "</td></tr>".
+                "<tr><td>Password:</td><td>" . htmlspecialchars($pw['string']) . "</td></tr>".
                 "<tr><td>Description:</td><td>" . $description . "</td></tr>".
                 "<tr><td>login:</td><td>" . $login . "</td></tr>".
                 "<tr><td>URL:</td><td>" . $url ."</td></tr>".
