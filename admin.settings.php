@@ -1046,6 +1046,7 @@ echo '
                         <td><label for="ldap_type">'.$LANG['settings_ldap_type'].'</label></td>
                         <td>
                             <select id="ldap_type" name="ldap_type" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                                <option value="0">-- '.$LANG['select'].' --</option>
                                 <option value="windows">Windows / Active Directory</option>
                                 <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
                                 <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>

@@ -294,7 +294,7 @@ function identifyUser($sentData)
             elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
             }
-            $adldap = new LDAP\adLDAP\adLDAP(
+            $adldap = new adLDAP\adLDAP(
                 array(
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
