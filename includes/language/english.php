@@ -57,6 +57,9 @@ global $LANG;
 $LANG = array (
     'enable_language_file' => '1', // Set to 0 to remove language from list. To translate, change to 1 to show this language in list. (future use)
     
+    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
+    'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
+    'runtime_upload' => 'Upload feature: runtime',
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
