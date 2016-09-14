@@ -2,6 +2,7 @@ Last changes
 
 2.1.26
  #1489 JSON error on quick search if no folder access
+ #1497 Nothing happens when clicking "Remove orphan items from database"
  #1375 Symbol < breaks password in One Time View page
  #1481 Query error
  #1476 Fix personal folder update script for
