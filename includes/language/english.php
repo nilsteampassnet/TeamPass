@@ -57,6 +57,9 @@ global $LANG;
 $LANG = array (
     'enable_language_file' => '1', // Set to 0 to remove language from list. To translate, change to 1 to show this language in list. (future use)
     
+    'failed_logins' => 'Failed Logins',
+    'admin_2factor_authentication_tab' => '2FA Options',
+    'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',

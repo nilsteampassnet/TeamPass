@@ -398,6 +398,7 @@ if (isset($_POST['type'])) {
                 $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 $email = noHTML(htmlspecialchars_decode($dataReceived['email']));
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -1504,6 +1505,7 @@ if (isset($_POST['type'])) {
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
@@ -1511,6 +1513,12 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "'.addslashes($LANG['error_html_codes']).'" } ]';
                 break;
             }
+            // check that title is not numeric
+            if (is_numeric($title) === true) {
+                echo '[{"error" : "ERR_TITLE_ONLY_WITH_NUMBERS"}]';;
+                break;
+            }
+
             // Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {

@@ -48,7 +48,7 @@ echo '
                 <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
                 <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
-                <li><a href="admin.settings_duo.php">2FA Options</a></li>
+                <li><a href="admin.settings_duo.php">'.$LANG['admin_2factor_authentication_tab'].'</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1

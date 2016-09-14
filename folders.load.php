@@ -101,11 +101,16 @@ $(function() {
                                     $("#div_add_group").dialog("open");
                                     $("#addgroup_show_error").html("<?php echo $LANG['error_html_codes'];?>");
                                     $("#addgroup_show_error").show();
+                                } else if (data[0].error == "error_title_only_with_numbers") {
+                                    $("#div_add_group").dialog("open");
+                                    $("#addgroup_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name'];?>");
+                                    $("#addgroup_show_error").show();
                                 } else {
                                     tableFolders.api().ajax.reload();
                                     $("#parent_id, #edit_parent_id").empty().append(data[0].droplist);
                                     $("#div_add_group").dialog("close");
                                 }
+                                $("#new_folder_wait").hide();
                             },
                             "json"
                        );
@@ -116,6 +121,7 @@ $(function() {
                 }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#addgroup_show_error").html("").hide();
                 $(this).dialog("close");
             }
         }
@@ -190,6 +196,9 @@ $(function() {
                         } else if (data[0].error == "error_html_codes") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes'];?>").show();
                             LoadingPage();
+                        } else if (data[0].error == "error_title_only_with_numbers") {
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name'];?>").show();
+                            $("#edit_folder_wait").hide();
                         } else {
                             $("#folder_id_to_edit").val("");    //clear id
                             tableFolders.api().ajax.reload();
@@ -204,6 +213,7 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 //clear id
                 $("#folder_id_to_edit").val("");
+                $("#edit_folder_show_error").html("");
 
                 //Close
                 $("#div_edit_folder").dialog("close");
