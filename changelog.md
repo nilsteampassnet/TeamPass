@@ -1,6 +1,7 @@
 Last changes
 
 2.1.26
+ #1494 csrfp.config.php not updated on URL change
  #1489 JSON error on quick search if no folder access
  #1497 Nothing happens when clicking "Remove orphan items from database"
  #1375 Symbol < breaks password in One Time View page

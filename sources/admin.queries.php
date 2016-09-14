@@ -1275,14 +1275,14 @@ switch ($_POST['type']) {
         // special Cases
         if ($dataReceived['field'] == "cpassman_url") {
             // update also jsUrl for CSFP protection
-            $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
-            $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+            $jsUrl = $dataReceived['value'].'/includes/libraries/csrfp/js/csrfprotector.js';
+            $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
             $data = file_get_contents($csrfp_file);
             $posJsUrl = strpos($data, '"jsUrl" => "');
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+            file_put_contents($csrfp_file, $newdata);
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
