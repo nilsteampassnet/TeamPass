@@ -66,6 +66,7 @@ $(function() {
             $("#div_add_group input, #div_add_group select").val("");
             $("#add_node_renewal_period").val("0");
             $("#folder_block_modif, #folder_block_creation").val("0");
+            $("#parent_id").val("na");
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -75,6 +76,9 @@ $(function() {
                     $("#addgroup_show_error").show();
                 } else if (document.getElementById("new_rep_complexite").value == "") {
                     document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_group_complex'];?>";
+                    $("#addgroup_show_error").show();
+                } else if (document.getElementById("parent_id").value == "" || isNaN(document.getElementById("parent_id").value)) {
+                    document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_no_selected_folder'];?>";
                     $("#addgroup_show_error").show();
                 } else {
                     if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
@@ -174,7 +178,10 @@ $(function() {
                 }if ($('#edit_folder_title').val() == "") {
                      $("#edit_folder_show_error").html("<?php echo $LANG['error_group_label'];?>").show();
                      return;
-                }
+                }if ($('#edit_parent_id').val() == "na") {
+                     $("#edit_folder_show_error").html("<?php echo $LANG['error_no_selected_folder'];?>").show();
+                     return;
+                }   
                 $("#edit_folder_wait").show();
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
