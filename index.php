@@ -311,7 +311,7 @@ echo '
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
-        <input type="hidden" name="action_on_going" id="action_on_going" value="" />
+        <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
         <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
 
 echo '
