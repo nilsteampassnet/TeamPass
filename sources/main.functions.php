@@ -1017,8 +1017,10 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     global $LANG;
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     //load library
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    $user_language = isset($_SESSION['user_language']) ?$_SESSION['user_language'] : "english";
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$user_language.'.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+
     // load PHPMailer
     if (!isset($mail)) $mail = new PHPMailer();
     // send to user
@@ -1415,4 +1417,33 @@ function handleConfigFile($action, $field = null, $value = null)
 function handleBackslash ($input)
 {
     return str_replace("&amp;#92;", "&#92;", $input);
+}
+
+/*
+** Permits to loas settings
+*/
+function loadSettings ()
+{
+    /* LOAD CPASSMAN SETTINGS */
+    if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
+        $_SESSION['settings']['duplicate_folder'] = 0;  //by default, this is false;
+        $_SESSION['settings']['duplicate_item'] = 0;  //by default, this is false;
+        $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+
+        $rows = DB::query("SELECT * FROM " . prefix_table("misc") . " WHERE type=%s_type OR type=%s_type2",
+            array(
+                'type' => "admin",
+                'type2' => "settings"
+            )
+        );
+        foreach ($rows as $record) {
+            if ($record['type'] == 'admin') {
+                $_SESSION['settings'][$record['intitule']] = $record['valeur'];
+            } else {
+                $settings[$record['intitule']] = $record['valeur'];
+            }
+        }
+        $_SESSION['settings']['loaded'] = 1;
+        $_SESSION['settings']['default_session_expiration_time'] = 5;
+    }
 }

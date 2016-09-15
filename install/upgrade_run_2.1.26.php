@@ -224,6 +224,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
 
+// alter table log_system
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."log_system` MODIFY qui VARCHAR(255)");
+
 // create index in log_items - for performance
 mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
 

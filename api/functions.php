@@ -693,14 +693,23 @@ function rest_get () {
                                 )
                             );
                         }
+
+                        // load settings
+                        loadSettings();
+
                         // Send email to new user
                         @sendEmail(
                             $LANG['email_subject_new_user'],
-                            str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
-                            $email
+                            str_replace(
+                                array('#tp_login#', '#tp_pw#', '#tp_link#'),
+                                array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                            $email,
+                            ""
                         );
+
                         // update LOG
-            logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id);
+                        logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
+                        
                         echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
