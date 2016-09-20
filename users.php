@@ -163,7 +163,7 @@ if ($_SESSION['is_admin']) {
 foreach ($rolesList as $fonction) {
     if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
         echo '
-        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
+        <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' '.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'</option>';
     }
 }
 echo '
@@ -180,9 +180,9 @@ echo '
     <br />
     <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
        <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
-    <div id="auto_create_folder_role">
+    <div id="auto_create_folder_role"  style="visibility:hidden;">
     <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
-    <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;`<span id="auto_create_folder_role_span"></span>`</label>
+    <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;&quot;<span id="auto_create_folder_role_span"></span>&quot;</label>
     <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
     <input type="hidden" id="new_domain" />
     </div>
@@ -316,16 +316,16 @@ echo '
         </div>
     </div>
     <div style="width:100%; margin-top:10px;">
-        <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].' : </label>
+        <label for="user_edit_functions_list" class="form_label">'.$LANG['functions'].'</label>
         <select name="user_edit_functions_list" id="user_edit_functions_list" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
-        <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].' : </label>
+        <label for="user_edit_managedby" class="form_label" style="margin-top:10px;">'.$LANG['managed_by'].'</label>
         <select name="user_edit_managedby" id="user_edit_managedby"><option label="" style="display: none;"></option></select>
         <br />
-        <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].' : </label>
+        <label for="user_edit_auth" class="form_label" style="margin-top:10px;">'.$LANG['authorized_groups'].'</label>
         <select name="user_edit_auth" id="user_edit_auth" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
-        <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].' : </label>
+        <label for="user_edit_forbid" class="form_label" style="margin-top:10px;">'.$LANG['forbidden_groups'].'</label>
         <select name="user_edit_forbid" id="user_edit_forbid" multiple="multiple"><option label="" style="display: none;"></option></select>
         <br />
     </div>
