@@ -110,15 +110,15 @@ echo '
 <div id="div_add_group" style="display:none;">
     <div id="addgroup_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].' :</label>
+    <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].'</label>
     <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
+    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
     <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">
 		'.$droplist.'
 	</select>
 
-    <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
+    <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
@@ -126,17 +126,17 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
 
-    <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
+    <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 
-	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
 	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
 		<option value="0">'.$LANG['no'].'</option>
 		<option value="1">'.$LANG['yes'].'</option>
 	</select>
 
 	<div style="margin-top:10px;">
-		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
 		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
 			<option value="0">'.$LANG['no'].'</option>
 			<option value="1">'.$LANG['yes'].'</option>
@@ -153,15 +153,15 @@ echo '
 <div id="div_edit_folder" style="display:none;">
     <div id="edit_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="edit_folder_title" class="label_cpm">'.$LANG['group_title'].' :</label>
+    <label for="edit_folder_title" class="label_cpm">'.$LANG['group_title'].'</label>
     <input type="text" id="edit_folder_title" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].' :</label>
+    <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
     <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">'.
 		$droplist.'
     </select>
 
-    <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].' :</label>
+    <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
@@ -169,17 +169,17 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
 
-    <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].' :</label>
+    <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 
-	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].' :</label>
+	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
 	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
 		<option value="0">'.$LANG['no'].'</option>
 		<option value="1">'.$LANG['yes'].'</option>
 	</select>
 
 	<div style="margin-top:10px;">
-		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].' :</label>
+		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
 		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
 			<option value="0">'.$LANG['no'].'</option>
 			<option value="1">'.$LANG['yes'].'</option>

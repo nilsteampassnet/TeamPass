@@ -1070,7 +1070,7 @@ if (!empty($_POST['type'])) {
                 if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
                     if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
                     else $tmp = "";
-                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' "'.$fonction['title'].'</option>';
+                    $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' '.$fonction['title'].'</option>';
                 }
             }
 

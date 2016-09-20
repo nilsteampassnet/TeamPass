@@ -889,10 +889,13 @@ function check_domain(email)
         function(data) {
             data = $.parseJSON(data);
             $("#new_folder_role_domain").attr("disabled", "disabled");
-            if (data.folder == "not_exists" && data.role == "not_exists") {
+            if (data.folder == "not_exists" && data.role == "not_exists" && domain !="") {
                 $("#new_folder_role_domain").attr("disabled", "");
                 $("#auto_create_folder_role_span").html(domain);
                 $("#new_domain").val(domain);
+                $("#auto_create_folder_role").css('visibility', 'visible');
+            } else {
+                $("#auto_create_folder_role").css('visibility', 'hidden');
             }
             $("#ajax_loader_new_mail").hide();
         }
