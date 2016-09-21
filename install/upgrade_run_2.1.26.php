@@ -356,5 +356,28 @@ if ($tmp_googlecount[0] > 0 ) {
     }
 }
 
+
+// Fix for #1510
+// change the "personal_folder" field on all named folders back to "0" in nested_tree
+$result = mysqli_query(
+    $dbTmp, 
+    "SELECT title, id
+    FROM `".$_SESSION['tbl_prefix']."nested_tree` 
+    WHERE personal_folder = '1' AND nlevel = '1' AND parent_id = '0'"
+);
+while($row = mysqli_fetch_assoc($result)) {
+    // only change non numeric folder title
+    if (!is_numeric($row['title'])) {
+        mysqli_query(
+            $dbTmp, 
+            "UPDATE `".$_SESSION['tbl_prefix']."nested_tree` 
+            SET personal_folder = '0' 
+            WHERE id = '".$row['id']."'"
+        );
+    }
+}
+mysqli_free_result($result);
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
