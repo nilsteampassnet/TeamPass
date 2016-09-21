@@ -709,7 +709,7 @@ function rest_get () {
 
                         // update LOG
                         logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
-                        
+
                         echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
@@ -755,10 +755,11 @@ function rest_get () {
 
                     if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $userData['pw']) === true) {
                         // define the restriction of "id_tree" of this user
+                        //db::debugMode(true);
                         $userDef = DB::queryOneColumn('folder_id',
                             "SELECT DISTINCT folder_id
                             FROM ".prefix_table("roles_values")."
-                            WHERE type IN ('R', 'W') ", empty($userData['groupes_interdits']) ? "" : "
+                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ", empty($userData['groupes_interdits']) ? "" : "
                             AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")", "
                             AND role_id IN %ls
                             GROUP BY folder_id",
@@ -802,7 +803,7 @@ function rest_get () {
                                 echo json_encode($json);
                             }
                         } else {
-                            rest_error ('AUTH_NO_DATA');
+                            rest_error ('NO_DATA_EXIST');
                         }
                     } else {
                         rest_error ('AUTH_NOT_GRANTED');
@@ -1138,6 +1139,9 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'AUTH_NO_DATA':
             $message = Array('err' => 'Data not allowed for the user');
+            break;
+        case 'NO_DATA_EXIST':
+            $message = Array('err' => 'No data exists');
             break;
         case 'PASSWORDTOOLONG':
             $message = Array('err' => 'Password is too long');
