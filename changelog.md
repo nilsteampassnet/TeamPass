@@ -1,6 +1,7 @@
 Last changes
 
 2.1.26
+ #1512 Long folder names break UI
  #1504 Error while creating a new user with API
  #1494 csrfp.config.php not updated on URL change
  #1491 Added check against only numeric folder name

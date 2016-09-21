@@ -228,6 +228,7 @@ function ListerItems(groupe_id, restricted, start)
                                 $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
                             }
                         }
+
                         if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
                             // only take first and last
                             var nb = 1;
@@ -238,12 +239,13 @@ function ListerItems(groupe_id, restricted, start)
                                     $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
                                 } else if (nb == path_levels) {
                                     // next condition occurs if lasst folder name is too long
-                                    if (totalPathLength > $("#items_path_var").width()) {
+                                    if (totalPathLength > path_maxlength) {
                                         var lastTxt = $(this).html();
                                         while ($(this).width() > (path_maxlength - occupedWidth)) {
                                             lastTxt = lastTxt.slice(0, -1);
                                             $(this).html(lastTxt);
                                         }
+                                        $(this).html(lastTxt+"...");
                                     }
                                 }
                                 occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
