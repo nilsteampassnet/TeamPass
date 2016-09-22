@@ -1,6 +1,7 @@
 Last changes
 
 2.1.26
+ #1515 Cannot add new users if similar user name exists
  #1512 Long folder names break UI
  #1510 During upgrade, clean personal_folder field in DB
  #1504 Error while creating a new user with API

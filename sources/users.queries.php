@@ -151,7 +151,7 @@ if (!empty($_POST['type'])) {
             // Check if user already exists
             $data = DB::query(
                 "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
-                WHERE login LIKE %ss",
+                WHERE login = %s",
                 mysqli_escape_string($link, stripslashes($login))
             );
 
