@@ -816,7 +816,7 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "set") {
             /*
-             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>?apikey=<VALID API KEY>
+             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>/<label>/<protocol>?apikey=<VALID API KEY>
              * Example: https://127.0.0.1/teampass/api/index.php/set/newLogin/newPassword/newUrl/myLogin/myPassword?apikey=gu6Eexaewaishooph6iethoh5woh0yoit6ohquo
              *
              * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
@@ -891,16 +891,23 @@ function rest_get () {
                             // encrypt password
                             $encrypt = cryption($GLOBALS['request'][2], SALT, "", "encrypt");
 
+                            // is there a protocol?
+                            if (isset($GLOBALS['request'][7]) || empty($GLOBALS['request'][7])) {
+                                $protocol = "http://";
+                            } else {
+                                $protocol = urldecode($GLOBALS['request'][7])."://";
+                            }
+
                             // add new item
                             DB::insert(
                                 prefix_table("items"),
                                 array(
-                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3].''),
+                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3]),
                                     'description' => "Imported with Teampass-Connect",
                                     'pw' => $encrypt['string'],
                                     'pw_iv' => $encrypt['iv'],
                                     'email' => "",
-                                    'url' => urldecode($GLOBALS['request'][3].'%'),
+                                    'url' => urldecode($GLOBALS['request'][3]),
                                     'id_tree' => $tpc_folder_id,
                                     'login' => $GLOBALS['request'][1],
                                     'inactif' => '0',
@@ -919,6 +926,142 @@ function rest_get () {
                                 $userData['id'],
                                 'at_creation',
                                 $GLOBALS['request'][1]
+                            );
+
+                            $json['status'] = "ok";
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('NO_PF_EXIST_FOR_USER');
+                        }
+                    } else {
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else {
+                    rest_error ('SET_NO_DATA');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
+        } elseif ($GLOBALS['request'][0] == "set_tpc") {
+            /*
+             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>/<label>/<protocol>?apikey=<VALID API KEY>
+             * Example: https://127.0.0.1/teampass/api/index.php/set/newLogin/newPassword/newUrl/myLogin/myPassword?apikey=gu6Eexaewaishooph6iethoh5woh0yoit6ohquo
+             *
+             * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
+             */
+            // get user credentials
+            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                // get url
+                if (isset($GLOBALS['request'][1])) {
+                    // is user granted?
+                    $userData = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
+                        $GLOBALS['request'][2]
+                    );
+                    if (DB::count() == 0) {
+                        rest_error ('AUTH_NO_IDENTIFIER');
+                    }
+
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    // is user identified?
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][3], $userData['pw']) === true) {
+                        // does the personal folder of this user exists?
+                        DB::queryFirstRow(
+                            "SELECT `id`
+                            FROM " . $pre . "nested_tree
+                            WHERE title = %s AND personal_folder = 1",
+                            $userData['id']
+                        );
+                        if (DB::count() > 0) {
+                            // check if "teampass-connect" folder exists
+                            // if not create it
+                            $folder = DB::queryFirstRow(
+                                "SELECT `id`
+                                FROM " . $pre . "nested_tree
+                                WHERE title = %s",
+                                "teampass-connect"
+                            );
+                            if (DB::count() == 0) {
+                                DB::insert(
+                                    prefix_table("nested_tree"),
+                                    array(
+                                        'parent_id' => '0',
+                                        'title' => "teampass-connect"
+                                    )
+                                );
+                                $tpc_folder_id = DB::insertId();
+
+                                //Add complexity
+                                DB::insert(
+                                    prefix_table("misc"),
+                                    array(
+                                        'type' => 'complex',
+                                        'intitule' => $tpc_folder_id,
+                                        'valeur' => '0'
+                                    )
+                                );
+
+                                // rebuild tree
+                                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                                $tree->register();
+                                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                                $tree->rebuild();
+                            } else {
+                                $tpc_folder_id = $folder['id'];
+                            }
+
+                            // prepare TPC parameters
+                            $tpc_param = explode('/', base64_decode($GLOBALS['request'][1]));
+
+                            // encrypt password
+                            $encrypt = cryption(urldecode($tpc_param[1]), SALT, "", "encrypt");
+
+                            // is there a label?
+                            if (empty($tpc_param[3])) {
+                                $label = "Credentials for ".urldecode($tpc_param[2]);
+                            } else {
+                                $label = urldecode($tpc_param[3]);
+                            }
+
+                            // add new item
+                            DB::insert(
+                                prefix_table("items"),
+                                array(
+                                    'label' => $label,
+                                    'description' => "Imported with Teampass-Connect",
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => $encrypt['iv'],
+                                    'email' => "",
+                                    'url' => urldecode($tpc_param[2]),
+                                    'id_tree' => $tpc_folder_id,
+                                    'login' => urldecode($tpc_param[0]),
+                                    'inactif' => '0',
+                                    'restricted_to' => $userData['id'],
+                                    'perso' => '0',
+                                    'anyone_can_modify' => '0',
+                                    'complexity_level' => '0'
+                                )
+                            );
+                            $newID = DB::insertId();
+
+                            // log
+                            logItems(
+                                $newID,
+                                $label,
+                                $userData['id'],
+                                'at_creation',
+                                ''
                             );
 
                             $json['status'] = "ok";
