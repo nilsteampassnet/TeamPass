@@ -814,6 +814,92 @@ function rest_get () {
             } else {
                 rest_error ('AUTH_NO_IDENTIFIER');
             }
+        } elseif ($GLOBALS['request'][0] == "auth_tpc") {
+            /*
+            ** TO BE USED ONLY BY TEAMPASS-CONNECT
+            **
+            */
+            // get user credentials
+            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                // get url
+                if(isset($GLOBALS['request'][1])) {
+                    // is user granted?
+                    $userData = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        $GLOBALS['request'][2]
+                    );
+
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][3], $userData['pw']) === true) {
+                        // define the restriction of "id_tree" of this user
+                        //db::debugMode(true);
+                        $userDef = DB::queryOneColumn('folder_id',
+                            "SELECT DISTINCT folder_id
+                            FROM ".prefix_table("roles_values")."
+                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ", empty($userData['groupes_interdits']) ? "" : "
+                            AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")", "
+                            AND role_id IN %ls
+                            GROUP BY folder_id",
+                            explode(";", $userData['groupes_interdits'])
+                        );
+                        // complete with "groupes_visibles"
+                        foreach (explode(";", $userData['groupes_visibles']) as $v) {
+                            array_push($userDef, $v);
+                        }
+
+                        // decrypt url
+                        $tpc_url = base64_decode($GLOBALS['request'][1]);
+
+                        // find the item associated to the url
+                        $response = DB::query(
+                            "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to
+                            FROM ".prefix_table("items")."
+                            WHERE url LIKE %s
+                            AND id_tree IN (".implode(",", $userDef).")
+                            ORDER BY id DESC",
+                            $tpc_url.'%'
+                        );
+                        $counter = DB::count();
+
+                        if ($counter > 0) {
+                            $json = "";
+                            foreach ($response as $data) {
+                                // check if item visible
+                                if (
+                                    empty($data['restricted_to']) ||
+                                    ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
+                                ) {
+                                    // prepare export
+                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $json[$data['id']]['pw'] = $crypt_pw['string'];
+                                }
+                            }
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('NO_DATA_EXIST');
+                        }
+                    } else {
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else {
+                    rest_error ('AUTH_NO_URL');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
         } elseif ($GLOBALS['request'][0] == "set") {
             /*
              * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>/<label>/<protocol>?apikey=<VALID API KEY>
@@ -949,10 +1035,7 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "set_tpc") {
             /*
-             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>/<label>/<protocol>?apikey=<VALID API KEY>
-             * Example: https://127.0.0.1/teampass/api/index.php/set/newLogin/newPassword/newUrl/myLogin/myPassword?apikey=gu6Eexaewaishooph6iethoh5woh0yoit6ohquo
-             *
-             * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
+             * TO BE USED ONLY BY TEAMPASS-CONNECT
              */
             // get user credentials
             if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
