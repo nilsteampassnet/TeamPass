@@ -305,7 +305,7 @@ function identifyUser($sentData)
             );
 
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+                fputs($dbgLdap, "Create new adldap object : ".$adldap->getLastError()."\n\n\n"); //Debug
             }
 
             // openLDAP expects an attribute=value pair
@@ -334,7 +334,7 @@ function identifyUser($sentData)
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
-                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
+                    "After authenticate : ".$adldap->getLastError()."\n\n\n" .
                     "ldap status : ".$ldapConnection."\n\n\n"
                 ); //Debug
             }
@@ -392,7 +392,7 @@ function identifyUser($sentData)
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
         
         // get user info from LDAP
-        $user_info_from_ad = $adldap->user_info($auth_username, array("mail", "givenname", "sn"));
+        $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
 
         DB::insert(
             prefix_table('users'),

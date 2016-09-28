@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          english.php
@@ -11,58 +11,9 @@
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *
- *
- * TRANSLATOR NOTICE:
- *
- *     Thanks for your help! Please observe these precautions when creating or editing this language file.
- * 
- * !! - Single quote character ' must be escaped by using \'
- * !! - Do not use # character - it is used to insert special features such as #URL#
- * !! - Text must not be cleared or left empty. Do not leave any blank '' entries
- *
- * - Use minimal HTML tags. <i> is allowed to emphasize words, or <strong> for more emphasis
- * - HTML tags are allowed in tooltips, but they may be ignored or discarded
- * - Do not use style, font size, <br> or special formatting here - improve the main CSS file for all users instead
- *
- *
- * STYLE GUIDE:
- *
- * - Create statements, not questions. For settings, the (yes/no) slider shows it is a question. 
- *       Good: "Resize images"  Bad: "Should images being resized?"
- *
- * - Start description with item-specific words. This allows quick location and identification.
- *       Good: "Default language"  Bad: "Define the default language"
- *       Good: "New feature"  Bad: "Enable the new feature"
- *
- *   If it applies to your language:
- *
- *   - Remove language articles when possible.
- *       Good: "Rebuild configuration file"  Bad: "Rebuild the configuration file"
- *       Good: "Choisir langue" Bad:"Choisir la langue"
- *
- *   - Do not capitalize words to emphasize them; use markup.  
- *       Good: "Disable <i>all</i> logins"  Bad: "Disable ALL logins"
-
- *   - Do not captialize attributes or features to emphasize them.  
- *       Good: "Set image width" Bad: "Set image Width"
-
- *   - Capitalize each word of buttons or headers: 
- *       Good: "User Management"  Bad: "User management"
- *
- *   - Do not use special characters such as No (numero sign), 1er (français), Tel (Japanese), (1) Japanese. Use only natural language.
  */
-
 global $LANG;
 $LANG = array (
-    'enable_language_file' => '1', // Set to 0 to remove language from list. To translate, change to 1 to show this language in list. (future use)
-    
-    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
-    'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
-    'runtime_upload' => 'Upload feature: runtime',
-    'failed_logins' => 'Failed Logins',
-    'admin_2factor_authentication_tab' => '2FA Options',
-    'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
@@ -138,8 +89,8 @@ $LANG = array (
     'channel_encryption_no_gmp' => 'Extension GMP is not loaded! Encryption can\'t be initiated!',
     'channel_encryption_no_openssl' => 'Extension OPENSSL is not loaded! Encryption can\'t be initiated!',
     'channel_encryption_no_file' => 'No encryption key file was found! Please use upgrade script.',
-    'admin_action_generate_encrypt_keys' => 'Generate new encryption keys used for secure communication', // unused
-    'admin_action_generate_encrypt_keys_tip' => 'Occasionally creating a new key pair may enhance security', // unused
+    'admin_action_generate_encrypt_keys' => 'Generate new encryption keys used for secure communication',
+    'admin_action_generate_encrypt_keys_tip' => 'Occasionally creating a new key pair may enhance security',
     'settings_anyone_can_modify_bydefault' => '<i>Anyone can modify</i> option selected by default',
     'channel_encryption_in_progress' => 'Encrypting channel ...',
     'channel_encryption_failed' => 'Authentication failed!',
@@ -168,15 +119,15 @@ $LANG = array (
     'admin_proxy_ip_tip' => 'If you require a proxy server to connect to the Internet, set the IP address here. Otherwise, leave blank.',
     'admin_proxy_port' => 'Proxy server port',
     'admin_proxy_port_tip' => 'If you require a proxy server to connect to the Internet, set the port number here.',
-    'settings_ldap_elusers' => ' Teampass local users only',
-    'settings_ldap_elusers_tip' => ' This feature allows users in the database to authenticate via LDAP. Disable this if you want to browse any LDAP directory.',
+    'settings_ldap_elusers' => 'Teampass local users only',
+    'settings_ldap_elusers_tip' => 'This feature allows users in the database to authenticate via LDAP. Disable this if you want to browse any LDAP directory.',
     'error_role_complex_not_set' => 'You must set the required passwords strength!',
     'item_updated_text' => 'This item has been edited. You need to update before you can change it.',
     'database_menu' => 'Database',
     'db_items_edited' => 'Item currently being edited',
     'item_edition_start_hour' => 'Editing started',
     'settings_delay_for_item_edition' => 'Exclusive editing lock expires after XX minutes',
-    'settings_delay_for_item_edition_tip' => 'When editing an item, the item is locked so that no other user can modify it. This setting deletes the lock token after a certain number of minutes. If the value is set to 0, an item will never be automatically unlocked after someone has started editing.</span>',
+    'settings_delay_for_item_edition_tip' => 'When editing an item, the item is locked so that no other user can modify it. This setting deletes the lock token after a certain number of minutes. If the value is set to 0, an item will never be automatically unlocked after someone has started editing.',
     'db_users_logged' => 'Users logged in',
     'action' => 'Action',
     'login_time' => 'Logged since',
@@ -278,7 +229,7 @@ $LANG = array (
     'migrate_pf_user_salt' => 'Enter the salt key for selected user',
     'migrate_pf_no_sk' => 'You must enter a salt key',
     'migrate_pf_no_sk_user' => 'You must enter a salt key',
-    'migrate_pf_no_user_id' => 'You must select the user";',
+    'migrate_pf_no_user_id' => 'You must select the user',
     'email_subject_new_user' => 'Password management account created for you',
     'email_new_user_mail' => 'An administrator has created an account you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=\'#tp_link#\'>Click this link</a> to log in and reset your password.',
     'error_empty_data' => 'No data to proceed!',
@@ -311,7 +262,7 @@ $LANG = array (
     'add_role_tip' => 'Add New Role',
     'admin' => 'Administration',
     'admin_action' => 'Confirm changes',
-    'admin_action_db_backup' => 'Backup the database.',
+    'admin_action_db_backup' => 'Backup the database',
     'admin_action_db_backup_key_tip' => 'Please enter a password to encrypt the backup file. The password will be required to restore the backup (blank for no encryption)',
     'admin_action_db_backup_start_tip' => 'Start',
     'admin_action_db_backup_tip' => 'It is good practice to backup your database regularly to protect against potential data loss.',
@@ -395,7 +346,7 @@ $LANG = array (
     'auth_modification_without_complexity' => 'Allow item modification without required password strength',
     'auto_create_folder_role' => 'Create folder and role for ',
     'block_last_created' => 'Last created',
-    'bugs_page' => 'If you discover a bug, please report it.', //unused
+    'bugs_page' => 'If you discover a bug, please report it.',
     'by' => 'by',
     'cancel' => 'Cancel',
     'cancel_button' => 'Cancel',
@@ -461,7 +412,6 @@ $LANG = array (
     'email_altbody_1' => 'Item',
     'email_altbody_2' => 'has been created.',
     'email_announce' => 'Email a link to all users',
-    'new_item_email_body' => 'Hi, <br /><br />New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
     'email_change' => 'Change the account\'s email',
     'email_changed' => 'Email changed!',
     'email_select' => 'Select users to inform',
@@ -648,7 +598,7 @@ $LANG = array (
     'no_last_items' => 'No items seen',
     'no_restriction' => 'No restriction',
     'numbers' => 'Numbers',
-    'number_of_used_pw' => 'Number of old passwords remembered to prevent reuse. (0 to disable)',
+    'number_of_used_pw' => 'Number of old passwords remembered to prevent reuse (0 to disable)',
     'ok' => 'OK',
     'pages' => 'Pages',
     'pdf_del_date' => 'PDF generated the',
@@ -939,7 +889,7 @@ $LANG = array (
     'ssh_action_performed' => 'Password updated for this item.<br /><br />You can now close this window.',
     'ssh_answer_from_server' => 'Server reply',
     'ssh_password_frequency_change_info' => 'Select the interval between automatic server password updates (selecting 0 will disable automatic password changing).<br />Automatic password updates will only be performed if the system administrator has also configured the scheduled password update feature cron job.',
-    'ssh_password_frequency_change' => 'Password change frequency (in month)',
+    'ssh_password_frequency_change' => 'Password change frequency (in months)',
     'ssh_scheduled_change' => 'Scheduled change',
     'ssh_one_shot_change' => 'One-time change',
     'month' => 'month',
@@ -948,11 +898,18 @@ $LANG = array (
     'can_manage_all_users' => 'Human Resources - User can manage all other users (except administrators) regardless of group membership. HR user will also have manager rights added to their account.',
     'error_bad_credentials_more_than_3_times' => 'Login credentials incorrect!<br>Please wait 10 seconds before next attempt',
     'settings_ldap_object_class' => 'Class to search',
-    'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX acount',
-    'rebuild_config_file' => 'Rebuild configuration file',
+    'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX account',
+    'rebuild_config_file' => 'Rebuild the configuration file',
     'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./includes/config/tp.config.php, but the file should be located outside the www directory for security.',
     'error_folder_complexity_lower_than_top_folder' => 'Subfolders must have password strength set the same or higher than parent folder',
     'rebuild_config_file' => 'Rebuild configuration file',
     'csv_import_information' => 'The CSV file needs to follow these rules:<ul><li>The first line must be a header,</li><li>The header must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
+    'new_item_email_body' => 'Hi, <br /><br />New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
+    'failed_logins' => 'Failed Logins',
+    'admin_2factor_authentication_tab' => '2FA Options',
+    'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
+    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
+    'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
+    'runtime_upload' => 'Upload feature: runtime',
     '' => ''
 );
