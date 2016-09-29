@@ -1,0 +1,6 @@
+<Directory />
+Options -Indexes 
+IndexIgnore *
+Order Allow,Deny
+Deny from all
+</Directory>
