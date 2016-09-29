@@ -116,6 +116,9 @@ function addToCacheTable($id)
             "folder" => "",
             //"restricted_to" => "0",
             "author" => API_USER_ID,
+            "renewal_period" => 0,
+            "timestamp" => time(),
+            "url" => 0
         )
     );
 }
@@ -574,7 +577,10 @@ function rest_get () {
                                     "restricted_to" => "",
                                     "login" => $item_login,
                                     "folder" => "",
-                                    "author" => API_USER_ID
+                                    "author" => API_USER_ID,
+                                    "renewal_period" => "0",
+                                    "timestamp" => time(),
+                                    "url" => "0"
                                 )
                             );
 

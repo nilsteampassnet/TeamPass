@@ -1,6 +1,6 @@
-<Directory />
+<Files>
 Options -Indexes 
 IndexIgnore *
 Order Allow,Deny
 Deny from all
-</Directory>
+</Files>
