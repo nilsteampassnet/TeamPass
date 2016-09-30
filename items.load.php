@@ -1543,7 +1543,7 @@ function showDetailsStep2(id, param)
             }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
-            $("#edit_past_pwds").attr('title', data.history_of_pwds);
+            $("#edit_past_pwds").attr('title', htmlspecialchars_decode(data.history_of_pwds));
 
             $("#id_files").html(data.files_id);
             $("#hid_files").val(data.files_id);
