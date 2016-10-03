@@ -447,14 +447,15 @@ function rest_get () {
                 foreach ($response as $data)
                 {
                     // prepare output
-                    $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
-                    $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $id = $data['id'];
+                    $json[$id]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json['pw'] = $crypt_pw['string'];
-                    $json['folder_id'] = $data['id_tree'];
-                    $json['status'] = utf8_encode("OK");
+                    $json[$id]['pw'] = $crypt_pw['string'];
+                    $json[$id]['folder_id'] = $data['id_tree'];
+                    $json[$id]['status'] = utf8_encode("OK");
                 }
                 if (isset($json) && $json) {
                     echo json_encode($json);

@@ -812,6 +812,7 @@ $(function() {
        );
     });
 
+    $("button").button();
 
 });
 
