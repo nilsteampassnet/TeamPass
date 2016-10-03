@@ -87,7 +87,7 @@ if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
 echo '
     <div style="margin-bottom:6px;margin-top:6px;">
         <i class="fa fa-cloud-upload fa-fw fa-lg"></i>&nbsp;
-        <span id="plupload_runtime2" class="ui-state-error ui-corner-all" style="width:350px;">Upload feature: No runtime found.</span>
+        <span id="plupload_runtime2" class="ui-state-error ui-corner-all" style="width:350px;">'.$LANG['error_upload_runtime_not_found'].'</span>
         <input type="hidden" id="upload_enabled2" value="" />
     </div>
     <div style="margin-bottom:6px;">
@@ -339,7 +339,7 @@ $(function() {
 
     // Show runtime status
     uploader_photo.bind("Init", function(up, params) {
-        $("#plupload_runtime2").html("Upload feature: runtime " + params.runtime).removeClass('ui-state-error');
+        $("#plupload_runtime2").html("<?php echo $LANG['runtime_upload'];?> " + params.runtime).removeClass('ui-state-error');
         $("#upload_enabled2").val("1");
     });
 

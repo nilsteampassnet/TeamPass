@@ -107,7 +107,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    require_once @$_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     if (isset($_GET['page']) && $_GET['page'] == "kb") {
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
     }
@@ -311,7 +311,7 @@ echo '
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
-        <input type="hidden" name="action_on_going" id="action_on_going" value="" />
+        <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
         <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
 
 echo '
@@ -428,13 +428,13 @@ if (
     else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid
         echo '
-        <div style="margin:auto;padding:4px;width:300px;"  class="ui-state-focus ui-corner-all">
+        <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
             <h3>'.$LANG['index_change_pw'].'</h3>
             <div style="height:20px;text-align:center;margin:2px;display:none;" id="change_pwd_error" class=""></div>
             <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all">'.
             $LANG['complex_asked'].' : '.$_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1].
             '</div>
-            <div id="pw_strength" style="margin:0 0 10px 30px;"></div>
+            <div id="pw_strength" style="margin:0 0 10px 140px;"></div>
             <table>
                 <tr>
                     <td>'.$LANG['index_new_pw'].' :</td><td><input type="password" size="15" name="new_pw" id="new_pw"/></td>
@@ -442,7 +442,9 @@ if (
                 <tr><td>'.$LANG['index_change_pw_confirmation'].' :</td><td><input type="password" size="15" name="new_pw2" id="new_pw2" onkeypress="if (event.keyCode == 13) ChangeMyPass();" /></td></tr>
             </table>
             <input type="hidden" id="pw_strength_value" />
-            <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$LANG['index_change_pw_button'].'" />
+            <div style="width:420px; text-align:center; margin:15px 0 10px 0;">
+                <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$LANG['index_change_pw_button'].'" />
+            </div>
         </div>
         <script type="text/javascript">
             $("#new_pw").focus();

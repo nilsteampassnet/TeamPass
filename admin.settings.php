@@ -48,7 +48,7 @@ echo '
                 <li><a href="#tabs-6">'.$LANG['admin_emails'].'</a></li>
                 <li><a href="admin.settings_categories.php">'.$LANG['categories'].'</a></li>
                 <li><a href="admin.settings_api.php">'.$LANG['admin_api'].'</a></li>
-                <li><a href="admin.settings_duo.php">2FA Options</a></li>
+                <li><a href="admin.settings_duo.php">'.$LANG['admin_2factor_authentication_tab'].'</a></li>
             </ul>';
 // --------------------------------------------------------------------------------
 // TAB Né1
@@ -405,6 +405,7 @@ echo '
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
             </td></tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
+/* DISABLED FOR 2.1.26
 echo '
         <tr><td>
             <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
@@ -412,6 +413,7 @@ echo '
         </td><td>
             <div class="toggle toggle-modern" id="use_md5_password_as_salt" data-toggle-on="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="use_md5_password_as_salt_input" name="use_md5_password_as_salt_input" value="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '1' : '0', '" />
         </td></tr>';
+*/
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
@@ -530,7 +532,7 @@ echo '
 // Clean DB with orphan items
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_db_backup\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_db_clean_items\')" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
@@ -1044,7 +1046,8 @@ echo '
                         <td><label for="ldap_type">'.$LANG['settings_ldap_type'].'</label></td>
                         <td>
                             <select id="ldap_type" name="ldap_type" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
-                                <option value="windows">Windows / Active Directory</option>
+                                <option value="0">-- '.$LANG['select'].' --</option>
+                                <option value="windows"', $ldap_type == 'windows' ? ' selected="selected"' : '', '>Windows / Active Directory</option>
                                 <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
                                 <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
                             </select>

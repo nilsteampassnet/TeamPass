@@ -159,30 +159,22 @@ switch ($_POST['type']) {
                    ),
                    "title=%s AND parent_id=%i", $record['id'], 0
                 );
-            }
 
-            // correct bug #1414
-            // Get an array of all folders
-            $folders = $tree->getDescendants($data['id'], false, true, true);
-            foreach ($folders as $folder) {
-                //update PF field for user
-                DB::update(
-                    prefix_table("nested_tree"),
-                    array(
-                        'personal_folder' => '1'
-                   ),
-                    "id = %i",
-                    $folder
-                );
+                // Get an array of all folders
+                $folders = $tree->getDescendants($record['id'], false, true, true);
+                foreach ($folders as $folder) {
+                 //update PF field for user
+                    DB::update(
+                        prefix_table("nested_tree"),
+                        array(
+                            'personal_folder' => '1'
+                       ),
+                        "id = %s",
+                        $folder
+                    );
+                }          
             }
         }
-
-        //Delete PF for deleted users - TODO
-        /*DB::query(
-            "SELECT COUNT(*) FROM ".prefix_table("nested_tree")." as t
-            LEFT JOIN ".prefix_table("users")." as u ON t.title = u.id
-            WHERE u.id IS null AND t.parent_id=0 AND t.title REGEXP '^[0-9]'"
-        );*/
 
         //rebuild fuild tree folder
         $tree->rebuild();
@@ -1283,14 +1275,14 @@ switch ($_POST['type']) {
         // special Cases
         if ($dataReceived['field'] == "cpassman_url") {
             // update also jsUrl for CSFP protection
-            $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
-            $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+            $jsUrl = $dataReceived['value'].'/includes/libraries/csrfp/js/csrfprotector.js';
+            $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
             $data = file_get_contents($csrfp_file);
             $posJsUrl = strpos($data, '"jsUrl" => "');
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+            file_put_contents($csrfp_file, $newdata);
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
@@ -1302,7 +1294,25 @@ switch ($_POST['type']) {
                 $type,
                 'restricted_to_roles'
             );
-        }
+        }/* else
+        if ($dataReceived['field'] == "use_md5_password_as_salt" && $dataReceived['value'] == "0") {
+            // in case this option is changed, we need to warn the users to adapt
+            $rows = DB::query(
+                "SELECT id FROM ".prefix_table("users")."
+                WHERE admin != %i",
+                "",
+                "1"
+            );
+            foreach ($rows as $record) {
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'upgrade_needed' => "1"
+                    ),
+                    "id = %i"
+                );
+            }
+        }*/
 
         // store in SESSION
         $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];

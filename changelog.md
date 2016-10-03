@@ -1,5 +1,21 @@
 Last changes
+
 2.1.26
+ #1527 Error Field 'timestamp' doesn't have a default value
+ #1526 New .htaccess file in ./includes/config
+ #1525 Bad encoding in previous used passwords list
+ #1515 Cannot add new users if similar user name exists
+ #1512 Long folder names break UI
+ #1511 Fix on LDAP due to library upgrade
+ #1510 During upgrade, clean personal_folder field in DB
+ #1504 Error while creating a new user with API
+ #1494 csrfp.config.php not updated on URL change
+ #1491 Added check against only numeric folder name
+ #1489 JSON error on quick search if no folder access
+ #1497 Nothing happens when clicking "Remove orphan items from database"
+ #1375 Symbol < breaks password in One Time View page
+ #1481 Query error
+ #1476 Fix personal folder update script for
  #1463 PDF Export still broken
  #1454 API outputs deleted passwords
  #1453 API should have function "userpw"

@@ -820,10 +820,12 @@ echo '
 <div id="div_move_folder" style="display:none;">
     <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <div style="text-align:center;margin-top:20px;">
-        The folder <b><span id="move_folder_title"></span></b> will be moved below folder:<br />
-        <select id="move_folder_id">
+        <p>'.$LANG['folder_will_be_moved_below'].'</p>
+        <div>
+        <select id="move_folder_id" style="width:250px; padding:3px;" class="ui-widget-content">
             <option value="0">-choisir-</option>
         </select>
+        </div>
     </div>
     <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...

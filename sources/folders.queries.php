@@ -353,6 +353,12 @@ if (isset($_POST['newtitle'])) {
                 break;
             }
 
+            // check if title is numeric
+            if (is_numeric($title) === true) {
+                echo '[ { "error" : "error_title_only_with_numbers"} ]';
+                break;
+            }
+
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
@@ -534,6 +540,12 @@ if (isset($_POST['newtitle'])) {
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
                 echo '[ { "error" : "error_html_codes" } ]';
+                break;
+            }
+
+            // check if title is numeric
+            if (is_numeric($title) === true) {
+                echo '[ { "error" : "error_title_only_with_numbers"} ]';
                 break;
             }
 

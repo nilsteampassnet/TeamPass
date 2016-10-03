@@ -228,6 +228,7 @@ function ListerItems(groupe_id, restricted, start)
                                 $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
                             }
                         }
+
                         if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
                             // only take first and last
                             var nb = 1;
@@ -238,12 +239,13 @@ function ListerItems(groupe_id, restricted, start)
                                     $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
                                 } else if (nb == path_levels) {
                                     // next condition occurs if lasst folder name is too long
-                                    if (totalPathLength > $("#items_path_var").width()) {
+                                    if (totalPathLength > path_maxlength) {
                                         var lastTxt = $(this).html();
                                         while ($(this).width() > (path_maxlength - occupedWidth)) {
                                             lastTxt = lastTxt.slice(0, -1);
                                             $(this).html(lastTxt);
                                         }
+                                        $(this).html(lastTxt+"...");
                                     }
                                 }
                                 occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
@@ -557,6 +559,7 @@ function AjouterItem()
         url = "http://"+url;
     }
 
+    // do checks
     if ($("#label").val() == "") erreur = "<?php echo $LANG['error_label'];?>";
     else if ($("#pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
     else if ($("#categorie").val() == "na") erreur = "<?php echo $LANG['error_group'];?>";
@@ -756,6 +759,7 @@ function EditerItem()
         url = "http://"+url;
     }
 
+    // do checks
     if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']);?>";
     else if ($("#edit_pw1").val() == "") erreur = "<?php echo addslashes($LANG['error_pw']);?>";
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
@@ -1039,6 +1043,9 @@ function AddNewFolder()
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']);?>").show();
     } else if ($("#new_rep_complexite").val() == "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>").show();
+    } else if (/^\d+$/.test($("#new_rep_titre").val())) {
+        // check if folder title contains only numbers
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>").show();
     } else if ($("#user_ongoing_action").val() == "") {
         $("#add_folder_loader").show();
         $("#user_ongoing_action").val("true");
@@ -1068,6 +1075,8 @@ function AddNewFolder()
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']);?>").show();
                 } else if (data[0].error == "error_html_codes") {
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
+                } else if (data[0].error == "error_title_only_with_numbers") {
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>").show();
                 } else if (data[0].error != "") {
                     $("#new_rep_show_error").html(data[0].error).show();
                     console.log(data[0].error);
@@ -1534,7 +1543,7 @@ function showDetailsStep2(id, param)
             }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
-            $("#edit_past_pwds").attr('title', data.history_of_pwds);
+            $("#edit_past_pwds").attr('title', htmlspecialchars_decode(data.history_of_pwds));
 
             $("#id_files").html(data.files_id);
             $("#hid_files").val(data.files_id);
@@ -2294,7 +2303,7 @@ $(function() {
     $("#jstree").height(window_height-185);
 
     //warning if screen height too short
-    if (parseInt(window_height-440) <= 50) {
+    if (parseInt(window_height-440) <= 30) {
         $("#div_dialog_message_text").html("<?php echo addslashes($LANG['warning_screen_height']);?>");
         $("#div_dialog_message").dialog('open');
     }
@@ -2304,7 +2313,7 @@ $(function() {
         //do nothing ... good value
     } else {
         //adapt to the screen height
-        $("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+        $("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
     }
 
     // Build buttons
@@ -2410,6 +2419,9 @@ $(function() {
                 } else if ($("#edit_folder_complexity").val() == "") {
                     $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>");
                     $("#edit_rep_show_error").show();
+                } else if (/^\d+$/.test($("#edit_folder_title").val())) {
+                    $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>");
+                    $("#edit_rep_show_error").show();
                 } else {
                     $("#edit_folder_loader").show();
                     $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
@@ -2437,7 +2449,11 @@ $(function() {
                                 $("#edit_folder_title").val($('#edit_folder_title').val());
                                 $("#div_editer_rep").dialog("close");
                             } else {
-                                $("#edit_rep_show_error").html(data[0].error).show();
+                                if (data[0].error === "ERR_TITLE_ONLY_WITH_NUMBERS") {
+                                    $("#edit_rep_show_error").html('<?php echo $LANG['error_only_numbers_in_folder_name'];?>').show();
+                                } else {
+                                    $("#edit_rep_show_error").html(data[0].error).show();
+                                }
 
                             }
                             $("#edit_folder_loader").hide();

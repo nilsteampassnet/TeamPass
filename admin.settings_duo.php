@@ -100,10 +100,10 @@ td {
   cursor:pointer;
 }
 .googleauth td:nth-child(1) {
-  width: 50%;
+  width: 40%;
 }
 .googleauth td:nth-child(2) {
-  width: 50%;
+  width: 60%;
 }
 .google_enabled { ', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '' : 'display:none;', ' }
 .duo_enabled { ', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', ' }

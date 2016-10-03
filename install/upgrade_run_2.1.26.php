@@ -224,6 +224,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
 
+// alter table log_system
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."log_system` MODIFY qui VARCHAR(255)");
+
 // create index in log_items - for performance
 mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
 
@@ -352,6 +355,29 @@ if ($tmp_googlecount[0] > 0 ) {
         mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'google_authentication', '0')");
     }
 }
+
+
+// Fix for #1510
+// change the "personal_folder" field on all named folders back to "0" in nested_tree
+$result = mysqli_query(
+    $dbTmp, 
+    "SELECT title, id
+    FROM `".$_SESSION['tbl_prefix']."nested_tree` 
+    WHERE personal_folder = '1' AND nlevel = '1' AND parent_id = '0'"
+);
+while($row = mysqli_fetch_assoc($result)) {
+    // only change non numeric folder title
+    if (!is_numeric($row['title'])) {
+        mysqli_query(
+            $dbTmp, 
+            "UPDATE `".$_SESSION['tbl_prefix']."nested_tree` 
+            SET personal_folder = '0' 
+            WHERE id = '".$row['id']."'"
+        );
+    }
+}
+mysqli_free_result($result);
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

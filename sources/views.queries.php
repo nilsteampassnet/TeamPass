@@ -67,20 +67,20 @@ switch ($_POST['type']) {
         $pdf=new TFPDF();
 
         //Add font for utf-8
-        $pdf->AddFont('DejaVu', '', 'DejaVuSansCondensed.ttf', true);
+        $pdf->AddFont('helvetica', '');
         $pdf->aliasNbPages();
         $pdf->addPage();
-        $pdf->SetFont('DejaVu', '', 16);
+        $pdf->SetFont('helvetica', '', 16);
         $pdf->Cell(0, 10, $LANG['pdf_del_title'], 0, 1, 'C', false);
-        $pdf->SetFont('DejaVu', '', 12);
+        $pdf->SetFont('helvetica', '', 12);
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
-        $pdf->SetFont('DejaVu', '', 10);
+        $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(15, 86, 145);
         $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", 1);
         $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", 1);
         $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", 1);
         $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", 1);
-        $pdf->SetFont('DejaVu', '', 10);
+        $pdf->SetFont('helvetica', '', 10);
 
         $rows = DB::query(
             "SELECT u.login as login, i.label as label, i.id_tree as id_tree
@@ -140,10 +140,11 @@ switch ($_POST['type']) {
         //ITEMS deleted
         $texte .= "<tr><td><span class='fa fa-key'></span>&nbsp;<u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
         $rows = DB::query(
-            "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date
+            "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date, n.title as folder_title
             FROM ".prefix_table("log_items")." as l
             INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
+            INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree=n.id)
             WHERE i.inactif = %i
             AND l.action = %s
             GROUP BY l.id_item",
@@ -161,7 +162,7 @@ switch ($_POST['type']) {
                 $thisFolder = "";
             }
 
-            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\">'.$record['login'].'</td>'.$thisFolder.'</tr>';
+            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
         }
 
         echo '[{"text":"'.$texte.'</table><div style=\'margin:15px 0px 0px 5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'restoration\');OpenDialog(\'tab2_dialog\');console.log(\'coucou\');\"><i class=\"fa fa-undo fa-lg\"></i>&nbsp;'.$LANG['restore'].'</a>&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'deletion\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-trash-o fa-lg\"></i>&nbsp;'.$LANG['delete'].'</a></div>"}]';
@@ -698,22 +699,22 @@ switch ($_POST['type']) {
         $pdf=new tFPDF();
 
         //Add font for utf-8
-        $pdf->AddFont('DejaVu', '', 'DejaVuSansCondensed.ttf', true);
+        $pdf->AddFont('helvetica', '');
 
         $pdf->aliasNbPages();
         $pdf->addPage();
-        $pdf->SetFont('DejaVu', '', 16);
+        $pdf->SetFont('helvetica', '', 16);
         $pdf->Cell(0, 10, $LANG['renewal_needed_pdf_title'], 0, 1, 'C', false);
-        $pdf->SetFont('DejaVu', '', 12);
+        $pdf->SetFont('helvetica', '', 12);
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
-        $pdf->SetFont('DejaVu', '', 10);
+        $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(192, 192, 192);
         $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", 1);
         $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", 1);
         $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", 1);
         $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", 1);
         $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", 1);
-        $pdf->SetFont('DejaVu', '', 9);
+        $pdf->SetFont('helvetica', '', 9);
 
         foreach (explode('@|@', addslashes($_POST['text'])) as $line) {
             $elem = explode('@;@', $line);

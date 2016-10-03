@@ -26,6 +26,17 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
+// if no folders are visible then return no results
+if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles'])) {
+    $returnValues = array(
+        "items_html" => '',
+        "message" => str_replace("%X%", 0, $LANG['find_message'])
+    );
+
+    echo prepareExchangedData($returnValues, "encode");
+    exit;
+}
+
 //Connect to DB
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;

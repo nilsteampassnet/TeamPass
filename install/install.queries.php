@@ -544,7 +544,7 @@ global \$SETTINGS;
                             `type` varchar(20) NOT NULL,
                             `date` varchar(30) NOT NULL,
                             `label` text NOT NULL,
-                            `qui` varchar(30) NOT NULL,
+                            `qui` varchar(255) NOT NULL,
                             `field_1` varchar(250) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
