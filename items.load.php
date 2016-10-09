@@ -2450,7 +2450,7 @@ $(function() {
                                 $("#div_editer_rep").dialog("close");
                             } else {
                                 if (data[0].error === "ERR_TITLE_ONLY_WITH_NUMBERS") {
-                                    $("#edit_rep_show_error").html('<?php echo $LANG['error_only_numbers_in_folder_name'];?>').show();
+                                    $("#edit_rep_show_error").html('<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>').show();
                                 } else {
                                     $("#edit_rep_show_error").html(data[0].error).show();
                                 }
