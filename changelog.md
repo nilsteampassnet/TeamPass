@@ -1,6 +1,7 @@
 Last changes
 
 2.1.26
+ #1537 Homepage not loading in French
  #1527 Error Field 'timestamp' doesn't have a default value
  #1526 New .htaccess file in ./includes/config
  #1525 Bad encoding in previous used passwords list
