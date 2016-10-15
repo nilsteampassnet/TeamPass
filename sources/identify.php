@@ -197,6 +197,7 @@ function identifyUser($sentData)
             'user_attribute : ' . $_SESSION['settings']['ldap_user_attribute']."\n" .
             'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
             'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+            'port : '.$_SESSION['settings']['ldap_port']."\n" .
             'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
             'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
         );
@@ -218,9 +219,21 @@ function identifyUser($sentData)
             $username=substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
-            $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+            $ldapURIs = "";
+            foreach(explode(",", $_SESSION['settings']['ldap_domain_controler']) as $domainControler) {
+                if($_SESSION['settings']['ldap_ssl'] == 1) {
+                    $ldapURIs .= "ldaps://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
+                }
+                else {
+                    $ldapURIs .= "ldap://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
+                }
+            }
+            if ($debugLdap == 1) {
+                fputs($dbgLdap, "LDAP URIs : " . $ldapURIs . "\n");
+            }
+            $ldapconn = ldap_connect($ldapURIs);
             if ($_SESSION['settings']['ldap_tls']) {
-               ldap_start_tls($ldapconn);
+            ldap_start_tls($ldapconn);
             }
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
@@ -280,6 +293,7 @@ function identifyUser($sentData)
                     'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
                     'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
                     'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+                    'port : '.$_SESSION['settings']['ldap_port']."\n" .
                     'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
@@ -299,6 +313,7 @@ function identifyUser($sentData)
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
+                    'port' => $_SESSION['settings']['ldap_port'],
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
                 )
