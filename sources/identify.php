@@ -453,7 +453,7 @@ function identifyUser($sentData)
     }
 
     // check GA code
-    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['2factor_authentication'] == 1 && $username != "admin") {
+    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
