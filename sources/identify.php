@@ -233,7 +233,7 @@ function identifyUser($sentData)
                 }
                 if ($ldapbind) {
                     $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=" . $_SESSION['settings']['ldap_object_class'] ."))";
-                    $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                        $filter_group = "memberUid=".$username;
                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
@@ -392,7 +392,12 @@ function identifyUser($sentData)
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
         
         // get user info from LDAP
-        $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+        if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
+            //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
+            $user_info_from_ad = $result;
+        } else {
+            $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+        }
 
         DB::insert(
             prefix_table('users'),
