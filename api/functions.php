@@ -238,7 +238,7 @@ function rest_delete () {
 function rest_get () {
     global $api_version;
     $_SESSION['user_id'] = "'api'";
-    
+
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
@@ -281,6 +281,7 @@ function rest_get () {
                     FROM ".prefix_table("items")."
                     WHERE inactif='0' AND ".$condition, $condition_value
                 );
+                $x = 0;
                 foreach ($response as $data)
                 {
                     // build the path to the Item
@@ -295,17 +296,18 @@ function rest_get () {
                     }
 
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['id'] = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
-                    $json[$id]['folder_id'] = $data['id_tree'];
-                    $json[$id]['path'] = $path;
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
                 }
             }
             else if($GLOBALS['request'][1] == "userpw") {
@@ -326,6 +328,9 @@ function rest_get () {
                     // forbid admin access
                 }
                 $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                if (count($response) === 0) {
+                    rest_error('USER_NOT_EXISTS');
+                }
                 foreach ($response as $data)
                 {
                     $role_str = $data['fonction_id'];
@@ -361,6 +366,7 @@ function rest_get () {
                     FROM ".prefix_table("items")."
                     WHERE inactif='0' AND ".$condition, $condition_value
                 );
+                $x = 0;
                 foreach ($response as $data)
                 {
                     // build the path to the Item
@@ -375,17 +381,18 @@ function rest_get () {
                     }
 
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['id'] = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
-                    $json[$id]['folder_id'] = $data['id_tree'];
-                    $json[$id]['path'] = $path;
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
                 }
             }
             else if($GLOBALS['request'][1] == "userfolders") {
@@ -398,14 +405,17 @@ function rest_get () {
                     // forbid admin access
                 }
                 $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                if (count($response) === 0) {
+                    rest_error('USER_NOT_EXISTS');
+                }
                 foreach ($response as $data)
                 {
                     $role_str = $data['fonction_id'];
                 }
 
                 $folder_arr = array();
-                $json = array();
                 $roles = explode(";", $role_str);
+                $x = 0;
                 foreach ($roles as $role)
                 {
                     $response = DB::query("SELECT folder_id, type FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
@@ -416,10 +426,12 @@ function rest_get () {
                             array_push($folder_arr,$folder_id);
 
                             $response2 = DB::queryFirstRow("SELECT title, nlevel FROM ".prefix_table("nested_tree")." WHERE id='".$folder_id."'");
-                            array_push(
-                                $json,
-                                array("id" => $folder_id, "title" => $response2['title'], "level" => $response2['nlevel'], "access_type" => $data['type'])
-                            );
+
+                            $json[$x]['id'] = $folder_id;
+                            $json[$x]['title'] = $response2['title'];
+                            $json[$x]['level'] = $response2['nlevel'];
+                            $json[$x]['access_type'] = $data['type'];
+                            $x++;
                         }
                     }
                 }
@@ -456,6 +468,7 @@ function rest_get () {
                     FROM ".prefix_table("items")."
                     WHERE inactif = %i AND id IN %ls", "0", $array_items
                 );
+                $x = 0;
                 foreach ($response as $data)
                 {
                     // build the path to the Item
@@ -470,17 +483,18 @@ function rest_get () {
                     }
 
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['id'] = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
-                    $json[$id]['folder_id'] = $data['id_tree'];
-                    $json[$id]['path'] = $path;
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
                 }
             }
 
@@ -1918,6 +1932,9 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'NO_PARAMETERS':
             $message = Array('err' => 'No parameters given');
+            break;
+        case 'USER_NOT_EXISTS':
+            $message = Array('err' => 'User does not exist');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
