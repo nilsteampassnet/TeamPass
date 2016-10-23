@@ -72,9 +72,7 @@ echo '
     <div style="">'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
-            <option value="0">---</option>' .
-$select_visible_nonpersonal_folders_options .
-'</select>
+        </select>
     </div>
 </div>';
 // DIALOG TO SEE ITEM DATA

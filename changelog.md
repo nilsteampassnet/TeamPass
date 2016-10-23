@@ -3,6 +3,9 @@ Last changes
 Bug fixing
  #1550 2 Factor enabled but can still log in without code
  #1551 Authentication through LDAP posix-search
+ Fixes in "Find" feature:
+       - copy from public to personal folder
+       - list of folders is refreshed when copying an Item
 
 2.1.26
  #1537 Homepage not loading in French

@@ -33,7 +33,20 @@ function aes_decrypt(text)
 function copy_item(item_id)
 {
     $('#id_selected_item').val(item_id);
-    $('#div_copy_item_to_folder').dialog('open');
+
+    $.post(
+        "sources/items.queries.php",
+        {
+            type    : "refresh_visible_folders",
+            key        : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            $("#copy_in_folder").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
+            $('#div_copy_item_to_folder').dialog('open');
+        }
+    );
+
 }
 
 $("#div_copy_item_to_folder").dialog({
@@ -56,9 +69,7 @@ $("#div_copy_item_to_folder").dialog({
                     },
                     function(data) {
                         //check if format error
-                        if (data[0].error == "no_item") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                        } else if (data[0].error == "not_allowed") {
+                        if (data[0].error !== "") {
                             $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
                         }
                         //if OK
