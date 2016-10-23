@@ -1,9 +1,9 @@
 <?php
 /**
  *
- * @file          configapi.php
+ * @file          (api)functions.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.0
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -13,6 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+$api_version = "2.0";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -235,7 +236,9 @@ function rest_delete () {
 }
 
 function rest_get () {
+    global $api_version;
     $_SESSION['user_id'] = "'api'";
+
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
@@ -251,7 +254,18 @@ function rest_get () {
         $category_query = "";
 
         if ($GLOBALS['request'][0] == "read") {
-            if($GLOBALS['request'][1] == "category") {
+            if($GLOBALS['request'][1] == "folder") {
+                /*
+                * READ FOLDERS
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+                //Load Tree
+                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
                 // get ids
                 if (strpos($GLOBALS['request'][2],";") > 0) {
                     $condition = "id_tree IN %ls";
@@ -260,49 +274,63 @@ function rest_get () {
                     $condition = "id_tree = %s";
                     $condition_value = $GLOBALS['request'][2];
                 }
-                DB::debugMode(false);
 
-                // get items in this module
-                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
+                // get items in this folder
+                $response = DB::query(
+                    "SELECT id, label, login, pw, pw_iv, url, id_tree, description, email
+                    FROM ".prefix_table("items")."
+                    WHERE inactif='0' AND ".$condition, $condition_value
+                );
+                $x = 0;
                 foreach ($response as $data)
                 {
-                    // prepare output
-                    $id = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
-                }
-
-                /* load folders */
-                $response = DB::query(
-                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
-                    $GLOBALS['request'][2]
-                );
-                $rows = array();
-                $i = 0;
-                foreach ($response as $row)
-                {
-                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
-                    foreach ($response as $data)
-                    {
-                        // prepare output
-                        $id = $data['id'];
-                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                        $json[$id]['pw'] = $crypt_pw['string'];
+                    // build the path to the Item
+                    $path = "";
+                    $arbo = $tree->getPath($data['id_tree'], true);
+                    foreach ($arbo as $elem) {
+                        if (empty($path)) {
+                            $path = stripslashes($elem->title);
+                        } else {
+                            $path .= " > ".stripslashes($elem->title);
+                        }
                     }
+
+                    // prepare output
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
                 }
             }
             else if($GLOBALS['request'][1] == "userpw") {
+                /*
+                * READ USER ITEMS
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+                //Load Tree
+                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+                // about the user
                 $username = $GLOBALS['request'][2];
                 if(strcmp($username,"admin")==0) {
                     // forbid admin access
                 }
                 $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                if (count($response) === 0) {
+                    rest_error('USER_NOT_EXISTS');
+                }
                 foreach ($response as $data)
                 {
                     $role_str = $data['fonction_id'];
@@ -330,44 +358,97 @@ function rest_get () {
                     $condition = "id_tree = %s";
                     $condition_value = $folder_str;
                 }
-                DB::debugMode(false);
+
                 $data = "";
                 // get items in this module
-                $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
+                $response = DB::query(
+                    "SELECT id,label,url,login,pw, pw_iv, url, id_tree, description, email
+                    FROM ".prefix_table("items")."
+                    WHERE inactif='0' AND ".$condition, $condition_value
+                );
+                $x = 0;
                 foreach ($response as $data)
                 {
+                    // build the path to the Item
+                    $path = "";
+                    $arbo = $tree->getPath($data['id_tree'], true);
+                    foreach ($arbo as $elem) {
+                        if (empty($path)) {
+                            $path = stripslashes($elem->title);
+                        } else {
+                            $path .= " > ".stripslashes($elem->title);
+                        }
+                    }
+
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
+                }
+            }
+            else if($GLOBALS['request'][1] == "userfolders") {
+                /*
+                * READ USER FOLDERS
+                * Sends back a list of folders
+                */
+                $username = $GLOBALS['request'][2];
+                if(strcmp($username,"admin")==0) {
+                    // forbid admin access
+                }
+                $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                if (count($response) === 0) {
+                    rest_error('USER_NOT_EXISTS');
+                }
+                foreach ($response as $data)
+                {
+                    $role_str = $data['fonction_id'];
                 }
 
-                /* load folders */
-                $response = DB::query(
-                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
-                    $folder_str
-                );
-                $rows = array();
-                $i = 0;
-                foreach ($response as $row)
+                $folder_arr = array();
+                $roles = explode(";", $role_str);
+                $x = 0;
+                foreach ($roles as $role)
                 {
-                    $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
+                    $response = DB::query("SELECT folder_id, type FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
                     foreach ($response as $data)
                     {
-                        // prepare output
-                        $id = $data['id'];
-                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                        $json[$id]['pw'] = $crypt_pw['string'];
+                        $folder_id = $data['folder_id'];
+                        if(!array_key_exists($folder_id,$folder_arr)) {
+                            array_push($folder_arr,$folder_id);
+
+                            $response2 = DB::queryFirstRow("SELECT title, nlevel FROM ".prefix_table("nested_tree")." WHERE id='".$folder_id."'");
+
+                            $json[$x]['id'] = $folder_id;
+                            $json[$x]['title'] = $response2['title'];
+                            $json[$x]['level'] = $response2['nlevel'];
+                            $json[$x]['access_type'] = $data['type'];
+                            $x++;
+                        }
                     }
                 }
             }
             elseif($GLOBALS['request'][1] == "items") {
+                /*
+                * READ ITEMS asked
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+                //Load Tree
+                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+                // get parameters
                 $array_items = explode(';',$GLOBALS['request'][2]);
 
                 // check if not empty
@@ -382,16 +463,38 @@ function rest_get () {
                     }
                 }
 
-                $response = DB::query("SELECT id,label,login,pw, pw_iv, id_tree FROM ".prefix_table("items")." WHERE inactif = %i AND id IN %ls", "0", $array_items);
+                $response = DB::query(
+                    "SELECT id,label,login,pw, pw_iv, url, id_tree, description, email
+                    FROM ".prefix_table("items")."
+                    WHERE inactif = %i AND id IN %ls", "0", $array_items
+                );
+                $x = 0;
                 foreach ($response as $data)
                 {
+                    // build the path to the Item
+                    $path = "";
+                    $arbo = $tree->getPath($data['id_tree'], true);
+                    foreach ($arbo as $elem) {
+                        if (empty($path)) {
+                            $path = stripslashes($elem->title);
+                        } else {
+                            $path .= " > ".stripslashes($elem->title);
+                        }
+                    }
+
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = $data['id'];
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+
+                    $x++;
                 }
             }
 
@@ -402,6 +505,18 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "find") {
             if($GLOBALS['request'][1] == "item") {
+                /*
+                * FIND ITEMS in FOLDERS
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+                //Load Tree
+                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+                // get parameters
                 $array_category = explode(';', $GLOBALS['request'][2]);
                 $item = $GLOBALS['request'][3];
                 foreach($array_category as $category) {
@@ -416,46 +531,49 @@ function rest_get () {
                     rest_error('MALFORMED');
                 }
 
-                if(count($array_category) > 1 && count($array_category) < 5) {
-                    for ($i = count($array_category); $i > 0; $i--) {
-                        $slot = $i - 1;
-                        if (!$slot) {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
-                        } else {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
-                        }
-                    }
-                    for ($i = 1; $i < count($array_category); $i++) { $category_query .= ")"; }
-                } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
-                } else {
+                if(count($array_category) === 0) {
                     rest_error ('NO_CATEGORY');
                 }
 
                 DB::debugMode(false);
                 $response = DB::query(
-                    "SELECT id, label, login, pw, pw_iv, id_tree
+                    "SELECT id, label, login, pw, pw_iv, url, id_tree, description, email
                     FROM ".prefix_table("items")."
                     WHERE 
                     inactif = %i 
-                    AND id_tree = (%s)
+                    AND id_tree IN %ls
                     AND label LIKE %ss",
                     "0",
-                    $category_query,
+                    $array_category,
                     $item
                 );
-                foreach ($response as $data)
-                {
+                $x = 0;
+                foreach ($response as $data) {
+                    // build the path to the Item
+                    $path = "";
+                    $arbo = $tree->getPath($data['id_tree'], true);
+                    foreach ($arbo as $elem) {
+                        if (empty($path)) {
+                            $path = stripslashes($elem->title);
+                        } else {
+                            $path .= " > ".stripslashes($elem->title);
+                        }
+                    }
+
                     // prepare output
-                    $id = $data['id'];
-                    $json[$id]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
-                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$x]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json[$id]['pw'] = $crypt_pw['string'];
-                    $json[$id]['folder_id'] = $data['id_tree'];
-                    $json[$id]['status'] = utf8_encode("OK");
+                    $json[$x]['pw'] = $crypt_pw['string'];
+                    $json[$x]['folder_id'] = $data['id_tree'];
+                    $json[$x]['path'] = $path;
+                    $json[$x]['status'] = utf8_encode("OK");
+
+                    $x++;
                 }
                 if (isset($json) && $json) {
                     echo json_encode($json);
@@ -465,28 +583,21 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "add") {
             if($GLOBALS['request'][1] == "item") {
-
-                // get item definition
-                $array_item = explode(';', urldecode($GLOBALS['request'][2]));
-                if (count($array_item) != 9) {
+                // get sent parameters
+                $params = explode(';', base64_decode($GLOBALS['request'][2]));
+                if (count($params) != 9) {
                     rest_error ('ITEMBADDEFINITION');
                 }
 
-                $item_label = $array_item[0];
-                $item_pwd = $array_item[1];
-                $item_desc = $array_item[2];
-                $item_folder_id = $array_item[3];
-                $item_login = $array_item[4];
-                $item_email = $array_item[5];
-                $item_url = $array_item[6];
-                $item_tags = $array_item[7];
-                $item_anyonecanmodify = $array_item[8];
-
-                // added so one can sent data including the http or https !
-                // anyway we have to urlencode this data
-                $item_url = urldecode($item_url);
-                // same for the email
-                $item_email = urldecode($item_email);
+                $item_label = $params[0];
+                $item_pwd = $params[1];
+                $item_desc = $params[2];
+                $item_folder_id = $params[3];
+                $item_login = $params[4];
+                $item_email = $params[5];
+                $item_url = $params[6];
+                $item_tags = $params[7];
+                $item_anyonecanmodify = $params[8];
 
                 // do some checks
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
@@ -610,7 +721,7 @@ function rest_get () {
             elseif($GLOBALS['request'][1] == "user") {
 
                 // get user definition
-                $array_user = explode(';', $GLOBALS['request'][2]);
+                $array_user = explode(';', base64_decode($GLOBALS['request'][2]));
                 if (count($array_user) != 11) {
                     rest_error ('USERBADDEFINITION');
                 }
@@ -723,6 +834,321 @@ function rest_get () {
                     }
                 } else {
                     rest_error ('USERALREADYEXISTS');
+                }
+            }
+            /*
+            * ADDING A FOLDER
+            * <url to teampass>/api/index.php/add/folder/<title>;<complexity_level>;<parent_id>;<renewal_period>;<personal>?apikey=<valid api key>
+            */
+            elseif($GLOBALS['request'][1] == "folder") {
+                if (!empty($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', base64_decode($GLOBALS['request'][2]));
+
+                    if (!empty($params[0]) && !empty($params[1])) {
+                        if (empty($params[3])) $params[3] = 0;
+                        if (empty($params[4])) $params[4] = 0;
+                        if ($params[2] < 0) {
+                            rest_error ('NO_DATA_EXIST');
+                        }
+
+                        //Check if title doesn't contains html codes
+                        if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $params[0], $out)) {
+                            rest_error ('HTML_CODES_NOT_ALLOWED');
+                        }
+
+                        // check if title is numeric
+                        if (is_numeric($params[0]) === true) {
+                            rest_error ('TITLE_ONLY_WITH_NUMBERS');
+                        }
+
+                        //Check if duplicate folders name are allowed
+                        $data = DB::queryfirstrow(
+                            "SELECT valeur
+                            FROM ".prefix_table("misc")." 
+                            WHERE type = %s AND intitule = %s",
+                            "admin",
+                            "duplicate_folder"
+                        );
+                        // if valeur = 0 then duplicate folders not allowed
+                        if ($data === 0) {
+                            DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s", $params[0]);
+                            $counter = DB::count();
+                            if ($counter != 0) {
+                                rest_error ('ALREADY_EXISTS');
+                            }
+                        }
+
+                        //check if parent folder is personal
+                        $data = DB::queryfirstrow(
+                            "SELECT personal_folder
+                            FROM ".prefix_table("nested_tree")." 
+                            WHERE id = %i",
+                            $params[2]
+                        );
+                        if ($data['personal_folder'] === "1") {
+                            $isPersonal = 1;
+                        } else {
+                            if ($params[4] === 1) {
+                                $isPersonal = 1;
+                            } else {
+                                $isPersonal = 0;
+                            }
+
+                            // get complexity level for this folder
+                            $data = DB::queryfirstrow(
+                                "SELECT valeur
+                                FROM ".prefix_table("misc")."
+                                WHERE intitule = %i AND type = %s",
+                                $params[2],
+                                "complex"
+                            );
+                            if (intval($params[1]) < intval($data['valeur'])) {
+                                rest_error ('COMPLEXICITY_LEVEL_NOT_REACHED');
+                            }
+                        }
+                        
+                        try {
+                            //create folder
+                            DB::insert(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => $params[2],
+                                    'title' => $params[0],
+                                    'personal_folder' => $isPersonal,
+                                    'renewal_period' => $params[3],
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0'
+                               )
+                            );
+                            $newId = DB::insertId();
+
+                            //Add complexity
+                            DB::insert(
+                                prefix_table("misc"),
+                                array(
+                                    'type' => 'complex',
+                                    'intitule' => $newId,
+                                    'valeur' => $params[1]
+                                )
+                            );
+
+                            echo '{"status":"folder created"}';
+                        } catch(PDOException $ex) {
+                            echo '<br />' . $ex->getMessage();
+                        }
+                    } else {
+                        rest_error ('NO_DATA_EXIST');
+                    }
+                } else {
+                    rest_error('SET_NO_DATA');
+                }
+            }
+        } elseif ($GLOBALS['request'][0] == "update") {
+            /*
+            * Section dedicated for UPDATING
+            */
+            if ($GLOBALS['request'][1] == "item") {
+                /*
+                * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
+                */
+                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', base64_decode($GLOBALS['request'][3]));
+
+                    if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
+                        // Check length
+                        if (strlen($params[1]) > 50) {
+                            rest_error ('PASSWORDTOOLONG');
+                        }
+
+                        // Check Folder ID
+                        DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $params[3]);
+                        $counter = DB::count();
+                        if ($counter == 0) {
+                            rest_error ('NOSUCHFOLDER');
+                        }
+
+                        // check if item exists
+                        DB::query(
+                            "SELECT * FROM ".prefix_table("items")." WHERE id = %i",
+                            $GLOBALS['request'][2]
+                        );
+                        $counter = DB::count();
+                        if ($counter > 0) {
+                            // encrypt pwd
+                            $encrypt = cryption($params[1], SALT, "", "encrypt");
+                            if (empty($encrypt['string'])) {
+                                rest_error ('PASSWORDEMPTY');
+                            }
+
+                            // ADD item
+                            try {
+                                DB::update(
+                                    prefix_table("items"),
+                                    array(
+                                        "label" => $params[0],
+                                        "description" => $params[2],
+                                        'pw' => $encrypt['string'],
+                                        'pw_iv' => $encrypt['iv'],
+                                        "email" => $params[5],
+                                        "url" => $params[6],
+                                        "id_tree" => intval($params[3]),
+                                        "login" => $params[4],
+                                        "anyone_can_modify" => intval($params[8])
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                // log
+                                DB::insert(
+                                    prefix_table("log_items"),
+                                    array(
+                                        "id_item" => $GLOBALS['request'][2],
+                                        "date" => time(),
+                                        "id_user" => API_USER_ID,
+                                        "action" => "at_modification"
+                                    )
+                                );
+
+                                // Add tags
+                                $tags = explode(' ', $params[7]);
+                                foreach ((array)$tags as $tag) {
+                                    if (!empty($tag)) {
+                                        // check if already exists
+                                        DB::query(
+                                            "SELECT * FROM ".prefix_table("tags")." WHERE tag = %s AND item_id = %i",
+                                            strtolower($tag),
+                                            $GLOBALS['request'][2]
+                                        );
+                                        $counter = DB::count();
+                                        if ($counter === 0) {
+                                            DB::insert(
+                                                prefix_table("tags"),
+                                                array(
+                                                    "item_id" => $GLOBALS['request'][2],
+                                                    "tag" => strtolower($tag)
+                                                )
+                                            );
+                                        }
+                                    }
+                                }
+
+                                // Update CACHE table
+                                DB::update(
+                                    prefix_table("cache"),
+                                    array(
+                                        "label" => $params[0],
+                                        "description" => $params[2],
+                                        "tags" => $params[7],
+                                        "id_tree" => intval($params[3]),
+                                        "perso" => "0",
+                                        "restricted_to" => "",
+                                        "login" => $params[4],
+                                        "folder" => "",
+                                        "author" => API_USER_ID,
+                                        "renewal_period" => "0",
+                                        "timestamp" => time(),
+                                        "url" => $params[6],
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                echo '{"status":"item updated"}';
+                            } catch(PDOException $ex) {
+                                echo '<br />' . $ex->getMessage();
+                            }
+                        } else {
+                            rest_error ('NO_DATA_EXIST');
+                        }
+                    } else {
+                        rest_error ('ITEMMISSINGDATA');
+                    }
+                } else {
+                    rest_error('NO_ITEM');
+                }
+            }            
+            /*
+            * UPDATING A FOLDER
+            * <url to teampass>/api/index.php/update/folder/<folder_id>/<title>;<complexity_level>;<renewal_period>?apikey=<valid api key>
+            */
+            else if($GLOBALS['request'][1] == "folder") {
+                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', base64_decode($GLOBALS['request'][3]));
+
+                    if (!empty($params[0])) {
+                        if ($params[1] < 0) {
+                            rest_error ('NO_DATA_EXIST');
+                        }
+                        if (empty($params[2])) $params[2] = 0;
+
+                        // check if folder exists and get folder data
+                        $data_folder = DB::queryfirstrow("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %s", $GLOBALS['request'][2]);
+                        $counter = DB::count();
+                        if ($counter === 0) {
+                            rest_error ('NO_DATA_EXIST');
+                        }
+
+                        //Check if title doesn't contains html codes
+                        if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $params[0], $out)) {
+                            rest_error ('HTML_CODES_NOT_ALLOWED');
+                        }
+
+                        // check if title is numeric
+                        if (is_numeric($params[0]) === true) {
+                            rest_error ('TITLE_ONLY_WITH_NUMBERS');
+                        }
+
+                        // get complexity level for this folder
+                        $data = DB::queryfirstrow(
+                            "SELECT valeur
+                            FROM ".prefix_table("misc")."
+                            WHERE intitule = %i AND type = %s",
+                            $data_folder['parent_id'],
+                            "complex"
+                        );
+                        if (intval($params[1]) < intval($data['valeur'])) {
+                            rest_error ('COMPLEXICITY_LEVEL_NOT_REACHED');
+                        }
+
+                        try {
+                            DB::update(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => $data_folder['parent_id'],
+                                    'title' => $params[0],
+                                    'personal_folder' => 0,
+                                    'renewal_period' => $params[2],
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0'
+                                ),
+                                "id = %i",
+                                $GLOBALS['request'][2]
+                            );
+
+                            //Add complexity
+                            DB::update(
+                                prefix_table("misc"),
+                                array(
+                                    'valeur' => $params[1]
+                                ),
+                                "intitule = %s AND type = %s",
+                                $GLOBALS['request'][2],
+                                "complex"
+                            );
+
+                            echo '{"status":"folder updated"}';
+                        } catch(PDOException $ex) {
+                            echo '<br />' . $ex->getMessage();
+                        }
+                    } else {
+                        rest_error ('ITEMMISSINGDATA');
+                    }
+                } else {
+                    rest_error('NO_ITEM');
                 }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
@@ -1289,6 +1715,101 @@ function rest_get () {
             } else {
                 rest_error ('EMPTY');
             }
+        } else if ($GLOBALS['request'][0] == "new_password") {
+            if (!empty($GLOBALS['request'][1])) {
+                $params = explode(";", $GLOBALS['request'][1]);
+
+                if (empty($params[0])) $params[0] = 8;
+                if (empty($params[1])) $params[1] = 0;
+                if (empty($params[2])) $params[2] = 0;
+                if (empty($params[3])) $params[3] = 0;
+                if (empty($params[4])) $params[4] = 0; 
+                if (empty($params[5])) $params[5] = 0; 
+                if (empty($params[6])) $params[6] = 0; 
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+                $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+                $pwgen->register();
+                $pwgen = new Encryption\PwGen\pwgen();
+
+                // init
+                $pwgen->setLength($params[0]);
+                if($params[1] === "1") $pwgen->setSecure(true);
+                if($params[2] === "1") $pwgen->setNumerals(true);
+                if($params[3] === "1") $pwgen->setCapitalize(true);
+                if($params[4] === "1") $pwgen->setAmbiguous(true);
+                if($params[5] === "1" && $params[6] === "1") $pwgen->setSymbols(true);
+
+                // generate and send back (generate in base64 if symbols are asked)
+                if ($params[6] === "1") {
+                    echo '{"password" : "'.base64_encode($pwgen->generate()).'"}';
+                } else {
+                    echo '{"password" : "'.($pwgen->generate()).'"}';
+                }
+            } else {
+                rest_error ('NO_PARAMETERS');
+            }
+        } else if ($GLOBALS['request'][0] === "info") {
+            if ($GLOBALS['request'][1] === "complexicity_levels_list") {
+
+                require_once '../includes/language/english.php';
+                $json = array(
+                    0=> $LANG['complex_level0'],
+                    25=> $LANG['complex_level1'],
+                    50=> $LANG['complex_level2'],
+                    60=> $LANG['complex_level3'],
+                    70=> $LANG['complex_level4'],
+                    80=> $LANG['complex_level5'],
+                    90=> $LANG['complex_level6']
+                );
+
+                echo json_encode($json);
+            } else if ($GLOBALS['request'][1] === "folder") {
+                if (!empty($GLOBALS['request'][2]) && is_numeric($GLOBALS['request'][2])) {
+                    $data = DB::queryFirstRow(
+                        "SELECT * FROM " . $pre . "nested_tree WHERE id = %i",
+                        $GLOBALS['request'][2]
+                    );
+                    if (DB::count() == 0) {
+                        rest_error ('NOSUCHFOLDER');
+                    }
+
+                    // form id_tree to full foldername
+                    require_once '../sources/SplClassLoader.php';
+                    //Load Tree
+                    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                    $tree->register();
+                    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+                    $folder = "";
+                    $arbo = $tree->getPath($GLOBALS['request'][2], true);
+                    foreach ($arbo as $elem) {
+                        if (empty($folder)) {
+                            $folder = stripslashes($elem->title);
+                        } else {
+                            $folder .= " > ".stripslashes($elem->title);
+                        }
+                    }
+
+                    // prepare info
+                    $json = array(
+                        "title" => $data['title'],
+                        "personal_folder" => $data['personal_folder'],
+                        "renewal_period" => $data['renewal_period'],
+                        "parent_id" => $data['parent_id'],
+                        "path" => $folder,
+                    );
+
+                    echo json_encode($json);
+                } else {
+                    rest_error ('NO_PARAMETERS');
+                }
+            } else if ($GLOBALS['request'][1] === "version") {
+                echo '{"api-version":"'.$api_version.'"}';
+            } else {
+                rest_error ('NO_PARAMETERS');
+            }
         } else {
             rest_error ('METHOD');
         }
@@ -1318,7 +1839,7 @@ function rest_error ($type,$detail = 'N/A') {
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'NO_CATEGORY':
-            $message = Array('err' => 'No category specified');
+            $message = Array('err' => 'No folder specified');
             break;
         case 'NO_ITEM':
             $message = Array('err' => 'No item specified');
@@ -1396,6 +1917,24 @@ function rest_error ($type,$detail = 'N/A') {
             break;
         case 'NO_PF_EXIST_FOR_USER':
             $message = Array('err' => 'No Personal Folder exists for this user');
+            break;
+        case 'HTML_CODES_NOT_ALLOWED':
+            $message = Array('err' => 'HTML tags not allowed');
+            break;
+        case 'TITLE_ONLY_WITH_NUMBERS':
+            $message = Array('err' => 'Title only with numbers not allowed');
+            break;
+        case 'ALREADY_EXISTS':
+            $message = Array('err' => 'Data already exists');
+            break;
+        case 'COMPLEXICITY_LEVEL_NOT_REACHED':
+            $message = Array('err' => 'complexity level was not reached');
+            break;
+        case 'NO_PARAMETERS':
+            $message = Array('err' => 'No parameters given');
+            break;
+        case 'USER_NOT_EXISTS':
+            $message = Array('err' => 'User does not exist');
             break;
         default:
             $message = Array('err' => 'Something happen ... but what ?');
