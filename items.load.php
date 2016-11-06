@@ -1095,11 +1095,12 @@ function AddNewFolder()
 
 function SupprimerFolder()
 {
-    if ($("#delete_rep_groupe").val() == "0") {
+    if ($("#delete_rep_groupe").val() === "0") {
         $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>").show();
+    } else if ($("#delete_rep_groupe option:selected").text() === "<?php echo $_SESSION['login'];?>") {
+        $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_not_allowed_to']);?>").show();
     } else if (confirm("<?php echo $LANG['confirm_delete_group'];?>")) {
         $("#del_folder_loader").show();
-
         $.post(
             "sources/folders.queries.php",
             {

@@ -2,7 +2,7 @@
 /**
  * @file          upgrade_scripts_manager.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -21,6 +21,7 @@ $_SESSION['CPM'] = 1;
 $scripts_list = array(
     array('upgrade_run_db_original.php', ""),
 	array('upgrade_run_2.1.26.php', ""),
+	array('upgrade_run_2.1.27.php', ""),
     array('upgrade_run_encryption_pwd.php', ""),
     array('upgrade_run_encryption_suggestions.php', ""),
 	array('upgrade_run_final.php', "")

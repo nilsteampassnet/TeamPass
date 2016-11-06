@@ -170,9 +170,22 @@ if (isset($_POST['newtitle'])) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
+
+            // user shall not delete personal folder
+            $data = DB::queryfirstrow(
+                "SELECT personal_folder
+                FROM ".prefix_table("nested_tree")." 
+                WHERE id = %i",
+                $_POST['id']
+            );
+            if ($data['personal_folder'] === "1") {
+                echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                break;
+            }
+
+            // this will delete all sub folders and items associated
             $foldersDeleted = "";
             $folderForDel = array();
-            // this will delete all sub folders and items associated
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
             // Get through each subfolder
