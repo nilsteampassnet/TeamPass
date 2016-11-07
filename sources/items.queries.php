@@ -2454,7 +2454,7 @@ if (isset($_POST['type'])) {
                     "decrypt"
                 );
                 $encrypt = cryption(
-                    $decrypt,
+                    $decrypt['string'],
                     mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
                     "",
                     "encrypt"
@@ -2493,7 +2493,7 @@ if (isset($_POST['type'])) {
                     "decrypt"
                 );
                 $encrypt = cryption(
-                    $decrypt,
+                    $decrypt['string'],
                     SALT,
                     "",
                     "encrypt"
