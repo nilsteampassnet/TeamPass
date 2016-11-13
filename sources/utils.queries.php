@@ -303,6 +303,7 @@ switch ($_POST['type']) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
+
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
@@ -327,8 +328,7 @@ switch ($_POST['type']) {
 
         // connect ot server with ssh
         $ret = "";
-        stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
-        include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
+        require($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
         $parse = parse_url($dataItem['url']);
         if (!isset($parse['host']) || empty($parse['host']) ||!isset($parse['host']) || empty($parse['host'])) {
             // error in parsing the url
@@ -341,11 +341,11 @@ switch ($_POST['type']) {
             );
             break;
         } else {
-            $ssh = new Net_SSH2($parse['host'], $parse['port']);
+            $ssh = new phpseclib\Net\SSH2($parse['host'], $parse['port']);
             if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
                echo prepareExchangedData(
                     array(
-                        "error" => "Login failed.<br />Error description: <i>".$_SESSION['sshError']."</i>",
+                        "error" => "Login failed.",
                         "text" => ""
                     ),
                     "encode"

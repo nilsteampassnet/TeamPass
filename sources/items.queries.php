@@ -2240,7 +2240,10 @@ if (isset($_POST['type'])) {
 
             // Get required Complexity for this Folder
             $data = DB::queryFirstRow(
-                "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s AND intitule = %s",
+                "SELECT m.valeur, n.personal_folder
+                FROM ".prefix_table("misc")." AS m
+                INNER JOIN ".prefix_table("nested_tree")." AS n ON (m.intitule = n.id)
+                WHERE type=%s AND intitule = %s",
                 "complex",
                 $_POST['groupe']
             );
@@ -2277,7 +2280,8 @@ if (isset($_POST['type'])) {
             $returnValues = array(
                 "val" => $data['valeur'],
                 "visibility" => $visibilite,
-                "complexity" => $complexity
+                "complexity" => $complexity,
+                "personal" => $data['personal_folder']
             );
             echo prepareExchangedData($returnValues, "encode");
             break;

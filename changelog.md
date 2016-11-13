@@ -5,6 +5,7 @@ Bug fixing
  #1551 Authentication through LDAP posix-search
  #1561 Personal folder deletion deletes all
  #1571 Drag and drop from PF to public folder makes item password corrupted
+ #1571 Create an item inside another folder than the one selected
  Fixes in "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item

@@ -488,6 +488,7 @@ function RecupComplexite(val, edit, context)
             funcReturned = 1;
             if (data.error == undefined || data.error == 0) {
                 $("#complexite_groupe").val(data.val);
+                $("#selected_folder_is_personal").val(data.personal);
                 if (edit == 1) {
                     $("#edit_complex_attendue").html("<b>"+data.complexity+"</b>");
                     $("#edit_afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
@@ -566,7 +567,9 @@ function AjouterItem()
     else if ($("#pw1").val() != $("#pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
     else if ($("#enable_delete_after_consultation").is(':checked') && (($("#times_before_deletion").val() < 1 && $("#deletion_after_date").val() == "") || ($("#times_before_deletion").val() == "" && $("#deletion_after_date").val() == ""))) erreur = "<?php echo $LANG['error_times_before_deletion'];?>";
     else if ($("#item_tags").val() != "" && reg.test($("#item_tags").val())) erreur = "<?php echo $LANG['error_tags'];?>";
-    else{
+    else if (($('#recherche_group_pf').val() === "1" || $('#selected_folder_is_personal').val() === "1") && $('#personal_sk_set').val() === "0") {
+        erreur = "<?php echo $LANG['alert_message_personal_sk_missing'];?>";
+    } else{
         //Check pw complexity level
         if (
             ($("#bloquer_creation_complexite").val() == 0 && parseInt($("#mypassword_complex").val()) >= parseInt($("#complexite_groupe").val()))
@@ -610,7 +613,7 @@ function AjouterItem()
             description = clean_up_html_safari(description);
 
             //Is PF
-            if ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1) {
+            if ($('#selected_folder_is_personal').val() == 1 && $('#personal_sk_set').val() == 1) {
                 var is_pf = 1;
             } else {
                 var is_pf = 0;
@@ -638,7 +641,7 @@ function AjouterItem()
             //prepare data
             var data = '{"pw":"'+sanitizeString($('#pw1').val())+'", "label":"'+sanitizeString($('#label').val())+'", '+
             '"login":"'+sanitizeString($('#item_login').val())+'", "is_pf":"'+is_pf+'", '+
-            '"description":"'+(description)+'", "email":"'+$('#email').val()+'", "url":"'+url+'", "categorie":"'+$('#hid_cat').val()+'", '+
+            '"description":"'+(description)+'", "email":"'+$('#email').val()+'", "url":"'+url+'", "categorie":"'+$('#categorie').val()+'", '+
             '"restricted_to":"'+restriction+'", "restricted_to_roles":"'+restriction_role+'", "salt_key_set":"'+$('#personal_sk_set').val()+
             '", "annonce":"'+annonce+'", "diffusion":"'+diffusion+'", "id":"'+$('#id_item').val()+'", '+
             '"anyone_can_modify":"'+$('#anyone_can_modify:checked').val()+'", "tags":"'+sanitizeString($('#item_tags').val())+
@@ -716,7 +719,9 @@ function AjouterItem()
                         AfficherDetailsItem(data.new_id);
 
                         // refresh list of items
-                        ListerItems($('#hid_cat').val(), "", 0)
+                        ListerItems($('#categorie').val(), "", 0)
+
+                        refreshTree($('#categorie').val());
 
                         //empty form
                         $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
@@ -2166,7 +2171,9 @@ function refreshTree(node_to_select, do_refresh)
     do_refresh = do_refresh || ""
     node_to_select = node_to_select || "";
 
-    if (do_refresh != "0") $('#jstree').jstree(true).refresh();
+    if (do_refresh !== "0") {
+        $('#jstree').jstree(true).refresh();
+    }
     if (node_to_select != "") {
         $("#hid_cat").val(node_to_select);
         $("#jstree").jstree("deselect_all");

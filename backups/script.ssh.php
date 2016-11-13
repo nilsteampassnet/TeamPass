@@ -12,8 +12,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+session_start();
+
 include '../includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
+$_SESSION['CPM'] = 1;
+require_once "../includes/config/include.php";
+require_once "../sources/main.functions.php";
 
 // connect to DB
 require_once '../sources/SplClassLoader.php';
@@ -27,8 +32,8 @@ DB::$error_handler = 'db_error_handler';
 $link= mysqli_connect($server, $user, $pass, $database, $port);
 
 // ssh libraries
-stream_resolve_include_path($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
-include($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
+stream_resolve_include_path('../includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
+include('../includes/libraries/Authentication/phpseclib/Net/SSH2.php');
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -47,7 +52,7 @@ foreach ($rows as $record) {
 
 // loop on server user password to change
 if (!empty($settings['enable_server_password_change']) && $settings['enable_server_password_change'] == 1) {
-    $log = "Start date ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time())."\n";
+    $log = "Start date ".date("Y-m-d h:i:s a")."\n";
 
     // loop on items
     $rows = DB::query(
@@ -105,7 +110,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
                 $record['id']
             );
             // update log
-            logItems($record['id'], $record['label'], "script", 'at_modification', $_SESSION['login'], 'at_pw :'.$record['pw'], $record['pw_iv']);
+            logItems($record['id'], $record['label'], "script", 'at_modification', '999998', 'at_pw :'.$record['pw'], $record['pw_iv']);
             //$log .= "   done.\n\n";
         } else {
             $log .= "   An error occured with password change.\n\n";
@@ -115,7 +120,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
     $log .= "End of task\n---------------\n\n";
 
     //save a log
-    $handle = fopen($_SESSION['settings']['cpassman_dir'].'/files/script.ssh.log', 'w+');
+    $handle = fopen('../files/script.ssh.log', 'w+');
     fwrite($handle, $log);
     fclose($handle);
 }
