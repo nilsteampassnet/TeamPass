@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_agses_authentication_setting' => 'Enable Agses two-factor authentication',
+    'admin_agses_authentication_setting_tip' => '',
+    'index_agses_key' => 'Agses code',
+    'admin_agses_api_key' => 'Agses API key',
+    'admin_agses_api_key_tip' => '',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',

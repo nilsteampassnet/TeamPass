@@ -1191,6 +1191,48 @@ switch ($_POST['type']) {
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
         break;
 
+    case "save_agses_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // agses_api_key
+        if (!is_null($dataReceived['agses_api_key'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_api_key");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_api_key",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_api_key'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_api_key'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_api_key"
+                );
+            }
+            $_SESSION['settings']['agses_api_key'] = htmlspecialchars_decode($dataReceived['agses_api_key']);
+        } else {
+            $_SESSION['settings']['agses_api_key'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
+
     case "save_option_change":
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {

@@ -34,7 +34,11 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
         <script type="text/javascript" src="includes/js/functions.js"></script>
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
-        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />';
+        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
+
+
+        <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
+        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -496,6 +500,38 @@ $htmlHeaders .= '
     }
 
     $(function() {
+        // agses
+        if ($("#axs_canvas").length > 0) {
+            
+
+            $("#login").blur(function() {
+                $("#login_check_wait").show();
+                $.post(
+                    "sources/identify.php",
+                    {
+                        type :   "identify_user_with_agses",
+                        login:   sanitizeString($("#login").val()),
+                        key:     "'.$_SESSION['key'].'"
+                    },
+                    function(data) {
+                        if (data[0].agses_setting === "1") {
+                            $("#axs_canvas").agsesInit({
+                                "message": data[0].agses_message,
+                            });
+                            $("#agses_div").show();
+                            $("#user_pwd").text("'.$LANG['index_agses_key'].'");
+                        } else {
+                            $("#agses_div").hide();
+                            $("#user_pwd").text("'.$LANG['index_password'].'");
+                        }
+
+                        $("#login_check_wait").hide();
+                    },
+                    "json"
+                );
+            })
+        }
+
         countdown();
         // load DUO login
         if ($("#duo_sig_response").val() != "") {

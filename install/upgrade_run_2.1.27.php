@@ -129,5 +129,30 @@ $dbTmp = mysqli_connect(
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 
+// add field agses_enabled to Users table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."users",
+    "agses_setting",
+    "VARCHAR(1) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field agses_setting to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+// add field agses_user_card_id to Users table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."users",
+    "agses_user_card_id",
+    "VARCHAR(12) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field agses_user_card_id to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

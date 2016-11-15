@@ -570,7 +570,7 @@ if (
         // CONNECTION FORM
         echo '
                 <form method="post" name="form_identify" id="form_identify" action="">
-                    <div style="width:300px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
+                    <div style="width:480px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
                         <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
         isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                             '.$LANG['index_get_identified'].'
@@ -581,10 +581,22 @@ if (
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
                             <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
-                            <img id="login_check_wait" src="includes/images/ajax-loader.gif" alt="" style="display:none;" />
-                        </div>
+                            <span id="login_check_wait" style="display:none;"><i class="fa fa-cog fa-spin fa-2x"></i></span>
+                        </div>';
+
+        // AGSES
+        if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
+            
+
+            echo '
+                        <div id="agses_div" style="text-align:center; display:none;">
+                            <canvas id="axs_canvas"></canvas>
+                        </div>';
+        }
+
+                        echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
-                            <label for="pw" class="form_label">'.$LANG['index_password'].'</label>
+                            <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
                             <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
 

@@ -52,6 +52,56 @@ if ($_POST['type'] === "identify_duo_user") {
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
+} elseif ($_POST['type'] == "identify_user_with_agses") {
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    // connect to the server
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    $row = DB::queryFirstRow(
+        "SELECT agses_setting, agses_user_card_id FROM ".prefix_table("users")."
+        WHERE login = %s",
+        $_POST['login']
+    );
+
+    $row_set = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_api_key'
+    );
+
+    if (isset($row['agses_user_card_id']) && !empty($row['agses_user_card_id']) && !empty($row_set['valeur'])) {
+        include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
+        $agses = new AXSILPortal_V1_Auth();
+        $agses->setUrl('https://portal.icsl.at/agses/');
+        $agses->setAAId('sm0agses');
+        //for release there will be another api-key - this is temporary only
+        $agses->setApiKey($row_set['valeur']);
+        $agses->create();
+        //create random salt and store it into session
+        if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+            $_SESSION['hedgeId'] = md5(time());
+        }
+        $agses_message = $agses->createAuthenticationMessage($row['agses_user_card_id'], true, 1, 2, $_SESSION['hedgeId']);
+
+        echo '[{"agses_setting" : "'.$row['agses_setting'].'" , "agses_message" : "'.$agses_message.'"}]';
+    } else {
+        if (empty($row_set['valeur'])) {
+            echo '[{"error" : "no_agses_api_key"}]';
+        } else {
+            echo '[{"error" : "user_not_exist"}]';
+        }
+    }
 } elseif ($_POST['type'] == "identify_duo_user_check") {
     // this step is verifying the response received from the server
 
