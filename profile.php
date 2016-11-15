@@ -119,7 +119,7 @@ if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['s
     <hr>
 
     <div style="margin-bottom:6px;">
-        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['user_profile_agses_card_id'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_textarea" id="agses-usercardid_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_settings']['agsescardid']) ? $_SESSION['user_settings']['agsescardid'] : '', '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
+        <i class="fa fa-id-card-o fa-lg"></i>&nbsp;'. $LANG['user_profile_agses_card_id'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_textarea" id="agses-usercardid_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '', '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>';
 }
 

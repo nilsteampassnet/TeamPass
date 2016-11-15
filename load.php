@@ -507,6 +507,7 @@ $htmlHeaders .= '
 
             $("#login, #agses_cardid").blur(function() {
                 if ($("#login").val() === "" || $("#login").val() === "admin") return false;
+                $("#pw").attr("disabled", true);
 
                 // special check for agses_cardid
                 if ($("#agses_cardid").val() !== "") {
@@ -535,6 +536,7 @@ $htmlHeaders .= '
                         key:      "'.$_SESSION['key'].'"
                     },
                     function(data) {
+                        $("#pw").attr("disabled", false);
                         $("#agses_flickercode_div").hide();
                         $("#user_pwd").text("'.$LANG['index_password'].'");
                         if (data[0].error !== "" && data[0].agses_message === "") {

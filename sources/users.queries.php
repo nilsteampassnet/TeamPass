@@ -1312,13 +1312,9 @@ elseif (!empty($_POST['newValue'])) {
     // special case for usertimezone where session needs to be updated
         $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
 
-    } else if ($value[0] === "agses-enabled") {
-    // special case for agsesenable where session needs to be updated
-        $_SESSION['user_settings']['agsesenabled'] = $_POST['newValue'];
-
     } else if ($value[0] === "agses-usercardid") {
     // special case for agsescardid where session needs to be updated
-        $_SESSION['user_settings']['agsescardid'] = $_POST['newValue'];
+        $_SESSION['user_settings']['agses-usercardid'] = $_POST['newValue'];
 
     } else if ($value[0] === "email") {
     // store email change in session
