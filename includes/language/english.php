@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -14,11 +14,17 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_agses_hosted' => 'AGSES hosted service',
+    'admin_agses_hosted_tip' => '',
+    'user_profile_agses_enable' => 'Enable Agses authentication',
+    'user_profile_agses_card_id' => 'Your Agses card id',
     'admin_agses_authentication_setting' => 'Enable Agses two-factor authentication',
     'admin_agses_authentication_setting_tip' => '',
     'index_agses_key' => 'Agses code',
-    'admin_agses_api_key' => 'Agses API key',
-    'admin_agses_api_key_tip' => '',
+    'admin_agses_hosted_url' => 'Url',
+    'admin_agses_hosted_id' => 'Id',
+    'admin_agses_hosted_apikey' => 'API key',
+    'admin_agses_save' => 'Save AGSES settings',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',

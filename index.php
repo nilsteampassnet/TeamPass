@@ -581,15 +581,17 @@ if (
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
                             <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
-                            <span id="login_check_wait" style="display:none;"><i class="fa fa-cog fa-spin fa-2x"></i></span>
+                            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
         // AGSES
         if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
-            
-
             echo '
-                        <div id="agses_div" style="text-align:center; display:none;">
+                        <div id="agses_cardid_div" style="text-align:center; display:none; padding:5px; width:454px; margin-bottom:5px;" class="ui-state-active ui-corner-all">
+                            '.$LANG['user_profile_agses_card_id'].': &nbsp;
+                            <input type="text" size="12" id="agses_cardid">
+                        </div>
+                        <div id="agses_flickercode_div" style="text-align:center; display:none;">
                             <canvas id="axs_canvas"></canvas>
                         </div>';
         }

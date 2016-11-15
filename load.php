@@ -252,6 +252,8 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (data[0].error == "ga_code_wrong") {
                     $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
+                } else if (data[0].value === "agses_error") {
+                    $("#connection_error").html(data[0].error).show();
                 } else {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
@@ -502,27 +504,68 @@ $htmlHeaders .= '
     $(function() {
         // agses
         if ($("#axs_canvas").length > 0) {
-            
 
-            $("#login").blur(function() {
+            $("#login, #agses_cardid").blur(function() {
+                if ($("#login").val() === "" || $("#login").val() === "admin") return false;
+
+                // special check for agses_cardid
+                if ($("#agses_cardid").val() !== "") {
+                    var agses_carid_error = "";
+                    if ($("#agses_cardid").val().length !== 12) {
+                        agses_carid_error = "Card ID MUST contain 12 numbers";
+                    } else if (isNaN($("#agses_cardid").val())) {
+                        agses_carid_error = "Card ID contains only numbers";
+                    }
+
+                    if (agses_carid_error !== "") {
+                        $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+agses_carid_error+"</div>");
+                        $("#tmp_agses_div").show(1).delay(2000).fadeOut(500);
+                        $("#agses_cardid_div").show();
+                        return false;
+                    }
+                }
+
                 $("#login_check_wait").show();
                 $.post(
                     "sources/identify.php",
                     {
-                        type :   "identify_user_with_agses",
-                        login:   sanitizeString($("#login").val()),
-                        key:     "'.$_SESSION['key'].'"
+                        type :    "identify_user_with_agses",
+                        login:    sanitizeString($("#login").val()),
+                        cardid:   sanitizeString($("#agses_cardid").val()),
+                        key:      "'.$_SESSION['key'].'"
                     },
                     function(data) {
-                        if (data[0].agses_setting === "1") {
+                        $("#agses_flickercode_div").hide();
+                        $("#user_pwd").text("'.$LANG['index_password'].'");
+                        if (data[0].error !== "" && data[0].agses_message === "") {
+                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
+                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                        } else if (data[0].agses_message !== "" && data[0].agses_message.indexOf("ERROR ") === 0) {
+                            // Agses returned an error
+                            $("#agses_cardid_div").show();
+                            $("#agses_cardid").focus();
+
+                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
+                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                        } else if (data[0].agses_message !== "") {
+                            $("#agses_cardid_div").hide();
+                            // flickercode is generated
                             $("#axs_canvas").agsesInit({
                                 "message": data[0].agses_message,
                             });
-                            $("#agses_div").show();
+                            $("#agses_flickercode_div").show();
                             $("#user_pwd").text("'.$LANG['index_agses_key'].'");
-                        } else {
-                            $("#agses_div").hide();
+                        } else if (data[0].agses_message === "") {
+                            // user needs to enter his user card id
+                            $("#agses_cardid_div").show();
                             $("#user_pwd").text("'.$LANG['index_password'].'");
+                            $("#agses_cardid").focus();
+                        } else {
+                            // something wrong
+                            $("#agses_flickercode_div, #agses_cardid_div").hide();
+                            $("#user_pwd").text("'.$LANG['index_password'].'");
+                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
+                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
                         }
 
                         $("#login_check_wait").hide();

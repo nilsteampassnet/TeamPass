@@ -67,39 +67,79 @@ if ($_POST['type'] === "identify_duo_user") {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    $row = DB::queryFirstRow(
-        "SELECT agses_setting, agses_user_card_id FROM ".prefix_table("users")."
-        WHERE login = %s",
-        $_POST['login']
-    );
+    if (isset($_POST['cardid']) && empty($_POST['cardid'])) {
+        $row = DB::queryFirstRow(
+            "SELECT `agses-usercardid` FROM ".prefix_table("users")."
+            WHERE login = %s",
+            filter_var($_POST['login'], FILTER_SANITIZE_STRING)
+        );
+    } else if (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
+        //
+        DB::update(
+            prefix_table('users'),
+            array(
+                'agses-usercardid' =>  filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT)
+               ),
+            "login = %s",
+            $_POST['login']
+        );
+        $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
+    }else {
+        // error
+    }
 
-    $row_set = DB::queryFirstRow(
+    $ret_agses_url = DB::queryFirstRow(
         "SELECT valeur FROM ".prefix_table("misc")."
         WHERE type = %s AND intitule = %s",
         'admin',
-        'agses_api_key'
+        'agses_hosted_url'
     );
 
-    if (isset($row['agses_user_card_id']) && !empty($row['agses_user_card_id']) && !empty($row_set['valeur'])) {
-        include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
-        $agses = new AXSILPortal_V1_Auth();
-        $agses->setUrl('https://portal.icsl.at/agses/');
-        $agses->setAAId('sm0agses');
-        //for release there will be another api-key - this is temporary only
-        $agses->setApiKey($row_set['valeur']);
-        $agses->create();
-        //create random salt and store it into session
-        if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
-            $_SESSION['hedgeId'] = md5(time());
-        }
-        $agses_message = $agses->createAuthenticationMessage($row['agses_user_card_id'], true, 1, 2, $_SESSION['hedgeId']);
+    $ret_agses_id = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_hosted_id'
+    );
 
-        echo '[{"agses_setting" : "'.$row['agses_setting'].'" , "agses_message" : "'.$agses_message.'"}]';
-    } else {
-        if (empty($row_set['valeur'])) {
-            echo '[{"error" : "no_agses_api_key"}]';
+    $ret_agses_apikey = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_hosted_apikey'
+    );
+
+    if (isset($row['agses-usercardid']) && !empty($ret_agses_apikey['valeur'])) {
+        if ($row['agses-usercardid'] !== "0" && !empty($row['agses-usercardid'])) {
+            include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
+            $agses = new AXSILPortal_V1_Auth();
+            $agses->setUrl($ret_agses_url['valeur']);
+            $agses->setAAId($ret_agses_id['valeur']);
+            //for release there will be another api-key - this is temporary only
+            $agses->setApiKey($ret_agses_apikey['valeur']);
+            $agses->create();
+            //create random salt and store it into session
+            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+                $_SESSION['hedgeId'] = md5(time());
+            }
+            $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
+            $agses_message = $agses->createAuthenticationMessage(
+                $row['agses-usercardid'],
+                true,
+                1,
+                2,
+                $_SESSION['hedgeId']
+            );
+
+            echo '[{"agses_message" : "'.$agses_message.'" , "error" : ""}]';
         } else {
-            echo '[{"error" : "user_not_exist"}]';
+            echo '[{"agses_status" : "no_user_card_id" , "agses_message" : "" , "error" : ""}]';
+        }
+    } else {
+        if (empty($ret_agses_apikey['valeur'])) {
+            echo '[{"error" : "no_agses_api_key" , "agses_message" : ""}]';
+        } else {
+            echo '[{"error" : "something_wrong" , "agses_message" : ""}]';  // user not found but not displayed as this in the error message
         }
     }
 } elseif ($_POST['type'] == "identify_duo_user_check") {
@@ -440,7 +480,7 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
-        
+
         // get user info from LDAP
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
@@ -533,6 +573,78 @@ function identifyUser($sentData)
         );
     }
 
+    // check AGSES code
+    if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 && $username != "admin") {
+        // load AGSES
+        include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
+            $agses = new AXSILPortal_V1_Auth();
+            $agses->setUrl($_SESSION['settings']['agses_hosted_url']);
+            $agses->setAAId($_SESSION['settings']['agses_hosted_id']);
+            //for release there will be another api-key - this is temporary only
+            $agses->setApiKey($_SESSION['settings']['agses_hosted_apikey']);
+            $agses->create();
+            //create random salt and store it into session
+            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+                $_SESSION['hedgeId'] = md5(time());
+            }
+
+        $responseCode = $passwordClear;
+        if ($responseCode != "" && strlen($responseCode) >= 4) {
+            // Verify response code, store result in session
+            $result = $agses->verifyResponse(
+                $_SESSION['user_settings']['agses-usercardid'],
+                $responseCode,
+                $_SESSION['hedgeId']
+            );
+
+            if ($result == 1) {
+                $return = "";
+                $logError = "";
+                $proceedIdentification = true;
+                $userPasswordVerified = true;
+                unset($_SESSION['hedgeId']);
+                unset($_SESSION['flickercode']);
+            } else {
+                if ($result < -10) {
+                    $logError =  "ERROR: ".$result;
+                } else if ($result == -4) {
+                    $logError =  "Wrong response code, no more tries left.";
+                } else if ($result == -3) {
+                    $logError =  "Wrong response code, try to reenter.";
+                } else if ($result == -2) {
+                    $logError =  "Timeout. The response code is not valid anymore.";
+                } else if ($result == -1) {
+                    $logError =  "Security Error. Did you try to verify the response from a different computer?";
+                } else if ($result == 1) {
+                    $logError =  "Authentication successful, response code correct.
+                          <br /><br />Authentification Method for SecureBrowser updated!";
+                    // Add necessary code here for accessing your Business Application
+                }
+                $return = "agses_error";
+                echo '[{"value" : "'.$return.'", "user_admin":"',
+                isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+                '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+                "error" : "'.$logError.'"}]';
+
+                exit();
+            }
+
+        } else {
+
+            $return = "agses_error";
+            $logError = "No response code given";
+
+            echo '[{"value" : "'.$return.'", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+            "error" : "'.$logError.'"}]';
+
+            exit();
+
+        }
+
+    }
+
     if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {
         // User exists in the DB
         //$data = $db->fetchArray($row);
@@ -567,11 +679,13 @@ function identifyUser($sentData)
         }
 
         // check the given password
-        if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
-            $userPasswordVerified = true;
-        } else {
-            $userPasswordVerified = false;
-            logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
+        if ($userPasswordVerified !== true) {
+            if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
+                $userPasswordVerified = true;
+            } else {
+                $userPasswordVerified = false;
+                logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
+            }
         }
 
         if ($debugDuo == 1) {

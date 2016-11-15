@@ -183,7 +183,6 @@ echo '
         <table>
           <tr>
             <td>
-              
               <label for="duo_akey">
                 '.$LANG['admin_duo_akey'].'
               </label>
@@ -194,7 +193,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_ikey">'.$LANG['admin_duo_ikey'].'</label>
             </td>
             <td>
@@ -203,7 +201,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_skey">'.$LANG['admin_duo_skey'].'</label>
             </td>
             <td>
@@ -212,7 +209,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_host">'.$LANG['admin_duo_host'].'</label>
             </td>
             <td>
@@ -265,11 +261,51 @@ echo '
       <td>
         <label for="agses_api_key">
           <i class="fa fa-chevron-right mi-grey-1"></i>
-          '.$LANG['admin_agses_api_key'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_agses_api_key_tip']), ENT_QUOTES).'"></i>
+          '.$LANG['admin_agses_hosted'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_agses_hosted_tip']), ENT_QUOTES).'"></i>
         </label>
       </td>
       <td>
-        <input type="text" size="30" id="agses_api_key" name="agses_api_key" value="', isset($_SESSION['settings']['agses_api_key']) ? $_SESSION['settings']['agses_api_key'] : '', '" placeholder="', isset($_SESSION['settings']['agses_api_key']) ? '' : 'Enter the API key for AGSES', '" class="text ui-widget-content" />
+        <table>
+          <tr>
+            <td>
+              <label for="duo_akey">
+                '.$LANG['admin_agses_hosted_url'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_url" value="', isset($_SESSION['settings']['agses_hosted_url']) ? $_SESSION['settings']['agses_hosted_url'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+               '.$LANG['admin_agses_hosted_id'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_id" value="', isset($_SESSION['settings']['agses_hosted_id']) ? $_SESSION['settings']['agses_hosted_id'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+               '.$LANG['admin_agses_hosted_apikey'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_apikey" value="', isset($_SESSION['settings']['agses_hosted_apikey']) ? $_SESSION['settings']['agses_hosted_apikey'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+        </table>
+        </td>
+      </tr>
+
+      <tr class="agses agses_enabled">
+        <td>
+        <label>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_agses_save'].'
+        </label>
+      </td>
+        <td>
         <input type="button" onclick="SaveAgses()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
         <span id="save_agses_wait" style="display: none;">
         <i class="fa fa-cog fa-spin"></i>
@@ -400,7 +436,7 @@ function SaveAgses()
 {
     $("#save_agses_wait").show();
 
-    var data = "{\"agses_api_key\":\""+sanitizeString($("#agses_api_key").val())+"\"}";
+    var data = "{\"agses_hosted_url\":\""+sanitizeString($("#agses_hosted_url").val())+"\" , \"agses_hosted_id\":\""+sanitizeString($("#agses_hosted_id").val())+"\" , \"agses_hosted_apikey\":\""+sanitizeString($("#agses_hosted_apikey").val())+"\"}";
     $.post(
         "sources/admin.queries.php",
         {
