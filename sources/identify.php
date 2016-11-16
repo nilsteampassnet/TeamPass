@@ -53,6 +53,8 @@ if ($_POST['type'] === "identify_duo_user") {
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
 } elseif ($_POST['type'] == "identify_user_with_agses") {
+//-- AUTHENTICATION WITH AGSES
+
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
@@ -67,14 +69,18 @@ if ($_POST['type'] === "identify_duo_user") {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
+    // do checks
     if (isset($_POST['cardid']) && empty($_POST['cardid'])) {
+        // no card id is given
+        // check if it is DB
         $row = DB::queryFirstRow(
             "SELECT `agses-usercardid` FROM ".prefix_table("users")."
             WHERE login = %s",
             filter_var($_POST['login'], FILTER_SANITIZE_STRING)
         );
     } else if (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
-        //
+        // card id is given
+        // save it in DB
         DB::update(
             prefix_table('users'),
             array(
@@ -86,8 +92,11 @@ if ($_POST['type'] === "identify_duo_user") {
         $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
     }else {
         // error
+        echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
+        return false;
     }
 
+    //-- get AGSES hosted information
     $ret_agses_url = DB::queryFirstRow(
         "SELECT valeur FROM ".prefix_table("misc")."
         WHERE type = %s AND intitule = %s",
@@ -109,7 +118,10 @@ if ($_POST['type'] === "identify_duo_user") {
         'agses_hosted_apikey'
     );
 
-    if (isset($row['agses-usercardid']) && !empty($ret_agses_apikey['valeur'])) {
+    // if we have a card id and all agses credentials
+    // then we try to generate the message for agsesflicker
+    if (isset($row['agses-usercardid']) && !empty($ret_agses_url['valeur']) && !empty($ret_agses_id['valeur']) && !empty($ret_agses_apikey['valeur'])) {
+        // check that card id is not empty or equal to 0
         if ($row['agses-usercardid'] !== "0" && !empty($row['agses-usercardid'])) {
             include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
             $agses = new AXSILPortal_V1_Auth();
@@ -136,8 +148,8 @@ if ($_POST['type'] === "identify_duo_user") {
             echo '[{"agses_status" : "no_user_card_id" , "agses_message" : "" , "error" : ""}]';
         }
     } else {
-        if (empty($ret_agses_apikey['valeur'])) {
-            echo '[{"error" : "no_agses_api_key" , "agses_message" : ""}]';
+        if (empty($ret_agses_apikey['valeur']) || empty($ret_agses_url['valeur']) || empty($ret_agses_id['valeur'])) {
+            echo '[{"error" : "no_agses_info" , "agses_message" : ""}]';
         } else {
             echo '[{"error" : "something_wrong" , "agses_message" : ""}]';  // user not found but not displayed as this in the error message
         }

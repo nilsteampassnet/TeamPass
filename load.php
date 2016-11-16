@@ -494,22 +494,25 @@ $htmlHeaders .= '
                     "json"
                 );
             } else {
-                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['error_complex_not_enought'].'");
+                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.addslashes($LANG['error_complex_not_enought']).'");
             }
         } else {
-            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.$LANG['index_pw_error_identical'].'");
+            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.addslashes($LANG['index_pw_error_identical']).'");
         }
     }
 
     $(function() {
-        // agses
+        // AGSES authentication
         if ($("#axs_canvas").length > 0) {
-
+            // show the agsesflicker
             $("#login, #agses_cardid").blur(function() {
+                // exclude if login is empty or Admin
                 if ($("#login").val() === "" || $("#login").val() === "admin") return false;
+
                 $("#pw").attr("disabled", true);
 
                 // special check for agses_cardid
+                // must contain 12 numbers
                 if ($("#agses_cardid").val() !== "") {
                     var agses_carid_error = "";
                     if ($("#agses_cardid").val().length !== 12) {
@@ -526,7 +529,10 @@ $htmlHeaders .= '
                     }
                 }
 
-                $("#login_check_wait").show();
+                // show a wait message
+                $("#agses_cardid_div").after("<div class=\"ui-state-focus ui-corner-all\" id=\"tmp_agses_wait_div\" style=\"padding:5px; text-align:center; width:454px;\"><i class=\"fa fa-cog fa-spin fa-1x\"></i>&nbsp;'.addslashes($LANG['admin_agses_wait']).'</div>");
+
+                // send query
                 $.post(
                     "sources/identify.php",
                     {
@@ -536,41 +542,61 @@ $htmlHeaders .= '
                         key:      "'.$_SESSION['key'].'"
                     },
                     function(data) {
+                        // init
                         $("#pw").attr("disabled", false);
                         $("#agses_flickercode_div").hide();
-                        $("#user_pwd").text("'.$LANG['index_password'].'");
+                        $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
+
                         if (data[0].error !== "" && data[0].agses_message === "") {
+                        // an error occured during query
+                            if (data[0].error === "no_agses_info") {
+                                data[0].error = "'.addslashes($LANG['agses_error_missing_api_data']).'";
+                            }
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
-                        } else if (data[0].agses_message !== "" && data[0].agses_message.indexOf("ERROR ") === 0) {
-                            // Agses returned an error
+
+                        } else if (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
+                        // Agses returned an error
                             $("#agses_cardid_div").show();
                             $("#agses_cardid").focus();
 
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+
                         } else if (data[0].agses_message !== "") {
+                        // show agses flicker
                             $("#agses_cardid_div").hide();
-                            // flickercode is generated
-                            $("#axs_canvas").agsesInit({
-                                "message": data[0].agses_message,
-                            });
+                            // check if already generated
+                            if ($("#axs_canvas").data("agsesFlicker") !== undefined) {
+                                $("#axs_canvas").agsesFlicker({
+                                    "message": data[0].agses_message,
+                                });
+                            } else {
+                                // generateflickercode
+                                $("#axs_canvas").agsesInit({
+                                    "message": data[0].agses_message,
+                                });
+                            }
                             $("#agses_flickercode_div").show();
-                            $("#user_pwd").text("'.$LANG['index_agses_key'].'");
+                            $("#user_pwd").text("'.addslashes($LANG['index_agses_key']).'");
+
                         } else if (data[0].agses_message === "") {
-                            // user needs to enter his user card id
+                        // user needs to enter his user card id
                             $("#agses_cardid_div").show();
-                            $("#user_pwd").text("'.$LANG['index_password'].'");
+                            $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
                             $("#agses_cardid").focus();
+
                         } else {
-                            // something wrong
+                        // something wrong
+                        // typically the user login does not exist
                             $("#agses_flickercode_div, #agses_cardid_div").hide();
-                            $("#user_pwd").text("'.$LANG['index_password'].'");
+                            $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
                         }
 
-                        $("#login_check_wait").hide();
+                        // remove wait message
+                        $("#tmp_agses_wait_div").remove();
                     },
                     "json"
                 );
@@ -693,7 +719,7 @@ $htmlHeaders .= '
             modal: true,
             autoOpen: false,
             width: 500,
-            height: 450,
+            height: 480,
             title: "'.$LANG['user_profile_dialogbox_menu'].'",
             buttons: {
                 "'.$LANG['close'].'": function() {
@@ -701,7 +727,7 @@ $htmlHeaders .= '
                 }
             },
             close: function() {
-                $("#dialog_user_profil").dialog("option", "height", 400);
+                $("#dialog_user_profil").dialog("option", "height", 430);
                 $("#div_user_profil").html("<i class=\'fa fa-cog fa-spin fa-2x\'></i>&nbsp;<b>'.$LANG['please_wait'].'</b>");
             }
         });
