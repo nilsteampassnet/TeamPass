@@ -142,6 +142,9 @@ if ($res === false) {
     exit();
 }
 
+// alter table USERS - user_language
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user_language VARCHAR(50) NOT NULL DEFAULT '0'");
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

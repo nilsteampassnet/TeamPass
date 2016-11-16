@@ -770,6 +770,7 @@ function identifyUser($sentData)
             if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) $data['treeloadstrategy'] = "full";
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
             $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
+            $_SESSION['user_settings']['user_language'] = $data['user_language'];
 
             // manage session expiration
             $serverTime = time();

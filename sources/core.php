@@ -106,13 +106,9 @@ if (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_setting
 
 //Load Languages stuff
 if (empty($languagesDropmenu)) {
-    $languagesDropmenu = "";
     $languagesList = array();
     $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
     foreach ($rows as $record) {
-        $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
-            $record['flag'].'" alt="'.$record['label'].'" title="'.
-            $record['label'].'" onclick="ChangeLanguage(\''.$record['name'].'\')" /></a></li>';
         array_push($languagesList, $record['name']);
         if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
             $_SESSION['user_language_flag'] = $record['flag'];

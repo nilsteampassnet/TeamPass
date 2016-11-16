@@ -64,7 +64,7 @@ require_once 'sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 
 /* DEFINE WHAT LANGUAGE TO USE */
-if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
+if (isset($_GET['language'])) {
     // case of user has change language in the login page
     $dataLanguage = DB::queryFirstRow(
         "SELECT flag, name
@@ -151,11 +151,11 @@ echo '
 if (isset($_SESSION['login'])) {
     // welcome message
     echo '
-        <div style="float:right; margin:-10px 50px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b>&nbsp;-&nbsp;', $_SESSION['user_admin'] == 1 ? $LANG['god'] : ($_SESSION['user_manager'] == 1 ? $LANG['gestionnaire'] : ($_SESSION['user_read_only'] == 1 ? $LANG['read_only_account'] : $LANG['user'])), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
+        <div style="float:right; margin:-10px 5px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b>&nbsp;-&nbsp;', $_SESSION['user_admin'] == 1 ? $LANG['god'] : ($_SESSION['user_manager'] == 1 ? $LANG['gestionnaire'] : ($_SESSION['user_read_only'] == 1 ? $LANG['read_only_account'] : $LANG['user'])), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
 
     echo '
         <div id="menu_top">
-            <div style="margin-left:20px; margin-top:2px;width:660px;" id="main_menu">';
+            <div style="margin-left:20px; margin-top:2px;width:710px;" id="main_menu">';
     if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
         echo '
                 <a class="btn btn-default" href="#"',
@@ -278,20 +278,6 @@ if (isset($_SESSION['login'])) {
             </div>';
 
     echo '
-        </div>';
-}
-// Display language menu
-if (!isset($_GET['otv'])) {
-    echo '
-        <div style="float:right;">
-            <dl id="flags" class="dropdown">
-                <dt><img src="includes/images/flags/'.$_SESSION['user_language_flag'].'" alt="" /></dt>
-                <dd>
-                    <ul>
-                    '.$languagesDropmenu.'
-                    </ul>
-                </dd>
-            </dl>
         </div>';
 }
 

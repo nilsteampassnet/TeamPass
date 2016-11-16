@@ -1294,6 +1294,10 @@ if (!empty($_POST['type'])) {
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 elseif (!empty($_POST['newValue'])) {
     $value = explode('_', $_POST['id']);
+    if ($value[0] === "userlanguage") {
+        $value[0]  = "user_language";
+        $_POST['newValue'] = strtolower($_POST['newValue']);
+    }
     DB::update(
         prefix_table("users"),
         array(
@@ -1311,6 +1315,11 @@ elseif (!empty($_POST['newValue'])) {
     } else if ($value[0] === "usertimezone") {
     // special case for usertimezone where session needs to be updated
         $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
+
+    } else if ($value[0] === "userlanguage") {
+    // special case for user_language where session needs to be updated
+        $_SESSION['user_settings']['user_language'] = $_POST['newValue'];
+        $_SESSION['user_language'] = $_POST['newValue'];
 
     } else if ($value[0] === "agses-usercardid") {
     // special case for agsescardid where session needs to be updated

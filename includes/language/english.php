@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'user_language' => 'Your language',
     'admin_agses_hosted' => 'AGSES hosted service',
     'admin_agses_hosted_tip' => '',
     'user_profile_agses_enable' => 'Enable Agses authentication',

@@ -49,6 +49,12 @@ foreach (timezone_identifiers_list() as $zone) {
     $arrayTimezones[$zone] = $zone;
 }
 
+// prepare lsit of flags
+$rows = DB::query("SELECT label FROM ".prefix_table("languages")." ORDER BY label ASC");
+foreach ($rows as $record) {
+    $arraFlags[$record['label']] = $record['label'];
+}
+
 echo '
 <input type="hidden" id="profile_user_token" value="" />
 <table style="margin-left:7px;">
@@ -112,6 +118,9 @@ echo '
     </div>
     <div style="margin-bottom:6px;">
         <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
+    </div>
+    <div style="margin-bottom:6px;">
+        <i class="fa fa-language fa-fw fa-lg"></i>&nbsp;'. $LANG['user_language'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_language" id="userlanguage_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_language']) ? $_SESSION['user_language'] : $_SESSION['settings']['default_language'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>';
 
 if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
@@ -402,6 +411,16 @@ $(function() {
     $(".editable_select").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
         data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
+    });
+    $(".editable_language").editable("sources/users.queries.php", {
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data   : '<?php print json_encode($arraFlags);?>',
         type   : 'select',
         select : true,
         onblur : "cancel",

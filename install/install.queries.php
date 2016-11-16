@@ -510,7 +510,7 @@ global \$SETTINGS;
                             `can_create_root_folder` tinyint(1) NOT null DEFAULT '0',
                             `read_only` tinyint(1) NOT null DEFAULT '0',
                             `timestamp` varchar(30) NOT null DEFAULT '0',
-                            `user_language` varchar(30) NOT null DEFAULT 'english',
+                            `user_language` varchar(50) NOT null DEFAULT '0',
                             `name` varchar(100) NULL,
                             `lastname` varchar(100) NULL,
                             `session_end` varchar(30) NULL,
@@ -523,6 +523,7 @@ global \$SETTINGS;
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
                             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
+                            `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

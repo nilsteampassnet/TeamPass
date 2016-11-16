@@ -377,6 +377,20 @@ $htmlHeaders .= '
                 $("#div_user_profil").load(
                     "'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
                 );
+            },
+            close: function() {
+                // in case of user changed language then reload the current page
+                if ($("#userlanguage_'.$_SESSION['user_id'].'").text() !== "'.$_SESSION['user_language'].'") {
+                    //location.reload();
+                    //document.location.href="index.php?language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
+                    var url = window.location.href;
+                    if (url.indexOf("?") > -1) {
+                        url += "&language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
+                    } else {
+                        url += "?language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
+                    }
+                    document.location.href = url;
+                }
             }
         }).dialog("open");
     }
@@ -719,7 +733,7 @@ $htmlHeaders .= '
             modal: true,
             autoOpen: false,
             width: 500,
-            height: 480,
+            height: 520,
             title: "'.$LANG['user_profile_dialogbox_menu'].'",
             buttons: {
                 "'.$LANG['close'].'": function() {
