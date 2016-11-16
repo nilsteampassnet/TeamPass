@@ -51,7 +51,7 @@ foreach (timezone_identifiers_list() as $zone) {
 
 echo '
 <input type="hidden" id="profile_user_token" value="" />
-<table>
+<table style="margin-left:7px;">
     <tr>
         <td rowspan="4" style="width:94px">
             <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px;"><img src="', isset($userData['avatar']) && !empty($userData['avatar']) ? 'includes/avatars/'.$userData['avatar'] : './includes/images/photo.jpg', '" /></div>
@@ -73,7 +73,23 @@ echo '
     </tr>
 </table>
 
+<div style="float:left; margin-left:10px;">
+   <ul class="menu" style="">
+      <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
+         <ul class="menu_250" style="text-align:left;">
+            <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
+            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) echo '
+            <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
+            echo '
+            <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
+            <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
+         </ul>
+      </li>
+   </ul>
+</div>
+
 <div style="float:left;width:95%;margin:10px 0 5px 10px;">
+    <hr>
     <div style="margin-bottom:6px;">
         <i class="fa fa-child fa-fw fa-lg"></i>&nbsp;
         '.$LANG['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
@@ -90,30 +106,29 @@ echo '
         <span id="plupload_runtime2" class="ui-state-error ui-corner-all" style="width:350px;">'.$LANG['error_upload_runtime_not_found'].'</span>
         <input type="hidden" id="upload_enabled2" value="" />
     </div>
+    <hr>
     <div style="margin-bottom:6px;">
         <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>
     <div style="margin-bottom:6px;">
         <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
-    </div>
+    </div>';
+
+if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
+    echo '
+    <hr>
+
+    <div style="margin-bottom:6px;">
+        <i class="fa fa-id-card-o fa-lg"></i>&nbsp;'. $LANG['user_profile_agses_card_id'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_textarea" id="agses-usercardid_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '', '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
+    </div>';
+}
+
+echo '
 </div>
 
+<hr>
 
-<div style="float:left; margin-left:10px;">
-   <ul class="menu" style="">
-      <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
-         <ul class="menu_250" style="text-align:left;">
-            <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
-            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) echo '
-            <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
-            echo '
-            <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
-            <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
-         </ul>
-      </li>
-   </ul>
-</div>
-<div style="float:left;width:95%;margin:10px;">
+<div style="float:left;width:100%;margin-top:10px;">
     <div style="text-align:center;margin:5px;padding:3px;display:none;" id="profile_info_box" class="ui-widget ui-state-highlight ui-corner-all"></div>
     <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
     <div id="upload_container_photo" style="display:none;"></div>
@@ -122,7 +137,7 @@ echo '
 // if DUOSecurity enabled then changing PWD is not allowed
 if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
    echo '
-    <div id="div_change_password" style="display:none;">
+    <div id="div_change_password" style="display:none; padding:5px;" class="ui-widget ui-state-default">
         <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
         <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
         <input type="password" size="15" name="new_pw" id="new_pw" />
@@ -137,7 +152,7 @@ if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
 
 //change the saltkey dialogbox
 echo '
-    <div id="div_change_psk" style="display:none;padding:4px;">
+    <div id="div_change_psk" style="display:none;padding:5px;" class="ui-widget ui-state-default">
       <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
          <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning'].'
       </div>
@@ -156,7 +171,7 @@ echo '
 
 //saltkey LOST dialogbox
 echo '
-   <div id="div_reset_psk" style="display:none;padding:4px;">
+   <div id="div_reset_psk" style="display:none;padding:5px;" class="ui-widget ui-state-default">
       <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
          <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning_lost'].'
       </div>
@@ -374,9 +389,11 @@ $(function() {
 
     //inline editing
     $(".editable_textarea").editable("sources/users.queries.php", {
+        onsubmit: function(settings, value) {
+            console.log(value);
+        },
         indicator : "<img src=\'includes/images/loading.gif\' />",
         type   : "text",
-        select : true,
         submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
         cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
         name   : "newValue",
@@ -395,6 +412,16 @@ $(function() {
     $(".editable_timezone").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
         data : '<?php print json_encode($arrayTimezones);?>',
+        type   : 'select',
+        select : true,
+        onblur : "cancel",
+        submit : "<i class=\'fa fa-check mi-green\'></i>&nbsp;",
+        cancel : "<i class=\'fa fa-remove mi-red\'></i>&nbsp;",
+        name : "newValue"
+    });
+    $(".editable_yesno").editable("sources/users.queries.php", {
+        indicator : "<img src=\'includes/images/loading.gif\' />",
+        data : '{"O":"<?php echo $LANG['no'];?>","1":"<?php echo $LANG['yes'];?>"}',
         type   : 'select',
         select : true,
         onblur : "cancel",

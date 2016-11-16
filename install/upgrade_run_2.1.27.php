@@ -129,5 +129,19 @@ $dbTmp = mysqli_connect(
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 
+
+// add field agses-usercardid to Users table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."users",
+    "agses-usercardid",
+    "VARCHAR(12) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field agses-usercardid to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

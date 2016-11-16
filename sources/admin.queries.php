@@ -172,7 +172,7 @@ switch ($_POST['type']) {
                         "id = %s",
                         $folder
                     );
-                }          
+                }
             }
         }
 
@@ -1185,6 +1185,106 @@ switch ($_POST['type']) {
             $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
         } else {
             $_SESSION['settings']['ga_website_name'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
+
+    case "save_agses_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // agses_hosted_url
+        if (!is_null($dataReceived['agses_hosted_url'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_url");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_url",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_hosted_url"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_url'] = htmlspecialchars_decode($dataReceived['agses_hosted_url']);
+        } else {
+            $_SESSION['settings']['agses_hosted_url'] = "";
+        }
+
+        // agses_hosted_id
+        if (!is_null($dataReceived['agses_hosted_id'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_id");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_id",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_hosted_id"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_id'] = htmlspecialchars_decode($dataReceived['agses_hosted_id']);
+        } else {
+            $_SESSION['settings']['agses_hosted_id'] = "";
+        }
+
+        // agses_hosted_apikey
+        if (!is_null($dataReceived['agses_hosted_apikey'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_apikey");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_apikey",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_api_key"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
+        } else {
+            $_SESSION['settings']['agses_hosted_apikey'] = "";
         }
 
         // send data

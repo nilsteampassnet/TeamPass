@@ -946,7 +946,4 @@ switch ($_POST['type']) {
 
         echo json_encode($array);
         break;
-
-
-
 }
