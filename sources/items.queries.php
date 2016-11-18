@@ -95,7 +95,7 @@ if (isset($_POST['type'])) {
         */
         case "new_item":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+            if ($_POST['key'] != $_SESSION['key']) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -115,6 +115,7 @@ if (isset($_POST['type'])) {
                 if (
                     !in_array($dataReceived['categorie'], array_keys($_SESSION['list_folders_limited']))
                     && !in_array($dataReceived['categorie'], $_SESSION['groupes_visibles'])
+                    && !in_array($dataReceived['categorie'], $_SESSION['personal_visible_groups_list'])
                 ) {
                     echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                     break;
@@ -124,6 +125,12 @@ if (isset($_POST['type'])) {
                     echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                     break;
                 }
+            }
+
+            // perform a check in case of Read-Only user creating an item in his PF
+            if ($_SESSION['user_read_only'] === true && !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])) {
+                echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                break;
             }
 
             // is pwd empty?
@@ -140,7 +147,12 @@ if (isset($_POST['type'])) {
             // check if element doesn't already exist
             $itemExists = 0;
             $newID = "";
-            $data = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", $label, 0);
+            $data = DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("items")."
+                WHERE label = %s AND inactif = %i",
+                $label,
+                0
+            );
             $counter = DB::count();
             if ($counter != 0) {
                 $itemExists = 1;
@@ -379,7 +391,7 @@ if (isset($_POST['type'])) {
         */
         case "update_item":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+            if ($_POST['key'] != $_SESSION['key']) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -399,6 +411,12 @@ if (isset($_POST['type'])) {
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 $email = noHTML(htmlspecialchars_decode($dataReceived['email']));
 
+                // perform a check in case of Read-Only user creating an item in his PF
+                if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== "1")) {
+                    echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                    break;
+                }
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -416,6 +434,12 @@ if (isset($_POST['type'])) {
                 }
                 if (empty($dataItem['restricted_to'])) {
                     $restrictionActive = false;
+                }
+
+                // perform a check in case of Read-Only user creating an item in his PF
+                if ($_SESSION['user_read_only'] === true && !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])) {
+                    echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                    break;
                 }
 
                 if (
@@ -830,7 +854,14 @@ if (isset($_POST['type'])) {
         */
         case "copy_item":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+            if ($_POST['key'] != $_SESSION['key']) {
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+
+            // perform a check in case of Read-Only user creating an item in his PF
+            if ($_SESSION['user_read_only'] === true && !in_array($_POST['categorie'], $_SESSION['personal_folders']) || !in_array($_POST['folder_id'], $_SESSION['personal_folders'])) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
@@ -841,8 +872,16 @@ if (isset($_POST['type'])) {
 
             if (isset($_POST['item_id']) && !empty($_POST['item_id']) && !empty($_POST['folder_id'])) {
                 // load the original record into an array
-                $originalRecord = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $_POST['item_id']);
-                $dataDestination = DB::queryfirstrow("SELECT personal_folder FROM ".prefix_table("nested_tree")." WHERE id=%i", $_POST['folder_id']);
+                $originalRecord = DB::queryfirstrow(
+                    "SELECT * FROM ".prefix_table("items")."
+                    WHERE id=%i",
+                    $_POST['item_id']
+                );
+                $dataDestination = DB::queryfirstrow(
+                    "SELECT personal_folder FROM ".prefix_table("nested_tree")."
+                    WHERE id=%i",
+                    $_POST['folder_id']
+                );
 
                 // previous is personal folder and public one
                 if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 0) {
@@ -880,6 +919,35 @@ if (isset($_POST['type'])) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         SALT,
+                        $originalRecord['pw_iv'],
+                        "decrypt"
+                    );
+                    $encrypt = cryption(
+                        $decrypt['string'],
+                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                        "",
+                        "encrypt"
+                    );
+
+                    // reaffect pw
+                    $originalRecord['pw'] = $encrypt['string'];
+                    $originalRecord['pw_iv'] = $encrypt['iv'];
+
+                    // this item is now private
+                    $is_perso = 1;
+                } else if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 1) {
+                // previous is public folder and personal one
+                    // check if PSK is set
+                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                        $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
+                        echo $returnValues;
+                        break;
+                    }
+
+                    // decrypt and re-encrypt password
+                    $decrypt = cryption(
+                        $originalRecord['pw'],
+                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
                         $originalRecord['pw_iv'],
                         "decrypt"
                     );
@@ -1472,11 +1540,18 @@ if (isset($_POST['type'])) {
         */
         case "del_item":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+            if ($_POST['key'] != $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
+
+            // perform a check in case of Read-Only user creating an item in his PF
+            if ($_SESSION['user_read_only'] === true && !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])) {
+                echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                break;
+            }
+
             // delete item consists in disabling it
             DB::update(
                 prefix_table("items"),
@@ -1854,7 +1929,7 @@ if (isset($_POST['type'])) {
                         // Can user modify it?
                         if ($record['anyone_can_modify'] == 1
                             || $_SESSION['user_id'] === $record['log_user']
-                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0) 
+                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
                             //|| $_SESSION['user_manager'] == 1   // force draggable if user is manager
                         ) {
                             $canMove = 1;
@@ -2250,8 +2325,19 @@ if (isset($_POST['type'])) {
 
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
                 $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
+                $folder_is_personal = $data['personal_folder'];
             } else {
                 $complexity = $LANG['not_defined'];
+
+                // if not defined, then previous query failed and personal_folder is null
+                // do new query to know if current folder is pf
+                $data_pf = DB::queryFirstRow(
+                    "SELECT personal_folder
+                    FROM ".prefix_table("nested_tree")."
+                    WHERE id = %s",
+                    $_POST['groupe']
+                );
+                $folder_is_personal = $data_pf['personal_folder'];
             }
             // Prepare Item actual visibility (what Users/Roles can see it)
             $visibilite = "";
@@ -2281,7 +2367,7 @@ if (isset($_POST['type'])) {
                 "val" => $data['valeur'],
                 "visibility" => $visibilite,
                 "complexity" => $complexity,
-                "personal" => $data['personal_folder']
+                "personal" => $folder_is_personal
             );
             echo prepareExchangedData($returnValues, "encode");
             break;
@@ -3073,8 +3159,8 @@ if (isset($_POST['type'])) {
                         // build select for all visible folders
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
                             if ($_SESSION['user_read_only'] == 0 || ($_SESSION['user_read_only'] == 1 && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1)) { // || (in_array($folder->id, $_SESSION['personal_folders']))
-                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1)) { //
+                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" >'.$ident.$fldTitle.'</option>';
                                 } else {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
                                 }

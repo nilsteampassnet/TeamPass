@@ -103,6 +103,7 @@ if (!empty($_POST['type'])) {
                         'author_id' => $_SESSION['user_id'],
                         'pw' => $encrypt['string'],
                         'pw_iv' => $encrypt['iv'],
+                        'pw_len' => 0,
                         'comment' => $comment,
                         'folder_id' => $folder
                     )
