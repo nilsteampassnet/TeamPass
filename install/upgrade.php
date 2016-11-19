@@ -1,5 +1,5 @@
 <?php
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;

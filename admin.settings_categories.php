@@ -16,7 +16,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>API Settings</title></head><body>
 <?php
-require_once('sources/sessions.php');
+require_once('sources/SecureHandler.php');
 session_start();
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {

@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
@@ -320,7 +320,7 @@ if (isset($_POST['type'])) {
             $res = "";
             //decrypt the password
             // AES Counter Mode implementation
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';
+            require_once 'libs/aesctr.php';
             $dbPassword = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
 
             // connexion

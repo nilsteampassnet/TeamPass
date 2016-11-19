@@ -12,6 +12,13 @@ Bug fixing
 
 2.1.27
  NEW   AGSES authentication implemented
+ IMP   Implemented new session encryption library (getting rid of mcrypt extension)
+ IMP   Language selection is now in User Profile (Default language is used on authentication page)
+ UPD   AES library
+ #1532 Added error message in install.js if db-pw contains double quotes
+ #1553 LDAP support - Add LDAP port - Add support multi LDAP server
+ #1556 Fix bug for upgrading old passwords
+ #1559 API IP Whitelist check does not consider XFF
 
 
 2.1.26

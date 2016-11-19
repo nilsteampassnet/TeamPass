@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 global $k;

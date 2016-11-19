@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('./sources/sessions.php');
+require_once('./sources/SecureHandler.php');
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||

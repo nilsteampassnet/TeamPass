@@ -15,7 +15,7 @@
 /*
 ** Is always performed at the end of the update process
 */
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";

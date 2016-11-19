@@ -102,7 +102,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
 
             //start session in case its not
             if (session_id() == '') {
-                require_once __DIR__ ."/../../../../../sources/sessions.php";
+                require_once __DIR__ ."/../../../../../sources/SecureHandler.php";
                 session_start();
             }
 

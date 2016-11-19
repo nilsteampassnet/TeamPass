@@ -13,7 +13,7 @@
  */
 
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
@@ -79,7 +79,7 @@ while ($data = mysqli_fetch_array($rows)) {
         // nothing to do - last encryption protocol (#3) used
         fputs($dbgDuo, "\nItem is correctly encrypted");
     } else {
-        if (!empty($data['pw_iv'])) {
+        if (!empty($data['pw'])) {
             // check if pw encrypted with protocol #2
             $pw = decrypt($data['pw']);
             if (empty($pw)) {

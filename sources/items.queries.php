@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -964,6 +964,10 @@ if (isset($_POST['type'])) {
 
                     // this item is now private
                     $is_perso = 1;
+                } else {
+                    $returnValues = '[{"error" : "case_not_managed"}, {"error_text" : "ERROR - case is not managed"}]';
+                        echo $returnValues;
+                        break;
                 }
 
                 // insert the new record and get the new auto_increment id

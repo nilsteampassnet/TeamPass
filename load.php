@@ -28,7 +28,8 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
         <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" type="text/css" />
         <script type="text/javascript" src="includes/js/simplePassMeter/simplePassMeter.js"></script>
-        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.min.js"></script>
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes.js"></script>
+        <script type="text/javascript" src="includes/libraries/Encryption/Crypt/aes-ctr.js"></script>
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
         <link rel="stylesheet" href="includes/js/nprogress/nprogress.css" type="text/css" />
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>

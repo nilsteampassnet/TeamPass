@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_port' => 'LDAP port',
+    'settings_ldap_port_tip' => 'Default non secure LDAP port: 389, default secure LDAP port: 636',
     'user_language' => 'Your language',
     'admin_agses_hosted' => 'AGSES hosted service',
     'admin_agses_hosted_tip' => '',

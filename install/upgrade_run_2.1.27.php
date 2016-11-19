@@ -15,7 +15,7 @@
 /*
 ** Upgrade script for release 2.1.26
 */
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";

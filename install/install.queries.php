@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
@@ -69,7 +69,7 @@ if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
@@ -132,7 +132,7 @@ if (isset($_POST['type'])) {
 
         case "step_3":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -179,7 +179,7 @@ if (isset($_POST['type'])) {
 
         case "step_4":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -225,7 +225,7 @@ if (isset($_POST['type'])) {
 
         case "step_5":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -829,7 +829,7 @@ global \$SETTINGS;
 
         case "step_6":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -980,7 +980,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
         case "step_7":
 
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             // launch
