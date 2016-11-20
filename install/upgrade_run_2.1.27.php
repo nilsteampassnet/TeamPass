@@ -145,6 +145,8 @@ if ($res === false) {
 // alter table USERS - user_language
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user_language VARCHAR(50) NOT NULL DEFAULT '0'");
 
+// alter table USERS - just ensure correct naming of IsAdministratedByRole
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` CHANGE IsAdministratedByRole isAdministratedByRole tinyint(5) NOT NULL DEFAULT '0'");
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

@@ -27,10 +27,17 @@ if (
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
-    if (!isset($_POST['newValue']) || empty(filter_var($_POST['newValue'], FILTER_SANITIZE_STRING))) {
+    if (!isset($_POST['newValue'])) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
         exit();
+    } else {
+        $filtered_newvalue = filter_var($_POST['newValue'], FILTER_SANITIZE_STRING);
+        if (empty($filtered_newvalue)) {
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            exit();
+        }
     }
 }
 
