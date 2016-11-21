@@ -112,7 +112,7 @@ if ($file_size <= 0) {
 // Get parameters
 $chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
 $chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
-$fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
+$fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
@@ -126,7 +126,14 @@ if (!isset($_FILES['file'])) {
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
+$file_name = preg_replace(
+    '[^'.$valid_chars_regex.']',
+    '',
+    filter_var(
+        strtolower(basename($_FILES['file']['name'])),
+        FILTER_SANITIZE_STRING
+    )
+);
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
     handleError('Invalid file name: '.$file_name.'.', 114);
 }

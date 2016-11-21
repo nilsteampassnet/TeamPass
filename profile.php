@@ -352,7 +352,6 @@ $(function() {
 
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "fileName":file.name,
                     "newFileName":"user<?php echo $_SESSION['user_id'];?>"+tmp,
                     "type_upload":"upload_profile_photo",
                     "user_token": $("#profile_user_token").val()
