@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'is_super_manager' => 'Is Super Manager',
     'settings_ldap_port' => 'LDAP port',
     'settings_ldap_port_tip' => 'Default non secure LDAP port: 389, default secure LDAP port: 636',
     'user_language' => 'Your language',

@@ -87,6 +87,14 @@ function tableExists($tablename, $database = false)
     else return false;
 }
 
+function cleanFields($txt) {
+    $tmp = str_replace(",", ";", trim($txt));
+    if ($tmp === "0" || empty($tmp)) return $tmp;
+    if (strpos($tmp, ';') === 0) $tmp = substr($tmp, 1);
+    if (substr($tmp, -1) !== ";") $tmp = $tmp.";";
+    return $tmp;
+}
+
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
 
@@ -147,6 +155,32 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user
 
 // alter table USERS - just ensure correct naming of IsAdministratedByRole
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` CHANGE IsAdministratedByRole isAdministratedByRole tinyint(5) NOT NULL DEFAULT '0'");
+
+// do clean of users table
+$fieldsToUpdate = ['groupes_visibles', 'fonction_id', 'groupes_interdits'];
+$result = mysqli_query($dbTmp, "SELECT id, groupes_visibles, fonction_id, groupes_interdits FROM `".$_SESSION['tbl_prefix']."users`");
+while($row = mysqli_fetch_assoc($result)) {
+    // check if field contains , instead of ;
+    foreach($fieldsToUpdate as $field) {
+        $tmp = cleanFields($row[$field]);
+        if ($tmp !== $row[$field]) {
+            mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                SET `".$field."` = '".$tmp."'
+                WHERE id = '".$row['id']."'"
+            );
+        }
+    }
+
+}
+mysqli_free_result($result);
+
+mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."misc`
+                    SET `valeur` = 'maintenance_mode'
+                    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+                );
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

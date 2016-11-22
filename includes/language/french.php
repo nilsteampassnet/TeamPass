@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          french.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'is_super_manager' => 'Is Super Manager',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',

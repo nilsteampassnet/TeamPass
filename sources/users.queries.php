@@ -177,9 +177,9 @@ if (!empty($_POST['type'])) {
                         'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
                         'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
                         'user_language' => $_SESSION['settings']['default_language'],
-                        'fonction_id' => $dataReceived['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
-                        'groupes_interdits' => ($dataReceived['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
-                        'groupes_visibles' => ($dataReceived['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
+                        'fonction_id' => $dataReceived['groups'],
+                        'groupes_interdits' => $dataReceived['forbidden_flds'],
+                        'groupes_visibles' => $dataReceived['allowed_flds'],
                         'isAdministratedByRole' => $dataReceived['isAdministratedByRole']
                        )
                 );

@@ -43,8 +43,16 @@ $(function() {
     $("#tabs").tabs();
 
     //Build multiselect box
-    $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").multiselect({
+    $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid, #new_user_groups, #new_user_auth_folders, #new_user_forbid_folders").multiselect({
         selectedList: 7,
+        minWidth: 550,
+        height: 145,
+        checkAllText: "<?php echo $LANG['check_all_text'];?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+    });
+    $("#new_is_admin_by").multiselect({
+        selectedList: 7,
+        multiple:false,
         minWidth: 550,
         height: 145,
         checkAllText: "<?php echo $LANG['check_all_text'];?>",
@@ -281,8 +289,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 320,
-        height: 540,
+        width: 590,
+        height: 600,
         title: "<?php echo $LANG['new_user_title'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -290,6 +298,18 @@ $(function() {
                     $("#add_new_user_error").show().html("<?php echo $LANG['error_must_enter_all_fields'];?>");
                 } else {
                     $("#add_new_user_info").show().html("<?php echo $LANG['please_wait'];?>");
+
+                    // get lists
+                    var forbidFld = "", authFld = "", groups = "";
+                    $("#new_user_groups option:selected").each(function () {
+                        groups += $(this).val() + ";";
+                    });
+                    $("#new_user_auth_folders option:selected").each(function () {
+                        authFld += $(this).val() + ";";
+                    });
+                    $("#new_user_forbid_folders option:selected").each(function () {
+                        forbidFld += $(this).val() + ";";
+                    });
 
                     //prepare data
                     var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
@@ -303,7 +323,10 @@ $(function() {
                         '"personal_folder":"'+$("#new_personal_folder").prop("checked")+'", '+
                         '"new_folder_role_domain":"'+$("#new_folder_role_domain").prop("checked")+'", '+
                         '"domain":"'+$('#new_domain').val()+'", '+
-                        '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'"}';
+                        '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'", '+
+                        '"groups":"' + groups + '", '+
+                        '"allowed_flds":"' + authFld + '", '+
+                        '"forbidden_flds":"' + forbidFld + '"}';
 
                     $.post(
                         "sources/users.queries.php",

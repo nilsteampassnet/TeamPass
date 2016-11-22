@@ -43,12 +43,26 @@ $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
 $treeDesc = $tree->getDescendants();
-// Build FUNCTIONS list
+$foldersList = "";
+foreach ($treeDesc as $t) {
+    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
+        $ident = "";
+        for ($y = 1;$y < $t->nlevel;$y++) {
+            $ident .= "&nbsp;&nbsp;";
+        }
+        $foldersList .= '<option value="'.$t->id.'">'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+        $prev_level = $t->nlevel;
+    }
+}
+
+// Build ROLESTITLES list
 $rolesList = array();
-$rows = DB::query("SELECT id,title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
+$rows = DB::query("SELECT id, title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
 foreach ($rows as $reccord) {
     $rolesList[$reccord['id']] = array('id' => $reccord['id'], 'title' => $reccord['title']);
 }
+
+
 // Display list of USERS
 echo '
 <div class="title ui-widget-content ui-corner-all">
@@ -139,21 +153,23 @@ echo '
 <div id="add_new_user" style="display:none;">
     <div id="add_new_user_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <label for="new_name" class="label_cpm">'.$LANG['name'].'</label>
-    <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" />
-    <br />
+    <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" style="margin-bottom:3px;" />
+
     <label for="new_lastname" class="label_cpm">'.$LANG['lastname'].'</label>
-    <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" />
-    <br />
+    <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" style="margin-bottom:3px;" />
+
     <label for="new_login" class="label_cpm">'.$LANG['login'].'</label>
-    <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" />
-    <br />
+    <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />
+
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
 '<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
-    <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" />', '
+    <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />', '
+
     <label for="new_email" class="label_cpm">'.$LANG['email'].'</label>
-    <input type="text" id="new_email" class="input_text text ui-widget-content ui-corner-all" onchange="check_domain(this.value)" />
+    <input type="text" id="new_email" class="input_text text ui-widget-content ui-corner-all" onchange="check_domain(this.value)" style="margin-bottom:3px;" />
+
     <label for="new_is_admin_by" class="label_cpm">'.$LANG['is_administrated_by_role'].'</label>
-    <select id="new_is_admin_by" class="input_text text ui-widget-content ui-corner-all">';
+    <select id="new_is_admin_by" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;">';
         // If administrator then all roles are shown
         // else only the Roles the users is associated to.
 if ($_SESSION['is_admin']) {
@@ -169,23 +185,73 @@ foreach ($rolesList as $fonction) {
 echo '
     </select>
     <br />
-    <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
-       <label for="new_admin">'.$LANG['is_admin'].'</label>
-    <br />
-    <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' />
-       <label for="new_manager">'.$LANG['is_manager'].'</label>
-    <br />
-    <input type="checkbox" id="new_read_only" />
-       <label for="new_read_only">'.$LANG['is_read_only'].'</label>
-    <br />
-    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
-       <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
-    <div id="auto_create_folder_role"  style="visibility:hidden;">
-    <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
-    <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;&quot;<span id="auto_create_folder_role_span"></span>&quot;</label>
-    <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
-    <input type="hidden" id="new_domain" />
+
+    <label for="new_user_groups" class="form_label">'.$LANG['functions'].'</label>
+    <select name="new_user_groups" id="new_user_groups" multiple="multiple">';
+
+$functionsList = "";
+// array of roles for actual user
+$my_functions = explode(';', $_SESSION['fonction_id']);
+
+$rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
+foreach ($rows as $record) {
+    if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+        $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role">'.$record['title'].'</option>';
+    }
+}
+
+    echo $functionsList.'
+    </select>
+
+    <label for="new_user_auth_folders" class="form_label" style="margin-top:3px;">'.$LANG['authorized_groups'].'</label>
+    <select name="new_user_auth_folders" id="new_user_auth_folders" multiple="multiple">
+        '.$foldersList.'
+    </select>
+
+    <label for="new_user_forbid_folders" class="form_label" style="margin-top:3px;">'.$LANG['forbidden_groups'].'</label>
+    <select name="new_user_forbid_folders" id="new_user_forbid_folders" multiple="multiple">
+        '.$foldersList.'
+    </select>
+
+    <div style="text-align:left;margin-top:5px;">
+        <label style="">'.$LANG['admin_misc_title'].'</label>
+        <div style="margin-top:5px;">
+            <table border="0">
+            <tr>
+                <td>
+                    <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                    <label for="new_admin">'.$LANG['is_admin'].'</label>
+
+                    <input type="checkbox" id="new_super_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                    <label for="new_super_manager">'.$LANG['is_super_manager'].'</label>
+
+                    <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                    <label for="new_manager">'.$LANG['is_manager'].'</label>
+
+                    <input type="checkbox" id="new_read_only" style="margin-bottom:3px;" />
+                    <label for="new_read_only">'.$LANG['is_read_only'].'</label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
+                    <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div id="auto_create_folder_role"  style="visibility:hidden;">
+                        <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
+                        <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;&quot;<span id="auto_create_folder_role_span"></span>&quot;</label>
+                        <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+                        <input type="hidden" id="new_domain" />
+                    </div>
+                </td>
+            </tr>
+            </table>
+        </div>
     </div>
+
     <div style="display:none;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // DIV FOR DELETING A USER
