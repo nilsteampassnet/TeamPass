@@ -85,6 +85,18 @@ foreach ($rows as $record) {
 
 echo '
 <div id="tabs-8">
+    <!-- Enable CUSTOM FOLDERS (toggle) -->
+    <div style="width:100%; height:30px;">
+    <div style="float:left;">
+        '.$LANG['settings_item_extra_fields'].'
+        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_item_extra_fields_tip']), ENT_QUOTES).'"></i></span>
+    </div>
+    <div style="float:left; margin-left:20px;" class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? 'true' : 'false', '"></div>
+    <div style="float:left;"><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '1' : '0', '" /></div>
+    </div>
+    <hr />
+
+
     <div id="categories_list">
         <table id="tbl_categories" style=""><tr style="display: none ! important;"><td>HTML validation placeholder</td></tr>';
 

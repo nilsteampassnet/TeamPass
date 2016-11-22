@@ -708,6 +708,7 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="subfolder_rights_as_parent" data-toggle-on="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="subfolder_rights_as_parent_input" name="subfolder_rights_as_parent_input" value="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? '1' : '0', '" />
                 </td></tr>';
+/*
 // Enable extra fields for each Item
 echo '
                 <tr><td>
@@ -719,7 +720,7 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '1' : '0', '" />
                 </td></tr>';
-
+*/
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // enable FAVOURITES
 echo '
