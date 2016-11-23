@@ -21,6 +21,7 @@ Bug fixing
  #1556 Fix bug for upgrading old passwords
  #1559 API IP Whitelist check does not consider XFF
  #1579 Fix for preventing a php fatal error
+ #1575 Fix for tree not loaded when user has no access to a folder with children
 
 
 2.1.26

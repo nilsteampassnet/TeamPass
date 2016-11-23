@@ -714,6 +714,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);
         $_SESSION['personal_visible_groups_list'] = implode(',', $_SESSION['personal_visible_groups']);
         $_SESSION['read_only_folders'] = $listReadOnlyFolders;
+        $_SESSION['no_access_folders'] = $groupesInterdits;
 
         $_SESSION['list_folders_limited'] = $listFoldersLimited;
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
@@ -1446,4 +1447,39 @@ function loadSettings ()
         $_SESSION['settings']['loaded'] = 1;
         $_SESSION['settings']['default_session_expiration_time'] = 5;
     }
+}
+
+/*
+** check if folder has custom fields.
+** Ensure that target one also has same custom fields
+*/
+function checkCFconsistency($source_id, $target_id) {
+    $source_cf = array();
+    $rows = DB::QUERY(
+        "SELECT id_category
+        FROM ".prefix_table("categories_folders")."
+        WHERE id_folder = %i",
+        $source_id
+    );
+    foreach ($rows as $record) {
+        array_push($source_cf, $record['id_category']);
+    }
+
+    $target_cf = array();
+    $rows = DB::QUERY(
+        "SELECT id_category
+        FROM ".prefix_table("categories_folders")."
+        WHERE id_folder = %i",
+        $target_id
+    );
+    foreach ($rows as $record) {
+        array_push($target_cf, $record['id_category']);
+    }
+
+    $cf_diff = array_diff($source_cf, $target_cf);
+    if (count($cf_diff) > 0) {
+       return false;
+    }
+
+    return true;
 }

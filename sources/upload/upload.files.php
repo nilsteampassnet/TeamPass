@@ -269,14 +269,20 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
     rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["xmlFile"]);
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+    // sanitize the new file name
+    $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
+
+    // get file extension
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext);
+
+    // rename the file
+    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext);
 
     // make thumbnail
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     make_thumb(
-        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext,
-        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] ."_thumb" . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName ."_thumb" . '.' . $ext,
         40
     );
 
@@ -298,14 +304,19 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar']);
     @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar_thumb']);
 
-    DB::query("UPDATE ".$pre."users
-        SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$_POST['newFileName'] ."_thumb" . '.' . $ext."'
-        WHERE id=%i", $_SESSION['user_id']);
+    // store in DB the new avatar
+    DB::query(
+        "UPDATE ".$pre."users
+        SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$newFileName ."_thumb" . '.' . $ext."'
+        WHERE id=%i",
+        $_SESSION['user_id']
+    );
 
-    $_SESSION['user_avatar'] = $_POST['newFileName'].'.'.$ext;
-    $_SESSION['user_avatar_thumb'] = $_POST['newFileName']."_thumb".'.'.$ext;
+    // store in session
+    $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
+    $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
 
-    echo '{"filename" : "'.$_POST['newFileName'].'.'.$ext.'"}';
+    echo '{"filename" : "'.$_SESSION['user_avatar'].'" , "filename_thumb" : "'.$_SESSION['user_avatar_thumb'].'"}';
     exit();
 
 } else {

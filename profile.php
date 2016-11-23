@@ -385,6 +385,7 @@ $(function() {
             myData = eval('(' + object.response + ')');
         }
         $("#profile_photo").html('<img src="includes/avatars/'+myData.filename+'" />');
+        $("#user_avatar_thumb").attr('src', 'includes/avatars/'+myData.filename_thumb);
         $("#filelist_photo").html('').hide();
     });
 
