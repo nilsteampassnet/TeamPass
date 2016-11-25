@@ -65,7 +65,11 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
-        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>';
+        <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
+        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />

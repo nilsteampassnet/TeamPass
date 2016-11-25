@@ -242,8 +242,12 @@ echo '
             );
             $counter = DB::count();
             if ($counter > 0) {
+                $ident = "";
+                for ($x = 1; $x < $folder->nlevel; $x++) {
+                    $ident .= "-";
+                }
                 echo '
-                <option value="'.$folder->id.'">'.str_replace("&", "&amp;", $folder->title).'</option>';
+                <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace("&", "&amp;", $folder->title).'</option>';
             }
         }
 echo '

@@ -1678,12 +1678,16 @@ if (isset($_POST['type'])) {
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
             $tmp_source = DB::queryFirstRow(
-                "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                "SELECT title, parent_id, personal_folder
+                FROM ".prefix_table("nested_tree")."
+                WHERE id = %i",
                 $dataReceived['source_folder_id']
             );
 
             $tmp_target = DB::queryFirstRow(
-                "SELECT title, parent_id, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                "SELECT title, parent_id, personal_folder
+                FROM ".prefix_table("nested_tree")."
+                WHERE id = %i",
                 $dataReceived['target_folder_id']
             );
 
@@ -1696,6 +1700,13 @@ if (isset($_POST['type'])) {
                 echo $returnValues;
                 break;
             }
+
+            // check Custom Fields consistency between both folders
+            /*if (checkCFconsistency($dataReceived['source_folder_id'], $dataReceived['target_folder_id']) === false) {
+                $returnValues = '[{"error" : "'.addslashes($LANG['error_custom_fields_not_similar_in_source_and_target_folders']).'"}]';
+                echo $returnValues;
+                break;
+            }*/
 
             if ( $tmp_source['parent_id'] != 0 || $tmp_source['title'] != $_SESSION['user_id'] || $tmp_source['personal_folder'] != 1 || $tmp_target['title'] != $_SESSION['user_id'] || $tmp_target['personal_folder'] != 1) {
 

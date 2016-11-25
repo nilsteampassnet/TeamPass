@@ -174,7 +174,7 @@ if (isset($_POST['newtitle'])) {
             // user shall not delete personal folder
             $data = DB::queryfirstrow(
                 "SELECT personal_folder
-                FROM ".prefix_table("nested_tree")." 
+                FROM ".prefix_table("nested_tree")."
                 WHERE id = %i",
                 $_POST['id']
             );
@@ -387,7 +387,7 @@ if (isset($_POST['newtitle'])) {
                 //check if parent folder is personal
                 $data = DB::queryfirstrow(
                     "SELECT personal_folder
-                    FROM ".prefix_table("nested_tree")." 
+                    FROM ".prefix_table("nested_tree")."
                     WHERE id = %i",
                     $parentId
                 );
@@ -413,7 +413,7 @@ if (isset($_POST['newtitle'])) {
                         }
                     }
                 }
-                
+
 
                 if (
                     $isPersonal == 1
@@ -496,6 +496,19 @@ if (isset($_POST['newtitle'])) {
                                 'role_id' => $record['role_id'],
                                 'folder_id' => $newId,
                                 'type' => $record['type']
+                            )
+                        );
+                    }
+
+                    // if parent folder has Custom Fields Categories then add to this child one too
+                    $rows = DB::query("SELECT id_category FROM ".prefix_table("categories_folders")." WHERE id_folder = %i", $parentId);
+                    foreach ($rows as $record) {
+                        //add CF Category to this subfolder
+                        DB::insert(
+                            prefix_table("categories_folders"),
+                            array(
+                                'id_category' => $record['id_category'],
+                                'id_folder' => $newId
                             )
                         );
                     }

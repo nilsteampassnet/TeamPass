@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_custom_fields_not_similar_in_source_and_target_folders' => 'Moving the folder is not possible as Custom Fields are not similar.',
     'is_super_manager' => 'Is Super Manager',
     'settings_ldap_port' => 'LDAP port',
     'settings_ldap_port_tip' => 'Default non secure LDAP port: 389, default secure LDAP port: 636',

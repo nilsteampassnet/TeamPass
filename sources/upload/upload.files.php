@@ -271,6 +271,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
+    $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
 
     // get file extension
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);

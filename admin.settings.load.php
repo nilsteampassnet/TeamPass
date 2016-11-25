@@ -33,9 +33,10 @@ function catInFolders(id) {
     $("#post_id").val(id);
     $("#catInFolder_title").html($("#item_"+id).html());    // display title
     // pre-select folders
+    $("#cat_folders_selection > option").prop("selected", false);
     var folder = $("#catFoldersList_"+id).val().split(";");
     for (var i=0; i<folder.length; i++) {
-        $("#cat_folders_selection option[value="+folder[0]+"]").attr('selected', true);
+        $("#cat_folders_selection option[value="+folder[i]+"]").attr('selected', 'selected');
     };
     // open
     $("#category_in_folder").dialog("open");
@@ -636,13 +637,23 @@ $(function() {
         }
     });
 
+    $("#cat_folders_selection").multiselect({
+        selectedList: 7,
+        multiple:true,
+        checkAllText: "<?php echo $LANG['check_all_text'];?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+    });
+
     $("#category_in_folder").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 400,
         height: 350,
         title: "<?php echo $LANG['category_in_folders'];?>",
+        open: function() {
+            $("#cat_folders_selection").multiselect('refresh');
+        },
         buttons: {
             "<?php echo $LANG['confirm'];?>": function() {
                 // get list of selected folders
@@ -840,7 +851,7 @@ function manageEncryptionOfAttachments(list, cpt) {
 function refreshInput()
 {
     var ids = "";
-    $.each($("#roles_allowed_to_print_select option:selected"), function(){  
+    $.each($("#roles_allowed_to_print_select option:selected"), function(){
         if (ids == "") ids = $(this).val();
         else ids = ids + ";" + $(this).val();
     });

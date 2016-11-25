@@ -269,8 +269,9 @@ if (
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
-    $server_cert=openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
-    $cert_name=$server_cert['name'];
+    $server_cert = openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
+    $cert_name = $server_cert['name'];
+    $cert_issuer = "";
     foreach ($server_cert['issuer'] as $key => $value) {
         $cert_issuer .= "/$key=$value";
     }
