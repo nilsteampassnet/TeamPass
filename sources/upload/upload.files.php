@@ -308,7 +308,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     // store in DB the new avatar
     DB::query(
         "UPDATE ".$pre."users
-        SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$newFileName ."_thumb" . '.' . $ext."'
+        SET avatar='".$newFileName . '.' . $ext."', avatar_thumb='".$newFileName ."_thumb" . '.' . $ext."'
         WHERE id=%i",
         $_SESSION['user_id']
     );
