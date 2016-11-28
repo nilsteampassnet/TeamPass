@@ -75,7 +75,7 @@ while ($data = mysqli_fetch_array($rows)) {
     fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
     // check if pw encrypted with protocol #3
     if (!empty($data['pw_iv'])) {
-        $pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+        $pw = cryption_phpCrypt($data['pw'], SALT, $data['pw_iv'], "decrypt");
         // nothing to do - last encryption protocol (#3) used
         fputs($dbgDuo, "\nItem is correctly encrypted");
     } else {
@@ -114,7 +114,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // crypt pw with new protocol #3
             // encrypt pw
-            $encrypt = cryption($pw, SALT, "", "encrypt");
+            $encrypt = cryption_phpCrypt($pw, SALT, "", "encrypt");
 
             // store Password
             mysqli_query($dbTmp,

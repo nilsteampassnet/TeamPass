@@ -257,16 +257,24 @@ function cryption($p1, $p2, $p3, $p4 = null)
         // load PhpEncryption library
         if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
             require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-            //require_once '../includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+            require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+            require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+            require_once '../includes/libraries/Encryption/Encryption/Key.php';
+            require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+            require_once '../includes/libraries/Encryption/Encryption/File.php';
+            require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+            require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+            require_once '../includes/libraries/Encryption/Encryption/Core.php';
         } else {
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyConfig.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Config.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
         }
         return defuse_crypto($p1, $p3, $p4);
     } else {
@@ -354,12 +362,19 @@ function testHex2Bin ($val)
 
 function defuse_crypto($message, $key, $type)
 {
-    //echo $message." ;; ".$key." ;; ".$type;
+    echo $message." ;; ".$key." ;; ".$type . " *** ";
     // init
     $err = '';
 
+    $key = \Defuse\Crypto\Key::createNewRandomKey();
+    $key = \Defuse\Crypto\Key::saveToAsciiSafeString();
+    echo $key;
+
+    //$key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($key);
+   // echo \Defuse\Crypto\KeyProtectedByPassword::saveToAsciiSafeString()." -- ";
+
     // manage key origin
-    if (empty($key) && $type == "encrypt") {
+    if (empty($key) && $type === "encrypt") {
         try {
             $key = \Defuse\Crypto\Crypto::createNewRandomKey();
         } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
@@ -373,9 +388,9 @@ function defuse_crypto($message, $key, $type)
         //echo $key_plain;
     }
 
-    if ($type == "encrypt") {
+    if ($type === "encrypt") {
         try {
-            $ciphertext = \Defuse\Crypto\Crypto::Encrypt($message, $key);
+            $ciphertext = \Defuse\Crypto\Crypto::encryptWithPassword($message, $key);
         } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
             $err = ('Cannot safely perform encryption');
         } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
@@ -388,9 +403,9 @@ function defuse_crypto($message, $key, $type)
             'error' => $err
         );
 
-    } else if ($type == "decrypt") {
+    } else if ($type === "decrypt") {
         try {
-            $decrypted = \Defuse\Crypto\Crypto::Decrypt($message, $key);
+            $decrypted = \Defuse\Crypto\Crypto::decryptWithPassword($message, $key);
         } catch (\Defuse\Crypto\Exception\InvalidCiphertextException $ex) {
             $err = ('DANGER! DANGER! The ciphertext has been tampered with!');
         } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {

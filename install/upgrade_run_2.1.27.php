@@ -13,7 +13,7 @@
  */
 
 /*
-** Upgrade script for release 2.1.26
+** Upgrade script for release 2.1.27
 */
 require_once('../sources/SecureHandler.php');
 session_start();
@@ -176,10 +176,23 @@ while($row = mysqli_fetch_assoc($result)) {
 mysqli_free_result($result);
 
 mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."misc`
-                    SET `valeur` = 'maintenance_mode'
-                    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
-                );
+    "UPDATE `".$_SESSION['tbl_prefix']."misc`
+    SET `valeur` = 'maintenance_mode'
+    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+);
+
+
+// add field encryption_type to ITEMS table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table ITEMS! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 
 
 // Finished
