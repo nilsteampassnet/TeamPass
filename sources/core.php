@@ -408,7 +408,8 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
                     $arrFields,
                     array(
                         $field['id'],
-                        addslashes($field['title'])
+                        addslashes($field['title']),
+                        $field['encrypted_data']
                     )
                 );
             }

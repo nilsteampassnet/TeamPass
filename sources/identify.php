@@ -279,7 +279,7 @@ function identifyUser($sentData)
     if (strlen(SALT) > 32) {
         $_SESSION['error']['salt'] = true;
     }
-    
+
     $_SESSION['user_language'] = $k['langage'];
     $ldapConnection = false;
 
@@ -790,6 +790,10 @@ function identifyUser($sentData)
 
             // manage session expiration
             $serverTime = time();
+            $dateTimeZoneServer = new DateTimeZone($_SESSION['settings']['timezone']);
+            $dateTimeServer = new DateTime("now", $dateTimeZoneServer);
+            $serverTimeOffset = $dateTimeZoneServer->getOffset($dateTimeServer);
+
             if ($dataReceived['TimezoneOffset'] > 0) {
                 $userTime = $serverTime + $dataReceived['TimezoneOffset'];
             } else {

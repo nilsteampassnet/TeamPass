@@ -157,10 +157,12 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                 echo '
         <tr id="t_field_'.$field['id'].'">
             <td width="60px"></td>
-            <td>
+            <td colspan="2">
                 <input type="text" id="catOrd_'.$field['id'].'" size="1" class="category_order" value="'.$field['order'].'" />&nbsp;
                 <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />
                 <label for="item_'.$field['id'].'_cat" id="item_'.$field['id'].'">'.($field['title']).'</label>
+                <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">', (isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fa fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>', '
+                </span>
             </td>
             <td></td>
         </tr>';

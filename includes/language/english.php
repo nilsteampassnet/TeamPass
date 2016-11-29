@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'encrypted_data' => 'Data is encrypted in database',
+    'not_encrypted_data' => 'Data is not encrypted in database',
     'error_custom_fields_not_similar_in_source_and_target_folders' => 'Moving the folder is not possible as Custom Fields are not similar.',
     'is_super_manager' => 'Is Super Manager',
     'settings_ldap_port' => 'LDAP port',

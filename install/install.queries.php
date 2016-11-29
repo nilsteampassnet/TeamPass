@@ -708,6 +708,7 @@ global \$SETTINGS;
                             `description` text NULL,
                             `type` varchar(50) NULL default '',
                             `order` int(12) NOT NULL default '0',
+                            `encrypted_data` tinyint(1) NOT NULL default '1',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

@@ -635,7 +635,7 @@ function AjouterItem()
             $('.item_field').each(function(i){
                 id = $(this).attr('id').split('_');
                 if (fields == "") fields = id[1] + '~~' + $(this).val();
-                else fields += '_|_' + id[1] + '~~' + $(this).val();
+                else fields += '_|_' + id[1] + '~~' + $(this).val() + '~~' + id[2];
             });
 
             // check if a folder is selected

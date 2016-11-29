@@ -175,6 +175,20 @@ while($row = mysqli_fetch_assoc($result)) {
 }
 mysqli_free_result($result);
 
+
+
+// add field encrypted_data to CATEGORIES table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."categories",
+    "encrypted_data",
+    "TINYINT(1) NOT NULL DEFAULT '1'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encrypted_data to table CATEGORIES! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
 mysqli_query($dbTmp,
                 "UPDATE `".$_SESSION['tbl_prefix']."misc`
                     SET `valeur` = 'maintenance_mode'

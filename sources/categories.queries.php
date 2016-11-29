@@ -68,11 +68,13 @@ if (isset($_POST['type'])) {
             );
             echo '[{"error" : "", "id" : "'.DB::insertId().'"}]';
             break;
+
         case "deleteCategory":
             DB::delete(prefix_table("categories"), "id = %i", $_POST['id']);
             DB::delete(prefix_table("categories_folders"), "id_category = %i", $_POST['id']);
             echo '[{"error" : ""}]';
             break;
+
         case "addNewField":
             // store key
             if (!empty($_POST['title']) && !empty($_POST['id'])) {
@@ -89,6 +91,7 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : "", "id" : "'.DB::insertId().'"}]';
             }
             break;
+
         case "renameItem":
             // update key
             if (!empty($_POST['data']) && !empty($_POST['id'])) {
@@ -103,6 +106,7 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : "", "id" : "'.$_POST['id'].'"}]';
             }
             break;
+
         case "moveItem":
             // update key
             if (!empty($_POST['data']) && !empty($_POST['id'])) {
@@ -118,6 +122,7 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : "", "id" : "'.$_POST['id'].'"}]';
             }
             break;
+
         case "saveOrder":
             // update order
             if (!empty($_POST['data'])) {
@@ -135,6 +140,7 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : ""}]';
             }
             break;
+
         case "loadFieldsList":
             $categoriesSelect = "";
             $arrCategories = $arrFields = array();
@@ -195,6 +201,7 @@ if (isset($_POST['type'])) {
             }
             echo json_encode($arrCategories, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             break;
+
         case "categoryInFolders":
             // update order
             if (!empty($_POST['foldersIds'])) {
@@ -221,6 +228,60 @@ if (isset($_POST['type'])) {
                 }
                 echo '[{"list" : "'.$list.'"}]';
             }
+            break;
+
+        case "dataIsEncryptedInDB":
+            // store key
+            DB::update(
+                prefix_table("categories"),
+                array(
+                    'encrypted_data' => $_POST['encrypt']
+                   ),
+                "id = %i",
+                $_POST['id']
+            );
+
+            // encrypt/decrypt existing data
+            $rowsF = DB::query(
+                "SELECT i.id, i.data, i.data_iv
+                FROM ".$pre."categories_items AS i
+                INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id = c.id)
+                WHERE c.id = %i",
+                $_POST['id']
+            );
+            foreach ($rowsF as $recordF) {
+                // decrypt/encrypt
+                if ($_POST['encrypt'] === "0") {
+                    $encrypt = cryption(
+                        $recordF['data'],
+                        SALT,
+                        $recordF['data_iv'],
+                        "decrypt"
+                    );
+                    $iv = "";
+                } else {
+                    $encrypt = cryption(
+                        $recordF['data'],
+                        SALT,
+                        "",
+                        "encrypt"
+                    );
+                    $iv = $encrypt['iv'];
+                }
+
+                // store in DB
+                DB::update(
+                    prefix_table("categories_items"),
+                    array(
+                        'data' => $encrypt['string'],
+                        'data_iv' => $iv
+                       ),
+                    "id = %i",
+                    $recordF['id']
+                );
+            }
+
+            echo '[{"error" : ""}]';
             break;
     }
 }

@@ -858,5 +858,33 @@ function refreshInput()
     $("#roles_allowed_to_print").val(ids);
     updateSetting('roles_allowed_to_print');
 }
+
+function changeEncrypMode(id, encrypted_data) {
+    // send to server
+    $("#div_loading").show();
+    //send query
+    $.post(
+        "sources/categories.queries.php",
+        {
+            type    : "dataIsEncryptedInDB",
+            id      : id,
+            encrypt : encrypted_data === "1" ? "0" : "1"
+        },
+        function(data) {
+            // show to user
+            if (data[0].error === ""){
+                if (encrypted_data === "1") {
+                    $("#encryt_data_"+id).html('<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>');
+                } else {
+                    $("#encryt_data_"+id).html('<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'1\')"></i>');
+                }
+            }
+            $("#div_loading").hide();
+        },
+        "json"
+   );
+
+
+}
 //]]>
 </script>

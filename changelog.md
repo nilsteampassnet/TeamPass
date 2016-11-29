@@ -12,6 +12,7 @@ Bug fixing
 
 2.1.27
  NEW   AGSES authentication implemented
+ NEW   Custom Fields data can be encrytped or not in database
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
