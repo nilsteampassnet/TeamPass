@@ -64,7 +64,6 @@ function IncreaseSessionTime(message_end, message_wait){
 function countdown()
 {
     var DayTill
-    //var theDay =  document.getElementById('temps_restant').value;
     var theDay =  $('#temps_restant').val();
     var today = new Date(); //Create an Date Object that contains today's date.
     var second = Math.floor(theDay - (today.getTime()/1000));

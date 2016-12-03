@@ -622,7 +622,9 @@ $htmlHeaders .= '
             })
         }
 
+        // manage countdown for session expiration
         countdown();
+
         // load DUO login
         if ($("#duo_sig_response").val() != "") {
             $("#login").val($("#duo_login").val());

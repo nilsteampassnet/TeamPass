@@ -1425,9 +1425,9 @@ if (isset($_POST['type'])) {
                 // send notification if enabled
                 if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1) {
                     // send back infos
-                    $arrData['notification_list'] = $listNotification;
+                    //$arrData['notification_list'] = $listNotification;
                     // Send email if activated
-                    if (!empty($listNotificationEmails) && !in_array($_SESSION['login'], explode(';', $listNotification))) {
+                    //if (!empty($listNotificationEmails) && !in_array($_SESSION['login'], explode(';', $listNotification))) {
                         DB::insert(
                             prefix_table('emails'),
                             array(
@@ -1438,7 +1438,7 @@ if (isset($_POST['type'])) {
                                 'status' => ''
                                )
                         );
-                    }
+                    //}
                 } else {
                     $arrData['notification_list'] = "";
                     $arrData['notification_status'] = "";

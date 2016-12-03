@@ -789,17 +789,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['user_language'] = $data['user_language'];
 
             // manage session expiration
-            $serverTime = time();
-            $dateTimeZoneServer = new DateTimeZone($_SESSION['settings']['timezone']);
-            $dateTimeServer = new DateTime("now", $dateTimeZoneServer);
-            $serverTimeOffset = $dateTimeZoneServer->getOffset($dateTimeServer);
-
-            if ($dataReceived['TimezoneOffset'] > 0) {
-                $userTime = $serverTime + $dataReceived['TimezoneOffset'];
-            } else {
-                $userTime = $serverTime;
-            }
-            $_SESSION['fin_session'] = $userTime + $dataReceived['duree_session'] * 60;
+            $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (

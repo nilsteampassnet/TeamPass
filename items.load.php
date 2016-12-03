@@ -3443,7 +3443,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     $.post(
         "sources/main.queries.php",
         {
-            type : "send_wainting_emails"
+            type : "send_waiting_emails"
         },
         function(data) {
             //
