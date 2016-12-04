@@ -195,5 +195,30 @@ if ($res === false) {
 }
 
 
+//-- generate new DEFUSE key
+$filename = "../includes/config/settings.php";
+$settingsFile = file($filename);
+while (list($key,$val) = each($settingsFile)) {
+    if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
+    }
+}
+
+copy($_SESSION['sk_file'], $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))));
+$new_salt = defuse_generate_key();
+$data = file($_SESSION['sk_file']); // reads an array of lines
+function replace_a_line($data) {
+    global $new_salt;
+    if (stristr($data, "@define('SALT'")) {
+        return "@define('SALT', '".$new_salt."'); //Never Change it once it has been used !!!!!\n";
+    }
+    return $data;
+}
+$data = array_map('replace_a_line', $data);
+file_put_contents($_SESSION['sk_file'], implode('', $data));
+$_SESSION['new_salt'] = $new_salt;
+//--
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

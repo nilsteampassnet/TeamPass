@@ -362,30 +362,14 @@ function testHex2Bin ($val)
 
 function defuse_crypto($message, $key, $type)
 {
-    echo $message." ;; ".$key." ;; ".$type . " *** ";
     // init
     $err = '';
 
-    $key = \Defuse\Crypto\Key::createNewRandomKey();
-    $key = \Defuse\Crypto\Key::saveToAsciiSafeString();
-    echo $key;
-
-    //$key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($key);
-   // echo \Defuse\Crypto\KeyProtectedByPassword::saveToAsciiSafeString()." -- ";
-
     // manage key origin
     if (empty($key) && $type === "encrypt") {
-        try {
-            $key = \Defuse\Crypto\Crypto::createNewRandomKey();
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely create a key');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely create a key');
-        }
-
-        //\Defuse\Crypto\Encoding::binToHex($key);
-        $tmp = \Defuse\Crypto\Key::saveToAsciiSafeString($key);
-        //echo $key_plain;
+        $key = \Defuse\Crypto\Key::createNewRandomKey();
+    } else {
+        $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($key)
     }
 
     if ($type === "encrypt") {
@@ -399,11 +383,11 @@ function defuse_crypto($message, $key, $type)
 
         return array(
             'string' => isset($ciphertext) ? $ciphertext : "",
-            //'iv' => $key_plain,
             'error' => $err
         );
 
     } else if ($type === "decrypt") {
+        echo $message." -- ". $key;
         try {
             $decrypted = \Defuse\Crypto\Crypto::decryptWithPassword($message, $key);
         } catch (\Defuse\Crypto\Exception\InvalidCiphertextException $ex) {
@@ -418,6 +402,22 @@ function defuse_crypto($message, $key, $type)
             'error' => $err
         );
     }
+}
+
+function defuse_generate_key() {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    $key = \Defuse\Crypto\Key::createNewRandomKey();
+    $key = $key->saveToAsciiSafeString();
+    return $key;
 }
 
 /**

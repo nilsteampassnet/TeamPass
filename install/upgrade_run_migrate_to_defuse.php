@@ -39,6 +39,7 @@ $dbTmp = mysqli_connect(
     $_SESSION['db_port']
 );
 
+
 fputs($dbgDuo, "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."\n");
 
@@ -78,16 +79,16 @@ while ($data = mysqli_fetch_array($rows)) {
         $new_pw = cryption(
             $old_pw['string'],
             "",
-            SALT,
+            $_SESSION['new_salt'],
             "encrypt"
         );
-echo $old_pw['string']." - ".$new_pw['string']." - ".$new_pw['error']." || ";
+        
         // store Password
-        /*mysqli_query($dbTmp,
+        mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['tbl_prefix']."items
-            SET pw = '".$new_pw['string']."', pw_iv = ''
+            SET pw = '".$new_pw['string']."', pw_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
-        );*/
+        );
     }
 }
 
