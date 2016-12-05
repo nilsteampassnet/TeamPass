@@ -150,6 +150,20 @@ if ($res === false) {
     exit();
 }
 
+
+// add field encrypted_data to Categories table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."categories",
+    "encrypted_data",
+    "TINYINT(1) NOT NULL DEFAULT '1'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encrypted_data to table categories! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 // alter table USERS - user_language
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user_language VARCHAR(50) NOT NULL DEFAULT '0'");
 
