@@ -1,6 +1,6 @@
 <?php
 /**
- * @file          upgrade_run_migrate_to_defuse.php
+ * @file          upgrade_run_migrate_cat_to_defuse.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
@@ -42,8 +42,7 @@ $dbTmp = mysqli_connect(
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
-    WHERE perso = '0'"
+    "SELECT * FROM ".$_SESSION['tbl_prefix']."categories_items"
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -54,8 +53,8 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."items
-    WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
+    "SELECT id, data, data_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."categories_items
+    LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -66,9 +65,9 @@ while ($data = mysqli_fetch_array($rows)) {
     if ($data['encryption_type'] !== "defuse") {
         // decrypt with phpCrypt
         $old_pw = cryption_phpCrypt(
-            $data['pw'],
+            $data['data'],
             $_POST['session_salt'],
-            $data['pw_iv'],
+            $data['data_iv'],
             "decrypt"
         );
 
@@ -82,8 +81,8 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // store Password
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."items
-            SET pw = '".$new_pw['string']."', pw_iv = '', encryption_type = 'defuse'
+            "UPDATE ".$_SESSION['tbl_prefix']."categories_items
+            SET data = '".$new_pw['string']."', data_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
     }

@@ -276,7 +276,7 @@ function cryption($p1, $p2, $p3, $p4 = null)
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
         }
-        return defuse_crypto($p1, $p3, $p4);
+        return defuse_crypto($p1, $p2, $p4);
     } else {
         return cryption_phpCrypt($p1, $p2, $p3, $p4);
     }
@@ -360,26 +360,22 @@ function testHex2Bin ($val)
     return hex2bin($val);
 }
 
-function defuse_crypto($message, $key, $type)
+function defuse_crypto($message, $keyAscii, $type)
 {
     // init
     $err = '';
+    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($keyAscii);
 
+/*
     // manage key origin
     if (empty($key) && $type === "encrypt") {
         $key = \Defuse\Crypto\Key::createNewRandomKey();
     } else {
-        $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($key)
+        $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($key);
     }
-
+*/
     if ($type === "encrypt") {
-        try {
-            $ciphertext = \Defuse\Crypto\Crypto::encryptWithPassword($message, $key);
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely perform encryption');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely perform encryption');
-        }
+        $ciphertext = \Defuse\Crypto\Crypto::encrypt($message, $key);
 
         return array(
             'string' => isset($ciphertext) ? $ciphertext : "",
@@ -387,18 +383,14 @@ function defuse_crypto($message, $key, $type)
         );
 
     } else if ($type === "decrypt") {
-        echo $message." -- ". $key;
         try {
-            $decrypted = \Defuse\Crypto\Crypto::decryptWithPassword($message, $key);
-        } catch (\Defuse\Crypto\Exception\InvalidCiphertextException $ex) {
-            $err = ('DANGER! DANGER! The ciphertext has been tampered with!');
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely perform decryption');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely perform decryption');
+            $secret_data = \Defuse\Crypto\Crypto::decrypt($message, $key);
+        } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+            echo "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
         }
+
         return array(
-            'string' => isset($decrypted) ? $decrypted : "",
+            'string' => isset($secret_data) ? $secret_data : "",
             'error' => $err
         );
     }

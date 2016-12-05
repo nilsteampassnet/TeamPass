@@ -167,18 +167,20 @@ if (isset($_POST['type'])) {
             ) {
                 // encrypt PW
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    if (DEFUSE_ENCRYPTION === TRUE) {
-                        $passwd = crypto($pw, $_SESSION['my_sk'], "encrypt");
-                    } else {
-                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
-                    }
+                    $passwd = crypto(
+                        $pw,
+                        $_SESSION['my_sk'],
+                        "",
+                        "encrypt"
+                    );
                     $restictedTo = $_SESSION['user_id'];
                 } else {
-                    if (DEFUSE_ENCRYPTION === TRUE) {
-                        $passwd = crypto($pw, "", "encrypt");
-                    } else {
-                        $passwd = cryption($pw, SALT, "", "encrypt");
-                    }
+                    $passwd = cryption(
+                        $pw,
+                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        "",
+                        "encrypt"
+                    );
                 }
 
                 if (DEFUSE_ENCRYPTION === TRUE) {
@@ -220,7 +222,12 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            $encrypt = cryption($field_data[1], SALT, "", "encrypt");
+                            $encrypt = cryption(
+                                $field_data[1],
+                                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                "",
+                                "encrypt"
+                            );
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -478,10 +485,20 @@ if (isset($_POST['type'])) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $sentPw = $pw;
-                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                        $passwd = cryption(
+                            $pw,
+                            $_SESSION['my_sk'],
+                            "",
+                            "encrypt"
+                        );
                         $restictedTo = $_SESSION['user_id'];
                     } else {
-                        $passwd = cryption($pw, SALT, "", "encrypt");
+                        $passwd = cryption(
+                            $pw,
+                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
+                            "encrypt"
+                        );
                     }
 
                     if (!empty($passwd["error"])) {
@@ -519,7 +536,8 @@ if (isset($_POST['type'])) {
                             'label' => $label,
                             'description' => $dataReceived['description'],
                             'pw' => $passwd['string'],
-                            'pw_iv' => $passwd['iv'],
+                            //'pw_iv' => $passwd['iv'],
+                            'pw_iv' => "",
                             'email' => $email,
                             'login' => $login,
                             'url' => $url,
@@ -546,7 +564,12 @@ if (isset($_POST['type'])) {
                                 );
                                 // store Field text in DB
                                 if (count($dataTmp['title']) == 0) {
-                                    $encrypt = cryption($field_data[1], SALT, "", "encrypt");
+                                    $encrypt = cryption(
+                                        $field_data[1],
+                                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                        "",
+                                        "encrypt"
+                                    );
                                     // store field text
                                     DB::insert(
                                         prefix_table('categories_items'),
@@ -554,22 +577,34 @@ if (isset($_POST['type'])) {
                                             'item_id' => $dataReceived['id'],
                                             'field_id' => $field_data[0],
                                             'data' => $encrypt['string'],
-                                            'data_iv' => $encrypt['iv']
+                                            'data_iv' => ""
+                                            //'data_iv' => $encrypt['iv']
                                         )
                                     );
                                     // update LOG
                                     logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_creation', $_SESSION['login'], 'at_field : '.$dataTmp['title']);
                                 } else {
                                     // compare the old and new value
-                                    $oldVal = cryption($dataTmp['data'], SALT, $dataTmp['data_iv'], "decrypt");
+                                    $oldVal = cryption(
+                                        $dataTmp['data'],
+                                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                        $dataTmp['data_iv'],
+                                        "decrypt"
+                                    );
                                     if ($field_data[1] != $oldVal['string']) {
-                                        $encrypt = cryption($field_data[1], SALT, "", "encrypt");
+                                        $encrypt = cryption(
+                                            $field_data[1],
+                                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                            "",
+                                            "encrypt"
+                                        );
                                         // update value
                                         DB::update(
                                             prefix_table('categories_items'),
                                             array(
                                                 'data' => $encrypt['string'],
-                                                'data_iv' => $encrypt['iv']
+                                                'data_iv' => ""
+                                                //'data_iv' => $encrypt['iv']
                                             ),
                                             "item_id = %i AND field_id = %i",
                                             $dataReceived['id'],
@@ -735,11 +770,21 @@ if (isset($_POST['type'])) {
                     if (isset($_SESSION['my_sk']) || !empty($_SESSION['my_sk'])){
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
-                        $oldPwClear = cryption($oldPw, $_SESSION['my_sk'], "", "decrypt");
+                        $oldPwClear = cryption(
+                            $oldPw,
+                            $_SESSION['my_sk'],
+                            "",
+                            "decrypt"
+                        );
                     } else {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
-                        $oldPwClear = cryption($oldPw, SALT, $oldPwIV, "decrypt");
+                        $oldPwClear = cryption(
+                            $oldPw,
+                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            $oldPwIV,
+                            "decrypt"
+                        );
                     }
                     if ($sentPw != $oldPwClear['string']) {
                         logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
@@ -780,9 +825,19 @@ if (isset($_POST['type'])) {
                     }
                     // decrypt PW
                     if (empty($dataReceived['salt_key'])) {
-                        $encrypt = cryption($dataItem['pw'], SALT, "", "encrypt");
+                        $encrypt = cryption(
+                            $dataItem['pw'],
+                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
+                            "encrypt"
+                        );
                     } else {
-                        $encrypt = cryption($dataItem['pw'], $_SESSION['my_sk'], "", "encrypt");
+                        $encrypt = cryption(
+                            $dataItem['pw'],
+                            $_SESSION['my_sk'],
+                            "",
+                            "encrypt"
+                        );
                     }
 
                     $pw = cleanString($encrypt['string']);
@@ -894,7 +949,7 @@ if (isset($_POST['type'])) {
                     );
                     $encrypt = cryption(
                         $decrypt,
-                        SALT,
+                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                         "",
                         "encrypt"
                     );
@@ -918,7 +973,7 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        SALT,
+                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                         $originalRecord['pw_iv'],
                         "decrypt"
                     );
@@ -1140,7 +1195,7 @@ if (isset($_POST['type'])) {
             } else {
                 $pw = cryption(
                     $dataItem['pw'],
-                    SALT,
+                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                     $dataItem['pw_iv'],
                     "decrypt"
                 );
@@ -1301,7 +1356,12 @@ if (isset($_POST['type'])) {
                             $arrCatList
                         );
                         foreach ($rows_tmp as $row) {
-                            $fieldText = cryption($row['data'], SALT, $row['data_iv'], "decrypt");
+                            $fieldText = cryption(
+                                $row['data'],
+                                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                $row['data_iv'],
+                                "decrypt"
+                            );
                             $fieldText = $fieldText['string'];
                             // build returned list of Fields text
                             if (empty($fieldsTmp)) {
@@ -1436,9 +1496,19 @@ if (isset($_POST['type'])) {
                 if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
                     // check if item is PF
                     if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            $record['raison_iv'],
+                            "decrypt"
+                        );
                     } else {
-                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            $_SESSION['my_sk'],
+                            $record['raison_iv'],
+                            "decrypt"
+                        );
                     }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
@@ -2070,9 +2140,19 @@ if (isset($_POST['type'])) {
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($need_sk == true && isset($_SESSION['my_sk'])) {
-                                $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    $_SESSION['my_sk'],
+                                    $record['pw_iv'],
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                    $record['pw_iv'],
+                                    "decrypt"
+                                );
                             }
 
                             // test charset => may cause a json error if is not utf8
@@ -2398,9 +2478,19 @@ if (isset($_POST['type'])) {
 
             if ($_POST['field'] == "pw") {
                 if ($dataItem['perso'] == 1) {
-                    $data = cryption($dataItem['pw'], $_SESSION['my_sk'], $dataItem['pw_iv'], "decrypt");
+                    $data = cryption(
+                        $dataItem['pw'],
+                        $_SESSION['my_sk'],
+                        $dataItem['pw_iv'],
+                        "decrypt"
+                    );
                 } else {
-                    $data = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+                    $data = cryption(
+                        $dataItem['pw'],
+                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        $dataItem['pw_iv'],
+                        "decrypt"
+                    );
                 }
             } else {
                 $data = $dataItem['login'];
@@ -2554,7 +2644,7 @@ if (isset($_POST['type'])) {
             } elseif ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 1) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    SALT,
+                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                     $dataSource['pw_iv'],
                     "decrypt"
                 );
@@ -2599,7 +2689,7 @@ if (isset($_POST['type'])) {
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    SALT,
+                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                     "",
                     "encrypt"
                 );
@@ -3255,9 +3345,19 @@ if (isset($_POST['type'])) {
                 if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
                     // check if item is PF
                     if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            $record['raison_iv'],
+                            "decrypt"
+                        );
                     } else {
-                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            $_SESSION['my_sk'],
+                            $record['raison_iv'],
+                            "decrypt"
+                        );
                     }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption

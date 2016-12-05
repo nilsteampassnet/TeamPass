@@ -302,11 +302,13 @@ function changeMainSaltKey(start)
 {
     var nb = 10;    // can be changed - number of items treated in each loop
 
+/*
     // check saltkey length
     if ($("#new_salt_key").val().length != 16) {
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_saltkey_length'];?>");
         return false;
     }
+*/
 
     // prepare excahnge
     var newSK = prepareExchangedData(

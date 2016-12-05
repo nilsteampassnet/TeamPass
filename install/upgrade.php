@@ -191,7 +191,8 @@ if (
                     type        : type_parameter,
                     start       : start_at,
                     total       : start_at,
-                    nb          : noitems_by_loop
+                    nb          : noitems_by_loop,
+                    session_salt: $("#session_salt").val()
                 },
                 function(data) {
                     // work not finished
@@ -300,7 +301,7 @@ echo '
         <div id="content">
             <div id="center" class="ui-corner-bottom">
                 <form name="install" method="post" action="">';
-                
+
 //HIDDEN THINGS
 echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />

@@ -195,6 +195,19 @@ if ($res === false) {
 }
 
 
+// add field encryption_type to ITEMS table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."categories_items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table categories_items! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 //-- generate new DEFUSE key
 $filename = "../includes/config/settings.php";
 $settingsFile = file($filename);
@@ -204,19 +217,32 @@ while (list($key,$val) = each($settingsFile)) {
     }
 }
 
-copy($_SESSION['sk_file'], $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))));
+copy(
+    SECUREPATH."/teampass-seckey.txt",
+    SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+);
 $new_salt = defuse_generate_key();
+file_put_contents(
+    SECUREPATH."/teampass-seckey.txt",
+    $new_salt
+);
+$_SESSION['new_salt'] = $new_salt;
+
+// update sk.php file
+copy(
+    $_SESSION['sk_file'],
+    $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+);
 $data = file($_SESSION['sk_file']); // reads an array of lines
 function replace_a_line($data) {
     global $new_salt;
     if (stristr($data, "@define('SALT'")) {
-        return "@define('SALT', '".$new_salt."'); //Never Change it once it has been used !!!!!\n";
+        return "";
     }
     return $data;
 }
 $data = array_map('replace_a_line', $data);
 file_put_contents($_SESSION['sk_file'], implode('', $data));
-$_SESSION['new_salt'] = $new_salt;
 //--
 
 
