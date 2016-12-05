@@ -103,6 +103,8 @@ if (isset($_GET['language'])) {
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
+} elseif ($_SESSION['user_language'] === "0") {
+    $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 }
 
 // Load user languages files

@@ -76,7 +76,7 @@ foreach ($rows as $record) {
 }
 
 //pw complexity levels
-if (isset($_SESSION['user_language'])) {
+if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $_SESSION['settings']['pwComplexity'] = array(
         0=>array(0,$LANG['complex_level0']),
@@ -343,14 +343,16 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         );
 
         // user type
-        if ($_SESSION['user_admin'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['god'];
-        } elseif ($_SESSION['user_manager'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-        } elseif ($_SESSION['user_read_only'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['read_only_account'];
-        } else {
-            $_SESSION['user_privilege'] = $LANG['user'];
+        if (isset($LANG)) {
+            if ($_SESSION['user_admin'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['god'];
+            } elseif ($_SESSION['user_manager'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['gestionnaire'];
+            } elseif ($_SESSION['user_read_only'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['read_only_account'];
+            } else {
+                $_SESSION['user_privilege'] = $LANG['user'];
+            }
         }
     }
 }
