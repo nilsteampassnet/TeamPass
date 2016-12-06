@@ -364,36 +364,28 @@ function defuse_crypto($message, $keyAscii, $type)
 {
     // init
     $err = '';
+
+    // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($keyAscii);
 
-/*
-    // manage key origin
-    if (empty($key) && $type === "encrypt") {
-        $key = \Defuse\Crypto\Key::createNewRandomKey();
-    } else {
-        $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($key);
-    }
-*/
-    if ($type === "encrypt") {
-        $ciphertext = \Defuse\Crypto\Crypto::encrypt($message, $key);
-
-        return array(
-            'string' => isset($ciphertext) ? $ciphertext : "",
-            'error' => $err
-        );
-
-    } else if ($type === "decrypt") {
-        try {
-            $secret_data = \Defuse\Crypto\Crypto::decrypt($message, $key);
-        } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-            echo "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+    try {
+        if ($type === "encrypt") {
+            $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+        } else if ($type === "decrypt") {
+            $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
         }
-
-        return array(
-            'string' => isset($secret_data) ? $secret_data : "",
-            'error' => $err
-        );
     }
+    catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+    }
+    catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+        $err = $ex;
+    }
+
+    return array(
+        'string' => isset($text) ? $text : "",
+        'error' => $err
+    );
 }
 
 function defuse_generate_key() {

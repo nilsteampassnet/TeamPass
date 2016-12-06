@@ -1,6 +1,6 @@
 <?php
 /**
- * @file          upgrade_run_migrate_cat_to_defuse.php
+ * @file          upgrade_run_defuse_for_custfields.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
@@ -13,7 +13,7 @@
  */
 
 /*
-** Upgrade script for release 2.1.26
+** Upgrade script for release 2.1.27
 */
 require_once('../sources/SecureHandler.php');
 session_start();
@@ -42,7 +42,8 @@ $dbTmp = mysqli_connect(
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT * FROM ".$_SESSION['tbl_prefix']."categories_items"
+    "SELECT * FROM ".$_SESSION['tbl_prefix']."log_items
+    WHERE raison_iv IS NOT NULL"
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -53,7 +54,8 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, data, data_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."categories_items
+    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."log_items
+    WHERE raison_iv IS NOT NULL
     LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -63,11 +65,12 @@ if (!$rows) {
 
 while ($data = mysqli_fetch_array($rows)) {
     if ($data['encryption_type'] !== "defuse") {
+        $tmp = explode('at_pw :', $data['raison']);
         // decrypt with phpCrypt
         $old_pw = cryption_phpCrypt(
-            $data['data'],
+            $tmp[0],
             $_POST['session_salt'],
-            $data['data_iv'],
+            $data['raison_iv'],
             "decrypt"
         );
 
@@ -82,8 +85,8 @@ while ($data = mysqli_fetch_array($rows)) {
         // store Password
         mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['tbl_prefix']."categories_items
-            SET data = '".$new_pw['string']."', data_iv = '', encryption_type = 'defuse'
-            WHERE id = ".$data['id']
+            SET raison = '".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
+            WHERE id_item = ".$data['id_item']
         );
     }
 }

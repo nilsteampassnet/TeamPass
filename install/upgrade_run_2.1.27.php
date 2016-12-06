@@ -89,7 +89,8 @@ function tableExists($tablename, $database = false)
 
 function cleanFields($txt) {
     $tmp = str_replace(",", ";", trim($txt));
-    if ($tmp === "0" || empty($tmp)) return $tmp;
+    if (empty($tmp)) return $tmp;
+    if ($tmp === ";") return "";
     if (strpos($tmp, ';') === 0) $tmp = substr($tmp, 1);
     if (substr($tmp, -1) !== ";") $tmp = $tmp.";";
     return $tmp;
@@ -195,7 +196,7 @@ if ($res === false) {
 }
 
 
-// add field encryption_type to ITEMS table
+// add field encryption_type to categories_items table
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."categories_items",
     "encryption_type",
@@ -203,6 +204,19 @@ $res = addColumnIfNotExist(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table categories_items! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+// add field encryption_type to LOG_ITEMS table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."log_items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table LOG_ITEMS! '.mysqli_error($dbTmp).'!"}]';
     mysqli_close($dbTmp);
     exit();
 }

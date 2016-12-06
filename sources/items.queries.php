@@ -202,7 +202,8 @@ if (isset($_POST['type'])) {
                         'label' => $label,
                         'description' => $dataReceived['description'],
                         'pw' => $passwd['string'],
-                        'pw_iv' => $passwd['iv'],
+                        'pw_iv' => "",
+                        //'pw_iv' => $passwd['iv'],
                         'email' => noHTML($dataReceived['email']),
                         'url' => noHTML($url),
                         'id_tree' => $dataReceived['categorie'],
@@ -612,7 +613,7 @@ if (isset($_POST['type'])) {
                                         );
 
                                         // update LOG
-                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp[0].' => '.$oldVal['string']);
+                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' => '.$oldVal['string']);
                                     }
                                 }
                             } else {
@@ -767,7 +768,7 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if (isset($_SESSION['my_sk']) || !empty($_SESSION['my_sk'])){
+                    if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption(

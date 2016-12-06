@@ -1,6 +1,6 @@
 <?php
 /**
- * @file          upgrade_run_migrate_to_defuse.php
+ * @file          upgrade_run_defuse_for_pwds.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
@@ -13,7 +13,7 @@
  */
 
 /*
-** Upgrade script for release 2.1.26
+** Upgrade script for release 2.1.27
 */
 require_once('../sources/SecureHandler.php');
 session_start();
