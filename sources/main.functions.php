@@ -22,8 +22,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 // load phpCrypt
 if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
     require_once '../includes/libraries/phpcrypt/phpCrypt.php';
+    require_once '../includes/config/settings.php';
 } else {
     require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/phpcrypt/phpCrypt.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/config/settings.php';
 }
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
@@ -251,7 +253,7 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption($p1, $p2, $p3, $p4 = null)
+function cryption($message, $sk, $iv, $type = null, $p5 = "public")
 {
     if (DEFUSE_ENCRYPTION === TRUE) {
         // load PhpEncryption library
@@ -276,9 +278,21 @@ function cryption($p1, $p2, $p3, $p4 = null)
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
         }
-        return defuse_crypto($p1, $p2, $p4);
+        if ($p5 === "public") {
+            return defuse_crypto(
+                $message,
+                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                $type
+            );
+        } else {
+            return defuse_crypto(
+                $message,
+                $sk,
+                $type
+            );
+        }
     } else {
-        return cryption_phpCrypt($p1, $p2, $p3, $p4);
+        return cryption_phpCrypt($message, $sk, $iv, $type);
     }
 }
 
@@ -360,13 +374,13 @@ function testHex2Bin ($val)
     return hex2bin($val);
 }
 
-function defuse_crypto($message, $keyAscii, $type)
+function defuse_crypto($message, $ascii_key, $type)
 {
     // init
     $err = '';
 
     // convert KEY
-    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($keyAscii);
+    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
     try {
         if ($type === "encrypt") {
@@ -402,6 +416,41 @@ function defuse_generate_key() {
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
+}
+
+function defuse_generate_personal_key($psk) {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
+    $protected_key_encoded = $protected_key->saveToAsciiSafeString();
+
+    return $protected_key_encoded;  // save this in user table
+}
+
+function defuse_validate_personal_key($psk, $protected_key_encoded) {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
+    $user_key = $protected_key->unlockKey($psk);
+    $user_key_encoded = $user_key->saveToAsciiSafeString();
+
+    return $user_key_encoded;   // store it in session once user has entered his psk
 }
 
 /**

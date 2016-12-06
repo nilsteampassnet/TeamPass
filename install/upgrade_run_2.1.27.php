@@ -260,5 +260,66 @@ file_put_contents($_SESSION['sk_file'], implode('', $data));
 //--
 
 
+// add field encryption_type to LOG_ITEMS table
+mysqli_query($dbTmp,
+    "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
+    VALUES ('admin', 'encryption_type', 'not_set')"
+);
+
+//-- users need to perform re-encryption of their personal pwds
+$result = mysqli_query(
+    $dbTmp,
+    "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type='admin' AND intitule='encryption_type'"
+);
+$row = mysqli_fetch_assoc($result);
+if ($row['valeur'] !== "defuse") {
+    $result = mysqli_query(
+        $dbTmp,
+        "SELECT id FROM `".$_SESSION['tbl_prefix']."users`"
+    );
+    while($row_user = mysqli_fetch_assoc($result)) {
+        $result_items = mysqli_query(
+            $dbTmp,
+            "SELECT i.id AS item_id
+            FROM `".$_SESSION['tbl_prefix']."nested_tree` AS n
+            INNER JOIN `".$_SESSION['tbl_prefix']."items` AS i ON (i.id_tree = n.id)
+            WHERE n.title = ".$row_user['id']
+        );
+        if (mysqli_num_rows($result_items) > 0) {
+            mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                SET `upgrade_needed` = '1'
+                WHERE id = ".$row_user['id']
+            );
+        } else {
+            mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                SET `upgrade_needed` = '0'
+                WHERE id = ".$row_user['id']
+            );
+        }
+    }
+
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['tbl_prefix']."misc`
+        SET `valeur` = 'defuse'
+        WHERE `type`='admin' AND `initule`='encryption_type'"
+    );
+}
+
+
+// add field personal_saltkey to Users table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."users",
+    "personal_saltkey",
+    "TEXT NOT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field personal_saltkey to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

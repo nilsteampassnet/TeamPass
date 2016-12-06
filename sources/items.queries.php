@@ -167,7 +167,7 @@ if (isset($_POST['type'])) {
             ) {
                 // encrypt PW
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    $passwd = crypto(
+                    $passwd = cryption(
                         $pw,
                         $_SESSION['my_sk'],
                         "",
@@ -177,7 +177,7 @@ if (isset($_POST['type'])) {
                 } else {
                     $passwd = cryption(
                         $pw,
-                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        "",
                         "",
                         "encrypt"
                     );
@@ -225,7 +225,7 @@ if (isset($_POST['type'])) {
                         if (count($field_data)>1 && !empty($field_data[1])) {
                             $encrypt = cryption(
                                 $field_data[1],
-                                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                "",
                                 "",
                                 "encrypt"
                             );
@@ -496,7 +496,7 @@ if (isset($_POST['type'])) {
                     } else {
                         $passwd = cryption(
                             $pw,
-                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
                             "",
                             "encrypt"
                         );
@@ -567,7 +567,7 @@ if (isset($_POST['type'])) {
                                 if (count($dataTmp['title']) == 0) {
                                     $encrypt = cryption(
                                         $field_data[1],
-                                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                        "",
                                         "",
                                         "encrypt"
                                     );
@@ -588,14 +588,14 @@ if (isset($_POST['type'])) {
                                     // compare the old and new value
                                     $oldVal = cryption(
                                         $dataTmp['data'],
-                                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                        "",
                                         $dataTmp['data_iv'],
                                         "decrypt"
                                     );
                                     if ($field_data[1] != $oldVal['string']) {
                                         $encrypt = cryption(
                                             $field_data[1],
-                                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                            "",
                                             "",
                                             "encrypt"
                                         );
@@ -782,7 +782,7 @@ if (isset($_POST['type'])) {
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption(
                             $oldPw,
-                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
                             $oldPwIV,
                             "decrypt"
                         );
@@ -828,7 +828,7 @@ if (isset($_POST['type'])) {
                     if (empty($dataReceived['salt_key'])) {
                         $encrypt = cryption(
                             $dataItem['pw'],
-                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
                             "",
                             "encrypt"
                         );
@@ -950,7 +950,7 @@ if (isset($_POST['type'])) {
                     );
                     $encrypt = cryption(
                         $decrypt,
-                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        "",
                         "",
                         "encrypt"
                     );
@@ -974,7 +974,7 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        "",
                         $originalRecord['pw_iv'],
                         "decrypt"
                     );
@@ -1196,7 +1196,7 @@ if (isset($_POST['type'])) {
             } else {
                 $pw = cryption(
                     $dataItem['pw'],
-                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                    "",
                     $dataItem['pw_iv'],
                     "decrypt"
                 );
@@ -1359,7 +1359,7 @@ if (isset($_POST['type'])) {
                         foreach ($rows_tmp as $row) {
                             $fieldText = cryption(
                                 $row['data'],
-                                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                "",
                                 $row['data_iv'],
                                 "decrypt"
                             );
@@ -1499,7 +1499,7 @@ if (isset($_POST['type'])) {
                     if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption(
                             $reason[1],
-                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
                             $record['raison_iv'],
                             "decrypt"
                         );
@@ -2150,7 +2150,7 @@ if (isset($_POST['type'])) {
                             } else {
                                 $pw = cryption(
                                     $record['pw'],
-                                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                                    "",
                                     $record['pw_iv'],
                                     "decrypt"
                                 );
@@ -2488,7 +2488,7 @@ if (isset($_POST['type'])) {
                 } else {
                     $data = cryption(
                         $dataItem['pw'],
-                        file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                        "",
                         $dataItem['pw_iv'],
                         "decrypt"
                     );
@@ -2645,7 +2645,7 @@ if (isset($_POST['type'])) {
             } elseif ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 1) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                    "",
                     $dataSource['pw_iv'],
                     "decrypt"
                 );
@@ -2690,7 +2690,7 @@ if (isset($_POST['type'])) {
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                    "",
                     "",
                     "encrypt"
                 );
@@ -3348,7 +3348,7 @@ if (isset($_POST['type'])) {
                     if ($dataItem['perso'] != 1) {
                         $reason[1] = cryption(
                             $reason[1],
-                            file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                            "",
                             $record['raison_iv'],
                             "decrypt"
                         );

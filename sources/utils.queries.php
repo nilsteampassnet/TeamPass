@@ -202,7 +202,12 @@ switch ($_POST['type']) {
             // check if current encryption protocol #3
             if (!empty($data['pw_iv']) && !empty($data['pw'])) {
                 // decrypt it
-                $pw = cryption($data['pw'], $oldPersonalSaltkey, $data['pw_iv'], "decrypt");
+                $pw = cryption(
+                    $data['pw'],
+                    $oldPersonalSaltkey,
+                    $data['pw_iv'],
+                    "decrypt"
+                );
                 $pw = $pw['string'];
             } else {
                 // check if pw encrypted with protocol #2
@@ -229,14 +234,20 @@ switch ($_POST['type']) {
 
             // encrypt it
             if (!empty($pw) && isUTF8($pw)) {
-                $encrypt = cryption($pw, $personal_sk, "", "encrypt");
+                $encrypt = cryption(
+                    $pw,
+                    $personal_sk,
+                    "",
+                    "encrypt"
+                );
                 if (isUTF8($pw)) {
                     // store Password
                     DB::update(
                         prefix_table('items'),
                         array(
                             'pw' => $encrypt['string'],
-                            'pw_iv' => $encrypt['iv']
+                            //'pw_iv' => $encrypt['iv'],
+                            'pw_iv' => ""
                            ),
                         "id = %i", $data['id']
                     );
@@ -284,7 +295,8 @@ switch ($_POST['type']) {
                     prefix_table('items'),
                     array(
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv']
+                        //'pw_iv' => $encrypt['iv'],
+                        'pw_iv' => ""
                        ),
                     "id = %i", $data['id']
                 );
