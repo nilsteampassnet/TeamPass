@@ -253,41 +253,19 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption($message, $sk, $iv, $type = null, $p5 = "public")
+function cryption($message, $sk, $iv, $type = null, $scope = "public")
 {
     if (DEFUSE_ENCRYPTION === TRUE) {
-        // load PhpEncryption library
-        if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
-            require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-            require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-            require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-            require_once '../includes/libraries/Encryption/Encryption/Key.php';
-            require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-            require_once '../includes/libraries/Encryption/Encryption/File.php';
-            require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-            require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-            require_once '../includes/libraries/Encryption/Encryption/Core.php';
-        } else {
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/File.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
-        }
-        if ($p5 === "public") {
+        if ($scope === "perso") {
             return defuse_crypto(
                 $message,
-                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                $sk,
                 $type
             );
         } else {
             return defuse_crypto(
                 $message,
-                $sk,
+                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
                 $type
             );
         }
@@ -306,7 +284,7 @@ function cryption($message, $sk, $iv, $type = null, $p5 = "public")
 function cryption_phpCrypt($string, $key, $iv, $type)
 {
     // manage key origin
-    if (empty($key)) $key = SALT;
+    define('SALT', 'LEfzTjADMTzV6qHC');
 
     if ($key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
@@ -374,10 +352,29 @@ function testHex2Bin ($val)
     return hex2bin($val);
 }
 
-function defuse_crypto($message, $ascii_key, $type)
+function defuse_crypto($message, $ascii_key, $type) //defuse_crypto
 {
+    // load PhpEncryption library
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        $path = '../includes/libraries/Encryption/Encryption/';
+    } else {
+        $path = $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
+    }
+    require_once $path.'Crypto.php';
+    require_once $path.'Encoding.php';
+    require_once $path.'DerivedKeys.php';
+    require_once $path.'Key.php';
+    require_once $path.'KeyOrPassword.php';
+    require_once $path.'File.php';
+    require_once $path.'RuntimeTests.php';
+    require_once $path.'KeyProtectedByPassword.php';
+    require_once $path.'Core.php';
+
     // init
     $err = '';
+    if (empty($ascii_key)) {
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    }
 
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
@@ -446,9 +443,17 @@ function defuse_validate_personal_key($psk, $protected_key_encoded) {
     require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
     require_once '../includes/libraries/Encryption/Encryption/Core.php';
 
-    $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
-    $user_key = $protected_key->unlockKey($psk);
-    $user_key_encoded = $user_key->saveToAsciiSafeString();
+    try {
+        $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
+        $user_key = $protected_key->unlockKey($psk);
+        $user_key_encoded = $user_key->saveToAsciiSafeString();
+    }
+    catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        return "Error - Major issue as the encryption is broken.";
+    }
+    catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        return "Error - The saltkey is not the correct one.";
+    }
 
     return $user_key_encoded;   // store it in session once user has entered his psk
 }

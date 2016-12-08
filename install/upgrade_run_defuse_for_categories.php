@@ -75,7 +75,6 @@ while ($data = mysqli_fetch_array($rows)) {
         $new_pw = cryption(
             $old_pw['string'],
             $_SESSION['new_salt'],
-            "",
             "encrypt"
         );
 

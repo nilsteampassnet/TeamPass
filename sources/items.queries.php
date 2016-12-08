@@ -169,7 +169,7 @@ if (isset($_POST['type'])) {
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                     $passwd = cryption(
                         $pw,
-                        $_SESSION['my_sk'],
+                        $_SESSION['user_settings']['session_psk'],
                         "",
                         "encrypt"
                     );
@@ -488,7 +488,7 @@ if (isset($_POST['type'])) {
                         $sentPw = $pw;
                         $passwd = cryption(
                             $pw,
-                            $_SESSION['my_sk'],
+                            $_SESSION['user_settings']['session_psk'],
                             "",
                             "encrypt"
                         );
@@ -773,7 +773,7 @@ if (isset($_POST['type'])) {
                         $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption(
                             $oldPw,
-                            $_SESSION['my_sk'],
+                            $_SESSION['user_settings']['session_psk'],
                             "",
                             "decrypt"
                         );
@@ -835,7 +835,7 @@ if (isset($_POST['type'])) {
                     } else {
                         $encrypt = cryption(
                             $dataItem['pw'],
-                            $_SESSION['my_sk'],
+                            $_SESSION['user_settings']['session_psk'],
                             "",
                             "encrypt"
                         );
@@ -944,7 +944,7 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         $originalRecord['pw_iv'],
                         "decrypt"
                     );
@@ -965,7 +965,7 @@ if (isset($_POST['type'])) {
                 // previous is public folder and personal one
                 else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
                     // check if PSK is set
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
                         echo $returnValues;
                         break;
@@ -980,7 +980,7 @@ if (isset($_POST['type'])) {
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "",
                         "encrypt"
                     );
@@ -994,7 +994,7 @@ if (isset($_POST['type'])) {
                 } else if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 1) {
                 // previous is public folder and personal one
                     // check if PSK is set
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
                         echo $returnValues;
                         break;
@@ -1003,13 +1003,13 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         $originalRecord['pw_iv'],
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "",
                         "encrypt"
                     );
@@ -1188,9 +1188,10 @@ if (isset($_POST['type'])) {
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = cryption(
                     $dataItem['pw'],
-                    $_SESSION['my_sk'],
+                    $_SESSION['user_settings']['session_psk'],
                     $dataItem['pw_iv'],
-                    "decrypt"
+                    "decrypt",
+                    "perso"
                 );
                 $arrData['edit_item_salt_key'] = 1;
             } else {
@@ -1506,7 +1507,7 @@ if (isset($_POST['type'])) {
                     } else {
                         $reason[1] = cryption(
                             $reason[1],
-                            $_SESSION['my_sk'],
+                            $_SESSION['user_settings']['session_psk'],
                             $record['raison_iv'],
                             "decrypt"
                         );
@@ -1856,7 +1857,7 @@ if (isset($_POST['type'])) {
             }
 
             // check if this folder is a PF. If yes check if saltket is set
-            if ((!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])) && $folderIsPf == 1) {
+            if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf == 1) {
                 $showError = "is_pf_but_no_saltkey";
             }
             // check if items exist
@@ -2140,10 +2141,10 @@ if (isset($_POST['type'])) {
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-                            if ($need_sk == true && isset($_SESSION['my_sk'])) {
+                            if ($need_sk == true && isset($_SESSION['user_settings']['session_psk'])) {
                                 $pw = cryption(
                                     $record['pw'],
-                                    $_SESSION['my_sk'],
+                                    $_SESSION['user_settings']['session_psk'],
                                     $record['pw_iv'],
                                     "decrypt"
                                 );
@@ -2481,7 +2482,7 @@ if (isset($_POST['type'])) {
                 if ($dataItem['perso'] == 1) {
                     $data = cryption(
                         $dataItem['pw'],
-                        $_SESSION['my_sk'],
+                        $_SESSION['user_settings']['session_psk'],
                         $dataItem['pw_iv'],
                         "decrypt"
                     );
@@ -2651,7 +2652,7 @@ if (isset($_POST['type'])) {
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                     "",
                     "encrypt"
                 );
@@ -2684,7 +2685,7 @@ if (isset($_POST['type'])) {
             elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 0) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
+                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                     $dataSource['pw_iv'],
                     "decrypt"
                 );
@@ -3355,7 +3356,7 @@ if (isset($_POST['type'])) {
                     } else {
                         $reason[1] = cryption(
                             $reason[1],
-                            $_SESSION['my_sk'],
+                            $_SESSION['user_settings']['session_psk'],
                             $record['raison_iv'],
                             "decrypt"
                         );

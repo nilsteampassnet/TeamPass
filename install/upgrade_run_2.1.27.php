@@ -308,14 +308,14 @@ if ($row['valeur'] !== "defuse") {
 }
 
 
-// add field personal_saltkey to Users table
+// add field encrypted_psk to Users table
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."users",
-    "personal_saltkey",
+    "encrypted_psk",
     "TEXT NOT NULL"
 );
 if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field personal_saltkey to table Users! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encrypted_psk to table Users! '.mysqli_error($dbTmp).'!"}]';
     mysqli_close($dbTmp);
     exit();
 }

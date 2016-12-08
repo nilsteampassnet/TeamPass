@@ -279,7 +279,7 @@ function identifyUser($sentData)
     if (strlen(SALT) > 32) {
         $_SESSION['error']['salt'] = true;
     }
-    
+
     $_SESSION['user_language'] = $k['langage'];
     $ldapConnection = false;
 
@@ -787,6 +787,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
             $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
             $_SESSION['user_settings']['user_language'] = $data['user_language'];
+            $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
 
             // manage session expiration
             $serverTime = time();

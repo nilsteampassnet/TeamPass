@@ -524,16 +524,56 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
+        $err = "";
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
-        if ($dataReceived['psk'] != "") {
-            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
-            setcookie(
-                "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                encrypt($_SESSION['my_sk'], ""),
-                (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                '/'
+        if ($dataReceived['psk'] !== "") {
+            // store in session the cleartext for psk
+            $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
+
+            // check if encrypted_psk is in database. If not, add it
+            if (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk'])) {
+                // generate it based upon clear psk
+                $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
+
+                // store it in DB
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
+                       ),
+                    "id = %i",
+                    $_SESSION['user_id']
+                );
+            }
+
+            // check if psk is correct.
+            $user_key_encoded = defuse_validate_personal_key(
+                $dataReceived['psk'],
+                $_SESSION['user_settings']['encrypted_psk']
             );
+            if (strpos($user_key_encoded, "Error ") !== false) {
+                $err = $user_key_encoded;
+            } else {
+                // Store PSK
+                $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
+                setcookie(
+                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                    $user_key_encoded,
+                    (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                    '/'
+                );
+            }
+        } else {
+            $err = "Personal Saltkey is empty!";
         }
+
+        echo prepareExchangedData(
+            array(
+                "error" => $err
+            ),
+            "encode"
+        );
+
         break;
     /**
      * Change the personal saltkey
