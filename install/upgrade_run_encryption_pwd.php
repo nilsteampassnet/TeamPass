@@ -143,7 +143,7 @@ while ($data = mysqli_fetch_array($rows)) {
         $resData = mysqli_query($dbTmp,
             "SELECT l.id_item AS id_item, k.rand_key AS rndKey, l.raison AS raison, l.raison_iv AS raison_iv, l.date AS mDate, l.id_user AS id_user, l.action AS action
             FROM ".$_SESSION['tbl_prefix']."log_items AS l
-            LEFT JOIN ".$_SESSION['tbl_prefix']."keys AS k ON (l.id_item = k.id)
+            LEFT JOIN ".$_SESSION['tbl_prefix'cryption_phpCrypt]."keys AS k ON (l.id_item = k.id)
             WHERE l.id_item = ".$data['id']." AND l.raison LIKE 'at_pw :%' AND k.sql_table='items'"
         );
         fputs($dbgDuo, "\nNb of entries in log: ".mysqli_num_rows($resData));
@@ -185,7 +185,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // store new encryption
                     if (isUTF8($pw) && !empty($pw)) {
-                        $encrypt = cryption($pw , SALT, "", "encrypt");
+                        $encrypt = cryption_phpCrypt($pw , SALT, "", "encrypt");
                         fputs($dbgDuo, " / Final : ".$encrypt['string']);
                         mysqli_query($dbTmp,
                             "UPDATE ".$_SESSION['tbl_prefix']."log_items
@@ -218,7 +218,7 @@ while ($data = mysqli_fetch_array($rows)) {
         while ($record = mysqli_fetch_array($resData)) {
             $tmpData = substr(decrypt($record['data']), strlen($record['rndKey']));
             if (isUTF8($tmpData ) && !empty($tmpData )) {
-                $encrypt = cryption($tmpData , SALT, "", "encrypt");
+                $encrypt = cryption_phpCrypt$tmpData , SALT, "", "encrypt");
 
                 // store Password
                 $resData_tmp2 = mysqli_query($dbTmp,

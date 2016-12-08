@@ -302,21 +302,6 @@ function changeMainSaltKey(start)
 {
     var nb = 10;    // can be changed - number of items treated in each loop
 
-/*
-    // check saltkey length
-    if ($("#new_salt_key").val().length != 16) {
-        $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_saltkey_length'];?>");
-        return false;
-    }
-*/
-
-    // prepare excahnge
-    var newSK = prepareExchangedData(
-        '{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}',
-        "encode",
-        "<?php echo $_SESSION['key'];?>"
-    );
-
     //console.log("Start value: "+start);
 
     // start change
@@ -328,8 +313,7 @@ function changeMainSaltKey(start)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___start",
-               newSK    : newSK
+               type     : "admin_action_change_salt_key___start"
             },
             function(data) {
                 //console.log("Step start - " + data[0].nextAction);
@@ -355,7 +339,6 @@ function changeMainSaltKey(start)
             "sources/admin.queries.php",
             {
                type     : "admin_action_change_salt_key___encrypt",
-               newSK    : newSK,
                start    : start,
                length    : nb,
                nbItems    : $("#changeMainSaltKey_itemsCount").val()
@@ -380,8 +363,7 @@ function changeMainSaltKey(start)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___end",
-               newSK    : newSK
+               type     : "admin_action_change_salt_key___end"
             },
             function(data) {
                 if (data[0].nextAction == "done") {

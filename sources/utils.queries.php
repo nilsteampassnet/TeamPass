@@ -87,9 +87,17 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    "",
+                                    "decrypt"
+                                );
                             }
 
                             $full_listing[$i] = array(
@@ -198,7 +206,7 @@ switch ($_POST['type']) {
             // check if current encryption protocol #3
             if (!empty($data['pw_iv']) && !empty($data['pw'])) {
                 // decrypt it
-                $pw = cryption(
+                $pw = cryption_phpCrypt(
                     $data['pw'],
                     $oldPersonalSaltkey,
                     $data['pw_iv'],
@@ -233,7 +241,6 @@ switch ($_POST['type']) {
                 $encrypt = cryption(
                     $pw,
                     $personal_sk,
-                    "",
                     "encrypt"
                 );
                 if (isUTF8($pw)) {
@@ -242,7 +249,6 @@ switch ($_POST['type']) {
                         prefix_table('items'),
                         array(
                             'pw' => $encrypt['string'],
-                            //'pw_iv' => $encrypt['iv'],
                             'pw_iv' => ""
                            ),
                         "id = %i", $data['id']
@@ -284,7 +290,7 @@ switch ($_POST['type']) {
                 }
 
                 // encrypt it
-                $encrypt = defuse_crypto(
+                $encrypt = cryption(
                     $pw,
                     $_SESSION['user_settings']['session_psk'],
                     "encrypt"
@@ -312,7 +318,7 @@ switch ($_POST['type']) {
                 );
 
                 // encrypt
-                $encrypt = defuse_crypto(
+                $encrypt = cryption(
                     $pw['string'],
                     $_SESSION['user_settings']['session_psk'],
                     "encrypt"
@@ -368,12 +374,15 @@ switch ($_POST['type']) {
         );
 
         // decrypt password
-        $oldPwClear = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+        $oldPwClear = cryption(
+            $dataItem['pw'],
+            "",
+            "decrypt"
+        );
 
         // encrypt new password
         $encrypt = cryption(
             $dataReceived['new_pwd'],
-            SALT,
             "",
             "encrypt"
         );

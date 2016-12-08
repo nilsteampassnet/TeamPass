@@ -3890,6 +3890,9 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
                 $("#dialog_upgrade_personal_passwords_status").html('<i class="fa fa-info"></i>&nbsp;<?php echo $LANG['operation_encryption_done'];?>');
                 // disable button
                 $("#dialog_upgrade_personal_passwords ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['admin_action_db_backup_start_tip'];?>')").prop("disabled", false);
+
+                // ensure that no upgrade popup is shown
+                $("#personal_upgrade_needed").val("");
             }
         }
     });

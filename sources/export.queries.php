@@ -109,9 +109,17 @@ switch ($_POST['type']) {
                     } else {
                         //encrypt PW
                         if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                            $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                            $pw = cryption(
+                                $record['pw'],
+                                mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                , "decrypt"
+                            );
                         } else {
-                            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                            $pw = cryption(
+                                $record['pw'],
+                                "",
+                                "decrypt"
+                            );
                         }
                         // store
                         DB::insert(
@@ -281,9 +289,17 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    "",
+                                    "decrypt"
+                                );
                             }
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
@@ -452,9 +468,17 @@ Enter the decryption key : <input type="password" id="saltkey" />
             if (empty($id_managed) || $id_managed != $record['id']) {
                 // decrypt PW
                 if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                    $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                    $pw = cryption(
+                        $record['pw'],
+                        mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                        "decrypt"
+                    );
                 } else {
-                    $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                    $pw = cryption(
+                        $record['pw'],
+                        "",
+                        "decrypt"
+                    );
                 }
                 array_push($full_listing,array(
                     'id_tree' => $record['id_tree'],

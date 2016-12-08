@@ -65,7 +65,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         $log .= "* Item '".$record['label']."'\n";
 
         // decrypt password
-        $oldPwClear = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+        $oldPwClear = cryption($record['pw'], "", "decrypt");
 
         // generate password
         $pwgen->setLength(10);
@@ -77,7 +77,6 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         // encrypt new password
         $encrypt = cryption(
             $new_pwd,
-            SALT,
             "",
             "encrypt"
         );

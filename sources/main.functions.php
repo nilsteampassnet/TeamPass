@@ -253,7 +253,7 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption($message, $sk, $iv, $type = null, $scope = "public")
+function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
 {
     if (DEFUSE_ENCRYPTION === TRUE) {
         if ($scope === "perso") {
@@ -352,7 +352,7 @@ function testHex2Bin ($val)
     return hex2bin($val);
 }
 
-function defuse_crypto($message, $ascii_key, $type) //defuse_crypto
+function cryption($message, $ascii_key, $type) //defuse_crypto
 {
     // load PhpEncryption library
     if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {

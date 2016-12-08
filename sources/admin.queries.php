@@ -504,16 +504,21 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___start":
         $error = "";
-        require_once 'main.functions.php';
+        $_SESSION['reencrypt_old_salt'] = require_once 'main.functions.php';
 
-        // check saltkey
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
-            // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
-            break;
-        }
+        // store old sk
+        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+        // generate new saltkey
+        copy(
+            SECUREPATH."/teampass-seckey.txt",
+            SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+        );
+        $_SESSION['reencrypt_new_salt'] = defuse_generate_key();
+        file_put_contents(
+            SECUREPATH."/teampass-seckey.txt",
+            $_SESSION['reencrypt_new_salt']
+        );
 
         //put tool in maintenance.
         DB::update(
@@ -541,11 +546,9 @@ switch ($_POST['type']) {
         require_once 'main.functions.php';
 
         // prepare SK
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+        if (empty($_SESSION['reencrypt_new_salt']) ||empty($_SESSION['reencrypt_old_salt'])) {
             // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+            echo '[{"nextAction":"" , "error":"saltkeys are empty???" , "nbOfItems":""}]';
             break;
         }
 
@@ -555,16 +558,25 @@ switch ($_POST['type']) {
             FROM ".prefix_table("items")."
             WHERE perso = %s
             LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
-            "0");
+            "0"
+        );
         foreach ($rows as $record) {
-            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+            $pw = cryption(
+                $record['pw'],
+                $_SESSION['reencrypt_old_salt'],
+                "decrypt"
+            );
             //encrypt with new SALT
-            $encrypt = cryption($pw['string'], $new_salt_key, "", "encrypt");
+            $encrypt = cryption(
+                $pw['string'],
+                $_SESSION['reencrypt_new_salt'],
+                "encrypt"
+            );
             DB::update(
                 prefix_table("items"),
                 array(
                     'pw' => $encrypt['string'],
-                    'pw_iv' => $encrypt['iv'],
+                    'pw_iv' => ""
                ),
                 "id = %i",
                 $record['id']
@@ -588,42 +600,6 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___end":
         $error = "";
-
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
-            // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
-            break;
-        }
-
-        // write the sk.php file
-        // get path to sk.php
-        $filename = "../includes/config/settings.php";
-        if (file_exists($filename)) {
-            //copy some constants from this existing file
-            $settings_file = file($filename);
-            while (list($key,$val) = each($settings_file)) {
-                if (substr_count($val, 'require_once "')>0) {
-                    $skfile = substr($val, 14, strpos($val, '";')-14);
-                    break;
-                }
-            }
-        }
-        //Do a copy of the existing file
-        @copy($skfile, $skfile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))));
-        unlink($skfile);
-        $fh = fopen($skfile, 'w');
-        fwrite(
-            $fh,
-            utf8_encode(
-                "<?php
-@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
-@define('COST', '13'); // Don't change this.
-?>"
-            )
-        );
-        fclose($fh);
 
         // quit maintenance mode.
         DB::update(

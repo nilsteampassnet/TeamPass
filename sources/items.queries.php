@@ -170,14 +170,12 @@ if (isset($_POST['type'])) {
                     $passwd = cryption(
                         $pw,
                         $_SESSION['user_settings']['session_psk'],
-                        "",
                         "encrypt"
                     );
                     $restictedTo = $_SESSION['user_id'];
                 } else {
                     $passwd = cryption(
                         $pw,
-                        "",
                         "",
                         "encrypt"
                     );
@@ -225,7 +223,6 @@ if (isset($_POST['type'])) {
                         if (count($field_data)>1 && !empty($field_data[1])) {
                             $encrypt = cryption(
                                 $field_data[1],
-                                "",
                                 "",
                                 "encrypt"
                             );
@@ -489,14 +486,12 @@ if (isset($_POST['type'])) {
                         $passwd = cryption(
                             $pw,
                             $_SESSION['user_settings']['session_psk'],
-                            "",
                             "encrypt"
                         );
                         $restictedTo = $_SESSION['user_id'];
                     } else {
                         $passwd = cryption(
                             $pw,
-                            "",
                             "",
                             "encrypt"
                         );
@@ -568,7 +563,6 @@ if (isset($_POST['type'])) {
                                     $encrypt = cryption(
                                         $field_data[1],
                                         "",
-                                        "",
                                         "encrypt"
                                     );
                                     // store field text
@@ -589,13 +583,11 @@ if (isset($_POST['type'])) {
                                     $oldVal = cryption(
                                         $dataTmp['data'],
                                         "",
-                                        $dataTmp['data_iv'],
                                         "decrypt"
                                     );
                                     if ($field_data[1] != $oldVal['string']) {
                                         $encrypt = cryption(
                                             $field_data[1],
-                                            "",
                                             "",
                                             "encrypt"
                                         );
@@ -774,7 +766,6 @@ if (isset($_POST['type'])) {
                         $oldPwClear = cryption(
                             $oldPw,
                             $_SESSION['user_settings']['session_psk'],
-                            "",
                             "decrypt"
                         );
                     } else {
@@ -783,7 +774,6 @@ if (isset($_POST['type'])) {
                         $oldPwClear = cryption(
                             $oldPw,
                             "",
-                            $oldPwIV,
                             "decrypt"
                         );
                     }
@@ -829,14 +819,12 @@ if (isset($_POST['type'])) {
                         $encrypt = cryption(
                             $dataItem['pw'],
                             "",
-                            "",
                             "encrypt"
                         );
                     } else {
                         $encrypt = cryption(
                             $dataItem['pw'],
                             $_SESSION['user_settings']['session_psk'],
-                            "",
                             "encrypt"
                         );
                     }
@@ -945,12 +933,10 @@ if (isset($_POST['type'])) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        $originalRecord['pw_iv'],
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt,
-                        "",
                         "",
                         "encrypt"
                     );
@@ -975,13 +961,11 @@ if (isset($_POST['type'])) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         "",
-                        $originalRecord['pw_iv'],
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        "",
                         "encrypt"
                     );
 
@@ -1004,13 +988,11 @@ if (isset($_POST['type'])) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        $originalRecord['pw_iv'],
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        "",
                         "encrypt"
                     );
 
@@ -1189,7 +1171,6 @@ if (isset($_POST['type'])) {
                 $pw = cryption(
                     $dataItem['pw'],
                     $_SESSION['user_settings']['session_psk'],
-                    $dataItem['pw_iv'],
                     "decrypt",
                     "perso"
                 );
@@ -1198,7 +1179,6 @@ if (isset($_POST['type'])) {
                 $pw = cryption(
                     $dataItem['pw'],
                     "",
-                    $dataItem['pw_iv'],
                     "decrypt"
                 );
                 $arrData['edit_item_salt_key'] = 0;
@@ -1361,7 +1341,6 @@ if (isset($_POST['type'])) {
                             $fieldText = cryption(
                                 $row['data'],
                                 "",
-                                $row['data_iv'],
                                 "decrypt"
                             );
                             $fieldText = $fieldText['string'];
@@ -1501,14 +1480,12 @@ if (isset($_POST['type'])) {
                         $reason[1] = cryption(
                             $reason[1],
                             "",
-                            $record['raison_iv'],
                             "decrypt"
                         );
                     } else {
                         $reason[1] = cryption(
                             $reason[1],
                             $_SESSION['user_settings']['session_psk'],
-                            $record['raison_iv'],
                             "decrypt"
                         );
                     }
@@ -2145,14 +2122,12 @@ if (isset($_POST['type'])) {
                                 $pw = cryption(
                                     $record['pw'],
                                     $_SESSION['user_settings']['session_psk'],
-                                    $record['pw_iv'],
                                     "decrypt"
                                 );
                             } else {
                                 $pw = cryption(
                                     $record['pw'],
                                     "",
-                                    $record['pw_iv'],
                                     "decrypt"
                                 );
                             }
@@ -2483,14 +2458,12 @@ if (isset($_POST['type'])) {
                     $data = cryption(
                         $dataItem['pw'],
                         $_SESSION['user_settings']['session_psk'],
-                        $dataItem['pw_iv'],
                         "decrypt"
                     );
                 } else {
                     $data = cryption(
                         $dataItem['pw'],
                         "",
-                        $dataItem['pw_iv'],
                         "decrypt"
                     );
                 }
@@ -2647,13 +2620,11 @@ if (isset($_POST['type'])) {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     "",
-                    $dataSource['pw_iv'],
                     "decrypt"
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
                     mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    "",
                     "encrypt"
                 );
                 // update pw
@@ -2686,12 +2657,10 @@ if (isset($_POST['type'])) {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    $dataSource['pw_iv'],
                     "decrypt"
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    "",
                     "",
                     "encrypt"
                 );
@@ -3350,14 +3319,12 @@ if (isset($_POST['type'])) {
                         $reason[1] = cryption(
                             $reason[1],
                             "",
-                            $record['raison_iv'],
                             "decrypt"
                         );
                     } else {
                         $reason[1] = cryption(
                             $reason[1],
                             $_SESSION['user_settings']['session_psk'],
-                            $record['raison_iv'],
                             "decrypt"
                         );
                     }
