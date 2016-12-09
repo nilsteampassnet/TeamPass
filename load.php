@@ -756,13 +756,19 @@ $htmlHeaders .= '
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 300,
+            width: 400,
             height: 150,
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
                 "'.$LANG['ok'].'": function() {
-                    $(this).dialog("close");
+                    $("#div_dialog_message").dialog("close");
                 }
+            },
+            beforeClose: function(){
+                $("#div_dialog_message_text").html("");
+            },
+            close: function() {
+                $("#div_dialog_message").dialog("close");
             }
         });
 

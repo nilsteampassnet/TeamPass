@@ -11,6 +11,7 @@ Bug fixing
        - list of folders is refreshed when copying an Item
 
 2.1.27
+ New   Defuse Encryption implemented in place of phpCrypt for which security issues were discovered
  NEW   AGSES authentication implemented
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)

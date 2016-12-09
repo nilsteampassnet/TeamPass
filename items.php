@@ -114,7 +114,7 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['encrypted_psk']) && !empty($_SESSION['user_settings']['encrypted_psk']) ? '1':'0', '" />
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['session_psk']) && !empty($_SESSION['user_settings']['session_psk']) ? '1':'0', '" />
 <input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1':'0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
