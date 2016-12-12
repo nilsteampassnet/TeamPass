@@ -140,6 +140,19 @@ function addToCacheTable($id)
     );
 }
 
+
+function getSettingValue($setting) {
+
+    // get default language
+    $set = DB::queryFirstRow(
+        "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+        "admin",
+        $setting)
+    );
+
+    return $set['valeur'];
+}
+
 function rest_delete () {
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
@@ -633,13 +646,18 @@ function rest_get () {
                     }
 
                     // check if element doesn't already exist
-                    DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
-                    $counter = DB::count();
-                    if ($counter != 0) {
-                        $itemExists = 1;
-                        // prevent the error if the label already exists
-                        // so lets just add the time() as a random factor
-                        $item_label .= " (" . time() .")";
+                    $item_duplicate_allowed = getSettingValue("duplicate_item");
+                    if ($item_duplicate_allowed !== "1") {
+                        DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                        $counter = DB::count();
+                        if ($counter != 0) {
+                            $itemExists = 1;
+                            // prevent the error if the label already exists
+                            // so lets just add the time() as a random factor
+                            $item_label .= " (" . time() .")";
+                        } else {
+                            $itemExists = 0;
+                        }
                     } else {
                         $itemExists = 0;
                     }

@@ -1,22 +1,16 @@
 Last changes
 
-Bug fixing
- #1550 2 Factor enabled but can still log in without code
- #1551 Authentication through LDAP posix-search
- #1561 Personal folder deletion deletes all
- #1571 Drag and drop from PF to public folder makes item password corrupted
- #1571 Create an item inside another folder than the one selected
- Fixes in "Find" feature:
-       - copy from public to personal folder
-       - list of folders is refreshed when copying an Item
 
 2.1.27
- New   Defuse Encryption implemented in place of phpCrypt for which security issues were discovered
+ New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
- UPD   AES library
+ UPD   AES library 
+ FIX   "Find" feature:
+       - copy from public to personal folder
+       - list of folders is refreshed when copying an Item
  #1532 Added error message in install.js if db-pw contains double quotes
  #1553 LDAP support - Add LDAP port - Add support multi LDAP server
  #1556 Fix bug for upgrading old passwords
@@ -24,6 +18,12 @@ Bug fixing
  #1579 Fix for preventing a php fatal error
  #1575 Fix for tree not loaded when user has no access to a folder with children
  #1581 Fix for new folder Custom Fields inheritance
+ #1593 Insert duplicate label with API
+ #1550 2 Factor enabled but can still log in without code
+ #1551 Authentication through LDAP posix-search
+ #1561 Personal folder deletion deletes all
+ #1571 Drag and drop from PF to public folder makes item password corrupted
+ #1571 Create an item inside another folder than the one selected
 
 
 2.1.26

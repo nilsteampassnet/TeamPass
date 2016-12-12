@@ -262,6 +262,43 @@ if (
             );
 
         }
+
+        function launch_database_dump() {
+
+            request = $.post("upgrade_ajax.php",
+                {
+                    type      : "perform_database_dump",
+                    db_host   : document.getElementById("db_host").value,
+                    db_login  : document.getElementById("db_login").value,
+                    db_pw     : document.getElementById("db_pw").value,
+                    db_bdd    : document.getElementById("db_bdd").value,
+                    db_port   : document.getElementById("db_port").value,
+                },
+                function(data) {
+                    if (data[0].finish != 1 && data[0].finish != "suggestion") {
+                        // handle re-encryption of passwords in Items table
+                        $("#change_pw_encryption_start").val(data[0].next);
+                        $("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
+                        if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
+                            newEncryptPw("0");
+                        }
+                    } else if (data[0].finish == "suggestion") {
+                        // handle the re-encryption of passwords in suggestion table
+                        newEncryptPw("1");
+                    } else {
+                        // handle finishing
+                        $("#change_pw_encryption_progress").html("Done");
+                        $("#but_encrypt_continu").hide();
+                        /* Unlock this step */
+                        document.getElementById("but_next").disabled = "";
+                        document.getElementById("but_launch").disabled = "disabled";
+                        document.getElementById("res_step4").innerHTML = "dataBase has been populated";
+                        document.getElementById("loader").style.display = "none";
+                    }
+                },
+                "json"
+            );
+        }
         </script>
     </head>
     <body>
@@ -308,39 +345,27 @@ echo '
                     <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version']:'', '" />
                     <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8']:'', '" />
                     <input type="hidden" name="menu_action" id="menu_action" value="" />
-                    <input type="text" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt']:@$_SESSION['encrypt_key'], '" />';
+                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt']:@$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
     echo '
-                     <h2>This page will help you to upgrade the TeamPass\'s database</h2>
+                     <h2>Teampass upgrade</h2>
 
-                     Before starting, be sure to:<br />
-                     - upload the complete package on the server and overwrite existing files,<br />
-                     - have the database connection informations,<br />
-                     - get some CHMOD rights on the server.<br />
-                     <br />
-                     <div style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</div>
-                     <div class="">
-                         <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
-                        // Display the license file
-                        $Fnm = "../license.txt";
-                        if (file_exists($Fnm)) {
-                            $tab = file($Fnm);
-                            echo '
-                            <div style="float:left;width:100%;height:250px;overflow:auto;">
-                                <div style="float:left;font-style:italic;">';
-                                $show = false;
-                                $cnt = 0;
-                                while (list($cle,$val) = each($tab)) {
-                                    echo $val."<br />";
-                                }
-                                echo '
-                                </div>
-                            </div>';
-                        }
-                    echo '
+                     Before starting, be sure to:<ul>
+                     <li>upload the complete package on the server and overwrite existing files,</li>
+                     <li>have the database connection informations,</li>
+                     <li>get some CHMOD rights on the server.</li>
+                     </ul>
+
+                     <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
+                        <img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
                      </div>
+
+                     <div style="width:550px; margin-bottom:10px;">
+                        <!--<input type="checkbox" id="dump_done" value="0">&nbsp;A database dump has been performed-->
+                     </div>
+                     <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>
                      &nbsp;
                      ';
 
@@ -411,6 +436,14 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <i>Please consider sending your statistics as a way to contribute to futur improvements of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
                      This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
+
+                     <div id="dump" style="display:none;">
+                     <fieldset><legend>Database dump</legend>
+                     <a href="#" onclick="launch_database_dump()">Launch Dump</a>
+                     </fieldset>
+                     </div>
+
+                      
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
