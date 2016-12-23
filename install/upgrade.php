@@ -283,28 +283,15 @@ if (
                     db_port   : document.getElementById("db_port").value,
                 },
                 function(data) {
-                    if (data[0].finish != 1 && data[0].finish != "suggestion") {
-                        // handle re-encryption of passwords in Items table
-                        $("#change_pw_encryption_start").val(data[0].next);
-                        $("#change_pw_encryption_progress").html("Progress: "+data[0].progress+"% <img src=\"../includes/images/76.gif\" />");
-                        if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
-                            newEncryptPw("0");
-                        }
-                    } else if (data[0].finish == "suggestion") {
-                        // handle the re-encryption of passwords in suggestion table
-                        newEncryptPw("1");
+                    var obj = $.parseJSON(data);
+                    if (obj[0].error !== "") {
+                        // ERROR
+                        $("#dump_result").html(obj[0].error);
                     } else {
-                        // handle finishing
-                        $("#change_pw_encryption_progress").html("Done");
-                        $("#but_encrypt_continu").hide();
-                        /* Unlock this step */
-                        document.getElementById("but_next").disabled = "";
-                        document.getElementById("but_launch").disabled = "disabled";
-                        document.getElementById("res_step4").innerHTML = "dataBase has been populated";
-                        document.getElementById("loader").style.display = "none";
+                        // DONE
+                        $("#dump_result").html("Dump is successfull. File stored: " + obj[0].file);
                     }
-                },
-                "json"
+                }
             );
         }
         </script>
@@ -370,11 +357,14 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
                      </div>
 
+                     <!--
                      <div style="width:550px; margin-bottom:10px; float:left;">
                         <label for="dump_done" style="width:350px;">&nbsp;A database dump has been performed</label><input type="checkbox" id="dump_done" name="dump_done" style="">
                      </div>
+                     -->
+
                      <br />
-                     <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>
+                     <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
                      &nbsp;
                      ';
 
@@ -446,9 +436,12 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
 
-                     <div id="dump" style="display:none;">
+                     <div id="dump">
                      <fieldset><legend>Database dump</legend>
-                     <a href="#" onclick="launch_database_dump()">Launch Dump</a>
+                     <i>If you have NOT performed a dump of your database, please considere to create one now.</i>
+                     <br>
+                     <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
+                     <br><span id="dump_result" style="margin-top:4px;"></span>
                      </fieldset>
                      </div>
 
@@ -550,7 +543,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 if (!isset($_POST['step'])) {
     echo '
                  <div id="buttons_bottom">
-                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" disabled="disabled" class="ui-state-default ui-corner-all" value="CONTINUE" />
+                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="CONTINUE" />
                  </div>';
 } elseif ($_POST['step'] == 3 && $conversion_utf8 == false) {
     echo '

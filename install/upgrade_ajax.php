@@ -635,7 +635,7 @@ require_once \"".$skFile."\";
 
             $mtables = array(); 
    
-            $mysqli = new mysqli($_PORT['db_host'], $_PORT['db_login'], $_PORT['db_pw'], $_PORT['db_bdd'], $_PORT['db_port']);
+            $mysqli = new mysqli($_POST['db_host'], $_POST['db_login'], $_POST['db_pw'], $_POST['db_bdd'], $_POST['db_port']);
             if ($mysqli->connect_error) {
                 die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
             }
@@ -702,9 +702,11 @@ require_once \"".$skFile."\";
 
             $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
                  
-            $fp = fopen($backup_file_name ,'w+');
+            $fp = fopen("../files/".$backup_file_name ,'w+');
             if (($result = fwrite($fp, $contents))) {
-                echo "Backup file created '--$backup_file_name' ($result)";
+                echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
+            } else {
+                echo '[{ "error" : "Backup fails - please do it manually."}]';
             }
             fclose($fp);
 
