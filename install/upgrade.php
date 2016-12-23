@@ -89,6 +89,14 @@ if (
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
+
+            $("#dump_done").click(function(event) {
+                if($("#dump_done").is(':checked')) {
+                    $("#but_next").prop("disabled", false);
+                } else {
+                    $("#but_next").prop("disabled", true);
+                }
+            });
         });
 
         function aes_encrypt(text)
@@ -362,9 +370,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         <img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
                      </div>
 
-                     <div style="width:550px; margin-bottom:10px;">
-                        <!--<input type="checkbox" id="dump_done" value="0">&nbsp;A database dump has been performed-->
+                     <div style="width:550px; margin-bottom:10px; float:left;">
+                        <label for="dump_done" style="width:350px;">&nbsp;A database dump has been performed</label><input type="checkbox" id="dump_done" name="dump_done" style="">
                      </div>
+                     <br />
                      <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>
                      &nbsp;
                      ';
@@ -443,7 +452,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      </fieldset>
                      </div>
 
-                      
+
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
@@ -541,7 +550,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 if (!isset($_POST['step'])) {
     echo '
                  <div id="buttons_bottom">
-                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="CONTINUE" />
+                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" disabled="disabled" class="ui-state-default ui-corner-all" value="CONTINUE" />
                  </div>';
 } elseif ($_POST['step'] == 3 && $conversion_utf8 == false) {
     echo '
