@@ -89,6 +89,14 @@ if (
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
+
+            $("#dump_done").click(function(event) {
+                if($("#dump_done").is(':checked')) {
+                    $("#but_next").prop("disabled", false);
+                } else {
+                    $("#but_next").prop("disabled", true);
+                }
+            });
         });
 
         function aes_encrypt(text)
@@ -191,7 +199,8 @@ if (
                     type        : type_parameter,
                     start       : start_at,
                     total       : start_at,
-                    nb          : noitems_by_loop
+                    nb          : noitems_by_loop,
+                    session_salt: $("#session_salt").val()
                 },
                 function(data) {
                     // work not finished
@@ -261,6 +270,30 @@ if (
             );
 
         }
+
+        function launch_database_dump() {
+
+            request = $.post("upgrade_ajax.php",
+                {
+                    type      : "perform_database_dump",
+                    db_host   : document.getElementById("db_host").value,
+                    db_login  : document.getElementById("db_login").value,
+                    db_pw     : document.getElementById("db_pw").value,
+                    db_bdd    : document.getElementById("db_bdd").value,
+                    db_port   : document.getElementById("db_port").value,
+                },
+                function(data) {
+                    var obj = $.parseJSON(data);
+                    if (obj[0].error !== "") {
+                        // ERROR
+                        $("#dump_result").html(obj[0].error);
+                    } else {
+                        // DONE
+                        $("#dump_result").html("Dump is successfull. File stored: " + obj[0].file);
+                    }
+                }
+            );
+        }
         </script>
     </head>
     <body>
@@ -300,7 +333,7 @@ echo '
         <div id="content">
             <div id="center" class="ui-corner-bottom">
                 <form name="install" method="post" action="">';
-                
+
 //HIDDEN THINGS
 echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
@@ -312,34 +345,26 @@ echo '
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
     echo '
-                     <h2>This page will help you to upgrade the TeamPass\'s database</h2>
+                     <h2>Teampass upgrade</h2>
 
-                     Before starting, be sure to:<br />
-                     - upload the complete package on the server and overwrite existing files,<br />
-                     - have the database connection informations,<br />
-                     - get some CHMOD rights on the server.<br />
-                     <br />
-                     <div style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</div>
-                     <div class="">
-                         <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
-                        // Display the license file
-                        $Fnm = "../license.txt";
-                        if (file_exists($Fnm)) {
-                            $tab = file($Fnm);
-                            echo '
-                            <div style="float:left;width:100%;height:250px;overflow:auto;">
-                                <div style="float:left;font-style:italic;">';
-                                $show = false;
-                                $cnt = 0;
-                                while (list($cle,$val) = each($tab)) {
-                                    echo $val."<br />";
-                                }
-                                echo '
-                                </div>
-                            </div>';
-                        }
-                    echo '
+                     Before starting, be sure to:<ul>
+                     <li>upload the complete package on the server and overwrite existing files,</li>
+                     <li>have the database connection informations,</li>
+                     <li>get some CHMOD rights on the server.</li>
+                     </ul>
+
+                     <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
+                        <img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
                      </div>
+
+                     <!--
+                     <div style="width:550px; margin-bottom:10px; float:left;">
+                        <label for="dump_done" style="width:350px;">&nbsp;A database dump has been performed</label><input type="checkbox" id="dump_done" name="dump_done" style="">
+                     </div>
+                     -->
+
+                     <br />
+                     <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
                      &nbsp;
                      ';
 
@@ -410,6 +435,17 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <i>Please consider sending your statistics as a way to contribute to futur improvements of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
                      This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
+
+                     <div id="dump">
+                     <fieldset><legend>Database dump</legend>
+                     <i>If you have NOT performed a dump of your database, please considere to create one now.</i>
+                     <br>
+                     <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
+                     <br><span id="dump_result" style="margin-top:4px;"></span>
+                     </fieldset>
+                     </div>
+
+
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';

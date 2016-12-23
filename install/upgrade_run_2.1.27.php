@@ -13,7 +13,7 @@
  */
 
 /*
-** Upgrade script for release 2.1.26
+** Upgrade script for release 2.1.27
 */
 require_once('../sources/SecureHandler.php');
 session_start();
@@ -89,7 +89,8 @@ function tableExists($tablename, $database = false)
 
 function cleanFields($txt) {
     $tmp = str_replace(",", ";", trim($txt));
-    if ($tmp === "0" || empty($tmp)) return $tmp;
+    if (empty($tmp)) return $tmp;
+    if ($tmp === ";") return "";
     if (strpos($tmp, ';') === 0) $tmp = substr($tmp, 1);
     if (substr($tmp, -1) !== ";") $tmp = $tmp.";";
     return $tmp;
@@ -204,10 +205,148 @@ if ($res === false) {
 }
 
 mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."misc`
-                    SET `valeur` = 'maintenance_mode'
-                    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
-                );
+    "UPDATE `".$_SESSION['tbl_prefix']."misc`
+    SET `valeur` = 'maintenance_mode'
+    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+);
+
+
+// add field encryption_type to ITEMS table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table ITEMS! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+// add field encryption_type to categories_items table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."categories_items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table categories_items! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+// add field encryption_type to LOG_ITEMS table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."log_items",
+    "encryption_type",
+    "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encryption_type to table LOG_ITEMS! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+//-- generate new DEFUSE key
+$filename = "../includes/config/settings.php";
+$settingsFile = file($filename);
+while (list($key,$val) = each($settingsFile)) {
+    if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
+    }
+}
+
+copy(
+    SECUREPATH."/teampass-seckey.txt",
+    SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+);
+$new_salt = defuse_generate_key();
+file_put_contents(
+    SECUREPATH."/teampass-seckey.txt",
+    $new_salt
+);
+$_SESSION['new_salt'] = $new_salt;
+
+// update sk.php file
+copy(
+    $_SESSION['sk_file'],
+    $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+);
+$data = file($_SESSION['sk_file']); // reads an array of lines
+function replace_a_line($data) {
+    global $new_salt;
+    if (stristr($data, "@define('SALT'")) {
+        return "";
+    }
+    return $data;
+}
+$data = array_map('replace_a_line', $data);
+file_put_contents($_SESSION['sk_file'], implode('', $data));
+//--
+
+
+// add field encryption_type to LOG_ITEMS table
+mysqli_query($dbTmp,
+    "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
+    VALUES ('admin', 'encryption_type', 'not_set')"
+);
+
+//-- users need to perform re-encryption of their personal pwds
+$result = mysqli_query(
+    $dbTmp,
+    "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type='admin' AND intitule='encryption_type'"
+);
+$row = mysqli_fetch_assoc($result);
+if ($row['valeur'] !== "defuse") {
+    $result = mysqli_query(
+        $dbTmp,
+        "SELECT id FROM `".$_SESSION['tbl_prefix']."users`"
+    );
+    while($row_user = mysqli_fetch_assoc($result)) {
+        $result_items = mysqli_query(
+            $dbTmp,
+            "SELECT i.id AS item_id
+            FROM `".$_SESSION['tbl_prefix']."nested_tree` AS n
+            INNER JOIN `".$_SESSION['tbl_prefix']."items` AS i ON (i.id_tree = n.id)
+            WHERE n.title = ".$row_user['id']
+        );
+        if (mysqli_num_rows($result_items) > 0) {
+            mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                SET `upgrade_needed` = '1'
+                WHERE id = ".$row_user['id']
+            );
+        } else {
+            mysqli_query($dbTmp,
+                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                SET `upgrade_needed` = '0'
+                WHERE id = ".$row_user['id']
+            );
+        }
+    }
+
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['tbl_prefix']."misc`
+        SET `valeur` = 'defuse'
+        WHERE `type`='admin' AND `initule`='encryption_type'"
+    );
+}
+
+
+// add field encrypted_psk to Users table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."users",
+    "encrypted_psk",
+    "TEXT NOT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encrypted_psk to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 
 
 // Finished

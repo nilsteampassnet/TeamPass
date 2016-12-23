@@ -129,4 +129,7 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 	$finish = 1;
 }
 
+// alter ITEMS table by adding default value to encryption_type field
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");
+
 echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';

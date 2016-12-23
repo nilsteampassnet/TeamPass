@@ -382,6 +382,8 @@ if (isset($_POST['type'])) {
                     SET `valeur` = 'maintenance_mode'
                     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
+
+                echo 'document.getElementById("dump").style.display = "";';
             } else {
                 $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
                 echo 'document.getElementById("but_next").disabled = "disabled";';
@@ -563,7 +565,6 @@ require_once \"".$skFile."\";
                         $fh,
                         utf8_encode(
 "<?php
-@define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 @define('AKEY', '');
 @define('IKEY', '');
@@ -628,5 +629,87 @@ require_once \"".$skFile."\";
             }
 
             break;
+
+        case "perform_database_dump":
+            $filename = "../includes/config/settings.php";
+
+            $mtables = array(); 
+   
+            $mysqli = new mysqli($_POST['db_host'], $_POST['db_login'], $_POST['db_pw'], $_POST['db_bdd'], $_POST['db_port']);
+            if ($mysqli->connect_error) {
+                die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
+            }
+           
+            $results = $mysqli->query("SHOW TABLES");
+           
+            while($row = $results->fetch_array()){
+                $mtables[] = $row[0];
+            }
+
+            foreach($mtables as $table){
+                $contents .= "-- Table `".$table."` --\n";
+               
+                $results = $mysqli->query("SHOW CREATE TABLE ".$table);
+                while($row = $results->fetch_array()){
+                    $contents .= $row[1].";\n\n";
+                }
+
+                $results = $mysqli->query("SELECT * FROM ".$table);
+                $row_count = $results->num_rows;
+                $fields = $results->fetch_fields();
+                $fields_count = count($fields);
+               
+                $insert_head = "INSERT INTO `".$table."` (";
+                for($i=0; $i < $fields_count; $i++){
+                    $insert_head  .= "`".$fields[$i]->name."`";
+                        if($i < $fields_count-1){
+                                $insert_head  .= ', ';
+                            }
+                }
+                $insert_head .=  ")";
+                $insert_head .= " VALUES\n";       
+                       
+                if($row_count>0){
+                    $r = 0;
+                    while($row = $results->fetch_array()){
+                        if(($r % 400)  == 0){
+                            $contents .= $insert_head;
+                        }
+                        $contents .= "(";
+                        for($i=0; $i < $fields_count; $i++){
+                            $row_content =  str_replace("\n","\\n",$mysqli->real_escape_string($row[$i]));
+                           
+                            switch($fields[$i]->type){
+                                case 8: case 3:
+                                    $contents .=  $row_content;
+                                    break;
+                                default:
+                                    $contents .= "'". $row_content ."'";
+                            }
+                            if($i < $fields_count-1){
+                                    $contents  .= ', ';
+                                }
+                        }
+                        if(($r+1) == $row_count || ($r % 400) == 399){
+                            $contents .= ");\n\n";
+                        }else{
+                            $contents .= "),\n";
+                        }
+                        $r++;
+                    }
+                }
+            }
+
+            $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
+                 
+            $fp = fopen("../files/".$backup_file_name ,'w+');
+            if (($result = fwrite($fp, $contents))) {
+                echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
+            } else {
+                echo '[{ "error" : "Backup fails - please do it manually."}]';
+            }
+            fclose($fp);
+
+            break; 
     }
 }

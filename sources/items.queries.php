@@ -167,18 +167,18 @@ if (isset($_POST['type'])) {
             ) {
                 // encrypt PW
                 if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    if (DEFUSE_ENCRYPTION === TRUE) {
-                        $passwd = crypto($pw, $_SESSION['my_sk'], "encrypt");
-                    } else {
-                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
-                    }
+                    $passwd = cryption(
+                        $pw,
+                        $_SESSION['user_settings']['session_psk'],
+                        "encrypt"
+                    );
                     $restictedTo = $_SESSION['user_id'];
                 } else {
-                    if (DEFUSE_ENCRYPTION === TRUE) {
-                        $passwd = crypto($pw, "", "encrypt");
-                    } else {
-                        $passwd = cryption($pw, SALT, "", "encrypt");
-                    }
+                    $passwd = cryption(
+                        $pw,
+                        "",
+                        "encrypt"
+                    );
                 }
 
                 if (DEFUSE_ENCRYPTION === TRUE) {
@@ -200,7 +200,8 @@ if (isset($_POST['type'])) {
                         'label' => $label,
                         'description' => $dataReceived['description'],
                         'pw' => $passwd['string'],
-                        'pw_iv' => $passwd['iv'],
+                        'pw_iv' => "",
+                        //'pw_iv' => $passwd['iv'],
                         'email' => noHTML($dataReceived['email']),
                         'url' => noHTML($url),
                         'id_tree' => $dataReceived['categorie'],
@@ -220,19 +221,11 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            // encrypt data
-                            if ($field_data[2] === "1") {
-                                $encrypt = cryption(
-                                    $field_data[1],
-                                    SALT,
-                                    "",
-                                    "encrypt"
-                                );
-                            } else {
-                                $encrypt['string'] = $field_data[1];
-                                $encrypt['iv'] = "";
-                            }
-                            // store in DB
+                            $encrypt = cryption(
+                                $field_data[1],
+                                "",
+                                "encrypt"
+                            );
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -490,10 +483,18 @@ if (isset($_POST['type'])) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $sentPw = $pw;
-                        $passwd = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                        $passwd = cryption(
+                            $pw,
+                            $_SESSION['user_settings']['session_psk'],
+                            "encrypt"
+                        );
                         $restictedTo = $_SESSION['user_id'];
                     } else {
-                        $passwd = cryption($pw, SALT, "", "encrypt");
+                        $passwd = cryption(
+                            $pw,
+                            "",
+                            "encrypt"
+                        );
                     }
 
                     if (!empty($passwd["error"])) {
@@ -531,7 +532,8 @@ if (isset($_POST['type'])) {
                             'label' => $label,
                             'description' => $dataReceived['description'],
                             'pw' => $passwd['string'],
-                            'pw_iv' => $passwd['iv'],
+                            //'pw_iv' => $passwd['iv'],
+                            'pw_iv' => "",
                             'email' => $email,
                             'login' => $login,
                             'url' => $url,
@@ -557,19 +559,12 @@ if (isset($_POST['type'])) {
                                     $dataReceived['id']
                                 );
                                 // store Field text in DB
-                                if (DB::count() === 0) {
-                                    // encrypt data ?
-                                    if ($dataTmp['encrypted_data'] === "1"){
-                                        $encrypt = cryption(
-                                            $field_data[1],
-                                            SALT,
-                                            "",
-                                            "encrypt"
-                                        );
-                                    } else {
-                                        $encrypt['string'] = $field_data[1];
-                                        $encrypt['iv'] = "";
-                                    }
+                                if (count($dataTmp['title']) == 0) {
+                                    $encrypt = cryption(
+                                        $field_data[1],
+                                        "",
+                                        "encrypt"
+                                    );
                                     // store field text
                                     DB::insert(
                                         prefix_table('categories_items'),
@@ -577,44 +572,32 @@ if (isset($_POST['type'])) {
                                             'item_id' => $dataReceived['id'],
                                             'field_id' => $field_data[0],
                                             'data' => $encrypt['string'],
-                                            'data_iv' => $encrypt['iv']
+                                            'data_iv' => ""
+                                            //'data_iv' => $encrypt['iv']
                                         )
                                     );
                                     // update LOG
                                     logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_creation', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' : '.$field_data[1]);
                                 } else {
                                     // compare the old and new value
-                                    // decrypt data ?
-                                    if ($dataTmp['encrypted_data'] === "1"){
-                                        $oldVal = cryption(
-                                            $dataTmp['data'],
-                                            SALT,
-                                            $dataTmp['data_iv'],
-                                            "decrypt"
-                                        );
-                                    } else {
-                                        $oldVal['string'] = $dataTmp['data'];
-                                    }
+                                    $oldVal = cryption(
+                                        $dataTmp['data'],
+                                        "",
+                                        "decrypt"
+                                    );
                                     if ($field_data[1] != $oldVal['string']) {
-                                        // encrypt data ?
-                                        if ($dataTmp['encrypted_data'] === "1"){
-                                            $encrypt = cryption(
-                                                $field_data[1],
-                                                SALT,
-                                                "",
-                                                "encrypt"
-                                            );
-                                        } else {
-                                            $encrypt['string'] = $field_data[1];
-                                            $encrypt['iv'] = "";
-                                        }
-
+                                        $encrypt = cryption(
+                                            $field_data[1],
+                                            "",
+                                            "encrypt"
+                                        );
                                         // update value
                                         DB::update(
                                             prefix_table('categories_items'),
                                             array(
                                                 'data' => $encrypt['string'],
-                                                'data_iv' => $encrypt['iv']
+                                                'data_iv' => ""
+                                                //'data_iv' => $encrypt['iv']
                                             ),
                                             "item_id = %i AND field_id = %i",
                                             $dataReceived['id'],
@@ -622,7 +605,7 @@ if (isset($_POST['type'])) {
                                         );
 
                                         // update LOG
-                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' : '.$oldVal['string'].' => '.$field_data[1]);
+                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' => '.$oldVal['string']);
                                     }
                                 }
                             } else {
@@ -777,14 +760,22 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if (isset($_SESSION['my_sk']) || !empty($_SESSION['my_sk'])){
+                    if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
-                        $oldPwClear = cryption($oldPw, $_SESSION['my_sk'], "", "decrypt");
+                        $oldPwClear = cryption(
+                            $oldPw,
+                            $_SESSION['user_settings']['session_psk'],
+                            "decrypt"
+                        );
                     } else {
                         $oldPw = $data['pw'];
                         $oldPwIV = $data['pw_iv'];
-                        $oldPwClear = cryption($oldPw, SALT, $oldPwIV, "decrypt");
+                        $oldPwClear = cryption(
+                            $oldPw,
+                            "",
+                            "decrypt"
+                        );
                     }
                     if ($sentPw != $oldPwClear['string']) {
                         logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
@@ -825,9 +816,17 @@ if (isset($_POST['type'])) {
                     }
                     // decrypt PW
                     if (empty($dataReceived['salt_key'])) {
-                        $encrypt = cryption($dataItem['pw'], SALT, "", "encrypt");
+                        $encrypt = cryption(
+                            $dataItem['pw'],
+                            "",
+                            "encrypt"
+                        );
                     } else {
-                        $encrypt = cryption($dataItem['pw'], $_SESSION['my_sk'], "", "encrypt");
+                        $encrypt = cryption(
+                            $dataItem['pw'],
+                            $_SESSION['user_settings']['session_psk'],
+                            "encrypt"
+                        );
                     }
 
                     $pw = cleanString($encrypt['string']);
@@ -933,13 +932,11 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                        $originalRecord['pw_iv'],
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt,
-                        SALT,
                         "",
                         "encrypt"
                     );
@@ -954,7 +951,7 @@ if (isset($_POST['type'])) {
                 // previous is public folder and personal one
                 else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
                     // check if PSK is set
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
                         echo $returnValues;
                         break;
@@ -963,14 +960,12 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        SALT,
-                        $originalRecord['pw_iv'],
+                        "",
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                        "",
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "encrypt"
                     );
 
@@ -983,7 +978,7 @@ if (isset($_POST['type'])) {
                 } else if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 1) {
                 // previous is public folder and personal one
                     // check if PSK is set
-                    if (!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])){
+                    if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
                         echo $returnValues;
                         break;
@@ -992,14 +987,12 @@ if (isset($_POST['type'])) {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                        $originalRecord['pw_iv'],
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "decrypt"
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
-                        mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                        "",
+                        mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                         "encrypt"
                     );
 
@@ -1177,16 +1170,15 @@ if (isset($_POST['type'])) {
             if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] == 1 && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] == 1) {
                 $pw = cryption(
                     $dataItem['pw'],
-                    $_SESSION['my_sk'],
-                    $dataItem['pw_iv'],
-                    "decrypt"
+                    $_SESSION['user_settings']['session_psk'],
+                    "decrypt",
+                    "perso"
                 );
                 $arrData['edit_item_salt_key'] = 1;
             } else {
                 $pw = cryption(
                     $dataItem['pw'],
-                    SALT,
-                    $dataItem['pw_iv'],
+                    "",
                     "decrypt"
                 );
                 $arrData['edit_item_salt_key'] = 0;
@@ -1346,19 +1338,12 @@ if (isset($_POST['type'])) {
                             $arrCatList
                         );
                         foreach ($rows_tmp as $row) {
-                            // decrypt data if needed
-                            if ($row['encrypted_data'] === "1"){
-                                $fieldText = cryption(
-                                    $row['data'],
-                                    SALT,
-                                    $row['data_iv'],
-                                    "decrypt"
-                                );
-                                $fieldText = $fieldText['string'];
-                            } else {
-                                $fieldText = $row['data'];
-                            }
-
+                            $fieldText = cryption(
+                                $row['data'],
+                                "",
+                                "decrypt"
+                            );
+                            $fieldText = $fieldText['string'];
                             // build returned list of Fields text
                             if (empty($fieldsTmp)) {
                                 $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $fieldText);
@@ -1492,9 +1477,17 @@ if (isset($_POST['type'])) {
                 if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
                     // check if item is PF
                     if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            "",
+                            "decrypt"
+                        );
                     } else {
-                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            $_SESSION['user_settings']['session_psk'],
+                            "decrypt"
+                        );
                     }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
@@ -1841,7 +1834,7 @@ if (isset($_POST['type'])) {
             }
 
             // check if this folder is a PF. If yes check if saltket is set
-            if ((!isset($_SESSION['my_sk']) || empty($_SESSION['my_sk'])) && $folderIsPf == 1) {
+            if ((!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) && $folderIsPf == 1) {
                 $showError = "is_pf_but_no_saltkey";
             }
             // check if items exist
@@ -2125,10 +2118,18 @@ if (isset($_POST['type'])) {
                         $html .= '</a>';
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
-                            if ($need_sk == true && isset($_SESSION['my_sk'])) {
-                                $pw = cryption($record['pw'], $_SESSION['my_sk'], $record['pw_iv'], "decrypt");
+                            if ($need_sk == true && isset($_SESSION['user_settings']['session_psk'])) {
+                                $pw = cryption(
+                                    $record['pw'],
+                                    $_SESSION['user_settings']['session_psk'],
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    "",
+                                    "decrypt"
+                                );
                             }
 
                             // test charset => may cause a json error if is not utf8
@@ -2454,9 +2455,17 @@ if (isset($_POST['type'])) {
 
             if ($_POST['field'] == "pw") {
                 if ($dataItem['perso'] == 1) {
-                    $data = cryption($dataItem['pw'], $_SESSION['my_sk'], $dataItem['pw_iv'], "decrypt");
+                    $data = cryption(
+                        $dataItem['pw'],
+                        $_SESSION['user_settings']['session_psk'],
+                        "decrypt"
+                    );
                 } else {
-                    $data = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+                    $data = cryption(
+                        $dataItem['pw'],
+                        "",
+                        "decrypt"
+                    );
                 }
             } else {
                 $data = $dataItem['login'];
@@ -2610,14 +2619,12 @@ if (isset($_POST['type'])) {
             } elseif ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 1) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    SALT,
-                    $dataSource['pw_iv'],
+                    "",
                     "decrypt"
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                    "",
+                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                     "encrypt"
                 );
                 // update pw
@@ -2649,13 +2656,11 @@ if (isset($_POST['type'])) {
             elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 0) {
                 $decrypt = cryption(
                     $dataSource['pw'],
-                    mysqli_escape_string($link, stripslashes($_SESSION['my_sk'])),
-                    $dataSource['pw_iv'],
+                    mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
                     "decrypt"
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
-                    SALT,
                     "",
                     "encrypt"
                 );
@@ -3311,9 +3316,17 @@ if (isset($_POST['type'])) {
                 if ($record['action'] == "at_modification" && $reason[0] == "at_pw ") {
                     // check if item is PF
                     if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption($reason[1], SALT, $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            "",
+                            "decrypt"
+                        );
                     } else {
-                        $reason[1] = cryption($reason[1], $_SESSION['my_sk'], $record['raison_iv'], "decrypt");
+                        $reason[1] = cryption(
+                            $reason[1],
+                            $_SESSION['user_settings']['session_psk'],
+                            "decrypt"
+                        );
                     }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption

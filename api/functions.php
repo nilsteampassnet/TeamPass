@@ -140,6 +140,19 @@ function addToCacheTable($id)
     );
 }
 
+
+function getSettingValue($setting) {
+
+    // get default language
+    $set = DB::queryFirstRow(
+        "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+        "admin",
+        $setting)
+    );
+
+    return $set['valeur'];
+}
+
 function rest_delete () {
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
@@ -318,7 +331,7 @@ function rest_get () {
                     $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
                     $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], "", "decrypt");
                     $json[$x]['pw'] = $crypt_pw['string'];
                     $json[$x]['folder_id'] = $data['id_tree'];
                     $json[$x]['path'] = $path;
@@ -365,7 +378,7 @@ function rest_get () {
                     }
                 }
                 $folder_str = implode(";",$folder_arr);
-                
+
                 // get ids
                 if (strpos($folder_str,";") > 0) {
                     $condition = "id_tree IN %ls";
@@ -403,7 +416,7 @@ function rest_get () {
                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$data['id']]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
                     $json[$data['id']]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], "", "decrypt");
                     $json[$data['id']]['pw'] = $crypt_pw['string'];
                     $json[$data['id']]['folder_id'] = $data['id_tree'];
                     $json[$data['id']]['path'] = $path;
@@ -508,7 +521,7 @@ function rest_get () {
                     $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
                     $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], "", "decrypt");
                     $json[$x]['pw'] = $crypt_pw['string'];
                     $json[$x]['folder_id'] = $data['id_tree'];
                     $json[$x]['path'] = $path;
@@ -558,8 +571,8 @@ function rest_get () {
                 $response = DB::query(
                     "SELECT id, label, login, pw, pw_iv, url, id_tree, description, email
                     FROM ".prefix_table("items")."
-                    WHERE 
-                    inactif = %i 
+                    WHERE
+                    inactif = %i
                     AND id_tree IN %ls
                     AND label LIKE %ss",
                     "0",
@@ -586,7 +599,7 @@ function rest_get () {
                     $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
                     $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $crypt_pw = cryption($data['pw'], "", "decrypt");
                     $json[$x]['pw'] = $crypt_pw['string'];
                     $json[$x]['folder_id'] = $data['id_tree'];
                     $json[$x]['path'] = $path;
@@ -633,18 +646,23 @@ function rest_get () {
                     }
 
                     // check if element doesn't already exist
-                    DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
-                    $counter = DB::count();
-                    if ($counter != 0) {
-                        $itemExists = 1;
-                        // prevent the error if the label already exists
-                        // so lets just add the time() as a random factor
-                        $item_label .= " (" . time() .")";
+                    $item_duplicate_allowed = getSettingValue("duplicate_item");
+                    if ($item_duplicate_allowed !== "1") {
+                        DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                        $counter = DB::count();
+                        if ($counter != 0) {
+                            $itemExists = 1;
+                            // prevent the error if the label already exists
+                            // so lets just add the time() as a random factor
+                            $item_label .= " (" . time() .")";
+                        } else {
+                            $itemExists = 0;
+                        }
                     } else {
                         $itemExists = 0;
                     }
                     if ($itemExists == 0) {
-                        $encrypt = cryption($item_pwd, SALT, "", "encrypt");
+                        $encrypt = cryption($item_pwd, "", "encrypt");
                         if (empty($encrypt['string'])) {
                             rest_error ('PASSWORDEMPTY');
                         }
@@ -884,7 +902,7 @@ function rest_get () {
                         //Check if duplicate folders name are allowed
                         $data = DB::queryfirstrow(
                             "SELECT valeur
-                            FROM ".prefix_table("misc")." 
+                            FROM ".prefix_table("misc")."
                             WHERE type = %s AND intitule = %s",
                             "admin",
                             "duplicate_folder"
@@ -901,7 +919,7 @@ function rest_get () {
                         //check if parent folder is personal
                         $data = DB::queryfirstrow(
                             "SELECT personal_folder
-                            FROM ".prefix_table("nested_tree")." 
+                            FROM ".prefix_table("nested_tree")."
                             WHERE id = %i",
                             $params[2]
                         );
@@ -926,7 +944,7 @@ function rest_get () {
                                 rest_error ('COMPLEXICITY_LEVEL_NOT_REACHED');
                             }
                         }
-                        
+
                         try {
                             //create folder
                             DB::insert(
@@ -996,7 +1014,7 @@ function rest_get () {
                         $counter = DB::count();
                         if ($counter > 0) {
                             // encrypt pwd
-                            $encrypt = cryption($params[1], SALT, "", "encrypt");
+                            $encrypt = cryption($params[1], "", "encrypt");
                             if (empty($encrypt['string'])) {
                                 rest_error ('PASSWORDEMPTY');
                             }
@@ -1088,7 +1106,7 @@ function rest_get () {
                 } else {
                     rest_error('NO_ITEM');
                 }
-            }            
+            }
             /*
             * UPDATING A FOLDER
             * <url to teampass>/api/index.php/update/folder/<folder_id>/<title>;<complexity_level>;<renewal_period>?apikey=<valid api key>
@@ -1244,7 +1262,7 @@ function rest_get () {
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $crypt_pw = cryption($data['pw'], "", "decrypt");
                                     $json[$data['id']]['pw'] = $crypt_pw['string'];
                                 }
                             }
@@ -1283,9 +1301,19 @@ function rest_get () {
                     // is user granted?
                     //db::debugMode(true);
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][2]
                     );
+
+                    // check if psk is correct.
+                    $user_saltkey = defuse_validate_personal_key(
+                        $user_saltkey,
+                        $userData['encrypted_psk']
+                    );
+                    if (strpos($user_key_encoded, "Error ") !== false) {
+                        // error
+                        rest_error ('AUTH_NO_DATA');
+                    }
 
                     // load passwordLib library
                     $_SESSION['settings']['cpassman_dir'] = "..";
@@ -1343,11 +1371,11 @@ function rest_get () {
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] =  mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                                     if ($data['perso'] === "0") {
-                                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                        $crypt_pw = cryption($data['pw'], "", "decrypt");
                                     } else if (empty($user_saltkey)) {
                                         $crypt_pw['string'] = "no_psk";
                                     } else {
-                                        $crypt_pw = cryption($data['pw'], $user_saltkey, $data['pw_iv'], "decrypt");
+                                        $crypt_pw = cryption($data['pw'], $user_saltkey, "decrypt");
                                     }
                                     $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
                                     $json[$data['id']]['perso'] = $data['perso'];
@@ -1446,7 +1474,7 @@ function rest_get () {
                             }
 
                             // encrypt password
-                            $encrypt = cryption($GLOBALS['request'][2], SALT, "", "encrypt");
+                            $encrypt = cryption($GLOBALS['request'][2], "", "encrypt");
 
                             // is there a protocol?
                             if (isset($GLOBALS['request'][7]) || empty($GLOBALS['request'][7])) {
@@ -1514,7 +1542,7 @@ function rest_get () {
                 if (isset($GLOBALS['request'][1])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM " . $pre . "users WHERE login = %s",
                         $GLOBALS['request'][2]
                     );
                     if (DB::count() == 0) {
@@ -1534,10 +1562,10 @@ function rest_get () {
 
                     // is user identified?
                     if ($pwdlib->verifyPasswordHash(base64_decode($GLOBALS['request'][3]), $userData['pw']) === true) {
-                        // 
+                        //
                         if ($tpc_param[4] !== "0") {
                             // it is not a personal folder
-                            $salt = SALT;
+                            $salt = "";
                             $tpc_folder_id = $tpc_param[4];
                             $perso = '0';
                             $restricted_to = $userData['id'];
@@ -1545,8 +1573,20 @@ function rest_get () {
                         } else if ($tpc_param[4] === "0" && $tpc_param[5] !== "") {
                             // it is a personal folder
                             $salt = $tpc_param[5];
+
+                            // check if psk is correct.
+                            $salt = defuse_validate_personal_key(
+                                $salt,
+                                $userData['encrypted_psk']
+                            );
+                            if (strpos($user_key_encoded, "Error ") !== false) {
+                                // error
+                                rest_error ('AUTH_NO_DATA');
+                            }
+
+
                             $perso = '1';
-                            $restricted_to = ""; 
+                            $restricted_to = "";
 
                             // does the personal folder of this user exists?
                             $user_folder = DB::queryFirstRow(
@@ -1602,7 +1642,7 @@ function rest_get () {
 
                         // now we continue
                         // encrypt password
-                        $encrypt = cryption(urldecode($tpc_param[1]), $salt, "", "encrypt");
+                        $encrypt = cryption(urldecode($tpc_param[1]), $salt, "encrypt");
 
                         // is there a label?
                         if (empty($tpc_param[3])) {
@@ -1808,9 +1848,9 @@ function rest_get () {
                 if (empty($params[1])) $params[1] = 0;
                 if (empty($params[2])) $params[2] = 0;
                 if (empty($params[3])) $params[3] = 0;
-                if (empty($params[4])) $params[4] = 0; 
-                if (empty($params[5])) $params[5] = 0; 
-                if (empty($params[6])) $params[6] = 0; 
+                if (empty($params[4])) $params[4] = 0;
+                if (empty($params[5])) $params[5] = 0;
+                if (empty($params[6])) $params[6] = 0;
 
                 // load library
                 require_once '../sources/SplClassLoader.php';

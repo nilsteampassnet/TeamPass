@@ -22,8 +22,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 // load phpCrypt
 if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
     require_once '../includes/libraries/phpcrypt/phpCrypt.php';
+    require_once '../includes/config/settings.php';
 } else {
     require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/phpcrypt/phpCrypt.php';
+    require_once $_SESSION['settings']['cpassman_dir'] . '/includes/config/settings.php';
 }
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use PHP_Crypt\Cipher as Cipher;
@@ -251,26 +253,24 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption($p1, $p2, $p3, $p4 = null)
+function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
 {
     if (DEFUSE_ENCRYPTION === TRUE) {
-        // load PhpEncryption library
-        if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
-            require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-            //require_once '../includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+        if ($scope === "perso") {
+            return defuse_crypto(
+                $message,
+                $sk,
+                $type
+            );
         } else {
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Crypto.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Core.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Encoding.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Key.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/KeyConfig.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/Config.php';
-            require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
+            return defuse_crypto(
+                $message,
+                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
+                $type
+            );
         }
-        return defuse_crypto($p1, $p3, $p4);
     } else {
-        return cryption_phpCrypt($p1, $p2, $p3, $p4);
+        return cryption_phpCrypt($message, $sk, $iv, $type);
     }
 }
 
@@ -284,7 +284,7 @@ function cryption($p1, $p2, $p3, $p4 = null)
 function cryption_phpCrypt($string, $key, $iv, $type)
 {
     // manage key origin
-    if (empty($key)) $key = SALT;
+    define('SALT', 'LEfzTjADMTzV6qHC');
 
     if ($key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
@@ -352,57 +352,110 @@ function testHex2Bin ($val)
     return hex2bin($val);
 }
 
-function defuse_crypto($message, $key, $type)
+function cryption($message, $ascii_key, $type) //defuse_crypto
 {
-    //echo $message." ;; ".$key." ;; ".$type;
+    // load PhpEncryption library
+    if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']['cpassman_dir'])) {
+        $path = '../includes/libraries/Encryption/Encryption/';
+    } else {
+        $path = $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
+    }
+    require_once $path.'Crypto.php';
+    require_once $path.'Encoding.php';
+    require_once $path.'DerivedKeys.php';
+    require_once $path.'Key.php';
+    require_once $path.'KeyOrPassword.php';
+    require_once $path.'File.php';
+    require_once $path.'RuntimeTests.php';
+    require_once $path.'KeyProtectedByPassword.php';
+    require_once $path.'Core.php';
+
     // init
     $err = '';
-
-    // manage key origin
-    if (empty($key) && $type == "encrypt") {
-        try {
-            $key = \Defuse\Crypto\Crypto::createNewRandomKey();
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely create a key');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely create a key');
-        }
-
-        //\Defuse\Crypto\Encoding::binToHex($key);
-        $tmp = \Defuse\Crypto\Key::saveToAsciiSafeString($key);
-        //echo $key_plain;
+    if (empty($ascii_key)) {
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     }
 
-    if ($type == "encrypt") {
-        try {
-            $ciphertext = \Defuse\Crypto\Crypto::Encrypt($message, $key);
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely perform encryption');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely perform encryption');
-        }
+    // convert KEY
+    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
-        return array(
-            'string' => isset($ciphertext) ? $ciphertext : "",
-            //'iv' => $key_plain,
-            'error' => $err
-        );
-
-    } else if ($type == "decrypt") {
-        try {
-            $decrypted = \Defuse\Crypto\Crypto::Decrypt($message, $key);
-        } catch (\Defuse\Crypto\Exception\InvalidCiphertextException $ex) {
-            $err = ('DANGER! DANGER! The ciphertext has been tampered with!');
-        } catch (\Defuse\Crypto\Exception\CryptoTestFailedException $ex) {
-            $err = ('Cannot safely perform decryption');
-        } catch (\Defuse\Crypto\Exception\CannotPerformOperationException $ex) {
-            $err = ('Cannot safely perform decryption');
+    try {
+        if ($type === "encrypt") {
+            $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+        } else if ($type === "decrypt") {
+            $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
         }
-        return array(
-            'string' => isset($decrypted) ? $decrypted : "",
-            'error' => $err
-        );
     }
+    catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+    }
+    catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+        $err = $ex;
+    }
+
+    return array(
+        'string' => isset($text) ? $text : "",
+        'error' => $err
+    );
+}
+
+function defuse_generate_key() {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    $key = \Defuse\Crypto\Key::createNewRandomKey();
+    $key = $key->saveToAsciiSafeString();
+    return $key;
+}
+
+function defuse_generate_personal_key($psk) {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    $protected_key = \Defuse\Crypto\KeyProtectedByPassword::createRandomPasswordProtectedKey($psk);
+    $protected_key_encoded = $protected_key->saveToAsciiSafeString();
+
+    return $protected_key_encoded;  // save this in user table
+}
+
+function defuse_validate_personal_key($psk, $protected_key_encoded) {
+    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/File.php';
+    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+    try {
+        $protected_key = \Defuse\Crypto\KeyProtectedByPassword::loadFromAsciiSafeString($protected_key_encoded);
+        $user_key = $protected_key->unlockKey($psk);
+        $user_key_encoded = $user_key->saveToAsciiSafeString();
+    }
+    catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        return "Error - Major issue as the encryption is broken.";
+    }
+    catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        return "Error - The saltkey is not the correct one.";
+    }
+
+    return $user_key_encoded;   // store it in session once user has entered his psk
 }
 
 /**

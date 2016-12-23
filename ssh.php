@@ -73,7 +73,11 @@ $dataItem = DB::queryfirstrow(
     $_GET['id']
 );
 // decrypt password
-$oldPwClear = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+$oldPwClear = cryption(
+    $dataItem['pw'],
+    "",
+    "decrypt"
+);
 
 echo '
 <div id="tabs">

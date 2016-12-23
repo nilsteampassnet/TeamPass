@@ -103,6 +103,8 @@ if (isset($_GET['language'])) {
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
+} elseif ($_SESSION['user_language'] === "0") {
+    $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 }
 
 // Load user languages files
@@ -334,6 +336,7 @@ if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
         $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
     }
 }
+/*
 // error Salt key
 if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
     if (empty($errorAdmin)) {
@@ -342,6 +345,7 @@ if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
         $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_salt'];
     }
 }
+*/
 
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
     // error cpassman dir

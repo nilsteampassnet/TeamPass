@@ -56,10 +56,18 @@ if (!$resData) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
     exit();
 }
-while ($record = mysqli_fetch_array($resData)) {
-    $tmpData = substr(decrypt($record['pw']), strlen($record['pw_iv']));
-    if (isUTF8($tmpData ) && !empty($tmpData )) {
-        $encrypt = cryption($tmpData , SALT, "", "encrypt");
+while ($record = mysqli_fetch_array($resData)) {echo decrypt($record['pw'])." ";
+    $tmpData = substr(
+        decrypt($record['pw']),
+        strlen($record['pw_iv'])
+    );
+    if (isUTF8($tmpData ) && !empty($tmpData)) {
+        $encrypt = cryption_phpCrypt(
+            $tmpData,
+            SALT,
+            "",
+            "encrypt"
+        );
 
         // store Password
         mysqli_query($dbTmp,

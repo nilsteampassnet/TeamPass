@@ -758,13 +758,19 @@ $htmlHeaders .= '
             bgiframe: true,
             modal: true,
             autoOpen: false,
-            width: 300,
+            width: 400,
             height: 150,
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
                 "'.$LANG['ok'].'": function() {
-                    $(this).dialog("close");
+                    $("#div_dialog_message").dialog("close");
                 }
+            },
+            beforeClose: function(){
+                $("#div_dialog_message_text").html("");
+            },
+            close: function() {
+                $("#div_dialog_message").dialog("close");
             }
         });
 
@@ -792,8 +798,17 @@ $htmlHeaders .= '
                            data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
                         },
                         function(data) {
-                            LoadingPage();
-                            if ($("#input_personal_saltkey").val() != "") {
+                            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                            if (data.error !== "") {
+                                // display error
+                                $("#main_info_box_text").html(data.error);
+                                $("#main_info_box").show().position({
+                                    my: "center",
+                                    at: "center top+75",
+                                    of: "#top"
+                                });
+                                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 5000);
+                            } else {
                                 $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",
@@ -803,6 +818,7 @@ $htmlHeaders .= '
                                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                                 location.reload();
                             }
+                            LoadingPage();
                             $("#input_personal_saltkey").val("");
                         }
                     );

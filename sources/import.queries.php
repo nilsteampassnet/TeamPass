@@ -250,9 +250,17 @@ switch ($_POST['type']) {
 
             //Encryption key
             if ($personalFolder == 1) {
-                $encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
+                $encrypt = cryption(
+                    $item[2],
+                    $_SESSION['user_settings']['session_psk'],
+                    "encrypt"
+                );
             } else {
-                $encrypt = cryption($item[2], SALT, "", "encrypt");
+                $encrypt = cryption(
+                    $item[2],
+                    "",
+                    "encrypt"
+                );
             }
 
             // Insert new item in table ITEMS
@@ -841,9 +849,17 @@ switch ($_POST['type']) {
 
                         // prepare PW
                         if ($import_perso == true) {
-                            $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                            $encrypt = cryption(
+                                $pw,
+                                $_SESSION['user_settings']['session_psk'],
+                                "encrypt"
+                            );
                         } else {
-                            $encrypt = cryption($pw, SALT, "", "encrypt");
+                            $encrypt = cryption(
+                                $pw,
+                                "",
+                                "encrypt"
+                            );
                         }
 
                         //ADD item

@@ -87,9 +87,17 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    "",
+                                    "decrypt"
+                                );
                             }
 
                             $full_listing[$i] = array(
@@ -125,6 +133,12 @@ switch ($_POST['type']) {
             break;
         }
 
+        // check if psk is set
+        if (!isset($_SESSION['user_settings']['clear_psk']) || empty($_SESSION['user_settings']['clear_psk']) || !isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])) {
+            echo '[{"error" : "No personal saltkey given"}]';
+            break;
+        }
+
         $currentID = "";
         $pws_list = array();
         $rows = DB::query(
@@ -143,17 +157,6 @@ switch ($_POST['type']) {
             }
         }
 
-        //
-        DB::update(
-            prefix_table('users'),
-            array(
-                'upgrade_needed' => 0
-               ),
-            "id = %i",
-            $_POST['user_id']
-        );
-        $_SESSION['user_upgrade_needed'] = 0;
-
         echo '[{"error" : "" , "pws_list" : "'.implode(',', $pws_list).'" , "currentId" : "'.$currentID.'" , "nb" : "'.count($pws_list).'"}]';
         break;
 
@@ -168,17 +171,18 @@ switch ($_POST['type']) {
             echo '[{"error" : "No ID provided"}]';
             break;
         }
+
         if (isset($_POST['data_to_share'])) {
             // ON DEMAND
 
             //decrypt and retreive data in JSON format
-			$dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+            $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
-			// do a check on old PSK
-			if (empty($_SESSION['my_sk']) || empty($dataReceived['old_sk'])) {
-				echo '[{"error" : "No personnal saltkey provided"}]';
-				break;
-			}
+            // do a check on old PSK
+            if (empty($_SESSION['my_sk']) || empty($dataReceived['old_sk'])) {
+                echo '[{"error" : "No personnal saltkey provided"}]';
+                break;
+            }
 
             //Prepare variables
             $personal_sk = htmlspecialchars_decode($dataReceived['sk']);
@@ -202,7 +206,12 @@ switch ($_POST['type']) {
             // check if current encryption protocol #3
             if (!empty($data['pw_iv']) && !empty($data['pw'])) {
                 // decrypt it
-                $pw = cryption($data['pw'], $oldPersonalSaltkey, $data['pw_iv'], "decrypt");
+                $pw = cryption_phpCrypt(
+                    $data['pw'],
+                    $oldPersonalSaltkey,
+                    $data['pw_iv'],
+                    "decrypt"
+                );
                 $pw = $pw['string'];
             } else {
                 // check if pw encrypted with protocol #2
@@ -229,14 +238,18 @@ switch ($_POST['type']) {
 
             // encrypt it
             if (!empty($pw) && isUTF8($pw)) {
-                $encrypt = cryption($pw, $personal_sk, "", "encrypt");
+                $encrypt = cryption(
+                    $pw,
+                    $personal_sk,
+                    "encrypt"
+                );
                 if (isUTF8($pw)) {
                     // store Password
                     DB::update(
                         prefix_table('items'),
                         array(
                             'pw' => $encrypt['string'],
-                            'pw_iv' => $encrypt['iv']
+                            'pw_iv' => ""
                            ),
                         "id = %i", $data['id']
                     );
@@ -244,22 +257,22 @@ switch ($_POST['type']) {
             }
         } else {
             // COMPLETE RE-ENCRYPTION
-
-            $personal_sk = $_SESSION['my_sk'];
-
             // get data about pw
             $data = DB::queryfirstrow(
-                "SELECT id, pw, pw_iv
+                "SELECT id, pw, pw_iv, encryption_type
                 FROM ".prefix_table("items")."
                 WHERE id = %i",
                 $_POST['currentId']
             );
-            if (empty($data['pw_iv'])) {
-                // check if pw encrypted with protocol #2
-                $pw = decrypt($data['pw'], $_SESSION['my_sk']);
+            if (empty($data['pw_iv']) && $data['encryption_type'] === "not_set") {
+            // check if pw encrypted with protocol #2
+                $pw = decrypt(
+                    $data['pw'],
+                    $_SESSION['user_settings']['clear_psk']
+                );
                 if (empty($pw)) {
                     // used protocol is #1
-                    $pw = decryptOld($data['pw'], $_SESSION['my_sk']);  // decrypt using protocol #1
+                    $pw = decryptOld($data['pw'], $_SESSION['user_settings']['clear_psk']);  // decrypt using protocol #1
                 } else {
                     // used protocol is #2
                     // get key for this pw
@@ -277,21 +290,66 @@ switch ($_POST['type']) {
                 }
 
                 // encrypt it
-                $encrypt = cryption($pw, $personal_sk, "", "encrypt");
+                $encrypt = cryption(
+                    $pw,
+                    $_SESSION['user_settings']['session_psk'],
+                    "encrypt"
+                );
 
                 // store Password
                 DB::update(
                     prefix_table('items'),
                     array(
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv']
+                        'pw_iv' => "",
+                        "encryption_type" => "defuse"
+                       ),
+                    "id = %i", $data['id']
+                );
+            } elseif ($data['encryption_type'] === "not_set") {
+            // to be re-encrypted with defuse
+
+                // decrypt
+                $pw = cryption_phpCrypt(
+                    $data['pw'],
+                    $_SESSION['user_settings']['clear_psk'],
+                    $data['pw_iv'],
+                    "decrypt"
+                );
+
+                // encrypt
+                $encrypt = cryption(
+                    $pw['string'],
+                    $_SESSION['user_settings']['session_psk'],
+                    "encrypt"
+                );
+
+                // store Password
+                DB::update(
+                    prefix_table('items'),
+                    array(
+                        'pw' => $encrypt['string'],
+                        'pw_iv' => "",
+                        "encryption_type" => "defuse"
                        ),
                     "id = %i", $data['id']
                 );
             } else {
-                // already re-encrypted
+            // already re-encrypted
             }
         }
+
+
+        //
+        DB::update(
+            prefix_table('users'),
+            array(
+                'upgrade_needed' => 0
+               ),
+            "id = %i",
+            $_POST['user_id']
+        );
+        $_SESSION['user_upgrade_needed'] = 0;
 
 
         echo '[{"error" : ""}]';
@@ -316,12 +374,15 @@ switch ($_POST['type']) {
         );
 
         // decrypt password
-        $oldPwClear = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+        $oldPwClear = cryption(
+            $dataItem['pw'],
+            "",
+            "decrypt"
+        );
 
         // encrypt new password
         $encrypt = cryption(
             $dataReceived['new_pwd'],
-            SALT,
             "",
             "encrypt"
         );

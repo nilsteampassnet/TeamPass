@@ -107,7 +107,7 @@ if (
             }
 
             // get data
-            $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+            $pw = cryption($dataItem['pw'], "", "decrypt");
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];

@@ -787,6 +787,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
             $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
             $_SESSION['user_settings']['user_language'] = $data['user_language'];
+            $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
 
             // manage session expiration
             $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;

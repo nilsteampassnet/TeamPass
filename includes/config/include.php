@@ -28,7 +28,7 @@ $k['allowedTags'] = "<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><bl
 @define('ERR_VALID_SESSION', "1004");
 @define('OTV_USER_ID', "9999991");
 @define('API_USER_ID', "9999999");
-@define('DEFUSE_ENCRYPTION', false);
+@define('DEFUSE_ENCRYPTION', true);
 
 // Management Pages
 $mngPages = array(

@@ -575,15 +575,12 @@ echo '
 // Change main SALT key
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'div_change_salt_key\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="changeMainSaltKey(\'starting\')" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
                     <label>'.$LANG['admin_action_change_salt_key'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_change_salt_key_tip']), ENT_QUOTES).'"></i></span>
-                    <span id="div_change_salt_key" style="margin-left:10px;display:none;">
-                        <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><span id="change_salt_key_image"></span>&nbsp;
-                        <span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
                         &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
