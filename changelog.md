@@ -27,6 +27,8 @@ Last changes
  #1561 Personal folder deletion deletes all
  #1571 Drag and drop from PF to public folder makes item password corrupted
  #1571 Create an item inside another folder than the one selected
+ #1601 Time zone can't be saved in My Profile
+ #1603 Attached files disappears
 
 
 2.1.26

@@ -180,7 +180,8 @@ if (!empty($_POST['type'])) {
                         'fonction_id' => $dataReceived['groups'],
                         'groupes_interdits' => $dataReceived['forbidden_flds'],
                         'groupes_visibles' => $dataReceived['allowed_flds'],
-                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole']
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'],
+                        'encrypted_psk' => ''
                        )
                 );
                 $new_user_id = DB::insertId();

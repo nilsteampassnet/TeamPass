@@ -2078,19 +2078,7 @@ PreviewImage = function(uri,title) {
                     width: 'auto',
                     title: title,
                     open: function( event, ui ) {
-                        // delete created file
-                        $.post(
-                            "sources/items.queries.php",
-                            {
-                                type        : "delete_file",
-                                file_suffix : data.file_suffix,
-                                uri         : uri,
-                                key         : "<?php echo $_SESSION['key'];?>"
-                            },
-                            function(data) {
-
-                            }
-                        );
+                        // nothing to do
                     }
                 });
             });

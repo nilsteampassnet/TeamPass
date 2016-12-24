@@ -524,6 +524,7 @@ global \$SETTINGS;
                             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
+                            `encrypted_psk` text NOT NULL
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
