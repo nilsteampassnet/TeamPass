@@ -137,7 +137,9 @@ echo '
 
 <hr>
 
-<div style="float:left;width:100%;margin-top:10px;">
+<div style="display:none;margin:3px 0 10px 0;text-align:center;padding:4px;" id="field_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
+
+<div style="float:left;width:100%;margin-top:3px;">
     <div style="text-align:center;margin:5px;padding:3px;display:none;" id="profile_info_box" class="ui-widget ui-state-highlight ui-corner-all"></div>
     <div style="height:20px;text-align:center;margin:2px;" id="change_pwd_error" class=""></div>
     <div id="upload_container_photo" style="display:none;"></div>
@@ -197,8 +199,6 @@ echo '
 
    </div>';
 echo '
-
-   <div style="display:none;margin:5px 0 10px 0;text-align:center;padding:4px;" id="field_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';
 ?>
 <script type="text/javascript">
@@ -208,7 +208,7 @@ $(function() {
     $("#but_change_password").click(function() {
         $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked'];?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1];?>");
         $("#change_pwd_error").hide();
-      $("#div_change_psk,   #div_reset_psk").hide();
+      $("#div_change_psk, #div_reset_psk").hide();
 
       if ($("#div_change_password").not(":visible")) {
          $("#div_change_password").show();
@@ -466,31 +466,45 @@ $(function() {
       $("#div_change_psk").show();
       $("#dialog_user_profil").dialog("option", "height", 600);
     });
-   $("#button_change_psk").click(function() {
-      $("#psk_change_wait").show();
 
-      var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
+    // manage CHANGE OF PERSONAL SALTKEY
+    $("#button_change_psk").click(function() {
+        $("#psk_change_wait").show();
 
-      $("#psk_change_wait_info").html("... 0%");
+        if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey").val() === "") {
+            $("#psk_change_wait").hide();
+            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo $LANG['home_personal_saltkey_label'];?></div>');
 
-      //Send query
-      $.post(
-         "sources/main.queries.php",
-         {
-            type            : "change_personal_saltkey",
-            data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key'];?>"),
-            key             : "<?php echo $_SESSION['key'];?>"
-         },
-         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            if (data.error == "no") {
-               changePersonalSaltKey(data_to_share, data.list, data.nb_total);
-            } else {
+            setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 1000);
+            return false;
+        }
+
+        var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
+
+        $("#psk_change_wait_info").html("... 0%");
+
+        //Send query
+        $.post(
+            "sources/main.queries.php",
+            {
+                type            : "change_personal_saltkey",
+                data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key'];?>"),
+                key             : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                if (data.error == "no") {
+                    changePersonalSaltKey(data_to_share, data.list, data.nb_total);
+                } else {
+                    $("#psk_change_wait").hide();
+                    $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;">' + data.error + '</div>');
+
+                    setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 3000);
+                    return false;
+                }
             }
-         }
-      );
-
-   })
+        );
+    });
 
 
    // RESET PSK
@@ -572,27 +586,41 @@ function changePersonalSaltKey(credentials, ids, nb_total)
    else
       $("#psk_change_wait_info").html("&nbsp;...&nbsp;"+Math.floor(((nb_total-nb) / nb_total) * 100)+"%");
 
-   $.post(
-      "sources/utils.queries.php",
-      {
-         type            : "reencrypt_personal_pwd",
-         data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key'];?>"),
-         currentId       : currentID,
-         key             : "<?php echo $_SESSION['key'];?>"
-      },
-      function(data){
-         if (currentID == "") {
-            $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done'];?>");
-            location.reload();
-         } else {
-            if (data[0].error == "") {
-               changePersonalSaltKey(credentials, aIds, nb_total);
-            } else {
-               $("#psk_change_wait_info").html(data[0].error);
-            }
-         }
-      },
-      "json"
-   );
+    var data = "{\"psk\":\""+sanitizeString($("#new_personal_saltkey").val())+"\"}";
+    $.post(
+      "sources/main.queries.php",
+        {
+           type    : "store_personal_saltkey",
+           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
+        },
+        function(data){
+            $.post(
+            "sources/utils.queries.php",
+            {
+                type            : "reencrypt_personal_pwd",
+                data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key'];?>"),
+                currentId       : currentID,
+                key             : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data){
+                if (currentID == "") {
+                    $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done'];?>");
+                    location.reload();
+                } else {
+                    if (data[0].error == "") {
+                    changePersonalSaltKey(credentials, aIds, nb_total);
+                    } else {
+                        $("#psk_change_wait_info").html(data[0].error);
+                    }
+                }
+            },
+            "json"
+            );
+
+        },
+        "json"
+    );
+
+   
 }
  </script>

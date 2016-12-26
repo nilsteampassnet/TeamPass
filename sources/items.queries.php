@@ -201,7 +201,6 @@ if (isset($_POST['type'])) {
                         'description' => $dataReceived['description'],
                         'pw' => $passwd['string'],
                         'pw_iv' => "",
-                        //'pw_iv' => $passwd['iv'],
                         'email' => noHTML($dataReceived['email']),
                         'url' => noHTML($url),
                         'id_tree' => $dataReceived['categorie'],

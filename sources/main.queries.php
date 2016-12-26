@@ -526,6 +526,8 @@ switch ($_POST['type']) {
     case "store_personal_saltkey":
         $err = "";
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // manage store
         if ($dataReceived['psk'] !== "") {
             // store in session the cleartext for psk
             $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
@@ -551,6 +553,7 @@ switch ($_POST['type']) {
                 $dataReceived['psk'],
                 $_SESSION['user_settings']['encrypted_psk']
             );
+            
             if (strpos($user_key_encoded, "Error ") !== false) {
                 $err = $user_key_encoded;
             } else {
@@ -558,7 +561,7 @@ switch ($_POST['type']) {
                 $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
                 setcookie(
                     "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    $user_key_encoded,
+                    encrypt($dataReceived['psk'], ""),
                     (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
                     '/'
                 );
@@ -583,17 +586,56 @@ switch ($_POST['type']) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
+
+        //init
+        $list = "";
+        $nb = 0;
+
         //decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
         $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
-        if (empty($oldPersonalSaltkey)) {
-            $oldPersonalSaltkey = $_SESSION['my_sk'];
+
+        // check old psk
+        $user_key_encoded = defuse_validate_personal_key(
+            $oldPersonalSaltkey,
+            $_SESSION['user_settings']['encrypted_psk']
+        );
+        if (strpos($user_key_encoded, "Error ") !== false) {
+            echo prepareExchangedData(
+                array(
+                    "list" => $list,
+                    "error" => $user_key_encoded,
+                    "nb_total" => $nb
+                ),
+                "encode"
+            );
+            break;
+        } else {
+            // Store PSK
+            $_SESSION['user_settings']['encrypted_oldpsk'] = $user_key_encoded;
         }
 
-        $list = "";
+        // generate the new encrypted psk based upon clear psk
+        $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($newPersonalSaltkey);
+
+        // store it in DB
+        DB::update(
+            prefix_table("users"),
+            array(
+                'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
+               ),
+            "id = %i",
+            $_SESSION['user_id']
+        );
+
+        $user_key_encoded = defuse_validate_personal_key(
+            $newPersonalSaltkey,
+            $_SESSION['user_settings']['encrypted_psk']
+        );
+        $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
 
         // Change encryption
         $rows = DB::query(
@@ -617,10 +659,9 @@ switch ($_POST['type']) {
         }
 
         // change salt
-        $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
         setcookie(
             "TeamPass_PFSK_".md5($_SESSION['user_id']),
-            encrypt($_SESSION['my_sk'], ""),
+            encrypt($newPersonalSaltkey, ""),
             time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
             '/'
         );
