@@ -29,6 +29,9 @@ Last changes
  #1571 Create an item inside another folder than the one selected
  #1601 Time zone can't be saved in My Profile
  #1603 Attached files disappears
+ #1531 Database otv table originator field should be int instead of tinyint
+ #1549 Read Only users can use Personal Folders
+ #1514 USr language selection is done in Profile dialogbox
 
 
 2.1.26

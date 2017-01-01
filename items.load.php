@@ -2616,8 +2616,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
-        height: 250,
+        width: 600,
+        height: 150,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
             "<?php echo $LANG['delete'];?>": function() {

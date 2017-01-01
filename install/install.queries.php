@@ -749,7 +749,7 @@ global \$SETTINGS;
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            `originator` tinyint(12) NOT NULL,
+                            `originator` int(12) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

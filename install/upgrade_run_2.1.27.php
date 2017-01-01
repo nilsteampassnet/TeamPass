@@ -171,6 +171,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user
 // alter table USERS - just ensure correct naming of IsAdministratedByRole
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` CHANGE IsAdministratedByRole isAdministratedByRole tinyint(5) NOT NULL DEFAULT '0'");
 
+// alter table OTV
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."otv` CHANGE originator originator int(12) NOT NULL DEFAULT '0'");
+
 // do clean of users table
 $fieldsToUpdate = ['groupes_visibles', 'fonction_id', 'groupes_interdits'];
 $result = mysqli_query($dbTmp, "SELECT id, groupes_visibles, fonction_id, groupes_interdits FROM `".$_SESSION['tbl_prefix']."users`");

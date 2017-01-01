@@ -134,7 +134,7 @@ switch ($_POST['type']) {
         }
 
         // check if psk is set
-        if (!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk']) || !isset($_SESSION['user_settings']['encrypted_oldpsk']) || empty($_SESSION['user_settings']['encrypted_oldpsk'])) {
+        if (!isset($_SESSION['user_settings']['encrypted_psk']) || empty($_SESSION['user_settings']['encrypted_psk'])) {
             echo '[{"error" : "No personal saltkey given"}]';
             break;
         }

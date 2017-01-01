@@ -228,41 +228,75 @@ $(function() {
         }
     });
 
-    $(".cb_selected_folder").click(function() {
-        var elem = $(this).attr("id").split("-");
-        if ($(this).prop("checked") == true) {
-            $("#row_"+elem[1]).css({"font-weight":"bold"});
-            $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
-        } else {
-            $("#row_"+elem[1]).css({"font-weight":""});
-            $("#title_"+elem[1]).css({"background-color":"#FFF"});
-        }
-    });
-
     // manage the click on toggle icons
     $(document).on({
         click: function (event) {
             $("#div_loading").show();
-            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue
-
-            // send change to be stored
-            $.post(
-                "sources/folders.queries.php",
-                {
-                    type    : tmp[1],
-                    value   : tmp[2],
-                    id      : tmp[0],
-                    key        : "<?php echo $_SESSION['key'];?>"
-                },
-                function(data) {
-                    $("#div_loading").hide();
-                    // refresh table content
-                    tableFolders.api().ajax.reload();
+            if ($(this).attr('tp') === undefined) {
+                // case of folder selection
+                var selected_cb = $(this);
+                var elem = $(this).attr("id").split("-");
+                if ($(this).prop("checked") == true) {
+                    $("#row_"+elem[1]).css({"font-weight":"bold"});
+                    $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
+                } else {
+                    $("#row_"+elem[1]).css({"font-weight":""});
+                    $("#title_"+elem[1]).css({"background-color":"#FFF"});
                 }
-            );
-        }
-    }, ".fa-toggle-off, .fa-toggle-on");
 
+                // send change to be stored
+                $.post(
+                    "sources/folders.queries.php",
+                    {
+                        type    : "select_sub_folders",
+                        id      : elem[1],
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#div_loading").hide();
+                        // check/uncheck checkbox
+                        if (data[0].subfolders !== "") {
+                            var tmp = data[0].subfolders.split(";");
+                            for (var i = tmp.length - 1; i >= 0; i--) {
+                                if (selected_cb.prop("checked") == true) {
+                                    $("#cb_selected-" + tmp[i]).prop("checked", true).prop("disabled", true);
+                                    $("#row_" + tmp[i]).css({"font-weight":"bold"});
+                                    $("#title_" + tmp[i]).css({"background-color":"#E9FF00"});
+                                } else {
+                                    $("#cb_selected-" + tmp[i]).prop("checked", false).prop("disabled", false);
+                                    $("#row_" + tmp[i]).css({"font-weight":""});
+                                    $("#title_" + tmp[i]).css({"background-color":"#FFF"});
+                                }
+                            }
+                        }
+                    },
+                    "json"
+                );
+            } else {
+                var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue
+
+                // send change to be stored
+                $.post(
+                    "sources/folders.queries.php",
+                    {
+                        type    : tmp[1],
+                        value   : tmp[2],
+                        id      : tmp[0],
+                        key        : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#div_loading").hide();
+                        // refresh table content
+                        tableFolders.api().ajax.reload();
+                    }
+                );
+            }
+        }
+    },
+    ".fa-toggle-off, .fa-toggle-on, .cb_selected_folder"
+    );
+
+    // 
     $( "#click_delete_multiple_folders" ).click(function() {
         var list_i = "";
         $(".cb_selected_folder:checked").each(function() {

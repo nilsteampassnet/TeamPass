@@ -272,64 +272,66 @@ if (isset($_POST['newtitle'])) {
             $folderForDel = array();
 
             foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
-                $foldersDeleted = "";
-                // Get through each subfolder
-                $folders = $tree->getDescendants($folderId, true);
-                foreach ($folders as $folder) {
-                    if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
-                        //Store the deleted folder (recycled bin)
-                        DB::insert(
-                            prefix_table("misc"),
-                            array(
-                                'type' => 'folder_deleted',
-                                'intitule' => "f".$folderId,
-                                'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                                    $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
-                                    $folder->nlevel.', 0, 0, 0, 0'
-                            )
-                        );
-                        //array for delete folder
-                        $folderForDel[] = $folder->id;
-
-                        //delete items & logs
-                        $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $folder->id);
-                        foreach ($items as $item) {
-                            DB::update(
-                                prefix_table("items"),
-                                array(
-                                    'inactif' => '1',
-                                ),
-                                "id = %i",
-                                $item['id']
-                            );
-                            //log
+                if (!in_array($folderId, $folderForDel)) {
+                    $foldersDeleted = "";
+                    // Get through each subfolder
+                    $folders = $tree->getDescendants($folderId, true);print_r($folders);
+                    foreach ($folders as $folder) {
+                        if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
+                            //Store the deleted folder (recycled bin)
                             DB::insert(
-                                prefix_table("log_items"),
+                                prefix_table("misc"),
                                 array(
-                                    'id_item' => $item['id'],
-                                    'date' => time(),
-                                    'id_user' => $_SESSION['user_id'],
-                                    'action' => 'at_delete'
+                                    'type' => 'folder_deleted',
+                                    'intitule' => "f".$folderId,
+                                    'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                        $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
+                                        $folder->nlevel.', 0, 0, 0, 0'
                                 )
                             );
+                            //array for delete folder
+                            $folderForDel[] = $folder->id;
 
-                            // delete folder from SESSION
-                            if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
-                                unset($messages[$key]);
+                            //delete items & logs
+                            $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $folder->id);
+                            foreach ($items as $item) {
+                                DB::update(
+                                    prefix_table("items"),
+                                    array(
+                                        'inactif' => '1',
+                                    ),
+                                    "id = %i",
+                                    $item['id']
+                                );
+                                //log
+                                DB::insert(
+                                    prefix_table("log_items"),
+                                    array(
+                                        'id_item' => $item['id'],
+                                        'date' => time(),
+                                        'id_user' => $_SESSION['user_id'],
+                                        'action' => 'at_delete'
+                                    )
+                                );
+
+                                // delete folder from SESSION
+                                if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
+                                    unset($_SESSION['groupes_visibles'][$item['id']]);
+                                }
                             }
+
+                            //Actualize the variable
+                            $_SESSION['nb_folders'] --;
                         }
-
-                        //Actualize the variable
-                        $_SESSION['nb_folders'] --;
                     }
-                }
-                //Update CACHE table
-                updateCacheTable("delete_value", $folderId);
-
-                // delete folders
-                $folderForDel=array_unique($folderForDel);
-                foreach ($folderForDel as $fol){
-                    DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
+                    //Update CACHE table
+                    updateCacheTable("delete_value", $folderId);
+                    
+                    // delete folders
+                    $folderForDel=array_unique($folderForDel);
+                    foreach ($folderForDel as $fol){
+                        DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
+                    }
                 }
             }
 
@@ -763,6 +765,39 @@ if (isset($_POST['newtitle'])) {
                 "id = %i",
                 $_POST['id']
             );
+            break;
+
+
+        // CASE where selecting/deselecting sub-folders
+        case "select_sub_folders":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            // get sub folders
+            $subfolders = "";
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+            // Get through each subfolder
+            $folders = $tree->getDescendants($_POST['id'], false);
+            foreach ($folders as $folder) {
+                if($subfolders === "") {
+                    $subfolders = $folder->id;
+                } else {
+                    $subfolders .= ";" . $folder->id;
+                }
+            }
+
+            echo '[ { "error" : "" , "subfolders" : "'.$subfolders.'" } ]';
+                    
             break;
     }
 }
