@@ -163,4 +163,4 @@ if (count($treeDesc) > 0) {
 }
 
 // finalize output
-echo '{"recordsTotal": '.count($treeDesc).', "recordsFiltered": '.$x.', "data": '.$sOutput;
+echo '{"recordsTotal": '.$x.', "recordsFiltered": '.$x.', "data": '.$sOutput;

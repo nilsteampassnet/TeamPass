@@ -185,7 +185,12 @@ if (!empty($listPf)) {
     $sWhere = "WHERE ".$sWhere;
 }
 
-DB::query("SELECT id FROM ".prefix_table("cache"));
+DB::query(
+    "SELECT id FROM ".prefix_table("cache")."
+    $sWhere
+    $sOrder",
+    $crit
+);
 $iTotal = DB::count();
 
 $rows = DB::query(

@@ -137,7 +137,17 @@ $dbTmp = mysqli_connect(
 // alter table Items
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
+// alter table misc to add an index
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
 
+// alter table misc to add an index
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
 
 // add field agses-usercardid to Users table
 $res = addColumnIfNotExist(

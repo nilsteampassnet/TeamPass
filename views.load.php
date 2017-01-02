@@ -185,7 +185,7 @@ $(function() {
     $("#radio_logs").click(function(e) {
         $("#div_log_purge").show();
     });
-    
+
 
     $("#tab2_dialog").dialog({
         bgiframe: true,

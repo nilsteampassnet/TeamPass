@@ -110,15 +110,13 @@ if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
     $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
 }
 
-DB::query("SELECT * FROM ".$pre."users");
-$iTotal = DB::count();
-//DB::debugMode(true);
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
     $sWhere
     $sLimit",
     $criteria
 );
+$iTotal = DB::count();
 
 //$iFilteredTotal = DB::count();
 $iFilteredTotal = 0;
@@ -182,7 +180,7 @@ foreach ($rows as $record) {
         $_SESSION['is_admin'] ||
         ($record['isAdministratedByRole'] > 0 &&
         in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
-		($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)
+        ($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)
     ) {
         $showUserFolders = true;
     } else {
@@ -204,12 +202,12 @@ foreach ($rows as $record) {
         } else {
             $sOutput .= '"';
         }
-		if ($record['id'] != API_USER_ID)
-			$sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>';
+        if ($record['id'] != API_USER_ID)
+            $sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>';
         $sOutput .= '",';
 
         //col2
-        $sOutput .= '"'.$record['login'].'"';
+        $sOutput .= '"<input=\"hidden\" id=\"user_login_'.$record['id'].'\" value=\"'.$record['login'].'\">'.$record['login'].'"';
         $sOutput .= ',';
 
         //col3

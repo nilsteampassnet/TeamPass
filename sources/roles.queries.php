@@ -63,7 +63,7 @@ if (!empty($_POST['type'])) {
             $tmp = DB::query("SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s", stripslashes($_POST['name']));
             $counter = DB::count();
             if ($counter == 0) {
-				db::debugmode(false);
+                db::debugmode(false);
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
@@ -78,26 +78,26 @@ if (!empty($_POST['type'])) {
                     //Actualize the variable
                     $_SESSION['nb_roles'] ++;
 
-					// get some data
-					$data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
+                    // get some data
+                    $data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
 
-					// add new role to user
-					$tmp = str_replace(";;", ";", $data_tmp['fonction_id']);
-					if (substr($tmp, -1) == ";") {
-						$_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].$role_id);
-					} else {
-						$_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].";".$role_id);
-					}
-					// store in DB
-					DB::update(
-						prefix_table("users"),
-						array(
-							'fonction_id' => $_SESSION['fonction_id']
-						   ),
-						"id = %i",
-						$_SESSION['user_id']
-					);
-					$_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
+                    // add new role to user
+                    $tmp = str_replace(";;", ";", $data_tmp['fonction_id']);
+                    if (substr($tmp, -1) == ";") {
+                        $_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].$role_id);
+                    } else {
+                        $_SESSION['fonction_id'] = str_replace(";;", ";", $data_tmp['fonction_id'].";".$role_id);
+                    }
+                    // store in DB
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'fonction_id' => $_SESSION['fonction_id']
+                           ),
+                        "id = %i",
+                        $_SESSION['user_id']
+                    );
+                    $_SESSION['user_roles'] = explode(";", $_SESSION['fonction_id']);
 
 
                     echo '[ { "error" : "no" } ]';
@@ -117,27 +117,27 @@ if (!empty($_POST['type'])) {
             //Actualize the variable
             $_SESSION['nb_roles'] --;
 
-			// parse all users to remove this role
-			$rows = DB::query(
-				"SELECT id, fonction_id FROM ".prefix_table("users")."
-				ORDER BY id ASC");
-			foreach ($rows as $record) {
-				$tab = explode(";", $record['fonction_id']);
-				if (($key = array_search($_POST['id'], $tab)) !== false) {
-					// remove the deleted role id
-					unset($tab[$key]);
+            // parse all users to remove this role
+            $rows = DB::query(
+                "SELECT id, fonction_id FROM ".prefix_table("users")."
+                ORDER BY id ASC");
+            foreach ($rows as $record) {
+                $tab = explode(";", $record['fonction_id']);
+                if (($key = array_search($_POST['id'], $tab)) !== false) {
+                    // remove the deleted role id
+                    unset($tab[$key]);
 
-					// store new list of functions
-					DB::update(
-						prefix_table("users"),
-						array(
-							'fonction_id' => rtrim(implode(";", $tab), ";")
-						   ),
-						"id = %i",
-						$record['id']
-					);
-				}
-			}
+                    // store new list of functions
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'fonction_id' => rtrim(implode(";", $tab), ";")
+                           ),
+                        "id = %i",
+                        $record['id']
+                    );
+                }
+            }
 
             echo '[ { "error" : "no" } ]';
             break;
@@ -308,12 +308,12 @@ if (!empty($_POST['type'])) {
                     } else {
                         $allow_pw_change = '&nbsp;<span class=\'fa fa-magic fa-2x mi-green tip\'  id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'></span>';
                     }
-					$title = mysqli_real_escape_string($link, filter_var($record['title'], FILTER_SANITIZE_STRING));
+                    $title = mysqli_real_escape_string($link, filter_var($record['title'], FILTER_SANITIZE_STRING));
 
                     $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.
-						$title.
+                        $title.
                         '<br>'.
-						'<span class=\'fa fa-pencil fa-2x mi-grey-1\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'></span>&nbsp;'.
+                        '<span class=\'fa fa-pencil fa-2x mi-grey-1\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'></span>&nbsp;'.
                         '<span class=\'fa fa-trash fa-2x mi-grey-1\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'></span>'.
                         $allow_pw_change.
                         '<div style=\'margin-top:-8px;\'>[&nbsp;'.$_SESSION['settings']['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
@@ -329,7 +329,7 @@ if (!empty($_POST['type'])) {
                 if (in_array($node->id, $_SESSION['groupes_visibles']) && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
                     $ident="";
                     for ($a=1; $a<$node->nlevel; $a++) {
-                        $ident .= "&#8212;";
+                        $ident .= '<i class=\'fa fa-sm fa-caret-right mi-grey-1\'></i>&nbsp;';
                     }
 
                     //display 1st cell of the line

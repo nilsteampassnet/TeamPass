@@ -8,7 +8,11 @@ Last changes
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
- UPD   AES library 
+ IMP   Folders deletion protocol has been securized to prevent unconsistencies in folders tree
+ IMP   New login availability is checked "live"
+ IMP   Filtering counters in datatables
+ IMP   Users Management dialogbox improved
+ UPD   AES library
  FIX   "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
@@ -31,7 +35,9 @@ Last changes
  #1603 Attached files disappears
  #1531 Database otv table originator field should be int instead of tinyint
  #1549 Read Only users can use Personal Folders
- #1514 USr language selection is done in Profile dialogbox
+ #1514 User language selection is done in Profile dialogbox
+ #1608 All folders are deleted
+ #1592 Show Client IP in mail to admin about logged on users
 
 
 2.1.26

@@ -152,7 +152,14 @@ $(function() {
                 }
             );
         }
-    }, ".fa-toggle-off, .fa-toggle-on");
+    },
+    ".fa-toggle-off, .fa-toggle-on"
+    );
+
+    // check if login is available
+    $("#new_login").change(function() {
+        login_exists($(this).val());
+    });
 
 
     $("#change_user_pw_newpw").simplePassMeter({
@@ -295,7 +302,7 @@ $(function() {
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
                 if ($("#new_login").val() == "" || $("#new_pwd").val()=="" || $("#new_email").val()=="") {
-                    $("#add_new_user_error").show().html("<?php echo $LANG['error_must_enter_all_fields'];?>");
+                    $("#add_new_user_error").show(1).html("<?php echo $LANG['error_must_enter_all_fields'];?>").delay(1000).fadeOut(1000);
                 } else {
                     $("#add_new_user_info").show().html("<?php echo $LANG['please_wait'];?>");
 
@@ -347,7 +354,7 @@ $(function() {
 
                                 $("#add_new_user").dialog("close");
                             } else {
-                                $("#add_new_user_error").html(data[0].error).show();
+                                $("#add_new_user_error").html(data[0].error).show(1).delay(1000).fadeOut(1000);
                             }
                         },
                         "json"
@@ -393,11 +400,12 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 430,
+        width: 380,
         height: 300,
         title: "<?php echo $LANG['admin_action'];?>",
         buttons: {
             "<?php echo $LANG['pw_generate'];?>": function() {
+                $("#generated_user_pw").html("");
                 $("#change_user_pw_wait").show();
                 $.post(
                         "sources/main.queries.php",
@@ -417,7 +425,7 @@ $(function() {
                             } else {
                                 $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val(data.key);
                                 $("#generated_user_pw").text(data.key);
-                                $("#show_generated_pw").show();
+                                $("#generated_user_pw, #generated_user_pw_title").show();
                                 $("#change_user_pw_newpw").focus();
                             }
                             $("#change_user_pw_wait").hide();
@@ -425,8 +433,12 @@ $(function() {
                    );
             },
             "<?php echo $LANG['save_button'];?>": function() {
-                if ($("#change_user_pw_newpw").val() == $("#change_user_pw_newpw_confirm").val()) {
-                                var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
+                if ($("#change_user_pw_newpw_confirm").val() === "" || $("#change_user_pw_newpw").val() === "") {
+                // check if empty
+                    $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields'];?>").show(1).delay(1000).fadeOut(1000);
+                } else if ($("#change_user_pw_newpw").val() === $("#change_user_pw_newpw_confirm").val()) {
+                // check if egual
+                    var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
                     $.post(
                         "sources/main.queries.php",
                         {
@@ -448,8 +460,7 @@ $(function() {
                         "json"
                    );
                 } else {
-                    $("#change_user_pw_error").html("<?php echo $LANG['error_password_confirmation'];?>");
-                    $("#change_user_pw_error").show();
+                    $("#change_user_pw_error").html("<?php echo $LANG['error_password_confirmation'];?>").show(1).delay(1000).fadeOut(1000);
                 }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
@@ -787,8 +798,9 @@ function action_on_user(id, action)
 
 function mdp_user(id)
 {
+    $("#generated_user_pw_title, #generated_user_pw").hide();
     $("#change_user_pw_id").val(id);
-    $("#change_user_pw_show_login").html($("#login_"+id).text());
+    $("#change_user_pw_show_login").html($("#user_login_"+id).text());
     $("#change_user_pw").dialog("open");
 }
 
@@ -1023,9 +1035,37 @@ function user_edit(user_id)
      }
 }
 
+/**
+* permits to create an automatic login based upon name and lastname
+*/
 function loginCreation()
 {
     $("#new_login").val($("#new_name").val().toLowerCase().replace(/ /g,"")+"."+$("#new_lastname").val().toLowerCase().replace(/ /g,""));
+    login_exists($("#new_login").val());
+}
+
+/**
+* Launches a query to identify if login exists
+*/
+function login_exists(text) {
+    $.post(
+        "sources/users.queries.php",
+        {
+            type    : "is_login_available",
+            login   : text,
+            key     : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            if (data[0].error === "") {
+                if (data[0].exists === "0") {
+                    $("#new_login_status").html('<span class="fa fa-check mi-green"></span>').show();
+                } else {
+                    $("#new_login_status").html('<span class="fa fa-minus-circle mi-red"></span>').show();
+                }
+            }
+        },
+        "json"
+    );
 }
 
 function aes_decrypt(text)

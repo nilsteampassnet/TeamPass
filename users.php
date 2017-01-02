@@ -151,14 +151,14 @@ echo '
 /* DIV FOR ADDING A USER */
 echo '
 <div id="add_new_user" style="display:none;">
-    <div id="add_new_user_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div id="add_new_user_error" style="text-align:center;margin:2px;display:none; position:absolute; padding:3px; width:94%;" class="ui-state-error ui-corner-all"></div>
     <label for="new_name" class="label_cpm">'.$LANG['name'].'</label>
     <input type="text" id="new_name" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" style="margin-bottom:3px;" />
 
     <label for="new_lastname" class="label_cpm">'.$LANG['lastname'].'</label>
     <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" style="margin-bottom:3px;" />
 
-    <label for="new_login" class="label_cpm">'.$LANG['login'].'</label>
+    <label for="new_login" class="label_cpm">'.$LANG['login'].'&nbsp;<span id="new_login_status"></span></label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />
 
     ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
@@ -218,15 +218,16 @@ foreach ($rows as $record) {
         <div style="margin-top:5px;">
             <table border="0">
             <tr>
-                <td>
-                    <input type="checkbox" id="new_admin"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                <td>', $_SESSION['user_admin'] === "1" ? '
+                    <input type="checkbox" id="new_admin" style="margin-bottom:3px;" />
                     <label for="new_admin">'.$LANG['is_admin'].'</label>
 
-                    <input type="checkbox" id="new_super_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                    <input type="checkbox" id="new_super_manager" style="margin-bottom:3px;" />
                     <label for="new_super_manager">'.$LANG['is_super_manager'].'</label>
 
-                    <input type="checkbox" id="new_manager"', $_SESSION['user_admin'] == 1 ? '':' disabled="disabled"', ' style="margin-bottom:3px;" />
+                    <input type="checkbox" id="new_manager" style="margin-bottom:3px;" />
                     <label for="new_manager">'.$LANG['is_manager'].'</label>
+                    ' : '', '
 
                     <input type="checkbox" id="new_read_only" style="margin-bottom:3px;" />
                     <label for="new_read_only">'.$LANG['is_read_only'].'</label>
@@ -266,18 +267,36 @@ echo '
 // DIV FOR CHANGING PASWWORD
 echo '
 <div id="change_user_pw" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;" class="ui-state-error ui-corner-all" id="change_user_pw_error"></div>' .
+    <div style="text-align:center; padding:2px; display:none; position:absolute; width:340px;" class="ui-state-error ui-corner-all" id="change_user_pw_error"></div>' .
 $LANG['give_new_pw'].'
     <div style="font-weight:bold;text-align:center;color:#FF8000;display:inline;" id="change_user_pw_show_login"></div>
-    <div style="margin-top:20px; width:100%;">
-        <label class="form_label" for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw" /><br />
-        <label class="form_label" for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;<input type="password" size="30" id="change_user_pw_newpw_confirm" />
-        <div id="show_generated_pw" style="display:none;"><label class="form_label" for="generated_user_pw">'.$LANG['generated_pw'].'</label>&nbsp;<span id="generated_user_pw"></span></div>
+    <div style="margin-top:20px;">
+        <table>
+            <tr>
+                <td style="width:120px;"><label for="change_user_pw_newpw">'.$LANG['index_new_pw'].'</label>&nbsp;</td>
+                <td><input type="password" size="30" id="change_user_pw_newpw" /></td>
+            </tr>
+            <tr>
+                <td><label for="change_user_pw_newpw_confirm">'.$LANG['index_change_pw_confirmation'].'</label>&nbsp;</td>
+                <td><input type="password" size="30" id="change_user_pw_newpw_confirm" /></td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td>
+                    <div id="pw_strength" style="margin-top:5px;"></div>
+                </td>
+            </tr>
+            <tr>
+                <td><label for="generated_user_pw" id="generated_user_pw_title" style="display:none;">'.$LANG['generated_pw'].'</label>
+                </td>
+                <td>
+                    <span style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" alt="ajax-loader" /></span>
+                    <span id="generated_user_pw" style="display:none;"></span>
+                </td>
+            </tr>
+        </table>
     </div>
-    <div style="width:100%;height:20px;">
-        <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
-    </div>
-    <div style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" alt="ajax-loader" /></div>
+
     <input type="hidden" id="change_user_pw_id" />
 </div>';
 // DIV FOR CHANGING EMAIL

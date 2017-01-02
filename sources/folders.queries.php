@@ -275,7 +275,7 @@ if (isset($_POST['newtitle'])) {
                 if (!in_array($folderId, $folderForDel)) {
                     $foldersDeleted = "";
                     // Get through each subfolder
-                    $folders = $tree->getDescendants($folderId, true);print_r($folders);
+                    $folders = $tree->getDescendants($folderId, true);
                     foreach ($folders as $folder) {
                         if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                             //Store the deleted folder (recycled bin)
@@ -283,7 +283,7 @@ if (isset($_POST['newtitle'])) {
                                 prefix_table("misc"),
                                 array(
                                     'type' => 'folder_deleted',
-                                    'intitule' => "f".$folderId,
+                                    'intitule' => "f".$folder->id,
                                     'valeur' => $folder->id.', '.$folder->parent_id.', '.
                                         $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
                                         $folder->nlevel.', 0, 0, 0, 0'
@@ -326,7 +326,7 @@ if (isset($_POST['newtitle'])) {
                     }
                     //Update CACHE table
                     updateCacheTable("delete_value", $folderId);
-                    
+
                     // delete folders
                     $folderForDel=array_unique($folderForDel);
                     foreach ($folderForDel as $fol){
@@ -797,7 +797,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             echo '[ { "error" : "" , "subfolders" : "'.$subfolders.'" } ]';
-                    
+
             break;
     }
 }

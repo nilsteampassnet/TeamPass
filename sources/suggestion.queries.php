@@ -102,7 +102,7 @@ if (!empty($_POST['type'])) {
                         'description' => ($description),
                         'author_id' => $_SESSION['user_id'],
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv'],
+                        'pw_iv' => "",
                         'pw_len' => 0,
                         'comment' => $comment,
                         'folder_id' => $folder
@@ -209,7 +209,7 @@ if (!empty($_POST['type'])) {
                     array(
                         'description' => !empty($suggestion['description']) ? $existing_item_id['id']."<br />----<br />".$suggestion['description'] : $existing_item_id['id'],
                         'pw' => $suggestion['pw'],
-                        'pw_iv' => $suggestion['pw_iv']
+                        'pw_iv' => ""
                     ),
                     "id=%i",
                     $existing_item_id['id']
@@ -250,7 +250,7 @@ if (!empty($_POST['type'])) {
                         'inactif' => '0',
                         'perso' => '0',
                         'anyone_can_modify' => '0',
-                        'pw_iv' => $suggestion['pw_iv']
+                        'pw_iv' => ""
                     )
                 );
                 $newID = DB::insertId();

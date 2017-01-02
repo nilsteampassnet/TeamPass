@@ -83,7 +83,18 @@ if ($_GET['sSearch'] != "") {
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-DB::query("SELECT id FROM ".$pre."suggestion");
+DB::query("SELECT id FROM ".$pre."suggestion
+    $sWhere
+    $sOrder",
+    array(
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+    )
+);
 $iTotal = DB::count();
 
 $rows = DB::query(

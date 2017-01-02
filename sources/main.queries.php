@@ -86,14 +86,14 @@ switch ($_POST['type']) {
         $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));    //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
 
         // User has decided to change is PW
-        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change" && $_SESSION['user_admin'] != 1) {
+        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] === "user_change" && $_SESSION['user_admin'] !== "1") {
             // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
             // check if badly written
-            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
+            $data_roles['fonction_id'] = array_filter(explode(',',str_replace(';', ',', $data_roles['fonction_id'])));
             if ($data_roles['fonction_id'][0] === "") {
-                $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
+                //$data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 DB::update(
                     prefix_table("users"),
@@ -176,7 +176,7 @@ switch ($_POST['type']) {
                 break;
             }
             // ADMIN has decided to change the USER's PW
-        } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] == "admin_change" || $_POST['change_pw_origine'] == "user_change") && $_SESSION['user_admin'] == 1)) {
+        } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] === "admin_change" || $_POST['change_pw_origine'] === "user_change") && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1" || $_SESSION['user_can_manage_all_users'] === "1"))) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
@@ -210,7 +210,7 @@ switch ($_POST['type']) {
             );
 
             // update LOG
-            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
 
             //Send email to user
             if ($_POST['change_pw_origine'] != "admin_change") {
@@ -553,7 +553,7 @@ switch ($_POST['type']) {
                 $dataReceived['psk'],
                 $_SESSION['user_settings']['encrypted_psk']
             );
-            
+
             if (strpos($user_key_encoded, "Error ") !== false) {
                 $err = $user_key_encoded;
             } else {

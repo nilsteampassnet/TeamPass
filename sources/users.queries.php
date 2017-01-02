@@ -163,6 +163,12 @@ if (!empty($_POST['type'])) {
             );
 
             if (DB::count() == 0) {
+                // check if admin role is set. If yes then check if originator is allowed
+                if ($dataReceived['admin'] === "true" && $_SESSION['user_admin'] !== "1") {
+                    echo '[ { "error" : "'.addslashes($LANG['error_not_allowed_to']).'" } ]';
+                    break;
+                }
+
                 // Add user in DB
                 DB::insert(
                     prefix_table("users"),
@@ -803,7 +809,7 @@ if (!empty($_POST['type'])) {
             $logs = $sql_filter = "";
             $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
-            if ($_POST['scope'] == "user_activity") {
+            if ($_POST['scope'] === "user_activity") {
                 if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] != "all") {
                     $sql_filter = " AND l.action = '".$_POST['filter']."'";
                 }
@@ -1296,6 +1302,26 @@ if (!empty($_POST['type'])) {
                 "id = %i",
                 $_POST['id']
             );
+            break;
+
+        /**
+         * IS LOGIN AVAILABLE?
+         */
+        case "is_login_available":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("users")."
+                WHERE login = %s",
+                mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))
+            );
+
+            echo '[ { "error" : "" , "exists" : "'.DB::count().'"} ]';
+
             break;
     }
 }

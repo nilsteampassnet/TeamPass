@@ -88,10 +88,19 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    DB::query("SELECT date
-            FROM ".$pre."log_system as l
-            INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'user_connection'");
+    DB::query(
+        "SELECT l.date as date, l.label as label, l.qui as who, u.login as login
+        FROM ".$pre."log_system as l
+        INNER JOIN ".$pre."users as u ON (l.qui=u.id)
+        $sWhere
+        $sOrder",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
     $iTotal = DB::count();
 
     $rows = DB::query(
@@ -161,10 +170,19 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    DB::query("SELECT *
+    DB::query(
+        "SELECT *
             FROM ".$pre."log_system as l
             INNER JOIN ".$pre."users as u ON (l.qui=u.id)
-            WHERE l.type = 'error'");
+        $sWhere
+        $sOrder",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
     $iTotal = DB::count();
 
     $rows = DB::query(
@@ -233,7 +251,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     }
 
     DB::query(
-        "SELECT l.date as date, u.login as login, i.label as label
+        "SELECT *
         FROM ".$pre."log_items as l
         INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
         INNER JOIN ".$pre."users as u ON (l.id_user=u.id)".
@@ -314,11 +332,19 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sWhere = substr_replace($sWhere, "", -3).") ";
     }
 
-    DB::query("SELECT *
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
-            WHERE l.action = 'at_copy'");
+    DB::query(
+        "SELECT *
+        FROM ".$pre."log_items as l
+        INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users as u ON (l.id_user=u.id)
+        $sWhere
+        $sOrder",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
+    );
     $iTotal = DB::count();
 
     $rows = DB::query(
@@ -473,10 +499,20 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sWhere .= ") ";
     }
 
-    DB::query("SELECT *
-            FROM ".$pre."log_items as l
-            INNER JOIN ".$pre."items as i ON (l.id_item=i.id)
-            INNER JOIN ".$pre."users as u ON (l.id_user=u.id)"
+    DB::query(
+        "SELECT *
+        FROM ".$pre."log_items AS l
+        INNER JOIN ".$pre."items AS i ON (l.id_item=i.id)
+        INNER JOIN ".$pre."users AS u ON (l.id_user=u.id)
+        INNER JOIN ".$pre."nested_tree AS t ON (i.id_tree=t.id)
+        $sWhere
+        $sOrder",
+        array(
+            '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+        )
     );
     $iTotal = DB::count();
 
@@ -561,7 +597,7 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     }
 
     DB::query(
-        "SELECT l.date as auth_date, l.label as label, l.qui as who
+        "SELECT *
         FROM ".$pre."log_system as l".
         $sWhere,
         array(

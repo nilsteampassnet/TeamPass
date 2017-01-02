@@ -789,7 +789,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['user_language'] = $data['user_language'];
             $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
             $_SESSION['user_settings']['usertimezone'] = $data['usertimezone'];
-            
+
 
             // manage session expiration
             $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
@@ -960,7 +960,7 @@ function identifyUser($sentData)
                                 '#tp_time#'
                             ),
                             array(
-                                " ".$_SESSION['login'],
+                                " ".$_SESSION['login']." (IP: ".get_client_ip_server().")",
                                 date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']),
                                 date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])
                             ),
