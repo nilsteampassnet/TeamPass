@@ -357,6 +357,7 @@ $LANG['activity'].':
                 <option value="at_import">'.$LANG['at_import'].'</option>
                 <option value="at_restored">'.$LANG['at_restored'].'</option>
                 <option value="at_pw">'.$LANG['at_pw'].'</option>
+                <option value="at_password_shown">'.$LANG['at_password_shown'].'</option>
                 <option value="at_shown">'.$LANG['at_shown'].'</option>
             </select>
         </span>

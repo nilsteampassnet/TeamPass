@@ -83,7 +83,8 @@ if ($_GET['sSearch'] != "") {
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-DB::query("SELECT * FROM ".$pre."kb
+DB::query(
+    "SELECT * FROM ".$pre."kb
     $sWhere
     $sOrder",
     array(

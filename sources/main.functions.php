@@ -541,6 +541,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
         $_SESSION['list_restricted_folders_for_items'] = array();
+        $_SESSION['list_folders_editable_by_role'] = array();
+        $_SESSION['list_folders_limited'] = array();
         $_SESSION['groupes_visibles_list'] = "";
         $_SESSION['list_folders_limited'] = "";
         $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
