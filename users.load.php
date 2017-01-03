@@ -76,15 +76,12 @@ $(function() {
             "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
         },
         "columns": [
-            {"width": "12%"},
+            {"width": "13%", "align": "left"},
+            {"width": "10%"},
             {"width": "15%"},
             {"width": "15%"},
-            {"width": "15%"},
-            {"width": "15%"},
-            {"width": "15%"},
-            null,
-            null,
-            null,
+            {"width": "20%"},
+            {"width": "20%"},
             null,
             null,
             null,
@@ -418,7 +415,7 @@ $(function() {
                             numerals   : true
                         },
                         function(data) {
-                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                            prepareExchangedData
                             if (data.error == "true") {
                                 $("#div_dialog_message_text").html(data.error_msg);
                                 $("#div_dialog_message").dialog("open");
@@ -733,6 +730,37 @@ $(function() {
             }
         }
     });
+
+    $("#user_folders_rights_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 380,
+        height: 600,
+        title: "<?php echo $LANG['user_s_rights_on_folders'];?>",
+        buttons: {
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog("close");
+            }
+        },
+        open: function() {
+            $("#user_folders_rights_dialog_wait").show();
+            $("#user_folders_rights_dialog_txt").html("");
+            $.post(
+                "sources/users.queries.php",
+                {
+                    type    : "user_folders_rights",
+                    id      : $('#user_folders_rights_dialog_id').val(),
+                    key     : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    $("#user_folders_rights_dialog_txt").html(data.html);
+                    $("#user_folders_rights_dialog_wait").hide();
+                }
+            );
+        }
+    });
 });
 
 /*
@@ -1019,6 +1047,15 @@ function user_edit(user_id)
     $("#user_edit_div").hide();
     $("#user_edit_id").val(user_id);
     $('#user_management_dialog').dialog('open');
+}
+
+/**
+* SHOW USER FOLDERS
+*/
+function user_folders_rights(user_id)
+{
+    $("#user_folders_rights_dialog_id").val(user_id);
+    $('#user_folders_rights_dialog').dialog('open');
 }
 
 /**

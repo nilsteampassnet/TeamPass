@@ -121,7 +121,7 @@ if (!empty($_POST['type'])) {
                 $new_fonctions = $val[1];
             }
             // ensure no double ; exists
-			$new_fonctions = str_replace(";;", ";", $new_fonctions);
+            $new_fonctions = str_replace(";;", ";", $new_fonctions);
             // Store id DB
             DB::update(
                 prefix_table("users"),
@@ -268,7 +268,7 @@ if (!empty($_POST['type'])) {
                     $dataReceived['email']
                 );
                 // update LOG
-				logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+                logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
 
                 echo '[ { "error" : "no" } ]';
             } else {
@@ -421,7 +421,7 @@ if (!empty($_POST['type'])) {
                 exit();
             }
 
-			// Get some data
+            // Get some data
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
@@ -433,10 +433,10 @@ if (!empty($_POST['type'])) {
                 array(
                     'gestionnaire' => $_POST['value'],
                     'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
-						($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
-						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
-						"1")
-					),
+                        ($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
+                        ($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
+                        "1")
+                    ),
                     'admin' => $_POST['value'] == 1 ? "0" : "0",
                     'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
@@ -468,7 +468,7 @@ if (!empty($_POST['type'])) {
             break;
         /**
          * UPDATE CAN MANAGE ALL USERS RIGHTS FOR USER
-		 * Notice that this role must be also Manager
+         * Notice that this role must be also Manager
          */
         case "can_manage_all_users":
             // Check KEY
@@ -477,7 +477,7 @@ if (!empty($_POST['type'])) {
                 exit();
             }
 
-			// Get some data
+            // Get some data
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
@@ -1322,6 +1322,169 @@ if (!empty($_POST['type'])) {
 
             echo '[ { "error" : "" , "exists" : "'.DB::count().'"} ]';
 
+            break;
+
+        /**
+         * GET USER FOLDER RIGHT
+         */
+        case "user_folders_rights":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+            $arrData = array();
+
+            //Build tree
+            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+            // get User info
+            $rowUser = DB::queryFirstRow(
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            // get rights
+            $functionsList = "";
+            $arrFolders = [];
+            $html = '<div style="padding:5px; margin-bottom:10px; border:solid 1px; background-color:#828282;  height:40px; width:325px;">';
+            if (!empty($rowUser['avatar_thumb'])) {
+                $html .= '<div style="float:left; margin-right:30px;"><img src="includes/avatars/'.$rowUser['avatar_thumb'].'"></div>';
+            }
+            $html .= '<div style="float:left;font-size:20px; margin-top:8px; text-align:center;">'.$rowUser['name'].' '.$rowUser['lastname'].' ['.$rowUser['login'].']</div></div><table>';
+
+            $arrData['functions'] = array_filter(explode(';', $rowUser['fonction_id']));
+            $arrData['allowed_folders'] = array_filter(explode(';', $rowUser['groupes_visibles']));
+            $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));
+
+            // refine folders based upon roles
+            $rows = DB::query(
+                "SELECT folder_id, type
+                FROM ".prefix_table("roles_values")."
+                WHERE role_id IN %ls",
+                $arrData['functions']
+            );
+            foreach ($rows as $record) {
+                $bFound = false;
+                $x = 0;
+                foreach($arrFolders as $fld) {
+                    if ($fld['id'] === $record['folder_id']) {
+                        if ($record['type'] === "W" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
+                            $arrFolders[$x]['type'] = "W";
+                        }
+                        $bFound = true;
+                        break;
+                    }
+                    $x++;
+                }
+                if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
+                    array_push($arrFolders, array("id" => $record['folder_id'] , "type" => $record['type']));
+                }
+            }
+
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                foreach($arrFolders as $fld) {
+                    if ($fld['id'] === $t->id) {
+                        // get folder name
+                        $row = DB::queryFirstRow(
+                            "SELECT title, nlevel
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $fld['id']
+                        );
+
+                        // manage indentation
+                        $ident = '';
+                        for ($y = 1; $y < $row['nlevel']; $y++) {
+                            $ident .= '<i class="fa fa-sm fa-caret-right"></i>&nbsp;';
+                        }
+
+                        // manage right icon
+                        if ($fld['type'] == "W") {
+                            $color = '#008000';
+                            $allowed = "W";
+                            $title = $LANG['write'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-edit fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eraser fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "ND") {
+                            $color = '#4E45F7';
+                            $allowed = "ND";
+                            $title = $LANG['no_delete'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-edit fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "NE") {
+                            $color = '#4E45F7';
+                            $allowed = "NE";
+                            $title = $LANG['no_edit'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eraser fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "NDNE") {
+                            $color = '#4E45F7';
+                            $allowed = "NDNE";
+                            $title = $LANG['no_edit_no_delete'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_edit_no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>';
+                        } else {
+                            $color = '#FEBC11';
+                            $allowed = "R";
+                            $title = $LANG['read'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['read'].'" style="color:#ff9000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eye fa-stack-1x"></i>
+                            </span>';
+                        }
+
+                        $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label."</td></tr>";
+                        break;
+                    }
+                }
+            }
+
+            $html .= '</table><div style="margin-top:15px; padding:3px;" class="ui-widget-content ui-state-default ui-corner-all"><span class="fa fa-info"></span>&nbsp;'.$LANG['folders_not_visible_are_not_displayed'].'</div>';
+
+            $return_values = prepareExchangedData(
+                array(
+                    'html' => $html,
+                    'error' => '',
+                    'login' => $rowUser['login']
+                ),
+                "encode"
+            );
+            echo $return_values;
             break;
     }
 }

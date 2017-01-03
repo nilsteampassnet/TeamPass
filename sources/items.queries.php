@@ -1990,10 +1990,10 @@ if (isset($_POST['type'])) {
                         }
 
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] == 1
+                        if ($record['anyone_can_modify'] === "1"
                             || $_SESSION['user_id'] === $record['log_user']
-                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
-                            //|| $_SESSION['user_manager'] == 1   // force draggable if user is manager
+                            || ($_SESSION['user_read_only'] === "1" && $folderIsPf === "0")
+                            || (isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] === "1") // force draggable if user is manager
                         ) {
                             $canMove = 1;
                         }

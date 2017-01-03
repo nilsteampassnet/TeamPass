@@ -8,7 +8,6 @@ Last changes
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
- IMP   Folders deletion protocol has been securized to prevent unconsistencies in folders tree
  IMP   New login availability is checked "live"
  IMP   Filtering counters in datatables
  IMP   Users Management dialogbox improved
@@ -38,6 +37,9 @@ Last changes
  #1514 User language selection is done in Profile dialogbox
  #1608 All folders are deleted
  #1592 Show Client IP in mail to admin about logged on users
+ #1408 Display folders visible by a user
+ #1412 New option: Manager can move items they can view
+ #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
 
 
 2.1.26

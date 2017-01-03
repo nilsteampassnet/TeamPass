@@ -648,6 +648,15 @@ echo '
                         <div class="toggle toggle-modern" id="manager_edit" data-toggle-on="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_edit_input" name="manager_edit_input" value="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
+// Managers can move items they are allowed to see
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['settings_manager_move_item'].'</label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="manager_move_item" data-toggle-on="', isset($_SESSION['settings']['manager_move_item']) && $_SESSION['settings']['manager_move_item'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_move_item_input" name="manager_move_item_input" value="', isset($_SESSION['settings']['manager_move_item']) && $_SESSION['settings']['manager_move_item'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // max items
 echo '

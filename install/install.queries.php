@@ -418,7 +418,8 @@ global \$SETTINGS;
                             array('admin','bck_script_filename', 'bck_cpassman'),
                             array('admin','syslog_enable','0'),
                             array('admin','syslog_host','localhost'),
-                            array('admin','syslog_port','514')
+                            array('admin','syslog_port','514'),
+                            array('admin','manager_move_item','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

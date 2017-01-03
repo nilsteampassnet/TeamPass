@@ -362,5 +362,14 @@ if ($res === false) {
 }
 
 
+// add new admin setting "manager_move_item"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'manager_move_item'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'manager_move_item', '0')"
+    );
+}
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

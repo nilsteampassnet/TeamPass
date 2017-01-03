@@ -79,23 +79,18 @@ echo '
 <div id="t_users_alphabet" style="margin-top:25px;"></div>
 <table id="t_users" class="hover" width="100%">
     <thead><tr>
-        <th style="width:40px;"></th>
+        <th>'.$LANG['action'].'</th>
         <th>'.$LANG['user_login'].'</th>
         <th>'.$LANG['name'].'</th>
         <th>'.$LANG['lastname'].'</th>
         <th>'.$LANG['managed_by'].'</th>
         <th>'.$LANG['functions'].'</th>
-        <!--<th>'.$LANG['authorized_groups'].'</th>
-        <th>'.$LANG['forbidden_groups'].'</th>-->
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['god']), ENT_QUOTES).'"><i class="fa fa-user-secret" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['gestionnaire']), ENT_QUOTES).'"><i class="fa fa-child" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['read_only_account']), ENT_QUOTES).'"><i class="fa fa-eye" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['can_manage_all_users']), ENT_QUOTES).'"><i class="fa fa-group" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['can_create_root_folder']), ENT_QUOTES).'"><i class="fa fa-code-fork" style="font-size:14px;"></i></th>
         <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['enable_personal_folder']), ENT_QUOTES).'"><i class="fa fa-book" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['pw_change']), ENT_QUOTES).'"><i class="fa fa-lock" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['logs']), ENT_QUOTES).'"><i class="fa fa-newspaper-o" style="font-size:14px;"></i></th>
-        <th style="width:20px;" title="'.htmlentities(strip_tags($LANG['send_ga_code']), ENT_QUOTES).'"><i class="fa fa-qrcode" style="font-size:14px;"></i></th>
     </tr></thead>
     <tbody>
         <tr><td></td></tr>
@@ -419,4 +414,16 @@ echo '
     <div style="text-align:center;padding:2px;display:none; margin:0 0 15px 0;position: absolute; bottom: 0;" class="ui-state-error ui-corner-all" id="user_edit_warning_bottom"></div>
     <input type="hidden" id="user_edit_id" />
     </div>
+</div>';
+
+// USER FOLDERS RIGHTS DIALOG
+echo '
+<div id="user_folders_rights_dialog" style="display:none;">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="user_folders_rights_dialog_wait">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
+    </div>
+
+    <div id="user_folders_rights_dialog_txt"></div>
+
+    <input type="hidden" id="user_folders_rights_dialog_id" />
 </div>';

@@ -14,7 +14,10 @@
  */
 global $LANG;
 $LANG = array (
-    'manager_can_move_any_item' => 'Managers can move any item',
+    'settings_manager_move_item' => 'Managers can move any items they can view',
+    'user_folders_rights' => 'Visible folders',
+    'user_s_rights_on_folders' => 'Rights on folders for User',
+    'folders_not_visible_are_not_displayed' => 'Folders not displayed in this list are not seen by the user',
     'encrypted_data' => 'Data is encrypted in database',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'error_custom_fields_not_similar_in_source_and_target_folders' => 'Moving the folder is not possible as Custom Fields are not similar.',
