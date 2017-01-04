@@ -8,38 +8,39 @@ Last changes
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
- IMP   New login availability is checked "live"
+ IMP   New user login availability is checked "live"
  IMP   Filtering counters in datatables
  IMP   Users Management dialogbox improved
- UPD   AES library
+ IMP   2FA authentication change to improve security (no call to external QR generator)
+ UPD   AES library updated
  FIX   "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
- #1532 Added error message in install.js if db-pw contains double quotes
- #1553 LDAP support - Add LDAP port - Add support multi LDAP server
- #1556 Fix bug for upgrading old passwords
- #1559 API IP Whitelist check does not consider XFF
- #1579 Fix for preventing a php fatal error
- #1575 Fix for tree not loaded when user has no access to a folder with children
- #1581 Fix for new folder Custom Fields inheritance
+ #1608 All folders are deleted
+ #1603 Attached files disappears
+ #1601 Time zone can't be saved in My Profile
+ #1593 Insert duplicate label with API
+ #1592 Show Client IP in mail to admin about logged on users
  #1588 Fix for OTV links
  #1587 fix for e-mail to administrator on logon does not work
- #1593 Insert duplicate label with API
- #1550 2 Factor enabled but can still log in without code
- #1551 Authentication through LDAP posix-search
- #1561 Personal folder deletion deletes all
+ #1581 Fix for new folder Custom Fields inheritance
+ #1579 Fix for preventing a php fatal error
+ #1575 Fix for tree not loaded when user has no access to a folder with children
  #1571 Drag and drop from PF to public folder makes item password corrupted
  #1571 Create an item inside another folder than the one selected
- #1601 Time zone can't be saved in My Profile
- #1603 Attached files disappears
- #1531 Database otv table originator field should be int instead of tinyint
+ #1561 Personal folder deletion deletes all
+ #1559 API IP Whitelist check does not consider XFF
+ #1556 Fix bug for upgrading old passwords
+ #1553 LDAP support - Add LDAP port - Add support multi LDAP server
+ #1551 Authentication through LDAP posix-search
+ #1550 2 Factor enabled but can still log in without code
  #1549 Read Only users can use Personal Folders
+ #1532 Added error message in install.js if db-pw contains double quotes
+ #1531 Database otv table originator field should be int instead of tinyint
  #1514 User language selection is done in Profile dialogbox
- #1608 All folders are deleted
- #1592 Show Client IP in mail to admin about logged on users
- #1408 Display folders visible by a user
- #1412 New option: Manager can move items they can view
  #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
+ #1412 New option: Manager can move items they can view
+ #1408 Display folders visible by a user
 
 
 2.1.26

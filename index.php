@@ -63,6 +63,8 @@ require_once 'sources/main.functions.php';
 // Load CORE
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
 
+include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+
 /* DEFINE WHAT LANGUAGE TO USE */
 if (isset($_GET['language'])) {
     // case of user has change language in the login page
@@ -611,12 +613,8 @@ if (
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
                             <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
-                            <!--<div id="div_ga_url" class="ui-widget ui-state-focus ui-corner-all" style="margin-top:3px;">
-                                '.$LANG['user_ga_code_sent_by_email'].'
-                            </div>
-                            <div style="text-align:center; font-size:9pt; font-style:italic; margin-bottom:10px;">
-                                <span onclick="getGASynchronization()" style="padding:3px;cursor:pointer;">'.$LANG['ga_not_yet_synchronized'].'</span>
-                            </div>-->
+                        <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
+                        <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">'.$LANG['i_need_to_generate_new_ga_code'].'</div>
                         </div>';
         }
         echo '

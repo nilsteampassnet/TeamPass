@@ -999,9 +999,9 @@ function user_action_ga_code(id)
     $.post(
     "sources/main.queries.php",
     {
-        type    : "ga_generate_qr",
-        id      : id,
-        send_email : "1"
+        type        : "ga_generate_qr",
+        id          : id,
+        send_email  : "1"
     },
     function(data) {
         if (data[0].error == "0") {

@@ -1351,7 +1351,7 @@ if (!empty($_POST['type'])) {
             // get rights
             $functionsList = "";
             $arrFolders = [];
-            $html = '<div style="padding:5px; margin-bottom:10px; border:solid 1px; background-color:#828282;  height:40px; width:325px;">';
+            $html = '<div style="padding:5px; margin-bottom:10px; height:40px;" class="ui-state-focus ui-corner-all">';
             if (!empty($rowUser['avatar_thumb'])) {
                 $html .= '<div style="float:left; margin-right:30px;"><img src="includes/avatars/'.$rowUser['avatar_thumb'].'"></div>';
             }

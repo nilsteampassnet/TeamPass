@@ -112,7 +112,7 @@ switch ($_POST['type']) {
                             $pw = cryption(
                                 $record['pw'],
                                 mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
-                                , "decrypt"
+                                "decrypt"
                             );
                         } else {
                             $pw = cryption(

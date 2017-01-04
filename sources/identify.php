@@ -26,8 +26,10 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
-// DUO
 if ($_POST['type'] === "identify_duo_user") {
+//--------
+// DUO AUTHENTICATION
+//--------
     // This step creates the DUO request encrypted key
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
@@ -53,7 +55,9 @@ if ($_POST['type'] === "identify_duo_user") {
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
 } elseif ($_POST['type'] == "identify_user_with_agses") {
+//--------
 //-- AUTHENTICATION WITH AGSES
+//--------
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
@@ -155,7 +159,10 @@ if ($_POST['type'] === "identify_duo_user") {
         }
     }
 } elseif ($_POST['type'] == "identify_duo_user_check") {
-    // this step is verifying the response received from the server
+//--------
+// DUO AUTHENTICATION
+// this step is verifying the response received from the server
+//--------
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     // load library
@@ -179,6 +186,10 @@ if ($_POST['type'] === "identify_duo_user") {
         echo '[{"resp" : "'.$resp.'"}]';
     }
 } elseif ($_POST['type'] == "identify_user") {
+//--------
+// NORMAL IDENTICATION STEP
+//--------
+
     // increment counter of login attempts
     if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
     else $_SESSION["pwd_attempts"] ++;
@@ -571,22 +582,54 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "USer exists (confirm): " . $counter . "\n"
+            "User exists (confirm): " . $counter . "\n"
         );
     }
 
     // check GA code
     if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
-            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
-            $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+            // load library
+            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 
-            if ($g->checkCode($data['ga'], $dataReceived['GACode'])) {
-                $proceedIdentification = true;
+            // create new instance
+            $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($_SESSION['settings']['ga_website_name']);
+
+            // now check if it is the 1st time the user is using 2FA
+            if ($data['ga_temporary_code'] !== "none" && $data['ga_temporary_code'] !== "done") {
+                if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
+                    $proceedIdentification = false;
+                    $logError = "ga_temporary_code_wrong";
+                } else {
+                    $proceedIdentification = false;
+                    $logError = "ga_temporary_code_correct";
+
+                    // generate new QR
+                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri("Teampass - ".$username, $data['ga']);
+
+                    // clear temporary code from DB
+                    DB::update(
+                        prefix_table('users'),
+                        array(
+                            'ga_temporary_code' => 'done'
+                        ),
+                        "id=%i",
+                        $data['id']
+                    );
+
+                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+
+                    exit();
+
+                }
             } else {
-                $proceedIdentification = false;
-                $logError = "ga_code_wrong";
+                // verify the user GA code
+                if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
+                    $proceedIdentification = true;
+                } else {
+                    $proceedIdentification = false;
+                    $logError = "ga_code_wrong";
+                }
             }
         } else {
             $proceedIdentification = false;

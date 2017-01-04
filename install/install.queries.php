@@ -518,6 +518,7 @@ global \$SETTINGS;
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
+                            `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none',
                             `avatar` varchar(255) NULL,
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,

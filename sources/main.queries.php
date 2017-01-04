@@ -294,35 +294,37 @@ switch ($_POST['type']) {
                 echo '[{"error" : "no_email"}]';
             } else {
                 // generate new GA user code
-                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
-                $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
-                $gaSecretKey = $g->generateSecret();
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+                $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($_SESSION['settings']['ga_website_name']);
+                $gaSecretKey = $tfa->createSecret();
+                $gaTemporaryCode = GenerateCryptKey(12);
 
                 // save the code
                 DB::update(
                     prefix_table("users"),
                     array(
-                        'ga' => $gaSecretKey
+                        'ga' => $gaSecretKey,
+                        'ga_temporary_code' => $gaTemporaryCode
                        ),
                     "id = %i",
                     $data['id']
                 );
 
-                // generate QR url
-                $gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
-
                 // send mail?
-                if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
+                if (isset($_POST['send_email']) && $_POST['send_email'] === "1") {
                     sendEmail (
                         $LANG['email_ga_subject'],
-                        str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
+                        str_replace(
+                            "#2FACode#",
+                            $gaTemporaryCode,
+                            $LANG['email_ga_text']
+                        ),
                         $data['email']
                     );
                 }
 
                 // send back
-                echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
+                echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".$data['email']."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
             }
         }
         break;

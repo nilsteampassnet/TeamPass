@@ -259,6 +259,11 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
                 } else if (data[0].value === "agses_error") {
                     $("#connection_error").html(data[0].error).show();
+                } else if (data[0].error == "ga_temporary_code_wrong") {
+                    $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
+                } else if (data[0].error == "ga_temporary_code_correct") {
+                    $("#ga_code").val("").focus();
+                    $("#2fa_new_code_div").html(data[0].value+"<br />'.$LANG['ga_flash_qr_and_login'].'").show();
                 } else {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 }
@@ -300,6 +305,31 @@ $htmlHeaders .= '
         } else {
             $("#connection_error").html("'.$LANG['ga_enter_credentials'].'").show();
         }
+    }
+
+    function send_user_new_temporary_ga_code() {
+        $("#div_loading").show();
+
+        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" ,\'+
+                   \'"pw":"\'+sanitizeString($("#pw").val())+\'"}\';
+
+        $.post(
+            "sources/main.queries.php",
+            {
+                type : "ga_generate_qr",
+                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'"),
+                send_email : "1"
+            },
+            function(data) {
+                if (data[0].error === "0") {
+                    $("#div_dialog_message").html(data[0].msg).dialog("open");
+                } else {
+
+                }
+                $("#div_loading").hide();
+            },
+            "json"
+        );
     }
 
     /*

@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'ga_temporary_bad_code' => 'The temporary code you have entered is wrong. Please check your email, paste the code and try again.',
+    'ga_flash_qr_and_login' => 'Flash this QR code with your mobile device, enter the 2Factor Authentication code and click `Enter` button.',
+    'i_need_to_generate_new_ga_code' => 'I need a new QR code. Please send me by email a temporary Identication Code.',
     'settings_manager_move_item' => 'Managers can move any items they can view',
     'user_folders_rights' => 'Visible folders',
     'user_s_rights_on_folders' => 'Rights on folders for User',
@@ -44,7 +47,7 @@ $LANG = array (
     'error_no_email' => 'This user has no email address set!',
     'error_no_user' => 'User not found!',
     'email_ga_subject' => 'Your Google Authenticator one-time code for TeamPass',
-    'email_ga_text' => 'Please <a href=\'#link#\'>click this link</a> and scan the QR code with your Google Authenticator app to set up your one-time credentials for the password manager.<br /><br />Cheers',
+    'email_ga_text' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your administrator is expecting you to use TwoFactor authentication to get connected to Teampass.<br>For your first connection to Teampass with TwoFactor, please use the code you will found here bellow in the "Identication code" field:<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>You will then have the opportunity to set up your one-time credentials for Teampass password manager.<br><br>Greetings',
     'settings_attachments_encryption' => 'Encrypt file attachments',
     'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments!  After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
     'admin_action_attachments_cryption' => 'Encrypt or decrypt all file attachments',

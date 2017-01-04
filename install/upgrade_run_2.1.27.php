@@ -371,5 +371,13 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 }
 
 
+// alter table USERS to add a new field "ga_temporary_code"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
+);
+
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
