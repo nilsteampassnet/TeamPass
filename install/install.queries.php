@@ -778,7 +778,11 @@ global \$SETTINGS;
                             `login` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
-                            `path` varchar(255) NOT NULL
+                            `path` varchar(500) NOT NULL,
+                            `email` varchar(500) NOT NULL default 'none',
+                            `url` varchar(500) NOT NULL default 'none',
+                            `kbs` varchar(500) NOT NULL default 'none',
+                            `tags` varchar(500) NOT NULL default 'none'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "tokens") {

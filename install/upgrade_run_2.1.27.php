@@ -378,6 +378,24 @@ mysqli_query(
 );
 
 
+// alter table EXPORT to add a new fields
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `email` VARCHAR(500) NOT NULL DEFAULT 'none';"
+);
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `url` VARCHAR(500) NOT NULL DEFAULT 'none';"
+);
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `kbs` VARCHAR(500) NOT NULL DEFAULT 'none';"
+);
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
+);
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
