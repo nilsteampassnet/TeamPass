@@ -134,7 +134,7 @@ if (isset($_POST['type'])) {
             }
 
             // is pwd empty?
-            if (empty($pw)) {
+            if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                 break;
             }
@@ -165,32 +165,29 @@ if (isset($_POST['type'])) {
                 ||
                 (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1)
             ) {
-                // encrypt PW
-                if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                    $passwd = cryption(
-                        $pw,
-                        $_SESSION['user_settings']['session_psk'],
-                        "encrypt"
-                    );
-                    $restictedTo = $_SESSION['user_id'];
+                if (isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
+                    // encrypt PW
+                    if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
+                        $passwd = cryption(
+                            $pw,
+                            $_SESSION['user_settings']['session_psk'],
+                            "encrypt"
+                        );
+                        $restictedTo = $_SESSION['user_id'];
+                    } else {
+                        $passwd = cryption(
+                            $pw,
+                            "",
+                            "encrypt"
+                        );
+                    }
                 } else {
-                    $passwd = cryption(
-                        $pw,
-                        "",
-                        "encrypt"
-                    );
+                    $passwd['string'] = "";
                 }
 
-                if (DEFUSE_ENCRYPTION === TRUE) {
-                    if (!empty($passwd["error"])) {
-                        echo prepareExchangedData(array("error" => "ERR_ENCRYPTION", "msg" => $passwd["error"]), "encode");
-                        break;
-                    }
-                } else {
-                    if (empty($passwd["string"])) {
-                        echo prepareExchangedData(array("error" => "ERR_ENCRYPTION_NOT_CORRECT"), "encode");
-                        break;
-                    }
+                if (!empty($passwd["error"])) {
+                    echo prepareExchangedData(array("error" => "ERR_ENCRYPTION", "msg" => $passwd["error"]), "encode");
+                    break;
                 }
 
                 // ADD item

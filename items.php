@@ -93,7 +93,8 @@ echo '
 <input type="hidden" id="access_level" value="" />
 <input type="hidden" id="empty_clipboard" value="" />
 <input type="hidden" id="selected_folder_is_personal" value="" />
-<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />';
+<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />
+<input type="text" id="create_item_without_password" value="', isset($_SESSION['user_settings']['create_item_without_password']) ? $_SESSION['user_settings']['create_item_without_password'] : "0", '" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '

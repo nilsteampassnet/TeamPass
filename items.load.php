@@ -562,7 +562,7 @@ function AjouterItem()
 
     // do checks
     if ($("#label").val() == "") erreur = "<?php echo $LANG['error_label'];?>";
-    else if ($("#pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
+    else if ($("#pw1").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo $LANG['error_pw'];?>";
     else if ($("#categorie").val() == "na") erreur = "<?php echo $LANG['error_group'];?>";
     else if ($("#pw1").val() != $("#pw2").val()) erreur = "<?php echo $LANG['error_confirm'];?>";
     else if ($("#enable_delete_after_consultation").is(':checked') && (($("#times_before_deletion").val() < 1 && $("#deletion_after_date").val() == "") || ($("#times_before_deletion").val() == "" && $("#deletion_after_date").val() == ""))) erreur = "<?php echo $LANG['error_times_before_deletion'];?>";

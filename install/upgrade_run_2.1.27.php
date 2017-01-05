@@ -370,6 +370,14 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
     );
 }
 
+// add new admin setting "create_item_without_password"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'create_item_without_password', '0')"
+    );
+}
+
 
 // alter table USERS to add a new field "ga_temporary_code"
 mysqli_query(

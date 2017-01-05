@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'create_item_without_password' => 'Allow item to be created without any password defined',
     'ga_temporary_bad_code' => 'The temporary code you have entered is wrong. Please check your email, paste the code and try again.',
     'ga_flash_qr_and_login' => 'Flash this QR code with your mobile device, enter the 2Factor Authentication code and click `Enter` button.',
     'i_need_to_generate_new_ga_code' => 'I need a new QR code. Please send me by email a temporary Identication Code.',

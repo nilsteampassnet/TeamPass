@@ -714,6 +714,16 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="subfolder_rights_as_parent" data-toggle-on="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="subfolder_rights_as_parent_input" name="subfolder_rights_as_parent_input" value="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? '1' : '0', '" />
                 </td></tr>';
+// Enable create_item_without_password
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>
+                        '.$LANG['create_item_without_password'].'
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="create_item_without_password" data-toggle-on="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="create_item_without_password_input" name="create_item_without_password_input" value="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? '1' : '0', '" />
+                </td></tr>';
 /*
 // Enable extra fields for each Item
 echo '
