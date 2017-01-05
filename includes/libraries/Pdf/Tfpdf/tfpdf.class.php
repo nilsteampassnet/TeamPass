@@ -76,7 +76,7 @@ var $PDFVersion;         // PDF version number
 *                               Public methods                                 *
 *                                                                              *
 *******************************************************************************/
-function __construct($orientation='P', $unit='mm', $size='A4')
+function __construct($orientation='P', $unit='mm', $size='A4', $footer_text_1 = "Page")
 {
     // Some checks
     $this->_dochecks();
@@ -545,7 +545,7 @@ function AddFont($family, $style='', $file='', $uni=false)
             unset($ttf);
         }
         else {
-            $cw = @file_get_contents($unifilename.'.cw.dat'); 
+            $cw = @file_get_contents($unifilename.'.cw.dat');
         }
         $i = count($this->fonts)+1;
         if(!empty($this->AliasNbPages))
@@ -680,7 +680,7 @@ function Text($x, $y, $txt)
         foreach($this->UTF8StringToArray($txt) as $uni)
             $this->CurrentFont['subset'][$uni] = $uni;
     }
-    else 
+    else
         $txt2 = '('.$this->_escape($txt).')';
     $s = sprintf('BT %.2F %.2F Td %s Tj ET',$x*$this->k,($this->h-$y)*$this->k,$txt2);
     if($this->underline && $txt!='')
@@ -1865,7 +1865,7 @@ function _putfonts()
             $this->_out('<</Type /Font');
             $this->_out('/Subtype /Type0');
             $this->_out('/BaseFont /'.$fontname.'');
-            $this->_out('/Encoding /Identity-H'); 
+            $this->_out('/Encoding /Identity-H');
             $this->_out('/DescendantFonts ['.($this->n + 1).' 0 R]');
             $this->_out('/ToUnicode '.($this->n + 2).' 0 R');
             $this->_out('>>');
@@ -1877,10 +1877,10 @@ function _putfonts()
             $this->_out('<</Type /Font');
             $this->_out('/Subtype /CIDFontType2');
             $this->_out('/BaseFont /'.$fontname.'');
-            $this->_out('/CIDSystemInfo '.($this->n + 2).' 0 R'); 
+            $this->_out('/CIDSystemInfo '.($this->n + 2).' 0 R');
             $this->_out('/FontDescriptor '.($this->n + 3).' 0 R');
             if (isset($font['desc']['MissingWidth'])){
-                $this->_out('/DW '.$font['desc']['MissingWidth'].''); 
+                $this->_out('/DW '.$font['desc']['MissingWidth'].'');
             }
 
             $this->_putTTfontwidths($font, $ttf->maxUni);
@@ -1917,7 +1917,7 @@ function _putfonts()
 
             // CIDSystemInfo dictionary
             $this->_newobj();
-            $this->_out('<</Registry (Adobe)'); 
+            $this->_out('<</Registry (Adobe)');
             $this->_out('/Ordering (UCS)');
             $this->_out('/Supplement 0');
             $this->_out('>>');
@@ -1951,7 +1951,7 @@ function _putfonts()
             $this->_putstream($cidtogidmap);
             $this->_out('endobj');
 
-            //Font file 
+            //Font file
             $this->_newobj();
             $this->_out('<</Length '.strlen($fontstream));
             $this->_out('/Filter /FlateDecode');
@@ -1960,7 +1960,7 @@ function _putfonts()
             $this->_putstream($fontstream);
             $this->_out('endobj');
             unset($ttf);
-        } 
+        }
         else
         {
             // Allow for additional types
@@ -1986,7 +1986,7 @@ function _putTTfontwidths(&$font, $maxUni) {
         $interval = false;
         $startcid = 1;
     }
-    $cwlen = $maxUni + 1; 
+    $cwlen = $maxUni + 1;
 
     // for each character
     for ($cid=$startcid; $cid<$cwlen; $cid++) {

@@ -38,10 +38,11 @@ Last changes
  #1532 Added error message in install.js if db-pw contains double quotes
  #1531 Database otv table originator field should be int instead of tinyint
  #1514 User language selection is done in Profile dialogbox
+ #1464 CSV files broken, html entities not decoded, newlines not stripped
  #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
  #1412 New option: Manager can move items they can view
  #1408 Display folders visible by a user
-
+ #1299 Export to pdf or csv shows htmlencoded
 
 2.1.26
  #1537 Homepage not loading in French
