@@ -2130,9 +2130,11 @@ if (isset($_POST['type'])) {
 
                             // test charset => may cause a json error if is not utf8
                             $pw = $pw['string'];
-                            if (!isUTF8($pw) || empty($pw)) {
+                            if (!isUTF8($pw)) {
                                 $pw = "";
                                 $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
+                            } else if (empty($pw)) {
+                                $html .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>'.$pw;
                             }
                         } else {
                             $pw = "";

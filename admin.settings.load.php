@@ -368,7 +368,7 @@ function changeMainSaltKey(start)
             function(data) {
                 if (data[0].nextAction == "done") {
                     console.log("done");
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-spin fa\"></i>&nbsp;<?php echo $LANG['finalizing'];?> <?php echo $LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
                 } else {
                     // error mngt
                 }

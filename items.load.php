@@ -577,6 +577,8 @@ function AjouterItem()
             ($("#bloquer_creation_complexite").val() == 1)
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
+            ||
+            $("#create_item_without_password").val() === "1"
       ) {
             var annonce = 0;
             if ($('#annonce').is(':checked')) annonce = 1;
@@ -1273,7 +1275,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Display details
                         $("#id_label").html(data.label);
                         $("#hid_label").val(unsanitizeString(data.label));
-                        $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
+                        if (data.pw === "") {
+                            $("#id_pw").html("");
+                        } else {
+                            $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
+                        }
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
