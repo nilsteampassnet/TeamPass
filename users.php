@@ -70,6 +70,9 @@ echo '
     <button title="'.htmlentities(strip_tags($LANG['new_user_title']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_user\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
+    <button title="'.htmlentities(strip_tags($LANG['share_user_rights']), ENT_QUOTES).'" onclick="OpenDialog(\'share_rights_dialog\')" class="button" style="font-size:16px;">
+        <i class="fa fa-share-alt"></i>
+    </button>
 </div>';
 
 
@@ -426,4 +429,49 @@ echo '
     <div id="user_folders_rights_dialog_txt"></div>
 
     <input type="hidden" id="user_folders_rights_dialog_id" />
+</div>';
+
+// PROPAGATE SETTINGS TO MULTIPLE USERS
+echo '
+<div id="share_rights_dialog" style="display:none;">
+
+    <div id="share_rights_info" class="ui-widget-content ui-state-highlight ui-corner-all" style="padding:5px;"><span class="fa fa-info-circle fa-2x"></span>&nbsp;'.$LANG['share_rights_info'].'</div>
+
+    <div id="" style="margin-top:10px;" class="">
+        <label for="share_rights_from" class="form_label" style="font-size:14px; font-weight:bold;"><span class="fa fa-user"></span>&nbsp;'.$LANG['share_rights_source'].'</label>
+        <select id="share_rights_from" onchange="get_user_rights()"></select>
+    </div>
+
+    <div id="share_rights_details" style="margin-top:5px; margin-left:20px;display:none; padding:3px;">
+        <label for="share_rights_details_1" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['functions'].'</label>
+        <span id="share_rights_details_1"></span>
+        <input type="hidden" id="share_rights_details_ids_1" />
+        <br>
+        <label for="share_rights_details_2" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['managed_by'].'</label>
+        <span id="share_rights_details_2"></span>
+        <input type="hidden" id="share_rights_details_ids_2" />
+        <br>
+        <label for="share_rights_details_3" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['authorized_groups'].'</label>
+        <span id="share_rights_details_3"></span>
+        <input type="hidden" id="share_rights_details_ids_3" />
+        <br>
+        <label for="share_rights_details_4" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['forbidden_groups'].'</label>
+        <span id="share_rights_details_4"></span>
+        <input type="hidden" id="share_rights_details_ids_4" />        
+        <input type="hidden" id="share_rights_details_other" />
+    </div>
+
+    <div id="" style="margin-top:5px;" class="">
+        <label for="share_pres" class="form_label">&nbsp;</label>
+        <span id="share_pres" style="text-align:center; margin-left:170px;"><span class="fa fa-long-arrow-down fa-2x"></span></span>
+    </div>
+
+    <div id="" style="margin-top:5px;" class="">
+        <label for="share_rights_to" class="form_label" style="font-size:14px; font-weight:bold;"><span class="fa fa-users"></span>&nbsp;'.$LANG['share_rights_destination'].'</label>
+        <select id="share_rights_to" multiple="multiple"></select>
+    </div>
+
+    <div style="text-align:center;padding:2px;display:none; margin:20px 0 0 0;" class="ui-corner-all" id="share_rights_dialog_msg"></div>
+
+    <input type="hidden" id="share_rights_dialog_id" />
 </div>';

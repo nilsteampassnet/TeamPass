@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+    'share_user_rights' => 'Share user rights',
+    'share_rights_info' => 'This dialogbox permits you to share the rights of one user with a selection of users.<br>Notice that the selected users will have their existing rights reseted and replaced with exactely the same rights as the source user.',
+    'share_rights_source' => 'Source user',
+    'share_rights_destination' => 'Destination users',
     'password_is_empty' => 'Item has no password',
     'create_item_without_password' => 'Allow item to be created without any password defined',
     'ga_temporary_bad_code' => 'The temporary code you have entered is wrong. Please check your email, paste the code and try again.',

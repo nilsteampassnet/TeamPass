@@ -58,6 +58,14 @@ $(function() {
         checkAllText: "<?php echo $LANG['check_all_text'];?>",
         uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
     });
+    $("#share_rights_from, #share_rights_to").multiselect({
+        selectedList: 7,
+        multiple:false,
+        minWidth: 350,
+        height: 145,
+        checkAllText: "<?php echo $LANG['check_all_text'];?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+    });
 
     //Launch the datatables pluggin
     var tableUsers = $("#t_users").dataTable({
@@ -730,6 +738,113 @@ $(function() {
             }
         }
     });
+    
+
+    $("#share_rights_dialog").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 600,
+        height: 400,
+        title: "<?php echo $LANG['share_user_rights'];?>",
+        open:  function() {
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
+            $.post(
+                "sources/users.queries.php",
+                {
+                    type : "get_list_of_users_for_sharing",
+                    key  : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    if (data.error === "") {
+                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+
+                        $("#share_rights_from").append(data.users_list_from);
+                        $("#share_rights_from").multiselect({
+                            multiple: false,
+                            header: "<?php echo $LANG['select'];?>",
+                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            selectedList: 1,
+                            maxWidth: "300px;"
+                        }, 'refresh');
+
+                        $("#share_rights_to").append(data.users_list_to);
+                        $("#share_rights_to").multiselect({
+                            multiple: true,
+                            header: "<?php echo $LANG['select'];?>",
+                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            selectedList: 7,
+                            maxWidth: "300px;"
+                        }, 'refresh');
+
+                        get_user_rights();
+                    } else {
+                        $("#share_rights_dialog_error").html("<?php echo $LANG['error_unknown'];?>");
+                    }
+                }
+            );
+        },
+        close:  function() {
+            $("#share_rights_from, #share_rights_to").empty();
+            $("#share_rights_details_1, share_rights_details_2, share_rights_details_3, share_rights_details_4").html("");
+            $("#share_rights_details_ids_1, #share_rights_details_ids_2, #share_rights_details_ids_3, #share_rights_details_ids_4").val("");
+        },
+        buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-cog fa-spin fa-2x\"></i>&nbsp;'.$LANG['please_wait'];?>").show();
+
+                // destination users
+                var destination_ids = '';
+                $("#share_rights_to option:selected").each(function () {
+                    if ($(this).val() !== $("#share_rights_from").val()) {
+                        if (destination_ids === "") {
+                            destination_ids = $(this).attr('id').split('-')[1];
+                        } else {
+                            destination_ids += ";" + $(this).attr('id').split('-')[1];
+                        }
+                    }
+                });
+
+                if (destination_ids === "") {
+                    $("#share_rights_dialog_msg").html("").hide();
+                    return false;
+                }
+
+                $.post(
+                    "sources/users.queries.php",
+                    {
+                        type            : "update_users_rights_sharing",
+                        source_id       : $("#share_rights_from option:selected").attr('id').split('-')[1],
+                        destination_ids : destination_ids,
+                        user_functions  : $("#share_rights_details_ids_1").val(),
+                        user_managedby  : $("#share_rights_details_ids_2").val(),
+                        user_fldallowed : $("#share_rights_details_ids_3").val(),
+                        user_fldforbid  : $("#share_rights_details_ids_4").val(),
+                        user_otherrights: $("#share_rights_details_other").val(),
+                        key             : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#share_rights_dialog_msg").hide();
+                        $("#share_rights_from").empty();
+                        $("#share_rights_to option:selected").prop("selected", false);
+
+                        // refresh table content
+                        tableUsers.api().ajax.reload();
+
+                        // unselect destination users
+                        $("#share_rights_to").multiselect("uncheckAll");
+
+                        $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-check-circle fa-2x mi-green\"></i>&nbsp;'.$LANG['alert_message_done'];?>").show(0).delay(2000).hide(0);
+                    }
+                );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog("close");
+            }
+        }
+    });
+
 
     $("#user_folders_rights_dialog").dialog({
         bgiframe: true,
@@ -1047,6 +1162,104 @@ function user_edit(user_id)
     $("#user_edit_div").hide();
     $("#user_edit_id").val(user_id);
     $('#user_management_dialog').dialog('open');
+}
+
+
+/**
+*
+*/
+function get_user_rights()
+{
+    if ($("#share_rights_from option:selected").length === 0) return false;
+
+    var user_id = $("#share_rights_from option:selected").attr('id').split('-')[1]
+    $.post(
+        "sources/users.queries.php",
+        {
+            type : "get_user_info",
+            id   : user_id,
+            key  : "<?php echo $_SESSION['key'];?>"
+        },
+        function(data) {
+            if (data.error == "no") {
+                $("#share_rights_details").show();
+
+                // functions
+                var tmp = "", tmp2 = "";
+                var my_json = $.parseJSON(data.share_function);
+                $.each(my_json, function(k, v) {
+                    if (v['id'] !== "") {
+                        if (tmp === "") {
+                            tmp = v['title'];
+                            tmp2 = v['id'];
+                        } else {
+                            tmp += " ; " + v['title'];
+                            tmp2 += ";"+v['id'];
+                        }
+                    }
+                });
+                $("#share_rights_details_1").html(tmp);
+                $("#share_rights_details_ids_1").val(tmp2);
+
+                // managed by
+                tmp = "";
+                tmp2 = "";
+                my_json = $.parseJSON(data.share_managedby);
+                $.each(my_json, function(k, v) {
+                    if (v['id'] !== "") {
+                        if (tmp === "") {
+                            tmp = v['title'];
+                            tmp2 = v['id'];
+                        } else {
+                            tmp += " ; " + v['title'];
+                            tmp2 += ";"+v['id'];
+                        }
+                    }
+                });
+                $("#share_rights_details_2").html(tmp);
+                $("#share_rights_details_ids_2").val(tmp2);
+
+                // forbidden
+                tmp = "";
+                tmp2 = "";
+                my_json = $.parseJSON(data.share_forbidden);
+                $.each(my_json, function(k, v) {
+                    if (v['id'] !== "") {
+                        if (tmp === "") {
+                            tmp = v['title'];
+                            tmp2 = v['id'];
+                        } else {
+                            tmp += " ; " + v['title'];
+                            tmp2 += ";"+v['id'];
+                        }
+                    }
+                });
+                $("#share_rights_details_3").html(tmp === "" ? "<?php echo $LANG['none'];?>" : tmp);
+                $("#share_rights_details_ids_3").val(tmp2);
+
+                // allowed
+                tmp = "";
+                tmp2 = "";
+                my_json = $.parseJSON(data.share_allowed);
+                $.each(my_json, function(k, v) {
+                    if (v['id'] !== "") {
+                        if (tmp === "") {
+                            tmp = v['title'];
+                            tmp2 = v['id'];
+                        } else {
+                            tmp += " ; " + v['title'];
+                            tmp2 += ";"+v['id'];
+                        }
+                    }
+                });
+                $("#share_rights_details_4").html(tmp === "" ? "<?php echo $LANG['none'];?>" : tmp);
+                $("#share_rights_details_ids_4").val(tmp2);
+
+                $("#share_rights_details_other").val(data.gestionnaire + ";" + data.read_only + ";" + data.can_create_root_folder + ";" + data.personal_folder + ";" + data.can_manage_all_users + ";" + data.admin);
+            }
+        },
+        "json"
+    );
 }
 
 /**

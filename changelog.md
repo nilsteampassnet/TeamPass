@@ -35,11 +35,13 @@ Last changes
  #1551 Authentication through LDAP posix-search
  #1550 2 Factor enabled but can still log in without code
  #1549 Read Only users can use Personal Folders
+ #1543 Wrong Saltkey message after setting
  #1533 The change of the main SALT Key doesn't work
  #1532 Added error message in install.js if db-pw contains double quotes
  #1531 Database otv table originator field should be int instead of tinyint
  #1514 User language selection is done in Profile dialogbox
  #1474 New option: create an item without password
+ #1472 "folder access" and "role" settings when adding new user + propage rights from one user
  #1464 CSV files broken, html entities not decoded, newlines not stripped
  #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
  #1412 New option: Manager can move items they can view

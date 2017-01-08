@@ -1044,6 +1044,10 @@ if (!empty($_POST['type'])) {
             }
 
             $arrData = array();
+            $arrFunction = array();
+            $arrMngBy = array();
+            $arrFldForbidden = array();
+            $arrFldAllowed = array();
 
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -1052,7 +1056,7 @@ if (!empty($_POST['type'])) {
 
             // get User info
             $rowUser = DB::queryFirstRow(
-                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, gestionnaire, read_only, can_create_root_folder, personal_folder, can_manage_all_users, admin
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
@@ -1067,8 +1071,20 @@ if (!empty($_POST['type'])) {
             $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
-                    if (in_array($record['id'], $users_functions)) $tmp = ' selected="selected"';
-                    else $tmp = "";
+                    if (in_array($record['id'], $users_functions)) {
+                        $tmp = ' selected="selected"';
+
+                        // 
+                        array_push(
+                            $arrFunction,
+                            array(
+                                'title' => $record['title'],
+                                'id' => $record['id']
+                            )
+                        );
+                    } else {
+                        $tmp = "";
+                    }
                     $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role"'.$tmp.'>'.$record['title'].'</option>';
                 }
             }
@@ -1082,10 +1098,32 @@ if (!empty($_POST['type'])) {
             $managedBy = '<option value="0">'.$LANG['administrators_only'].'</option>';
             foreach ($rolesList as $fonction) {
                 if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
-                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
-                    else $tmp = "";
+                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
+                        $tmp = ' selected="selected"';
+
+                        // 
+                        array_push(
+                            $arrMngBy,
+                            array(
+                                'title' => $fonction['title'],
+                                'id' => $fonction['id']
+                            )
+                        );
+                    } else {
+                        $tmp = "";
+                    }
                     $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' '.$fonction['title'].'</option>';
                 }
+            }
+
+            if (count($arrMngBy) === 0) {
+                array_push(
+                    $arrMngBy,
+                    array(
+                        'title' => $LANG['administrators_only'],
+                        'id' => "0"
+                    )
+                );
             }
 
             // get FOLDERS FORBIDDEN
@@ -1101,8 +1139,18 @@ if (!empty($_POST['type'])) {
                     }
                     if (in_array($t->id, $userForbidFolders)) {
                         $tmp = ' selected="selected"';
+
+                        // 
+                        array_push(
+                            $arrFldForbidden,
+                            array(
+                                'title' => htmlspecialchars($t->title, ENT_COMPAT, "UTF-8"),
+                                'id' => $t->id
+                            )
+                        );
                     }
                     $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+
                     $prev_level = $t->nlevel;
                 }
             }
@@ -1120,8 +1168,18 @@ if (!empty($_POST['type'])) {
                     }
                     if (in_array($t->id, $userAllowFolders)) {
                         $tmp = ' selected="selected"';
+
+                        // 
+                        array_push(
+                            $arrFldAllowed,
+                            array(
+                                'title' => htmlspecialchars($t->title, ENT_COMPAT, "UTF-8"),
+                                'id' => $t->id
+                            )
+                        );
                     }
                     $allowedFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+
                     $prev_level = $t->nlevel;
                 }
             }
@@ -1141,7 +1199,17 @@ if (!empty($_POST['type'])) {
             $arrData['function'] = $functionsList;
             $arrData['managedby'] = $managedBy;
             $arrData['foldersForbid'] = $forbiddenFolders;
-            $arrData['foldersAllow'] = $allowedFolders;
+            $arrData['foldersAllow'] = $allowedFolders;//print_r($arrMngBy);
+            $arrData['share_function'] = json_encode($arrFunction, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_managedby'] = json_encode($arrMngBy, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_forbidden'] = json_encode($arrFldForbidden, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_allowed'] = json_encode($arrFldAllowed, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['gestionnaire'] = $rowUser['gestionnaire'];
+            $arrData['read_only'] = $rowUser['read_only'];
+            $arrData['can_create_root_folder'] = $rowUser['can_create_root_folder'];
+            $arrData['personal_folder'] = $rowUser['personal_folder'];
+            $arrData['can_manage_all_users'] = $rowUser['can_manage_all_users'];
+            $arrData['admin'] = $rowUser['admin'];
 
             $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             echo $return_values;
@@ -1485,6 +1553,108 @@ if (!empty($_POST['type'])) {
                 "encode"
             );
             echo $return_values;
+            break;
+
+        /**
+         * GET LIST OF USERS
+         */
+        case "get_list_of_users_for_sharing":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            $list_users_from = '';
+            $list_users_to = '';
+
+            $rows = DB::query(
+                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                FROM ".prefix_table("users")."
+                WHERE admin = %i",
+                "0"
+            );
+            foreach ($rows as $record) {
+                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+            }
+
+            $return_values = prepareExchangedData(
+                array(
+                    'users_list_from' => $list_users_from,
+                    'users_list_to' => $list_users_to,
+                    'error' => ''
+                ),
+                "encode"
+            );
+            echo $return_values;
+
+            break;
+
+        /**
+         * UPDATE USERS RIGHTS BY SHARING
+         */
+        case "update_users_rights_sharing":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            // Check send values
+            if (empty($_POST['source_id']) || empty($_POST['destination_ids'])) {
+                // error
+                exit();
+            }
+
+            // manage other rights
+            $user_other_rights = explode(';', $_POST['user_otherrights']); //gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin
+
+            foreach (explode(';', $_POST['destination_ids']) as $dest_user_id) {
+                // update user
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'fonction_id' => $_POST['user_functions'],
+                        'isAdministratedByRole' => $_POST['user_managedby'],
+                        'groupes_visibles' => $_POST['user_fldallowed'],
+                        'groupes_interdits' => $_POST['user_fldforbid'],
+                        'gestionnaire' => $user_other_rights[0],
+                        'read_only' => $user_other_rights[1],
+                        'can_create_root_folder' => $user_other_rights[2],
+                        'personal_folder' => $user_other_rights[3],
+                        'can_manage_all_users' => $user_other_rights[4],
+                        'admin' => $user_other_rights[5],
+                       ),
+                    "id = %i",
+                    $dest_user_id
+                );
+            }
+
+/*
+            $list_users_from = $list_users_to = '';
+
+            $rows = DB::query(
+                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                FROM ".prefix_table("users")."
+                WHERE admin = %i",
+                "0"
+            );
+            foreach ($rows as $record) {
+                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+            }
+
+            $return_values = prepareExchangedData(
+                array(
+                    'users_list_from' => $list_users_from,
+                    'users_list_to' => $list_users_to,
+                    'error' => ''
+                ),
+                "encode"
+            );
+            echo $return_values;
+*/
             break;
     }
 }
