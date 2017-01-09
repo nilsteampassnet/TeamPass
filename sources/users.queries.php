@@ -1074,7 +1074,7 @@ if (!empty($_POST['type'])) {
                     if (in_array($record['id'], $users_functions)) {
                         $tmp = ' selected="selected"';
 
-                        // 
+                        //
                         array_push(
                             $arrFunction,
                             array(
@@ -1101,7 +1101,7 @@ if (!empty($_POST['type'])) {
                     if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
                         $tmp = ' selected="selected"';
 
-                        // 
+                        //
                         array_push(
                             $arrMngBy,
                             array(
@@ -1140,7 +1140,7 @@ if (!empty($_POST['type'])) {
                     if (in_array($t->id, $userForbidFolders)) {
                         $tmp = ' selected="selected"';
 
-                        // 
+                        //
                         array_push(
                             $arrFldForbidden,
                             array(
@@ -1169,7 +1169,7 @@ if (!empty($_POST['type'])) {
                     if (in_array($t->id, $userAllowFolders)) {
                         $tmp = ' selected="selected"';
 
-                        // 
+                        //
                         array_push(
                             $arrFldAllowed,
                             array(
@@ -1568,12 +1568,23 @@ if (!empty($_POST['type'])) {
             $list_users_from = '';
             $list_users_to = '';
 
-            $rows = DB::query(
-                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
-                FROM ".prefix_table("users")."
-                WHERE admin = %i",
-                "0"
-            );
+            if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
+                $rows = DB::query(
+                    "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    FROM ".prefix_table("users")."
+                    WHERE admin = %i AND isAdministratedByRole IN %ls",
+                    "0",
+                    array_filter($_SESSION['user_roles'])
+                );
+            } else {
+                $rows = DB::query(
+                    "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    FROM ".prefix_table("users")."
+                    WHERE admin = %i",
+                    "0"
+                );
+            }
+
             foreach ($rows as $record) {
                 $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
                 $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';

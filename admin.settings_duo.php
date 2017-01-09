@@ -143,9 +143,22 @@ echo '
       <td>
         <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'not set', '" class="text ui-widget-content" />
         <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
-        <span id="save_wait" style="display: none;">
-        <i class="fa fa-cog fa-spin"></i>
-        </span>
+        <span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+      </td>
+    </tr>
+
+<!-- // ga_reset_by_user -->
+    <tr class="googleauth google_enabled">
+      <td>
+        <label for="ga_reset_by_user">
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['ga_reset_by_user'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['ga_reset_by_user_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? 'true' : 'false', '">
+        </div>
+        <input type="hidden" id="ga_reset_by_user_input" name="ga_reset_by_user_input" value="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 

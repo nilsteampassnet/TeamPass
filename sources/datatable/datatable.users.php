@@ -253,8 +253,12 @@ foreach ($rows as $record) {
         $sOutput .= ',';
 
         //col9
-        if ($record['admin'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
+        if ($_SESSION['user_can_manage_all_users'] === "1" || $_SESSION['is_admin'] === "1") {
+            if ($record['admin'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
+            else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
+        } else {
+            $sOutput .= '""';
+        }
         $sOutput .= ',';
 
         //col10

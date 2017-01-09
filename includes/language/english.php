@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    '2FA_new_code_by_user_not_allowed' => 'This has been disabled. Please request new code to your Administrator.',
+    'ga_reset_by_user' => 'User can reset his 2FA code',
+    'ga_reset_by_user_tip' => 'If enabled, the user will have the possibility to reset his 2FA code using the link in the login page. This could be useful in case he has changed mobile device for example. If not enabled, the user will have to ask the Administrator to generate a new code.',
     'share_user_rights' => 'Share user rights',
     'share_rights_info' => 'This dialogbox permits you to share the rights of one user with a selection of users.<br>Notice that the selected users will have their existing rights reseted and replaced with exactely the same rights as the source user.',
     'share_rights_source' => 'Source user',
@@ -60,8 +63,8 @@ $LANG = array (
     'admin_action_attachments_cryption_tip' => 'Warning: Only encrypt or decrypt files after changing attachment encryption settings to match. Select whether to encrypt or decrypt, then press start. Make a backup of the upload folder before running this function.',
     'encrypt' => 'Encrypt',
     'decrypt' => 'Decrypt',
-    'admin_ga_website_name' => 'Name displayed in Google Authenticator for Teampass',
-    'admin_ga_website_name_tip' => 'This name is used for the identification code account in Google Authenticator.',
+    'admin_ga_website_name' => 'Name displayed in Google Authenticator',
+    'admin_ga_website_name_tip' => 'This name is used for the identification code account in Google Authenticator for Teampass.',
     'admin_action_pw_prefix_correct' => 'Repair password prefix',
     'admin_action_pw_prefix_correct_tip' => 'Please backup the database before performing this task. This script will perform an update of password prefix in database. Only run this to fix incorrectly displayed passwords after upgrading from older versions.',
     'items_changed' => 'have been changed.',

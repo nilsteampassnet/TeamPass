@@ -291,9 +291,12 @@ $htmlHeaders .= '
                     send_email : "1"
                 },
                 function(data) {
-                    if (data[0].error == "0") {
+                    if (data[0].error === "0") {
                         //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
+                    } else if (data[0].error === "not_allowed") {
+                        $("#connection_error").html("'.$LANG['2FA_new_code_by_user_not_allowed'].'").show();
+                        $("#div_ga_url").hide();
                     } else {
                         $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
                         $("#div_ga_url").hide();

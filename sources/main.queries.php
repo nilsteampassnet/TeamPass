@@ -264,6 +264,12 @@ switch ($_POST['type']) {
     * This will generate the QR Google Authenticator
     */
     case "ga_generate_qr":
+        // is this allowed by setting
+        if (!isset($_SESSION['settings']['ga_reset_by_user']) || $_SESSION['settings']['ga_reset_by_user'] !== "1") {
+            // User cannot ask for a new code
+            echo '[{"error" : "not_allowed"}]';
+        }
+
         // Check if user exists
         if (!isset($_POST['id']) || empty($_POST['id'])) {
             // decrypt and retreive data in JSON format
