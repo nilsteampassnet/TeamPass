@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'error_cannot_delete_subfolders_exist' => 'This folder cannot be deleted as at least one subfolder exists.',
     '2FA_new_code_by_user_not_allowed' => 'This has been disabled. Please request new code to your Administrator.',
     'ga_reset_by_user' => 'User can reset his 2FA code',
     'ga_reset_by_user_tip' => 'If enabled, the user will have the possibility to reset his 2FA code using the link in the login page. This could be useful in case he has changed mobile device for example. If not enabled, the user will have to ask the Administrator to generate a new code.',

@@ -1124,10 +1124,20 @@ function SupprimerFolder()
                 key        : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
-                refreshTree();
                 $("#del_folder_loader").hide();
-                $("#div_supprimer_rep").dialog("close");
-            }
+                if (data.error !== "") {
+                    if (data.error === "ERR_SUB_FOLDERS_EXIST") {
+                        $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_cannot_delete_subfolders_exist']);?>").show(1).delay(3000).fadeOut(1000);
+
+                    } else if (data.error === "ERR_FOLDER_NOT_ALLOWED") {
+                        $("#del_rep_show_error").html("<?php echo addslashes($LANG['error_not_allowed_to']);?>");
+                    }
+                } else {
+                    refreshTree();
+                    $("#div_supprimer_rep").dialog("close");
+                }
+            },
+            "json"
        );
     }
 }
@@ -2623,7 +2633,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 600,
-        height: 150,
+        height: 200,
         title: "<?php echo $LANG['item_menu_del_rep'];?>",
         buttons: {
             "<?php echo $LANG['delete'];?>": function() {
