@@ -39,6 +39,7 @@ $(function() {
             {"width": "7%"},
             {"width": "5%"},
             {className: "dt-body-left"},
+            {"width": "5%"},
             {"width": "15%"},
             {"width": "10%"},
             {"width": "10%"},
@@ -181,7 +182,7 @@ $(function() {
                 }if ($('#edit_parent_id').val() == "na") {
                      $("#edit_folder_show_error").html("<?php echo $LANG['error_no_selected_folder'];?>").show();
                      return;
-                }   
+                }
                 $("#edit_folder_wait").show();
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
@@ -296,7 +297,7 @@ $(function() {
     ".fa-toggle-off, .fa-toggle-on, .cb_selected_folder"
     );
 
-    // 
+    //
     $( "#click_delete_multiple_folders" ).click(function() {
         var list_i = "";
         $(".cb_selected_folder:checked").each(function() {

@@ -836,16 +836,24 @@ echo '
 // Formulaire SUPPRIMER REPERTORIE
 echo '
 <div id="div_supprimer_rep" style="display:none;">
-    <div id="del_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
-            <td><select id="delete_rep_groupe">
+            <td><select id="delete_rep_groupe" onclick="">
                 <option value="0">-choisir-</option>
             </select></td>
         </tr>
+        <tr>
+        <td colspan="2">
+            <div id="delete_rep_groupe_validate_div" class="ui-state-default ui-corner-all" style="padding:5px; margin-top:10px;">
+                <input type="checkbox" id="delete_rep_groupe_validate"><label for="delete_rep_groupe_validate">'.$LANG['confirm_delete_group'].'</label>
+            </div>
+        </td>
+        </tr>
     </table>
-    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="del_rep_show_error" style="text-align:center;padding:5px;display:none;margin-top:10px;" class="ui-state-error ui-corner-all"></div>
+
+    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:15px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';

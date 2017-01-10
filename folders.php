@@ -93,6 +93,7 @@ echo '
         <th></th>
         <th>ID</th>
         <th>'.$LANG['group'].'</th>
+        <th style="width:20px;">'.$LANG['nb_items'].'</th>
         <th>'.$LANG['complexity'].'</th>
         <th>'.$LANG['group_parent'].'</th>
         <th>'.$LANG['level'].'</th>

@@ -166,7 +166,7 @@ if (isset($_POST['newtitle'])) {
         // CASE where DELETING a group
         case "delete_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
+            if ($_POST['key'] !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }

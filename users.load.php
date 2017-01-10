@@ -84,7 +84,7 @@ $(function() {
             "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
         },
         "columns": [
-            {"width": "13%", "align": "left"},
+            {"width": "13%", className: "dt-body-left"},
             {"width": "10%"},
             {"width": "15%"},
             {"width": "15%"},
@@ -738,7 +738,7 @@ $(function() {
             }
         }
     });
-    
+
 
     $("#share_rights_dialog").dialog({
         bgiframe: true,

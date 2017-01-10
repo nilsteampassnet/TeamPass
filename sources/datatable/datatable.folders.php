@@ -110,6 +110,16 @@ foreach ($treeDesc as $t) {
         $sOutput .= '"'.$ident.'<span id=\"title_'.$t->id.'\">'.addslashes(str_replace("'", "&lsquo;", $t->title)).'</span>"';
         $sOutput .= ',';
 
+        // col3 - get number of items in folder
+        $data_items = DB::query(
+            "SELECT id
+            FROM ".$pre."items
+            WHERE id_tree = %i",
+            $t->id
+        );
+        $sOutput .= '"'.DB::count().'"';
+        $sOutput .= ',';
+
         //col3
         $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.@$_SESSION['settings']['pwComplexity'][$node_data['valeur']][1].'</span>"';
         $sOutput .= ',';

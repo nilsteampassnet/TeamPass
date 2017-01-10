@@ -454,6 +454,7 @@ $htmlHeaders .= '
         if (window.location.href.indexOf("page=items") == -1) {
             location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
         } else {
+            $("#items_list").html("<ul class=\'liste_items\' id=\'full_items_list\'></ul>");
             AfficherDetailsItem(item_id);
             if (tree_id != $("#hid_cat").val()) {
                 ListerItems(tree_id);
