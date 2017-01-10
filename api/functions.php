@@ -147,7 +147,7 @@ function getSettingValue($setting) {
     $set = DB::queryFirstRow(
         "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
         "admin",
-        $setting)
+        $setting
     );
 
     return $set['valeur'];
@@ -377,7 +377,7 @@ function rest_get () {
                         }
                     }
                 }
-                $folder_str = implode(";",$folder_arr);
+                $folder_str = array_filter(implode(";",$folder_arr));
 
                 // get ids
                 if (strpos($folder_str,";") > 0) {
@@ -1310,7 +1310,7 @@ function rest_get () {
                         $user_saltkey,
                         $userData['encrypted_psk']
                     );
-                    if (strpos($user_key_encoded, "Error ") !== false) {
+                    if (strpos($user_saltkey, "Error ") !== false) {
                         // error
                         rest_error ('AUTH_NO_DATA');
                     }
@@ -1351,7 +1351,7 @@ function rest_get () {
                             "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
                             FROM ".prefix_table("items")."
                             WHERE url LIKE %s
-                            AND id_tree IN (".implode(",", $userDef).")
+                            AND id_tree IN (".implode(",", array_filter($userDef)).")
                             AND inactif = %i
                             ORDER BY id DESC",
                             $tpc_url.'%',
@@ -1658,7 +1658,7 @@ function rest_get () {
                                 'label' => $label,
                                 'description' => "Imported with Teampass-Connect",
                                 'pw' => $encrypt['string'],
-                                'pw_iv' => $encrypt['iv'],
+                                'pw_iv' => "",
                                 'email' => "",
                                 'url' => urldecode($tpc_param[2]),
                                 'id_tree' => $tpc_folder_id,
