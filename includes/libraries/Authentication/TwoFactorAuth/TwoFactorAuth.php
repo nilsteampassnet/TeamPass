@@ -2,10 +2,10 @@
 
 namespace Authentication\TwoFactorAuth;
 
-require_once(dirname(__FILE__)."/Providers\Qr\GoogleQRCodeProvider.php");
-require_once(dirname(__FILE__)."/Providers\Qr\IQRCodeProvider.php");
-require_once(dirname(__FILE__)."/Providers\Rng\CSRNGProvider.php");
-require_once(dirname(__FILE__)."/Providers\Rng\IRNGProvider.php");
+require_once(dirname(__FILE__)."/Providers/Qr/GoogleQRCodeProvider.php");
+require_once(dirname(__FILE__)."/Providers/Qr/IQRCodeProvider.php");
+require_once(dirname(__FILE__)."/Providers/Rng/CSRNGProvider.php");
+require_once(dirname(__FILE__)."/Providers/Rng/IRNGProvider.php");
 
 // Based on / inspired by: https://github.com/PHPGangsta/GoogleAuthenticator
 // Algorithms, digits, period etc. explained: https://github.com/google/google-authenticator/wiki/Key-Uri-Format

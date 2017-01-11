@@ -165,7 +165,7 @@ if (isset($_POST['type'])) {
                 ||
                 (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1)
             ) {
-                if (isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
+                if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") || !empty($pw)) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $passwd = cryption(
@@ -2360,6 +2360,14 @@ if (isset($_POST['type'])) {
                 }
             }
 
+            // do query on this folder
+            $data_this_folder = DB::queryFirstRow(
+                "SELECT id, personal_folder, title
+                FROM ".prefix_table("nested_tree")."
+                WHERE id = %s",
+                $_POST['groupe']
+            );
+
             // check if user can perform this action
             if (isset($_POST['context']) && !empty($_POST['context'])) {
                 if ($_POST['context'] == "create_folder" || $_POST['context'] == "edit_folder" || $_POST['context'] == "delete_folder") {
@@ -2370,6 +2378,9 @@ if (isset($_POST['type'])) {
                            isset($_SESSION['settings']['enable_user_can_create_folders'])
                            && $_SESSION['settings']['enable_user_can_create_folders'] == 1
                         )
+                        || (
+                            $data_this_folder['personal_folder'] === "1" && $data_this_folder['title'] === $_SESSION['user_id']
+                        )   // take into consideration if this is a personal folder
                     ) {
                         // allow
                     } else {
