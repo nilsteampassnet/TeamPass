@@ -585,6 +585,7 @@ echo '
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
+/*
 // Correct passwords prefix
 echo '
                 <div style="margin-bottom:3px">
@@ -596,6 +597,7 @@ echo '
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_pw_prefix_correct_tip']), ENT_QUOTES).'"></i></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
+*/
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
@@ -761,6 +763,16 @@ echo '
                     <label>'.$LANG['setting_can_create_root_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="can_create_root_folder" data-toggle-on="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="can_create_root_folder_input" name="can_create_root_folder_input" value="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+// enable enable_massive_move_delete
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['enable_massive_move_delete'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['enable_massive_move_delete_tip']), ENT_QUOTES).'"></i></span>
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="enable_massive_move_delete" data-toggle-on="', isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_massive_move_delete_input" name="enable_massive_move_delete_input" value="', isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
 echo '<tr><td colspan="3"><hr /></td></tr>';

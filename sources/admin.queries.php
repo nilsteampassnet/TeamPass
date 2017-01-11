@@ -125,7 +125,11 @@ switch ($_POST['type']) {
     #CASE for refreshing all Personal Folders
     case "admin_action_check_pf":
         //get through all users
-        $rows = DB::query("SELECT id,login,email FROM ".prefix_table("users")." ORDER BY login ASC");
+        $rows = DB::query(
+            "SELECT id, login, email
+            FROM ".prefix_table("users")."
+            ORDER BY login ASC"
+        );
         foreach ($rows as $record) {
             //update PF field for user
             DB::update(
@@ -138,7 +142,13 @@ switch ($_POST['type']) {
             );
 
             //if folder doesn't exist then create it
-            $data = DB::queryfirstrow("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s AND parent_id = %i", $record['id'], 0);
+            $data = DB::queryfirstrow(
+                "SELECT id
+                FROM ".prefix_table("nested_tree")."
+                WHERE title = %s AND parent_id = %i",
+                $record['id'],
+                0
+            );
             $counter = DB::count();
             if ($counter == 0) {
                 //If not exist then add it
@@ -150,6 +160,9 @@ switch ($_POST['type']) {
                         'personal_folder' => '1'
                    )
                 );
+
+                //rebuild fuild tree folder
+                $tree->rebuild();
             } else {
                 //If exists then update it
                 DB::update(
@@ -157,11 +170,15 @@ switch ($_POST['type']) {
                     array(
                         'personal_folder' => '1'
                    ),
-                   "title=%s AND parent_id=%i", $record['id'], 0
+                   "title=%s AND parent_id=%i",
+                   $record['id'],
+                   0
                 );
+                //rebuild fuild tree folder
+                $tree->rebuild();
 
                 // Get an array of all folders
-                $folders = $tree->getDescendants($record['id'], false, true, true);
+                $folders = $tree->getDescendants($data['id'], false, true, true);
                 foreach ($folders as $folder) {
                  //update PF field for user
                     DB::update(
@@ -176,8 +193,6 @@ switch ($_POST['type']) {
             }
         }
 
-        //rebuild fuild tree folder
-        $tree->rebuild();
 
         echo '[{"result" : "pf_done"}]';
         break;

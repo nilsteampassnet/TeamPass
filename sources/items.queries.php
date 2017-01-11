@@ -460,6 +460,13 @@ if (isset($_POST['type'])) {
                     ||
                     (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
                  ) {
+
+                    // is pwd empty?
+                    if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
+                        echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
+                        break;
+                    }
+
                     // Check length
                     if (strlen($pw) > $_SESSION['settings']['pwd_maximum_length']) {
                         echo prepareExchangedData(array("error" => "ERR_PWD_TOO_LONG"), "encode");
@@ -477,25 +484,29 @@ if (isset($_POST['type'])) {
                         $dataReceived['id']
                     );
                     // encrypt PW
-                    if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
-                        $sentPw = $pw;
-                        $passwd = cryption(
-                            $pw,
-                            $_SESSION['user_settings']['session_psk'],
-                            "encrypt"
-                        );
-                        $restictedTo = $_SESSION['user_id'];
-                    } else {
-                        $passwd = cryption(
-                            $pw,
-                            "",
-                            "encrypt"
-                        );
-                    }
+                    if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") || !empty($pw)) {
+                        if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
+                            $sentPw = $pw;
+                            $passwd = cryption(
+                                $pw,
+                                $_SESSION['user_settings']['session_psk'],
+                                "encrypt"
+                            );
+                            $restictedTo = $_SESSION['user_id'];
+                        } else {
+                            $passwd = cryption(
+                                $pw,
+                                "",
+                                "encrypt"
+                            );
+                        }
 
-                    if (!empty($passwd["error"])) {
-                        echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
-                        break;
+                        if (!empty($passwd["error"])) {
+                            echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
+                            break;
+                        }
+                    } else {
+                        $passwd['string'] = "";
                     }
 
                     // ---Manage tags
@@ -528,7 +539,6 @@ if (isset($_POST['type'])) {
                             'label' => $label,
                             'description' => $dataReceived['description'],
                             'pw' => $passwd['string'],
-                            //'pw_iv' => $passwd['iv'],
                             'pw_iv' => "",
                             'email' => $email,
                             'login' => $login,

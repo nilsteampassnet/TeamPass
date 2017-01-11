@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'enable_massive_move_delete' => 'Allow user to perform massive move and delete operations',
+    'enable_massive_move_delete_tip' => 'When enabled, this option permits a user to perform a massive move and/or delete operation in one time. The user will only be able to perform this on Items on which he is allowed to.',
     'error_cannot_delete_subfolders_exist' => 'This folder cannot be deleted as at least one subfolder exists.',
     '2FA_new_code_by_user_not_allowed' => 'This has been disabled. Please request new code to your Administrator.',
     'ga_reset_by_user' => 'User can reset his 2FA code',

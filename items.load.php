@@ -777,7 +777,7 @@ function EditerItem()
 
     // do checks
     if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']);?>";
-    else if ($("#edit_pw1").val() == "") erreur = "<?php echo addslashes($LANG['error_pw']);?>";
+    else if ($("#edit_pw1").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo $LANG['error_pw'];?>";
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
     else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']);?>";
     else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
@@ -791,6 +791,8 @@ function EditerItem()
             ($("#bloquer_modification_complexite").val() == 1)
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
+            ||
+            $("#create_item_without_password").val() === "1"
       ) {
             LoadingPage();  //afficher image de chargement
             var annonce = 0;

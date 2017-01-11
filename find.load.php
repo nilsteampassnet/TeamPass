@@ -172,13 +172,13 @@ $(function() {
             $("#find_page input").focus();
         },
         "columns": [
-            { "width": "40px" },
-            null,
-            null,
-            null,
-            null,
-            null,
-            null
+            {"width": "80px", className: "dt-body-left"},
+            {"width": "20%"},
+            {"width": "10%"},
+            {"width": "30%"},
+            {"width": "10%"},
+            {"width": "30%"},
+            {"width": "10%"}
         ]
     });
 });

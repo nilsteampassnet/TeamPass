@@ -16,6 +16,7 @@ Last changes
  FIX   "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
+ #1614 Generate personal folders sets regular root folders also as personal
  #1608 All folders are deleted
  #1603 Attached files disappears
  #1601 Time zone can't be saved in My Profile
