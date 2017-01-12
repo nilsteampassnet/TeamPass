@@ -24,7 +24,7 @@ class DB {
   public static $password = '';
   public static $host = 'localhost';
   public static $port = null;
-  public static $encoding = 'latin1';
+  public static $encoding = 'utf8';
   
   // configure workings
   public static $param_char = '%';

@@ -1,20 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
         <title>TeamPass Installation</title>
         <link rel="stylesheet" href="css/install.css" type="text/css" />
         <link rel="stylesheet" href="css/overcast/jquery-ui-1.10.3.custom.min.css" type="text/css" />
         <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <!--<script type="text/javascript" src="start.js"></script>-->
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/aes.min.js"></script>
-
         <script type="text/javascript" src="install.js"></script>
-
         <script type="text/javascript">
-
-
         </script>
     </head>
 
@@ -109,7 +106,7 @@ echo '
     <li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
     <li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
     <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check18"></span></li>
-    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check12"></span></li>
+    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check13"></span></li>
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
     <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check15"></span></li>
@@ -120,10 +117,18 @@ echo '
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
     <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
+<<<<<<< HEAD
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
     <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check14"></span></li>
     <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check10"></span></li>
     <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
+=======
+    <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check14"></span></li>
+    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check9"></span></li>
+    <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check11"></span></li>
+    <li>Execution time limit&nbsp;<span id="res2_check12"></span></li>
+>>>>>>> a7b6f821dcbb0964c345d002afb8566b3ab4265d
     </ul>
 </div>';
 
@@ -164,36 +169,6 @@ echo '
         <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
     </label>
     <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
-    </div>
-    <h5>SMTP set-up:</h5>
-    <div class="line_entry">
-    <label for="smtp_server" class="label_block_big">SMTP server :<span style="font-size:8pt;font-weight:normal;">Email server configuration</span></label><input type="text" id="smtp_server" value="smtp.my_domain.com" style="width:250px;" />&nbsp;<span id="res4_check3"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth" class="label_block_big">SMTP authorization:<span style="font-size:8pt;font-weight:normal;">false or true</span></label><input type="text" id="smtp_auth" value="false" style="width:250px;" />&nbsp;<span id="res4_check4"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth_username" class="label_block_big">SMTP authorization username :</label><input type="text" id="smtp_auth_username" value="" style="width:250px;" />&nbsp;<span id="res4_check5"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth_password" class="label_block_big">SMTP authorization password :</label><input type="text" id="smtp_auth_password" value="" style="width:250px;" />&nbsp;<span id="res4_check6"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_port" class="label_block_big">SMTP Port :</label><input type="text" id="smtp_port" value="25" style="width:250px;" />&nbsp;<span id="res4_check7"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_security" class="label_block_big">SMTP security :</label>
-    <select id="smtp_security" name="email_security" class="text ui-widget-content">
-        <option value="none" selected="selected">None</option>
-        <option value="ssl">SSL</option>
-        <option value="tls">TLS</option>
-    </select>
-    </div>
-    <div class="line_entry">
-    <label for="email_from" class="label_block_big">Email from :</label><input type="text" id="email_from" value="" style="width:250px;"  />&nbsp;<span id="res4_check8"></span>
-    </div>
-    <div class="line_entry">
-    <label for="email_from_name" class="label_block_big">Email from name :</label><input type="text" id="email_from_name" value="" style="width:250px;" />&nbsp;<span id="res4_check9"></span>
     </div>
     <h5>Administrator account set-up:</h5>
     <div class="line_entry">

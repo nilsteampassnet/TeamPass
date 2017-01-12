@@ -284,7 +284,7 @@ function identifyUser($sentData)
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
             }
-            $adldap = new SplClassLoader('LDAP\adLDAP', '../includes/libraries');
+            $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
             $adldap->register();
 
             // Posix style LDAP handles user searches a bit differently
@@ -294,7 +294,7 @@ function identifyUser($sentData)
             elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
             }
-            $adldap = new LDAP\adLDAP\adLDAP(
+            $adldap = new adLDAP\adLDAP(
                 array(
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
@@ -305,7 +305,7 @@ function identifyUser($sentData)
             );
 
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->get_last_error()."\n\n\n"); //Debug
+                fputs($dbgLdap, "Create new adldap object : ".$adldap->getLastError()."\n\n\n"); //Debug
             }
 
             // openLDAP expects an attribute=value pair
@@ -334,7 +334,7 @@ function identifyUser($sentData)
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
-                    "After authenticate : ".$adldap->get_last_error()."\n\n\n" .
+                    "After authenticate : ".$adldap->getLastError()."\n\n\n" .
                     "ldap status : ".$ldapConnection."\n\n\n"
                 ); //Debug
             }
@@ -390,14 +390,18 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        
+        // get user info from LDAP
+        $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
 
         DB::insert(
             prefix_table('users'),
             array(
                 'login' => $username,
-                //'pw' => $password,
                 'pw' => $data['pw'],
-                'email' => "",
+                'email' => @$user_info_from_ad[0]['mail'][0],
+                'name' => $user_info_from_ad[0]['givenname'][0],
+                'lastname' => $user_info_from_ad[0]['sn'][0],
                 'admin' => '0',
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
@@ -449,7 +453,7 @@ function identifyUser($sentData)
     }
 
     // check GA code
-    if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 && $username != "admin") {
+    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");

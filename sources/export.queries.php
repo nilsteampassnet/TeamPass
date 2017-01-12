@@ -113,19 +113,15 @@ switch ($_POST['type']) {
                         } else {
                             $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
                         }
-                        /*if ($record['perso'] != 1) {
-                            $pw = stripslashes($pw);
-                            $pw = substr(addslashes($pw), strlen($record['rand_key']));
-                        }*/
                         // store
                         DB::insert(
                             prefix_table("export"),
                             array(
                                 'id' => $record['id'],
-                                'description' => htmlspecialchars_decode(addslashes($record['description'])),
-                                'label' => htmlspecialchars_decode(addslashes($record['label'])),
-                                'pw' => stripslashes($pw['string']),
-                                'login' => htmlspecialchars_decode($record['login']),
+                                'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true),
+                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
+                                'login' => ($record['login']),
                                 'path' => $path
                             )
                         );
@@ -153,30 +149,37 @@ switch ($_POST['type']) {
 
             //Prepare the PDF file
             include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
+
             $pdf=new FPDF_Protection();
             $pdf->SetProtection(array('print'), $_POST['pdf_password']);
 
             //Add font for regular text
-            $pdf->AddFont('DejaVu', '', 'DejaVuSansCondensed.ttf', true);
+            $pdf->AddFont('helvetica', '');
             //Add monospace font for passwords
             $pdf->AddFont('LiberationMono', '');
 
             $pdf->aliasNbPages();
             $pdf->addPage();
-            $pdf->SetFont('DejaVu', '', 16);
+            $pdf->SetFont('helvetica', '', 16);
             $pdf->Cell(0, 10, $LANG['print_out_pdf_title'], 0, 1, 'C', false);
-            $pdf->SetFont('DejaVu', '', 12);
+            $pdf->SetFont('helvetica', '', 12);
             $pdf->Cell(0, 10, $LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
 
             $prev_path = "";
             $table = array('label', 'login', 'pw', 'description');
             foreach ($rows as $record) {
+                // decode
+                $record['label'] = utf8_decode($record['label']);
+                $record['login'] = utf8_decode($record['login']);
+                $record['pw'] = utf8_decode($record['pw']);
+                $record['description'] = utf8_decode($record['description']);
+
                 $printed_ids[] = $record['id'];
                 if ($prev_path != $record['path']) {
-                    $pdf->SetFont('DejaVu', '', 10);
+                    $pdf->SetFont('helvetica', '', 10);
                     $pdf->SetFillColor(192, 192, 192);
                     error_log('key: '.$key.' - paths: '.$record['path']);
-                    $pdf->cell(0, 6, $record['path'], 1, 1, "L", 1);
+                    $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", 1);
                     $pdf->SetFillColor(222, 222, 222);
                     $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
                     $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
@@ -185,10 +188,10 @@ switch ($_POST['type']) {
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
-                $record['description'] = html_entity_decode(htmlspecialchars_decode(str_replace("<br />", "\n", $record['description']), ENT_QUOTES));
                 //row height calculation
                 $nb = 0;
                 $nb = max($nb, nbLines($table_col_width[0], $record['label']));
+                $nb = max($nb, nbLines($table_col_width[1], $record['login']));
                 $nb = max($nb, nbLines($table_col_width[3], $record['description']));
                 $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
 
@@ -196,7 +199,7 @@ switch ($_POST['type']) {
                 //Page break needed?
                 checkPageBreak($h);
                 //Draw cells
-                $pdf->SetFont('DejaVu', '', 9);
+                $pdf->SetFont('helvetica', '', 9);
                 for ($i=0; $i<count($table); $i++) {
                     $w=$table_col_width[$i];
                     $a='L';
@@ -206,7 +209,7 @@ switch ($_POST['type']) {
                     //Draw
                     $pdf->Rect($x, $y, $w, $h);
                     //Write
-                    $pdf->MultiCell($w, 5, stripslashes($record[$table[$i]]), 0, $a);
+                    $pdf->MultiCell($w, 5, ($record[$table[$i]]), 0, $a);
                     //go to right
                     $pdf->SetXY($x+$w, $y);
                 }
@@ -215,6 +218,7 @@ switch ($_POST['type']) {
             }
 
             $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
+
             //send the file
             $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdf_file);
 

@@ -93,7 +93,7 @@ echo '
         <div>
             <label for="ausp_pwd">'.$LANG['index_new_pw'].':</label>&nbsp;
             <input type="text" id="ausp_pwd" class="menu_250 text ui-widget-content ui-corner-all" style="padding:3px;" />
-            &nbsp;<i id="ausp_but_generate" class="fa fa-refresh fa-border fa-sm tip" style="cursor:pointer;padding:3px;" title="'.$LANG['click_to_generate'].'"></i>
+            &nbsp;<i id="ausp_but_generate" class="fa fa-refresh fa-border fa-sm tip" style="cursor:pointer;padding:3px;" title="'.htmlentities(strip_tags($LANG['click_to_generate']), ENT_QUOTES).'"></i>
             &nbsp;<i id="ausp_pwd_loader" style="display:none;margin-left:5px;" class="fa fa-cog fa-spin"></i>&nbsp;
         </div>
         <hr>

@@ -18,7 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-
+//<![CDATA[
 $(function() {
 
     //Launch the datatables pluggin
@@ -66,6 +66,7 @@ $(function() {
             $("#div_add_group input, #div_add_group select").val("");
             $("#add_node_renewal_period").val("0");
             $("#folder_block_modif, #folder_block_creation").val("0");
+            $("#parent_id").val("na");
         },
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -75,6 +76,9 @@ $(function() {
                     $("#addgroup_show_error").show();
                 } else if (document.getElementById("new_rep_complexite").value == "") {
                     document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_group_complex'];?>";
+                    $("#addgroup_show_error").show();
+                } else if (document.getElementById("parent_id").value == "" || isNaN(document.getElementById("parent_id").value)) {
+                    document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_no_selected_folder'];?>";
                     $("#addgroup_show_error").show();
                 } else {
                     if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
@@ -101,11 +105,16 @@ $(function() {
                                     $("#div_add_group").dialog("open");
                                     $("#addgroup_show_error").html("<?php echo $LANG['error_html_codes'];?>");
                                     $("#addgroup_show_error").show();
+                                } else if (data[0].error == "error_title_only_with_numbers") {
+                                    $("#div_add_group").dialog("open");
+                                    $("#addgroup_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name'];?>");
+                                    $("#addgroup_show_error").show();
                                 } else {
                                     tableFolders.api().ajax.reload();
                                     $("#parent_id, #edit_parent_id").empty().append(data[0].droplist);
                                     $("#div_add_group").dialog("close");
                                 }
+                                $("#new_folder_wait").hide();
                             },
                             "json"
                        );
@@ -116,6 +125,7 @@ $(function() {
                 }
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#addgroup_show_error").html("").hide();
                 $(this).dialog("close");
             }
         }
@@ -168,7 +178,10 @@ $(function() {
                 }if ($('#edit_folder_title').val() == "") {
                      $("#edit_folder_show_error").html("<?php echo $LANG['error_group_label'];?>").show();
                      return;
-                }
+                }if ($('#edit_parent_id').val() == "na") {
+                     $("#edit_folder_show_error").html("<?php echo $LANG['error_no_selected_folder'];?>").show();
+                     return;
+                }   
                 $("#edit_folder_wait").show();
                 //prepare data
                 var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
@@ -190,6 +203,9 @@ $(function() {
                         } else if (data[0].error == "error_html_codes") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes'];?>").show();
                             LoadingPage();
+                        } else if (data[0].error == "error_title_only_with_numbers") {
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name'];?>").show();
+                            $("#edit_folder_wait").hide();
                         } else {
                             $("#folder_id_to_edit").val("");    //clear id
                             tableFolders.api().ajax.reload();
@@ -204,6 +220,7 @@ $(function() {
             "<?php echo $LANG['cancel_button'];?>": function() {
                 //clear id
                 $("#folder_id_to_edit").val("");
+                $("#edit_folder_show_error").html("");
 
                 //Close
                 $("#div_edit_folder").dialog("close");
@@ -291,5 +308,5 @@ function open_edit_folder_dialog(id)
     $("#folder_id_to_edit").val(id);
     $("#div_edit_folder").dialog("open");
 }
-
+//]]>
 </script>

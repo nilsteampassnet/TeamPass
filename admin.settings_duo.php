@@ -12,7 +12,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-
 require_once('sources/sessions.php');
 session_start();
 if (
@@ -81,118 +80,169 @@ while (list($key,$val) = each($skFile)) {
         $tmp_host = substr($val, 17, strpos($val, '")')-17);
     }
 }
+echo '
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>Two-factor Settings</title>
+<style type="text/css">
+table {
+  width: 100%;
+}
+td {
+  vertical-align: top;
+}
+.fa-chevron-right {
+  margin-right: .6em;
+}
+.fa-question-circle {
+  margin-left: .6em;
+}
+.tip {
+  cursor:pointer;
+}
+.googleauth td:nth-child(1) {
+  width: 40%;
+}
+.googleauth td:nth-child(2) {
+  width: 60%;
+}
+.google_enabled { ', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '' : 'display:none;', ' }
+.duo_enabled { ', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', ' }
+</style>
+</head><body>';
+
+
 
 echo '
 <div id="tabs-9">
-    <div style="margin-bottom:3px;">
-        <table>
-         <!-- 2factors_code -->
-        <tr style="margin-bottom:3px">
-            <td>
-                <i class="fa fa-sm fa-wrench"></i>&nbsp;
-                <label>'.$LANG['admin_2factors_authentication_setting'].'
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_2factors_authentication_setting_tip'].'"></i>
-                </label>
-            </td>
-            <td style="margin-left:15px;">
-                <div class="toggle toggle-modern" id="2factors_authentication" data-toggle-on="', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="2factors_authentication_input" name="2factors_authentication_input" value="', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? '1' : '0', '" />
-            <td>
-        </tr>
-    <!-- // Google Authenticator website name -->
-        <tr style="margin-bottom:3px">
-            <td>
-                <i class="fa fa-sm fa-wrench"></i>&nbsp;
-                <label for="ga_website_name">'.$LANG['admin_ga_website_name'].'</label>
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['admin_ga_website_name_tip'].'"></i>
-                </td>
-                <td>
-                <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'TeamPass for ChangeMe', '" class="text ui-widget-content" />
-            <td>
-        </tr>
-        </table>
-        <div style="margin:5px 0 5px 20px;">
-            <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" style="cursor:pointer; padding:4px; width:75px;" />
-            &nbsp;<span id="savefa_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+  <table><tbody>
+<!-- Google Authentication toggle -->
+    <tr class="googleauth">
+      <td>
+        <label>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_2factors_authentication_setting'].'
+          <i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_2factors_authentication_setting_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 'true' : 'false', '">
         </div>
-    </div>
-    <hr style="margin:10px 0 10px 0;">
-    <div style="width:100%;">
-        <div style="margin-bottom:3px; float:left; width:350px;">
-            <i class="fa fa-sm fa-wrench"></i>&nbsp;
-            <label for="api">' .
-            $LANG['settings_duo'].'
-                &nbsp;<i class="fa fa-question-circle tip" title="'.$LANG['settings_duo_tip'].'"></i>
-            </label>
-        </div>
-        <div class="toggle toggle-modern" id="duo" data-toggle-on="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 'true' : 'false', '" style=" float:left; margin-left: 15px; width:70px;"></div><input type="hidden" id="duo_input" name="duo_input" value="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '1' : '0', '" />
-    </div>
-    <br />
-    <div id="duo_enabled" style="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', '">
-    <div style="margin-bottom:3px;">
-        <h3>'.$LANG['admin_duo_intro'].'</h3>
-    </div>
-    <div style="margin-bottom:3px;">
-        <table border="0">';
-// AKEY
-echo '
-           <tr style="margin-bottom:3px">
-                <td width="100px">
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label for="duo_akey">'.$LANG['admin_duo_akey'].'</label>
-                </td>
-                <td>
-                <input type="text" size="60" id="duo_akey" name="duo_akey" value="'.$tmp_akey.'" class="text ui-widget-content" />
-                &nbsp;<input type="button" onclick="GenerateCryptKey(40)" value="'.$LANG['generate_random_key'].'" class="ui-state-default ui-corner-all" style="cursor:pointer;" />&nbsp;<span id="generate_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
-                <td>
-            </tr>';
-// IKEY
-echo '
-           <tr style="margin-bottom:3px">
-                <td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label for="duo_ikey">'.$LANG['admin_duo_ikey'].'</label>
-                </td>
-                <td>
-                <input type="text" size="60" id="duo_ikey" name="duo_ikey" value="'.$tmp_ikey.'" class="text ui-widget-content" />
-                <td>
-            </tr>';
-// SKEY
-echo '
-           <tr style="margin-bottom:3px">
-                <td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label for="duo_skey">'.$LANG['admin_duo_skey'].'</label>
-                </td>
-                <td>
-                <input type="text" size="60" id="duo_skey" name="duo_skey" value="'.$tmp_skey.'" class="text ui-widget-content" />
-                <td>
-            </tr>';
-// HOST
-echo '
-           <tr style="margin-bottom:3px">
-                <td>
-                <span class="ui-icon ui-icon-disk" style="float: left; margin-right: .3em;">&nbsp;</span>
-                <label for="duo_host">'.$LANG['admin_duo_host'].'</label>
-                </td>
-                <td>
-                <input type="text" size="60" id="duo_host" name="duo_host" value="'.$tmp_host.'" class="text ui-widget-content" />
-                <td>
-            </tr>';
+        <input type="hidden" id="google_authentication_input" name="google_authentication_input" value="', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '1' : '0', '" />
+      </td>
+    </tr>
 
-echo '
+<!-- // Google Authentication name -->
+    <tr class="googleauth google_enabled">
+      <td>
+        <label for="ga_website_name">
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_ga_website_name'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_ga_website_name_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'not set', '" class="text ui-widget-content" />
+        <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
+        <span id="save_wait" style="display: none;">
+        <i class="fa fa-cog fa-spin"></i>
+        </span>
+      </td>
+    </tr>
+
+    <tr>
+      <td colspan="2"><hr />
+      </td>
+    </tr>
+
+<!-- // Duo Security toggle -->
+    <tr>
+      <td>
+        <label for="duo">
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['settings_duo'].'
+          <i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_duo_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="duo" data-toggle-on="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 'true' : 'false', '">
+        </div>
+        <input type="hidden" id="duo_input" name="duo_input" value="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '1' : '0', '" />
+      </td>
+    </tr>
+
+    <!-- // Duo Security keys -->
+    <tr class="duo_enabled">
+      <td>
+        <i class="fa fa-chevron-right mi-grey-1"></i>
+        '.$LANG['admin_duo_intro'].'
+        <i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_duo_explanation']), ENT_QUOTES).'"></i>
+      </td>
+      <td>
+        <input type="button" onclick="GenerateCryptKey(40)" value="'.$LANG['generate_random_key'].'" class="ui-state-default ui-corner-all" />
+        <span id="generate_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+        <table>
+          <tr>
+            <td>
+              
+              <label for="duo_akey">
+                '.$LANG['admin_duo_akey'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="duo_akey" name="duo_akey" value="'.$tmp_akey.'" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              
+              <label for="duo_ikey">'.$LANG['admin_duo_ikey'].'</label>
+            </td>
+            <td>
+              <input type="text" size="60" id="duo_ikey" name="duo_ikey" value="'.$tmp_ikey.'" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              
+              <label for="duo_skey">'.$LANG['admin_duo_skey'].'</label>
+            </td>
+            <td>
+              <input type="text" size="60" id="duo_skey" name="duo_skey" value="'.$tmp_skey.'" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+              
+              <label for="duo_host">'.$LANG['admin_duo_host'].'</label>
+            </td>
+            <td>
+              <input type="text" size="60" id="duo_host" name="duo_host" value="'.$tmp_host.'" class="text ui-widget-content" />
+            </td>
+          </tr>
         </table>
-    <div style="margin:15px 0 0 0;">' .
-        $LANG['settings_duo_explanation'].'
-    </div>
-    <div style="margin-bottom:20px; margin-top:20px;">
-        <input type="button" onclick="SaveKeys()" value="'.$LANG['duo_save_sk_file'].'" class="ui-state-default ui-corner-all" style="cursor:pointer;" />
-        &nbsp;<span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
-    </div>
-    </div>
+      </td>
+    </tr>
+
+<!-- // Duo Security save button -->
+    <tr class="duo_enabled">
+      <td>
+        <i class="fa fa-chevron-right mi-grey-1"></i>
+        '.$LANG['duo_save_sk_file'].'
+      </td>
+      <td>
+        <div>
+              <input type="button" onclick="SaveKeys()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
+              <span id="save_wait" style="display: none;">
+                <i class="fa fa-cog fa-spin"></i>
+              </span>
+        </div>
+      </td>
+    </tr>
+  </tbody></table>
 </div>';
 
 echo '
 <script type="text/javascript">
+//<![CDATA[
 function saveDuoStatus(status)
 {
     $("#save_status_wait").show();
@@ -273,19 +323,19 @@ function SaveFA()
 {
     $("#savefa_wait").show();
 
-    var data = "{\"2factors_authentication\":\""+$("input[name=\"2factors_authentication\"]").prop("checked")+"\", \"ga_website_name\":\""+sanitizeString($("#ga_website_name").val())+"\"}";
+    var data = "{\"google_authentication\":\""+$("input[name=\"google_authentication\"]").prop("checked")+"\", \"ga_website_name\":\""+sanitizeString($("#ga_website_name").val())+"\"}";
     $.post(
         "sources/admin.queries.php",
         {
-            type : "save_fa_options",
+            type : "save_google_options",
             data : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
             key  : "'.$_SESSION['key'].'"
         },
         function(data) {
             if (data[0].error == "") {
                 $("#main_info_box_text").html(data[0].result);
-                console.log($("input[name=\"2factors_authentication\"]").prop("checked"));
-                if ($("input[name=\"2factors_authentication\"]").prop("checked") == "true") {
+                console.log($("input[name=\"google_authentication\"]").prop("checked"));
+                if ($("input[name=\"google_authentication\"]").prop("checked") == "true") {
                     $("#temp_session_fa_status").val("1");
                 } else {
                     $("#temp_session_fa_status").val("0");
@@ -324,10 +374,12 @@ $(function() {
     $(".toggle").on("toggle", function(e, active) {
         if (active) {
             $("#"+e.target.id+"_input").val(1);
-            if(e.target.id == "duo") $("#duo_enabled").show();
+            if(e.target.id == "duo") $(".duo_enabled").show();
+            if(e.target.id == "google_authentication") $(".google_enabled").show();
         } else {
             $("#"+e.target.id+"_input").val(0);
-            if(e.target.id == "duo") $("#duo_enabled").hide();
+            if(e.target.id == "duo") $(".duo_enabled").hide();
+            if(e.target.id == "google_authentication") $(".google_enabled").hide();
         }
         // store in DB
         var data = "{\"field\":\""+e.target.id+"\", \"value\":\""+$("#"+e.target.id+"_input").val()+"\"}";
@@ -350,7 +402,7 @@ $(function() {
                 }
                 console.log(data);
                 if (data.error == "") {
-                    $("#"+e.target.id).after("<span class=\"fa fa-check fa-lg mi-green new_check\" style=\"float:left;\"></span>");
+                    $("#"+e.target.id).before("<i class=\"fa fa-check fa-lg mi-green new_check\" style=\"float:right;\"></i>");
                     $(".new_check").fadeOut(2000);
                     setTimeout("$(\".new_check\").remove()", 2100);
                 }
@@ -358,6 +410,7 @@ $(function() {
         );
     });
 });
-
+//]]>
 </script>
-';
+
+</body></html>';

@@ -30,6 +30,7 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 */
 ?>
 <script type="text/javascript">
+//<![CDATA[
 $(function() {
     $.getScript("./includes/libraries/Authentication/DuoSecurity/Duo-Web-v2.min.js");
     $.post(
@@ -61,4 +62,5 @@ $(function() {
         "json"
     );
 });
+//]]>
 </script>

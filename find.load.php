@@ -18,6 +18,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
+//<![CDATA[
 function aes_decrypt(text)
 {
     return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
@@ -160,7 +161,8 @@ $(function() {
             $("#find_page input").focus();
         },
         "columns": [
-            { "width": "10%" },
+            { "width": "40px" },
+            null,
             null,
             null,
             null,
@@ -169,4 +171,5 @@ $(function() {
         ]
     });
 });
+//]]>
 </script>

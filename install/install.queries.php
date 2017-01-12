@@ -46,6 +46,25 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
     return $res;
 }
 
+/**
+ * genHash()
+ *
+ * Generate a hash for user login
+ */
+function bCrypt($password, $cost)
+{
+    $salt = sprintf('$2y$%02d$', $cost);
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        $salt .= bin2hex(openssl_random_pseudo_bytes(11));
+    } else {
+        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i=0; $i<22; $i++) {
+            $salt.=$chars[mt_rand(0, 63)];
+        }
+    }
+    return crypt($password, $salt);
+}
+
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
@@ -264,6 +283,10 @@ if (isset($_POST['type'])) {
                             `raison_iv` text NULL
                             ) CHARSET=utf8;"
                         );
+                        // create index
+                        mysqli_query($dbTmp,
+                            "CREATE INDEX teampass_log_items_id_item_IDX ON ".$var['tbl_prefix']."log_items (id_item,date);"
+                        );
                     } else if ($task == "misc") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."misc` (
@@ -356,17 +379,17 @@ global \$SETTINGS;
                             array('admin','enable_delete_after_consultation', '0'),
                             array('admin','enable_personal_saltkey_cookie', '0'),
                             array('admin','personal_saltkey_cookie_duration', '31'),
-                            array('admin','email_smtp_server', $var['smtp_server']),
-                            array('admin','email_smtp_auth', $var['smtp_auth']),
-                            array('admin','email_auth_username', $var['smtp_auth_username']),
-                            array('admin','email_auth_pwd', $var['smtp_auth_password']),
-                            array('admin','email_port', $var['smtp_port']),
-                            array('admin','email_security', $var['smtp_security']),
-                            array('admin','email_server_url', $var['url_path']),
-                            array('admin','email_from', $var['email_from']),
-                            array('admin','email_from_name', $var['email_from_name']),
+                            array('admin','email_smtp_server', ''),
+                            array('admin','email_smtp_auth', ''),
+                            array('admin','email_auth_username', ''),
+                            array('admin','email_auth_pwd', ''),
+                            array('admin','email_port', ''),
+                            array('admin','email_security',''),
+                            array('admin','email_server_url', ''),
+                            array('admin','email_from', ''),
+                            array('admin','email_from_name', ''),
                             array('admin','pwd_maximum_length', '40'),
-                            array('admin','2factors_authentication', '0'),
+                            array('admin','google_authentication', '0'),
                             array('admin','delay_item_edition', '0'),
                             array('admin','allow_import','0'),
                             array('admin','proxy_ip',''),
@@ -498,7 +521,8 @@ global \$SETTINGS;
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
-                            `can_manage_all_users` BOOLEAN NOT NULL DEFAULT FALSE,
+                            `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
+                            `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -520,7 +544,7 @@ global \$SETTINGS;
                             `type` varchar(20) NOT NULL,
                             `date` varchar(30) NOT NULL,
                             `label` text NOT NULL,
-                            `qui` varchar(30) NOT NULL,
+                            `qui` varchar(255) NOT NULL,
                             `field_1` varchar(250) DEFAULT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
@@ -552,7 +576,8 @@ global \$SETTINGS;
                             `folder` varchar(300) NOT NULL,
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
-                            `timestamp` varchar(50) DEFAULT NULL
+                            `timestamp` varchar(50) DEFAULT NULL,
+                            `url` varchar(500) NOT NULL DEFAULT '0'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "roles_title") {
@@ -766,7 +791,6 @@ global \$SETTINGS;
                     }
                 } else if ($activity == "entry") {
                     if ($task == "admin") {
-                        require_once '../sources/main.functions.php';
                         // check that admin accounts doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {
@@ -778,10 +802,10 @@ global \$SETTINGS;
                         }
 
                         // check that API doesn't exist
-                        $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '9999999'"));
+                        $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {
                             $mysqli_result = mysqli_query($dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
                             );
                         }
                     }

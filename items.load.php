@@ -23,6 +23,7 @@ $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/librari
 ?>
 
 <script type="text/javascript">
+//<![CDATA[
     var query_in_progress = 0;
 
     $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
@@ -227,6 +228,7 @@ function ListerItems(groupe_id, restricted, start)
                                 $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
                             }
                         }
+
                         if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
                             // only take first and last
                             var nb = 1;
@@ -237,12 +239,13 @@ function ListerItems(groupe_id, restricted, start)
                                     $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
                                 } else if (nb == path_levels) {
                                     // next condition occurs if lasst folder name is too long
-                                    if (totalPathLength > $("#items_path_var").width()) {
+                                    if (totalPathLength > path_maxlength) {
                                         var lastTxt = $(this).html();
                                         while ($(this).width() > (path_maxlength - occupedWidth)) {
                                             lastTxt = lastTxt.slice(0, -1);
                                             $(this).html(lastTxt);
                                         }
+                                        $(this).html(lastTxt+"...");
                                     }
                                 }
                                 occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
@@ -556,6 +559,7 @@ function AjouterItem()
         url = "http://"+url;
     }
 
+    // do checks
     if ($("#label").val() == "") erreur = "<?php echo $LANG['error_label'];?>";
     else if ($("#pw1").val() == "") erreur = "<?php echo $LANG['error_pw'];?>";
     else if ($("#categorie").val() == "na") erreur = "<?php echo $LANG['error_group'];?>";
@@ -755,6 +759,7 @@ function EditerItem()
         url = "http://"+url;
     }
 
+    // do checks
     if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']);?>";
     else if ($("#edit_pw1").val() == "") erreur = "<?php echo addslashes($LANG['error_pw']);?>";
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
@@ -1038,6 +1043,9 @@ function AddNewFolder()
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']);?>").show();
     } else if ($("#new_rep_complexite").val() == "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>").show();
+    } else if (/^\d+$/.test($("#new_rep_titre").val())) {
+        // check if folder title contains only numbers
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>").show();
     } else if ($("#user_ongoing_action").val() == "") {
         $("#add_folder_loader").show();
         $("#user_ongoing_action").val("true");
@@ -1067,6 +1075,8 @@ function AddNewFolder()
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']);?>").show();
                 } else if (data[0].error == "error_html_codes") {
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_html_codes']);?>").show();
+                } else if (data[0].error == "error_title_only_with_numbers") {
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>").show();
                 } else if (data[0].error != "") {
                     $("#new_rep_show_error").html(data[0].error).show();
                     console.log(data[0].error);
@@ -1245,7 +1255,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //Display details
                         $("#id_label").html(data.label);
-                        $("#hid_label").val(data.label);
+                        $("#hid_label").val(unsanitizeString(data.label));
                         $("#id_pw").html('<?php echo $var['hidden_asterisk'];?>');
                         $("#hid_pw").val(unsanitizeString(data.pw));
                         if (data.url != "") {
@@ -1261,7 +1271,21 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_login").val(data.login);
                         $("#id_email").html(data.email);
                         $("#hid_email").val(data.email);
-                        $("#id_restricted_to").html(data.id_restricted_to+data.id_restricted_to_roles);
+                        //prepare nice list of users / groups
+                        var tmp_arr = data.id_restricted_to.split(";");
+                        var html_users = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_users += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-user fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        var tmp_arr = data.id_restricted_to_roles.split(";");
+                        var html_groups = "";
+                        for (var i=0; i<tmp_arr.length; i++) {
+                            if (tmp_arr[i] !== "") html_groups += "<span class='round-grey'><i style='margin-right:2px;' class='fa fa-group fa-sm'></i>"+tmp_arr[i]+"</span>";
+                        }
+                        $("#id_restricted_to").html(
+                            html_users+
+                            html_groups
+                        );
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
                         $("#id_tags").html(data.tags);
@@ -1458,7 +1482,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         //Dont show details
                         $("#item_details_nok").show();
-                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $LANG['author'];?>: </b>'+data.author+'<br><b><?php echo $LANG['restricted_to'];?>: </b>'+data.restricted_to+'<br><br><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($LANG['request_access_ot_item']);?></a></u></div>');
+                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo $LANG['author'];?>: </b>'+data.author+'<br /><b><?php echo $LANG['restricted_to'];?>: </b>'+data.restricted_to+'<br /><br /><u><a href="#" onclick="SendMail(\'request_access_to_author\',\''+data.id+','+data.id_user+'\',\'<?php echo $_SESSION['key'];?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']);?>\')"><?php echo addslashes($LANG['request_access_ot_item']);?></a></u></div>');
                         $("#item_details_ok").hide();
                         $("#item_details_expired").hide();
                         $("#item_details_expired_full").hide();
@@ -1519,7 +1543,7 @@ function showDetailsStep2(id, param)
             }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
-            $("#edit_past_pwds").attr('title', data.history_of_pwds);
+            $("#edit_past_pwds").attr('title', htmlspecialchars_decode(data.history_of_pwds));
 
             $("#id_files").html(data.files_id);
             $("#hid_files").val(data.files_id);
@@ -1586,12 +1610,7 @@ function ActionOnQuickIcon(id, action)
 //## FUNCTION : prepare new folder dialogbox
 //###########
 function open_add_group_div()
-{/*
-    // exclude for PF
-    if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
+{
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1601,18 +1620,6 @@ function open_add_group_div()
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
-
-    /*
-    // hide not allowed complexity level
-    $("#new_rep_complexite > option").each(function() {
-        if (parseInt(this.value) < parseInt($("#complexite_groupe").val())) {
-            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', true);
-        } else {
-            $('#new_rep_complexite option[value='+this.value+']').prop('disabled', false);
-        }
-    });
-    $('#new_rep_complexite option[value='+$('#complexite_groupe').val()+']').prop('selected', true);
-    */
 
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe option[value='+$('#hid_cat').val()+']').prop('selected', true);
@@ -1625,11 +1632,6 @@ function open_add_group_div()
 //###########
 function open_edit_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1653,11 +1655,6 @@ function open_edit_group_div()
 //###########
 function open_move_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1" || $('#pf_selected').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($.inArray($("#hid_cat").val(), $("#personal_visible_groups_list").val().split(',')) != -1 && $("#personal_sk_set").val() == "0") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_personal_sk_expected'];?>");
         return false;
@@ -1689,11 +1686,6 @@ function open_move_group_div()
 //###########
 function open_del_group_div()
 {
-    // exclude for PF
-    /*if ($('#recherche_group_pf').val() == "1") {
-        displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
-        return false;
-    }*/
     if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -2311,7 +2303,7 @@ $(function() {
     $("#jstree").height(window_height-185);
 
     //warning if screen height too short
-    if (parseInt(window_height-440) <= 50) {
+    if (parseInt(window_height-440) <= 30) {
         $("#div_dialog_message_text").html("<?php echo addslashes($LANG['warning_screen_height']);?>");
         $("#div_dialog_message").dialog('open');
     }
@@ -2321,7 +2313,7 @@ $(function() {
         //do nothing ... good value
     } else {
         //adapt to the screen height
-        $("#nb_items_to_display_once").val(Math.round((window_height-450)/23));
+        $("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
     }
 
     // Build buttons
@@ -2427,6 +2419,9 @@ $(function() {
                 } else if ($("#edit_folder_complexity").val() == "") {
                     $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>");
                     $("#edit_rep_show_error").show();
+                } else if (/^\d+$/.test($("#edit_folder_title").val())) {
+                    $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>");
+                    $("#edit_rep_show_error").show();
                 } else {
                     $("#edit_folder_loader").show();
                     $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
@@ -2454,7 +2449,11 @@ $(function() {
                                 $("#edit_folder_title").val($('#edit_folder_title').val());
                                 $("#div_editer_rep").dialog("close");
                             } else {
-                                $("#edit_rep_show_error").html(data[0].error).show();
+                                if (data[0].error === "ERR_TITLE_ONLY_WITH_NUMBERS") {
+                                    $("#edit_rep_show_error").html('<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>').show();
+                                } else {
+                                    $("#edit_rep_show_error").html(data[0].error).show();
+                                }
 
                             }
                             $("#edit_folder_loader").hide();
@@ -2970,6 +2969,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_upload_wait").hide();
+                $("#files_number").val(0);
             }
         }
     });
@@ -3072,6 +3072,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
             },
             UploadComplete: function(up, files) {
                 $("#item_edit_upload_wait").hide();
+                $("#edit_files_number").val(0);
             }
         }
     });
@@ -3883,7 +3884,7 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
 
 $.fn.simulateClick = function() {
     return this.each(function() {
-        if('createEvent' in document) {console.log("coucou");
+        if('createEvent' in document) {
             var doc = this.ownerDocument,
                 evt = doc.createEvent('MouseEvents');
             evt.initMouseEvent('click', true, true, doc.defaultView, 1, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -3903,5 +3904,5 @@ String.prototype.escapeHTML = function() {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
-
+//]]>
 </script>

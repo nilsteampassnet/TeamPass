@@ -19,7 +19,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 ?>
 
 <script type="text/javascript">
-
+//<![CDATA[
 
     $.extend($.expr[":"], {
         "containsIN": function(elem, i, match, array) {
@@ -362,7 +362,6 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button'];?>": function() {
                 $(this).dialog("close");
-                console.log("coucou");
             }
         }
     });
@@ -612,7 +611,12 @@ $(function() {
                         $("#user_edit_functions_list").multiselect('refresh');
 
                         $("#user_edit_managedby").append(data.managedby);
-                        $("#user_edit_managedby").multiselect('refresh');
+                        $("#user_edit_managedby").multiselect({
+                            multiple: false,
+                            header: "<?php echo $LANG['select'];?>",
+                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            selectedList: 1
+                        }, 'refresh');
 
                         $("#user_edit_auth").append(data.foldersAllow);
                         $("#user_edit_auth").multiselect('refresh');
@@ -885,10 +889,13 @@ function check_domain(email)
         function(data) {
             data = $.parseJSON(data);
             $("#new_folder_role_domain").attr("disabled", "disabled");
-            if (data.folder == "not_exists" && data.role == "not_exists") {
+            if (data.folder == "not_exists" && data.role == "not_exists" && domain !="") {
                 $("#new_folder_role_domain").attr("disabled", "");
                 $("#auto_create_folder_role_span").html(domain);
                 $("#new_domain").val(domain);
+                $("#auto_create_folder_role").css('visibility', 'visible');
+            } else {
+                $("#auto_create_folder_role").css('visibility', 'hidden');
             }
             $("#ajax_loader_new_mail").hide();
         }
@@ -1049,5 +1056,5 @@ function htmlspecialchars_decode (string, quote_style)
 
     return string;
 }
-
+//]]>
 </script>

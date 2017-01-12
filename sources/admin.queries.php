@@ -159,15 +159,22 @@ switch ($_POST['type']) {
                    ),
                    "title=%s AND parent_id=%i", $record['id'], 0
                 );
+
+                // Get an array of all folders
+                $folders = $tree->getDescendants($record['id'], false, true, true);
+                foreach ($folders as $folder) {
+                 //update PF field for user
+                    DB::update(
+                        prefix_table("nested_tree"),
+                        array(
+                            'personal_folder' => '1'
+                       ),
+                        "id = %s",
+                        $folder
+                    );
+                }          
             }
         }
-
-        //Delete PF for deleted users - TODO
-        /*DB::query(
-            "SELECT COUNT(*) FROM ".prefix_table("nested_tree")." as t
-            LEFT JOIN ".prefix_table("users")." as u ON t.title = u.id
-            WHERE u.id IS null AND t.parent_id=0 AND t.title REGEXP '^[0-9]'"
-        );*/
 
         //rebuild fuild tree folder
         $tree->rebuild();
@@ -1115,7 +1122,7 @@ switch ($_POST['type']) {
         echo '[{"result" : "'.addslashes($LANG['admin_duo_stored']).'" , "error" : ""}]';
         break;
 
-    case "save_fa_options":
+    case "save_google_options":
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
@@ -1124,17 +1131,17 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
-        // 2factors_authentication
-        if (htmlspecialchars_decode($dataReceived['2factors_authentication']) == "false") $tmp = 0;
+        // Google Authentication
+        if (htmlspecialchars_decode($dataReceived['google_authentication']) == "false") $tmp = 0;
         else $tmp = 1;
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "2factors_authentication");
+        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "google_authentication");
         $counter = DB::count();
         if ($counter == 0) {
             DB::insert(
                 prefix_table("misc"),
                 array(
                     'type' => "admin",
-                    "intitule" => "2factors_authentication",
+                    "intitule" => "google_authentication",
                     'valeur' => $tmp
                 )
             );
@@ -1146,10 +1153,10 @@ switch ($_POST['type']) {
                 ),
                 "type = %s AND intitule = %s",
                 "admin",
-                "2factors_authentication"
+                "google_authentication"
             );
         }
-        $_SESSION['settings']['2factors_authentication'] = htmlspecialchars_decode($dataReceived['2factors_authentication']);
+        $_SESSION['settings']['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
 
         // ga_website_name
         if (!is_null($dataReceived['ga_website_name'])) {
@@ -1268,14 +1275,14 @@ switch ($_POST['type']) {
         // special Cases
         if ($dataReceived['field'] == "cpassman_url") {
             // update also jsUrl for CSFP protection
-            $jsUrl = $_POST['cpassman_url'].'/includes/libraries/csrfp/js/csrfprotector.js';
-            $csrfp_file = "./includes/libraries/csrfp/libs/csrfp.config.php";
+            $jsUrl = $dataReceived['value'].'/includes/libraries/csrfp/js/csrfprotector.js';
+            $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
             $data = file_get_contents($csrfp_file);
             $posJsUrl = strpos($data, '"jsUrl" => "');
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents("./includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+            file_put_contents($csrfp_file, $newdata);
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
@@ -1287,7 +1294,25 @@ switch ($_POST['type']) {
                 $type,
                 'restricted_to_roles'
             );
-        }
+        }/* else
+        if ($dataReceived['field'] == "use_md5_password_as_salt" && $dataReceived['value'] == "0") {
+            // in case this option is changed, we need to warn the users to adapt
+            $rows = DB::query(
+                "SELECT id FROM ".prefix_table("users")."
+                WHERE admin != %i",
+                "",
+                "1"
+            );
+            foreach ($rows as $record) {
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'upgrade_needed' => "1"
+                    ),
+                    "id = %i"
+                );
+            }
+        }*/
 
         // store in SESSION
         $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];

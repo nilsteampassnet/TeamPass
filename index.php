@@ -107,7 +107,7 @@ if (!isset($_SESSION['user_id']) && isset($_GET['language'])) {
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    require_once @$_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     if (isset($_GET['page']) && $_GET['page'] == "kb") {
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
     }
@@ -125,6 +125,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <title>Teampass</title>
 <script type="text/javascript">
+    //<![CDATA[
     if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
@@ -132,6 +133,7 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
         }
     }
+    //]]>
 </script>
 <?php
 echo $htmlHeaders;
@@ -269,7 +271,7 @@ if (isset($_SESSION['login'])) {
     // show avatar
     echo '
                 <div style="float:right; margin-right:10px;">
-                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()">
+                    <img src="', isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg', '" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()" alt="photo" />
                 </div>';
 
     echo '
@@ -309,8 +311,8 @@ echo '
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
-        <input type="hidden" name="action_on_going" id="action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'">';
+        <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
+        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
 
 echo '
     <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
@@ -403,7 +405,7 @@ if (
             class="ui-state-highlight ui-corner-all" id="div_maintenance">
             <b>'.$LANG['update_needed_mode_admin'].'</b>
             <span style="float:right;cursor:pointer;">
-                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" />
+                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" alt="close" />
             </span>
         </div>';
 }
@@ -426,13 +428,13 @@ if (
     else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid
         echo '
-        <div style="margin:auto;padding:4px;width:300px;"  class="ui-state-focus ui-corner-all">
+        <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
             <h3>'.$LANG['index_change_pw'].'</h3>
             <div style="height:20px;text-align:center;margin:2px;display:none;" id="change_pwd_error" class=""></div>
             <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all">'.
             $LANG['complex_asked'].' : '.$_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1].
             '</div>
-            <div id="pw_strength" style="margin:0 0 10px 30px;"></div>
+            <div id="pw_strength" style="margin:0 0 10px 140px;"></div>
             <table>
                 <tr>
                     <td>'.$LANG['index_new_pw'].' :</td><td><input type="password" size="15" name="new_pw" id="new_pw"/></td>
@@ -440,7 +442,9 @@ if (
                 <tr><td>'.$LANG['index_change_pw_confirmation'].' :</td><td><input type="password" size="15" name="new_pw2" id="new_pw2" onkeypress="if (event.keyCode == 13) ChangeMyPass();" /></td></tr>
             </table>
             <input type="hidden" id="pw_strength_value" />
-            <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$LANG['index_change_pw_button'].'" />
+            <div style="width:420px; text-align:center; margin:15px 0 10px 0;">
+                <input type="button" onClick="ChangeMyPass()" onkeypress="if (event.keyCode == 13) ChangeMyPass();" class="ui-state-default ui-corner-all" style="padding:4px;width:150px;margin:10px 0 0 80px;" value="'.$LANG['index_change_pw_button'].'" />
+            </div>
         </div>
         <script type="text/javascript">
             $("#new_pw").focus();
@@ -581,7 +585,7 @@ if (
                         </div>
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
 
         // Personal salt key
@@ -598,7 +602,7 @@ if (
         }
 
         // Google Authenticator code
-        if (isset($_SESSION['settings']['2factors_authentication']) && $_SESSION['settings']['2factors_authentication'] == 1) {
+        if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1) {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
@@ -638,7 +642,7 @@ if (
                     <br />
                     <label for="forgot_pw_login">'.$LANG['login'].'</label>
                     <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
-                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" /></div>
+                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" alt="loading" /></div>
                 </div>';
     }
 echo '
@@ -710,7 +714,7 @@ if (
     <div id="dialog_duo" style="display:none;padding:4px;">
         <div id="div_duo"></div>
         '.$LANG['duo_loading_iframe'].'
-        <form method="POST" id="duo_form">
+        <form method="post" id="duo_form" action="#">
             <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
             <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
         </form>
@@ -720,8 +724,6 @@ if (
 closelog();
 
 ?>
+<script type="text/javascript">NProgress.start();</script>
     </body>
 </html>
-<script>
-    NProgress.start();
-</script>

@@ -294,9 +294,17 @@ if (isset($_POST['type'])) {
                             // send it
                             @sendEmail(
                                 $LANG['email_subject'],
-                                $LANG['email_body_1'].mysqli_escape_string($link, stripslashes(($_POST['label']))).$LANG['email_body_2'].$LANG['email_body_3'],
+                                str_replace(
+                                    array("#label", "#link"),
+                                    array(stripslashes($label), $_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    $LANG['new_item_email_body']
+                                ),
                                 $emailAddress,
-                                $txt['email_body_1'].mysqli_escape_string($link, stripslashes($label)).$txt['email_body_2'].$_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body_3']
+                                str_replace(
+                                    array("#label", "#link"),
+                                    array(stripslashes($label), $_SESSION['settings']['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    $LANG['new_item_email_body']
+                                )
                             );
                         }
                     }
@@ -384,12 +392,13 @@ if (isset($_POST['type'])) {
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
-                $label = noHTML(htmlspecialchars_decode($dataReceived['label']));
+                $label = noHTML(($dataReceived['label']));
                 $url = noHTML(htmlspecialchars_decode($dataReceived['url']));
                 $pw = $original_pw = $sentPw = htmlspecialchars_decode($dataReceived['pw']);
                 $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 $email = noHTML(htmlspecialchars_decode($dataReceived['email']));
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -1086,7 +1095,7 @@ if (isset($_POST['type'])) {
                 ||
                 (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $dataItem['anyone_can_modify'] == 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && $restrictionActive == false)
                 ||
-                (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
+                (in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
                 // Allow show details
                 $arrData['show_details'] = 1;
@@ -1246,7 +1255,7 @@ if (isset($_POST['type'])) {
                 $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
                 if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
                     if ($dataDelete['del_enabled'] == 1 || $arrData['id_user'] != $_SESSION['user_id']) {
-                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] > 1) {
+                        if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
                                 $pre."automatic_del",
@@ -1496,6 +1505,7 @@ if (isset($_POST['type'])) {
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
             // Check if title doesn't contains html codes
@@ -1503,6 +1513,12 @@ if (isset($_POST['type'])) {
                 echo '[ { "error" : "'.addslashes($LANG['error_html_codes']).'" } ]';
                 break;
             }
+            // check that title is not numeric
+            if (is_numeric($title) === true) {
+                echo '[{"error" : "ERR_TITLE_ONLY_WITH_NUMBERS"}]';;
+                break;
+            }
+
             // Check if duplicate folders name are allowed
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
@@ -1834,10 +1850,12 @@ if (isset($_POST['type'])) {
                                 $restrictedTo .= ','.$_SESSION['user_id'];
                             }
                         }
+
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] == 1 ||
-                            $_SESSION['user_id'] == $record['log_user'] ||
-                            ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0)
+                        if ($record['anyone_can_modify'] == 1
+                            || $_SESSION['user_id'] === $record['log_user']
+                            || ($_SESSION['user_read_only'] == 1 && $folderIsPf == 0) 
+                            //|| $_SESSION['user_manager'] == 1   // force draggable if user is manager
                         ) {
                             $canMove = 1;
                         }
@@ -1880,6 +1898,7 @@ if (isset($_POST['type'])) {
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = 1;
+                            $canMove = 1;
                         }
                         // CAse where item is restricted to a group of users not including user
                         elseif (
@@ -1948,7 +1967,7 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes($record['label']), 0, 65);
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes(handleBackslash($record['label'])), 0, 65);
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
                             $tempo = explode("<br />", $record['description']);
                             if (count($tempo) == 1) {
@@ -2700,7 +2719,7 @@ if (isset($_POST['type'])) {
             require_once $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/ExceptionHandler.php';
 
             // delete all existing old otv codes
-            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period']));
+            $rows = DB::query("SELECT id FROM ".prefix_table("otv")." WHERE timestamp < ".(time() - $_SESSION['settings']['otv_expiration_period'] * 86400));
             foreach ($rows as $record) {
                 DB::delete(prefix_table('otv'), "id=%i", $record['id']);
             }
@@ -3152,7 +3171,7 @@ if (isset($_POST['type'])) {
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
                         '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
                         '</tr>'.
                         '<tr></tr>';
                 }

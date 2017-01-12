@@ -1,13 +1,55 @@
 Last changes
+
+Bug fixing
+ #1550 2 Factor enabled but can still log in without code
+
 2.1.26
- #1395 Error with Chrom while upgrading
+ #1537 Homepage not loading in French
+ #1527 Error Field 'timestamp' doesn't have a default value
+ #1526 New .htaccess file in ./includes/config
+ #1525 Bad encoding in previous used passwords list
+ #1515 Cannot add new users if similar user name exists
+ #1512 Long folder names break UI
+ #1511 Fix on LDAP due to library upgrade
+ #1510 During upgrade, clean personal_folder field in DB
+ #1504 Error while creating a new user with API
+ #1494 csrfp.config.php not updated on URL change
+ #1491 Added check against only numeric folder name
+ #1489 JSON error on quick search if no folder access
+ #1497 Nothing happens when clicking "Remove orphan items from database"
+ #1375 Symbol < breaks password in One Time View page
+ #1481 Query error
+ #1476 Fix personal folder update script for
+ #1463 PDF Export still broken
+ #1454 API outputs deleted passwords
+ #1453 API should have function "userpw"
+ #1452 API should also output the url to each password
+ #1457 New email address not used until logoff & logon
+ #1450 Purge log feature - purges nothing
+ #1449 Delete category hangs UI and crashes PHP
+ #1448 admin delete removed password multiple select not working
+ #1445 Password label doesn't preserve '\' character
+ #1439 Fix for large files upload
+ #1438 Sanitize ampersand to URL encoding in csrfp.config
+ #1426 Fixes for many critical issues with OTV
+ #1421 Item will not be automatically deleted when accessed through otv option enabled
+ #1415 Installation Issue and PDF export password field mask
+       Fixed problem for user to change self password
+       Fixed problem for deleting all directories
+ #1414 Subfolders created into personal folders are presented in Folders and Roles management
+ #1409 Updated PDF library to fit 7.x PHP
+ #1407 Remove Save button in 2FA settings tab
+ #1402 User can define his timezone
+ #1395 Error with Chrome while upgrading
  #1394 Replace ascii characters in cpliboard copy
  #1392 Corrected sql error while restoring database
  #1389 Requested JSON parse failed when copying item
  #1386 JSON parse failed (history item view)
  #1384 SyntaxError: Invalid Character if Syslog enabled
+ #1383 Export to PDF - Incorrect formatting
  #1381 LDAP user have unlimited access on first logon
  #1380 CSV or KeePass Import - Title as "0"
+ #1378 JSON parse error when changing user password (with several roles)
  #1369 Cannot save some settings
  #1361 Duo prevents the ability to add/edit items
  #1353 Add ldap_start_tls if set

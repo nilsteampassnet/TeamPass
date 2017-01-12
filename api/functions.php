@@ -115,7 +115,10 @@ function addToCacheTable($id)
             "login" => $data['login'],
             "folder" => "",
             //"restricted_to" => "0",
-            "author" => "9999999",
+            "author" => API_USER_ID,
+            "renewal_period" => 0,
+            "timestamp" => time(),
+            "url" => 0
         )
     );
 }
@@ -260,13 +263,14 @@ function rest_get () {
                 DB::debugMode(false);
 
                 // get items in this module
-                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE ".$condition, $condition_value);
+                $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
                 foreach ($response as $data)
                 {
                     // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json[$id]['pw'] = $crypt_pw['string'];
                 }
@@ -280,13 +284,84 @@ function rest_get () {
                 $i = 0;
                 foreach ($response as $row)
                 {
-                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE id_tree=%i", $row['id']);
+                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
                     foreach ($response as $data)
                     {
                         // prepare output
                         $id = $data['id'];
                         $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                         $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                        $json[$id]['pw'] = $crypt_pw['string'];
+                    }
+                }
+            }
+            else if($GLOBALS['request'][1] == "userpw") {
+                $username = $GLOBALS['request'][2];
+                if(strcmp($username,"admin")==0) {
+                    // forbid admin access
+                }
+                $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                foreach ($response as $data)
+                {
+                    $role_str = $data['fonction_id'];
+                }
+                $folder_arr = array();
+                $roles = explode(";", $role_str);
+                foreach ($roles as $role)
+                {
+                    $response = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
+                    foreach ($response as $data)
+                    {
+                        $folder_id = $data['folder_id'];
+                        if(!array_key_exists($folder_id,$folder_arr)) {
+                            array_push($folder_arr,$folder_id);
+                        }
+                    }
+                }
+                $folder_str = implode(";",$folder_arr);
+                
+                // get ids
+                if (strpos($folder_str,";") > 0) {
+                    $condition = "id_tree IN %ls";
+                    $condition_value = explode(';', $folder_str);
+                } else {
+                    $condition = "id_tree = %s";
+                    $condition_value = $folder_str;
+                }
+                DB::debugMode(false);
+                $data = "";
+                // get items in this module
+                $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$id]['pw'] = $crypt_pw['string'];
+                }
+
+                /* load folders */
+                $response = DB::query(
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
+                    $folder_str
+                );
+                $rows = array();
+                $i = 0;
+                foreach ($response as $row)
+                {
+                    $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
+                    foreach ($response as $data)
+                    {
+                        // prepare output
+                        $id = $data['id'];
+                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                         $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                         $json[$id]['pw'] = $crypt_pw['string'];
                     }
@@ -307,13 +382,14 @@ function rest_get () {
                     }
                 }
 
-                $response = DB::query("select id,label,login,pw, pw_iv, id_tree from ".prefix_table("items")." where id IN %ls", $array_items);
+                $response = DB::query("SELECT id,label,login,pw, pw_iv, id_tree FROM ".prefix_table("items")." WHERE inactif = %i AND id IN %ls", "0", $array_items);
                 foreach ($response as $data)
                 {
                     // prepare output
                     $id = $data['id'];
                     $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                     $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
                     $json[$id]['pw'] = $crypt_pw['string'];
                 }
@@ -358,23 +434,28 @@ function rest_get () {
 
                 DB::debugMode(false);
                 $response = DB::query(
-                    "select id, label, login, pw, pw_iv, id_tree
-                    from ".prefix_table("items")."
-                    where id_tree = (%s)
-                    and label LIKE %ss",
+                    "SELECT id, label, login, pw, pw_iv, id_tree
+                    FROM ".prefix_table("items")."
+                    WHERE 
+                    inactif = %i 
+                    AND id_tree = (%s)
+                    AND label LIKE %ss",
+                    "0",
                     $category_query,
                     $item
                 );
                 foreach ($response as $data)
                 {
                     // prepare output
-                    $json['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
-                    $json['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $id = $data['id'];
+                    $json[$id]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
-                    $json['pw'] = $crypt_pw['string'];
-                    $json['folder_id'] = $data['id_tree'];
-                    $json['status'] = utf8_encode("OK");
+                    $json[$id]['pw'] = $crypt_pw['string'];
+                    $json[$id]['folder_id'] = $data['id_tree'];
+                    $json[$id]['status'] = utf8_encode("OK");
                 }
                 if (isset($json) && $json) {
                     echo json_encode($json);
@@ -465,7 +546,7 @@ function rest_get () {
                                 array(
                                     "id_item" => $newID,
                                     "date" => time(),
-                                    "id_user" => "9999999",
+                                    "id_user" => API_USER_ID,
                                     "action" => "at_creation"
                                 )
                             );
@@ -497,7 +578,10 @@ function rest_get () {
                                     "restricted_to" => "",
                                     "login" => $item_login,
                                     "folder" => "",
-                                    "author" => "9999999"
+                                    "author" => API_USER_ID,
+                                    "renewal_period" => "0",
+                                    "timestamp" => time(),
+                                    "url" => "0"
                                 )
                             );
 
@@ -536,9 +620,9 @@ function rest_get () {
                 $lastname = $array_user[2];
                 $password = $array_user[3];
                 $email = $array_user[4];
-                $adminby = $array_user[5];
-                $isreadonly = $array_user[6];
-                $roles = $array_user[7];
+                $adminby = urldecode($array_user[5]);
+                $isreadonly = urldecode($array_user[6]);
+                $roles = urldecode($array_user[7]);
                 $isadmin = $array_user[8];
                 $ismanager = $array_user[9];
                 $haspf = $array_user[10];
@@ -616,14 +700,23 @@ function rest_get () {
                                 )
                             );
                         }
+
+                        // load settings
+                        loadSettings();
+
                         // Send email to new user
                         @sendEmail(
                             $LANG['email_subject_new_user'],
-                            str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
-                            $email
+                            str_replace(
+                                array('#tp_login#', '#tp_pw#', '#tp_link#'),
+                                array(" ".addslashes($login), addslashes($password), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                            $email,
+                            ""
                         );
+
                         // update LOG
-            logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id);
+                        logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
+
                         echo '{"status":"user added"}';
                     } catch(PDOException $ex) {
                         echo '<br />' . $ex->getMessage();
@@ -669,10 +762,11 @@ function rest_get () {
 
                     if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $userData['pw']) === true) {
                         // define the restriction of "id_tree" of this user
+                        //db::debugMode(true);
                         $userDef = DB::queryOneColumn('folder_id',
                             "SELECT DISTINCT folder_id
                             FROM ".prefix_table("roles_values")."
-                            WHERE type IN ('R', 'W') ", empty($userData['groupes_interdits']) ? "" : "
+                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ", empty($userData['groupes_interdits']) ? "" : "
                             AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")", "
                             AND role_id IN %ls
                             GROUP BY folder_id",
@@ -716,7 +810,93 @@ function rest_get () {
                                 echo json_encode($json);
                             }
                         } else {
-                            rest_error ('AUTH_NO_DATA');
+                            rest_error ('NO_DATA_EXIST');
+                        }
+                    } else {
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else {
+                    rest_error ('AUTH_NO_URL');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
+        } elseif ($GLOBALS['request'][0] == "auth_tpc") {
+            /*
+            ** TO BE USED ONLY BY TEAMPASS-CONNECT
+            **
+            */
+            // get user credentials
+            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                // get url
+                if(isset($GLOBALS['request'][1])) {
+                    // is user granted?
+                    $userData = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        $GLOBALS['request'][2]
+                    );
+
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][3], $userData['pw']) === true) {
+                        // define the restriction of "id_tree" of this user
+                        //db::debugMode(true);
+                        $userDef = DB::queryOneColumn('folder_id',
+                            "SELECT DISTINCT folder_id
+                            FROM ".prefix_table("roles_values")."
+                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ", empty($userData['groupes_interdits']) ? "" : "
+                            AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")", "
+                            AND role_id IN %ls
+                            GROUP BY folder_id",
+                            explode(";", $userData['groupes_interdits'])
+                        );
+                        // complete with "groupes_visibles"
+                        foreach (explode(";", $userData['groupes_visibles']) as $v) {
+                            array_push($userDef, $v);
+                        }
+
+                        // decrypt url
+                        $tpc_url = base64_decode($GLOBALS['request'][1]);
+
+                        // find the item associated to the url
+                        $response = DB::query(
+                            "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to
+                            FROM ".prefix_table("items")."
+                            WHERE url LIKE %s
+                            AND id_tree IN (".implode(",", $userDef).")
+                            ORDER BY id DESC",
+                            $tpc_url.'%'
+                        );
+                        $counter = DB::count();
+
+                        if ($counter > 0) {
+                            $json = "";
+                            foreach ($response as $data) {
+                                // check if item visible
+                                if (
+                                    empty($data['restricted_to']) ||
+                                    ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
+                                ) {
+                                    // prepare export
+                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+                                    $json[$data['id']]['pw'] = $crypt_pw['string'];
+                                }
+                            }
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('NO_DATA_EXIST');
                         }
                     } else {
                         rest_error ('AUTH_NOT_GRANTED');
@@ -729,7 +909,7 @@ function rest_get () {
             }
         } elseif ($GLOBALS['request'][0] == "set") {
             /*
-             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>?apikey=<VALID API KEY>
+             * Expected call format: .../api/index.php/set/<login_to_save>/<password_to_save>/<url>/<user_login>/<user_password>/<label>/<protocol>?apikey=<VALID API KEY>
              * Example: https://127.0.0.1/teampass/api/index.php/set/newLogin/newPassword/newUrl/myLogin/myPassword?apikey=gu6Eexaewaishooph6iethoh5woh0yoit6ohquo
              *
              * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
@@ -804,16 +984,23 @@ function rest_get () {
                             // encrypt password
                             $encrypt = cryption($GLOBALS['request'][2], SALT, "", "encrypt");
 
+                            // is there a protocol?
+                            if (isset($GLOBALS['request'][7]) || empty($GLOBALS['request'][7])) {
+                                $protocol = "http://";
+                            } else {
+                                $protocol = urldecode($GLOBALS['request'][7])."://";
+                            }
+
                             // add new item
                             DB::insert(
                                 prefix_table("items"),
                                 array(
-                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3].''),
+                                    'label' => "Credentials for ".urldecode($GLOBALS['request'][3]),
                                     'description' => "Imported with Teampass-Connect",
                                     'pw' => $encrypt['string'],
                                     'pw_iv' => $encrypt['iv'],
                                     'email' => "",
-                                    'url' => urldecode($GLOBALS['request'][3].'%'),
+                                    'url' => urldecode($GLOBALS['request'][3]),
                                     'id_tree' => $tpc_folder_id,
                                     'login' => $GLOBALS['request'][1],
                                     'inactif' => '0',
@@ -832,6 +1019,139 @@ function rest_get () {
                                 $userData['id'],
                                 'at_creation',
                                 $GLOBALS['request'][1]
+                            );
+
+                            $json['status'] = "ok";
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error ('AUTH_NO_DATA');
+                            } else {
+                                echo json_encode($json);
+                            }
+                        } else {
+                            rest_error ('NO_PF_EXIST_FOR_USER');
+                        }
+                    } else {
+                        rest_error ('AUTH_NOT_GRANTED');
+                    }
+                } else {
+                    rest_error ('SET_NO_DATA');
+                }
+            } else {
+                rest_error ('AUTH_NO_IDENTIFIER');
+            }
+        } elseif ($GLOBALS['request'][0] == "set_tpc") {
+            /*
+             * TO BE USED ONLY BY TEAMPASS-CONNECT
+             */
+            // get user credentials
+            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+                // get url
+                if (isset($GLOBALS['request'][1])) {
+                    // is user granted?
+                    $userData = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
+                        $GLOBALS['request'][2]
+                    );
+                    if (DB::count() == 0) {
+                        rest_error ('AUTH_NO_IDENTIFIER');
+                    }
+
+                    // load passwordLib library
+                    $_SESSION['settings']['cpassman_dir'] = "..";
+                    require_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    // is user identified?
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][3], $userData['pw']) === true) {
+                        // does the personal folder of this user exists?
+                        DB::queryFirstRow(
+                            "SELECT `id`
+                            FROM " . $pre . "nested_tree
+                            WHERE title = %s AND personal_folder = 1",
+                            $userData['id']
+                        );
+                        if (DB::count() > 0) {
+                            // check if "teampass-connect" folder exists
+                            // if not create it
+                            $folder = DB::queryFirstRow(
+                                "SELECT `id`
+                                FROM " . $pre . "nested_tree
+                                WHERE title = %s",
+                                "teampass-connect"
+                            );
+                            if (DB::count() == 0) {
+                                DB::insert(
+                                    prefix_table("nested_tree"),
+                                    array(
+                                        'parent_id' => '0',
+                                        'title' => "teampass-connect"
+                                    )
+                                );
+                                $tpc_folder_id = DB::insertId();
+
+                                //Add complexity
+                                DB::insert(
+                                    prefix_table("misc"),
+                                    array(
+                                        'type' => 'complex',
+                                        'intitule' => $tpc_folder_id,
+                                        'valeur' => '0'
+                                    )
+                                );
+
+                                // rebuild tree
+                                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                                $tree->register();
+                                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                                $tree->rebuild();
+                            } else {
+                                $tpc_folder_id = $folder['id'];
+                            }
+
+                            // prepare TPC parameters
+                            $tpc_param = explode('/', base64_decode($GLOBALS['request'][1]));
+
+                            // encrypt password
+                            $encrypt = cryption(urldecode($tpc_param[1]), SALT, "", "encrypt");
+
+                            // is there a label?
+                            if (empty($tpc_param[3])) {
+                                $label = "Credentials for ".urldecode($tpc_param[2]);
+                            } else {
+                                $label = urldecode($tpc_param[3]);
+                            }
+
+                            // add new item
+                            DB::insert(
+                                prefix_table("items"),
+                                array(
+                                    'label' => $label,
+                                    'description' => "Imported with Teampass-Connect",
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => $encrypt['iv'],
+                                    'email' => "",
+                                    'url' => urldecode($tpc_param[2]),
+                                    'id_tree' => $tpc_folder_id,
+                                    'login' => urldecode($tpc_param[0]),
+                                    'inactif' => '0',
+                                    'restricted_to' => $userData['id'],
+                                    'perso' => '0',
+                                    'anyone_can_modify' => '0',
+                                    'complexity_level' => '0'
+                                )
+                            );
+                            $newID = DB::insertId();
+
+                            // log
+                            logItems(
+                                $newID,
+                                $label,
+                                $userData['id'],
+                                'at_creation',
+                                ''
                             );
 
                             $json['status'] = "ok";
@@ -917,7 +1237,7 @@ function rest_get () {
                                             array(
                                                 'id_item' => $item['id'],
                                                 'date' => time(),
-                                                'id_user' => "9999999",
+                                                'id_user' => API_USER_ID,
                                                 'action' => 'at_delete'
                                             )
                                         );
@@ -952,7 +1272,7 @@ function rest_get () {
                         array(
                             'id_item' => $array_items[$i],
                             'date' => time(),
-                            'id_user' => "9999999",
+                            'id_user' => API_USER_ID,
                             'action' => 'at_delete'
                         )
                     );
@@ -1053,6 +1373,9 @@ function rest_error ($type,$detail = 'N/A') {
         case 'AUTH_NO_DATA':
             $message = Array('err' => 'Data not allowed for the user');
             break;
+        case 'NO_DATA_EXIST':
+            $message = Array('err' => 'No data exists');
+            break;
         case 'PASSWORDTOOLONG':
             $message = Array('err' => 'Password is too long');
             break;
@@ -1109,4 +1432,3 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
 
     return substr($dk, $st, $kl);
 }
-

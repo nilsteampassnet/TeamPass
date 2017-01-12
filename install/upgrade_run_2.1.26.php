@@ -155,11 +155,23 @@ if ($res === false) {
     exit();
 }
 
+// add field url to cache table
+$res = addColumnIfNotExist(
+    $_SESSION['tbl_prefix']."cache",
+    "url",
+    "VARCHAR(500) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field Url to table Cache! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
 // add field can_manage_all_users to users table
 $res = addColumnIfNotExist(
     $_SESSION['tbl_prefix']."users",
     "can_manage_all_users",
-    "BOOLEAN NOT NULL DEFAULT FALSE"
+    "tinyint(1) NOT NULL DEFAULT '0'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field can_manage_all_users to table Users! '.mysqli_error($dbTmp).'!"}]';
@@ -168,10 +180,10 @@ if ($res === false) {
 }
 
 // check that API doesn't exist
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '9999999'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('9999999', 'API', '1')"
+        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
     );
 }
 
@@ -207,6 +219,20 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY time
 
 // alter table files
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
+
+// alter table USers
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
+
+// alter table log_system
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."log_system` MODIFY qui VARCHAR(255)");
+
+// create index in log_items - for performance
+mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
+
+// change to true setting variable encryptClientServer
+// this variable is not to be changed anymore
+mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
 
 // create new table
 mysqli_query($dbTmp, 
@@ -305,11 +331,52 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     fclose($fh);
 
 
+// clean duplicate ldap_object_class from bad update script version
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+if ($tmp[0] > 1 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
+}
 // add new setting - ldap_object_class
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE intitule = 'admin' AND valeur = 'ldap_object_class'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }
+
+// convert 2factors_ to google_ due to illegal id, and for clarification of purpose
+$tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
+$tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
+
+if ($tmp_googlecount[0] > 0 ) {
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
+} else {
+    if ($tmp_twocount[0] > 0 ) {
+        mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
+    } else {
+        mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'google_authentication', '0')");
+    }
+}
+
+
+// Fix for #1510
+// change the "personal_folder" field on all named folders back to "0" in nested_tree
+$result = mysqli_query(
+    $dbTmp, 
+    "SELECT title, id
+    FROM `".$_SESSION['tbl_prefix']."nested_tree` 
+    WHERE personal_folder = '1' AND nlevel = '1' AND parent_id = '0'"
+);
+while($row = mysqli_fetch_assoc($result)) {
+    // only change non numeric folder title
+    if (!is_numeric($row['title'])) {
+        mysqli_query(
+            $dbTmp, 
+            "UPDATE `".$_SESSION['tbl_prefix']."nested_tree` 
+            SET personal_folder = '0' 
+            WHERE id = '".$row['id']."'"
+        );
+    }
+}
+mysqli_free_result($result);
 
 
 // Finished

@@ -26,6 +26,17 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
+// if no folders are visible then return no results
+if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles'])) {
+    $returnValues = array(
+        "items_html" => '',
+        "message" => str_replace("%X%", 0, $LANG['find_message'])
+    );
+
+    echo prepareExchangedData($returnValues, "encode");
+    exit;
+}
+
 //Connect to DB
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
@@ -39,7 +50,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Columns name
-$aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login');
+$aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
@@ -134,6 +145,7 @@ if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
         '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
     );
 }
@@ -158,6 +170,7 @@ if (count($crit) == 0) {
         '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf
     );
 }
@@ -176,7 +189,7 @@ DB::query("SELECT id FROM ".prefix_table("cache"));
 $iTotal = DB::count();
 
 $rows = DB::query(
-    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, timestamp
+    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
     FROM ".prefix_table("cache")."
     $sWhere
     $sOrder
@@ -251,7 +264,13 @@ if (!isset($_GET['type'])) {
         //col5 - TAGS
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
 
-        //col6 - Prepare the Treegrid
+        // col6 - URL
+        if ($record['url'] != "0")
+            $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['url']), ENT_QUOTES) . '", ';
+        else
+            $sOutputItem .= '"", ';
+
+        //col7 - Prepare the Treegrid
         $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
 
         //Finish the line
@@ -414,19 +433,19 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'"><i class="fa fa-key mi-yellow"></i>&nbsp;'.substr(stripslashes($record['label']), 0, 65);
-
+        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'
+        "><i class="fa fa-key mi-yellow"></i>&nbsp;'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
             } else {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
+                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($tempo[0]), 0, 30))).']</font>';
             }
         }
 
         // set folder
-        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(substr(cleanString($record['folder']), 0, 30))).'</span>';
+        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65))).'</span>';
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
 

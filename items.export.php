@@ -104,7 +104,7 @@ echo '
 
 <div style="margin-top:5px; display:none;" id="div_export_pdf_password">
     <label for="export_pdf_password" class="form_label">'.$LANG['file_protection_password'].':</label>
-    <input type="text" id="export_pdf_password" />
+    <input type="password" id="export_pdf_password" />
 </div>
 
 <div style="text-align:center;margin-top:10px; display:none;" id="export_information"></div>';
@@ -142,7 +142,7 @@ echo '
                 var nb2 = aIds.length;
                 aIds = aIds.toString();
                 $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-				console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+				//console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
                 if (currentID != "") {
                     pollExport(export_format, aIds, currentID, nb);
                 } else {

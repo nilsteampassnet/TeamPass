@@ -20,6 +20,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 global $k, $settings;
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -203,7 +204,7 @@ foreach ($rows as $record) {
         } else {
             $sOutput .= '"';
         }
-		if ($record['id'] != "9999999")
+		if ($record['id'] != API_USER_ID)
 			$sOutput .= '<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></i>';
         $sOutput .= '",';
 
