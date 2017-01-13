@@ -116,7 +116,7 @@ $("#div_item_data").dialog({
                     id         : $('#id_selected_item').val(),
                     salt_key_required : $('#personalItem').val(),
                     salt_key_set : $('#personal_sk_set').val(),
-                	page 	: "find",
+                    page    : "find",
                     key        : "<?php echo $_SESSION['key'];?>"
                 },
                 function(data) {
@@ -156,6 +156,96 @@ $("#div_item_data").dialog({
       }
   });
 
+/*
+**
+*/
+$("#div_mass_op").dialog({
+    bgiframe: true,
+    modal: true,
+    autoOpen: false,
+    width: 500,
+    height: 400,
+    title: "<?php echo $LANG['mass_operation'];?>",
+    open: function() {
+        var html = sel_items = sel_items_txt = item_id = '';
+        // selected items
+        $(".mass_op_cb:checkbox:checked").each(function () {
+            item_id = $(this).attr('id').split('-')[1] ;
+            sel_items += item_id + ";";
+            if (sel_items_txt === "") {
+                sel_items_txt = '<li>' + $("#item_label-"+item_id).text() + '</li>';
+            } else {
+                sel_items_txt += "<li>" + $("#item_label-"+item_id).text() + '</li>';
+            }
+        });
+
+        // prepare display
+        if ($("#div_mass_op").data('action') === "move") {
+            html = '<?php echo $LANG['you_decided_to_move_items'];?>: ' +
+            '<div><ul>' + sel_items_txt + '</ul></div>';
+            var folder_options = '';
+
+            // get list of folders
+            $.post(
+                "sources/folders.queries.php",
+                {
+                    type    : "get_list_of_folders",
+                    key     : "<?php echo $_SESSION['key'];?>"
+                },
+                function(data) {
+                    $("#div_loading").hide();console.log(data[0].list_folders);
+                    // check/uncheck checkbox
+                    if (data[0].list_folders !== "") {
+                        var tmp = data[0].list_folders.split(";");
+                        for (var i = tmp.length - 1; i >= 0; i--) {
+                            folder_options += tmp[i];
+                        }
+                    }
+
+                    // destination folder
+                     html += '<div style=""><?php echo $LANG['import_keepass_to_folder'];?>' +
+                     '<select id=""><option value="0"><?php echo $LANG['root'];?></option>' + folder_options + '</select>' +
+                     '</div>';
+                },
+                "json"
+            );
+        }
+
+        //displa to user
+        $("#div_mass_html").html(html);
+    },
+    buttons: {
+        "<?php echo $LANG['ok'];?>": function() {
+            //Send query
+            $.post(
+                "sources/items.queries.php",
+            {
+                type    : "copy_item",
+                item_id : $('#id_selected_item').val(),
+                folder_id : $('#copy_in_folder').val(),
+                key        : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                //check if format error
+                if (data[0].error !== "") {
+                    $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                }
+                //if OK
+                if (data[0].status == "ok") {
+                    $("#div_dialog_message_text").html("<?php echo $LANG['alert_message_done'];?>");
+                    $("#div_dialog_message").dialog('open');
+                    $("#div_copy_item_to_folder").dialog('close');
+                }
+            },
+            "json"
+            );
+        },
+        "<?php echo $LANG['cancel_button'];?>": function() {
+            $(this).dialog('close');
+        }
+    }
+});
+
 $(function() {
     //Launch the datatables pluggin
     oTable = $("#t_items").dataTable({
@@ -172,13 +262,13 @@ $(function() {
             $("#find_page input").focus();
         },
         "columns": [
-            {"width": "80px", className: "dt-body-left"},
-            {"width": "20%"},
+            {"width": "10%", className: "dt-body-left"},
+            {"width": "15%"},
             {"width": "10%"},
-            {"width": "30%"},
+            {"width": "25%"},
             {"width": "10%"},
-            {"width": "30%"},
-            {"width": "10%"}
+            {"width": "15%"},
+            {"width": "15%"}
         ]
     });
 });

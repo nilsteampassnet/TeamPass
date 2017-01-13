@@ -220,10 +220,25 @@ if (!isset($_GET['type'])) {
         $sOutputItem = "[";
 
         // massive move/delete enabled?
+        $checkbox = '';
         if (isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] === "1") {
-            $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" id=\"\">';
-        } else {
-            $checkbox = '';
+            // check role access on this folder (get the most restrictive) (2.1.23)
+            $accessLevel = 2;
+            $arrTmp = [];
+//echo $_SESSION['fonction_id'];
+            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                $access = DB::queryFirstRow(
+                    "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
+                    $role,
+                    $record['id_tree']
+                );
+                if ($access['type'] == "R") array_push($arrTmp, 1);
+                else if ($access['type'] == "W") array_push($arrTmp, 0);
+                else array_push($arrTmp, 2);
+            }
+            $accessLevel = min($arrTmp);
+            if ($accessLevel === 0)
+                $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
         }
 
         //col1
@@ -231,7 +246,7 @@ if (!isset($_GET['type'])) {
             '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '</span>", ';
 
         //col3
         $sOutputItem .= '"' . str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';

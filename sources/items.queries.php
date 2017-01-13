@@ -1874,6 +1874,23 @@ if (isset($_POST['type'])) {
                 '/'
             );
 
+
+            // check role access on this folder (get the most restrictive) (2.1.23)
+            $accessLevel = 2;
+            $arrTmp = [];
+//echo $_SESSION['fonction_id'];
+            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                $access = DB::queryFirstRow(
+                    "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
+                    $role,
+                    $_POST['id']
+                );
+                if ($access['type'] == "R") array_push($arrTmp, 1);
+                else if ($access['type'] == "W") array_push($arrTmp, 0);
+                else array_push($arrTmp, 2);
+            }
+            $accessLevel = min($arrTmp);
+//echo $_POST['id']." - ".$accessLevel." - ";
             // if expiration is enable then catch lost recent password change
             /*if ($_SESSION['settings']['activate_expiration'] == 1) {
                 $tmp_query = DB::query(
@@ -2099,7 +2116,7 @@ if (isset($_POST['type'])) {
                         }
                         // Prepare full line
                         $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
-                        if ($canMove == 1) {
+                        if ($canMove == 1 && $accessLevel === 0) {
                             $html .= 'item_draggable';
                         } else {
                             $html .= 'item';
@@ -2107,7 +2124,7 @@ if (isset($_POST['type'])) {
 
                         $html .= '" id="'.$record['id'].'" style="margin-left:-30px;">';
 
-                        if ($canMove == 1) {
+                        if ($canMove == 1 && $accessLevel === 0) {
                             $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
@@ -2239,19 +2256,6 @@ if (isset($_POST['type'])) {
                         }
                     }
                 }
-            }
-
-            // check role access on this folder (get the most restrictive) (2.1.23)
-            $accessLevel = 2;
-            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                $access = DB::queryFirstRow(
-                    "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
-                    $role,
-                    $_POST['id']
-                );
-                if ($access['type'] == "R") $access['type'] = 1;
-                if ($access['type'] == "W") $access['type'] = 0;
-                if ($access['type'] < $accessLevel) $accessLevel = $access['type'];
             }
 
 

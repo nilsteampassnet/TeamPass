@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array (
+    'mass_operation' => 'Mass operation on Items',
+    'move_items' => 'Move selected Items',
+    'delete_items' => 'Delete selected Items',
+    'you_decided_to_move_items' => 'You decided to move items',
+    'you_decided_to_delete_items' => 'You decided to delete items',
     'enable_massive_move_delete' => 'Allow user to perform massive move and delete operations',
     'enable_massive_move_delete_tip' => 'When enabled, this option permits a user to perform a massive move and/or delete operation in one time. The user will only be able to perform this on Items on which he is allowed to.',
     'error_cannot_delete_subfolders_exist' => 'This folder cannot be deleted as at least one subfolder exists.',
