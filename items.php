@@ -126,7 +126,8 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />
-<input type="hidden" id="item_user_token" value="" />';
+<input type="hidden" id="item_user_token" value="" />
+<input type="hidden" id="items_listing_should_stop" value="" />';
 
 echo '
 <div id="div_items">';
@@ -184,7 +185,6 @@ echo '
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
                         <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
-                        <!--    placeholder="'.$LANG['item_menu_find'].'"   -->
                         <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
                     </div>
 

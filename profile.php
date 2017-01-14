@@ -55,12 +55,23 @@ foreach ($rows as $record) {
     $arraFlags[$record['label']] = $record['label'];
 }
 
+// prepare avatar
+if (isset($userData['avatar']) && !empty($userData['avatar'])) {
+    if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'])) {
+        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'];
+    } else {
+        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+    }
+} else {
+    $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+}
+
 echo '
 <input type="hidden" id="profile_user_token" value="" />
 <table style="margin-left:7px;">
     <tr>
         <td rowspan="4" style="width:94px">
-            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px;"><img src="', isset($userData['avatar']) && !empty($userData['avatar']) ? 'includes/avatars/'.$userData['avatar'] : './includes/images/photo.jpg', '" /></div>
+            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px;"><img src="'.$avatar.'" /></div>
         </td>
         <td style="width:70px;">&nbsp;'.$LANG['name'].':</td>
         <td><b>', isset($_SESSION['name']) && !empty($_SESSION['name']) ? $_SESSION['name'].' '.$_SESSION['lastname'] : $_SESSION['login'], '</b></td>

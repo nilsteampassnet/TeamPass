@@ -16,6 +16,8 @@ Last changes
  FIX   "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
+ #1620 Direct copy password from seach results and large folders
+ #1616 Cannot show password with IE11
  #1614 Generate personal folders sets regular root folders also as personal
  #1608 All folders are deleted
  #1603 Attached files disappears

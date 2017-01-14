@@ -475,14 +475,47 @@ if (!isset($_GET['type'])) {
 
         $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
 
-        // Prepare make Favorite small icon
-        $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
-        if (in_array($record['id'], $_SESSION['favourites'])) {
-            $sOutput .= '<i class="fa fa-star mi-yellow fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>&nbsp;';
-        } else {
-            $sOutput .= '<i class="fa fa-star-o fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>&nbsp;';
+        // prepare login mini icon
+        if (!empty($record['login'])) {
+            $sOutput .= '<i class="fa fa-user fa-lg mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
         }
-        $sOutput .= "</span>";
+
+        // prepare pwd copy if enabled
+        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
+            $data_item = DB::queryFirstRow(
+                "SELECT pw
+                from ".prefix_table("items")." WHERE id=%i",
+                $record['id']
+            );
+
+            if ($record['perso'] === "1" && isset($_SESSION['user_settings']['session_psk'])) {
+                $pw = cryption(
+                    $data_item['pw'],
+                    $_SESSION['user_settings']['session_psk'],
+                    "decrypt"
+                );
+            } else {
+                $pw = cryption(
+                    $data_item['pw'],
+                    "",
+                    "decrypt"
+                );
+            }
+
+            // test charset => may cause a json error if is not utf8
+            $pw = $pw['string'];
+            if (isUTF8($pw)) {
+                $sOutput .= '<i class="fa fa-lock fa-lg mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+            }
+        }
+
+
+        // Prepare make Favorite small icon 
+        if (in_array($record['id'], $_SESSION['favourites'])) {
+            $sOutput .= '<i class="fa fa-star fa-lg mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" title="'.$LANG['item_menu_del_from_fav'].'"></i>';
+        } else {
+            $sOutput .= '<i class="fa fa-star-o fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" title="'.$LANG['item_menu_add_to_fav'].'"></i>';
+        }
 
         $sOutput .= '</li>';
     }

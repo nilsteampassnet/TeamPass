@@ -147,8 +147,16 @@ function LoadTreeNode(node_id)
 //###########
 function ListerItems(groupe_id, restricted, start)
 {
-    // prevent launch of similar query in case of doubleclick
     var me = $(this);
+
+    // case where we should stop listing the items
+    if ($("#items_listing_should_stop").val() === "1") {
+        me.data('requestRunning', false);
+        $("#items_listing_should_stop").val("0");
+        return false;
+    } 
+
+    // prevent launch of similar query in case of doubleclick
     if ( me.data('requestRunning') ) {
         return false;
     } else {
@@ -3489,7 +3497,7 @@ $("#id_pw").mousedown(function(event) {
      showPwdContinuous();
 }).mouseup(function(event) {
      mouseStillDown = false;
-}).mousemove(function(event) {
+}).mouseleave(function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(){
@@ -3579,7 +3587,7 @@ function htmlspecialchars_decode (string, quote_style)
  */
 function proceed_list_update()
 {
-    if ($("#query_next_start").val() != "end") {
+    if ($("#query_next_start").val() !== "end") {
         //Check if nb of items do display > to 0
         if ($("#nb_items_to_display_once").val() > 0) {
             ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val()));
@@ -3788,6 +3796,9 @@ function prepareOneTimeView()
 function globalItemsSearch()
 {
     if ($("#search_item").val() != "") {
+        // stop items loading (if on-going)
+        $("#items_listing_should_stop").val("1");
+
         // wait
         $("#items_list_loader").show();
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching'];?>');
