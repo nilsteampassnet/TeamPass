@@ -156,96 +156,6 @@ $("#div_item_data").dialog({
       }
   });
 
-/*
-**
-*/
-$("#div_mass_op").dialog({
-    bgiframe: true,
-    modal: true,
-    autoOpen: false,
-    width: 500,
-    height: 400,
-    title: "<?php echo $LANG['mass_operation'];?>",
-    open: function() {
-        var html = sel_items = sel_items_txt = item_id = '';
-        // selected items
-        $(".mass_op_cb:checkbox:checked").each(function () {
-            item_id = $(this).attr('id').split('-')[1] ;
-            sel_items += item_id + ";";
-            if (sel_items_txt === "") {
-                sel_items_txt = '<li>' + $("#item_label-"+item_id).text() + '</li>';
-            } else {
-                sel_items_txt += "<li>" + $("#item_label-"+item_id).text() + '</li>';
-            }
-        });
-
-        // prepare display
-        if ($("#div_mass_op").data('action') === "move") {
-            html = '<?php echo $LANG['you_decided_to_move_items'];?>: ' +
-            '<div><ul>' + sel_items_txt + '</ul></div>';
-            var folder_options = '';
-
-            // get list of folders
-            $.post(
-                "sources/folders.queries.php",
-                {
-                    type    : "get_list_of_folders",
-                    key     : "<?php echo $_SESSION['key'];?>"
-                },
-                function(data) {
-                    $("#div_loading").hide();console.log(data[0].list_folders);
-                    // check/uncheck checkbox
-                    if (data[0].list_folders !== "") {
-                        var tmp = data[0].list_folders.split(";");
-                        for (var i = tmp.length - 1; i >= 0; i--) {
-                            folder_options += tmp[i];
-                        }
-                    }
-
-                    // destination folder
-                     html += '<div style=""><?php echo $LANG['import_keepass_to_folder'];?>' +
-                     '<select id=""><option value="0"><?php echo $LANG['root'];?></option>' + folder_options + '</select>' +
-                     '</div>';
-                },
-                "json"
-            );
-        }
-
-        //displa to user
-        $("#div_mass_html").html(html);
-    },
-    buttons: {
-        "<?php echo $LANG['ok'];?>": function() {
-            //Send query
-            $.post(
-                "sources/items.queries.php",
-            {
-                type    : "copy_item",
-                item_id : $('#id_selected_item').val(),
-                folder_id : $('#copy_in_folder').val(),
-                key        : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data) {
-                //check if format error
-                if (data[0].error !== "") {
-                    $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                }
-                //if OK
-                if (data[0].status == "ok") {
-                    $("#div_dialog_message_text").html("<?php echo $LANG['alert_message_done'];?>");
-                    $("#div_dialog_message").dialog('open');
-                    $("#div_copy_item_to_folder").dialog('close');
-                }
-            },
-            "json"
-            );
-        },
-        "<?php echo $LANG['cancel_button'];?>": function() {
-            $(this).dialog('close');
-        }
-    }
-});
-
 $(function() {
     //Launch the datatables pluggin
     oTable = $("#t_items").dataTable({
@@ -270,6 +180,178 @@ $(function() {
             {"width": "15%"},
             {"width": "15%"}
         ]
+    });
+
+
+
+
+    /*
+    **
+    */
+    $("#div_mass_op").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 500,
+        height: 400,
+        title: "<?php echo $LANG['mass_operation'];?>",
+        open: function() {
+            var html = sel_items = sel_items_txt = item_id = '';
+
+            $("#div_mass_op_msg").html("").hide();
+
+            // selected items
+            $(".mass_op_cb:checkbox:checked").each(function () {
+                item_id = $(this).attr('id').split('-')[1] ;
+                sel_items += item_id + ";";
+                if (sel_items_txt === "") {
+                    sel_items_txt = '<li>' + $("#item_label-"+item_id).text() + '</li>';
+                } else {
+                    sel_items_txt += "<li>" + $("#item_label-"+item_id).text() + '</li>';
+                }
+            });
+
+            // prepare display
+            if ($("#div_mass_op").data('action') === "move") {
+                html = '<?php echo $LANG['you_decided_to_move_items'];?>: ' +
+                '<div><ul>' + sel_items_txt + '</ul></div>';
+                var folder_options = '';
+
+                // get list of folders
+                $.post(
+                    "sources/folders.queries.php",
+                    {
+                        type    : "get_list_of_folders",
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#div_loading").hide();
+                        // check/uncheck checkbox
+                        if (data[0].list_folders !== "") {
+                            var tmp = data[0].list_folders.split(";");
+                            for (var i = tmp.length - 1; i >= 0; i--) {
+                                folder_options += tmp[i];
+                            }
+                        }
+
+                        // destination folder
+                         html += '<div style=""><?php echo $LANG['import_keepass_to_folder'];?>:&nbsp;&nbsp;' +
+                         '<select id="mass_move_destination_folder_id">' + data[0].list_folders + '</select>' +
+                         '</div>';
+
+                        //display to user
+                        $("#div_mass_html").html(html);
+                    },
+                    "json"
+                );
+            } else if ($("#div_mass_op").data('action') === "delete") {
+                html = '<?php echo $LANG['you_decided_to_delete_items'];?>: ' +
+                '<div><ul>' + sel_items_txt + '</ul></div>' +
+                '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['confirm_deletion'];?></div>';
+                
+                $("#div_mass_html").html(html);
+            }
+
+        },
+        buttons: {
+            "<?php echo $LANG['ok'];?>": function() {
+                $("#div_mass_op_msg")
+                    .addClass("ui-state-highlight")
+                    .html('<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;<?php echo $LANG['please_wait'];?>')
+                    .show();
+
+                var sel_items = '';
+
+                // selected items
+                $(".mass_op_cb:checkbox:checked").each(function () {
+                    sel_items += $(this).attr('id').split('-')[1] + ";";
+                });
+
+                if (sel_items === "") {
+                    $("#div_mass_op_msg")
+                        .addClass("ui-state-error")
+                        .html('<span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['must_select_items'];?>')
+                        .show().delay(2000).fadeOut(1000);
+                    return false;
+                }
+
+                if ($("#div_mass_op").data('action') === "move") {
+                // MASS MOVE
+
+                    //Send query
+                    $.post(
+                        "sources/items.queries.php",
+                        {
+                            type        : "mass_move_items",
+                            item_ids    : sel_items,
+                            folder_id   : $("#mass_move_destination_folder_id").val(),
+                            key         : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+                            //check if format error
+                            if (data[0].error !== "") {
+                                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                            }
+                            //if OK
+                            if (data[0].status == "ok") {
+                                //reload search 
+                                oTable.api().ajax.reload();
+
+                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                                    $("#main_info_box").show().position({
+                                        my: "center",
+                                        at: "center top+75",
+                                        of: "#top"
+                                    });
+                                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+
+                                // show finished
+                                $("#div_mass_op").dialog("close");
+                            }
+                        },
+                        "json"
+                    );
+                } else if ($("#div_mass_op").data('action') === "delete") {
+                // MASS DELETE
+
+                    //Send query
+                    $.post(
+                        "sources/items.queries.php",
+                        {
+                            type        : "mass_delete_items",
+                            item_ids    : sel_items,
+                            key         : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+                            //check if format error
+                            if (data[0].error !== "") {
+                                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                            }
+                            //if OK
+                            if (data[0].status == "ok") {
+                                //reload search 
+                                oTable.api().ajax.reload();
+
+                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                                    $("#main_info_box").show().position({
+                                        my: "center",
+                                        at: "center top+75",
+                                        of: "#top"
+                                    });
+                                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+
+                                // show finished
+                                $("#div_mass_op").dialog("close");
+                            }
+                        },
+                        "json"
+                    );
+                }
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog('close');
+            }
+        }
     });
 });
 //]]>

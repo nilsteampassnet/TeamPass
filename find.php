@@ -92,8 +92,8 @@ echo '
 // DIALOG TO MASS OPERATIONS
 echo '
 <div id="div_mass_op" style="display:none;">
-    <div id="div_mass_op_msg" style="text-align:center;margin:2px;display:none;" class="ui-corner-all"></div>
     <div id="div_mass_html" style=""></div>
+    <div id="div_mass_op_msg" style="text-align:center; margin-top:10px; display:none; padding:10px;" class="ui-corner-all"></div>
 </div>';
 // Load file
 require_once 'find.load.php';

@@ -16,6 +16,7 @@ global $LANG;
 $LANG = array (
     'mass_operation' => 'Mass operation on Items',
     'move_items' => 'Move selected Items',
+    'must_select_items' => 'You must select items!',
     'delete_items' => 'Delete selected Items',
     'you_decided_to_move_items' => 'You decided to move items',
     'you_decided_to_delete_items' => 'You decided to delete items',

@@ -830,31 +830,19 @@ if (isset($_POST['newtitle'])) {
             $arrFolders = [];
             foreach ($folders as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
-                    if (is_numeric($t->title)) {
-                        $user = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id = %i", $t->title);
-                        $t->title = $_SESSION['login'];
-                        $t->id = $t->id."-perso";
-                    }
-                    $ident = "&nbsp;&nbsp;";
-                    for ($x=1; $x<$t->nlevel; $x++) {
-                        $ident .= "&nbsp;&nbsp;";
-                    }
+                    if (!is_numeric($t->title)) {                       
+                        $ident = "&nbsp;&nbsp;";
+                        for ($x=1; $x<$t->nlevel; $x++) {
+                            $ident .= "&nbsp;&nbsp;";
+                        }
 
-                    array_push($arrFolders, '<option value=\"'.$t->id.'\">'.$ident.$t->title.'</option>');
-/*
-                    if ($prevLevel < $t->nlevel) {
-                        $html .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.$t->title.'</option>';
-                    } elseif ($prevLevel == $t->nlevel) {
-                        $html .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.$t->title.'</option>';
-                    } else {
-                        $html .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.$t->title.'</option>';
+                        array_push($arrFolders, '<option value=\"'.$t->id.'\">'.$ident.addslashes($t->title).'</option>');
+                        $prevLevel = $t->nlevel;
                     }
-*/
-                    $prevLevel = $t->nlevel;
                 }
             }
 
-            echo '[ { "error" : "" , "list_folders" : "'.addslashes(implode(";", $arrFolders)).'" } ]';
+            echo '[ { "error" : "" , "list_folders" : "'.implode(";", $arrFolders).'" } ]';
 
             break;
     }

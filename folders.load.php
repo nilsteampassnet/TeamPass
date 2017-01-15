@@ -87,7 +87,8 @@ $(function() {
                         $("#addgroup_show_error").hide();
                         //prepare data
                         var data = '{"title":"'+$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#new_rep_complexite').val().replace(/"/g,'&quot;')+'", '+
-                        '"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#folder_block_creation").val()+'" , "block_modif":"'+$("#folder_block_modif").val()+'"}';console.log(data);
+                        '"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#folder_block_creation").val()+'" , "block_modif":"'+$("#folder_block_modif").val()+'"}';
+                        
                         //send query
                         $.post(
                             "sources/folders.queries.php",

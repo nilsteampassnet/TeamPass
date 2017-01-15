@@ -44,17 +44,6 @@ $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("
 @$_SESSION['user_avatar'] = $userData['avatar'];
 @$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
-// prepare list of timezones
-foreach (timezone_identifiers_list() as $zone) {
-    $arrayTimezones[$zone] = $zone;
-}
-
-// prepare lsit of flags
-$rows = DB::query("SELECT label FROM ".prefix_table("languages")." ORDER BY label ASC");
-foreach ($rows as $record) {
-    $arraFlags[$record['label']] = $record['label'];
-}
-
 // prepare avatar
 if (isset($userData['avatar']) && !empty($userData['avatar'])) {
     if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'])) {
@@ -64,6 +53,17 @@ if (isset($userData['avatar']) && !empty($userData['avatar'])) {
     }
 } else {
     $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+}
+
+// prepare list of timezones
+foreach (timezone_identifiers_list() as $zone) {
+    $arrayTimezones[$zone] = $zone;
+}
+
+// prepare lsit of flags
+$rows = DB::query("SELECT label FROM ".prefix_table("languages")." ORDER BY label ASC");
+foreach ($rows as $record) {
+    $arraFlags[$record['label']] = $record['label'];
 }
 
 echo '

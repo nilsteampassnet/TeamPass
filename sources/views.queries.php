@@ -228,6 +228,9 @@ switch ($_POST['type']) {
                 );
             }
         }
+
+        updateCacheTable("reload", "");
+        
         break;
 
     /**

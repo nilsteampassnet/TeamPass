@@ -2694,7 +2694,7 @@ if (isset($_POST['type'])) {
                     array(
                         'id_tree' => $_POST['folder_id'],
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv'],
+                        'pw_iv' => "",
                         'perso' => 0
                     ),
                     "id=%i",
@@ -2705,6 +2705,168 @@ if (isset($_POST['type'])) {
             logItems($_POST['item_id'], $dataSource['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']);
 
             echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$_POST['folder_id'].'"}]';
+            break;
+
+        /*
+        * CASE
+        * MASSIVE Move an ITEM
+        */
+        case "mass_move_items":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true || !isset($_SESSION['settings']['pwd_maximum_length'])) {
+                // error
+                exit();
+            }
+
+            // loop on items to move
+            foreach (explode(";", $_POST['item_ids']) as $item_id) {
+                if (!empty($item_id)) {
+                    // get data about item
+                    $dataSource = DB::queryfirstrow(
+                        "SELECT i.pw, i.pw_iv, f.personal_folder,i.id_tree, f.title,i.label
+                        FROM ".prefix_table("items")." as i
+                        INNER JOIN ".prefix_table("nested_tree")." as f ON (i.id_tree=f.id)
+                        WHERE i.id=%i",
+                        $item_id
+                    );
+                    // get data about new folder
+                    $dataDestination = DB::queryfirstrow(
+                        "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                        $_POST['folder_id']
+                    );
+
+                    // previous is non personal folder and new too
+                    if ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 0) {
+                        // just update is needed. Item key is the same
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'id_tree' => $_POST['folder_id']
+                               ),
+                            "id=%i",
+                            $item_id
+                        );
+                    } elseif ($dataSource['personal_folder'] == 0 && $dataDestination['personal_folder'] == 1) {
+                        $decrypt = cryption(
+                            $dataSource['pw'],
+                            "",
+                            "decrypt"
+                        );
+                        $encrypt = cryption(
+                            $decrypt['string'],
+                            mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
+                            "encrypt"
+                        );
+                        // update pw
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'id_tree' => $_POST['folder_id'],
+                                'pw' => $encrypt['string'],
+                                'pw_iv' => $encrypt['iv'],
+                                'perso' => 1
+                            ),
+                            "id=%i",
+                            $item_id
+                        );
+                    }
+                    // If previous is personal folder and new is personal folder too => no key exist on item
+                    elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 1) {
+                        // just update is needed. Item key is the same
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'id_tree' => $_POST['folder_id']
+                            ),
+                            "id=%i",
+                            $item_id
+                        );
+                    }
+                    // If previous is personal folder and new is not personal folder => no key exist on item => add new
+                    elseif ($dataSource['personal_folder'] == 1 && $dataDestination['personal_folder'] == 0) {
+                        $decrypt = cryption(
+                            $dataSource['pw'],
+                            mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
+                            "decrypt"
+                        );
+                        $encrypt = cryption(
+                            $decrypt['string'],
+                            "",
+                            "encrypt"
+                        );
+
+                        // update item
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'id_tree' => $_POST['folder_id'],
+                                'pw' => $encrypt['string'],
+                                'pw_iv' => "",
+                                'perso' => 0
+                            ),
+                            "id=%i",
+                            $item_id
+                        );
+                    }
+                    // Log item moved
+                    logItems($item_id, $dataSource['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']);
+                }
+            }
+
+            // reload cache table
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            updateCacheTable("reload", "");
+
+            echo '[{"error":"" , "status":"ok"}]';
+            break;
+
+        /*
+         * CASE
+         * MASSIVE Delete an item
+        */
+        case "mass_delete_items":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key']) {
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+
+            // loop on items to move
+            foreach (explode(";", $_POST['item_ids']) as $item_id) {
+                if (!empty($item_id)) {
+                    // get info
+                    $dataSource = DB::queryfirstrow(
+                        "SELECT label, id_tree
+                        FROM ".prefix_table("items")."
+                        WHERE id=%i",
+                        $item_id
+                    );
+
+                    // perform a check in case of Read-Only user creating an item in his PF
+                    if ($_SESSION['user_read_only'] === true) {
+                        echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
+                        break;
+                    }
+
+                    // delete item consists in disabling it
+                    DB::update(
+                        prefix_table("items"),
+                        array(
+                            'inactif' => '1',
+                           ),
+                        "id = %i",
+                        $item_id
+                    );
+                    // log
+                    logItems($item_id, $dataSource['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
+                    // Update CACHE table
+                    updateCacheTable("delete_value", $item_id);
+                }
+            }
+
+            echo '[{"error":"" , "status":"ok"}]';
+            
             break;
 
             /*
@@ -3360,7 +3522,18 @@ if (isset($_POST['type'])) {
                 }
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
-                    $avatar = isset($record['avatar_thumb']) && !empty($record['avatar_thumb']) ? $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'] : $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+
+                    // prepare avatar
+                    if (isset($record['avatar_thumb']) && !empty($record['avatar_thumb'])) {
+                        if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'])) {
+                            $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'];
+                        } else {
+                            $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+                        }
+                    } else {
+                        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+                    }
+
                     $history .= '<tr style="">'.
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.

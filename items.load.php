@@ -145,16 +145,22 @@ function LoadTreeNode(node_id)
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
-function ListerItems(groupe_id, restricted, start)
+function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
-
+    stop_listing_current_folder = stop_listing_current_folder || "0";
+    
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {
         me.data('requestRunning', false);
         $("#items_listing_should_stop").val("0");
         return false;
     } 
+
+    if (stop_listing_current_folder === 1) {
+        me.data('requestRunning', false);
+        $("#new_listing_characteristics").val(groupe_id+","+restricted+","+start+",0");
+    }
 
     // prevent launch of similar query in case of doubleclick
     if ( me.data('requestRunning') ) {
@@ -189,11 +195,11 @@ function ListerItems(groupe_id, restricted, start)
         //ajax query
         request = $.post("sources/items.queries.php",
             {
-                type     : "lister_items_groupe",
-                id         : groupe_id,
-                restricted : restricted,
-                start    : start,
-                key        : "<?php echo $_SESSION['key'];?>",
+                type        : "lister_items_groupe",
+                id          : groupe_id,
+                restricted  : restricted,
+                start       : start,
+                key         : "<?php echo $_SESSION['key'];?>",
                 nb_items_to_display_once : $("#nb_items_to_display_once").val()
             },
             function(data) {
@@ -325,7 +331,7 @@ function ListerItems(groupe_id, restricted, start)
                     //disable buttons
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item").addClass( "ui-state-disabled").off("click");
 
-                    proceed_list_update();
+                    proceed_list_update(stop_listing_current_folder);
                 } else {
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
@@ -419,7 +425,7 @@ function ListerItems(groupe_id, restricted, start)
                         });
                     }
 
-                    proceed_list_update();
+                    proceed_list_update(stop_listing_current_folder);
                 }
                 //Delete data
                 delete data;
@@ -1105,7 +1111,6 @@ function AddNewFolder()
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']);?>").show();
                 } else if (data[0].error != "") {
                     $("#new_rep_show_error").html(data[0].error).show();
-                    console.log(data[0].error);
                 } else {
                     $("#new_rep_titre").val("");
                     refreshTree(data[0].newid);
@@ -2250,7 +2255,6 @@ function refreshVisibleFolders()
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-            //console.log(data.selectVisibleFoldersOptions);
             //check if format error
             if (data.error == "") {
                 // clear list (except the entries with value = 0)
@@ -3065,7 +3069,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 reason: "item_attachments",
                 duration: 10
             },
-            function(data) {console.log(data[0].token);
+            function(data) {
                 $("#item_user_token").val(data[0].token);
                 uploader_attachments.start();
             },
@@ -3585,8 +3589,16 @@ function htmlspecialchars_decode (string, quote_style)
 /**
  * Permit to load dynamically the list of Items
  */
-function proceed_list_update()
+function proceed_list_update(stop_proceeding)
 {
+    stop_proceeding = stop_proceeding || "";
+
+    if (stop_proceeding === "1" || $("#new_listing_characteristics").val() === "") {
+        var tmp = $("#new_listing_characteristics").val().split(',');
+        ListerItems(tmp[0], tmp[1], tmp[2], tmp[3]);
+        return false;
+    }
+
     if ($("#query_next_start").val() !== "end") {
         //Check if nb of items do display > to 0
         if ($("#nb_items_to_display_once").val() > 0) {
@@ -3625,7 +3637,6 @@ function proceed_list_update()
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
-                //console.log(data.selOptionsUsers);
                 // *** restricted_to_list ***
                 $("#restricted_to_list").empty();
                 //Add list of roles if option is set
