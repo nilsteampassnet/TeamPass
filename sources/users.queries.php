@@ -1430,7 +1430,6 @@ if (!empty($_POST['type'])) {
             $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));
 
             // refine folders based upon roles
-            db::debugmode(true);
             $rows = DB::query(
                 "SELECT folder_id, type
                 FROM ".prefix_table("roles_values")."
@@ -1441,17 +1440,10 @@ if (!empty($_POST['type'])) {
             foreach ($rows as $record) {
                 $bFound = false;
                 $x = 0;
-                echo "> ".$record['folder_id']." | ";
                 foreach($arrFolders as $fld) {
-                    echo "   -".$fld['id']." ".$fld['type']." , ";
                     if ($fld['id'] === $record['folder_id']) {
-                        echo evaluate_folder_acces_level($fld['type'], $arrFolders[$x]['type'])." ;; ";
-                        /*if ($record['type'] === "W" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
-                            $arrFolders[$x]['type'] = "W";
-                        } else if ($record['type'] === "ND" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
-                            $arrFolders[$x]['type'] = "W";
-                        }*/
-                        $arrFolders[$x]['type'] = evaluate_folder_acces_level($fld['type'], $arrFolders[$x]['type']);
+                        // get the level of access on the folder
+                        $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
                         $bFound = true;
                         break;
                     }
@@ -1461,7 +1453,7 @@ if (!empty($_POST['type'])) {
                     array_push($arrFolders, array("id" => $record['folder_id'] , "type" => $record['type']));
                 }
             }
-//print_r($arrFolders);
+
             $tree_desc = $tree->getDescendants();
             foreach ($tree_desc as $t) {
                 foreach($arrFolders as $fld) {
